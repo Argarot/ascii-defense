@@ -1,13 +1,16 @@
 /**
- * Placement-grid comparison.
+ * Tile-grid vs continuous comparison.
  *
- * NOT the game. Three panels, identical terrain and towers, differing only in
- * whether placement is freeform, snapped to a square grid, or snapped to hexes.
- * The question being tested: does an explicit grid make tower footprints and
- * buildable space self-evident, or does it just clutter the board?
+ * NOT the game. Same map, same art, two backends:
  *
- * Grid chrome uses box-drawing glyphs. That is consistent with the charset
- * rule: blocks and box-drawing are UI, never entity art.
+ *   left  — continuous: terrain is per-cell noise, towers sit at arbitrary
+ *           cell offsets. No tile concept anywhere.
+ *   right — tile grid: the map IS a grid of square tiles (Heroes of Might and
+ *           Magic style). Terrain is authored per tile, placement snaps to
+ *           tiles. No drawn borders; the structure is legible from the terrain.
+ *
+ * Cells are square (unscii-8 is 8x8), so a 12x12-cell tile is a genuinely
+ * square 96x96 px tile. No aspect correction needed anywhere.
  */
 import { GLTerm } from './term/GLTerm';
 import type { GlyphSet } from './term/GLTerm';
@@ -25,10 +28,17 @@ const PAL: Record<string, string> = {
   'enemy.body': '#8c3a3a', 'enemy.edge': '#e26060', 'enemy.eye': '#ffd166',
   ground: '#27333f', groundDim: '#18202a', road: '#4a5b70', roadLit: '#71879f',
   roadEdge: '#8299b3', rock: '#3b4653', rockCap: '#5d6e83', ore: '#e8b52a',
-  grid: '#243447', gridLit: '#3d5570', text: '#d3dae7', dim: '#65758a',
-  accent: '#2ee6a0', bg: '#07090c',
+  hint: '#1d2836', text: '#d3dae7', dim: '#65758a', accent: '#2ee6a0', bg: '#07090c',
 };
 const PATH = '#4cc9f0';
+
+const TILE = 12;          // cells per tile edge — square, because cells are square
+const TILES_X = 9;
+const TILES_Y = 5;
+const PW = TILE * TILES_X;
+const PH_MAP = TILE * TILES_Y;
+
+type Tile = 'ground' | 'road' | 'rock' | 'ore';
 
 function hash2(x: number, y: number, salt: number): number {
   let h = (x | 0) * 374761393 + (y | 0) * 668265263 + salt * 2246822519;
@@ -49,118 +59,143 @@ function drawPiece(t: GLTerm, p: Piece, inkMap: Record<string, string | null>, x
   }
 }
 
-/** Straight line between two cells, drawn with a fixed glyph. */
-function line(t: GLTerm, x0: number, y0: number, x1: number, y1: number, ch: string, col: string): void {
-  const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-  for (let i = 0; i <= steps; i++) {
-    const x = Math.round(x0 + ((x1 - x0) * i) / steps);
-    const y = Math.round(y0 + ((y1 - y0) * i) / steps);
-    t.put(x, y, ch, col);
-  }
-}
-
-/** Flat-top hex outline: half-width 6, half-height 4. Tiles at dx=9, dy=8. */
-function hex(t: GLTerm, cx: number, cy: number, col: string): void {
-  line(t, cx - 3, cy - 4, cx + 3, cy - 4, '─', col);
-  line(t, cx - 3, cy + 4, cx + 3, cy + 4, '─', col);
-  line(t, cx - 6, cy, cx - 4, cy - 3, '/', col);
-  line(t, cx - 6, cy, cx - 4, cy + 3, '\\', col);
-  line(t, cx + 6, cy, cx + 4, cy - 3, '\\', col);
-  line(t, cx + 6, cy, cx + 4, cy + 3, '/', col);
-}
-
 async function main(): Promise<void> {
   const [glyphs, data] = await Promise.all([load<GlyphSet>('glyphset.json'), load<Styles>('styles.json')]);
-  const style = data.styles.extended; // the palette you picked
+  const style = data.styles.extended;
   const app = document.getElementById('app')!;
 
-  const PW = 74, PH = 50;
-  const term = new GLTerm(glyphs, { cols: PW * 3 + 4, rows: PH, cellPx: 8, background: PAL.bg });
+  const term = new GLTerm(glyphs, { cols: PW * 2 + 4, rows: PH_MAP + 6, cellPx: 8, background: PAL.bg });
   app.appendChild(term.canvas);
   const note = document.createElement('div');
   note.className = 'hud';
   app.appendChild(note);
 
-  const MODES = [
-    { key: 'none', label: 'A. no grid (freeform)', blurb: 'what we have now. placement rules are invisible' },
-    { key: 'square', label: 'B. square placement grid', blurb: 'towers snap to 12x10 tiles. footprint is explicit' },
-    { key: 'hex', label: 'C. hex placement grid', blurb: '6 neighbours. rectangular sprites do not fit hexes' },
-  ] as const;
+  // ------------------------------------------------------------- the tile map
+  // One authored map, shared by both panels. This is the whole point: the same
+  // level data can be rendered either way.
+  const tiles: Tile[] = new Array(TILES_X * TILES_Y).fill('ground');
+  const tileAt = (tx: number, ty: number): Tile => tiles[ty * TILES_X + tx];
+  {
+    let ty = 2;
+    for (let tx = 0; tx < TILES_X; tx++) {
+      tiles[ty * TILES_X + tx] = 'road';
+      const roll = hash2(tx, 0, 3);
+      if (roll < 0.3 && ty > 0) { ty--; tiles[ty * TILES_X + tx] = 'road'; }
+      else if (roll > 0.7 && ty < TILES_Y - 1) { ty++; tiles[ty * TILES_X + tx] = 'road'; }
+    }
+    for (let i = 0; i < tiles.length; i++) {
+      if (tiles[i] !== 'ground') continue;
+      const r = hash2(i % TILES_X, (i / TILES_X) | 0, 9);
+      if (r > 0.86) tiles[i] = 'rock';
+      else if (r < 0.09) tiles[i] = 'ore';
+    }
+  }
+  const towerTiles: number[] = [];
+  for (let i = 0; i < tiles.length && towerTiles.length < 5; i++) {
+    if (tiles[i] === 'ground' && hash2(i, 1, 17) > 0.55) towerTiles.push(i);
+  }
 
-  const top = 3, mapH = PH - 5;
-  const roadY = (x: number): number => 26 + Math.round(Math.sin(x * 0.07) * 6);
+  const top = 3;
+
+  /** Continuous: per-cell noise, no tile awareness at all. */
+  function drawContinuous(ox: number): void {
+    for (let y = 0; y < PH_MAP; y++) {
+      for (let x = 0; x < PW; x++) {
+        const t = tileAt(Math.min(TILES_X - 1, (x / TILE) | 0), Math.min(TILES_Y - 1, (y / TILE) | 0));
+        const sy = top + y;
+        // Noise ignores tile edges entirely, so boundaries dissolve.
+        if (t === 'road') {
+          if (hash2(x, y, 5) < 0.85) term.put(ox + x, sy, pickG(style.terrain.road, x, y, 6), hash2(x, y, 7) < 0.15 ? PAL.roadLit : PAL.road);
+        } else if (t === 'rock' && hash2(x, y, 8) < 0.8) {
+          term.put(ox + x, sy, pickG(style.terrain.rock, x, y, 9), PAL.rock);
+        } else if (t === 'ore' && hash2(x, y, 13) < 0.10) {
+          term.put(ox + x, sy, style.terrain.ore[0], PAL.ore);
+        } else if (hash2(x, y, 10) < 0.08) {
+          term.put(ox + x, sy, pickG(style.terrain.ground, x, y, 11), hash2(x, y, 12) < 0.5 ? PAL.groundDim : PAL.ground);
+        }
+      }
+    }
+    // Towers at arbitrary offsets — nothing lines up with anything.
+    towerTiles.forEach((i, n) => {
+      const tx = i % TILES_X, ty = (i / TILES_X) | 0;
+      const jx = Math.round(hash2(n, 2, 31) * 6) - 3;
+      const jy = Math.round(hash2(n, 3, 37) * 6) - 3;
+      drawPiece(term, style.tower, data.inkMap, ox + tx * TILE + jx, top + ty * TILE + 1 + jy, PAL['tower.shadow']);
+    });
+  }
+
+  /** Tile grid: terrain authored per tile, placement snapped. No borders. */
+  function drawTiled(ox: number, hints: boolean): void {
+    for (let ty = 0; ty < TILES_Y; ty++) {
+      for (let tx = 0; tx < TILES_X; tx++) {
+        const t = tileAt(tx, ty);
+        // One roll per tile gives the whole tile a shared character — this is
+        // what makes the grid legible without drawing a single border.
+        const density = 0.05 + hash2(tx, ty, 41) * 0.09;
+        for (let y = 0; y < TILE; y++) {
+          for (let x = 0; x < TILE; x++) {
+            const gx = tx * TILE + x, gy = ty * TILE + y, sy = top + gy;
+            if (t === 'road') {
+              // Edge cells of a road tile get the lighter treatment, so the
+              // road reads as a laid surface with kerbs.
+              const edge = (x === 0 || x === TILE - 1 || y === 0 || y === TILE - 1);
+              const nbr = edge && (
+                (y === 0 && ty > 0 && tileAt(tx, ty - 1) === 'road') ||
+                (y === TILE - 1 && ty < TILES_Y - 1 && tileAt(tx, ty + 1) === 'road') ||
+                (x === 0 && tx > 0 && tileAt(tx - 1, ty) === 'road') ||
+                (x === TILE - 1 && tx < TILES_X - 1 && tileAt(tx + 1, ty) === 'road'));
+              if (edge && !nbr) term.put(ox + gx, sy, pickG(style.terrain.roadEdge, gx, gy, 4), PAL.roadEdge);
+              else if (hash2(gx, gy, 5) < 0.85) term.put(ox + gx, sy, pickG(style.terrain.road, gx, gy, 6), hash2(gx, gy, 7) < 0.15 ? PAL.roadLit : PAL.road);
+            } else if (t === 'rock') {
+              const inset = x > 0 && x < TILE - 1 && y > 0 && y < TILE - 1;
+              if (inset || hash2(gx, gy, 8) < 0.5) term.put(ox + gx, sy, pickG(style.terrain.rock, gx, gy, 9), inset ? PAL.rock : PAL.rockCap);
+            } else if (t === 'ore') {
+              if (hash2(gx, gy, 13) < 0.13) term.put(ox + gx, sy, style.terrain.ore[0], PAL.ore);
+              else if (hash2(gx, gy, 10) < density) term.put(ox + gx, sy, pickG(style.terrain.ground, gx, gy, 11), PAL.groundDim);
+            } else if (hash2(gx, gy, 10) < density) {
+              term.put(ox + gx, sy, pickG(style.terrain.ground, gx, gy, 11), hash2(gx, gy, 12) < 0.5 ? PAL.groundDim : PAL.ground);
+            }
+          }
+        }
+        if (hints && t === 'ground') term.put(ox + tx * TILE, top + ty * TILE, '·', PAL.hint);
+      }
+    }
+    towerTiles.forEach((i) => {
+      const tx = i % TILES_X, ty = (i / TILES_X) | 0;
+      drawPiece(term, style.tower, data.inkMap, ox + tx * TILE, top + ty * TILE + 1, PAL['tower.shadow']);
+    });
+  }
 
   let tick = 0;
   function frame(): void {
     term.clear(PAL.bg);
 
-    MODES.forEach((mode, pi) => {
-      const ox = pi * (PW + 2);
-      term.write(ox, 0, mode.label, PAL.accent);
-      term.write(ox, 1, mode.blurb, PAL.dim);
+    term.write(0, 0, 'A · continuous backend', PAL.accent);
+    term.write(0, 1, 'per-cell terrain, free placement — nothing aligns, footprints are guesswork', PAL.dim);
+    term.write(PW + 4, 0, 'B · tile grid backend  (12x12 cells = 96x96 px, square)', PAL.accent);
+    term.write(PW + 4, 1, 'per-tile terrain, snapped placement — structure is visible without any borders', PAL.dim);
 
-      // terrain
-      for (let y = 0; y < mapH; y++) {
-        for (let x = 0; x < PW; x++) {
-          const ry = roadY(x), onRoad = y >= ry && y < ry + 6;
-          const sy = top + y;
-          if (onRoad) {
-            if (y === ry || y === ry + 5) term.put(ox + x, sy, pickG(style.terrain.roadEdge, x, y, 4), PAL.roadEdge);
-            else if (hash2(x, y, 5) < 0.9) term.put(ox + x, sy, pickG(style.terrain.road, x, y, 6), hash2(x, y, 7) < 0.15 ? PAL.roadLit : PAL.road);
-          } else if (hash2((x / 6) | 0, (y / 4) | 0, 21) > 0.9) {
-            term.put(ox + x, sy, pickG(style.terrain.rock, x, y, 9), PAL.rock);
-          } else if (hash2(x, y, 10) < 0.08) {
-            term.put(ox + x, sy, pickG(style.terrain.ground, x, y, 11), hash2(x, y, 12) < 0.5 ? PAL.groundDim : PAL.ground);
-          }
-        }
-      }
+    drawContinuous(0);
+    drawTiled(PW + 4, true);
 
-      // grid chrome, drawn only where you could actually build
-      if (mode.key === 'square') {
-        for (let gy = 0; gy + 10 <= mapH; gy += 10) {
-          for (let gx = 0; gx + 12 <= PW; gx += 12) {
-            const ry = roadY(gx + 6);
-            const blocked = gy + 10 > ry && gy < ry + 6;
-            const col = blocked ? PAL.grid : PAL.gridLit;
-            for (let i = 1; i < 12; i++) { term.put(ox + gx + i, top + gy, '─', col); term.put(ox + gx + i, top + gy + 9, '─', col); }
-            for (let i = 1; i < 9; i++) { term.put(ox + gx, top + gy + i, '│', col); term.put(ox + gx + 11, top + gy + i, '│', col); }
-            term.put(ox + gx, top + gy, '┌', col); term.put(ox + gx + 11, top + gy, '┐', col);
-            term.put(ox + gx, top + gy + 9, '└', col); term.put(ox + gx + 11, top + gy + 9, '┘', col);
-          }
-        }
-      } else if (mode.key === 'hex') {
-        for (let c = 0; c * 9 + 12 < PW + 6; c++) {
-          for (let r = 0; r * 8 + 8 < mapH; r++) {
-            const cx = ox + 6 + c * 9, cy = top + 5 + r * 8 + (c % 2) * 4;
-            const ry = roadY(6 + c * 9);
-            const blocked = cy - top + 4 > ry && cy - top - 4 < ry + 6;
-            hex(term, cx, cy, blocked ? PAL.grid : PAL.gridLit);
-          }
-        }
-      }
+    // Same enemies on both, walking the road tiles.
+    for (let e = 0; e < 4; e++) {
+      const p = ((tick * 0.3 + e * 22) % (PW + 10)) - 8;
+      const tx = Math.max(0, Math.min(TILES_X - 1, (p / TILE) | 0));
+      let ty = 2;
+      for (let y = 0; y < TILES_Y; y++) if (tileAt(tx, y) === 'road') { ty = y; break; }
+      const ey = top + ty * TILE + 4;
+      drawPiece(term, style.enemy, data.inkMap, Math.round(p), ey, undefined);
+      drawPiece(term, style.enemy, data.inkMap, PW + 4 + Math.round(p), ey, undefined);
+    }
 
-      // towers, snapped per mode
-      const spots: [number, number][] = mode.key === 'square'
-        ? [[12, 0], [36, 10], [24, 30], [48, 30]]
-        : mode.key === 'hex'
-          ? [[9, 2], [33, 6], [24, 34], [51, 30]]
-          : [[13, 3], [37, 12], [25, 32], [49, 31]];
-      for (const [sx, sy] of spots) drawPiece(term, style.tower, data.inkMap, ox + sx, top + sy, PAL['tower.shadow']);
-
-      // enemies on the road
-      for (let e = 0; e < 3; e++) {
-        const ex = Math.round(((tick * 0.35 + e * 24) % (PW + 8)) - 8);
-        drawPiece(term, style.enemy, data.inkMap, ox + ex, top + roadY(ex), undefined);
-      }
-    });
-
-    term.write(0, PH - 1, 'all three use the Stone Story palette. grid chrome is box-drawing = UI only, never entity art.', PAL.dim);
+    term.write(0, top + PH_MAP + 1, 'same level data, two renderings. tiles are square because cells are square (unscii-8 is 8x8).', PAL.dim);
     term.flush();
     (window as unknown as Record<string, unknown>).__screen = () => term.toText();
     tick++;
     requestAnimationFrame(frame);
   }
-  note.textContent = 'placement grid comparison — 1:1 at 8px cells';
+  note.textContent = 'tile grid vs continuous — 1:1 at 8px cells';
   frame();
 }
 
