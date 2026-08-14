@@ -78,6 +78,7 @@ export class GLTerm {
   private data: Float32Array;
   private vbo: WebGLBuffer;
   private index = new Map<number, number>(); // codepoint -> atlas slot
+  private slotToCp: number[] = [];           // atlas slot -> codepoint
   private atlasRows: number;
   private bgDefault: [number, number, number];
   private cellCount: number;
@@ -163,6 +164,7 @@ export class GLTerm {
     const px = new Uint8Array(w * h * 4);
     glyphs.codepoints.forEach((cp, slot) => {
       this.index.set(cp, slot);
+      this.slotToCp[slot] = cp;
       const ox = (slot % ATLAS_COLS) * cw;
       const oy = Math.floor(slot / ATLAS_COLS) * ch;
       for (let row = 0; row < ch; row++) {
@@ -220,6 +222,25 @@ export class GLTerm {
   write(x: number, y: number, text: string, fg: string, bg?: string): void {
     let i = 0;
     for (const ch of text) this.put(x + i++, y, ch, fg, bg);
+  }
+
+  /**
+   * Screen state as plain text. This is the QA backbone, not a debug leftover:
+   * golden files are git-diffable, so a failing snapshot shows the actual
+   * screen in the PR diff. Strictly better than image comparison for an
+   * ASCII game — no pixel tolerances, no binary blobs in the repo.
+   */
+  toText(): string {
+    const lines: string[] = [];
+    for (let y = 0; y < this.rows; y++) {
+      let line = '';
+      for (let x = 0; x < this.cols; x++) {
+        const slot = this.data[(y * this.cols + x) * FLOATS_PER_CELL + 2];
+        line += String.fromCodePoint(this.slotToCp[slot] ?? 32);
+      }
+      lines.push(line.replace(/\s+$/, ''));
+    }
+    return lines.join('\n');
   }
 
   flush(): void {

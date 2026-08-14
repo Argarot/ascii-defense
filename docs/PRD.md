@@ -130,11 +130,14 @@ tree nodes. Ore can never be spent during a run.
 There is **one** economy building — the Refinery — and its upgrade tree *is* the
 spend-now-or-invest-later decision:
 
+The Refinery is the **one two-path exception** in the game. A third path was
+drafted ("Logistics — throughput, range, adjacency") and cut: it was filler
+sitting beside two sharp choices. Refineries produce resources, nothing else.
+
 | Path | Produces | Requires |
 |---|---|---|
 | **Yield** | Scrap per wave | anywhere |
 | **Extraction** | Ore per wave | must be built **on an ore node** |
-| **Logistics** | throughput, range, adjacency bonuses | anywhere |
 
 Because the Extraction path requires an ore node, **site selection is a
 pre-commitment**: you choose where to build already knowing which future you

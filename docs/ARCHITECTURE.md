@@ -188,6 +188,26 @@ of art authoring: what you draw is what you see.
 native 8 px on a 1920-wide display; usable area is nearer 232×128 after browser
 chrome. Roughly 32,400 cells, measured at ~2 ms/frame fully animated.
 
+## 3b. Reserve the shape, ship one value
+
+A recurring principle, stated once here instead of three times elsewhere. Where
+a future feature would otherwise force a rewrite, the *shape* ships now and
+carries a single value:
+
+| Reserved | Ships as | Avoids |
+|---|---|---|
+| Ore stored per tier — `{ "1": 240 }` | one tier | a save migration |
+| `metaPowerIndex` in the difficulty model | pinned near 1.0 | re-deriving balance |
+| Subcell entity coordinates (§4a) | 1×1 subcells | rewriting movement and collision |
+| **Path identity as a data field, not a colour** | colour only | rewriting the sim for accessibility |
+
+That last one is deliberate and worth spelling out. Encoding upgrade path purely
+in hue fails for roughly 8% of men. Full colour-vision-deficiency support is
+**out of scope for now by decision**, but the sim stores `pathId` as data and
+the renderer chooses how to present it. Adding a redundant channel later — a
+marker glyph, a border treatment — is then a renderer and asset change, not a
+core change. Nothing in the engine may branch on colour.
+
 ## 4a. Subcell coordinates — built in M1, used later
 
 Effects are deferred past M1, but the coordinate system they need is not.
@@ -347,9 +367,15 @@ tiers arrive as content rather than as a migration.
 
 ## 13. CI/CD
 
-- `ci.yml` — typecheck, lint, unit + golden + replay tests, content validation, build.
-- `pages.yml` — build and deploy to Pages on `main`. **Shipped and working.**
+**Built today:** `pages.yml` only — build and deploy to Pages on `main`.
+
+**Not built yet** (an earlier draft of this document described these as if they
+existed, which was wrong):
+
+- `ci.yml` — typecheck, lint, unit + golden + replay tests, content validation.
 - `balance.yml` — `harness check`, posts a report, fails on drift.
+
+Both land in Phase 1, before any game code.
 
 Verified free on public repositories:
 [Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)

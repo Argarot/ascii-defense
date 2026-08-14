@@ -13,3 +13,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# REXPaint is a tool, not a project artifact
+REXPaint-v*/
