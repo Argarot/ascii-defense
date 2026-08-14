@@ -158,7 +158,10 @@ async function main(): Promise<void> {
         // top face — i.e. only where terrain steps down. Void in front is
         // treated as below ground so the board edge gets a visible lip.
         const nextK = at(tx, ty + 1);
-        const nextE = nextK === 'void' ? -2 : ELEV[nextK];
+        // A void neighbour gets a thin 2-row lip, not a full-height wall. On an
+        // expanding board most tiles border void, and a full wall each time
+        // buries the board in slabs.
+        const nextE = nextK === 'void' ? e - 1 : ELEV[nextK];
         const wallH = Math.max(0, (e - nextE) * 2);
         for (let y = 0; y < wallH; y++) {
           for (let x = 0; x < T; x++) {
