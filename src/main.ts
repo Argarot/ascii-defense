@@ -153,13 +153,18 @@ async function main(): Promise<void> {
         const e = ELEV[k];
         const bx = ox + tx * T;
         const topY = oy + ty * TOPH - e * 2;
-        const wallH = TOPH - (ELEV[at(tx, ty + 1)] - e) * 2;
         fillTile(k, bx, topY, T, TOPH, ty * TX + tx, 0);
-        for (let y = 0; y < Math.max(0, wallH - TOPH + 4 + e * 2); y++) {
+        // The wall is exactly the gap between this top face and the next row's
+        // top face — i.e. only where terrain steps down. Void in front is
+        // treated as below ground so the board edge gets a visible lip.
+        const nextK = at(tx, ty + 1);
+        const nextE = nextK === 'void' ? -2 : ELEV[nextK];
+        const wallH = Math.max(0, (e - nextE) * 2);
+        for (let y = 0; y < wallH; y++) {
           for (let x = 0; x < T; x++) {
-            const wy = topY + TOPH + y;
-            if (wy >= oy + TY * TOPH + 14) continue;
-            term.put(bx + x, wy, y === 0 ? '▔' : (hash2(bx + x, wy, 71) < 0.4 ? '▒' : '░'), y === 0 ? PAL.wallLit : PAL.wall);
+            term.put(bx + x, topY + TOPH + y,
+              y === 0 ? '▔' : (hash2(bx + x, topY + y, 71) < 0.4 ? '▒' : '░'),
+              y === 0 ? PAL.wallLit : PAL.wall);
           }
         }
       }
@@ -198,7 +203,6 @@ async function main(): Promise<void> {
       if (h.conn.includes('N')) term.write(ox + 8, cy, '╨', PAL.roadEdge);
       if (h.conn.includes('S')) term.write(ox + 8, cy + 15, '╥', PAL.roadEdge);
       term.write(ox + 1, cy + 16, `${i + 1}. ${h.name}`, i === 0 ? PAL.text : PAL.dim);
-      term.write(ox + w - 6, cy + 16, h.conn, PAL.dim);
     });
     term.write(ox, oy + 3 * 17 + 2, 'reroll  ·  2 recon', PAL.dim);
   }
