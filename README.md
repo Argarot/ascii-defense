@@ -16,14 +16,20 @@ a render-loop demo, not the game. See [docs/ROADMAP.md](docs/ROADMAP.md).
 - **Deep tower evolution.** Three upgrade paths of five tiers per tower, with a
   hard crosspathing limit — one path to tier 5, a second to tier 2, the third
   stays locked. Eight tower families behave like sixty builds.
+- **Towers that grow into their space.** Emplacements occupy 3×2 cells, become
+  5×3 at tier 3 and 7×4 at tier 5. Placement has to anticipate growth, and a
+  maxed tower is visibly a landmark on the board.
 - **Procedural everything.** Maps, waves and run structure are generated, not
   authored. Runs are a branching node map across three acts.
 - **Mazing without unwinnable states.** Roads are pathable but never buildable,
   so a valid route always exists. Bypass zones let you lengthen the route by
   building — mazing is an economic decision, not a puzzle you can lose to.
+- **Mining the margins.** Ground far from the path holds ore. Extractors mine a
+  meta-currency that never helps the current run — so every one is a bet against
+  your own survival, funding a permanent tech tree instead.
 - **Difficulty derived, not tuned by hand.** Wave budgets come from a model of
-  achievable DPS against live path length, validated by a headless bot harness
-  that plays hundreds of seeded runs.
+  achievable DPS against live path length, spending, and permanent progression —
+  validated by a headless bot harness that plays hundreds of seeded runs.
 
 Full design in [docs/PRD.md](docs/PRD.md); technical approach in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

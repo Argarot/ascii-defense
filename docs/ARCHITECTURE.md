@@ -28,13 +28,17 @@ ascii-defense/
 │  │  ├─ src/rng/          seeded PRNG, named streams
 │  │  ├─ src/grid/         terrain, flow field, spatial queries
 │  │  ├─ src/sim/          tick loop, towers, enemies, projectiles, effects
-│  │  ├─ src/procgen/      battle maps, node maps, wave composition
-│  │  ├─ src/balance/      the H(w) model, budget solver
+│  │  ├─ src/procgen/      battle maps, node maps, ore nodes, wave composition
+│  │  ├─ src/balance/      the H(w) model, budget solver, metaPowerIndex
+│  │  ├─ src/economy/      Scrap, Ore extraction, node depletion, cost curves
+│  │  ├─ src/meta/         tech tree graph, unlock gating, persistence
 │  │  └─ src/run/          run state machine, nodes, drafting, save/load
 │  ├─ content/         # DATA. towers, enemies, modifiers, biomes, bosses
 │  │  ├─ src/towers/       one file per family, full 3×5 trees
+│  │  ├─ src/sprites/      per-tier ASCII sprite art + animation frames
 │  │  ├─ src/enemies/
 │  │  ├─ src/modifiers/
+│  │  ├─ src/tech/         tech tree nodes, prerequisites, costs
 │  │  ├─ src/biomes/
 │  │  └─ src/schema.ts     types + a runtime validator run in CI
 │  ├─ term/            # the ASCII "terminal": glyph atlas, dirty-cell canvas
@@ -75,6 +79,31 @@ changed. This is a terminal emulator. `term.put(x, y, glyph, fg, bg)` is the
 entire public API, which is why a real TUI backend could be dropped in later
 without touching the game.
 
+## 3a. Sprites and footprints
+
+Towers occupy a rectangle of cells and grow with tier — 3×2, then 5×3, then 7×4
+(PRD §6.2). Three consequences for the engine:
+
+**An occupancy grid.** A `Uint16Array` the size of the board maps each cell to
+the id of whatever owns it, or 0. It is the single source of truth for "can I
+build here", "what did I click on", and "is this tile pathable". Placement is a
+rectangle scan against it; there is no per-tower geometry maths anywhere else.
+
+**Upgrades are placement operations.** Growing 3×2 → 5×3 must re-check the
+occupancy grid for the expanded rectangle, and is rejected if blocked. The
+expansion rectangle is computed by the same function the hover preview calls, so
+what the UI outlines and what the engine permits cannot drift — the classic bug
+in games with variable-size buildings.
+
+**Footprints change pathing.** Every occupied cell is impassable, so building
+and upgrading both trigger a flow-field recompute. This is already the trigger
+condition (§5), so no new machinery — but it does mean an *upgrade* can reroute
+enemies, which the wave budget reads live via `L`.
+
+Sprites are authored as per-cell `(glyph, colour)` pairs with 2–3 animation
+frames, stored in `content/src/sprites`. The renderer blits them through the
+same `term.put()` as everything else; a sprite is data, not a special case.
+
 ## 4. Determinism
 
 Non-negotiable — it is the foundation of the balance harness, bug reproduction
@@ -110,6 +139,10 @@ the cheapest outgoing direction; every enemy just reads its current tile.
   cache-friendly and allocation-free.
 - **Towers**: plain objects. Dozens at most, and they carry rich upgrade state.
 - **Projectiles**: pooled ring buffer, no per-shot allocation.
+- **Occupancy**: one `Uint16Array` over the board, cell → owner id (0 = free).
+  Multi-cell footprints, click targeting and buildability all read from it.
+- **Ore nodes**: plain objects with remaining yield; small in number, and
+  depletion must be inspectable for the balance report.
 
 Not a general ECS. An ECS is the right answer for open-ended entity composition;
 here the entity kinds are fixed and small, and the indirection would cost more
@@ -159,7 +192,30 @@ the build instead of shipping a dead upgrade.
 | Property | Generate 10,000 maps → assert a path always exists, bypass ratio in range, buildable area in range | Vitest |
 | Golden | Seeded run → state hash after N ticks | Vitest, CI gate |
 | Balance | 500+ seeded runs × 4 bot policies → win-rate bands, leak curves | `harness`, nightly + on PR |
+| Property | Placement/upgrade never disagrees with the hover preview; growth never overlaps | Vitest |
 | Manual | Does it feel good | You. The one thing I cannot self-verify. |
+
+**The harness matrix, and why Tech Tree stage 2 is deferred.** Stage 1 pins
+`metaPowerIndex` into a narrow band, so validating `seeds × policies` is
+sufficient. Stage 2 (Potency nodes) makes it a real variable, and correctness
+then requires `seeds × policies × meta tiers` — a multiplicative increase in CI
+time for every balance change. The model reads `metaPowerIndex` from day one so
+this is a scaling decision later, not a redesign.
+
+## 9a. Persistence and save migration
+
+Two stores in `localStorage`, versioned separately:
+
+- `ad.meta.v1` — banked Ore, purchased tech nodes, unlocked content, settings.
+  This is the one that must survive forever; losing it destroys progression.
+- `ad.run.v1` — in-progress run snapshot. Disposable; a failed migration may
+  discard it with a message rather than attempting repair.
+
+Every write carries a schema version, and loaders are pure
+`(oldShape) => newShape` functions chained in sequence. Migrations are unit
+tested against captured fixtures of every previously shipped shape. For a
+project meant to accrete content for months, this is the difference between
+adding a tower and stranding a save.
 
 ## 10. CI/CD
 
@@ -185,11 +241,16 @@ are free for public repositories.
 | npm | 12.0.2 ✅ |
 | git | 2.33.0.windows.2 ✅ |
 | Python | 3.11.15 ✅ (not needed) |
-| **`gh` CLI** | **NOT INSTALLED** ❌ — blocks repo creation |
-| winget | available ✅ (can install `gh`) |
-| Vite build | ✅ proven end to end in a throwaway spike |
+| `gh` CLI | 2.97.0 ✅, authenticated with a fine-grained token scoped to this repo only |
+| Vite build | ✅ proven locally and on a clean CI runner |
 | Canvas ASCII perf | ✅ measured, 17× headroom |
-| GitHub push + Pages deploy | ❌ **unproven — needs your hands first** |
+| GitHub push + Pages deploy | ✅ **proven — live at <https://argarot.github.io/ascii-defense/>** |
+
+**One thing that cannot be automated:** creating the Pages *site* is refused to
+both `GITHUB_TOKEN` and a repo-scoped fine-grained PAT
+(`Resource not accessible by integration`). It was enabled once by hand in
+Settings → Pages → Source → GitHub Actions. A fork must do the same. This is
+recorded in a comment in `.github/workflows/pages.yml` so nobody re-discovers it.
 
 ---
 

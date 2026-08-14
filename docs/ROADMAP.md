@@ -1,162 +1,160 @@
-# ASCII Defense — Roadmap, Estimates & Your Actions
+# ASCII Defense — Roadmap & Estimates
 
-Status: **draft, awaiting approval.** No implementation has started.
+A "session" = one focused working stretch, roughly a few hours. Ranges are wide
+where content authoring dominates.
 
-A "session" below = one focused working stretch of mine, roughly a few hours of
-wall time. Estimates are ranges because content authoring is the variable.
+These docs are written to be **handed off** — the build phase may run under a
+different model than the one that scoped it. Anything load-bearing is stated
+explicitly rather than left as shared context.
 
 ---
 
-## M0 — Foundation & delivery path *(~1 session)*
+## M0 — Foundation & delivery path ✅ **COMPLETE**
 
-Prove the boring path completely before any game code exists.
+- Vite 7 + TypeScript strict, zero runtime dependencies.
+- `src/term/Term.ts` — glyph atlas + dirty-cell renderer. 0.93 ms/frame at
+  120×50 with 400 entities, against 17.22 ms/frame for naive `fillText`.
+- GitHub Actions building and deploying to Pages.
+- Apache-2.0, PRD, architecture, roadmap.
 
-- Monorepo: npm workspaces, TS project references, ESLint (incl. the
-  `no-Math.random` and `engine-must-not-import-DOM` rules), Vitest, Prettier.
-- `packages/term`: the glyph-atlas dirty-cell renderer, ported from the proven
-  spike, with a `term.put()` API and its own unit tests.
-- `packages/web`: a screen showing an animated ASCII grid + FPS counter.
-- GitHub repo created, CI green, **deployed and reachable at a public URL.**
+**Live: <https://argarot.github.io/ascii-defense/>** — verified by loading the
+deployed page and confirming it renders, not by trusting a green check.
 
-**Exit gate:** you open the URL on your machine and see the grid moving.
-Nothing further gets built until that is true.
-
-## M1 — Playable battle *(~3–4 sessions)*
+## M1 — Playable battle *(~4–5 sessions)*
 
 The vertical slice. One battle, no run structure.
 
 - Seeded RNG with named streams; fixed 20 Hz tick; pause / 1× / 2× / 4×.
-- Battle map procgen: terrain, road carving, bypass zones, spawn + Core
-  placement. Property test: 10,000 maps, path always exists.
-- Dijkstra flow field (ground / burrow / fly), recomputed on build.
-- 4 complete towers (`^` Bolt, `o` Mortar, `~` Frost, `$` Refinery) + `#` Wall,
-  full 3×5 trees with crosspathing enforced.
+- Map procgen: terrain, road carving, bypass zones (including narrow
+  wall-only ones), ore node scattering weighted by distance from path.
+- Dijkstra flow field (ground / burrow / fly), recomputed on build and upgrade.
+- **Occupancy grid and multi-cell footprints** — placement, click targeting,
+  and tier growth (3×2 → 5×3 → 7×4) with hover preview of the expansion.
+- **Sprite system** — per-cell (glyph, colour) art with idle/fire frames.
+- 4 complete towers + 1×1 Wall, full 3×5 trees, crosspathing enforced.
 - 8 enemy types across the trait matrix; projectiles; damage types; armour.
-- Wave budget solver against the `H(w)` model; 10 waves; gold; lives; win/lose.
-- Mouse-first HUD: hover range preview, build palette, upgrade panel showing all
-  three paths and which are still legal.
+- Wave budget solver against the `H(w)` model; 10 waves; Scrap; lives; win/lose.
+- Mouse-first HUD: range preview, build palette, upgrade panel showing all three
+  paths and which remain legal.
 
-**Exit gate:** you play it and tell me whether it is fun. This is the checkpoint
-that matters most and the one I cannot fake.
+*+1 session vs. the original estimate, entirely from footprints and sprites.*
 
-## M2 — The run *(~2–3 sessions)*
+**Exit gate:** you play it and say whether it is fun. The checkpoint that matters
+most and the one I cannot fake.
+
+## M2 — The run and the mines *(~3–4 sessions)*
 
 - Node-map procgen (3 acts, branching routes, node-type distribution).
 - Shops, Forges, Events, Elites, Act bosses with unique mechanics.
-- Drafted modifiers: Cores, Mods, Curses; the stat pipeline they plug into.
-- Run state machine; save/resume to `localStorage`; run summary screen.
+- Drafted modifiers: Cores, Mods, Curses, and the stat pipeline they plug into.
+- **Ore economy** — Extractors, finite node yield with depletion, rising
+  per-extractor cost, banking scaled by Threat and depth.
+- **`C(w)` net of extractor spending**, so mining is priced into difficulty
+  automatically rather than bolted on.
+- Run state machine; save/resume; versioned persistence with migration tests.
 - 4 more towers, ~8 more enemies.
 
-**Exit gate:** a complete run, start to Core-death or victory, resumable.
+*+1 session vs. original, from the ore economy.*
+
+**Exit gate:** a complete run, start to finish, resumable, with Ore banked.
 
 ## M3 — Balance & autopilot *(~2–3 sessions)*
 
-- `packages/bot`: 4 policies (`greedy-dps`, `economy-first`, `mazer`, `balanced`).
-- `packages/harness`: headless CLI — N seeds × policies → win rates, leak curves,
-  gold curves, tower pick rates, unwinnable/trivial seed detection.
-- Tune `η` and the `k(w)` pressure curve from measured data. This is the actual
-  "balanced on autopilot" deliverable.
+- `packages/bot`: 4 policies (`greedy-dps`, `economy-first`, `mazer`, `miner`).
+- `packages/harness`: headless CLI — N seeds × policies → win rates, leak
+  curves, Scrap/Ore curves, tower pick rates, unwinnable/trivial seed detection.
+- Tune `eta` and the `k(w)` pressure curve from measured data.
 - `balance.yml` CI gate: win rates must stay inside their bands.
 - In-game autopilot toggle — the same bot, watchable at 4×.
 
-**Exit gate:** balance report across ≥500 seeds per policy inside target bands,
-zero unwinnable seeds.
+**Exit gate:** ≥500 seeds per policy inside target bands, zero unwinnable seeds.
 
-## M4 — Content & ship *(~3–4 sessions)*
+## M4 — Tech Tree, content & art *(~4–6 sessions)*
 
-- Towers 9–14; enemies to ~24; 3 biomes with distinct terrain and enemy pools.
-- Meta unlocks + Threat Levels (difficulty tiers).
-- README with animated capture, CONTRIBUTING, content-authoring guide, licence.
-- Seeded/daily-challenge runs (free given determinism).
-- Release polish pass.
+- **Tech Tree stage 1** — Unlock / Option / Utility / Threat nodes, plus a
+  capped Economy band. Rendered as an ASCII screen through the same Term.
+- Towers 9–14; enemies to ~24; 3 biomes as distinct palettes.
+- **Full sprite pass**, particles, damage numbers, screen nudge, UI chrome.
+- README with animated capture, contributing and content-authoring guides.
+- Seeded / daily-challenge runs (free, given determinism).
+
+*Widest range on the board: sprite art for 14 families × 3 footprints is the
+single largest content item. Mitigation in §Risks.*
 
 **Exit gate:** a stranger clones it, follows the README, and plays.
 
----
+## M5 — Tech Tree stage 2 *(optional, ~2–3 sessions)*
 
-## Total
+- **Potency nodes** — permanent stat increases.
+- Harness matrix extended to `seeds × policies × meta tiers`.
 
-**~11–15 sessions.** M0+M1 (~4–5) gets you something genuinely playable; that is
-the natural point to decide whether this becomes a long-term project or stops.
-
-Everything is sequenced so the riskiest, most externally-dependent work happens
-first: delivery path → determinism → balance model → content volume.
-
----
-
-## What you need to do, concretely
-
-### Before M0 can finish — required
-
-1. **Install the GitHub CLI** (it is not on this machine; I checked):
-
-```bash
-winget install --id GitHub.cli --source winget
-```
-
-Then open a **new** terminal and authenticate:
-
-```bash
-gh auth login
-```
-
-Choose: GitHub.com → HTTPS → *Login with a web browser* → paste the code.
-When it finishes, `gh auth status` should show you as logged in.
-
-2. **Tell me the repo name and owner.** Default proposal: public repo
-   `ascii-defense` under your account. Say the word and I create it, push, and
-   wire up Pages.
-
-3. **Enable Pages, if the API won't let me.** I will try
-   `gh api -X POST .../pages` with `build_type: workflow`. If your token scope
-   blocks it, you click: repo → Settings → Pages → Source: **GitHub Actions**.
-   One dropdown.
-
-If you would rather not install `gh` at all: create the empty public repo in the
-browser yourself and give me the URL. I will push over HTTPS with `git`, which
-is already installed. `gh` just makes everything after that smoother.
-
-### At the M1 gate — required
-
-4. **Play it and tell me if it's fun.** Specifically: does placing a tower feel
-   good, is the upgrade panel legible, is the pace right, and is mazing a
-   decision you actually think about? Automated tests cannot answer any of this.
-
-### Optional, whenever
-
-5. **Pick a name.** `ASCII Defense` is the working title. If you want something
-   with more personality, now is the cheap moment to change it.
-6. **Decide on sound.** Currently out of scope. Say if you want it later.
-
-### What you do NOT need to do
-
-No accounts beyond GitHub. No credit card — [GitHub Free](https://github.com/pricing)
-includes Pages, and Actions minutes are free for public repositories. No hosting
-bill, no domain, no build machine. Total verified running cost: **$0.**
+Deliberately last. `metaPowerIndex` exists in the model from M1, so this is a
+scaling exercise rather than a redesign — but it multiplies CI time for every
+balance change afterwards, which is why it waits until the curve is trusted.
 
 ---
 
-## Biggest risk, and what would invalidate this plan
+## Totals
 
-**The risk: the balance model does not survive contact with real play.**
+| Scope | Sessions |
+|---|---|
+| M1–M4 (the game) | **13–18** |
+| M5 (optional) | +2–3 |
+| *Previous estimate, before your three additions* | *11–15* |
 
-The `H(w)` model assumes players convert gold into in-path DPS at some
-efficiency `η`. If bot play and human play diverge badly, the harness will
-happily certify a curve that feels wrong to you — waves that are trivial or
-walls that are impossible.
+The additions cost roughly **+3 sessions net**: +1 footprints/sprites, +1 ore
+economy, +1.5 tech tree, less overlap.
 
-*Mitigations already designed in:* `η` and `k(w)` are config, not code, so
-retuning is a data edit. A smoke version of the harness lands during M1, not M3,
-so we find the divergence early. Path length `L` is read live from the flow
-field, so mazing can never desync from the wave budget.
+M1 alone (~4–5 sessions) is the natural decision point — it is the first build
+you can judge on feel rather than description.
 
-*What would invalidate the plan:* if, after M1, your subjective read of the
-difficulty consistently disagrees with the harness across several tuning passes.
-The fallback is bounded dynamic difficulty adjustment — a small live correction
-term on `k(w)` driven by recent player performance, clamped so it can never
-trivialise or brick a run. That is a documented retreat, not an improvisation,
-and I would stop and re-plan rather than bolt it on quietly.
+---
 
-**Second risk: content volume.** 14 towers × 3 paths × 5 tiers is 210 authored
-upgrades. Mitigation: schema + CI validator so bad content fails the build, and
-M1 ships 4 towers *complete* rather than 14 half-finished.
+## Your actions
+
+**Done:** GitHub account, `gh` installed and authenticated with a fine-grained
+token scoped to this repo only, repo created, Pages enabled.
+
+**Nothing is blocking right now.** The next thing needed from you is at the M1
+gate: play it and report whether placing and upgrading a tower feels good, the
+board reads clearly, and mazing is a decision you actually think about.
+
+Optional, whenever: pick a real name (still `ASCII Defense`), and say whether
+sound is wanted later.
+
+Running cost remains **$0** — [GitHub Free](https://github.com/pricing) includes
+Pages, and Actions minutes are free for public repositories.
+
+---
+
+## Risks
+
+**1 — The balance model doesn't survive contact.** `H(w)` assumes players
+convert Scrap into in-path DPS at efficiency `eta`. If bot and human play
+diverge, the harness certifies a curve that feels wrong.
+*Mitigations:* `eta` and `k(w)` are config, not code; a smoke harness lands in
+M1 rather than M3; `L`, `C(w)` and `M` are all read live so they cannot desync.
+*Fallback:* bounded dynamic difficulty adjustment — a clamped correction on
+`k(w)` that can never trivialise or brick a run. A documented retreat, not an
+improvisation.
+
+**2 — Sprite art volume.** 14 families × 3 footprints × path variants is the
+largest single content item, and hand-drawing all of it is where this stalls.
+*Mitigation:* sprites are **composed, not drawn** — a generator wraps a frame
+vocabulary around the family glyph with a path-coloured accent, producing a
+consistent default for every tower/tier/path. Hand-authored art then overrides
+only where a tower deserves a signature silhouette (tier 5s, bosses). This
+turns an O(families × tiers × paths) drawing job into an O(families) one.
+
+**3 — Mining may feel consequence-free.** You chose separate currencies with
+opportunity cost only, so nothing actively threatens extractors. The economy
+caps in PRD §7.3 bound the upside, but "safe and boring" is still possible.
+*Mitigation:* Raiders are designed-in — the wave generator supports per-wave
+objective splits from the start, so adding them later is content, not
+architecture.
+
+**4 — Footprint growth may annoy more than it rewards.** Being unable to
+upgrade because a neighbour is in the way can read as punishment.
+*Mitigation:* hover previews the expansion outline before purchase, and the
+engine and UI share one function so they cannot disagree. If it still grates,
+"grow once at tier 3" is a one-line content change, not a rewrite.
