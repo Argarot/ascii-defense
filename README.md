@@ -15,24 +15,24 @@ a render-loop demo, not the game. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 - **Deep tower evolution.** Three upgrade paths of five tiers per tower, with a
   hard crosspathing limit — one path to tier 5, a second to tier 2, the third
-  stays locked. Eight tower families behave like sixty builds.
-- **Towers that grow into their space.** Emplacements occupy 3×2 cells, become
-  5×3 at tier 3 and 7×4 at tier 5. Placement has to anticipate growth, and a
-  maxed tower is visibly a landmark on the board.
-- **Procedural everything.** Maps, waves and run structure are generated, not
-  authored. Runs are a branching node map across three acts.
-- **Mazing without unwinnable states.** Roads are pathable but never buildable,
-  so a valid route always exists. Bypass zones let you lengthen the route by
-  building — mazing is an economic decision, not a puzzle you can lose to.
-- **Mining the margins.** Ground far from the path holds ore. Extractors mine a
-  meta-currency that never helps the current run — so every one is a bet against
-  your own survival, funding a permanent tech tree instead.
-- **Difficulty derived, not tuned by hand.** Wave budgets come from a model of
-  achievable DPS against live path length, spending, and permanent progression —
-  validated by a headless bot harness that plays hundreds of seeded runs.
+  stays locked. Eight tower families produce a very large build space.
+- **Every run is reproducible.** A run is a seed plus an input log, a couple of
+  kilobytes. That gives shareable replays, daily challenges, bug reports as
+  files, and a regression corpus built from real play.
+- **Mazing without unwinnable states.** Road is pathable but never buildable, so
+  a valid route always exists — a structural guarantee, not a runtime check.
+  Building on shortcuts lengthens the route; a live preview shows you where
+  enemies will go before you spend.
+- **Mining the margins.** Ore sits far from the path. The Refinery's upgrade
+  tree *is* the decision: one path pays Scrap that helps you now, another pays
+  Ore that only helps future runs. Nothing compensates you for choosing wrong.
+- **Difficulty measured, not guessed.** Wave budgets are calibrated from a bot
+  playing hundreds of seeded runs, then committed as reviewable data. A balance
+  change shows up in a diff.
 
 Full design in [docs/PRD.md](docs/PRD.md); technical approach in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); build order and conventions in
+[docs/HANDOFF.md](docs/HANDOFF.md).
 
 ## Running it locally
 

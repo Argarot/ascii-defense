@@ -1,327 +1,294 @@
 # ASCII Defense — Product Requirements
 
-Status: **draft.** M0 (delivery path) is complete and live at
-<https://argarot.github.io/ascii-defense/>. No game code is written yet.
+Status: **scoping complete.** M0 (delivery path) is live at
+<https://argarot.github.io/ascii-defense/>. No game code written yet.
 
 ---
 
 ## 1. What it is
 
-A roguelite tower defense game that runs in a browser and draws every single
-thing — terrain, towers, enemies, projectiles, explosions, menus — as coloured
-ASCII characters on a monospace grid.
+A roguelite tower defense game in the browser, drawing everything — terrain,
+towers, enemies, projectiles, menus — as coloured ASCII characters on a
+monospace grid.
 
-A **run** is a journey through a procedurally generated node map (Slay the
-Spire's structure). Nodes are battles, elites, shops, forges, events and bosses.
-Each battle is a procedurally generated defense map. You lose the run when the
-Core falls; you keep mined Ore and spend it on a permanent Tech Tree.
+A **run** is a sequence of procedurally generated battles with a draft between
+each. You lose when the Core falls; you keep mined Ore and spend it on a
+permanent tech tree.
 
-The ASCII presentation is a stylistic constraint, not a mechanic. Every design
-decision below is judged as tower defense design first — but the game should be
-*good looking*, not merely functional. See §9.
-
-## 2. Who it's for
-
-Players who like **Bloons TD 6's tower upgrade depth** and **Slay the Spire's
-run structure**, and don't need rendered art to enjoy either. Desktop,
-mouse-first, playable from a URL with no install.
-
-## 3. Design pillars
+## 2. Design pillars
 
 | Pillar | What it means | What it rules out |
 |---|---|---|
-| **Every placement is a build decision** | Deep evolution trees, a hard crosspathing limit, and towers that physically grow into their space | "Buy the best tower, spam it" |
-| **No two runs are the same** | Procedural maps, waves, node routes and drafted modifiers | Memorised optimal layouts |
-| **Never unwinnable, never trivial** | Difficulty derived from an explicit maths model, validated by a bot harness | Hand-tuned levels; RNG that hands you a dead run |
-| **Every tile has a purpose** | Land far from the path is mining territory, not wasted space | Empty margins that never matter |
-| **Readable at a glance** | Sprite silhouette = tier, colour = specialisation, glyph = family | Visual noise needing a legend |
-| **Content is data, not code** | Towers, enemies, sprites, modifiers, biomes and tech nodes are typed data | Adding a tower requiring engine surgery |
+| **Every placement is a build decision** | Deep evolution trees with a hard crosspathing limit; towers occupy real space | "Buy the best tower, spam it" |
+| **Every run is reproducible** | A run is a seed plus an input log. Replays, daily challenges, bug reports and the regression corpus all fall out of this | Non-deterministic simulation |
+| **Never unwinnable, never trivial** | Road is never buildable; wave budgets are calibrated from measured play | Hand-tuned levels; RNG that hands you a dead run |
+| **Density over decoration** | ASCII's advantage is showing more state at once than a graphical game can. Use it | Prettiness that costs legibility |
+| **Content is data, not code** | Towers, enemies, sprites and tech nodes are JSON validated against a schema | Adding a tower requiring engine changes |
 
-## 4. Core loop
+## 3. Core loop
 
 ```
-Run start  ──►  Node map (3 acts)
-                  │
-                  ├─ Battle  ──► place & upgrade towers, mine ore ──► Scrap + draft 1 of 3
-                  ├─ Elite   ──► harder battle, guaranteed rare modifier
-                  ├─ Shop    ──► spend Scrap: towers, modifiers, re-rolls, Core repair
-                  ├─ Forge   ──► permanently upgrade one carried tower for the rest of the run
-                  ├─ Event   ──► text choice, risk/reward
-                  └─ Boss    ──► act finale, unique mechanic, run-defining Core modifier
-                  │
-                Run ends ──► banked Ore ──► Tech Tree ──► next run starts wider
+Run start ──► Battle 1 ──► draft 1 of 3 ──► Battle 2 ──► ... ──► Battle 8 ──► win
+                 │
+             Core falls ──► run ends ──► banked Ore ──► tech tree ──► next run starts wider
 ```
 
-Target run length: **30–50 minutes** at 2× speed. A battle is 6–10 waves.
+A battle is 8–12 waves. A run is ~30 minutes at 2× speed.
 
-## 5. The map: "hybrid path + bypass"
+Branching node maps, shops, forges, events and bosses are **deliberately not in
+the core loop** — see [ROADMAP.md](ROADMAP.md). They add nothing if the battles
+are not fun, so they are gated behind proving that they are.
 
-Three terrain classes:
+## 4. The map
 
 | Tile | Glyph | Pathable | Buildable | Role |
 |---|---|---|---|---|
-| **Road** | `.` `,` | yes (cost 1.0) | **no** | The guaranteed route. Always exists. |
-| **Ground** | `"` `'` | yes (cost 1.4) | **yes** | Open terrain you build on. |
-| **Rock** | `#` `%` | no | no | Procgen obstacle. Free walls. |
+| **Road** | `.` `,` | yes, cost 1.0 | **no** | The guaranteed route |
+| **Ground** | `"` `'` | yes, cost 1.4 | yes | Open terrain you build on |
+| **Rock** | `#` `%` | no | no | Procgen obstacle, free wall |
+| **Ore node** | `*` | yes, cost 1.4 | yes (see §6) | Mining site |
 
-Enemies use a flow field to walk the **cheapest** route to the Core. The
-generator deliberately carves **bypass zones** — open ground cheaper than
-following the road. You close them by building, forcing the long route.
+Enemies walk the **cheapest** route to the Core via a flow field. Because ground
+costs more than road, shortcuts across open terrain exist naturally; building on
+them closes them and pushes enemies back onto the long road.
 
-Consequences, all deliberate:
+There is no "bypass zone" system. Shortcuts are an emergent consequence of the
+cost model, and the generator's only job is to ensure meaningful ones exist.
 
-- **Mazing is an economic decision**, not a puzzle. Spend on lengthening the
-  path, or on raw damage?
+Two properties fall out, both deliberate:
+
 - **The game can never become unwinnable.** Road is never buildable, so a valid
-  route always exists.
-- **The balance surface is bounded.** Path length varies between a known minimum
-  and maximum, and the wave model reads it live.
-- **Over-mazing has a counter.** Flyers ignore pathing; burrowers ignore ground
-  cost.
+  route always exists. This invariant is load-bearing — never replace it with a
+  "check if still passable" validation.
+- **Mazing is an economic decision.** Walls (1×1) cost Scrap and space.
 
-Because towers now occupy multiple tiles (§6), **Walls remain 1×1** — they are
-the precision instrument for closing narrow bypasses that no tower fits into.
-Some bypass zones are generated deliberately narrow for exactly this reason.
+### 4.1 The path-preview overlay is a requirement, not polish
 
-## 6. Towers: footprint, growth, and evolution
+Flow-field pathing is unreadable without help. If you cannot see where enemies
+will go *before* committing Scrap, mazing is guesswork and the mechanic dies.
 
-### 6.1 Crosspathing
+The board must show, at all times, the current route; and on build-hover, the
+route **as it would be** if that placement happened. This ships in M1.
 
-Every tower has **three upgrade paths of five tiers**, with the BTD6 rule:
-**one path may reach tier 5, a second may reach tier 2, the third stays at 0.**
-One restriction makes 8 towers behave like 60 builds.
+## 5. Towers
 
-Drafted run modifiers overlay the authored trees, so the same tower plays
-differently run to run.
+### 5.1 Crosspathing
 
-### 6.2 Towers occupy space, and grow
+Three upgrade paths of five tiers. **One path may reach tier 5, a second may
+reach tier 2, the third stays at 0.** One rule turns 8 towers into a large build
+space.
 
-Character cells are roughly 1:1.7 (taller than wide), so a **3-wide × 2-tall**
-footprint reads as square on screen. Towers grow as they specialise:
+### 5.2 Fixed footprint, growing intricacy
 
-| Tiers | Footprint | Reads as |
+Character cells are roughly 1:1.7, so a **3-wide × 2-tall** footprint reads as
+square. Standard towers are 3×2; heavies are 5×3. **Footprints never change.**
+
+Tiering up is expressed through the sprite, not the size:
+
+- **Tier 0–1** — bare frame, single family glyph
+- **Tier 2–3** — denser frame, path-coloured accent cells, an idle animation
+- **Tier 4–5** — full frame detail, distinct silhouette per path, firing animation
+
+Colour carries the specialisation; the family glyph never moves from the sprite
+centre so identity survives every upgrade.
+
+*Growth-on-upgrade was considered and cut: it bought one visual moment at the
+cost of occupancy re-checking, a UI/engine contract, and a "cannot upgrade,
+neighbour in the way" failure mode.*
+
+### 5.3 Families
+
+M1 ships the first five. Full target is **8 towers + Wall** — not 14. Eight
+well-tuned towers with crosspathing already yields more build space than can be
+balanced in reasonable time.
+
+| Glyph | Tower | Size | Role | Path A | Path B | Path C | Milestone |
+|---|---|---|---|---|---|---|---|
+| `^` | Bolt Turret | 3×2 | cheap single target | Velocity | Caliber | Optics | M1 |
+| `o` | Mortar | 3×2 | AoE, minimum range | Payload | Cadence | Ordnance | M1 |
+| `~` | Frost Emitter | 3×2 | slow aura | Chill | Shatter | Field | M1 |
+| `$` | Refinery | 3×2 | economy (§6) | Yield | Extraction | Logistics | M1 |
+| `#` | Wall | 1×1 | no attack, closes shortcuts | — | — | — | M1 |
+| `%` | Acid Sprayer | 3×2 | DoT, armour shred | Corrosion | Volatility | Saturation | M4 |
+| `\` | Arc Coil | 3×2 | chain lightning | Conductivity | Overcharge | Capacitor | M4 |
+| `+` | Bastion | 3×2 | buff aura | Command | Logistics | Fortify | M4 |
+| `X` | Rail Lance | 5×3 | long-range line pierce | Focus | Penetration | Overwatch | M4 |
+
+## 6. Economy: one building, two futures
+
+**Scrap** funds the run. **Ore** is meta-only, banks at run's end, and buys tech
+tree nodes. Ore can never be spent during a run.
+
+There is **one** economy building — the Refinery — and its upgrade tree *is* the
+spend-now-or-invest-later decision:
+
+| Path | Produces | Requires |
 |---|---|---|
-| 0–2 | **3 × 2** | a compact emplacement |
-| 3–4 | **5 × 3** | a serious installation |
-| 5 | **7 × 4** | a landmark |
+| **Yield** | Scrap per wave | anywhere |
+| **Extraction** | Ore per wave | must be built **on an ore node** |
+| **Logistics** | throughput, range, adjacency bonuses | anywhere |
 
-This is not decoration. It creates three real mechanics:
+Because the Extraction path requires an ore node, **site selection is a
+pre-commitment**: you choose where to build already knowing which future you
+intend. And because ore nodes sit far from the path, mining pulls your money and
+your buildable space away from your defense.
 
-- **Placement must anticipate growth.** Upgrading requires the larger footprint
-  to be free. Hovering an upgrade shows the expansion outline in advance, so
-  this is a planning problem, never a gotcha.
-- **The board is self-documenting.** You can see which tower took the tier-5
-  from across the map, because it is physically the biggest thing there.
-- **Density is a resource.** Fewer, larger towers means each placement carries
-  more weight — reinforcing pillar one.
+### 6.1 Mining is balanced by opportunity cost alone
 
-### 6.3 Sprites
+Scrap spent on Extraction is Scrap not spent on defense, and the waves do not
+care. There is no enemy that hunts extractors, and **wave budgets are not
+reduced to compensate for mining**.
 
-Towers are authored as small ASCII sprites: per-cell (glyph, colour) pairs, with
-2–3 animation frames for idle and firing. The family glyph always sits at the
-sprite's centre so identity never changes as the thing grows.
+This is deliberate. Compensating would refund the very cost that makes the
+decision matter. It also keeps `C(w)` — Scrap earnable by wave `w` — a pure
+function of waves cleared, independent of player choice, which removes a
+feedback loop from the difficulty system.
+
+### 6.2 The general principle
+
+> The difficulty model offsets choices that **increase combat power**, and
+> ignores choices that do not.
+
+Mining buys no combat power, so it is not offset — you simply end up weaker.
+Mazing *does* buy combat power (more time in range), so it is partially offset,
+sub-linearly (§8.3). One rule, applied consistently.
+
+### 6.3 Ore tiers — reserved, not built
+
+Ore nodes carry a `tier` field, and each battle has a tier-weight table so that
+deeper battles can roll richer nodes. **Stage one ships one tier and a weight
+table of `[1.0]`.** The schema, the banking code and the tech-tree costs all
+carry tier from day one, so adding tiers later is content, not surgery.
+
+## 7. Enemies
+
+Start narrow. **Two damage types** (Kinetic, Energy) and **five traits**:
+
+`armoured` (flat reduction, wants Kinetic) · `shielded` (regenerating overshield,
+wants burst) · `fast` · `flying` (ignores pathing, flies straight at the Core) ·
+`swarm` (many, cheap, wants AoE)
+
+M1 ships six enemies across that matrix. A 4×11 damage-type × trait matrix was
+cut: it is 44 interactions, mostly unexercised, and it is precisely where
+balance bugs breed. Traits expand only once the small matrix is proven.
+
+Flyers are the structural counter to over-mazing and must exist from M1.
+
+## 8. Difficulty: calibrated, not derived
+
+### 8.1 What changed and why
+
+An earlier draft computed achievable DPS analytically from Scrap earned. That
+was dishonest: DPS is not a function of money. One maxed tower and ten cheap
+ones represent the same spend and wildly different defense, and the difference
+was being hidden inside a fudge factor.
+
+**Wave budgets are measured, not derived.**
+
+### 8.2 How budgets are produced
 
 ```
-Bolt Turret — kinetic, cyan
-
-  T0-2 (3x2)     T3-4 (5x3)       T5 (7x4)
-
-     .^.           .-^-.          ..-^-..
-     [=]           |=#=|          /|=#=|\
-                   '---'          |[###]|
-                                  \-----/
-
-Mortar — explosive, amber
-
-     (o)           .(o).          ..(o)..
-     [_]           |=_=|          /|=___|\
-                   '---'          |[#####]|
-                                  \------/
+1. Analytic prior       — a rough starting curve, used only as an initial guess
+                          and as an outlier alarm
+2. Bot calibration      — the bot plays N seeds against candidate budgets;
+                          record clear margin, lives lost, leak %, time-to-kill
+3. Solve                — pick the budget curve putting the reference policy at
+                          the target margin for each wave
+4. Human offset         — a measured constant between bot performance and real
+                          play, from Daniil's recorded runs
+5. Freeze               — the resulting curve ships as data in content/balance/
+6. Guard                — the harness re-runs on every change; drift beyond
+                          tolerance fails CI
 ```
 
-Frame vocabulary is strictly printable ASCII: `. ' - = | / \ [ ] ( ) _ # ^ ~ o`.
+The harness therefore **produces the shipped numbers** rather than validating a
+model. That is why it exists in M1, not M3.
 
-### 6.4 Families
+### 8.3 The two live inputs that remain
 
-Launch families (M1 ships 4 complete; the rest follow):
+- **`L`, effective path length** — read from the flow field. Wave EHP scales
+  **sub-linearly** with it: `(L / L_base) ^ p`, with `p ≈ 0.5` as a calibrated
+  knob. Doubling your path roughly doubles time-in-range but only raises wave
+  EHP by ~40%, so mazing stays a real edge without becoming mandatory. `p = 0`
+  makes mazing dominant; `p = 1` makes it pointless.
+- **`M`, metaPowerIndex** — a scalar summarising permanent tech-tree power. Near
+  1.0 while the tree grants only unlocks. Present in the model from day one so
+  that adding stat nodes later moves a number the model already reads.
 
-| Glyph | Tower | Role | Path A | Path B | Path C |
-|---|---|---|---|---|---|
-| `^` | Bolt Turret | cheap single target | Velocity | Caliber | Optics |
-| `o` | Mortar | AoE, minimum range | Payload | Cadence | Ordnance |
-| `~` | Frost Emitter | slow aura | Chill | Shatter | Field |
-| `%` | Acid Sprayer | DoT / armour shred | Corrosion | Volatility | Saturation |
-| `\` | Arc Coil | chain lightning | Conductivity | Overcharge | Capacitor |
-| `$` | Refinery | Scrap economy | Yield | Interest | Salvage |
-| `+` | Bastion | buff aura to neighbours | Command | Logistics | Fortify |
-| `X` | Rail Lance | long-range line pierce | Focus | Penetration | Overwatch |
-| `&` | Extractor | mines Ore (§7) | Throughput | Depth | Automation |
-| `#` | Wall | 1×1, no attack, closes bypasses | — | — | — |
+`k(w)`, the pressure curve — rising across a run, spiking at finales, dipping
+after — remains the one hand-authored difficulty knob.
 
-## 7. Mining and the Ore economy
+## 9. The bot: a regression detector, not an oracle
 
-The problem this solves: without it, ground far from the path is dead space.
+Writing a TD bot that plays *well* is plausibly harder than the game. A greedy
+bot will be worse than a human, so calibrating difficulty to it alone produces a
+game that is too easy.
 
-### 7.1 How it works
+**One** bot, honestly framed:
 
-- Procgen scatters **Ore Nodes** (`*`, coloured by richness) on buildable
-  ground, weighted **toward tiles far from the path** — measured by the same
-  flow field that drives enemy movement.
-- Building an **Extractor** (`&`, 3×2, grows like any tower) on or adjacent to a
-  node extracts **Ore** each wave.
-- **Ore is never spendable during a run.** It banks automatically at run's end
-  and is the sole currency of the Tech Tree (§8).
+- **Primary job:** regression detection. "Did this change make wave 14 harder?"
+  is answerable with high confidence and is most of the value.
+- **Secondary job:** absolute difficulty, via a measured human offset that
+  Daniil's real runs establish.
+- **Free bonus:** an in-game autopilot to watch at 4×.
 
-### 7.2 Two currencies, and why
+## 10. Meta progression
 
-| Currency | Earned from | Spent on | Persists? |
-|---|---|---|---|
-| **Scrap** | kills, wave clears, Refineries | towers, upgrades, shops, repairs — everything in-run | no |
-| **Ore** | Extractors only | the Tech Tree | **yes** |
+Ore buys a tech tree. Built in stages, gated behind the core loop being fun.
 
-Because Ore cannot help you survive, **every extractor is a bet against your own
-run**: Scrap spent on mining is Scrap not spent on defense. That is the
-decision, and it is present from the first extractor rather than only late.
-
-### 7.3 Keeping it from becoming free money
-
-Once a run is comfortably won, surplus Scrap would otherwise convert into
-unlimited Ore. Three economy-side caps, deliberately chosen over adding a new
-enemy type:
-
-1. **Nodes are finite.** Each has a total yield; a worked node depletes and the
-   extractor idles. A map contains a bounded amount of Ore.
-2. **Extractors get more expensive.** Each additional extractor in a run costs
-   more than the last.
-3. **Banking scales with difficulty, not grinding.** Ore banked is multiplied by
-   Threat Level and run depth, so farming easy runs is strictly worse than
-   pushing hard ones.
-
-*Designed-in extension point:* if playtesting shows mining still feels
-consequence-free, **Raiders** — enemies that break from the path to attack
-extractors, in proportion to how many you own — drop in without reworking the
-economy. The wave generator already supports per-wave objective splits. Not
-built in stage 1.
-
-## 8. Tech Tree (meta progression)
-
-Spent with Ore. Persisted in `localStorage`. Built in **two stages**, with the
-infrastructure for stage 2 present from the start.
-
-### 8.1 Structure
-
-Five disciplines, each a branch:
-
-**Ballistics** · **Thermals** · **Arcana** · **Logistics** (economy and mining) ·
-**Command** (auras, run modifiers)
-
-Node types:
-
-| Type | Grants | Stage |
+| Stage | Grants | When |
 |---|---|---|
-| **Unlock** | new tower family, extractor type, starting relic, biome | 1 |
-| **Option** | alternate tier-5s and path variants for existing towers | 1 |
-| **Utility** | extra reroll, +1 draft pick, see next wave's composition | 1 |
-| **Threat** | harder difficulty tiers — which multiply Ore income | 1 |
-| **Economy** | small, explicitly capped starting-Scrap and yield bonuses | 1 (capped) |
-| **Potency** | permanent stat increases: damage, range, rate | **2** |
+| **1** | ~5 nodes: unlock a tower, unlock a starting relic, +1 draft option, unlock Threat Level 2 | M2 |
+| **2** | Full tree: 5 disciplines, alternate tier-5s, capped economy nodes | M4+ |
+| **3** | Potency nodes (permanent stat increases) | only if wanted |
 
-### 8.2 Why staged, and what stage 1 must build anyway
+Stage 3 makes `metaPowerIndex` a real variable, at which point the harness must
+validate `seeds × meta tiers` instead of `seeds`. That multiplies CI time for
+every balance change afterwards, which is why it is last and optional.
 
-Stage 1 is mostly content unlocks plus a tightly capped economy band, so the
-difficulty model stays honest while the game is still being tuned. Stage 2 adds
-genuine permanent power.
+## 11. Determinism and replays — a headline feature
 
-That upgrade only stays safe if the difficulty model treats permanent power as
-an **input it already reads**. So from day one, the balance model carries a
-`metaPowerIndex` term (§10) — a scalar summarising all permanent bonuses. In
-stage 1 it is pinned near 1.0 by the caps. In stage 2 it widens. Nothing in the
-model changes; a number it already consumes simply moves.
+The fixed 20 Hz tick and seeded RNG are already paid for. What they buy:
 
-**The honest cost:** once `metaPowerIndex` varies, the balance harness must
-validate across meta tiers as well as seeds and policies. That multiplies the
-validation matrix, and it is the main reason stage 2 comes later.
+- **A run is a seed plus an input log** — on the order of kilobytes.
+- **Shareable replays.** Watch anyone's run, at any speed.
+- **Daily challenges.** A date-derived seed. Essentially free.
+- **Bug reports as files.** "It broke" becomes a reproducible artifact.
+- **A regression corpus of real play** — replays double as integration tests.
 
-### 8.3 Anti-grind
+This is not an implementation detail. It is one of the most valuable things the
+architecture gives us and should be surfaced in the UI.
 
-Ore income scales with Threat Level and run depth (§7.3), so progress comes from
-playing harder, not longer.
+## 12. Art direction
 
-## 9. Art direction
+Deliberately deferred. Core functionality first; the current sprite sketches are
+placeholders and the terrain and enemy visuals both need a proper pass.
 
-"Somewhat aesthetically pleasing" is a requirement, not a nice-to-have.
+What is fixed now, because it constrains the data model:
 
-- **Colour carries meaning.** Family = glyph, specialisation = hue, tier =
-  brightness and silhouette size. Damage types have fixed hues used consistently
-  across towers, projectiles and status effects.
-- **Motion sells impact.** Projectiles are directional glyphs (`- \ | /`),
-  impacts bloom (`. + * X`), deaths decay (`X → x → . → ` `). Big hits nudge the
-  viewport by one cell.
-- **UI is drawn, not styled.** Panels, borders and the tech tree are ASCII
-  chrome built from `+ - | . '`, rendered by the same Term as the game board.
-- **Biomes are palettes.** Each biome re-tints terrain, so acts feel distinct
-  without new mechanics.
-- **Legibility beats spectacle.** Any effect that makes enemy count or tower
-  state harder to read gets cut. This is the tie-breaker rule.
+- Sprites are per-cell `(glyph, colour)` grids with named animation frames.
+- Colour semantics are consistent: family = glyph, specialisation = hue, tier =
+  frame density and brightness.
+- All UI chrome is drawn through the same `Term` as the board.
+- **Legibility is the tie-breaker.** Any effect that makes enemy count or tower
+  state harder to read gets cut.
 
-## 10. Difficulty: derived, not authored
+## 13. Out of scope
 
-Waves are generated against an explicit model rather than hand-tuned. Per wave `w`:
+Mobile/touch · multiplayer · sound · accounts or cloud saves · non-ASCII
+graphics · a terminal build (the renderer permits one; not a deliverable).
 
-```
-L      effective path length        (read live from the flow field)
-T      seconds in the field         = L / speed
-C(w)   Scrap earnable by wave w     (deterministic, net of extractor spending)
-M      metaPowerIndex               (permanent Tech Tree power; ~1.0 in stage 1)
-D(w)   achievable in-path DPS       = f(C(w)) x eta x M
-k(w)   target pressure curve        (the one hand-authored difficulty knob)
+## 14. Acceptance criteria
 
-wave EHP budget  H(w) = D(w) x T x k(w)
-```
+**M1 — the fun test.** One procedural battle, 5 towers with complete trees, 6
+enemies, 10 waves, path-preview overlay, mouse control, smoke harness. Daniil
+plays it and says whether it is fun.
 
-Three live inputs make this self-correcting rather than guesswork:
+**M2 — a complete game.** 8 battles in sequence, draft between each, Ore
+banking, 5-node tech tree, save/resume. A run can be won or lost.
 
-- **`L`** knows how much you mazed.
-- **`C(w)`** is net of extractor spending — so a player who invests heavily in
-  mining faces proportionally easier waves, because they genuinely have less
-  defense. Mining is priced into difficulty automatically.
-- **`M`** knows how much permanent power you carry.
+**M3 — trustworthy difficulty.** Calibrated budget curves; harness detects
+injected regressions; no unwinnable or trivial seed across ≥500 runs.
 
-`k(w)` is a sawtooth: pressure rises across an act, spikes at elites and bosses,
-dips after. Composition then spends `H(w)` on trait-costed enemies drawn from a
-wave archetype. `eta` and `k(w)` are config, not code.
-
-## 11. Enemies
-
-Composed from trait flags rather than authored individually:
-
-`armoured` · `shielded` · `fast` · `flying` · `camo` · `swarm` · `burrower` ·
-`regenerator` · `splitter` · `leader` · `boss`
-
-Each trait poses a counter question. A wave is not "more HP", it is "does your
-build answer *this*".
-
-## 12. Out of scope
-
-Mobile/touch · multiplayer · sound (maybe later) · accounts or cloud saves ·
-non-ASCII graphics · a terminal build (the renderer permits one; it is not a
-deliverable).
-
-## 13. Acceptance criteria
-
-**M1 — playable battle.** Procedural map, 4 towers with complete trees and
-growth footprints, 8 enemy types, 10 waves, win/lose, mouse control. Fun for ten
-minutes.
-
-**M2 — full run.** 3 acts, node map, shops/forges/events/bosses, drafted
-modifiers, mining and Ore banking, save/resume.
-
-**M3 — balanced.** Harness reports win rates inside target bands across ≥500
-seeds per policy; curve matches intended `k(w)`; no unwinnable or trivial seed.
-In-game autopilot watchable.
-
-**M4 — meta and polish.** Tech Tree stage 1, Threat Levels, 14 towers, 3 biomes,
-full sprite art, particles and UI chrome. Public README a stranger can follow.
-
-**M5 — stage 2 (optional).** Potency nodes, plus the expanded harness matrix
-validating win rates across meta tiers.
+**M4+ — expansion**, only past the decision point: node maps, shops, bosses,
+towers 6–9, biomes, the full art pass.

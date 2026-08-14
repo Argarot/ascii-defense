@@ -1,64 +1,120 @@
 # ASCII Defense — Technical Vision
 
-Status: **draft, awaiting approval.**
+Status: **scoping complete.** M0 shipped; M1 not started.
 
 ---
 
 ## 1. Stack, and why
 
-| Choice | Why | Alternative rejected because |
+| Choice | Why | Rejected alternative |
 |---|---|---|
-| **TypeScript** | The sim is a rules engine — 200+ upgrade definitions, trait flags, modifier pipelines. Types are the only thing that keeps that authorable. Same language browser + headless harness. | JS: unmaintainable at this content volume. Rust/WASM: build complexity buys nothing, we have 17× perf headroom already. Python: browser story is Pyodide (megabytes, slow start) and you chose browser. |
-| **Vite 7** | Verified working on your machine: install + typecheck + prod build in 0.9 s. Static output → drops straight onto GitHub Pages. | — |
-| **npm workspaces** | Monorepo with genuinely separate packages, no extra tooling to install. You have npm 12. | pnpm/turbo: not installed, no benefit at this size. |
-| **Vitest** | Shares the Vite config. Fast. | Jest: separate transform pipeline for no gain. |
-| **No game engine** | It is a character grid. Phaser/Pixi would add megabytes and an abstraction layer over a `<canvas>` we drive in under 1 ms. | |
-| **No React (in the game)** | The board is one canvas; the HUD is a handful of panels. React would own the DOM we're deliberately not using. Plain TS + a tiny reactive store. | |
-| **`rot-js` — read, don't depend** | BSD-3-Clause. Its display layer is slower than what we measured, and we need a TD-specific flow field, not its A*. We take ideas (and the licence permits taking code, with attribution) rather than the dependency. | |
-| **JetBrains Mono, bundled** | OFL-1.1, free for commercial use and redistribution. Bundling means every player sees the identical grid; system-font fallback does not. | |
+| **TypeScript** | The sim is a rules engine. Types are what keep 100+ upgrade definitions authorable. Same language in browser and headless harness. | JS (unmaintainable at this content volume); Rust/WASM (build complexity buys nothing — we measured 17× headroom); Python (Pyodide is megabytes and slow to start) |
+| **Vite 7** | Verified: install, typecheck and prod build in under a second. Static output drops onto Pages. | — |
+| **npm workspaces** | Real package boundaries, no extra tooling. npm 12 is already installed. | pnpm/turbo — not installed, no benefit at this size |
+| **Vitest** | Shares the Vite config. | Jest — separate transform pipeline, no gain |
+| **No game engine** | It is a character grid. Phaser/Pixi would add megabytes over a `<canvas>` we drive in under 1 ms. | |
+| **No React in the game** | The board is one canvas; the HUD is a few panels. | |
+| **`rot-js`: read, don't depend** | BSD-3-Clause. Its display layer is slower than what we measured and we need a TD flow field, not its A*. Take ideas, not the dependency. | |
 
-Runtime dependencies: **target zero.** Dev dependencies only.
+Runtime dependencies: **target zero.**
 
 ## 2. Repository layout
 
 ```
 ascii-defense/
 ├─ packages/
-│  ├─ engine/          # headless simulation. ZERO DOM references.
-│  │  ├─ src/rng/          seeded PRNG, named streams
-│  │  ├─ src/grid/         terrain, flow field, spatial queries
-│  │  ├─ src/sim/          tick loop, towers, enemies, projectiles, effects
-│  │  ├─ src/procgen/      battle maps, node maps, ore nodes, wave composition
-│  │  ├─ src/balance/      the H(w) model, budget solver, metaPowerIndex
-│  │  ├─ src/economy/      Scrap, Ore extraction, node depletion, cost curves
-│  │  ├─ src/meta/         tech tree graph, unlock gating, persistence
-│  │  └─ src/run/          run state machine, nodes, drafting, save/load
-│  ├─ content/         # DATA. towers, enemies, modifiers, biomes, bosses
-│  │  ├─ src/towers/       one file per family, full 3×5 trees
-│  │  ├─ src/sprites/      per-tier ASCII sprite art + animation frames
-│  │  ├─ src/enemies/
-│  │  ├─ src/modifiers/
-│  │  ├─ src/tech/         tech tree nodes, prerequisites, costs
-│  │  ├─ src/biomes/
-│  │  └─ src/schema.ts     types + a runtime validator run in CI
-│  ├─ term/            # the ASCII "terminal": glyph atlas, dirty-cell canvas
-│  ├─ web/             # the game: screens, HUD, input, rendering, localStorage
-│  ├─ bot/             # policy AI — used by harness AND in-game autopilot
-│  └─ harness/         # headless CLI: batch runs, balance reports, CI gate
-├─ assets/fonts/       # JetBrains Mono subset + licence
-├─ docs/               # PRD, ARCHITECTURE, ROADMAP, balance notes
-├─ .github/workflows/  # ci.yml (typecheck/test/build), pages.yml, balance.yml
-└─ tools/              # content scaffolding + validation scripts
+│  ├─ engine/           # headless simulation. ZERO DOM references.
+│  │  ├─ src/rng/           seeded PRNG, named streams
+│  │  ├─ src/grid/          terrain, occupancy, flow field
+│  │  ├─ src/sim/           tick loop, towers, enemies, projectiles
+│  │  ├─ src/procgen/       maps, ore nodes, wave composition
+│  │  ├─ src/balance/       budget tables, k(w), path scaling, metaPowerIndex
+│  │  ├─ src/economy/       Scrap, Ore, node depletion, cost curves
+│  │  ├─ src/meta/          tech tree graph, unlocks, persistence
+│  │  ├─ src/replay/        seed + input log record/playback
+│  │  └─ src/run/           run state machine, drafting, save/load
+│  ├─ content/          # DATA — JSON, validated against schemas
+│  │  ├─ towers/*.json
+│  │  ├─ enemies/*.json
+│  │  ├─ sprites/*.json
+│  │  ├─ tech/*.json
+│  │  ├─ balance/*.json     calibrated budget curves (harness output)
+│  │  ├─ schema/*.schema.json
+│  │  └─ src/index.ts       loads, validates, exposes generated types
+│  ├─ term/             # canvas character display (SHIPPED in M0)
+│  ├─ web/              # game app: screens, HUD, input, overlays, storage
+│  ├─ bot/              # the single policy bot
+│  └─ harness/          # headless CLI: calibration, regression, reports
+├─ assets/fonts/
+├─ docs/
+├─ tools/               # schema→types codegen, content linter
+└─ .github/workflows/
 ```
 
-The hard rule: **`engine` and `content` never import from `term` or `web`.**
-That is what makes the headless harness possible, and it is enforced by a lint
-rule, not by discipline.
+**The hard rule:** `engine` and `content` never import from `term` or `web`.
+Enforced by a lint rule, not by discipline. It is what makes the harness
+possible.
 
-## 3. Rendering — measured, not assumed
+## 3. Content is JSON with a schema
 
-Benchmarked in-browser on your machine before writing this document. Scene:
-**120×50 grid (6,000 cells), 400 moving entities, dpr 1**.
+Content must be editable without touching TypeScript, so it lives as JSON. To
+keep that from becoming untyped mush, every file declares `$schema`:
+
+```jsonc
+// packages/content/towers/bolt_turret.json
+{
+  "$schema": "../schema/tower.schema.json",
+  "id": "bolt_turret",
+  "name": "Bolt Turret",
+  "glyph": "^",
+  "size": [3, 2],
+  "cost": 90,
+  "damageType": "kinetic",
+  "sprite": "bolt_turret",
+  "base": { "damage": 4, "cooldownTicks": 12, "range": 5.5, "pierce": 1 },
+  "paths": {
+    "A": { "name": "Velocity", "tiers": [ /* 5 */ ] },
+    "B": { "name": "Caliber",  "tiers": [ /* 5 */ ] },
+    "C": { "name": "Optics",   "tiers": [ /* 5 */ ] }
+  }
+}
+```
+
+What this buys, in order of importance:
+
+1. **VS Code validates and autocompletes while editing** — from `$schema`, with
+   no tooling to install.
+2. **TS types are generated from the schemas** (`tools/schema-to-types`), so
+   engine and data cannot drift. Types are committed, and CI fails if
+   regenerating them produces a diff.
+3. **CI validates every file** against its schema before anything builds.
+4. **A content linter** (`tools/content-lint`) flags what schemas cannot:
+   non-monotonic upgrade costs, cost-to-power outliers, orphaned sprite or
+   effect references, unreachable tech nodes. This is what keeps 100+ upgrades
+   from rotting over months.
+
+Sprites are JSON too — rows of strings plus a colour map:
+
+```jsonc
+{
+  "id": "bolt_turret",
+  "size": [3, 2],
+  "palette": { "f": "frame", "g": "glyph", "a": "accent" },
+  "tiers": {
+    "0": { "idle": [[".^.", "[=]"]], "colors": [["fgf", "fff"]] },
+    "4": { "idle": [[".^.", "[#]"]], "fire": [["*^*", "[#]"]],
+           "colors": [["faf", "fgf"]] }
+  }
+}
+```
+
+Colour names resolve through the path palette, so one sprite serves all three
+specialisations and recolours itself.
+
+## 4. Rendering — measured, not assumed
+
+Benchmarked in-browser before the approach was chosen. 120×50 grid (6,000
+cells), 400 moving entities:
 
 | Strategy | ms/frame | fps ceiling |
 |---|---:|---:|
@@ -66,191 +122,160 @@ Benchmarked in-browser on your machine before writing this document. Scene:
 | Glyph atlas blit, full grid | 15.92 | 63 |
 | **Glyph atlas + dirty cells** | **0.93** | **1,073** |
 
-Verified the output is real pixels, not a silent no-op: 4.2 % ink coverage,
-843 distinct colours, correct background dominance.
+Shipped in `packages/term`. Every (glyph, colour) pair is rasterised once into
+an offscreen atlas; the frame loop diffs a front and back cell buffer and blits
+only what changed. `term.put(x, y, glyph, fg, bg)` is the whole API, which is
+why a terminal backend could replace it later without the game noticing.
 
-**Decision: glyph atlas + dirty-cell diffing.** ~17× headroom at 60 fps, which
-is the budget we need for particles, damage numbers and 4× speed.
+## 5. Occupancy and footprints
 
-How it works: at boot, rasterise every (glyph × palette colour) pair once into
-an offscreen canvas. The frame loop compares a front and back cell buffer
-(`Uint8Array`s of glyph/fg/bg indices) and `drawImage`s only the cells that
-changed. This is a terminal emulator. `term.put(x, y, glyph, fg, bg)` is the
-entire public API, which is why a real TUI backend could be dropped in later
-without touching the game.
+Towers are 3×2 (heavies 5×3) and **never change size**. A `Uint16Array` over the
+board maps each cell to its owner id, or 0.
 
-## 3a. Sprites and footprints
+It is the single source of truth for buildability, click targeting and
+pathability. Placement is a rectangle scan; no per-tower geometry maths exists
+anywhere else. Because footprints are fixed, placement is checked once and never
+re-checked — the UI/engine contract that growth would have required does not
+exist.
 
-Towers occupy a rectangle of cells and grow with tier — 3×2, then 5×3, then 7×4
-(PRD §6.2). Three consequences for the engine:
+## 6. Pathfinding and the preview overlay
 
-**An occupancy grid.** A `Uint16Array` the size of the board maps each cell to
-the id of whatever owns it, or 0. It is the single source of truth for "can I
-build here", "what did I click on", and "is this tile pathable". Placement is a
-rectangle scan against it; there is no per-tower geometry maths anywhere else.
+Dijkstra flow field from the Core outward over the terrain cost grid (Red Blob
+Games' approach). Each tile stores distance-to-Core and its cheapest outgoing
+direction; enemies just read their current tile.
 
-**Upgrades are placement operations.** Growing 3×2 → 5×3 must re-check the
-occupancy grid for the expanded rectangle, and is rejected if blocked. The
-expansion rectangle is computed by the same function the hover preview calls, so
-what the UI outlines and what the engine permits cannot drift — the classic bug
-in games with variable-size buildings.
+- Recomputed **only on build/sell**, not per tick. ~2,300 tiles is sub-millisecond.
+- **Two fields**: ground, and flying (straight line, no field). Burrowing added
+  later if the trait returns.
+- Yields `L`, effective path length, feeding the wave budget (PRD §8.3).
 
-**Footprints change pathing.** Every occupied cell is impassable, so building
-and upgrading both trigger a flow-field recompute. This is already the trigger
-condition (§5), so no new machinery — but it does mean an *upgrade* can reroute
-enemies, which the wave budget reads live via `L`.
+**The preview overlay is part of this system, not the UI layer.** On build-hover
+the engine computes a *speculative* field for the hypothetical placement and
+returns both routes. The UI only renders what the engine says. This is the one
+feature that makes mazing legible, and putting the speculation in the engine is
+what keeps preview and reality identical by construction.
 
-Sprites are authored as per-cell `(glyph, colour)` pairs with 2–3 animation
-frames, stored in `content/src/sprites`. The renderer blits them through the
-same `term.put()` as everything else; a sprite is data, not a special case.
+## 7. Determinism and replay
 
-## 4. Determinism
+Non-negotiable. It is the foundation of calibration, regression testing,
+bug reproduction, save/resume and daily challenges.
 
-Non-negotiable — it is the foundation of the balance harness, bug reproduction
-and save/resume.
+- One seeded PRNG (xorshift128+/PCG). **`Math.random` banned by lint rule.**
+- **Named streams** — map generation, wave composition and combat draw from
+  independent sequences, so changing combat code cannot reshuffle maps.
+- **Fixed 20 Hz tick.** No frame delta reaches the simulation. Speed controls
+  change ticks-per-frame, never tick size.
+- Rendering reads the sim and never writes to it.
 
-- One seeded PRNG (xorshift128+ / PCG), **`Math.random` banned by lint rule.**
-- **Named streams** so that map generation, wave composition and combat rolls
-  draw from independent sequences. Changing combat code must not reshuffle maps.
-- **Fixed tick, 20 Hz.** No frame delta touches the simulation. Speed controls
-  (pause / 1× / 2× / 4×) change how many ticks run per frame, never tick size.
-- Rendering reads the sim; it never writes to it.
-- **Golden test:** seed + scripted inputs → 2,000 ticks → hash the sim state.
-  If that hash moves unintentionally, CI fails. This is the single most valuable
-  test in the project.
+**Replay format:** `{ version, seed, contentHash, inputs: [{tick, action}] }`.
+Kilobytes. Playback re-runs the sim and asserts the final state hash matches.
 
-## 5. Pathfinding
+`contentHash` matters: a replay recorded against different tower data is not
+replayable, and must say so rather than silently diverging.
 
-Dijkstra flow field from the Core outward across the terrain cost grid
-(Red Blob Games' tower-defense approach). Each tile stores distance-to-Core and
-the cheapest outgoing direction; every enemy just reads its current tile.
+**Golden test:** seed + scripted inputs → 2,000 ticks → state hash. If that hash
+moves unintentionally, CI fails. The single most valuable test in the project.
 
-- Recomputed **only on build/sell**, not per tick. A 64×36 grid is ~2,300 tiles —
-  sub-millisecond.
-- **Three fields**: ground, burrowing (ignores ground cost), flying (straight
-  line, no field needed). Cheap to keep in sync.
-- The field also yields `L`, the effective path length, which feeds the wave
-  budget model directly (PRD §8). Pathfinding and balance are the same system.
-
-## 6. Simulation data layout
+## 8. Simulation data layout
 
 - **Enemies**: structure-of-arrays (`Float32Array` positions, `Uint16Array` HP,
-  `Uint32Array` trait bitflags). Hundreds alive at once; this keeps the hot loop
-  cache-friendly and allocation-free.
-- **Towers**: plain objects. Dozens at most, and they carry rich upgrade state.
-- **Projectiles**: pooled ring buffer, no per-shot allocation.
-- **Occupancy**: one `Uint16Array` over the board, cell → owner id (0 = free).
-  Multi-cell footprints, click targeting and buildability all read from it.
-- **Ore nodes**: plain objects with remaining yield; small in number, and
-  depletion must be inspectable for the balance report.
+  `Uint32Array` trait bitflags). Hundreds alive; cache-friendly, allocation-free.
+- **Towers**: plain objects. Dozens at most, rich upgrade state.
+- **Projectiles**: pooled ring buffer.
+- **Occupancy**: one `Uint16Array`, cell → owner id.
+- **Ore nodes**: plain objects carrying `tier` and remaining yield.
 
-Not a general ECS. An ECS is the right answer for open-ended entity composition;
-here the entity kinds are fixed and small, and the indirection would cost more
-than it buys.
+Not a general ECS. Entity kinds here are fixed and few; the indirection would
+cost more than it buys.
 
-## 7. Stat resolution pipeline
+## 9. Stat resolution pipeline
 
-Order is explicit, documented, and unit-tested, because this is where upgrade
+Order is explicit, documented and unit-tested, because this is where upgrade
 systems rot:
 
 ```
-base stats
-  → path tier bonuses (additive within a path, multiplicative across paths)
-  → crosspath synergy bonuses
-  → aura buffs (Bastion, adjacency)
-  → run modifiers (drafted relics)
-  → temporary effects (boss debuffs, event curses)
-  = resolved stats, recomputed only on change, cached per tower
+base → path tier bonuses → crosspath synergies → aura buffs
+     → run modifiers → temporary effects → resolved (cached, recomputed on change)
 ```
 
-## 8. Content as data
+## 10. Balance calibration
 
-Everything in `packages/content` is typed data validated at build time:
+The harness produces the shipped numbers; it does not merely check them.
 
-```ts
-export const BOLT_TURRET: TowerDef = {
-  id: 'bolt_turret', glyph: '^', cost: 90, family: 'kinetic',
-  base: { damage: 4, cooldownTicks: 12, range: 5.5, pierce: 1 },
-  paths: {
-    A: { name: 'Velocity', tiers: [ /* 5 tiers */ ] },
-    B: { name: 'Caliber',  tiers: [ /* 5 tiers */ ] },
-    C: { name: 'Optics',   tiers: [ /* 5 tiers */ ] },
-  },
-};
+```
+tools/harness calibrate --seeds 500 --waves 12
+  → runs the bot against candidate budget curves
+  → records clear margin, lives lost, leak %, time-to-kill distribution
+  → solves for the curve hitting target margin per wave
+  → writes packages/content/balance/curves.json
+
+tools/harness check
+  → re-runs against the frozen curves
+  → fails if measured margin drifts beyond tolerance
 ```
 
-A CI validator checks every tree for: 5 tiers per path, monotonically rising
-cost, no undefined effect keys, no orphaned references, and — importantly — that
-each tier's cost-to-power ratio sits inside a sane band. Broken content fails
-the build instead of shipping a dead upgrade.
+Calibration output is **committed data**, reviewable in a diff like any other
+content. A balance change is a visible change.
 
-## 9. Testing strategy
+The bot is one policy, treated as a **regression detector**. Absolute difficulty
+comes from a human offset constant measured against Daniil's recorded replays —
+which is another thing replays give us for free.
+
+## 11. Testing
 
 | Layer | What | Where |
 |---|---|---|
-| Unit | RNG streams, flow field, crosspath legality, stat pipeline order, wave budget solver | Vitest, `packages/*/test` |
-| Property | Generate 10,000 maps → assert a path always exists, bypass ratio in range, buildable area in range | Vitest |
+| Unit | RNG streams, flow field, crosspath legality, stat pipeline order, occupancy | Vitest |
+| Property | 10,000 maps → path always exists, buildable area and shortcut count in range | Vitest |
 | Golden | Seeded run → state hash after N ticks | Vitest, CI gate |
-| Balance | 500+ seeded runs × 4 bot policies → win-rate bands, leak curves | `harness`, nightly + on PR |
-| Property | Placement/upgrade never disagrees with the hover preview; growth never overlaps | Vitest |
-| Manual | Does it feel good | You. The one thing I cannot self-verify. |
+| Replay | Recorded human runs replay to identical final state | Vitest |
+| Content | Schema validation, generated-types drift, content linter | CI |
+| Balance | Calibrated curves vs. measured margin | `harness check`, CI |
+| Manual | Does it feel good | Daniil. The one thing that cannot be automated. |
 
-**The harness matrix, and why Tech Tree stage 2 is deferred.** Stage 1 pins
-`metaPowerIndex` into a narrow band, so validating `seeds × policies` is
-sufficient. Stage 2 (Potency nodes) makes it a real variable, and correctness
-then requires `seeds × policies × meta tiers` — a multiplicative increase in CI
-time for every balance change. The model reads `metaPowerIndex` from day one so
-this is a scaling decision later, not a redesign.
+## 12. Persistence
 
-## 9a. Persistence and save migration
+Two `localStorage` stores, versioned separately:
 
-Two stores in `localStorage`, versioned separately:
-
-- `ad.meta.v1` — banked Ore, purchased tech nodes, unlocked content, settings.
-  This is the one that must survive forever; losing it destroys progression.
+- `ad.meta.v1` — banked Ore (per tier), purchased tech nodes, unlocks, settings.
+  Must survive forever; losing it destroys progression.
 - `ad.run.v1` — in-progress run snapshot. Disposable; a failed migration may
-  discard it with a message rather than attempting repair.
+  discard it with a message rather than attempt repair.
 
-Every write carries a schema version, and loaders are pure
-`(oldShape) => newShape` functions chained in sequence. Migrations are unit
-tested against captured fixtures of every previously shipped shape. For a
-project meant to accrete content for months, this is the difference between
-adding a tower and stranding a save.
+Loaders are pure `(oldShape) => newShape` functions chained in sequence, unit
+tested against captured fixtures of every shipped shape. For a project meant to
+accrete content for months, this is the difference between adding a tower and
+stranding a save.
 
-## 10. CI/CD
+Ore is stored as a **per-tier record** (`{ "1": 240 }`) from day one, so ore
+tiers arrive as content rather than as a migration.
 
-Three GitHub Actions workflows, on GitHub's free tier for public repositories:
+## 13. CI/CD
 
-- `ci.yml` — typecheck, lint, unit + golden tests, build. On every push/PR.
-- `pages.yml` — build and deploy to GitHub Pages on `main`.
-- `balance.yml` — headless harness, posts a balance report; fails if win rates
-  leave their bands.
+- `ci.yml` — typecheck, lint, unit + golden + replay tests, content validation, build.
+- `pages.yml` — build and deploy to Pages on `main`. **Shipped and working.**
+- `balance.yml` — `harness check`, posts a report, fails on drift.
 
-**Verified limits** ([GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)):
-1 GB published site, 100 GB/month soft bandwidth, 10 builds/hour soft limit
-(not applied to Actions-based deploys), 10-minute deploy timeout. The built game
-will be well under 5 MB including the bundled font.
-[GitHub Free](https://github.com/pricing) includes Pages, and Actions minutes
-are free for public repositories.
+Verified free on public repositories:
+[Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)
+(1 GB site, 100 GB/month bandwidth), [GitHub Free](https://github.com/pricing)
+includes Pages, Actions minutes free for public repos.
 
-## 11. Verified environment (checked, not assumed)
+## 14. Verified environment
 
 | Tool | Status |
 |---|---|
 | Node | v22.23.2 ✅ |
 | npm | 12.0.2 ✅ |
 | git | 2.33.0.windows.2 ✅ |
-| Python | 3.11.15 ✅ (not needed) |
-| `gh` CLI | 2.97.0 ✅, authenticated with a fine-grained token scoped to this repo only |
-| Vite build | ✅ proven locally and on a clean CI runner |
+| `gh` CLI | 2.97.0 ✅, fine-grained token scoped to this repo only |
+| Vite build | ✅ locally and on a clean CI runner |
 | Canvas ASCII perf | ✅ measured, 17× headroom |
-| GitHub push + Pages deploy | ✅ **proven — live at <https://argarot.github.io/ascii-defense/>** |
+| Push + Pages deploy | ✅ live at <https://argarot.github.io/ascii-defense/> |
 
-**One thing that cannot be automated:** creating the Pages *site* is refused to
-both `GITHUB_TOKEN` and a repo-scoped fine-grained PAT
-(`Resource not accessible by integration`). It was enabled once by hand in
-Settings → Pages → Source → GitHub Actions. A fork must do the same. This is
-recorded in a comment in `.github/workflows/pages.yml` so nobody re-discovers it.
+**Cannot be automated:** creating the Pages *site* is refused to both
+`GITHUB_TOKEN` and repo-scoped fine-grained PATs. Enabled once by hand; recorded
+in a comment in `.github/workflows/pages.yml`.
 
 ---
 
@@ -260,8 +285,5 @@ recorded in a comment in `.github/workflows/pages.yml` so nobody re-discovers it
 - [rot.js (BSD-3-Clause)](https://github.com/ondras/rot.js/)
 - [Bloons Wiki — Crosspathing](https://bloons.fandom.com/wiki/Crosspathing)
 - [A Novel Procedural Content Generation Algorithm for Tower Defense Games (ACM)](https://dl.acm.org/doi/fullHtml/10.1145/3564982.3564993)
-- [A NEAT Approach to Wave Generation in Tower Defense Games (PDF)](https://www.open-access.bcu.ac.uk/13568/1/A_NEAT_Approach_to_Wave_Generation_in_Tower_Defense_Games___IMET.pdf)
-- [Balance in TD games — Game Developer](https://www.gamedeveloper.com/design/balance-in-td-games)
 - [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)
-- [GitHub pricing](https://github.com/pricing)
 - [JetBrains Mono (OFL-1.1)](https://github.com/JetBrains/JetBrainsMono)
