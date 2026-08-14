@@ -1,16 +1,17 @@
 /**
- * Square vs hex tiles, under a LOGICAL tile grid (no borders drawn), with the
- * tile-placement expansion mechanic illustrated.
+ * Mock: tile-laying UI, and a tilted (2.5D) rendering of the same board.
  *
- * Most of the map is void. Placed tiles form a connected region with a road
- * running through it. Void tiles adjacent to the region are legal placements
- * and are marked faintly — that is the "which tile can I add" checker made
- * visible.
+ * NOT the game. Answers two questions visually before they go into the PRD:
+ *   1. What does a mostly-void board, a hand of terrain tiles, and a legal
+ *      placement look like in ASCII?
+ *   2. Does a tilted perspective work in a character grid, and what does it
+ *      cost?
  *
- * Both panels share one tile map and one renderer; only the tile shape
- * function differs. Square tiles are 12x12 cells. Hex tiles are flat-top,
- * centres on a 12 x 14 lattice with odd columns offset by 7 — a ratio of
- * 1.167 against the ideal 1.155, so they are near-regular hexagons.
+ * The tilt is a foreshortened ground plane: a tile's top face is 12x8 cells
+ * while the tile advances only 8 rows per grid step, so the 4 remaining rows
+ * become a front wall. Elevation raises the top face and lengthens the wall.
+ * That is a real 2.5D height map, drawn back-to-front, with no change to the
+ * underlying square grid.
  */
 import { GLTerm } from './term/GLTerm';
 import type { GlyphSet } from './term/GLTerm';
@@ -25,192 +26,199 @@ interface Styles { inkMap: Record<string, string | null>; styles: Record<string,
 const PAL: Record<string, string> = {
   'tower.shadow': '#11161d', 'tower.frame': '#5b6f86', 'tower.body': '#8298b0',
   'tower.edge': '#aec2d8', 'tower.core': '#f2f7ff',
-  'enemy.body': '#8c3a3a', 'enemy.edge': '#e26060', 'enemy.eye': '#ffd166',
   ground: '#27333f', groundDim: '#18202a', road: '#4a5b70', roadLit: '#71879f',
   roadEdge: '#8299b3', rock: '#3b4653', ore: '#e8b52a',
-  frontier: '#2a4436', frontierLit: '#3f6b52',
-  text: '#d3dae7', dim: '#65758a', accent: '#2ee6a0', bg: '#07090c',
+  wall: '#1b2531', wallLit: '#2b3a4b',
+  frontier: '#2a4436', frontierLit: '#47795c',
+  ghost: '#2ee6a0', card: '#33475e', cardLit: '#7d93ab',
+  spawn: '#e05a5a', text: '#d3dae7', dim: '#65758a', accent: '#2ee6a0', bg: '#07090c',
 };
 const PATH = '#4cc9f0';
 
-type Tile = 'void' | 'ground' | 'road' | 'rock' | 'ore';
-const PW = 110, PMH = 58, TOP = 3;
+const T = 12;            // tile edge in cells (flat)
+const TOPH = 8;          // tilted: rows of top face visible per grid step
+const TX = 9, TY = 5;    // board in tiles
+
+type Kind = 'void' | 'ground' | 'road' | 'rock' | 'ore' | 'spawn';
+const ELEV: Record<Kind, number> = { void: 0, road: 0, ground: 1, ore: 1, rock: 3, spawn: 1 };
 
 function hash2(x: number, y: number, s: number): number {
   let h = (x | 0) * 374761393 + (y | 0) * 668265263 + s * 2246822519;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
-const pickG = (a: string[], x: number, y: number, s: number): string =>
+const pick = (a: string[], x: number, y: number, s: number): string =>
   a[Math.floor(hash2(x, y, s) * a.length) % a.length];
-
-function drawPiece(t: GLTerm, p: Piece, m: Record<string, string | null>, x: number, y: number, bg?: string): void {
-  for (let r = 0; r < p.art.length; r++)
-    for (let c = 0; c < (p.art[r] ?? '').length; c++) {
-      const role = m[(p.ink[r] ?? '')[c] ?? '.'];
-      if (!role) continue;
-      t.put(x + c, y + r, p.art[r][c], role === 'PATH' ? PATH : (PAL[role] ?? '#f0f'), bg);
-    }
-}
-
-/** A tiling: maps a cell to a tile id, and a tile id to its centre cell. */
-interface Tiling {
-  cols: number; rows: number;
-  idAt(x: number, y: number): number;
-  centre(id: number): [number, number];
-  neighbours(id: number): number[];
-}
-
-function squareTiling(size: number): Tiling {
-  const cols = Math.floor(PW / size), rows = Math.floor(PMH / size);
-  return {
-    cols, rows,
-    idAt: (x, y) => {
-      const c = Math.floor(x / size), r = Math.floor(y / size);
-      return c < 0 || r < 0 || c >= cols || r >= rows ? -1 : r * cols + c;
-    },
-    centre: (id) => [(id % cols) * size + size / 2, Math.floor(id / cols) * size + size / 2],
-    neighbours: (id) => {
-      const c = id % cols, r = Math.floor(id / cols), out: number[] = [];
-      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        const nc = c + dc, nr = r + dr;
-        if (nc >= 0 && nr >= 0 && nc < cols && nr < rows) out.push(nr * cols + nc);
-      }
-      return out;
-    },
-  };
-}
-
-function hexTiling(dx: number, dy: number): Tiling {
-  const cols = Math.floor(PW / dx), rows = Math.floor(PMH / dy);
-  const centre = (id: number): [number, number] => {
-    const c = id % cols, r = Math.floor(id / cols);
-    return [c * dx + dx / 2, r * dy + dy / 2 + (c % 2) * (dy / 2)];
-  };
-  return {
-    cols, rows, centre,
-    // Nearest-centre lookup over a hex lattice is exactly the hex Voronoi cell,
-    // so tile shape falls out of the lattice rather than being drawn.
-    idAt: (x, y) => {
-      let best = -1, bestD = Infinity;
-      const c0 = Math.floor(x / dx), r0 = Math.floor(y / dy);
-      for (let c = c0 - 1; c <= c0 + 1; c++) {
-        for (let r = r0 - 1; r <= r0 + 1; r++) {
-          if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
-          const id = r * cols + c, [ux, uy] = centre(id);
-          const d = (ux - x) ** 2 + (uy - y) ** 2;
-          if (d < bestD) { bestD = d; best = id; }
-        }
-      }
-      return best;
-    },
-    neighbours: (id) => {
-      const c = id % cols, r = Math.floor(id / cols), odd = c % 2;
-      const deltas = odd
-        ? [[0, -1], [0, 1], [-1, 0], [-1, 1], [1, 0], [1, 1]]
-        : [[0, -1], [0, 1], [-1, -1], [-1, 0], [1, -1], [1, 0]];
-      const out: number[] = [];
-      for (const [dc, dr] of deltas) {
-        const nc = c + dc, nr = r + dr;
-        if (nc >= 0 && nr >= 0 && nc < cols && nr < rows) out.push(nr * cols + nc);
-      }
-      return out;
-    },
-  };
-}
 
 async function main(): Promise<void> {
   const [glyphs, data] = await Promise.all([load<GlyphSet>('glyphset.json'), load<Styles>('styles.json')]);
-  const style = data.styles.extended;
+  const st = data.styles.extended;
   const app = document.getElementById('app')!;
-  const term = new GLTerm(glyphs, { cols: PW * 2 + 4, rows: PMH + 6, cellPx: 8, background: PAL.bg });
+  const COLS = 178, ROWS = 122;
+  const term = new GLTerm(glyphs, { cols: COLS, rows: ROWS, cellPx: 8, background: PAL.bg });
   app.appendChild(term.canvas);
   const note = document.createElement('div');
   note.className = 'hud';
   app.appendChild(note);
 
-  /** Grow a connected region with a road spine, leaving the rest void. */
-  function buildMap(t: Tiling, seed: number): { tiles: Tile[]; towers: number[]; frontier: Set<number> } {
-    const n = t.cols * t.rows;
-    const tiles: Tile[] = new Array(n).fill('void');
-    let cur = Math.floor(t.rows / 2) * t.cols;
-    const road: number[] = [];
-    for (let i = 0; i < t.cols + 2 && cur >= 0; i++) {
-      tiles[cur] = 'road';
-      road.push(cur);
-      const nb = t.neighbours(cur).filter((x) => t.centre(x)[0] > t.centre(cur)[0] && tiles[x] === 'void');
-      if (!nb.length) break;
-      cur = nb[Math.floor(hash2(i, seed, 5) * nb.length) % nb.length];
-    }
-    for (const r of road) {
-      for (const nb of t.neighbours(r)) {
-        if (tiles[nb] !== 'void') continue;
-        const h = hash2(nb, seed, 7);
-        tiles[nb] = h > 0.82 ? 'rock' : h < 0.12 ? 'ore' : 'ground';
+  const G = (a: string[]) => a;
+  const drawPiece = (p: Piece, x: number, y: number, bg?: string, tint?: string): void => {
+    for (let r = 0; r < p.art.length; r++)
+      for (let c = 0; c < p.art[r].length; c++) {
+        const role = data.inkMap[(p.ink[r] ?? '')[c] ?? '.'];
+        if (!role) continue;
+        term.put(x + c, y + r, p.art[r][c], tint ?? (role === 'PATH' ? PATH : (PAL[role] ?? '#f0f')), bg);
+      }
+  };
+
+  // ------------------------------------------------------- the placed board
+  const tiles: Kind[] = new Array(TX * TY).fill('void');
+  const put = (tx: number, ty: number, k: Kind): void => { if (tx >= 0 && ty >= 0 && tx < TX && ty < TY) tiles[ty * TX + tx] = k; };
+  const at = (tx: number, ty: number): Kind => (tx < 0 || ty < 0 || tx >= TX || ty >= TY ? 'void' : tiles[ty * TX + tx]);
+  // A short built region: spawn on the left, road snaking right, ground either side.
+  put(0, 2, 'spawn'); put(1, 2, 'road'); put(2, 2, 'road'); put(2, 1, 'road'); put(3, 1, 'road');
+  put(1, 1, 'ground'); put(1, 3, 'ground'); put(2, 3, 'rock'); put(3, 2, 'ground');
+  put(2, 0, 'ground'); put(3, 0, 'ore'); put(0, 1, 'rock'); put(0, 3, 'ground');
+  const towers = [1 * TX + 1, 3 * TX + 0];
+
+  const frontier = new Set<number>();
+  for (let ty = 0; ty < TY; ty++)
+    for (let tx = 0; tx < TX; tx++)
+      if (at(tx, ty) === 'void' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => at(tx + dx, ty + dy) !== 'void'))
+        frontier.add(ty * TX + tx);
+  const GHOST_TX = 4, GHOST_TY = 1;
+
+  /** Terrain fill for one tile, into an arbitrary rectangle. */
+  function fillTile(k: Kind, ox: number, oy: number, w: number, h: number, seed: number, dim: number): void {
+    const dens = 0.05 + hash2(seed, 0, 41) * 0.08;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const gx = ox + x, gy = oy + y;
+        const shade = (c: string): string => c;
+        if (k === 'road') {
+          if (hash2(gx, gy, 5) < 0.85) term.put(gx, gy, pick(G(st.terrain.road), gx, gy, 6), shade(hash2(gx, gy, 7) < 0.15 ? PAL.roadLit : PAL.road));
+        } else if (k === 'rock') {
+          if (hash2(gx, gy, 8) < 0.8) term.put(gx, gy, pick(G(st.terrain.rock), gx, gy, 9), PAL.rock);
+        } else if (k === 'ore') {
+          if (hash2(gx, gy, 13) < 0.13) term.put(gx, gy, st.terrain.ore[0], PAL.ore);
+          else if (hash2(gx, gy, 10) < dens) term.put(gx, gy, pick(G(st.terrain.ground), gx, gy, 11), PAL.groundDim);
+        } else if (k === 'spawn') {
+          if (hash2(gx, gy, 5) < 0.85) term.put(gx, gy, pick(G(st.terrain.road), gx, gy, 6), PAL.road);
+          if (y === (h >> 1) && x > 1 && x < w - 2) term.put(gx, gy, '»', PAL.spawn);
+        } else if (hash2(gx, gy, 10) < dens) {
+          term.put(gx, gy, pick(G(st.terrain.ground), gx, gy, 11), hash2(gx, gy, 12) < 0.5 ? PAL.groundDim : PAL.ground);
+        }
+        void dim;
       }
     }
-    const towers: number[] = [];
-    for (let i = 0; i < n && towers.length < 6; i++)
-      if (tiles[i] === 'ground' && hash2(i, seed, 11) > 0.55) towers.push(i);
-    const frontier = new Set<number>();
-    for (let i = 0; i < n; i++)
-      if (tiles[i] === 'void') for (const nb of t.neighbours(i)) if (tiles[nb] !== 'void') { frontier.add(i); break; }
-    return { tiles, towers, frontier };
   }
 
-  function drawPanel(ox: number, t: Tiling, map: ReturnType<typeof buildMap>, towerSize: number): void {
-    for (let y = 0; y < PMH; y++) {
-      for (let x = 0; x < PW; x++) {
-        const id = t.idAt(x, y);
-        if (id < 0) continue;
-        const kind = map.tiles[id];
-        const sy = TOP + y;
-        if (kind === 'void') {
-          // Legal next placements get a faint stipple; unreachable void stays black.
-          if (map.frontier.has(id) && hash2(x, y, 33) < 0.10)
-            term.put(ox + x, sy, '·', hash2(x, y, 34) < 0.3 ? PAL.frontierLit : PAL.frontier);
+  // ------------------------------------------------------------- flat board
+  function drawFlat(ox: number, oy: number): void {
+    for (let ty = 0; ty < TY; ty++) {
+      for (let tx = 0; tx < TX; tx++) {
+        const k = at(tx, ty);
+        const bx = ox + tx * T, by = oy + ty * T;
+        if (k === 'void') {
+          if (frontier.has(ty * TX + tx))
+            for (let y = 0; y < T; y++) for (let x = 0; x < T; x++)
+              if (hash2(bx + x, by + y, 33) < 0.09) term.put(bx + x, by + y, '·', PAL.frontier);
           continue;
         }
-        const dens = 0.05 + hash2(id, 0, 41) * 0.08;
-        if (kind === 'road') {
-          const nbrRoad = t.neighbours(t.idAt(x, y)).some((nb) => map.tiles[nb] === 'road');
-          const edge = t.idAt(x, y) !== t.idAt(x + 1, y) || t.idAt(x, y) !== t.idAt(x, y + 1);
-          if (edge && !nbrRoad) term.put(ox + x, sy, pickG(style.terrain.roadEdge, x, y, 4), PAL.roadEdge);
-          else if (hash2(x, y, 5) < 0.85) term.put(ox + x, sy, pickG(style.terrain.road, x, y, 6), hash2(x, y, 7) < 0.15 ? PAL.roadLit : PAL.road);
-        } else if (kind === 'rock') {
-          if (hash2(x, y, 8) < 0.75) term.put(ox + x, sy, pickG(style.terrain.rock, x, y, 9), PAL.rock);
-        } else if (kind === 'ore') {
-          if (hash2(x, y, 13) < 0.12) term.put(ox + x, sy, style.terrain.ore[0], PAL.ore);
-          else if (hash2(x, y, 10) < dens) term.put(ox + x, sy, pickG(style.terrain.ground, x, y, 11), PAL.groundDim);
-        } else if (hash2(x, y, 10) < dens) {
-          term.put(ox + x, sy, pickG(style.terrain.ground, x, y, 11), hash2(x, y, 12) < 0.5 ? PAL.groundDim : PAL.ground);
-        }
+        fillTile(k, bx, by, T, T, ty * TX + tx, 0);
       }
     }
-    for (const id of map.towers) {
-      const [cx, cy] = t.centre(id);
-      drawPiece(term, style.tower, data.inkMap, ox + Math.round(cx) - 6, TOP + Math.round(cy) - towerSize, PAL['tower.shadow']);
+    for (const id of towers) drawPiece(st.tower, ox + (id % TX) * T, oy + Math.floor(id / TX) * T + 1, PAL['tower.shadow']);
+
+    // Ghost: the selected hand tile previewed on a legal position.
+    const gx = ox + GHOST_TX * T, gy = oy + GHOST_TY * T;
+    for (let y = 0; y < T; y++)
+      for (let x = 0; x < T; x++) {
+        const onRoad = y >= 4 && y < 8;
+        if (onRoad) { if (hash2(x, y, 61) < 0.7) term.put(gx + x, gy + y, pick(G(st.terrain.road), x, y, 6), PAL.ghost); }
+        else if (x === 0 || x === T - 1 || y === 0 || y === T - 1) {
+          if ((x + y) % 2 === 0) term.put(gx + x, gy + y, '·', PAL.ghost);
+        }
+      }
+  }
+
+  // ---------------------------------------------------------- tilted board
+  // Back to front. Top face is TOPH rows; the rest of the 12-row step becomes
+  // a front wall, made taller by elevation.
+  function drawTilted(ox: number, oy: number): void {
+    for (let ty = 0; ty < TY; ty++) {
+      for (let tx = 0; tx < TX; tx++) {
+        const k = at(tx, ty);
+        if (k === 'void') continue;
+        const e = ELEV[k];
+        const bx = ox + tx * T;
+        const topY = oy + ty * TOPH - e * 2;
+        const wallH = TOPH - (ELEV[at(tx, ty + 1)] - e) * 2;
+        fillTile(k, bx, topY, T, TOPH, ty * TX + tx, 0);
+        for (let y = 0; y < Math.max(0, wallH - TOPH + 4 + e * 2); y++) {
+          for (let x = 0; x < T; x++) {
+            const wy = topY + TOPH + y;
+            if (wy >= oy + TY * TOPH + 14) continue;
+            term.put(bx + x, wy, y === 0 ? '▔' : (hash2(bx + x, wy, 71) < 0.4 ? '▒' : '░'), y === 0 ? PAL.wallLit : PAL.wall);
+          }
+        }
+      }
+      for (const id of towers) if (Math.floor(id / TX) === ty)
+        drawPiece(st.tower, ox + (id % TX) * T, oy + ty * TOPH - ELEV[at(id % TX, ty)] * 2 - 4, PAL['tower.shadow']);
     }
   }
 
-  const sq = squareTiling(12);
-  const hx = hexTiling(12, 14);
-  const sqMap = buildMap(sq, 3), hxMap = buildMap(hx, 3);
+  // ------------------------------------------------------------- tile hand
+  const HAND: { name: string; conn: string; rows: (x: number, y: number) => Kind }[] = [
+    { name: 'straight', conn: 'W-E', rows: (_x, y) => (y >= 4 && y < 8 ? 'road' : 'ground') },
+    { name: 'corner', conn: 'W-S', rows: (x, y) => ((y >= 4 && y < 8 && x < 8) || (x >= 4 && x < 8 && y >= 4) ? 'road' : 'ground') },
+    { name: 'spur + spawn', conn: 'W-E-N', rows: (x, y) => ((y >= 4 && y < 8) || (x >= 4 && x < 8 && y < 8) ? 'road' : 'rock') },
+  ];
+
+  function drawHand(ox: number, oy: number): void {
+    term.write(ox, oy - 2, 'place a tile  (every 2 waves)', PAL.accent);
+    HAND.forEach((h, i) => {
+      const cy = oy + i * 17;
+      const w = T + 4;
+      for (let x = 0; x < w; x++) { term.put(ox + x, cy, '─', i === 0 ? PAL.cardLit : PAL.card); term.put(ox + x, cy + 15, '─', i === 0 ? PAL.cardLit : PAL.card); }
+      for (let y = 1; y < 15; y++) { term.put(ox, cy + y, '│', i === 0 ? PAL.cardLit : PAL.card); term.put(ox + w - 1, cy + y, '│', i === 0 ? PAL.cardLit : PAL.card); }
+      term.put(ox, cy, '┌', PAL.card); term.put(ox + w - 1, cy, '┐', PAL.card);
+      term.put(ox, cy + 15, '└', PAL.card); term.put(ox + w - 1, cy + 15, '┘', PAL.card);
+      for (let y = 0; y < T; y++)
+        for (let x = 0; x < T; x++) {
+          const k = h.rows(x, y);
+          const gx = ox + 2 + x, gy = cy + 2 + y;
+          if (k === 'road') { if (hash2(gx, gy, 5) < 0.85) term.put(gx, gy, pick(G(st.terrain.road), gx, gy, 6), PAL.road); }
+          else if (k === 'rock') { if (hash2(gx, gy, 8) < 0.75) term.put(gx, gy, pick(G(st.terrain.rock), gx, gy, 9), PAL.rock); }
+          else if (hash2(gx, gy, 10) < 0.09) term.put(gx, gy, pick(G(st.terrain.ground), gx, gy, 11), PAL.groundDim);
+        }
+      // connector marks on the card edge — this is the legality rule, visible
+      if (h.conn.includes('W')) term.write(ox, cy + 8, '╞', PAL.roadEdge);
+      if (h.conn.includes('E')) term.write(ox + w - 1, cy + 8, '╡', PAL.roadEdge);
+      if (h.conn.includes('N')) term.write(ox + 8, cy, '╨', PAL.roadEdge);
+      if (h.conn.includes('S')) term.write(ox + 8, cy + 15, '╥', PAL.roadEdge);
+      term.write(ox + 1, cy + 16, `${i + 1}. ${h.name}`, i === 0 ? PAL.text : PAL.dim);
+      term.write(ox + w - 6, cy + 16, h.conn, PAL.dim);
+    });
+    term.write(ox, oy + 3 * 17 + 2, 'reroll  ·  2 recon', PAL.dim);
+  }
 
   function frame(): void {
     term.clear(PAL.bg);
-    term.write(0, 0, 'A · square tiles  (12x12 cells)', PAL.accent);
-    term.write(0, 1, '4 neighbours · axis-aligned edges · one REXPaint canvas size', PAL.dim);
-    term.write(PW + 4, 0, 'B · hex tiles  (12x14 lattice, flat-top)', PAL.accent);
-    term.write(PW + 4, 1, '6 neighbours · stepped diagonal edges · rect canvas with wasted corners', PAL.dim);
-    drawPanel(0, sq, sqMap, 5);
-    drawPanel(PW + 4, hx, hxMap, 5);
-    term.write(0, TOP + PMH + 1, 'faint green stipple = void tiles legal to place next. black = unreachable void. most of the map is unbuilt.', PAL.dim);
+    term.write(0, 0, 'A · flat — mostly-void board, tile hand, legal placement ghosted', PAL.accent);
+    term.write(0, 1, 'green stipple = legal positions · green outline = selected tile previewed · » = enemy entry', PAL.dim);
+    drawFlat(0, 3);
+    drawHand(114, 5);
+
+    term.write(0, 68, 'B · tilted — same board, foreshortened ground plane + front walls', PAL.accent);
+    term.write(0, 69, 'top face 12x8 per 12-cell tile · elevation raises the face and lengthens the wall', PAL.dim);
+    drawTilted(0, 72);
+
     term.flush();
     (window as unknown as Record<string, unknown>).__screen = () => term.toText();
     requestAnimationFrame(frame);
   }
-  note.textContent = 'square vs hex tiles, with tile-placement expansion — 1:1 at 8px cells';
+  note.textContent = 'tile-laying UI and tilted rendering — 1:1 at 8px cells';
   frame();
 }
 
