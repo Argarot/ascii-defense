@@ -155,6 +155,23 @@ export class Term {
     this.backBg.fill(id);
   }
 
+  /**
+   * The current back buffer as plain text, one line per row.
+   *
+   * For an ASCII game this is a first-class capability, not a debug leftover:
+   * it makes screen state assertable in unit tests, diffable between frames,
+   * and reportable in a bug without a screenshot.
+   */
+  toText(): string {
+    const lines: string[] = [];
+    for (let y = 0; y < this.rows; y++) {
+      let line = '';
+      for (let x = 0; x < this.cols; x++) line += GLYPHS[this.backGlyph[y * this.cols + x]];
+      lines.push(line.replace(/\s+$/, ''));
+    }
+    return lines.join('\n');
+  }
+
   /** Paint only the cells that changed since the last flush. */
   flush(): void {
     const { ctx, cellW, cellH } = this;

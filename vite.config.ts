@@ -9,5 +9,9 @@ export default defineConfig(({ command }) => ({
   build: {
     target: 'es2022',
     outDir: 'dist',
+    // Bundles go to dist/build/, keeping dist/assets/ purely the art library
+    // copied from public/. Without this both land in dist/assets and a bundled
+    // file could shadow a sprite.
+    assetsDir: 'build',
   },
 }));

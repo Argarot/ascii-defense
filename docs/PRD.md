@@ -41,12 +41,14 @@ are not fun, so they are gated behind proving that they are.
 
 ## 4. The map
 
-| Tile | Glyph | Pathable | Buildable | Role |
-|---|---|---|---|---|
-| **Road** | `.` `,` | yes, cost 1.0 | **no** | The guaranteed route |
-| **Ground** | `"` `'` | yes, cost 1.4 | yes | Open terrain you build on |
-| **Rock** | `#` `%` | no | no | Procgen obstacle, free wall |
-| **Ore node** | `*` | yes, cost 1.4 | yes (see §6) | Mining site |
+| Tile | Pathable | Buildable | Role |
+|---|---|---|---|
+| **Road** | yes, cost 1.0 | **no** | The guaranteed route |
+| **Ground** | yes, cost 1.4 | yes | Open terrain you build on |
+| **Rock** | no | no | Procgen obstacle, free wall |
+| **Ore node** | yes, cost 1.4 | yes (see §6) | Mining site |
+
+*How any of this looks is not specified here. See [ASSETS.md](ASSETS.md).*
 
 Enemies walk the **cheapest** route to the Core via a flow field. Because ground
 costs more than road, shortcuts across open terrain exist naturally; building on
@@ -80,21 +82,26 @@ space.
 
 ### 5.2 Fixed footprint, growing intricacy
 
-Character cells are roughly 1:1.7, so a **3-wide × 2-tall** footprint reads as
-square. Standard towers are 3×2; heavies are 5×3. **Footprints never change.**
+A tower is a **drawing**, not a character with decoration around it. Standard
+towers occupy **7 × 4 cells**; heavies 9 × 5. **Footprints never change.**
 
-Tiering up is expressed through the sprite, not the size:
+Tiering up is expressed entirely through the artwork — detail density, frame
+elaboration, path-coloured accents and brightness all climb, while the
+silhouette stays recognisable. Identity comes from the whole shape, not from any
+one character.
 
-- **Tier 0–1** — bare frame, single family glyph
-- **Tier 2–3** — denser frame, path-coloured accent cells, an idle animation
-- **Tier 4–5** — full frame detail, distinct silhouette per path, firing animation
-
-Colour carries the specialisation; the family glyph never moves from the sprite
-centre so identity survives every upgrade.
+Nothing about *what those drawings contain* is specified in this document. Sizes
+appear here only because footprint is a mechanical property: it determines
+placement, buildable area and how many towers a board can hold. Appearance lives
+in [ASSETS.md](ASSETS.md) and in `public/assets/`.
 
 *Growth-on-upgrade was considered and cut: it bought one visual moment at the
 cost of occupancy re-checking, a UI/engine contract, and a "cannot upgrade,
 neighbour in the way" failure mode.*
+
+**Consequence for the board:** 7 × 4 towers need room for 20–25 placements,
+which is roughly a **160 × 50 cell** viewport. That is comfortable on a desktop
+monitor and is a large part of why this game is desktop-only.
 
 ### 5.3 Families
 
@@ -102,17 +109,17 @@ M1 ships the first five. Full target is **8 towers + Wall** — not 14. Eight
 well-tuned towers with crosspathing already yields more build space than can be
 balanced in reasonable time.
 
-| Glyph | Tower | Size | Role | Path A | Path B | Path C | Milestone |
+| Tower | Sprite id | Size | Role | Path A | Path B | Path C | Milestone |
 |---|---|---|---|---|---|---|---|
-| `^` | Bolt Turret | 3×2 | cheap single target | Velocity | Caliber | Optics | M1 |
-| `o` | Mortar | 3×2 | AoE, minimum range | Payload | Cadence | Ordnance | M1 |
-| `~` | Frost Emitter | 3×2 | slow aura | Chill | Shatter | Field | M1 |
-| `$` | Refinery | 3×2 | economy (§6) | Yield | Extraction | Logistics | M1 |
-| `#` | Wall | 1×1 | no attack, closes shortcuts | — | — | — | M1 |
-| `%` | Acid Sprayer | 3×2 | DoT, armour shred | Corrosion | Volatility | Saturation | M4 |
-| `\` | Arc Coil | 3×2 | chain lightning | Conductivity | Overcharge | Capacitor | M4 |
-| `+` | Bastion | 3×2 | buff aura | Command | Logistics | Fortify | M4 |
-| `X` | Rail Lance | 5×3 | long-range line pierce | Focus | Penetration | Overwatch | M4 |
+| Bolt Turret | `tower_bolt` | 7×4 | cheap single target | Velocity | Caliber | Optics | M1 |
+| Mortar | `tower_mortar` | 7×4 | AoE, minimum range | Payload | Cadence | Ordnance | M1 |
+| Frost Emitter | `tower_frost` | 7×4 | slow aura | Chill | Shatter | Field | M1 |
+| Refinery | `tower_refinery` | 7×4 | economy (§6) | Yield | Extraction | Logistics | M1 |
+| Wall | `wall` | 3×2 | no attack, closes shortcuts | — | — | — | M1 |
+| Acid Sprayer | `tower_acid` | 7×4 | DoT, armour shred | Corrosion | Volatility | Saturation | M4 |
+| Arc Coil | `tower_arc` | 7×4 | chain lightning | Conductivity | Overcharge | Capacitor | M4 |
+| Bastion | `tower_bastion` | 7×4 | buff aura | Command | Logistics | Fortify | M4 |
+| Rail Lance | `tower_rail` | 9×5 | long-range line pierce | Focus | Penetration | Overwatch | M4 |
 
 ## 6. Economy: one building, two futures
 
@@ -173,6 +180,10 @@ cut: it is 44 interactions, mostly unexercised, and it is precisely where
 balance bugs breed. Traits expand only once the small matrix is proven.
 
 Flyers are the structural counter to over-mazing and must exist from M1.
+
+Enemies are drawn sprites too, and **size class carries threat**: 2×1 for swarm
+units, 3×2 for line infantry and flyers, 5×3 for armoured, 11×6 for bosses. You
+should be able to read what is coming from the silhouettes alone.
 
 ## 8. Difficulty: calibrated, not derived
 
@@ -261,17 +272,18 @@ architecture gives us and should be surfaced in the UI.
 
 ## 12. Art direction
 
-Deliberately deferred. Core functionality first; the current sprite sketches are
-placeholders and the terrain and enemy visuals both need a proper pass.
+Specified separately, in [ASSETS.md](ASSETS.md), and implemented as a runtime
+asset library under `public/assets/`. **This document names no glyphs and no
+colours** — if it did, the library would not be the source of truth.
 
-What is fixed now, because it constrains the data model:
+What is settled: sprites are parallel art/ink grids resolved through a role
+palette; one drawing serves all three upgrade paths by recolouring; terrain is
+sparse and edge-treated rather than randomly filled; all UI chrome draws through
+the same `Term` as the board; and legibility beats spectacle in every tie.
 
-- Sprites are per-cell `(glyph, colour)` grids with named animation frames.
-- Colour semantics are consistent: family = glyph, specialisation = hue, tier =
-  frame density and brightness.
-- All UI chrome is drawn through the same `Term` as the board.
-- **Legibility is the tie-breaker.** Any effect that makes enemy count or tower
-  state harder to read gets cut.
+The current library is a **direction proof, not a finished set**. Enemy art is
+the weakest part, and animation, projectiles and UI chrome are unauthored. Full
+art pass is scheduled in M4+.
 
 ## 13. Out of scope
 

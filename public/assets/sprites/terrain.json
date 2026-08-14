@@ -1,0 +1,40 @@
+{
+  "id": "terrain.default",
+  "note": "Terrain reads as a surface, not as noise. Two rules do the work: ground is mostly EMPTY with sparse specks (density), and every class boundary gets an explicit edge treatment. Glyph choice is driven by a mixing hash, never a linear one - x*a+y*b patterns produce visible diagonal moire.",
+  "classes": {
+    "ground": {
+      "glyphs": [".", "'", "`", ",", ":"],
+      "density": 0.09,
+      "ink": "terrain.ground",
+      "dimChance": 0.55,
+      "dimInk": "terrain.groundDim"
+    },
+    "road": {
+      "glyphs": [":", ":", ".", ":", ",", ":"],
+      "density": 0.92,
+      "ink": "terrain.road",
+      "litChance": 0.14,
+      "litInk": "terrain.roadLit"
+    },
+    "roadEdge": {
+      "glyphs": ["-", "-", "'", "-", "."],
+      "density": 1.0,
+      "ink": "terrain.roadEdge"
+    },
+    "rock": {
+      "glyphs": ["#", "#", "%", "&", "#", "@"],
+      "density": 1.0,
+      "ink": "terrain.rock",
+      "capGlyphs": ["^", "^", "~", "-"],
+      "capInk": "terrain.rockLit"
+    },
+    "ore": {
+      "glyphs": ["*"],
+      "density": 1.0,
+      "ink": "terrain.ore",
+      "haloGlyphs": ["'", ".", ","],
+      "haloChance": 0.5,
+      "haloInk": "terrain.oreDim"
+    }
+  }
+}

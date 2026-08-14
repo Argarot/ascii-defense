@@ -93,23 +93,33 @@ What this buys, in order of importance:
    effect references, unreachable tech nodes. This is what keeps 100+ upgrades
    from rotting over months.
 
-Sprites are JSON too — rows of strings plus a colour map:
+Sprites are JSON too, and live under `public/assets/` so they are **fetched at
+runtime rather than bundled** — edit a file, reload, see the change, no rebuild.
+Full format in [ASSETS.md](ASSETS.md); the short version is parallel `art` and
+`ink` grids resolved through a role palette:
 
 ```jsonc
 {
-  "id": "bolt_turret",
-  "size": [3, 2],
-  "palette": { "f": "frame", "g": "glyph", "a": "accent" },
+  "id": "tower_bolt", "size": [7, 4], "bg": "tower.shadow",
+  "inkMap": { ".": null, "f": "tower.frame", "c": "PATH", "w": "tower.core" },
   "tiers": {
-    "0": { "idle": [[".^.", "[=]"]], "colors": [["fgf", "fff"]] },
-    "4": { "idle": [[".^.", "[#]"]], "fire": [["*^*", "[#]"]],
-           "colors": [["faf", "fgf"]] }
+    "1": { "art": ["  ___  ", " /:::\\ ", "[|-O-|]", " \\___/ "],
+           "ink": ["..fff..", ".fbbbf.", "efbcbfe", ".fffff."] }
   }
 }
 ```
 
-Colour names resolve through the path palette, so one sprite serves all three
-specialisations and recolours itself.
+`.` is transparent, so terrain shows through the gaps in a drawing. `"PATH"`
+resolves to the instance's upgrade path colour, so one drawing serves all three
+specialisations.
+
+**The engine knows no glyphs.** It knows sprite ids, ink keys and footprints.
+This is why the PRD names no characters — if it did, the library would not be
+the source of truth.
+
+Vite's `build.assetsDir` is set to `build/` so bundled output lands in
+`dist/build/` and `dist/assets/` stays purely the art library. Without that both
+share `dist/assets/` and a bundled file could shadow a sprite.
 
 ## 4. Rendering — measured, not assumed
 
@@ -129,8 +139,11 @@ why a terminal backend could replace it later without the game noticing.
 
 ## 5. Occupancy and footprints
 
-Towers are 3×2 (heavies 5×3) and **never change size**. A `Uint16Array` over the
-board maps each cell to its owner id, or 0.
+Towers are 7×4 (heavies 9×5, walls 3×2) and **never change size**. A
+`Uint16Array` over the board maps each cell to its owner id, or 0.
+
+Sprite sizes drive board size: fitting 20–25 towers needs roughly a 160×50 cell
+viewport (~1440×750 px). Desktop only, by consequence rather than by choice.
 
 It is the single source of truth for buildability, click targeting and
 pathability. Placement is a rectangle scan; no per-tower geometry maths exists
