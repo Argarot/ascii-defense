@@ -1,0 +1,10 @@
+# Normalise line endings so Windows/macOS/Linux contributors don't produce
+# whole-file diffs. Text is stored as LF in the repo regardless of platform.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
