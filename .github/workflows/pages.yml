@@ -35,7 +35,11 @@ jobs:
       - name: Typecheck and build
         run: npm run build
 
+      # enablement lets the workflow turn Pages on itself using GITHUB_TOKEN,
+      # so first-time setup needs no manual click in repo settings.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
