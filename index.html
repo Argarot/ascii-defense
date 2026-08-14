@@ -16,16 +16,16 @@
       }
       body {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
-        padding: 24px 12px;
+        padding: 10px 4px;
       }
       #app { display: inline-block; }
+      /* No max-width: scaling a bitmap font blurs it, which defeats the point. */
       canvas {
         display: block;
         border: 1px solid #1c2530;
-        border-radius: 3px;
-        max-width: 100%;
+        image-rendering: pixelated;
       }
       .hud {
         margin-top: 10px;

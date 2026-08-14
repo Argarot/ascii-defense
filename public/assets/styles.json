@@ -1,0 +1,152 @@
+{
+  "id": "charset.comparison",
+  "note": "The same tower, enemy and terrain drawn under three character-set regimes. Colours and sizes are identical across styles so the only variable is the vocabulary of glyphs available.",
+  "inkMap": {
+    ".": null,
+    "f": "tower.frame",
+    "b": "tower.body",
+    "e": "tower.edge",
+    "c": "PATH",
+    "w": "tower.core",
+    "s": "tower.shadow",
+    "B": "enemy.body",
+    "E": "enemy.edge",
+    "Y": "enemy.eye"
+  },
+  "styles": {
+    "ascii": {
+      "label": "A. strict ASCII (95 glyphs)",
+      "blurb": "the original premise. shading by punctuation density only",
+      "terrain": {
+        "ground": [".", "'", "`", ","],
+        "road": [":", ".", ",", ";"],
+        "roadEdge": ["-", "'", "."],
+        "rock": ["#", "%", "&"],
+        "rockCap": ["^", "~"],
+        "ore": ["*"]
+      },
+      "tower": {
+        "size": [12, 10],
+        "art": [
+          "    _____   ",
+          "   /:::::\\  ",
+          "  /:::::::\\ ",
+          " /:::::::::\\",
+          "|::[####]::|",
+          "|:::(OO):::|",
+          "|::[####]::|",
+          "|::::::::::|",
+          "\\::::::::::/",
+          " '--------' "
+        ],
+        "ink": [
+          "....fffff...",
+          "...febbbef..",
+          "..febbbbbef.",
+          ".febbbbbbbef",
+          "fesfccccfsef",
+          "fesfcwwcfsef",
+          "fesfccccfsef",
+          "febbbbbbbbef",
+          "febbbbbbbbef",
+          ".fffffffff.."
+        ]
+      },
+      "enemy": {
+        "size": [6, 6],
+        "art": [" .--. ", "/#oo#\\", "|####|", "\\####/", " |  | ", " ^  ^ "],
+        "ink": [".EEEE.", "EBYYBE", "EBBBBE", "EBBBBE", ".B..B.", ".B..B."]
+      }
+    },
+
+    "extended": {
+      "label": "B. + Latin-1 (Stone Story's palette)",
+      "blurb": "adds \u00b4 \u00af \u00b7 \u00b8 \u00a6 \u00b1 \u00a4 \u00a7 \u00b5 \u00ab \u00bb for edge softening and finer tone",
+      "terrain": {
+        "ground": ["\u00b7", "\u00b4", "`", "\u00b8"],
+        "road": ["\u00ac", "\u00b7", "\u00f7", ":"],
+        "roadEdge": ["\u00af", "\u00b8", "\u00b4"],
+        "rock": ["\u00a7", "\u00a4", "\u00b5"],
+        "rockCap": ["\u00b0", "\u00af"],
+        "ore": ["\u00a4"]
+      },
+      "tower": {
+        "size": [12, 10],
+        "art": [
+          "    ,-\u00af\u00af-,  ",
+          "   /\u00b7:::\u00b7\\  ",
+          "  /:\u00b7:::\u00b7:\\ ",
+          " /:\u00b7:::::\u00b7:\\",
+          "\u00a6:\u00ab[\u00a4\u00a4\u00a4\u00a4]\u00bb:\u00a6",
+          "\u00a6:\u00b7:(\u00b0\u00b0):\u00b7:\u00a6",
+          "\u00a6:\u00ab[\u00a4\u00a4\u00a4\u00a4]\u00bb:\u00a6",
+          "\u00a6:\u00b7:\u00b7::\u00b7:\u00b7:\u00a6",
+          "\\\u00b7:\u00b8____\u00b8:\u00b7/",
+          " `-,,__,,-\u00b4 "
+        ],
+        "ink": [
+          "....ffff....",
+          "...febbbef..",
+          "..febbbbbef.",
+          ".febbbbbbbef",
+          "fesfccccfsef",
+          "fesfcwwcfsef",
+          "fesfccccfsef",
+          "febbbbbbbbef",
+          "febbbbbbbbef",
+          ".fffffffff.."
+        ]
+      },
+      "enemy": {
+        "size": [6, 6],
+        "art": [" ,\u00af\u00af, ", "/\u00b7\u00b0\u00b0\u00b7\\", "\u00a6\u00a7\u00a7\u00a7\u00a7\u00a6", "\\\u00b1\u00b1\u00b1\u00b1/", " \u00a6  \u00a6 ", " \u00b4  ` "],
+        "ink": [".EEEE.", "EBYYBE", "EBBBBE", "EBBBBE", ".B..B.", ".B..B."]
+      }
+    },
+
+    "blocks": {
+      "label": "C. + block elements & box drawing",
+      "blurb": "half-blocks double effective resolution; \u2588\u2593\u2592\u2591 gives a clean 4-step ramp",
+      "terrain": {
+        "ground": ["\u2591", "\u2596", "\u259d", "\u00b7"],
+        "road": ["\u2592", "\u2591", "\u2592", "\u2593"],
+        "roadEdge": ["\u2500", "\u2584", "\u2580"],
+        "rock": ["\u2588", "\u2593", "\u2588"],
+        "rockCap": ["\u2580", "\u259b"],
+        "ore": ["\u25c6"]
+      },
+      "tower": {
+        "size": [12, 10],
+        "art": [
+          "    \u2584\u2584\u2584\u2584    ",
+          "   \u259f\u2588\u2588\u2588\u2588\u2599   ",
+          "  \u259f\u2588\u2588\u2588\u2588\u2588\u2588\u2599  ",
+          " \u259f\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2599 ",
+          "\u2503\u2593\u2588\u2588\u2588\u2592\u2592\u2588\u2588\u2588\u2593\u2503",
+          "\u2503\u2593\u2588\u2588\u2590\u2588\u2588\u258c\u2588\u2588\u2593\u2503",
+          "\u2503\u2593\u2588\u2588\u2588\u2592\u2592\u2588\u2588\u2588\u2593\u2503",
+          "\u2503\u2592\u2593\u2593\u2593\u2593\u2593\u2593\u2593\u2593\u2592\u2503",
+          "\u2517\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u251b",
+          " \u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591 "
+        ],
+        "ink": [
+          "....ffff....",
+          "...febbbef..",
+          "..febbbbbef.",
+          ".febbbbbbbef",
+          "fesbbccbbsef",
+          "fesbcwwcbsef",
+          "fesbbccbbsef",
+          "febbbbbbbbef",
+          "ffffffffffff",
+          ".ssssssssss."
+        ]
+      },
+      "enemy": {
+        "size": [6, 6],
+        "art": [" \u2584\u2584\u2584\u2584 ", "\u259f\u2593\u2588\u2588\u2593\u2599", "\u2588\u2580\u2588\u2588\u2580\u2588", "\u259c\u2588\u2588\u2588\u2588\u259b", " \u259a\u2584\u2584\u259e ", " \u2598  \u259d "],
+        "ink": [".EEEE.", "EBYYBE", "EBBBBE", "EBBBBE", ".BBBB.", ".B..B."]
+      }
+    }
+  }
+}
