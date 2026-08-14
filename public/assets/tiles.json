@@ -1,0 +1,49 @@
+{
+  "id": "tiles.compact",
+  "note": "7x7-cell tiles (56x56 px). Terrain fill uses the block ramp because block glyphs fill the cell edge to edge - punctuation ink is ~5x7 inside an 8x8 box, so punctuation-only terrain reads taller than it is. Entities stay on the Stone Story palette.",
+  "tile": 7,
+  "inkMap": {
+    ".": null,
+    "f": "tower.frame",
+    "b": "tower.body",
+    "e": "tower.edge",
+    "c": "PATH",
+    "w": "tower.core",
+    "B": "enemy.body",
+    "E": "enemy.edge",
+    "Y": "enemy.eye"
+  },
+  "tower": {
+    "size": [7, 7],
+    "art": [
+      " ,---, ",
+      "/·:::·\\",
+      "¦[¤¤¤]¦",
+      "¦(°°°)¦",
+      "¦[¤¤¤]¦",
+      "\\·:_:·/",
+      " `---´ "
+    ],
+    "ink": [
+      ".fffff.",
+      "febbbef",
+      "fbcccbf",
+      "fbcwcbf",
+      "fbcccbf",
+      "febbbef",
+      ".fffff."
+    ]
+  },
+  "enemy": {
+    "size": [3, 3],
+    "art": ["(o)", "/#\\", " v "],
+    "ink": ["EYE", "BBB", ".B."]
+  },
+  "terrain": {
+    "ground": { "fill": ["░", "░", " ", " ", "·", "'"], "top": "#2c3947", "mid": "#222d38", "bot": "#18202a" },
+    "road":   { "fill": ["▒", "▒", "░", "▒"],           "top": "#7d93ad", "mid": "#4a5b70", "bot": "#334152" },
+    "rock":   { "fill": ["▓", "█", "▓", "█"],           "top": "#66788d", "mid": "#3b4653", "bot": "#232c37" },
+    "ore":    { "fill": ["░", "▒", "¤", "░"],           "top": "#e8b52a", "mid": "#8a6a15", "bot": "#4a3a0d" },
+    "spawn":  { "fill": ["▒", "░", "»", "▒"],           "top": "#e05a5a", "mid": "#7d3535", "bot": "#3a1c1c" }
+  }
+}
