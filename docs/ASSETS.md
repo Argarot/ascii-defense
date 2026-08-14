@@ -30,27 +30,64 @@ Same object, same footprint, three tiers. Detail density and brightness climb;
 the shape stays recognisable. This is what "grows in intricacy" means — nothing
 about the drawing's size changes.
 
-## 2. Size classes
+## 2. The canvas you are drawing on
 
-Character cells are roughly 1:1.7, so a 7-wide × 4-tall sprite is close to
-square on screen.
+| | |
+|---|---|
+| **Font** | [unscii-8](https://github.com/viznut/unscii), 8×8 bitmap, public domain |
+| **Cell** | 8 × 8 px — **square**, so no aspect correction. What you draw is what you see. |
+| **Grid** | 240 × 135 cells (1920 × 1080), ~232 × 128 usable |
+| **Character set** | printable ASCII + Latin-1 supplement + **block elements and box drawing** |
+| **Colour** | 24-bit per cell, foreground and background, no palette cap |
 
-| Class | Cells | Used for |
+### Character set
+
+Strict 7-bit ASCII was rejected: 95 glyphs is too small a vocabulary to shade
+with, and it is the main reason the first asset pass looked thin. The set is now
+roughly Stone Story's 256 symbols **plus** block elements and box drawing:
+
+```
+ASCII        ! " # $ % & ' ( ) * + , - . / 0-9 : ; < = > ? @ A-Z [ \ ] ^ _ ` a-z { | } ~
+Latin-1      ´ ‾ ¡ · ° « » ÷ ± ¬ ¦ ¤ § µ ¶ ¸ ¹ ² ³ ¼ ½ ¾
+Blocks       █ ▓ ▒ ░ ▀ ▄ ▌ ▐ ▖ ▗ ▘ ▝ ▚ ▞
+Box drawing  ─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬ ╭ ╮ ╯ ╰
+```
+
+**Half-blocks are the highest-value addition.** `▀ ▄ ▌ ▐` effectively double
+resolution along one axis, giving a 16×8 or 8×16 effective grid per cell for
+silhouettes and shading. `█ ▓ ▒ ░` give a clean four-step density ramp that is
+far more controllable than punctuation dithering.
+
+This means the game is textmode art rather than ASCII in the strict sense. That
+is a deliberate trade of purity for the art actually looking good.
+
+## 3. Size classes
+
+| Class | Cells | Pixels |
 |---|---|---|
-| Tower | **7 × 4** | all standard towers |
-| Heavy tower | 9 × 5 | late-tier siege pieces |
-| Wall | 3 × 2 | the precision mazing tool |
-| Enemy, small | 2 × 1 | swarm units |
-| Enemy, medium | 3 × 2 | line infantry, flyers |
-| Enemy, large | 5 × 3 | armoured units |
-| Boss | 11 × 6 | act finales |
+| Wall | 4 × 4 | 32 × 32 |
+| **Tower** | **12 × 10** | 96 × 80 |
+| Heavy tower | 16 × 14 | 128 × 112 |
+| Enemy, small | 4 × 4 | 32 × 32 |
+| Enemy, medium | 6 × 6 | 48 × 48 |
+| Enemy, large | 10 × 10 | 80 × 80 |
+| Boss | 20 × 18 | 160 × 144 |
 
-### Consequence for the viewport
+A 96 × 80 px tower is a real sprite with room for genuine detail — roughly ten
+times the drawing area of the 7×4 sketches it replaces.
 
-7×4 towers mean the board cannot be 96 cells wide. A battle needs room for
-20–25 towers, which at this scale is roughly **160 × 50 cells** — about
-1440 × 750 px at a 9 × 15 cell. That is comfortable on desktop and is the
-reason this game is desktop-only.
+## 2b. Authoring: REXPaint, not a text editor
+
+Sprites are drawn in **[REXPaint](https://www.gridsagegames.com/rexpaint/)** —
+free, Windows-native, multi-layer, written by Cogmind's developer — and
+converted by `tools/rexpaint-import` into the runtime JSON.
+
+Hand-typing art into JSON is why the first pass was primitive. Nobody draws well
+in a text editor. REXPaint gives a palette picker, layers, shape tools and
+undo, and exports XML/CSV that maps cleanly onto our art/ink grids.
+
+The runtime format below stays the build artifact; `.xp` sources are committed
+alongside it so the art remains editable.
 
 ## 3. Sprite format
 
@@ -133,12 +170,25 @@ caps on their top row. Edges are what make regions read as *surfaces*.
 
 ## 6. Authoring rules
 
-- **Printable 7-bit ASCII only.** Frame vocabulary: `. ' \` , : ; - = _ | / \ ( ) [ ] < > ^ ~ * # % & @`
-- **Consistent light.** Highlights on the top and left, shadow on the bottom
-  and right, everywhere.
-- **Density ramp** for volume, dark to light: `` `.:-=+*#%@ ``
-- **Silhouette first.** If it isn't recognisable at one colour, more colours
-  won't save it.
+Distilled from [Stone Story RPG's ASCII tutorial](https://stonestoryrpg.com/ascii_tutorial.html),
+which is the best published source on making this look good:
+
+- **Material language.** Fix a vocabulary where specific symbol combinations
+  consistently mean metal, stone, energy, organic. Players absorb it without
+  being taught, and it is what makes art read as *objects* rather than texture.
+  Define it once, apply it everywhere.
+- **Anti-alias edges** with blend characters — half-blocks and lighter density
+  glyphs along a boundary soften the step between shapes.
+- **Dither for tone.** Space marks out to get gradation; `█ ▓ ▒ ░` is the
+  controllable ramp, punctuation the fine one.
+- **Negative space is form.** Gaps do as much work as marks.
+- **Ground your sprites.** A solid dark block beneath a figure reads as shadow
+  and pulls it off the terrain.
+- **Consistent light** — highlights top-left, shadow bottom-right, everywhere.
+- **Silhouette first.** If it is not recognisable in one colour, more colours
+  will not save it.
+- **Subtractive animation** — build the full frame, then remove elements
+  progressively to produce motion.
 - **Legibility is the tie-breaker.** Any sprite that makes enemy count or tower
   state harder to read gets simplified. This overrides every rule above.
 
@@ -153,11 +203,21 @@ caps on their top row. Edges are what make regions read as *surfaces*.
 
 ## 8. Still to do
 
-The current library is a **direction proof, not a finished set**. Outstanding:
+**Everything currently in `public/assets/` is obsolete.** It was drawn at 7×4
+against a 95-glyph set with a 64-colour cap, by hand, in JSON. All three
+constraints are gone. Treat it as a format demonstration, not as art.
 
-- Enemy art is the weakest part; large and boss classes need real drawings.
-- Terrain needs biome variants and better rock formation shapes.
-- No animation frames yet — the format supports named frames, none are authored.
-- No projectiles, impacts, death animations or UI chrome.
-- Directional muzzle overlay: a single cell drawn on the sprite perimeter in the
+Outstanding:
+
+- Redraw every sprite in REXPaint at the new size classes, with the full
+  character set and the material language defined.
+- Define the material language itself — which glyph combinations mean metal,
+  stone, energy, organic — before drawing anything else.
+- Terrain: biome palettes, rock formation shapes, road surface variants.
+- Animation frames. The format supports named frames; none are authored.
+- Effects: projectiles, impacts, explosions, death animations. Deferred past M1
+  by decision, but the subcell coordinate system that makes them fluid ships in
+  M1 (ARCHITECTURE §4a).
+- UI chrome: panels, borders, the tech tree screen.
+- Directional muzzle overlay — a single cell on the sprite perimeter in the
   firing direction, giving the read of a rotating turret for almost nothing.

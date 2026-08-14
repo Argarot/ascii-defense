@@ -83,7 +83,8 @@ space.
 ### 5.2 Fixed footprint, growing intricacy
 
 A tower is a **drawing**, not a character with decoration around it. Standard
-towers occupy **7 × 4 cells**; heavies 9 × 5. **Footprints never change.**
+towers occupy **12 × 10 cells** (96 × 80 px); heavies 16 × 14. Cells are square,
+so no aspect correction applies. **Footprints never change.**
 
 Tiering up is expressed entirely through the artwork — detail density, frame
 elaboration, path-coloured accents and brightness all climb, while the
@@ -99,9 +100,9 @@ in [ASSETS.md](ASSETS.md) and in `public/assets/`.
 cost of occupancy re-checking, a UI/engine contract, and a "cannot upgrade,
 neighbour in the way" failure mode.*
 
-**Consequence for the board:** 7 × 4 towers need room for 20–25 placements,
-which is roughly a **160 × 50 cell** viewport. That is comfortable on a desktop
-monitor and is a large part of why this game is desktop-only.
+**Consequence for the board:** the grid is **240 × 135 cells at 8 × 8 px**
+(1920 × 1080). That is a full desktop display, and is why the game is
+desktop-only — a consequence of the art direction rather than a preference.
 
 ### 5.3 Families
 
@@ -181,9 +182,9 @@ balance bugs breed. Traits expand only once the small matrix is proven.
 
 Flyers are the structural counter to over-mazing and must exist from M1.
 
-Enemies are drawn sprites too, and **size class carries threat**: 2×1 for swarm
-units, 3×2 for line infantry and flyers, 5×3 for armoured, 11×6 for bosses. You
-should be able to read what is coming from the silhouettes alone.
+Enemies are drawn sprites too, and **size class carries threat**: 4×4 for swarm
+units, 6×6 for line infantry and flyers, 10×10 for armoured, 20×18 for bosses.
+You should be able to read what is coming from the silhouettes alone.
 
 ## 8. Difficulty: calibrated, not derived
 
@@ -270,20 +271,36 @@ The fixed 20 Hz tick and seeded RNG are already paid for. What they buy:
 This is not an implementation detail. It is one of the most valuable things the
 architecture gives us and should be surfaced in the UI.
 
-## 12. Art direction
+## 12. Art direction and effects
 
 Specified separately, in [ASSETS.md](ASSETS.md), and implemented as a runtime
-asset library under `public/assets/`. **This document names no glyphs and no
-colours** — if it did, the library would not be the source of truth.
+asset library. **This document names no glyphs and no colours** — if it did, the
+library would not be the source of truth.
 
-What is settled: sprites are parallel art/ink grids resolved through a role
-palette; one drawing serves all three upgrade paths by recolouring; terrain is
-sparse and edge-treated rather than randomly filled; all UI chrome draws through
-the same `Term` as the board; and legibility beats spectacle in every tie.
+Settled: a **240 × 135 grid of square 8 × 8 px cells**, rendered by WebGL2 with
+24-bit colour per cell; the [unscii-8](https://github.com/viznut/unscii) bitmap
+font (public domain); a character set of ASCII plus Latin-1 plus **block
+elements and box drawing** — half-blocks effectively double resolution, and
+`█ ▓ ▒ ░` gives a controllable density ramp. Strictly speaking this makes the
+game textmode art rather than ASCII, which is a deliberate trade of purity for
+the art being good. Sprites are authored in **REXPaint** and imported.
 
-The current library is a **direction proof, not a finished set**. Enemy art is
-the weakest part, and animation, projectiles and UI chrome are unauthored. Full
-art pass is scheduled in M4+.
+### Effects — deferred, but not designed away
+
+Projectiles, impacts, explosions and tower animation were **absent** from
+earlier drafts, not merely under-specified. They ship after M1, following
+Cogmind's model: effect definitions in hot-reloadable data files, a template
+system generating recoloured variants, and duration scaled by importance
+(100–200 ms for light hits, 300–1500 ms for heavy weapons).
+
+**One piece cannot wait.** Cogmind positions particles on a 9×9 subcell grid
+inside every cell, which is why its effects flow instead of snapping. Entity
+positions are therefore stored in **subcell units from M1** — retrofitting that
+later would mean rewriting movement, collision and rendering. Reserve the shape,
+ship one value; the same pattern as ore tiers and `metaPowerIndex`.
+
+The existing asset library is now **obsolete** — drawn at the old size against a
+95-glyph set with a 64-colour cap. It stands only as a format demonstration.
 
 ## 13. Out of scope
 

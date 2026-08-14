@@ -121,29 +121,111 @@ Vite's `build.assetsDir` is set to `build/` so bundled output lands in
 `dist/build/` and `dist/assets/` stays purely the art library. Without that both
 share `dist/assets/` and a bundled file could shadow a sprite.
 
-## 4. Rendering — measured, not assumed
+## 4. Rendering — WebGL2, and why canvas 2D was rejected
 
-Benchmarked in-browser before the approach was chosen. 120×50 grid (6,000
-cells), 400 moving entities:
+**The first benchmark measured the wrong workload.** It used ~13% cell churn and
+16 colours, which flattered dirty-cell diffing and produced 0.93 ms/frame. The
+actual target — dense grid, heavy animation, true per-cell colour — changes most
+of the screen every frame, and diffing stops helping entirely.
 
-| Strategy | ms/frame | fps ceiling |
-|---|---:|---:|
-| `fillText` per cell, full grid | 17.22 | 58 |
-| Glyph atlas blit, full grid | 15.92 | 63 |
-| **Glyph atlas + dirty cells** | **0.93** | **1,073** |
+Re-measured with 100% cell churn, 224 glyphs, 24-bit per-cell colour,
+`gl.finish()` for honest GPU timing, and canvases removed from the compositor:
 
-Shipped in `packages/term`. Every (glyph, colour) pair is rasterised once into
-an offscreen atlas; the frame loop diffs a front and back cell buffer and blits
-only what changed. `term.put(x, y, glyph, fg, bg)` is the whole API, which is
-why a terminal backend could replace it later without the game noticing.
+| Grid | Cells | Canvas 2D (dirty) | Canvas 2D (full) | **WebGL2** |
+|---|---:|---:|---:|---:|
+| 120×50 | 6,000 | 38.0 ms | 34.9 ms | **0.51 ms** |
+| 240×90 | 21,600 | 118.8 ms | 125.1 ms | **1.32 ms** |
+| 320×120 | 38,400 | 212.1 ms | 203.2 ms | **2.36 ms** |
+| 400×150 | 60,000 | 333.4 ms | 270.5 ms | 26.9 ms |
+
+Canvas 2D fails at the *smallest* useful grid: 38 ms is 26 fps at 6,000 cells
+before any game logic runs. Verified the GL path actually draws rather than
+merely running fast — `readPixels` reports 40.7% ink and 59,019 distinct
+colours. The knee at 60,000 cells is real and undiagnosed; 320×120 at 2.36 ms
+leaves ample headroom, so it does not block us.
+
+**The colour ceiling is the structural argument.** A canvas atlas rasterises
+every glyph *per colour*, so it caps at ~64 colours — every canvas run in the
+benchmark reported the cap hit. WebGL carries colour as a per-instance vertex
+attribute, so 24-bit colour per cell costs nothing. Rich colour is simply not
+affordable on the canvas backend.
+
+### Architecture
+
+Following [xterm.js's WebGL renderer](https://github.com/xtermjs/xterm.js/pull/1790):
+
+- Glyphs rasterised **white** into one atlas texture, alpha as coverage. Colour
+  is never baked in.
+- One static unit quad, drawn with `drawArraysInstanced` — one instance per cell.
+- Per-instance attributes packed into a `Float32Array`: cell x/y, glyph index,
+  fg rgb, bg rgb. Uploaded with `bufferSubData` once per frame.
+- Fragment shader: `mix(bg, fg, coverage)`.
+
+No dirty-cell diffing. At these speeds it is unnecessary complexity, and it
+actively misleads about worst-case cost.
+
+**API is unchanged.** `put / write / clear / flush / toText` survive from the
+canvas implementation; only the guts are replaced. `toText()` remains valuable
+for assertable screen state in tests.
+
+### Font
+
+**[unscii-8](https://github.com/viznut/unscii)** — 8×8 bitmap Unicode font,
+*"Public Domain (or CC-0)"* (the GPL exception covers only `unscii-16-full` and
+Unifont-derived files, which we do not use). Ships as **woff**.
+
+Chosen because it is derived from C64, Amiga, CPC and IBM PC ROM fonts, so block
+elements and box drawing are first-class; and because bitmap fonts stay crisp at
+8 px where antialiased vector fonts go mushy. Bitmap fonts must be used at
+native size or integer multiples — which fixes the cell to **8×8 px**.
+
+**Cells are square**, which removes the 1:1.7 aspect correction from every piece
+of art authoring: what you draw is what you see.
+
+### Grid
+
+**240 × 135 cells at 8×8 px = 1920 × 1080.** 240 columns is the maximum at
+native 8 px on a 1920-wide display; usable area is nearer 232×128 after browser
+chrome. Roughly 32,400 cells, measured at ~2 ms/frame fully animated.
+
+## 4a. Subcell coordinates — built in M1, used later
+
+Effects are deferred past M1, but the coordinate system they need is not.
+
+Cogmind positions particles on a **9×9 subcell grid inside every cell** — a
+100×100 map carries a 900×900 positioning grid — which is why its effects move
+fluidly instead of snapping character to character. Retrofitting that into a
+sim whose entities live at cell resolution is a rewrite of movement, collision
+and rendering.
+
+So: **the simulation stores entity positions in subcell units from M1**, and the
+renderer divides down when drawing. Costs almost nothing now; makes the effects
+system in M2+ additive rather than invasive. Same pattern as per-tier Ore
+storage and `metaPowerIndex` — reserve the shape, ship one value.
+
+Effect *definitions* will follow Cogmind's model when built: external
+hot-reloadable data files, a template system generating recoloured variants, and
+duration scaled by importance (100–200 ms for light hits, 300–1500 ms for heavy
+weapons and explosions).
 
 ## 5. Occupancy and footprints
 
-Towers are 7×4 (heavies 9×5, walls 3×2) and **never change size**. A
-`Uint16Array` over the board maps each cell to its owner id, or 0.
+Cells are square, so footprints are stated in plain cells with no aspect
+correction. Sizes **never change** with tier.
 
-Sprite sizes drive board size: fitting 20–25 towers needs roughly a 160×50 cell
-viewport (~1440×750 px). Desktop only, by consequence rather than by choice.
+| Class | Cells | Pixels |
+|---|---|---|
+| Wall | 4 × 4 | 32 × 32 |
+| Tower | 12 × 10 | 96 × 80 |
+| Heavy tower | 16 × 14 | 128 × 112 |
+| Enemy, small | 4 × 4 | 32 × 32 |
+| Enemy, medium | 6 × 6 | 48 × 48 |
+| Enemy, large | 10 × 10 | 80 × 80 |
+| Boss | 20 × 18 | 160 × 144 |
+
+A `Uint16Array` over the board maps each cell to its owner id, or 0. With a
+~240×105 play area (reserving rows for UI), 12×10 towers plus spacing give
+roughly 160 placement slots — ample for 20–25 towers.
 
 It is the single source of truth for buildability, click targeting and
 pathability. Placement is a rectangle scan; no per-tower geometry maths exists

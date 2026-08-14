@@ -19,10 +19,21 @@ explicitly rather than left as conversational context. Start with
 **Live: <https://argarot.github.io/ascii-defense/>** — verified by loading the
 deployed page and confirming it renders, not by trusting a green check.
 
-## M1 — The fun test *(4–5 sessions)*
+## M1 — The fun test *(6–8 sessions)*
 
 One battle. No run structure. Everything needed to answer "is this fun?"
 
+*Re-estimated up from 4–5. The renderer is being rebuilt on WebGL2, the art
+pipeline now runs through an external tool, and subcell coordinates touch the
+sim from the start. All three were decided after the first estimate.*
+
+- **WebGL2 renderer** replacing the canvas `Term`: instanced quads, white glyph
+  atlas, 24-bit per-cell colour. The `put/write/clear/flush/toText` API is
+  preserved; only the guts change. Canvas 2D measured 38 ms/frame under real
+  animation load and is not viable — see ARCHITECTURE §4.
+- **unscii-8** vendored (public domain), 8×8 square cells, 240×135 grid.
+- **`tools/rexpaint-import`** — REXPaint XML/CSV → runtime sprite JSON.
+- **Subcell entity coordinates** from day one — ARCHITECTURE §4a.
 - Workspace restructure into `packages/*`; lint rules for `no-Math.random` and
   `engine-must-not-import-DOM`.
 - Seeded RNG with named streams; fixed 20 Hz tick; pause / 1× / 2× / 4×.
@@ -86,6 +97,7 @@ this fun and do I want more of it?" is yes.
 
 | Item | Sessions |
 |---|---|
+| **Effects system** — subcell particles, projectiles, impacts, explosions, tower animation; hot-reloadable definitions, templating, importance-scaled timing | 2–3 |
 | Branching node map, shops, forges, events | 2–3 |
 | Act bosses with unique mechanics | 1–2 |
 | Towers 6–9 (Acid, Arc Coil, Bastion, Rail Lance) | 2–3 |
@@ -102,9 +114,9 @@ this fun and do I want more of it?" is yes.
 
 | | Sessions |
 |---|---|
-| M1–M3 — complete playable game | **9–12** |
-| M4+ — everything else | +8–15 |
-| **Full scope as described** | **17–27** |
+| M1–M3 — complete playable game | **11–15** |
+| M4+ — everything else | +10–18 |
+| **Full scope as described** | **21–33** |
 
 Two earlier numbers were wrong and are corrected here. The original 11–15
 underestimated the tuning tail: the last 20% of balance work across 100+
