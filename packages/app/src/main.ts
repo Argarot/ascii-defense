@@ -18,7 +18,18 @@ import {
 } from '@ascii-defense/engine';
 import { BoardView, CELL_W, CELL_H, role } from '@ascii-defense/view';
 import type { CellRef } from '@ascii-defense/view';
+import { validateEnemies, validateTowers } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
+import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
+import towersJson from '@ascii-defense/content/assets/towers/roster.json';
+
+// Content enters the app validated or not at all (ARCHITECTURE sec 8).
+function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
+  if (!r.ok) throw new Error(`${what} failed validation: ` + r.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
+  return r.value;
+}
+const ENEMY_DEFS = must(validateEnemies.check(enemiesJson), 'enemies roster').enemies;
+const TOWER_DEFS = must(validateTowers.check(towersJson), 'towers roster').towers;
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '5';
@@ -86,8 +97,9 @@ async function main(): Promise<void> {
       cellsW: mapX * TILE_SIZE,
       cellsH: mapY * TILE_SIZE,
       map,
+      enemyDefs: ENEMY_DEFS,
+      towerDefs: TOWER_DEFS,
       spawnEveryTicks: 20,
-      speed: 0.08,
     });
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
@@ -102,14 +114,33 @@ async function main(): Promise<void> {
     return out;
   };
 
+  const describeTower = (cell: CellRef | null): string | undefined => {
+    if (!cell) return undefined;
+    const t = sim.towerAt(cell.x, cell.y);
+    if (!t) return undefined;
+    const def = sim.towerDef(t);
+    const dps = ((def.projectile.damage / def.fireEveryTicks) * TICK_HZ).toFixed(1);
+    return `${def.name ?? def.id} \u00b7 kills ${t.kills} \u00b7 dmg ${def.projectile.damage} \u00b7 ${dps}/s \u00b7 range ${def.range} \u00b7 X sells`;
+  };
+
   const draw = (): void => {
     const speed = SPEEDS[speedIdx];
+    const towers: { x: number; y: number }[] = [];
+    for (const t of sim.towers) if (t) towers.push({ x: t.cellX, y: t.cellY });
+    const projectiles: { x: number; y: number }[] = [];
+    for (let i = 0; i < sim.projX.length; i++) {
+      if (sim.projAlive[i]) projectiles.push({ x: sim.projX[i], y: sim.projY[i] });
+    }
     view.render({
       hover,
       selected,
       enemies: collectEnemies(),
+      towers,
+      projectiles,
+      hoverBuildable: hover !== null && sim.canBuildAt(hover.x, hover.y),
+      inspectorOverride: describeTower(selected) ?? describeTower(hover),
       showGrid,
-      status: `breaches ${sim.breaches} \u00b7 ${speed === 0 ? 'PAUSED (space)' : `${speed}x`} \u00b7 L=${sim.flow.L}`,
+      status: `kills ${sim.kills} \u00b7 core -${sim.coreDamage} \u00b7 ${speed === 0 ? 'PAUSED (space)' : `${speed}x`} \u00b7 L=${sim.flow.L}`,
     });
     dirty = false;
   };
@@ -144,7 +175,14 @@ async function main(): Promise<void> {
   });
   term.canvas.addEventListener('click', (e) => {
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
-    selected = same(cell, selected) ? null : cell; // click again to deselect
+    // Build on buildable ground (free until the economy lands, session B);
+    // anything else is selection.
+    if (cell && sim.canBuildAt(cell.x, cell.y)) {
+      sim.buildTower(cell.x, cell.y, TOWER_DEFS[0].id);
+      selected = cell;
+    } else {
+      selected = same(cell, selected) ? null : cell; // click again to deselect
+    }
     dirty = true;
   });
   window.addEventListener('keydown', (e) => {
@@ -158,6 +196,9 @@ async function main(): Promise<void> {
     if (e.key === '2') { speedIdx = 2; dirty = true; }
     if (e.key === '3') { speedIdx = 3; dirty = true; }
     if (e.key === 'g' || e.key === 'G') { showGrid = !showGrid; dirty = true; }
+    if ((e.key === 'x' || e.key === 'X' || e.key === 'Delete') && selected) {
+      if (sim.sellTower(selected.x, selected.y)) dirty = true;
+    }
     if (e.key === 'Escape') {
       selected = null;
       dirty = true;
@@ -191,11 +232,17 @@ async function main(): Promise<void> {
   // Debug handle for headless verification (the browser pane throttles rAF,
   // see CONTRIBUTING). Steps the sim and redraws on demand; harmless in prod.
   (globalThis as Record<string, unknown>).__ad = {
-    step: (n: number): { breaches: number; alive: number } => {
+    step: (n: number): { breaches: number; alive: number; kills: number; coreDamage: number } => {
       for (let i = 0; i < n; i++) sim.tick();
       draw();
-      return { breaches: sim.breaches, alive: sim.aliveCount() };
+      return { breaches: sim.breaches, alive: sim.aliveCount(), kills: sim.kills, coreDamage: sim.coreDamage };
     },
+    build: (x: number, y: number): boolean => {
+      const ok = sim.buildTower(x, y, TOWER_DEFS[0].id);
+      draw();
+      return ok;
+    },
+    canBuild: (x: number, y: number): boolean => sim.canBuildAt(x, y),
     enemies: collectEnemies,
   };
 }
