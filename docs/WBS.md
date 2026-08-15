@@ -92,9 +92,9 @@ battery; sim deterministic cross-machine against the live deploy.
 - [~] 1.4.2 Bolt Turret shipped with stats as content; projectile spec scaffolding (homing/pierce/explosive/effects) reserved per Daniil *(PRs #16-17)*. Mortar, Frost, Refinery: sessions C-D.
 - [~] 1.4.3 Enemies: SoA storage ✓, hp/speed/damage as content ✓, 2 defs (grunt, skitter) ✓, movement on flow field ✓ *(PRs #16-17)*. Damage types + full trait matrix + 4 more defs: session C. ~~flyers~~ cut.
 - [x] 1.4.4 Targeting (first-on-path, deterministic ties) + subcell projectiles + damage resolution + kill credit. Cross-content CI rule: projectiles must outrun enemies. *(PR #17)*
-- [ ] 1.4.5 Waves, Scrap, lives, win/lose; wave budgets from analytic prior with `L` offset `(L/L_base)^0.5`.
+- [~] 1.4.5 **Scrap live** (starting pool, costs gate builds, 70% sell refund, kill bounties; PR #19). Waves, Core health as lives, win/lose, budget curves: session C.
 - [ ] 1.4.6 Refinery economy: Yield → Scrap anywhere; Extraction → Ore on ore cells only; Ore banked per tier.
-- [~] 1.4.7 **HUD** (first-class): build palette, tower inspector with crosspath legality, tile hand, wave state, speed controls. *(early slice shipped ahead of schedule, PR #9: BoardView in `view`, pixel→cell mapping, hover highlight, click-select with brackets, cell inspector line)*
+- [~] 1.4.7 **HUD**: bottom panel at 2× font (PR #20) - SCRAP/status, inspector, build palette w/ affordability, F/L/C/W priority selector (PR #19), range overlay + hover/selection (PRs #9, #18). Remaining: upgrade-path UI (session C), tile hand n/a (cut with pivot).
 - [ ] 1.4.8 Replay: `{version, seed, contentHash, inputs}` record/playback; golden state-hash test (2,000 ticks).
 
 ### 1.5 Phase 5 — smoke harness *(~0.5–1 session)*
