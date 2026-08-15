@@ -1,12 +1,10 @@
 {
-  "id": "tiles.mini",
-  "note": "5x5-cell tiles (40x40 px). No block glyphs anywhere. Terrain uses the classic ASCII luminance ramp - glyph picked by density - with colour carrying the tone. Shading is per-row colour, not geometry.",
-  "tile": 5,
+  "id": "towers.bysize",
+  "note": "Tower and enemy art keyed by cell size in glyphs. A tower occupies exactly one cell. Mock art - the real pass happens in REXPaint once the material language is settled.",
   "inkMap": {
     ".": null,
     "f": "tower.frame",
     "b": "tower.body",
-    "e": "tower.edge",
     "c": "PATH",
     "w": "tower.core",
     "B": "enemy.body",
@@ -14,47 +12,28 @@
     "Y": "enemy.eye"
   },
   "towers": {
-    "bolt": {
-      "art": [" ,-, ", "/·:·\\", "¦[O]¦", "\\·:·/", " `-´ "],
-      "ink": [".fff.", "fbcbf", "fcwcf", "fbcbf", ".fff."]
+    "5": {
+      "bolt":     { "art": [" ,-, ", "/·:·\\", "¦[O]¦", "\\·:·/", " `-´ "], "ink": [".fff.", "fbcbf", "fcwcf", "fbcbf", ".fff."] },
+      "mortar":   { "art": [" \\|/ ", "/(=)\\", "¦(°)¦", "\\·:·/", " `-´ "], "ink": [".ccc.", "fbcbf", "fcwcf", "fbbbf", ".fff."] },
+      "frost":    { "art": ["\\ * /", " ·¤· ", "*(O)*", " ·¤· ", "/ * \\"], "ink": ["c.c.c", ".fcf.", "cbwbc", ".fcf.", "c.c.c"] },
+      "refinery": { "art": [" -¤- ", "/[¤]\\", "¦(§)¦", "\\·_·/", " `-´ "], "ink": [".fcf.", "fbcbf", "fcwcf", "fbbbf", ".fff."] }
     },
-    "mortar": {
-      "art": [" \\|/ ", "/(=)\\", "¦(°)¦", "\\·:·/", " `-´ "],
-      "ink": [".ccc.", "fbcbf", "fcwcf", "fbbbf", ".fff."]
+    "4": {
+      "bolt":     { "art": [",--,", "|oO|", "|==|", "`--´"], "ink": ["ffff", "fcwf", "fbbf", "ffff"] },
+      "mortar":   { "art": [",\\/,", "|()|", "|##|", "`--´"], "ink": ["fccf", "fcwf", "fbbf", "ffff"] },
+      "frost":    { "art": ["\\**/", "|¤¤|", "|¤¤|", "/**\\"], "ink": ["cccc", "fcwf", "fwcf", "cccc"] },
+      "refinery": { "art": [",==,", "|$$|", "|==|", "`--´"], "ink": ["fccf", "fcwf", "fbbf", "ffff"] }
     },
-    "frost": {
-      "art": ["\\ * /", " ·¤· ", "*(O)*", " ·¤· ", "/ * \\"],
-      "ink": ["c.c.c", ".fcf.", "cbwbc", ".fcf.", "c.c.c"]
-    },
-    "refinery": {
-      "art": [" -¤- ", "/[¤]\\", "¦(§)¦", "\\·_·/", " `-´ "],
-      "ink": [".fcf.", "fbcbf", "fcwcf", "fbbbf", ".fff."]
+    "3": {
+      "bolt":     { "art": [",-,", "|O|", "`-´"], "ink": ["fff", "cwc", "fff"] },
+      "mortar":   { "art": ["\\|/", "|@|", "`-´"], "ink": ["ccc", "cwc", "fff"] },
+      "frost":    { "art": ["\\*/", "¤O¤", "/*\\"], "ink": ["ccc", "cwc", "ccc"] },
+      "refinery": { "art": ["-¤-", "|$|", "`-´"], "ink": ["fcf", "cwc", "fff"] }
     }
   },
-  "enemy": {
-    "art": ["(o)", "/^\\"],
-    "ink": ["EYE", "BBB"]
-  },
-  "terrain": {
-    "ground": {
-      "ramp": [" ", " ", " ", " ", " ", "'", "`", ".", ","],
-      "top": "#3a4a5c", "mid": "#26323e", "bot": "#161e27"
-    },
-    "road": {
-      "ramp": [":", ";", ":", "·", ":", "=", ":"],
-      "top": "#8ba3bd", "mid": "#54677e", "bot": "#33414f"
-    },
-    "rock": {
-      "ramp": ["#", "%", "@", "&", "#", "%"],
-      "top": "#7b8ea3", "mid": "#3f4b59", "bot": "#242c36"
-    },
-    "ore": {
-      "ramp": ["¤", "*", "·", "¤", "'"],
-      "top": "#ffd15c", "mid": "#c69218", "bot": "#6b5010"
-    },
-    "spawn": {
-      "ramp": ["»", ":", "»", ";", "·"],
-      "top": "#ff8080", "mid": "#a34040", "bot": "#4a1f1f"
-    }
+  "enemies": {
+    "5": { "art": ["(o)", "/^\\"], "ink": ["EYE", "BBB"] },
+    "4": { "art": ["(o)", "/^\\"], "ink": ["EYE", "BBB"] },
+    "3": { "art": ["(o)"], "ink": ["EYE"] }
   }
 }
