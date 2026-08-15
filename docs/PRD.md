@@ -146,13 +146,18 @@ A tower occupies **exactly one cell** and never changes size. This kills, by
 construction, every "can I fit this here" and "can I upgrade this" failure mode
 we previously designed mitigations for.
 
-### 5.2 Crosspathing
+### 5.2 Upgrade tiers (replaced crosspathing, 2026-08-15)
 
-Three upgrade paths of five tiers. **One path may reach tier 5, a second tier 2,
-the third stays at 0.** Eight towers plus that rule is a large build space.
+**Three tiers per tower; each tier is an either/or choice; a committed choice
+is final and locks out its sibling; tiers unlock in order.** 2+4+8 = 14
+distinct versions per tower, each visually distinct rather than a number.
+*(Replaced the 5/2/0 crosspathing model, which suited slot-scarce TDs; with
+generated maps, build depth comes from which towers and which forks, and the
+either/or fork is directly renderable as a tree - Daniil's call.)*
 
-Tiering changes the artwork within the cell — frame detail, accent colour,
-brightness — never the footprint.
+Tiering changes the artwork within the cell - frame detail, accent colour,
+brightness - never the footprint. The Core follows the same tier structure
+after its type choice (sec 4.5).
 
 ### 5.3 Families
 

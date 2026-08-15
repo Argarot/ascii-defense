@@ -7,28 +7,20 @@
       "cost": 20,
       "range": 6,
       "fireEveryTicks": 14,
+      "attack": "projectile",
       "projectile": { "damage": 8, "speed": 0.5, "homing": true },
-      "paths": [
-        { "name": "Velocity", "tiers": [
-          { "cost": 15, "mods": { "fireEveryTicks": -2 } },
-          { "cost": 25, "mods": { "fireEveryTicks": -2 } },
-          { "cost": 40, "mods": { "fireEveryTicks": -2 } },
-          { "cost": 60, "mods": { "fireEveryTicks": -2 } },
-          { "cost": 90, "mods": { "fireEveryTicks": -2 } }
+      "tiers": [
+        { "choices": [
+          { "name": "Rifled", "cost": 25, "mods": { "damage": 6 } },
+          { "name": "Gas Seals", "cost": 25, "mods": { "fireEveryTicks": -4 } }
         ] },
-        { "name": "Caliber", "tiers": [
-          { "cost": 15, "mods": { "damage": 4 } },
-          { "cost": 25, "mods": { "damage": 5 } },
-          { "cost": 40, "mods": { "damage": 7 } },
-          { "cost": 60, "mods": { "damage": 10 } },
-          { "cost": 90, "mods": { "damage": 14 } }
+        { "choices": [
+          { "name": "Long Scope", "cost": 55, "mods": { "range": 2.5, "damage": 4 } },
+          { "name": "Autoloader", "cost": 55, "mods": { "fireEveryTicks": -4, "damage": 3 } }
         ] },
-        { "name": "Optics", "tiers": [
-          { "cost": 15, "mods": { "range": 1 } },
-          { "cost": 25, "mods": { "range": 1 } },
-          { "cost": 40, "mods": { "range": 1.5 } },
-          { "cost": 60, "mods": { "range": 1.5 } },
-          { "cost": 90, "mods": { "range": 2 } }
+        { "choices": [
+          { "name": "Railbore", "cost": 120, "mods": { "damage": 22 } },
+          { "name": "Hailstorm", "cost": 120, "mods": { "fireEveryTicks": -4, "damage": 8 } }
         ] }
       ]
     },
@@ -38,28 +30,20 @@
       "cost": 35,
       "range": 7,
       "fireEveryTicks": 40,
+      "attack": "projectile",
       "projectile": { "damage": 10, "speed": 0.35, "homing": true, "explosive": true, "explodeRadius": 1.2 },
-      "paths": [
-        { "name": "Payload", "tiers": [
-          { "cost": 20, "mods": { "damage": 5 } },
-          { "cost": 35, "mods": { "damage": 7 } },
-          { "cost": 55, "mods": { "damage": 10 } },
-          { "cost": 80, "mods": { "damage": 14 } },
-          { "cost": 120, "mods": { "damage": 20 } }
+      "tiers": [
+        { "choices": [
+          { "name": "Heavy Shells", "cost": 30, "mods": { "damage": 8 } },
+          { "name": "Wide Burst", "cost": 30, "mods": { "explodeRadius": 0.5 } }
         ] },
-        { "name": "Cadence", "tiers": [
-          { "cost": 20, "mods": { "fireEveryTicks": -4 } },
-          { "cost": 35, "mods": { "fireEveryTicks": -4 } },
-          { "cost": 55, "mods": { "fireEveryTicks": -5 } },
-          { "cost": 80, "mods": { "fireEveryTicks": -5 } },
-          { "cost": 120, "mods": { "fireEveryTicks": -6 } }
+        { "choices": [
+          { "name": "Siege Load", "cost": 65, "mods": { "damage": 12, "explodeRadius": 0.3 } },
+          { "name": "Drum Feed", "cost": 65, "mods": { "fireEveryTicks": -12 } }
         ] },
-        { "name": "Ordnance", "tiers": [
-          { "cost": 20, "mods": { "explodeRadius": 0.3 } },
-          { "cost": 35, "mods": { "explodeRadius": 0.3 } },
-          { "cost": 55, "mods": { "explodeRadius": 0.4 } },
-          { "cost": 80, "mods": { "explodeRadius": 0.4 } },
-          { "cost": 120, "mods": { "explodeRadius": 0.6 } }
+        { "choices": [
+          { "name": "Bunker Buster", "cost": 140, "mods": { "damage": 30 } },
+          { "name": "Carpet Fire", "cost": 140, "mods": { "explodeRadius": 0.8, "fireEveryTicks": -8 } }
         ] }
       ]
     },
@@ -67,30 +51,22 @@
       "id": "frost",
       "name": "Frost Emitter",
       "cost": 25,
-      "range": 4,
-      "fireEveryTicks": 18,
-      "projectile": { "damage": 2, "speed": 0.5, "homing": true, "applyEffect": "slow", "slowMul": 0.55, "slowTicks": 30 },
-      "paths": [
-        { "name": "Chill", "tiers": [
-          { "cost": 15, "mods": { "slowTicks": 10 } },
-          { "cost": 25, "mods": { "slowTicks": 10 } },
-          { "cost": 40, "mods": { "slowTicks": 15 } },
-          { "cost": 60, "mods": { "slowTicks": 15 } },
-          { "cost": 90, "mods": { "slowTicks": 20 } }
+      "range": 3.5,
+      "fireEveryTicks": 24,
+      "attack": "pulse",
+      "projectile": { "damage": 3, "speed": 1, "applyEffect": "slow", "slowMul": 0.55, "slowTicks": 26 },
+      "tiers": [
+        { "choices": [
+          { "name": "Deep Chill", "cost": 25, "mods": { "slowTicks": 14 } },
+          { "name": "Ice Shards", "cost": 25, "mods": { "damage": 4 } }
         ] },
-        { "name": "Shatter", "tiers": [
-          { "cost": 15, "mods": { "damage": 3 } },
-          { "cost": 25, "mods": { "damage": 4 } },
-          { "cost": 40, "mods": { "damage": 6 } },
-          { "cost": 60, "mods": { "damage": 8 } },
-          { "cost": 90, "mods": { "damage": 12 } }
+        { "choices": [
+          { "name": "Wide Field", "cost": 55, "mods": { "range": 1.5 } },
+          { "name": "Rapid Cycle", "cost": 55, "mods": { "fireEveryTicks": -8 } }
         ] },
-        { "name": "Field", "tiers": [
-          { "cost": 15, "mods": { "range": 0.5 } },
-          { "cost": 25, "mods": { "range": 0.5 } },
-          { "cost": 40, "mods": { "range": 1 } },
-          { "cost": 60, "mods": { "range": 1 } },
-          { "cost": 90, "mods": { "range": 1.5 } }
+        { "choices": [
+          { "name": "Absolute Zero", "cost": 120, "mods": { "slowTicks": 30, "damage": 6 } },
+          { "name": "Shatterfield", "cost": 120, "mods": { "damage": 16 } }
         ] }
       ]
     }

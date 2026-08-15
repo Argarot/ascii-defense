@@ -16,12 +16,15 @@ import type { GLTerm } from '@ascii-defense/render';
 import { PRIORITIES, type Priority } from '@ascii-defense/engine';
 import { role } from '../palette';
 
-export interface HudPathInfo {
+export interface HudChoiceInfo {
   name: string;
-  tier: number;
-  /** Next tier's cost, or null when maxed/crosspath-locked. */
-  cost: number | null;
+  cost: number;
+  state: 'chosen' | 'rejected' | 'available' | 'locked';
   affordable: boolean;
+}
+
+export interface HudTierInfo {
+  choices: readonly HudChoiceInfo[];
 }
 
 export interface HudTowerInfo {
@@ -31,7 +34,7 @@ export interface HudTowerInfo {
   dps: string;
   range: number;
   priority: Priority;
-  paths: readonly HudPathInfo[];
+  tiers: readonly HudTierInfo[];
 }
 
 export interface HudState {
@@ -61,7 +64,7 @@ export interface HudState {
 export type HudAction =
   | { kind: 'priority'; value: Priority }
   | { kind: 'build'; index: number }
-  | { kind: 'upgrade'; path: number };
+  | { kind: 'choose'; tier: number; option: number };
 
 interface Region {
   row: number;
@@ -127,17 +130,29 @@ export class HudPanel {
       term.write(0, 2, 'THE CORE HAS FALLEN \u00b7 press R for a new run', role('enemy.fast'));
     } else if (s.selectedTower) {
       const t = s.selectedTower;
-      const lead = `${t.name} \u00b7 ${t.dmg} dmg \u00b7 ${t.dps}/s \u00b7 rng ${t.range} \u00b7 kills ${t.kills} \u00b7 `;
+      const lead = `${t.name} \u00b7 ${t.dmg} dmg \u00b7 ${t.dps}/s \u00b7 rng ${t.range} \u00b7 `;
       term.write(0, 2, lead, role('ui.text'));
       let x = lead.length;
-      t.paths.forEach((p, pi) => {
-        const label =
-          p.cost === null ? `[${p.name} ${p.tier}/5 \u2014]` : `[${p.name} ${p.tier}/5 $${p.cost}]`;
-        const colour =
-          p.cost === null ? role('ui.dim') : p.affordable ? role('ui.accent') : role('ui.text');
-        term.write(x, 2, label, colour);
-        if (p.cost !== null) this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'upgrade', path: pi } });
-        x += label.length + 2;
+      t.tiers.forEach((tier, ti) => {
+        term.write(x, 2, `T${ti + 1}`, role('ui.dim'));
+        x += 3;
+        tier.choices.forEach((c, ci) => {
+          const label = c.state === 'chosen' ? `[${c.name} \u2713]` : `[${c.name} $${c.cost}]`;
+          const colour =
+            c.state === 'chosen'
+              ? role('ui.accent')
+              : c.state === 'available'
+                ? c.affordable
+                  ? role('ui.text')
+                  : role('ui.dim')
+                : role('ui.grid');
+          term.write(x, 2, label, colour);
+          if (c.state === 'available') {
+            this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'choose', tier: ti, option: ci } });
+          }
+          x += label.length + 1;
+        });
+        x += 2;
       });
     } else {
       let x = 0;
