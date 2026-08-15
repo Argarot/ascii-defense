@@ -1,6 +1,6 @@
 # ASCII Defense — Architecture
 
-Status: **M0 shipped, M1 not started.**
+Status: **M1 Phase 4 in flight; see docs/WBS.md for live state.**
 
 ---
 

@@ -93,9 +93,9 @@ battery; sim deterministic cross-machine against the live deploy.
 - [x] 1.4.3 Six enemies across the trait matrix (armor blunts, shields burn first, fast/swarm stats), minWave gating. Damage types (Kinetic/Energy): deferred to D with the Core branches. *(PRs #16, #23)*
 - [x] 1.4.4 Targeting (first-on-path, deterministic ties) + subcell projectiles + damage resolution + kill credit. Cross-content CI rule: projectiles must outrun enemies. *(PR #17)*
 - [x] 1.4.5 Scrap economy + waves with telegraphed widening fronts + Core health and defeat. Budget curves from analytic prior: M3 calibration. *(PRs #19, #23)*
-- [ ] 1.4.6 Refinery economy: Yield → Scrap anywhere; Extraction → Ore on ore cells only; Ore banked per tier.
+- [ ] 1.4.6 **NEXT (D part 2b)**: Refinery + Ore (3-reroll in-memory persistence for the demo); Core as selectable entity - type choice then tier tree, paid in Ore.
 - [x] 1.4.7 HUD complete for M1: 2× panel, build palette, tower inspector w/ crosspath-aware upgrade buttons, priority selector, range circle, telegraphs, Core vitals, defeat banner. Mouse-first. *(PRs #9, #18-#20, #23)*
-- [ ] 1.4.8 Replay: `{version, seed, contentHash, inputs}` record/playback; golden state-hash test (2,000 ticks).
+- [ ] 1.4.8 **NEXT (D part 2b)**: Replay `{version, seed, contentHash, inputs}` record/playback; golden state-hash test (2,000 ticks).
 
 ### 1.5 Phase 5 — smoke harness *(~0.5–1 session)*
 
