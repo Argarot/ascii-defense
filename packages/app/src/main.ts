@@ -66,13 +66,19 @@ async function main(): Promise<void> {
 
   const setSeed = (s: number): void => {
     seed = s;
-    // Difficulty knobs (PRD sec 4.4) - hardcoded demo values until threat
-    // levels exist: 4 fronts spread by sector, long winding roads.
-    const map = generateMap(createRng(seed).stream('map'), lib, {
+    // Difficulty knobs (PRD sec 4.4), randomized per seed for the demo so the
+    // space of possible maps is visible. Road length is BIASED long (max of
+    // two draws) rather than pinned - shorter roads are the harder end of the
+    // dial, and threat levels will move this bias, not a constant.
+    const rng = createRng(seed);
+    const knobs = rng.stream('map');
+    const entries = knobs.int(2, 5);
+    const targetPathLength = 8 + Math.max(knobs.int(0, 18), knobs.int(0, 18));
+    const map = generateMap(knobs, lib, {
       width: mapX,
       height: mapY,
-      entries: 4,
-      targetPathLength: 16,
+      entries,
+      targetPathLength,
     });
     view.setMap(map, seed);
     sim = new Sim(seed, {
