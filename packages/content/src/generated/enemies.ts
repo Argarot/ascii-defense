@@ -1,0 +1,116 @@
+// AUTO-GENERATED from schema/enemies.schema.json - do not edit.
+// Regenerate: node tools/build-content-types.mjs
+
+/**
+ * Enemy definitions. hp/speed/damage are the M1 surface; traits and bounty are reserved shape for the trait matrix (PRD sec 7) and the Scrap economy. speed is cells per tick at 20 Hz.
+ */
+export interface EnemyRoster {
+  $schema?: string;
+  /**
+   * @minItems 1
+   */
+  enemies: [
+    {
+      id: string;
+      name?: string;
+      hp: number;
+      speed: number;
+      /**
+       * Core health lost on breach (PRD sec 4.5).
+       */
+      damage: number;
+      /**
+       * Scrap on kill. Reserved; economy lands in session B.
+       */
+      bounty?: number;
+      traits?: ('armoured' | 'shielded' | 'fast' | 'swarm')[];
+    },
+    ...{
+      id: string;
+      name?: string;
+      hp: number;
+      speed: number;
+      /**
+       * Core health lost on breach (PRD sec 4.5).
+       */
+      damage: number;
+      /**
+       * Scrap on kill. Reserved; economy lands in session B.
+       */
+      bounty?: number;
+      traits?: ('armoured' | 'shielded' | 'fast' | 'swarm')[];
+    }[]
+  ];
+}
+
+/** The schema itself, for runtime validation. Same source as the type above. */
+export const enemiesSchema = {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ascii-defense/enemies.schema.json",
+  "title": "EnemyRoster",
+  "description": "Enemy definitions. hp/speed/damage are the M1 surface; traits and bounty are reserved shape for the trait matrix (PRD sec 7) and the Scrap economy. speed is cells per tick at 20 Hz.",
+  "type": "object",
+  "required": [
+    "enemies"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "enemies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "hp",
+          "speed",
+          "damage"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hp": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "speed": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          },
+          "damage": {
+            "description": "Core health lost on breach (PRD sec 4.5).",
+            "type": "number",
+            "minimum": 0
+          },
+          "bounty": {
+            "description": "Scrap on kill. Reserved; economy lands in session B.",
+            "type": "number",
+            "minimum": 0
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "armoured",
+                "shielded",
+                "fast",
+                "swarm"
+              ]
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    }
+  }
+} as const;

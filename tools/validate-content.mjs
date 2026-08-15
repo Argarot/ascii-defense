@@ -30,6 +30,8 @@ const SCHEMA_FOR = {
   'palette.json': 'palette.schema.json',
   'sprites/': 'sprite.schema.json',
   'tiles/': 'tiles.schema.json',
+  'enemies/': 'enemies.schema.json',
+  'towers/': 'towers.schema.json',
 };
 
 const ajv = new Ajv({ allErrors: true, strictTypes: false });
