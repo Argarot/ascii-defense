@@ -88,21 +88,23 @@ async function main(): Promise<void> {
   const board: (typeof lib[0] | null)[] = new Array(MAPX * MAPY).fill(null);
   const get = (x: number, y: number) => (x < 0 || y < 0 || x >= MAPX || y >= MAPY ? null : board[y * MAPX + x]);
   {
-    let x = 0, y = 3;
-    board[y * MAPX + x] = byId.get('spawn_e')!;
-    let exit = 'e';
-    for (let step = 0; step < 40; step++) {
-      const [dx, dy] = DIRS[exit as keyof typeof DIRS];
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= MAPX || ny >= MAPY || get(nx, ny)) break;
-      const entry = OPP[exit];
+    // Grow from a queue of open connector ends rather than a single chain, so
+    // one blocked exit does not stop the whole layout.
+    board[3 * MAPX + 0] = byId.get('spawn_e')!;
+    const open: { x: number; y: number; entry: string }[] = [{ x: 1, y: 3, entry: 'w' }];
+    let guard = 0;
+    while (open.length && guard++ < 400) {
+      const { x, y, entry } = open.shift()!;
+      if (x < 0 || y < 0 || x >= MAPX || y >= MAPY || get(x, y)) continue;
       const cands = lib.filter((t) => t.id !== 'spawn_e' && t.conn.includes(entry));
-      if (!cands.length) break;
-      const d = cands[Math.floor(hash2(nx, ny, step + 5) * cands.length) % cands.length];
-      board[ny * MAPX + nx] = d;
-      const exits = d.conn.filter((c) => c !== entry);
-      exit = exits[Math.floor(hash2(nx, ny, step + 90) * exits.length) % exits.length];
-      x = nx; y = ny;
+      if (!cands.length) continue;
+      const d = cands[Math.floor(hash2(x, y, guard + 5) * cands.length) % cands.length];
+      board[y * MAPX + x] = d;
+      for (const c of d.conn) {
+        if (c === entry) continue;
+        const [dx, dy] = DIRS[c as keyof typeof DIRS];
+        open.push({ x: x + dx, y: y + dy, entry: OPP[c] });
+      }
     }
   }
   const laid = board.filter(Boolean).length;
@@ -123,7 +125,8 @@ async function main(): Promise<void> {
     const TG = TC * Gp;
     const tilesAcross = Math.ceil(PANEL / TG);
     term.write(ox, oy - 3, label, PAL.accent);
-    term.write(ox, oy - 2, `tile ${TG}px · ${Math.floor(1920 / (TG * 8))}x${Math.floor(1150 / (TG * 8))} = ${Math.floor(1920 / (TG * 8)) * Math.floor(1150 / (TG * 8))} tiles on a 1920x1200 screen`, PAL.dim);
+    const across = Math.floor(1920 / (TG * 8)), down = Math.floor(1150 / (TG * 8));
+    term.write(ox, oy - 2, `tile ${TG * 8}px · ${across}x${down} = ${across * down} tiles on a 1920x1200 screen`, PAL.dim);
 
     for (let ty = 0; ty < tilesAcross; ty++) {
       for (let tx = 0; tx < tilesAcross; tx++) {
