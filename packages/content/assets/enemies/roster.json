@@ -1,0 +1,22 @@
+{
+  "$schema": "../../schema/enemies.schema.json",
+  "enemies": [
+    {
+      "id": "grunt",
+      "name": "grunt",
+      "hp": 30,
+      "speed": 0.06,
+      "damage": 1,
+      "bounty": 4
+    },
+    {
+      "id": "skitter",
+      "name": "skitter",
+      "hp": 12,
+      "speed": 0.12,
+      "damage": 1,
+      "bounty": 3,
+      "traits": ["fast"]
+    }
+  ]
+}

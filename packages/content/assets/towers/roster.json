@@ -1,0 +1,17 @@
+{
+  "$schema": "../../schema/towers.schema.json",
+  "towers": [
+    {
+      "id": "bolt",
+      "name": "Bolt Turret",
+      "cost": 20,
+      "range": 6,
+      "fireEveryTicks": 14,
+      "projectile": {
+        "damage": 8,
+        "speed": 0.5,
+        "homing": true
+      }
+    }
+  ]
+}
