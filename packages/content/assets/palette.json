@@ -10,6 +10,7 @@
     "tower.core": "#ffffff",
     "tower.ground": "#0c1017",
     "enemy.eye": "#ffd166",
+    "enemy.fast": "#ff8484",
     "path.1": "#4cc9f0",
     "path.2": "#ffb703",
     "path.3": "#c08cff",

@@ -29,6 +29,13 @@ export { CELL_W, CELL_H } from './style';
 const TOWER_ART = ['.-^-.', '|[O]|', "'---'"];
 const TOWER_CORE = /[O@$8]/;
 
+// Per-enemy-type look, so the roster is readable on the board. Placeholder
+// until sprites; unknown ids fall back to the classic '@'.
+const ENEMY_LOOK: Record<string, { glyph: string; roleName: string }> = {
+  grunt: { glyph: '@', roleName: 'enemy.eye' },
+  skitter: { glyph: 'x', roleName: 'enemy.fast' },
+};
+
 const DESCRIBE: Record<CellType, string> = {
   G: 'ground \u00b7 buildable',
   R: 'road \u00b7 NEVER buildable',
@@ -46,18 +53,20 @@ export interface BoardViewOptions {
   /** Board size in tiles. */
   mapX: number;
   mapY: number;
-  /** HUD rows above the board, in glyph rows. */
-  offsetY: number;
   /** Pixels per glyph (native font size). */
   glyphPxW: number;
   glyphPxH: number;
 }
 
+/** Text rows below the board: inspector, title, help. */
+export const HUD_ROWS = 3;
+
 export interface RenderState {
   hover: CellRef | null;
   selected: CellRef | null;
-  /** Walker positions in continuous cell units (subcell resolution). */
-  enemies?: readonly { x: number; y: number }[];
+  /** Walkers in continuous cell units (subcell resolution), with their def id
+   *  so each enemy type reads differently on the board. */
+  enemies?: readonly { x: number; y: number; id?: string }[];
   /** Live towers, in cell coordinates. */
   towers?: readonly { x: number; y: number }[];
   /** Projectiles in flight, continuous cell units. */
@@ -70,6 +79,8 @@ export interface RenderState {
   status?: string;
   /** Faint markers on tile corners - the map's seams, visible on demand. */
   showGrid?: boolean;
+  /** Range overlay for the selected tower, in cell units. */
+  range?: { x: number; y: number; r: number } | null;
 }
 
 export class BoardView {
@@ -105,9 +116,9 @@ export class BoardView {
 
   /** Canvas pixel -> board cell, or null when over the HUD rows / outside. */
   cellFromPixel(px: number, py: number): CellRef | null {
-    const { glyphPxW, glyphPxH, offsetY } = this.opts;
+    const { glyphPxW, glyphPxH } = this.opts;
     const x = Math.floor(px / (glyphPxW * CELL_W));
-    const y = Math.floor((py - offsetY * glyphPxH) / (glyphPxH * CELL_H));
+    const y = Math.floor(py / (glyphPxH * CELL_H));
     if (x < 0 || y < 0 || x >= this.cellsW || y >= this.cellsH) return null;
     return { x, y };
   }
@@ -122,24 +133,26 @@ export class BoardView {
 
   render(state: RenderState): void {
     const term = this.term;
-    const { offsetY } = this.opts;
+    const offsetY = 0; // board at the top; HUD text lives BELOW the board
+    const hudY = this.cellsH * CELL_H;
 
     term.clear(role('ui.bg'));
-    term.write(0, 0, `ASCII DEFENSE \u00b7 generated map \u00b7 seed ${this.seed}`, role('ui.accent'));
+    // Bottom HUD rows: inspector nearest the board, then title, then help.
+    term.write(
+      0,
+      hudY,
+      state.inspectorOverride ?? this.describeCell(state.selected ?? state.hover),
+      role('ui.text'),
+    );
+    term.write(0, hudY + 1, `ASCII DEFENSE \u00b7 generated map \u00b7 seed ${this.seed}`, role('ui.accent'));
     if (state.status) {
-      term.write(this.cellsW * CELL_W - state.status.length, 0, state.status, role('ui.accent'));
+      term.write(this.cellsW * CELL_W - state.status.length, hudY + 1, state.status, role('ui.accent'));
     }
     term.write(
       0,
-      1,
-      `hover inspects \u00b7 click selects \u00b7 R rerolls \u00b7 G tile seams \u00b7 ?seed=${this.seed} pins this map \u00b7 ${this.map.entries.length} entries, one unique road each`,
+      hudY + 2,
+      `hover inspects \u00b7 click selects/builds \u00b7 R rerolls \u00b7 G tile seams \u00b7 X sells \u00b7 ?seed=${this.seed} pins this map \u00b7 ${this.map.entries.length} entries`,
       role('ui.dim'),
-    );
-    term.write(
-      0,
-      2,
-      state.inspectorOverride ?? this.describeCell(state.selected ?? state.hover),
-      role('ui.text'),
     );
 
     for (let cy = 0; cy < this.cellsH; cy++)
@@ -186,11 +199,31 @@ export class BoardView {
         }
     }
 
-    // Tile seams, on demand (G key): L-shaped corner brackets per placed
-    // tile, drawn with light box glyphs - distinctly visible when wanted,
-    // dim enough (ui.grid) not to fight the terrain.
+    // Range overlay for the selected tower: tint (background-only, glyphs
+    // untouched) every cell whose center the tower can reach. No guesswork.
+    if (state.range) {
+      const { x: rx, y: ry, r } = state.range;
+      const r2 = r * r;
+      const minX = Math.max(0, Math.floor(rx - r));
+      const maxX = Math.min(this.cellsW - 1, Math.ceil(rx + r));
+      const minY = Math.max(0, Math.floor(ry - r));
+      const maxY = Math.min(this.cellsH - 1, Math.ceil(ry + r));
+      for (let cy = minY; cy <= maxY; cy++)
+        for (let cx = minX; cx <= maxX; cx++) {
+          const dx = cx - rx;
+          const dy = cy - ry;
+          if (dx * dx + dy * dy > r2) continue;
+          if (this.cells[cy * this.cellsW + cx] === null) continue;
+          for (let y = 0; y < CELL_H; y++)
+            for (let x = 0; x < CELL_W; x++) term.tint(cx * CELL_W + x, offsetY + cy * CELL_H + y, '#1c3a52');
+        }
+    }
+
+    // Tile seams, on demand (G key): L-shaped BACKGROUND tints on each
+    // corner (3 glyphs: corner + one along each edge). Tinting leaves the
+    // terrain glyphs untouched, so seams never erase structures (Daniil).
     if (state.showGrid) {
-      const gridCol = role('ui.grid');
+      const seam = '#3a4d63';
       const TGX = TILE_SIZE * CELL_W;
       const TGY = TILE_SIZE * CELL_H;
       for (let ty = 0; ty < this.opts.mapY; ty++)
@@ -200,36 +233,27 @@ export class BoardView {
           const x1 = tx * TGX + TGX - 1;
           const y0 = offsetY + ty * TGY;
           const y1 = offsetY + ty * TGY + TGY - 1;
-          // Top-left \u250c\u2500\u2500 / \u2502
-          term.put(x0, y0, '\u250c', gridCol);
-          term.put(x0 + 1, y0, '\u2500', gridCol);
-          term.put(x0 + 2, y0, '\u2500', gridCol);
-          term.put(x0, y0 + 1, '\u2502', gridCol);
-          // Top-right \u2500\u2500\u2510 / \u2502
-          term.put(x1, y0, '\u2510', gridCol);
-          term.put(x1 - 1, y0, '\u2500', gridCol);
-          term.put(x1 - 2, y0, '\u2500', gridCol);
-          term.put(x1, y0 + 1, '\u2502', gridCol);
-          // Bottom-left \u2502 / \u2514\u2500\u2500
-          term.put(x0, y1, '\u2514', gridCol);
-          term.put(x0 + 1, y1, '\u2500', gridCol);
-          term.put(x0 + 2, y1, '\u2500', gridCol);
-          term.put(x0, y1 - 1, '\u2502', gridCol);
-          // Bottom-right \u2502 / \u2500\u2500\u2518
-          term.put(x1, y1, '\u2518', gridCol);
-          term.put(x1 - 1, y1, '\u2500', gridCol);
-          term.put(x1 - 2, y1, '\u2500', gridCol);
-          term.put(x1, y1 - 1, '\u2502', gridCol);
+          for (const [cxr, cyr, hx, vy] of [
+            [x0, y0, 1, 1],
+            [x1, y0, -1, 1],
+            [x0, y1, 1, -1],
+            [x1, y1, -1, -1],
+          ] as const) {
+            term.tint(cxr, cyr, seam);
+            term.tint(cxr + hx, cyr, seam);
+            term.tint(cxr, cyr + vy, seam);
+          }
         }
     }
 
     // Real walkers, drawn at subcell resolution: continuous cell coords map
     // to the 5x3 glyph grid, so motion has 5 horizontal steps per cell
-    // instead of snapping cell to cell.
+    // instead of snapping cell to cell. Each enemy type has its own look.
     for (const e of state.enemies ?? []) {
       const gx = Math.floor(e.x * CELL_W);
       const gy = offsetY + Math.floor(e.y * CELL_H);
-      term.put(gx, gy, '@', role('enemy.eye'));
+      const look = (e.id && ENEMY_LOOK[e.id]) || ENEMY_LOOK.grunt;
+      term.put(gx, gy, look.glyph, role(look.roleName));
     }
 
     // Projectiles: single bright glyphs streaking at subcell resolution.

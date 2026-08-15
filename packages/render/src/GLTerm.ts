@@ -210,6 +210,20 @@ export class GLTerm {
     }
   }
 
+  /**
+   * Change ONLY the background of a cell, leaving glyph and foreground
+   * untouched. This is what overlays are made of: range rings, seam markers
+   * and highlights can paint zones without erasing what lives there.
+   */
+  tint(x: number, y: number, bg: string): void {
+    if (x < 0 || y < 0 || x >= this.cols || y >= this.rows) return;
+    const o = (y * this.cols + x) * FLOATS_PER_CELL;
+    const b = rgb(bg);
+    this.data[o + 6] = b[0];
+    this.data[o + 7] = b[1];
+    this.data[o + 8] = b[2];
+  }
+
   put(x: number, y: number, ch: string, fg: string, bg?: string): void {
     if (x < 0 || y < 0 || x >= this.cols || y >= this.rows) return;
     const slot = this.index.get(ch.codePointAt(0) ?? 32);
