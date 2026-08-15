@@ -1,3 +1,5 @@
-// DATA ONLY plus the typed registry (src/registry.ts, WBS 1.1.8).
-// Schemas, generated types and the asset registry live here. No game logic.
-export {};
+// DATA plus the typed validation/registry layer. No game logic.
+// The full asset registry (typed lookups, sprite resolution) lands with the
+// art pipeline in M1 Phase 2-3.
+export { validatePalette, validateSprite } from './validate';
+export type { Palette, Sprite, Validator, ContentError } from './validate';
