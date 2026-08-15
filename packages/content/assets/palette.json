@@ -5,6 +5,7 @@
     "ui.text": "#d3dae7",
     "ui.dim": "#65758a",
     "ui.accent": "#2ee6a0",
+    "ui.grid": "#2e3d4e",
     "tower.frame": "#7286a0",
     "tower.core": "#ffffff",
     "tower.ground": "#0c1017",

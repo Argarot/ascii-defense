@@ -14,6 +14,7 @@ import {
   TileLibrary,
   createRng,
   resolveCells,
+  slotAt,
   type Board,
   type CellType,
   type GeneratedMap,
@@ -63,6 +64,8 @@ export interface RenderState {
   enemies?: readonly { x: number; y: number }[];
   /** Right side of the title row: sim status (breaches, speed). */
   status?: string;
+  /** Faint markers on tile corners - the map's seams, visible on demand. */
+  showGrid?: boolean;
 }
 
 export class BoardView {
@@ -126,7 +129,7 @@ export class BoardView {
     term.write(
       0,
       1,
-      `hover inspects \u00b7 click selects \u00b7 R rerolls \u00b7 ?seed=${this.seed} pins this map \u00b7 ${this.map.entries.length} entries, every road leads to the Core`,
+      `hover inspects \u00b7 click selects \u00b7 R rerolls \u00b7 G tile seams \u00b7 ?seed=${this.seed} pins this map \u00b7 ${this.map.entries.length} entries, one unique road each`,
       role('ui.dim'),
     );
     term.write(0, 2, this.describeCell(state.selected ?? state.hover), role('ui.text'));
@@ -149,7 +152,16 @@ export class BoardView {
         }
 
         const hoverBg = hovered ? '#2a3a4d' : undefined;
-        drawTerrainCell(term, kind, gx0, gy0, hoverBg);
+        // Boundary shading only for landmass types: roads read as routes and
+        // the Core has its own look; ground/rock/ore get mass edges.
+        const shaded = kind === 'G' || kind === 'K' || kind === 'O';
+        const north = cy > 0 ? this.cells[(cy - 1) * this.cellsW + cx] : null;
+        const south = cy + 1 < this.cellsH ? this.cells[(cy + 1) * this.cellsW + cx] : null;
+        drawTerrainCell(term, kind, gx0, gy0, {
+          bg: hoverBg,
+          litTop: shaded && north !== kind,
+          shadowBottom: shaded && south !== kind,
+        });
 
         if (kind === 'G' && decor.chance(0.16)) {
           const art = TOWERS[towerN % TOWERS.length];
@@ -163,6 +175,24 @@ export class BoardView {
             }
         }
       }
+
+    // Tile seams, on demand (G key): a faint corner mark per placed tile -
+    // enough to count tiles by, dim enough to vanish during play.
+    if (state.showGrid) {
+      const gridCol = role('ui.grid');
+      const TGX = TILE_SIZE * CELL_W;
+      const TGY = TILE_SIZE * CELL_H;
+      for (let ty = 0; ty < this.opts.mapY; ty++)
+        for (let tx = 0; tx < this.opts.mapX; tx++) {
+          if (!slotAt(this.board, tx, ty)) continue;
+          const gx0 = tx * TGX;
+          const gy0 = offsetY + ty * TGY;
+          term.put(gx0, gy0, '+', gridCol);
+          term.put(gx0 + TGX - 1, gy0, '+', gridCol);
+          term.put(gx0, gy0 + TGY - 1, '+', gridCol);
+          term.put(gx0 + TGX - 1, gy0 + TGY - 1, '+', gridCol);
+        }
+    }
 
     // Real walkers, drawn at subcell resolution: continuous cell coords map
     // to the 5x3 glyph grid, so motion has 5 horizontal steps per cell
