@@ -71,7 +71,7 @@ async function main(): Promise<void> {
     cellPxH: GLYPH_PX_H * 2,
     background: role('ui.bg'),
   });
-  const hud = new HudPanel(hudTerm);
+  const hud = new HudPanel(hudTerm, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
 
   // Seed from the URL if pinned, else from the clock (Math.random is banned
   // everywhere, and the whole point is that the seed is the only entropy).
@@ -83,6 +83,7 @@ async function main(): Promise<void> {
   let sim!: Sim;
   let speedIdx = 1; // start at 1x
   let showGrid = false;
+  let selectedBuild = 0; // palette index of the active build choice
   let dirty = true;
 
   const setSeed = (s: number): void => {
@@ -91,16 +92,23 @@ async function main(): Promise<void> {
     // space of possible maps is visible. Road length is BIASED long (max of
     // two draws) rather than pinned - shorter roads are the harder end of the
     // dial, and threat levels will move this bias, not a constant.
-    const rng = createRng(seed);
-    const knobs = rng.stream('map');
-    const entries = knobs.int(2, 5);
-    const targetPathLength = 8 + Math.max(knobs.int(0, 18), knobs.int(0, 18));
-    const map = generateMap(knobs, lib, {
-      width: mapX,
-      height: mapY,
-      entries,
-      targetPathLength,
-    });
+    //
+    // The engine already retries generation internally; if a seed still
+    // fails, quietly step to the next one - a player must never read a
+    // generator stack trace (Daniil).
+    let map;
+    for (;;) {
+      try {
+        const knobs = createRng(seed).stream('map');
+        const entries = knobs.int(2, 5);
+        const targetPathLength = 8 + Math.max(knobs.int(0, 18), knobs.int(0, 18));
+        map = generateMap(knobs, lib, { width: mapX, height: mapY, entries, targetPathLength });
+        break;
+      } catch (err) {
+        console.warn(`seed ${seed} could not generate, stepping`, err);
+        seed = (seed + 1) % 1_000_000;
+      }
+    }
     view.setMap(map);
     sim = new Sim(seed, {
       cells: resolveCells(map.board, lib),
@@ -147,7 +155,9 @@ async function main(): Promise<void> {
       // Green only when the sim would actually accept the click: placeable
       // AND affordable.
       hoverBuildable:
-        hover !== null && sim.canBuildAt(hover.x, hover.y) && sim.canAfford(TOWER_DEFS[0].id),
+        hover !== null &&
+        sim.canBuildAt(hover.x, hover.y) &&
+        sim.canAfford(TOWER_DEFS[selectedBuild].id),
       showGrid,
     });
 
@@ -167,6 +177,7 @@ async function main(): Promise<void> {
         cost: d.cost,
         affordable: sim.canAfford(d.id),
       })),
+      selectedBuild,
       selectedTower:
         infoTower && def
           ? {
@@ -212,12 +223,20 @@ async function main(): Promise<void> {
     hover = null;
     dirty = true;
   });
+  // Mouse-first: the HUD's labels ARE its buttons.
+  hudTerm.canvas.addEventListener('click', (e) => {
+    const action = hud.actionAt(e.offsetX, e.offsetY);
+    if (!action) return;
+    if (action.kind === 'build') selectedBuild = action.index;
+    if (action.kind === 'priority' && selected) sim.setPriority(selected.x, selected.y, action.value);
+    dirty = true;
+  });
   term.canvas.addEventListener('click', (e) => {
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
     // Build on buildable ground (free until the economy lands, session B);
     // anything else is selection.
     if (cell && sim.canBuildAt(cell.x, cell.y)) {
-      sim.buildTower(cell.x, cell.y, TOWER_DEFS[0].id);
+      sim.buildTower(cell.x, cell.y, TOWER_DEFS[selectedBuild].id);
       selected = cell;
     } else {
       selected = same(cell, selected) ? null : cell; // click again to deselect

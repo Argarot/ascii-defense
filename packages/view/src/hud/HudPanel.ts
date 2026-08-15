@@ -4,6 +4,11 @@
  * crisp). This text is meant to be READ, unlike the board's texture
  * (Daniil, session B feedback).
  *
+ * Mouse-first (agreed rule): everything actionable here is clickable.
+ * render() records the glyph rectangle of every actionable label, and
+ * actionAt() maps a canvas pixel back to the action - the words on screen
+ * and the click targets cannot drift apart because they are the same data.
+ *
  * Four rows: resources/status, inspector, actions (build palette or the
  * selected tower's priority selector), help.
  */
@@ -32,8 +37,21 @@ export interface HudState {
   inspector: string;
   /** The build palette; one entry per buildable tower def. */
   palette: readonly { name: string; cost: number; affordable: boolean }[];
+  /** Which palette entry is the active build choice. */
+  selectedBuild: number;
   /** Set when the selection is a tower - swaps the action row to priorities. */
   selectedTower: HudTowerInfo | null;
+}
+
+export type HudAction =
+  | { kind: 'priority'; value: Priority }
+  | { kind: 'build'; index: number };
+
+interface Region {
+  row: number;
+  x0: number;
+  x1: number; // exclusive
+  action: HudAction;
 }
 
 const PRIORITY_LABEL: Record<Priority, string> = {
@@ -44,10 +62,27 @@ const PRIORITY_LABEL: Record<Priority, string> = {
 };
 
 export class HudPanel {
-  constructor(private term: GLTerm) {}
+  private regions: Region[] = [];
+
+  constructor(
+    private term: GLTerm,
+    private glyphPxW: number,
+    private glyphPxH: number,
+  ) {}
+
+  /** Canvas pixel -> the action under it, or null. */
+  actionAt(px: number, py: number): HudAction | null {
+    const gx = Math.floor(px / this.glyphPxW);
+    const gy = Math.floor(py / this.glyphPxH);
+    for (const r of this.regions) {
+      if (r.row === gy && gx >= r.x0 && gx < r.x1) return r.action;
+    }
+    return null;
+  }
 
   render(s: HudState): void {
     const term = this.term;
+    this.regions = [];
     term.clear(role('ui.bg'));
 
     // Row 0 - resources and run status. Scrap first: it is the number the
@@ -62,22 +97,31 @@ export class HudPanel {
     // Row 2 - actions: priorities for a selected tower, else the palette.
     if (s.selectedTower) {
       const t = s.selectedTower;
-      term.write(0, 2, `${t.name} \u00b7 ${t.dmg} dmg \u00b7 ${t.dps}/s \u00b7 range ${t.range} \u00b7 kills ${t.kills} \u00b7 priority:`, role('ui.text'));
-      let x = `${t.name} \u00b7 ${t.dmg} dmg \u00b7 ${t.dps}/s \u00b7 range ${t.range} \u00b7 kills ${t.kills} \u00b7 priority: `.length;
+      const lead = `${t.name} \u00b7 ${t.dmg} dmg \u00b7 ${t.dps}/s \u00b7 range ${t.range} \u00b7 kills ${t.kills} \u00b7 priority: `;
+      term.write(0, 2, lead, role('ui.text'));
+      let x = lead.length;
       for (const p of PRIORITIES) {
         const label = PRIORITY_LABEL[p];
         term.write(x, 2, label, p === t.priority ? role('ui.accent') : role('ui.dim'));
-        x += label.length + 1;
+        this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'priority', value: p } });
+        x += label.length + 2;
       }
     } else {
       let x = 0;
       term.write(x, 2, 'build: ', role('ui.dim'));
       x += 7;
-      for (const item of s.palette) {
-        const label = `${item.name} $${item.cost}`;
-        term.write(x, 2, label, item.affordable ? role('ui.text') : role('ui.dim'));
+      s.palette.forEach((item, index) => {
+        const marker = index === s.selectedBuild ? '>' : ' ';
+        const label = `${marker}${item.name} $${item.cost}`;
+        term.write(
+          x,
+          2,
+          label,
+          index === s.selectedBuild ? role('ui.accent') : item.affordable ? role('ui.text') : role('ui.dim'),
+        );
+        this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'build', index } });
         x += label.length + 3;
-      }
+      });
       term.write(x, 2, '(click green ground to place)', role('ui.dim'));
     }
 
@@ -85,7 +129,7 @@ export class HudPanel {
     term.write(
       0,
       3,
-      'space pause \u00b7 1/2/3 speed \u00b7 click build/select \u00b7 F/L/C/W priority \u00b7 X sell \u00b7 G seams \u00b7 R new map \u00b7 Esc deselect',
+      'space pause \u00b7 1/2/3 speed \u00b7 click build/select \u00b7 F/L/C/W or click priority \u00b7 X sell \u00b7 G seams \u00b7 R new map \u00b7 Esc deselect',
       role('ui.dim'),
     );
 

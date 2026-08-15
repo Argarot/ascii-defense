@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
 import { TILE_SIZE, deriveConnectors, validateTileCells } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt, type Board } from '../tiles/board';
-import { FILL_RADIUS, generateMap } from './mapgen';
+import { FILL_RADIUS, ORE_REACH, generateMap } from './mapgen';
 
 // The same tile shapes the shipped library provides, inline so engine tests
 // stay hermetic (engine may not import content).
@@ -149,7 +149,7 @@ describe('map generation v2 - trees, void, spread', () => {
     }
   });
 
-  it(`terrain hugs the road: filled within ${FILL_RADIUS} slots, void beyond`, () => {
+  it('terrain hugs the road: plain fill near, ore-only ring, void beyond', () => {
     for (const opts of [CASES[3], CASES[4], CASES[5]]) {
       for (let seed = 1; seed <= 4; seed++) {
         const map = generateMap(createRng(seed * 3).stream('map'), LIB, opts);
@@ -191,10 +191,18 @@ describe('map generation v2 - trees, void, spread', () => {
         }
 
         for (let k = 0; k < width * height; k++) {
-          const placed = map.board.slots[k] !== null;
+          const p = map.board.slots[k];
           if (isRoadSlot[k]) continue;
-          if (placed) expect(dist[k], `filled slot ${k} too far from road`).toBeLessThanOrEqual(FILL_RADIUS);
-          else expect(dist[k], `void slot ${k} should have been filled`).toBeGreaterThan(FILL_RADIUS);
+          if (p) {
+            expect(dist[k], `filled slot ${k} too far from road`).toBeLessThanOrEqual(ORE_REACH);
+            if (dist[k] > FILL_RADIUS) {
+              // The outer ring is resources-or-nothing.
+              const cells = LIB.resolved(p.tileId, p.rotation).cells;
+              expect(cells.some((row) => row.includes('O')), `outer-ring slot ${k} must carry ore`).toBe(true);
+            }
+          } else {
+            expect(dist[k], `void slot ${k} should have been filled`).toBeGreaterThan(FILL_RADIUS);
+          }
         }
       }
     }

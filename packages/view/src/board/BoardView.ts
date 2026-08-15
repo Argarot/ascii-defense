@@ -171,29 +171,34 @@ export class BoardView {
         }
     }
 
-    // Range overlay for the selected tower: tint (background-only, glyphs
-    // untouched) every cell whose center the tower can reach. No guesswork.
+    // Range OUTLINE for the selected tower, at glyph (subcell) resolution:
+    // tint only the glyphs whose distance from the tower's center sits on
+    // the radius, giving a near-true circle instead of a blocky area fill.
     if (state.range) {
-      const { x: rx, y: ry, r } = state.range;
-      const r2 = r * r;
-      const minX = Math.max(0, Math.floor(rx - r));
-      const maxX = Math.min(this.cellsW - 1, Math.ceil(rx + r));
-      const minY = Math.max(0, Math.floor(ry - r));
-      const maxY = Math.min(this.cellsH - 1, Math.ceil(ry + r));
-      for (let cy = minY; cy <= maxY; cy++)
-        for (let cx = minX; cx <= maxX; cx++) {
-          const dx = cx - rx;
-          const dy = cy - ry;
-          if (dx * dx + dy * dy > r2) continue;
-          if (this.cells[cy * this.cellsW + cx] === null) continue;
-          for (let y = 0; y < CELL_H; y++)
-            for (let x = 0; x < CELL_W; x++) term.tint(cx * CELL_W + x, offsetY + cy * CELL_H + y, '#1c3a52');
+      const cx = state.range.x + 0.5;
+      const cy = state.range.y + 0.5;
+      const r = state.range.r;
+      // Band half-width in cell units: wide enough that every glyph row and
+      // column the circle crosses catches at least one tinted glyph.
+      const band = 0.22;
+      const minGx = Math.max(0, Math.floor((cx - r - 1) * CELL_W));
+      const maxGx = Math.min(this.cellsW * CELL_W - 1, Math.ceil((cx + r + 1) * CELL_W));
+      const minGy = Math.max(0, Math.floor((cy - r - 1) * CELL_H));
+      const maxGy = Math.min(this.cellsH * CELL_H - 1, Math.ceil((cy + r + 1) * CELL_H));
+      for (let gy = minGy; gy <= maxGy; gy++)
+        for (let gx = minGx; gx <= maxGx; gx++) {
+          const ux = (gx + 0.5) / CELL_W;
+          const uy = (gy + 0.5) / CELL_H;
+          const dx = ux - cx;
+          const dy = uy - cy;
+          if (Math.abs(Math.sqrt(dx * dx + dy * dy) - r) <= band) {
+            term.tint(gx, offsetY + gy, '#2b4d6e');
+          }
         }
     }
 
-    // Tile seams, on demand (G key): L-shaped BACKGROUND tints on each
-    // corner (3 glyphs: corner + one along each edge). Tinting leaves the
-    // terrain glyphs untouched, so seams never erase structures (Daniil).
+    // Tile seams, on demand (G key): a single background-tinted glyph per
+    // corner - subtle by request; the eye assembles the grid from dots.
     if (state.showGrid) {
       const seam = '#3a4d63';
       const TGX = TILE_SIZE * CELL_W;
@@ -201,20 +206,10 @@ export class BoardView {
       for (let ty = 0; ty < this.opts.mapY; ty++)
         for (let tx = 0; tx < this.opts.mapX; tx++) {
           if (!slotAt(this.board, tx, ty)) continue;
-          const x0 = tx * TGX;
-          const x1 = tx * TGX + TGX - 1;
-          const y0 = offsetY + ty * TGY;
-          const y1 = offsetY + ty * TGY + TGY - 1;
-          for (const [cxr, cyr, hx, vy] of [
-            [x0, y0, 1, 1],
-            [x1, y0, -1, 1],
-            [x0, y1, 1, -1],
-            [x1, y1, -1, -1],
-          ] as const) {
-            term.tint(cxr, cyr, seam);
-            term.tint(cxr + hx, cyr, seam);
-            term.tint(cxr, cyr + vy, seam);
-          }
+          term.tint(tx * TGX, offsetY + ty * TGY, seam);
+          term.tint(tx * TGX + TGX - 1, offsetY + ty * TGY, seam);
+          term.tint(tx * TGX, offsetY + ty * TGY + TGY - 1, seam);
+          term.tint(tx * TGX + TGX - 1, offsetY + ty * TGY + TGY - 1, seam);
         }
     }
 
