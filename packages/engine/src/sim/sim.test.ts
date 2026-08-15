@@ -330,7 +330,7 @@ describe('towers and projectiles', () => {
   });
 
   it('pulse towers hit everything in range on cooldown, no projectiles', () => {
-    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const { map, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
     const PULSER: TowerDef = {
       id: 'bolt',
       cost: 20,
