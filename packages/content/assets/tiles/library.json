@@ -146,12 +146,12 @@
     },
     {
       "id": "ore_pocket",
-      "name": "rich vein",
+      "name": "ore vein",
       "cells": [
         "GGGGG",
-        "GOOGG",
-        "GOOOG",
-        "KGOGG",
+        "GKKGG",
+        "GKOOG",
+        "GGKGG",
         "GGGGG"
       ]
     }

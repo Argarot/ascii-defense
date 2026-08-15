@@ -46,7 +46,13 @@ export interface GeneratedMap {
 }
 
 /** Roadless slots farther than this (in slots) from the road stay void. */
-export const FILL_RADIUS = 3;
+export const FILL_RADIUS = 2;
+/**
+ * Ore may appear one ring beyond ordinary terrain - the only thing worth
+ * keeping land for is a resource (Daniil). Slots at this distance are
+ * ore-or-void.
+ */
+export const ORE_REACH = 3;
 
 const EDGE_DELTA: Record<Edge, [number, number]> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 const CENTER = (TILE_SIZE - 1) / 2;
@@ -95,8 +101,29 @@ function indexLibrary(lib: TileLibrary): {
 }
 
 export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOptions): GeneratedMap {
-  const { width, height, entries, targetPathLength } = opts;
+  // A cornered carve is rare but real; the whole generation retries on the
+  // SAME stream (state simply advances), so a seed still means one exact map
+  // and no failure ever reaches a player. Ten strikes before we admit defeat.
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      return generateMapOnce(rng, lib, opts);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError;
+}
+
+function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions): GeneratedMap {
+  const { width, height, entries } = opts;
   if (entries < 1) throw new Error('a map needs at least one entry');
+  // A target no board could honour would guarantee cornered walks; clamp to
+  // a share of the board per walk and let 'longer' mean 'as long as fits'.
+  const targetPathLength = Math.min(
+    opts.targetPathLength,
+    Math.max(1, Math.floor((width * height * 0.55) / entries)),
+  );
   const index = indexLibrary(lib);
 
   const slotIdx = (x: number, y: number): number => y * width + x;
@@ -250,10 +277,18 @@ export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOption
     for (let x = 0; x < width; x++) {
       const k = slotIdx(x, y);
       if (roadEdges.has(k)) continue;
-      if (dist[k] > FILL_RADIUS) continue; // unclaimed land stays void
-      // Reach vs greed (PRD sec 4.1): adjacent to the road ore is rare,
-      // three slots out it is common.
-      const oreChance = Math.min(0.05 + 0.22 * (dist[k] - 1), 0.75);
+      if (dist[k] > ORE_REACH) continue; // unclaimed land stays void
+      if (dist[k] > FILL_RADIUS) {
+        // The outer ring exists only for resources: ore or nothing. This is
+        // what keeps maps from carrying useless land (Daniil).
+        if (index.filler.ore.length > 0 && rng.chance(0.3)) {
+          board = place(board, rng.pick(index.filler.ore), rng.pick([0, 1, 2, 3] as const), x, y);
+        }
+        continue;
+      }
+      // Reach vs greed (PRD sec 4.1): ore is rare near the road, likelier
+      // (but never common - nodes are a find, not a floor) farther out.
+      const oreChance = 0.04 + 0.1 * (dist[k] - 1);
       const pool =
         index.filler.ore.length > 0 && rng.chance(oreChance) ? index.filler.ore : index.filler.plain;
       board = place(board, rng.pick(pool), rng.pick([0, 1, 2, 3] as const), x, y);
