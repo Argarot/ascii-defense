@@ -21,6 +21,7 @@ import { createRng, type Rng } from '../rng/rng';
 import { isBuildable, type CellType } from '../grid/cells';
 import type { GeneratedMap } from '../mapgen/mapgen';
 import { computeFlowField, type FlowField } from './flow';
+import { pickTarget, type Priority, type TargetCandidate } from './targeting';
 import type { EnemyDef, TowerDef } from './defs';
 
 export const TICK_HZ = 20;
@@ -37,6 +38,8 @@ export interface SimOptions {
   spawnEveryTicks?: number;
   /** Stop spawning after this many; 0 = endless. */
   maxSpawns?: number;
+  /** Scrap at run start. */
+  startingScrap?: number;
 }
 
 export interface Tower {
@@ -45,7 +48,11 @@ export interface Tower {
   defIdx: number;
   cooldown: number;
   kills: number;
+  priority: Priority;
 }
+
+/** Fraction of cost returned on sell - selling is a retreat, not a refund. */
+export const SELL_REFUND = 0.7;
 
 const ENEMY_CAP = 1024;
 const PROJ_CAP = 2048;
@@ -92,6 +99,8 @@ export class Sim {
   coreDamage = 0;
   spawned = 0;
   kills = 0;
+  /** The run currency: pays for towers, earned back as bounties. */
+  scrap = 0;
 
   private readonly rng: Rng;
   private readonly spawnEvery: number;
@@ -106,6 +115,7 @@ export class Sim {
     this.rng = createRng(seed);
     this.spawnEvery = opts.spawnEveryTicks ?? TICK_HZ;
     this.maxSpawns = opts.maxSpawns ?? 0;
+    this.scrap = opts.startingScrap ?? 100;
     this.occupancy = new Uint16Array(opts.cellsW * opts.cellsH);
     this.flow = computeFlowField(opts.cells, opts.cellsW, opts.cellsH, opts.map.entries);
   }
@@ -118,12 +128,27 @@ export class Sim {
     return t !== null && isBuildable(t) && this.occupancy[y * this.opts.cellsW + x] === 0;
   }
 
+  canAfford(defId: string): boolean {
+    const def = this.opts.towerDefs.find((d) => d.id === defId);
+    return def !== undefined && this.scrap >= def.cost;
+  }
+
   buildTower(x: number, y: number, defId: string): boolean {
     if (!this.canBuildAt(x, y)) return false;
     const defIdx = this.opts.towerDefs.findIndex((d) => d.id === defId);
     if (defIdx === -1) throw new Error(`unknown tower def '${defId}'`);
-    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, kills: 0 });
+    const def = this.opts.towerDefs[defIdx];
+    if (this.scrap < def.cost) return false; // the economy says no
+    this.scrap -= def.cost;
+    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, kills: 0, priority: 'first' });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length; // idx + 1
+    return true;
+  }
+
+  setPriority(x: number, y: number, priority: Priority): boolean {
+    const t = this.towerAt(x, y);
+    if (!t) return false;
+    t.priority = priority;
     return true;
   }
 
@@ -140,6 +165,8 @@ export class Sim {
   sellTower(x: number, y: number): boolean {
     const idx = this.occupancy[y * this.opts.cellsW + x];
     if (idx === 0) return false;
+    const tower = this.towers[idx - 1];
+    if (tower) this.scrap += Math.floor(this.opts.towerDefs[tower.defIdx].cost * SELL_REFUND);
     this.towers[idx - 1] = null; // slot stays; occupancy indices stay valid
     this.occupancy[y * this.opts.cellsW + x] = 0;
     return true;
@@ -191,34 +218,32 @@ export class Sim {
       if (!tower) continue;
       if (--tower.cooldown > 0) continue;
       const def = this.opts.towerDefs[tower.defIdx];
-      const target = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, def.range);
+      const target = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, def.range, tower.priority);
       if (target === -1) continue;
       tower.cooldown = def.fireEveryTicks;
       this.fire(ti, tower, target);
     }
   }
 
-  /**
-   * "First" targeting: the in-range enemy closest to the Core (lowest flow
-   * distance at its current cell), ties to the lowest slot. Priority
-   * strategies (last/closest/weakest) arrive with the HUD in session B.
-   */
-  private acquire(cx: number, cy: number, range: number): number {
+  /** Gather in-range candidates and let the tower's priority choose. */
+  private acquire(cx: number, cy: number, range: number, priority: Priority): number {
     const { dist, width } = this.flow;
-    let best = -1;
-    let bestFlow = Infinity;
+    const rangeSq = range * range;
+    const candidates: TargetCandidate[] = [];
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;
       const dx = this.posX[i] - cx;
       const dy = this.posY[i] - cy;
-      if (Math.sqrt(dx * dx + dy * dy) > range) continue;
-      const f = dist[Math.floor(this.posY[i]) * width + Math.floor(this.posX[i])];
-      if (f < bestFlow) {
-        bestFlow = f;
-        best = i;
-      }
+      const dSq = dx * dx + dy * dy;
+      if (dSq > rangeSq) continue;
+      candidates.push({
+        slot: i,
+        flowDist: dist[Math.floor(this.posY[i]) * width + Math.floor(this.posX[i])],
+        distSq: dSq,
+        hp: this.hp[i],
+      });
     }
-    return best;
+    return pickTarget(candidates, priority);
   }
 
   private fire(towerIdx: number, tower: Tower, target: number): void {
@@ -302,6 +327,7 @@ export class Sim {
       this.alive[enemy] = 0;
       this.freeEnemies.push(enemy);
       this.kills++;
+      this.scrap += this.opts.enemyDefs[this.enemyDefIdx[enemy]].bounty ?? 0;
       const tower = this.towers[this.projTowerIdx[p]];
       if (tower) tower.kills++;
     }
