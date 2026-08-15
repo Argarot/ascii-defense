@@ -2,10 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2022", "DOM"],
+    "resolveJsonModule": true,
     "rootDir": "src",
     "outDir": "dist-types",
     "tsBuildInfoFile": "dist-types/.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../engine" }, { "path": "../render" }]
+  "references": [{ "path": "../engine" }, { "path": "../content" }, { "path": "../render" }]
 }
