@@ -72,7 +72,7 @@ not the logic. Decision: Daniil, 2026-08-15.)*
 - [ ] 1.3.6 Dijkstra flow fields over cells: ground + flying; yields `L`.
 - [ ] 1.3.7 Terrain rendering: weighted glyph pools, mixing hash, boundary shading (lit/mid/dark). *(pools + hash exist in demo; boundary shading and the view-package home remain)*
 - [x] 1.3.8 Connectivity tests: 35 seeded boards over sizes 2×1…14×7 + adversarial battery (off-center roads, corner roads, split routes, roads-to-nowhere, edge spawns, boundary violations, rotation identities, road-join). *(PR #8)*
-- [ ] 1.3.9 **Tile Smith** authoring tool: paint a 5×5 grid in the browser, live engine validation, export only when valid. *(new item, Daniil 2026-08-15; PR #10)*
+- [x] 1.3.9 **Tile Smith** authoring tool: paint a 5×5 grid at `/tilesmith.html`, live derived connectors, verdict + export gated by engine `validateTileCells`, shared terrain styling with the game view. *(new item, Daniil 2026-08-15; PR #10)*
 
 ### 1.4 Phase 4 — the game *(~3–4 sessions)* — **blocked by D1, D2, D3**
 
@@ -82,7 +82,7 @@ not the logic. Decision: Daniil, 2026-08-15.)*
 - [ ] 1.4.4 Targeting + projectiles (subcell); damage resolution.
 - [ ] 1.4.5 Waves, Scrap, lives, win/lose; wave budgets from analytic prior with `L` offset `(L/L_base)^0.5`.
 - [ ] 1.4.6 Refinery economy: Yield → Scrap anywhere; Extraction → Ore on ore cells only; Ore banked per tier.
-- [ ] 1.4.7 **HUD** (first-class): build palette, tower inspector with crosspath legality, tile hand, wave state, speed controls.
+- [~] 1.4.7 **HUD** (first-class): build palette, tower inspector with crosspath legality, tile hand, wave state, speed controls. *(early slice shipped ahead of schedule, PR #9: BoardView in `view`, pixel→cell mapping, hover highlight, click-select with brackets, cell inspector line)*
 - [ ] 1.4.8 Replay: `{version, seed, contentHash, inputs}` record/playback; golden state-hash test (2,000 ticks).
 
 ### 1.5 Phase 5 — smoke harness *(~0.5–1 session)*
