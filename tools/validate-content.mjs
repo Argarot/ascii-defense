@@ -23,9 +23,13 @@ const ASSET_DIR = 'packages/content/assets';
 const SCHEMA_DIR = 'packages/content/schema';
 
 // filename (or directory) -> schema. Extend as asset kinds appear.
+// Tile SEMANTICS (center-or-nothing edges, route continuity) are engine rules
+// and are checked by packages/harness/src/content.test.ts against the same
+// code the game runs - not duplicated here.
 const SCHEMA_FOR = {
   'palette.json': 'palette.schema.json',
   'sprites/': 'sprite.schema.json',
+  'tiles/': 'tiles.schema.json',
 };
 
 const ajv = new Ajv({ allErrors: true, strictTypes: false });

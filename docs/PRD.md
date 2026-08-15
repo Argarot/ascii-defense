@@ -57,9 +57,23 @@ authored in glyph grids and the aspect is absorbed by the cell shape.
 
 ### 4.2 Tiles and connectors
 
-Each terrain tile is a 5×5 grid of cell types plus **edge connectors** naming
-which edges carry road. A tile may be laid only where its connectors agree with
-every already-placed neighbour on their shared edge.
+Each terrain tile is a 5×5 grid of cell types. **Edge connectors are derived
+from the grid, never declared**: a road may cross a tile edge **only at that
+edge's center cell** — the center-or-nothing rule. So "does this edge carry
+road" is a boolean, matching is boolean equality, and inside the tile the road
+shape is arbitrary, Carcassonne-style. A declared connector cannot disagree
+with the drawn cells because there is no declared connector.
+
+Tile validity (enforced by one engine function, shared by the game, the
+content CI and the authoring tool): roads touch edges only at centers; all
+road/spawn cells form one connected group; a road that exists reaches at least
+one edge; spawns are interior cells.
+
+Placement legality: every shared edge agrees (both road, or both not); a
+connector may not face off the board — roads to nowhere are unrepresentable;
+in-game, a tile must touch the existing landmass, and **a road-carrying tile
+must join the existing road** (≥1 matched road edge), so the network stays one
+component growing from the spawn. Roadless scenery tiles need only contact.
 
 **Connectivity therefore holds by construction.** The game never validates that
 a path exists, because a disconnected board cannot be built. This is the same

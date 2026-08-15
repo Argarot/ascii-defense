@@ -46,6 +46,9 @@ Bonus: demo rebuilt as a seeded board through the real pipeline (PR #7); live pa
 
 ### 1.2 Phase 2 — art pipeline proof *(~0.5 session, needs Daniil)*
 
+**Parked until Daniil is at the laptop** — Phase 3 backend pulled forward
+instead (no dependency between them; resequenced 2026-08-15).
+
 **Gate: a sprite drawn in REXPaint appears in the game unchanged.**
 
 - [ ] 1.2.1 `tools/build-rexpaint-font.mjs` — spleen atlas as 16-column PNG, same index order as runtime glyphset.
@@ -56,16 +59,20 @@ Bonus: demo rebuilt as a seeded board through the real pipeline (PR #7); live pa
 
 ### 1.3 Phase 3 — the board *(~2–3 sessions)*
 
-**Gate: property test — 10,000 generated boards, connectivity always holds.**
+**Gate: connectivity property test — seeded edge-biased boards + adversarial
+unit battery, always holds.** *(Rescoped from "10,000 boards": with derived
+connectors, invalid states are unrepresentable; mass generation tests the RNG,
+not the logic. Decision: Daniil, 2026-08-15.)*
 
 - [ ] 1.3.1 Fixed 20 Hz tick loop; pause / 1× / 2× / 4× as ticks-per-frame.
 - [ ] 1.3.2 Three-level grid model; **subcell entity coordinates** (shipping as 1×1); occupancy `Uint16Array`.
-- [ ] 1.3.3 Tile model: 5×5 cell grids, edge connectors, rotation.
-- [ ] 1.3.4 Placement legality = connector agreement with all placed neighbours; tile-laying flow (draft → place).
-- [ ] 1.3.5 Starter tile library in `content/assets/tiles/` (enough shapes to exercise matching; density per D1 can come later).
+- [x] 1.3.3 Tile model: native 5×5 grids, **derived center-or-nothing connectors** (PRD §4.2), rotation, single validity function. *(PR #8)*
+- [x] 1.3.4 Placement legality: edge agreement, no road off-board, contact + **road-join rule** (road tiles must extend the network — found by the property test catching disconnected networks). Draft→place flow itself lands with the run loop (M2). *(PR #8)*
+- [x] 1.3.5 Starter library: 11 tiles authored native 5×5 in `content/assets/tiles/library.json`; 7×7 `tiledefs.json` + `to5()` downsampling hack removed. Semantic validation via engine in harness CI test. *(PR #8)*
 - [ ] 1.3.6 Dijkstra flow fields over cells: ground + flying; yields `L`.
-- [ ] 1.3.7 Terrain rendering: weighted glyph pools, mixing hash, boundary shading (lit/mid/dark).
-- [ ] 1.3.8 Property test: 10k random legal boards → connectivity holds, no orphaned tiles.
+- [ ] 1.3.7 Terrain rendering: weighted glyph pools, mixing hash, boundary shading (lit/mid/dark). *(pools + hash exist in demo; boundary shading and the view-package home remain)*
+- [x] 1.3.8 Connectivity tests: 35 seeded boards over sizes 2×1…14×7 + adversarial battery (off-center roads, corner roads, split routes, roads-to-nowhere, edge spawns, boundary violations, rotation identities, road-join). *(PR #8)*
+- [ ] 1.3.9 **Tile Smith** authoring tool: paint a 5×5 grid in the browser, live engine validation, export only when valid. *(new item, Daniil 2026-08-15; PR #10)*
 
 ### 1.4 Phase 4 — the game *(~3–4 sessions)* — **blocked by D1, D2, D3**
 
