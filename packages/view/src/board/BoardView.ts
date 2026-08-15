@@ -13,10 +13,10 @@ import {
   TILE_SIZE,
   TileLibrary,
   createRng,
-  growBoard,
   resolveCells,
   type Board,
   type CellType,
+  type GeneratedMap,
 } from '@ascii-defense/engine';
 import type { GLTerm } from '@ascii-defense/render';
 import { role } from '../palette';
@@ -38,7 +38,7 @@ const DESCRIBE: Record<CellType, string> = {
   R: 'road \u00b7 NEVER buildable',
   K: 'rock \u00b7 blocked',
   O: 'ore \u00b7 buildable \u00b7 a refinery here mines Ore',
-  S: 'spawn \u00b7 enemy entry',
+  C: 'the CORE \u00b7 protect this \u00b7 every road leads here',
 };
 
 export interface CellRef {
@@ -64,6 +64,7 @@ export interface RenderState {
 
 export class BoardView {
   private board!: Board;
+  private map!: GeneratedMap;
   private cells!: (CellType | null)[];
   private seed = 0;
 
@@ -79,21 +80,12 @@ export class BoardView {
     this.cellsH = opts.mapY * TILE_SIZE;
   }
 
-  /** Grow and cache the board for a seed. Rendering never regrows. */
-  setSeed(seed: number): void {
+  /** Adopt a generated map. Generation is the app's business (engine call). */
+  setMap(map: GeneratedMap, seed: number): void {
+    this.map = map;
+    this.board = map.board;
     this.seed = seed;
-    this.board = growBoard(createRng(seed).stream('map'), this.lib, {
-      width: this.opts.mapX,
-      height: this.opts.mapY,
-      startTileId: 'spawn',
-      // Mid-run snapshot, not endgame: visible void is the game's shape.
-      maxTiles: Math.floor(this.opts.mapX * this.opts.mapY * 0.6),
-    });
     this.cells = resolveCells(this.board, this.lib);
-  }
-
-  tilesLaid(): number {
-    return this.board.slots.filter(Boolean).length;
   }
 
   cellType(ref: CellRef): CellType | null {
@@ -124,11 +116,11 @@ export class BoardView {
     const decor = createRng(this.seed).stream('combat');
 
     term.clear(role('ui.bg'));
-    term.write(0, 0, `ASCII DEFENSE \u00b7 terrain demo \u00b7 seed ${this.seed}`, role('ui.accent'));
+    term.write(0, 0, `ASCII DEFENSE \u00b7 generated map \u00b7 seed ${this.seed}`, role('ui.accent'));
     term.write(
       0,
       1,
-      `hover inspects \u00b7 click selects \u00b7 R rerolls \u00b7 ?seed=${this.seed} pins this board \u00b7 ${this.tilesLaid()} tiles grown from the spawn`,
+      `hover inspects \u00b7 click selects \u00b7 R rerolls \u00b7 ?seed=${this.seed} pins this map \u00b7 ${this.map.entries.length} entries, every road leads to the Core`,
       role('ui.dim'),
     );
     term.write(0, 2, this.describeCell(state.selected ?? state.hover), role('ui.text'));

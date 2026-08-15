@@ -103,10 +103,10 @@ export function validateTileCells(cells: readonly string[]): string[] {
       if (c === 'R' && onEdge(x, y) && !isEdgeCenter(x, y)) {
         errors.push(`road at (${x},${y}) touches an edge off-center - roads may cross edges only at their middle cell`);
       }
-      // Spawn is the route's terminus; on an edge it would read as a
+      // Core cells are the route's terminus; on an edge they would read as a
       // connector while deriving none, which is a visual lie.
-      if (c === 'S' && onEdge(x, y)) {
-        errors.push(`spawn at (${x},${y}) sits on an edge - spawns must be interior`);
+      if (c === 'C' && onEdge(x, y)) {
+        errors.push(`core at (${x},${y}) sits on an edge - the Core must be interior`);
       }
     }
 

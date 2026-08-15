@@ -45,15 +45,15 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     expect(validateTileCells(bad).join()).toMatch(/never reaches an edge/);
   });
 
-  it('rejects a spawn on any edge, even the center', () => {
-    const bad = g('GGGGG', 'GGGGG', 'SRRRR', 'GGGGG', 'GGGGG');
-    expect(validateTileCells(bad).join()).toMatch(/spawn.*edge/);
+  it('rejects a core cell on any edge, even the center', () => {
+    const bad = g('GGGGG', 'GGGGG', 'CRRRR', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(bad).join()).toMatch(/core.*edge/);
   });
 
-  it('accepts an interior spawn joined to the road', () => {
-    const good = g('GGGGG', 'GGGGG', 'GGSRR', 'GGGGG', 'GGGGG');
+  it('accepts an interior core block joined to the road', () => {
+    const good = g('GGGGG', 'GCCCG', 'GCCCR', 'GCCCG', 'GGGGG');
     expect(validateTileCells(good)).toEqual([]);
-    // Spawn derives no connector: only the east road cell does.
+    // Core cells derive no connector: only the east road cell does.
     expect(deriveConnectors(good)).toEqual({ n: false, e: true, s: false, w: false });
   });
 
@@ -145,7 +145,7 @@ describe('placement legality', () => {
 
 describe('grown boards hold the connectivity contract (seeded, edge-biased sizes)', () => {
   const LIB_DEFS = [
-    { id: 'spawn', cells: g('GGGGG', 'GGGGG', 'GGSRR', 'GGGGG', 'GGGGG') },
+    { id: 'core', cells: g('GGGGG', 'GCCCG', 'GCCCR', 'GCCCG', 'GGGGG') },
     { id: 'straight', cells: STRAIGHT },
     { id: 'corner', cells: CORNER },
     { id: 'tee', cells: g('GGGGG', 'GGGGG', 'RRRRR', 'GGRGG', 'GGRGG') },
@@ -155,7 +155,7 @@ describe('grown boards hold the connectivity contract (seeded, edge-biased sizes
   ];
   const lib = new TileLibrary(LIB_DEFS);
 
-  // Smallest board a spawn fits on, up to demo size. Small boards are where
+  // Smallest board a core fits on, up to demo size. Small boards are where
   // boundary bugs live, which is why they get equal representation.
   const SIZES: [number, number][] = [[2, 1], [2, 2], [3, 3], [8, 3], [14, 7]];
 
@@ -167,7 +167,7 @@ describe('grown boards hold the connectivity contract (seeded, edge-biased sizes
         const board = growBoard(rng.stream('map'), lib, {
           width: w,
           height: h,
-          startTileId: 'spawn',
+          startTileId: 'core',
           maxTiles: w * h,
         });
         boards++;
@@ -213,23 +213,23 @@ describe('grown boards hold the connectivity contract (seeded, edge-biased sizes
     expect(boards).toBe(SIZES.length * 7);
   });
 
-  it('the road network grown from the spawn is one connected component', () => {
+  it('the road network grown from the core is one connected component', () => {
     // The in-game guarantee: growth only ever extends the landmass, and roads
     // only join at matched connectors, so every road cell must be reachable
-    // from the spawn. Checked on the resolved grid with plain BFS.
+    // from the core. Checked on the resolved grid with plain BFS.
     for (let seed = 1; seed <= 10; seed++) {
       const rng = createRng(seed);
       const w = 8, h = 6;
       const board = growBoard(rng.stream('map'), lib, {
-        width: w, height: h, startTileId: 'spawn', maxTiles: w * h,
+        width: w, height: h, startTileId: 'core', maxTiles: w * h,
       });
       const cells = resolveCells(board, lib);
       const W = w * 5, H = h * 5;
       const route = new Set<number>();
       let start = -1;
       for (let i = 0; i < cells.length; i++) {
-        if (cells[i] === 'R' || cells[i] === 'S') route.add(i);
-        if (cells[i] === 'S') start = i;
+        if (cells[i] === 'R' || cells[i] === 'C') route.add(i);
+        if (cells[i] === 'C') start = i;
       }
       expect(start).toBeGreaterThanOrEqual(0);
 
@@ -252,15 +252,15 @@ describe('grown boards hold the connectivity contract (seeded, edge-biased sizes
   it('growth is deterministic per seed', () => {
     const grow = () =>
       growBoard(createRng(777).stream('map'), lib, {
-        width: 6, height: 5, startTileId: 'spawn', maxTiles: 30,
+        width: 6, height: 5, startTileId: 'core', maxTiles: 30,
       });
     expect(grow()).toEqual(grow());
   });
 
-  it('a spawn cannot exist on a 1x1 board - its road would exit the world', () => {
+  it('a core cannot exist on a 1x1 board - its road would exit the world', () => {
     expect(() =>
       growBoard(createRng(1).stream('map'), lib, {
-        width: 1, height: 1, startTileId: 'spawn', maxTiles: 5,
+        width: 1, height: 1, startTileId: 'core', maxTiles: 5,
       }),
     ).toThrow(/fits nowhere/);
   });
