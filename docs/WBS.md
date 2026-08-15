@@ -31,15 +31,15 @@ Conventions:
 
 **Gate: CI green on an empty game.**
 
-- [ ] 1.1.1 Convert repo to npm workspaces: `packages/{engine,content,render,view,bot,harness,app}` + `tools/`. Move `GLTerm.ts` → `render`, demo bootstrap → `app`. Site still builds and deploys identically.
-- [ ] 1.1.2 TypeScript project references / per-package tsconfig; `typecheck` covers all packages.
-- [ ] 1.1.3 ESLint 9 flat config with **invariant rules**: ban `Math.random` (inv 1); forbid appearance imports/branching in `engine` (inv 2); layer-import boundaries `engine/content ⊄ render/view/app/DOM`, `render ⊄ engine` (inv 3). Use `eslint-plugin-boundaries` or `import-x` zones rather than hand-rolled rules if they fit.
-- [ ] 1.1.4 Vitest 4 for Node-side unit tests; first real test target: RNG streams.
-- [ ] 1.1.5 `pure-rand` seeded PRNG with named streams in `engine/rng`; delete the biased mock xorshift.
+- [x] 1.1.1 Convert repo to npm workspaces: `packages/{engine,content,render,view,bot,harness,app}` + `tools/`. Move `GLTerm.ts` → `render`, demo bootstrap → `app`. Site still builds and deploys identically. *(PR #1; also fixed `vite preview` never serving the Pages base)*
+- [x] 1.1.2 TypeScript project references / per-package tsconfig; `typecheck` covers all packages. Headless packages get `lib: [ES2022]`, no DOM — invariant 2 at compile level. *(PR #1)*
+- [x] 1.1.3 ESLint 9 flat config with **invariant rules**: `Math.random` ban (inv 1); DOM-global ban in headless packages (inv 2); layer-import boundaries via `eslint-plugin-boundaries` v7 (inv 3); `node:` builtins banned outside harness/tools. All rules proven to fire on planted violations. *(PR #2)*
+- [x] 1.1.4 Vitest 4 for Node-side unit tests; 11 RNG tests. *(PR #3)*
+- [x] 1.1.5 `pure-rand` seeded PRNG with named streams (`map|drafts|waves|combat` as a union type) in `engine/rng`; golden values frozen against dependency drift; state round-trip tested for M2 save/resume. The mock xorshift survives only as `main.ts` demo layout hashing, replaced wholesale in Phase 3. *(PR #3)*
 - [ ] 1.1.6 Vitest Browser Mode + Playwright provider; prove GLTerm renders in real Chromium under test.
 - [ ] 1.1.7 Text-snapshot infrastructure on `GLTerm.toText()`; one golden screen committed and diffable.
 - [ ] 1.1.8 Content pipeline: `content/schema/*.schema.json`, `json-schema-to-typescript` codegen (committed types, CI fails on drift), `ajv` validation at load, content linter skeleton.
-- [ ] 1.1.9 `ci.yml`: typecheck, lint, unit, browser/snapshot, content validation. Runs on PR; `pages.yml` untouched.
+- [~] 1.1.9 `ci.yml`: typecheck, lint, unit, **build** run on every PR *(PR #4)*. Still to add in session 2: browser/snapshot job, content validation job.
 
 ### 1.2 Phase 2 — art pipeline proof *(~0.5 session, needs Daniil)*
 
