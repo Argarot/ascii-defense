@@ -13,6 +13,7 @@ import {
   TILE_SIZE,
   TileLibrary,
   createRng,
+  effectiveStats,
   generateMap,
   resolveCells,
 } from '@ascii-defense/engine';
@@ -45,7 +46,7 @@ async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
   const lib = new TileLibrary(tileLibraryJson.tiles);
 
-  const mapX = 14, mapY = 7;
+  const mapX = 12, mapY = 7; // 2 tile columns ceded to the side panel (Daniil)
   const boardCols = mapX * TILE_SIZE * CELL_W;
   const term = new GLTerm(glyphs, {
     cols: boardCols,
@@ -62,11 +63,11 @@ async function main(): Promise<void> {
     glyphPxH: GLYPH_PX_H,
   });
 
-  // The HUD below the board, at 2x glyph size (10x16 px - integer multiple,
-  // the bitmap font stays crisp). Half the columns, same pixel width.
+  // The HUD beside the board, full height at 2x glyph size (10x16 px -
+  // integer multiple, the bitmap font stays crisp).
   const hudTerm = new GLTerm(glyphs, {
-    cols: Math.floor(boardCols / 2),
-    rows: 4,
+    cols: 25,
+    rows: Math.floor((mapY * TILE_SIZE * CELL_H * GLYPH_PX_H) / (GLYPH_PX_H * 2)),
     cellPx: GLYPH_PX_W * 2,
     cellPxH: GLYPH_PX_H * 2,
     background: role('ui.bg'),
@@ -84,6 +85,7 @@ async function main(): Promise<void> {
   let speedIdx = 1; // start at 1x
   let showGrid = false;
   let selectedBuild = 0; // palette index of the active build choice
+  let hudHover: import('@ascii-defense/view').HudAction | null = null;
   let dirty = true;
 
   const setSeed = (s: number): void => {
@@ -144,10 +146,13 @@ async function main(): Promise<void> {
     // Selected tower shows its true reach - "range 6" as paint, not prose.
     const selTower = selected ? sim.towerAt(selected.x, selected.y) : null;
     const buildTarget = selected !== null && sim.canBuildAt(selected.x, selected.y);
+    // Hovering a palette entry previews THAT tower's radius (the staged-tile
+    // ring follows the mouse, not just the last click - Daniil's fix).
+    const previewIdx = hudHover?.kind === 'build' ? hudHover.index : selectedBuild;
     const range = selTower
       ? { x: selTower.cellX, y: selTower.cellY, r: sim.stats(selTower).range }
       : buildTarget && selected
-        ? { x: selected.x, y: selected.y, r: TOWER_DEFS[selectedBuild].range }
+        ? { x: selected.x, y: selected.y, r: TOWER_DEFS[previewIdx].range }
         : null;
     view.render({
       hover,
@@ -176,10 +181,22 @@ async function main(): Promise<void> {
     const infoTower = selTower ?? hoverTower;
     const def = infoTower ? sim.towerDef(infoTower) : null;
     const eff = infoTower ? sim.stats(infoTower) : null;
+    // Choice hover: fold the would-be pick into a stat preview.
+    let effPreview: ReturnType<typeof sim.stats> | null = null;
+    if (infoTower && hudHover?.kind === 'choose' && sim.choiceCost(infoTower, hudHover.tier, hudHover.option) !== null) {
+      const next = [...infoTower.choices] as [number, number, number];
+      next[hudHover.tier] = hudHover.option;
+      effPreview = effectiveStats(sim.towerDef(infoTower), next);
+    }
+    const toStats = (e: NonNullable<typeof eff>) => ({
+      dmg: e.damage,
+      dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
+      range: Math.round(e.range * 10) / 10,
+      slow: e.slowTicks,
+    });
     hud.render({
       scrap: sim.scrap,
       kills: sim.kills,
-      coreDamage: sim.coreDamage,
       coreHp: sim.coreHp,
       coreHpMax: sim.coreHpMax,
       wave: sim.wave,
@@ -196,14 +213,14 @@ async function main(): Promise<void> {
       })),
       selectedBuild,
       buildTargetSelected: buildTarget,
+      phase: animPhase,
       selectedTower:
         infoTower && def && eff
           ? {
               name: def.name ?? def.id,
               kills: infoTower.kills,
-              dmg: eff.damage,
-              dps: ((eff.damage / eff.fireEveryTicks) * TICK_HZ).toFixed(1),
-              range: eff.range,
+              stats: toStats(eff),
+              preview: effPreview ? toStats(effPreview) : null,
               priority: infoTower.priority,
               tiers: (def.tiers ?? []).map((tierDef, ti) => ({
                 choices: tierDef.choices.map((c, ci) => {
@@ -225,8 +242,10 @@ async function main(): Promise<void> {
   };
 
   const app = document.getElementById('app')!;
+  app.style.display = 'flex';
+  app.style.alignItems = 'flex-start';
+  app.style.gap = '6px';
   app.appendChild(term.canvas);
-  hudTerm.canvas.style.marginTop = '4px';
   app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
   cap.className = 'hud';
@@ -252,6 +271,20 @@ async function main(): Promise<void> {
   });
   term.canvas.addEventListener('mouseleave', () => {
     hover = null;
+    dirty = true;
+  });
+  // Hovering HUD labels previews them (radius for palette, stats for
+  // choices); the same regions answer clicks.
+  hudTerm.canvas.addEventListener('mousemove', (e) => {
+    const a = hud.actionAt(e.offsetX, e.offsetY);
+    const changed = JSON.stringify(a) !== JSON.stringify(hudHover);
+    if (changed) {
+      hudHover = a;
+      dirty = true;
+    }
+  });
+  hudTerm.canvas.addEventListener('mouseleave', () => {
+    hudHover = null;
     dirty = true;
   });
   // Mouse-first: the HUD's labels ARE its buttons.
