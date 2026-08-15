@@ -28,14 +28,14 @@ const BRUSH_LABEL: Record<CellType, string> = {
   R: 'R road',
   K: 'K rock',
   O: 'O ore',
-  S: 'S spawn',
+  C: 'C core',
 };
 const BRUSH_BG: Record<CellType, string> = {
   G: '#3d4f61',
   R: '#93abc4',
   K: '#5a6a7c',
   O: '#ffd15c',
-  S: '#ff9090',
+  C: '#2bbfae',
 };
 
 let cells: string[] = ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];

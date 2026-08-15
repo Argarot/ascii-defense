@@ -25,8 +25,8 @@
     "terrain.ore.mid": "#ffd15c",
     "terrain.ore.lit": "#fff0b0",
     "terrain.ore.dark": "#2a2415",
-    "terrain.spawn.mid": "#ff9090",
-    "terrain.spawn.lit": "#ffd0d0",
-    "terrain.spawn.dark": "#331a1a"
+    "terrain.core.mid": "#2bbfae",
+    "terrain.core.lit": "#a8fff2",
+    "terrain.core.dark": "#0d2b26"
   }
 }

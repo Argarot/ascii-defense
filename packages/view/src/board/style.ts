@@ -15,7 +15,7 @@ export const POOLS: Record<CellType, string> = {
   R: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   K: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
   O: '*+.o\u283f\u283e\u283d\u283bO0\u2837',
-  S: '>>:.\u2808\u2818\u2838',
+  C: '\u28ff\u28f7\u28ef@O0\u28f6',
 };
 
 export const TERRAIN_KEY: Record<CellType, string> = {
@@ -23,7 +23,7 @@ export const TERRAIN_KEY: Record<CellType, string> = {
   R: 'road',
   K: 'rock',
   O: 'ore',
-  S: 'spawn',
+  C: 'core',
 };
 
 /** Stateless mixing hash for per-glyph texture (ASSETS.md sec 5). */

@@ -5,7 +5,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { TILE_SIZE, TileLibrary } from '@ascii-defense/engine';
+import { TILE_SIZE, TileLibrary, createRng, generateMap } from '@ascii-defense/engine';
 import { BoardView, CELL_W, CELL_H, role } from '@ascii-defense/view';
 import type { CellRef } from '@ascii-defense/view';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -52,7 +52,15 @@ async function main(): Promise<void> {
 
   const setSeed = (s: number): void => {
     seed = s;
-    view.setSeed(seed);
+    // Difficulty knobs (PRD sec 4.4) - hardcoded demo values until threat
+    // levels exist: 3 fronts, paths forced to wander 12 slots before exiting.
+    const map = generateMap(createRng(seed).stream('map'), lib, {
+      width: mapX,
+      height: mapY,
+      entries: 3,
+      targetPathLength: 12,
+    });
+    view.setMap(map, seed);
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
     draw();
@@ -63,8 +71,7 @@ async function main(): Promise<void> {
   const cap = document.createElement('div');
   cap.className = 'hud';
   cap.textContent =
-    `spleen 5x8 \u00b7 board by engine growBoard (derived connectors, road-join rule) \u00b7 ` +
-    `hover + selection are view-layer; the engine never knows a mouse exists \u00b7 `;
+    `spleen 5x8 \u00b7 map by engine generateMap: Core center, 3 carved entries, ore richer far from the road \u00b7 `;
   const smithLink = document.createElement('a');
   smithLink.href = 'tilesmith.html';
   smithLink.textContent = 'tile smith \u2192';

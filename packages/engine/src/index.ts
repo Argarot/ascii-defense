@@ -31,3 +31,6 @@ export {
   resolveCells,
 } from './tiles/board';
 export type { Board, Placement, PlaceOptions } from './tiles/board';
+
+export { generateMap } from './mapgen/mapgen';
+export type { GeneratedMap, MapGenOptions, CellRef } from './mapgen/mapgen';

@@ -2,7 +2,7 @@
 // Regenerate: node tools/build-content-types.mjs
 
 /**
- * Terrain tile library. A tile is a 5x5 grid of cell codes (G ground, R road, K rock, O ore, S spawn). Edge connectors are DERIVED from the grid - roads may cross an edge only at its center cell - so there is no conn field to disagree with the drawing. Semantic rules (center-or-nothing, route continuity, interior spawns) are enforced by engine validateTile, run over this file in CI.
+ * Terrain tile library. A tile is a 5x5 grid of cell codes (G ground, R road, K rock, O ore, C core). Edge connectors are DERIVED from the grid - roads may cross an edge only at its center cell - so there is no conn field to disagree with the drawing. Semantic rules (center-or-nothing, route continuity, interior spawns) are enforced by engine validateTile, run over this file in CI.
  */
 export interface TileLibrary {
   $schema?: string;
@@ -36,7 +36,7 @@ export const tilesSchema = {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "ascii-defense/tiles.schema.json",
   "title": "TileLibrary",
-  "description": "Terrain tile library. A tile is a 5x5 grid of cell codes (G ground, R road, K rock, O ore, S spawn). Edge connectors are DERIVED from the grid - roads may cross an edge only at its center cell - so there is no conn field to disagree with the drawing. Semantic rules (center-or-nothing, route continuity, interior spawns) are enforced by engine validateTile, run over this file in CI.",
+  "description": "Terrain tile library. A tile is a 5x5 grid of cell codes (G ground, R road, K rock, O ore, C core). Edge connectors are DERIVED from the grid - roads may cross an edge only at its center cell - so there is no conn field to disagree with the drawing. Semantic rules (center-or-nothing, route continuity, interior spawns) are enforced by engine validateTile, run over this file in CI.",
   "type": "object",
   "required": [
     "tiles"
@@ -70,7 +70,7 @@ export const tilesSchema = {
             "maxItems": 5,
             "items": {
               "type": "string",
-              "pattern": "^[GRKOS]{5}$"
+              "pattern": "^[GRKOC]{5}$"
             }
           }
         }
