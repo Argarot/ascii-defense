@@ -58,8 +58,6 @@ export interface BoardViewOptions {
   glyphPxH: number;
 }
 
-/** Text rows below the board: inspector, title, help. */
-export const HUD_ROWS = 3;
 
 export interface RenderState {
   hover: CellRef | null;
@@ -73,10 +71,6 @@ export interface RenderState {
   projectiles?: readonly { x: number; y: number }[];
   /** The hovered cell accepts a build right now (sim's verdict, not ours). */
   hoverBuildable?: boolean;
-  /** Replaces the inspector line when the app knows better (tower stats). */
-  inspectorOverride?: string;
-  /** Right side of the title row: sim status (breaches, speed). */
-  status?: string;
   /** Faint markers on tile corners - the map's seams, visible on demand. */
   showGrid?: boolean;
   /** Range overlay for the selected tower, in cell units. */
@@ -85,9 +79,7 @@ export interface RenderState {
 
 export class BoardView {
   private board!: Board;
-  private map!: GeneratedMap;
   private cells!: (CellType | null)[];
-  private seed = 0;
 
   readonly cellsW: number;
   readonly cellsH: number;
@@ -102,10 +94,8 @@ export class BoardView {
   }
 
   /** Adopt a generated map. Generation is the app's business (engine call). */
-  setMap(map: GeneratedMap, seed: number): void {
-    this.map = map;
+  setMap(map: GeneratedMap): void {
     this.board = map.board;
-    this.seed = seed;
     this.cells = resolveCells(this.board, this.lib);
   }
 
@@ -133,27 +123,9 @@ export class BoardView {
 
   render(state: RenderState): void {
     const term = this.term;
-    const offsetY = 0; // board at the top; HUD text lives BELOW the board
-    const hudY = this.cellsH * CELL_H;
+    const offsetY = 0; // the board owns its whole surface; text lives in HudPanel
 
     term.clear(role('ui.bg'));
-    // Bottom HUD rows: inspector nearest the board, then title, then help.
-    term.write(
-      0,
-      hudY,
-      state.inspectorOverride ?? this.describeCell(state.selected ?? state.hover),
-      role('ui.text'),
-    );
-    term.write(0, hudY + 1, `ASCII DEFENSE \u00b7 generated map \u00b7 seed ${this.seed}`, role('ui.accent'));
-    if (state.status) {
-      term.write(this.cellsW * CELL_W - state.status.length, hudY + 1, state.status, role('ui.accent'));
-    }
-    term.write(
-      0,
-      hudY + 2,
-      `hover inspects \u00b7 click selects/builds \u00b7 R rerolls \u00b7 G tile seams \u00b7 X sells \u00b7 ?seed=${this.seed} pins this map \u00b7 ${this.map.entries.length} entries`,
-      role('ui.dim'),
-    );
 
     for (let cy = 0; cy < this.cellsH; cy++)
       for (let cx = 0; cx < this.cellsW; cx++) {

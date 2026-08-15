@@ -16,7 +16,7 @@ import {
   generateMap,
   resolveCells,
 } from '@ascii-defense/engine';
-import { BoardView, CELL_W, CELL_H, HUD_ROWS, role } from '@ascii-defense/view';
+import { BoardView, HudPanel, CELL_W, CELL_H, role } from '@ascii-defense/view';
 import type { CellRef } from '@ascii-defense/view';
 import { validateEnemies, validateTowers } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -46,10 +46,10 @@ async function main(): Promise<void> {
   const lib = new TileLibrary(tileLibraryJson.tiles);
 
   const mapX = 14, mapY = 7;
+  const boardCols = mapX * TILE_SIZE * CELL_W;
   const term = new GLTerm(glyphs, {
-    cols: mapX * TILE_SIZE * CELL_W,
-    // Board on top, HUD text rows below it (Daniil: HUD lives at the bottom).
-    rows: mapY * TILE_SIZE * CELL_H + HUD_ROWS,
+    cols: boardCols,
+    rows: mapY * TILE_SIZE * CELL_H,
     cellPx: GLYPH_PX_W,
     cellPxH: GLYPH_PX_H,
     background: role('ui.bg'),
@@ -61,6 +61,17 @@ async function main(): Promise<void> {
     glyphPxW: GLYPH_PX_W,
     glyphPxH: GLYPH_PX_H,
   });
+
+  // The HUD below the board, at 2x glyph size (10x16 px - integer multiple,
+  // the bitmap font stays crisp). Half the columns, same pixel width.
+  const hudTerm = new GLTerm(glyphs, {
+    cols: Math.floor(boardCols / 2),
+    rows: 4,
+    cellPx: GLYPH_PX_W * 2,
+    cellPxH: GLYPH_PX_H * 2,
+    background: role('ui.bg'),
+  });
+  const hud = new HudPanel(hudTerm);
 
   // Seed from the URL if pinned, else from the clock (Math.random is banned
   // everywhere, and the whole point is that the seed is the only entropy).
@@ -90,7 +101,7 @@ async function main(): Promise<void> {
       entries,
       targetPathLength,
     });
-    view.setMap(map, seed);
+    view.setMap(map);
     sim = new Sim(seed, {
       cells: resolveCells(map.board, lib),
       cellsW: mapX * TILE_SIZE,
@@ -113,15 +124,6 @@ async function main(): Promise<void> {
     return out;
   };
 
-  const describeTower = (cell: CellRef | null): string | undefined => {
-    if (!cell) return undefined;
-    const t = sim.towerAt(cell.x, cell.y);
-    if (!t) return undefined;
-    const def = sim.towerDef(t);
-    const dps = ((def.projectile.damage / def.fireEveryTicks) * TICK_HZ).toFixed(1);
-    return `${def.name ?? def.id} \u00b7 kills ${t.kills} \u00b7 dmg ${def.projectile.damage} \u00b7 ${dps}/s \u00b7 range ${def.range} \u00b7 X sells`;
-  };
-
   const draw = (): void => {
     const speed = SPEEDS[speedIdx];
     const towers: { x: number; y: number }[] = [];
@@ -142,16 +144,48 @@ async function main(): Promise<void> {
       towers,
       projectiles,
       range,
-      hoverBuildable: hover !== null && sim.canBuildAt(hover.x, hover.y),
-      inspectorOverride: describeTower(selected) ?? describeTower(hover),
+      // Green only when the sim would actually accept the click: placeable
+      // AND affordable.
+      hoverBuildable:
+        hover !== null && sim.canBuildAt(hover.x, hover.y) && sim.canAfford(TOWER_DEFS[0].id),
       showGrid,
-      status: `kills ${sim.kills} \u00b7 core -${sim.coreDamage} \u00b7 ${speed === 0 ? 'PAUSED (space)' : `${speed}x`} \u00b7 L=${sim.flow.L}`,
+    });
+
+    const hoverTower = hover ? sim.towerAt(hover.x, hover.y) : null;
+    const infoTower = selTower ?? hoverTower;
+    const def = infoTower ? sim.towerDef(infoTower) : null;
+    hud.render({
+      scrap: sim.scrap,
+      kills: sim.kills,
+      coreDamage: sim.coreDamage,
+      L: sim.flow.L,
+      seed,
+      speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
+      inspector: view.describeCell(selected ?? hover),
+      palette: TOWER_DEFS.map((d) => ({
+        name: d.name ?? d.id,
+        cost: d.cost,
+        affordable: sim.canAfford(d.id),
+      })),
+      selectedTower:
+        infoTower && def
+          ? {
+              name: def.name ?? def.id,
+              kills: infoTower.kills,
+              dmg: def.projectile.damage,
+              dps: ((def.projectile.damage / def.fireEveryTicks) * TICK_HZ).toFixed(1),
+              range: def.range,
+              priority: infoTower.priority,
+            }
+          : null,
     });
     dirty = false;
   };
 
   const app = document.getElementById('app')!;
   app.appendChild(term.canvas);
+  hudTerm.canvas.style.marginTop = '4px';
+  app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
   cap.className = 'hud';
   cap.textContent =
@@ -203,6 +237,11 @@ async function main(): Promise<void> {
     if (e.key === 'g' || e.key === 'G') { showGrid = !showGrid; dirty = true; }
     if ((e.key === 'x' || e.key === 'X' || e.key === 'Delete') && selected) {
       if (sim.sellTower(selected.x, selected.y)) dirty = true;
+    }
+    if (selected) {
+      const prio = { f: 'first', l: 'last', c: 'closest', w: 'weakest' } as const;
+      const p = prio[e.key.toLowerCase() as keyof typeof prio];
+      if (p && sim.setPriority(selected.x, selected.y, p)) dirty = true;
     }
     if (e.key === 'Escape') {
       selected = null;
