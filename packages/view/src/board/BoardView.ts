@@ -85,6 +85,8 @@ export interface RenderState {
   showGrid?: boolean;
   /** Range overlay for the selected tower, in cell units. */
   range?: { x: number; y: number; r: number } | null;
+  /** The range shown is a pre-build preview: pulse it. */
+  rangeIsPreview?: boolean;
   /** Entries the NEXT wave attacks from - telegraphed with '!' markers. */
   telegraph?: readonly CellRef[];
   /** The Core has fallen; draw the end screen over everything. */
@@ -232,8 +234,9 @@ export class BoardView {
           const dy = uy - cy;
           if (Math.abs(Math.sqrt(dx * dx + dy * dy) - r) <= band) {
             // Brighten what is already there - the ring wears the terrain's
-            // own tone instead of flat paint (Daniil).
-            term.shade(gx, offsetY + gy, 1.9, 0.07);
+            // own tone instead of flat paint (Daniil). Previews breathe.
+            const mul = state.rangeIsPreview ? 1.3 + 0.9 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1) : 1.9;
+            term.shade(gx, offsetY + gy, mul, 0.07);
           }
         }
     }
@@ -274,10 +277,12 @@ export class BoardView {
     for (const t of state.telegraph ?? []) {
       const gx = t.x * CELL_W;
       const gy = offsetY + t.y * CELL_H;
-      term.put(gx + 1, gy + 1, '!', role('enemy.fast'));
-      term.put(gx + 3, gy + 1, '!', role('enemy.fast'));
       for (let yy = 0; yy < CELL_H; yy++)
         for (let xx = 0; xx < CELL_W; xx++) term.shade(gx + xx, gy + yy, breathe, 0.12);
+      // No bold in a bitmap font; contrast does bold's job - bright glyphs
+      // on a solid dark-red plate that the breathing cannot wash out.
+      term.put(gx + 1, gy + 1, '!', '#ffffff', '#8a2231');
+      term.put(gx + 3, gy + 1, '!', '#ffffff', '#8a2231');
     }
 
     // Selection brackets last, over everything: the selected cell's corner

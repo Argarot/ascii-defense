@@ -458,7 +458,9 @@ export class Sim {
   private applyDamage(enemy: number, raw: number, slowMulN: number, slowTicksN: number, towerIdx: number): void {
     if (!this.alive[enemy]) return;
     const def = this.opts.enemyDefs[this.enemyDefIdx[enemy]];
-    let dmg = Math.max(1, raw - (def.armor ?? 0));
+    // Zero-damage attacks are pure control (Frost's base): effects land,
+    // health does not move, armor's min-1 rule only applies to real hits.
+    let dmg = raw <= 0 ? 0 : Math.max(1, raw - (def.armor ?? 0));
     if (this.shield[enemy] > 0) {
       const absorbed = Math.min(this.shield[enemy], dmg);
       this.shield[enemy] -= absorbed;

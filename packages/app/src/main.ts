@@ -143,9 +143,12 @@ async function main(): Promise<void> {
     }
     // Selected tower shows its true reach - "range 6" as paint, not prose.
     const selTower = selected ? sim.towerAt(selected.x, selected.y) : null;
+    const buildTarget = selected !== null && sim.canBuildAt(selected.x, selected.y);
     const range = selTower
-      ? { x: selTower.cellX, y: selTower.cellY, r: sim.towerDef(selTower).range }
-      : null;
+      ? { x: selTower.cellX, y: selTower.cellY, r: sim.stats(selTower).range }
+      : buildTarget && selected
+        ? { x: selected.x, y: selected.y, r: TOWER_DEFS[selectedBuild].range }
+        : null;
     view.render({
       hover,
       selected,
@@ -160,6 +163,7 @@ async function main(): Promise<void> {
         sim.canBuildAt(hover.x, hover.y) &&
         sim.canAfford(TOWER_DEFS[selectedBuild].id),
       showGrid,
+      rangeIsPreview: !selTower && buildTarget,
       telegraph: sim.nextWaveEntries,
       gameOver: sim.status === 'lost',
       pulses: sim.pulses
@@ -191,6 +195,7 @@ async function main(): Promise<void> {
         affordable: sim.canAfford(d.id),
       })),
       selectedBuild,
+      buildTargetSelected: buildTarget,
       selectedTower:
         infoTower && def && eff
           ? {
@@ -253,21 +258,22 @@ async function main(): Promise<void> {
   hudTerm.canvas.addEventListener('click', (e) => {
     const action = hud.actionAt(e.offsetX, e.offsetY);
     if (!action) return;
-    if (action.kind === 'build') selectedBuild = action.index;
+    if (action.kind === 'build') {
+      selectedBuild = action.index;
+      // The palette IS the build button when a tile is staged.
+      if (selected && sim.canBuildAt(selected.x, selected.y)) {
+        sim.buildTower(selected.x, selected.y, TOWER_DEFS[action.index].id);
+      }
+    }
     if (action.kind === 'priority' && selected) sim.setPriority(selected.x, selected.y, action.value);
     if (action.kind === 'choose' && selected) sim.chooseTier(selected.x, selected.y, action.tier, action.option);
     dirty = true;
   });
   term.canvas.addEventListener('click', (e) => {
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
-    // Build on buildable ground (free until the economy lands, session B);
-    // anything else is selection.
-    if (cell && sim.canBuildAt(cell.x, cell.y)) {
-      sim.buildTower(cell.x, cell.y, TOWER_DEFS[selectedBuild].id);
-      selected = cell;
-    } else {
-      selected = same(cell, selected) ? null : cell; // click again to deselect
-    }
+    // Select-first flow (Daniil): clicking never builds. Pick the tile,
+    // then pick the tower in the HUD; the preview ring breathes meanwhile.
+    selected = same(cell, selected) ? null : cell;
     dirty = true;
   });
   window.addEventListener('keydown', (e) => {

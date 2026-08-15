@@ -57,6 +57,8 @@ export interface HudState {
   palette: readonly { name: string; cost: number; affordable: boolean }[];
   /** Which palette entry is the active build choice. */
   selectedBuild: number;
+  /** A buildable empty tile is selected - palette clicks build THERE. */
+  buildTargetSelected: boolean;
   /** Set when the selection is a tower - swaps the action row to priorities. */
   selectedTower: HudTowerInfo | null;
 }
@@ -170,7 +172,12 @@ export class HudPanel {
         this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'build', index } });
         x += label.length + 3;
       });
-      term.write(x, 2, '(click green ground to place)', role('ui.dim'));
+      term.write(
+        x,
+        2,
+        s.buildTargetSelected ? '<- click a tower to build on the selected tile' : '(select a tile, then pick a tower here)',
+        s.buildTargetSelected ? role('ui.accent') : role('ui.dim'),
+      );
     }
 
     // Row 3 - help.
