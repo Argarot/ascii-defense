@@ -34,6 +34,10 @@ const TOWER_CORE = /[O@$8]/;
 const ENEMY_LOOK: Record<string, { glyph: string; roleName: string }> = {
   grunt: { glyph: '@', roleName: 'enemy.eye' },
   skitter: { glyph: 'x', roleName: 'enemy.fast' },
+  swarmling: { glyph: 'm', roleName: 'enemy.swarm' },
+  brute: { glyph: 'B', roleName: 'enemy.brute' },
+  shell: { glyph: 'S', roleName: 'enemy.shell' },
+  husk: { glyph: 'H', roleName: 'enemy.husk' },
 };
 
 const DESCRIBE: Record<CellType, string> = {
@@ -75,6 +79,10 @@ export interface RenderState {
   showGrid?: boolean;
   /** Range overlay for the selected tower, in cell units. */
   range?: { x: number; y: number; r: number } | null;
+  /** Entries the NEXT wave attacks from - telegraphed with '!' markers. */
+  telegraph?: readonly CellRef[];
+  /** The Core has fallen; draw the end screen over everything. */
+  gameOver?: boolean;
 }
 
 export class BoardView {
@@ -229,6 +237,15 @@ export class BoardView {
       term.put(gx, gy, '*', role('tower.core'));
     }
 
+    // Telegraphs: where the next wave will pour in. A loud '!' at each
+    // upcoming entry, so repositioning happens before the wave, not during.
+    for (const t of state.telegraph ?? []) {
+      const gx = t.x * CELL_W + 2;
+      const gy = offsetY + t.y * CELL_H + 1;
+      term.put(gx, gy, '!', role('enemy.fast'));
+      term.shade(gx, gy, 1.8, 0.1);
+    }
+
     // Selection brackets last, over everything: the selected cell's corner
     // glyphs get light box-drawing corners in the accent colour.
     if (state.selected) {
@@ -240,6 +257,18 @@ export class BoardView {
       term.put(gx0 + CELL_W - 1, gy0, '\u2510', accent);
       term.put(gx0, gy0 + CELL_H - 1, '\u2514', accent);
       term.put(gx0 + CELL_W - 1, gy0 + CELL_H - 1, '\u2518', accent);
+    }
+
+    // The end. A dark band across the middle so the message owns the eye.
+    if (state.gameOver) {
+      const msg = 'THE  CORE  HAS  FALLEN';
+      const sub = 'press R for a new run';
+      const midY = Math.floor((this.cellsH * CELL_H) / 2);
+      const midX = Math.floor((this.cellsW * CELL_W) / 2);
+      for (let y = midY - 2; y <= midY + 2; y++)
+        for (let x = 0; x < this.cellsW * CELL_W; x++) term.put(x, y, ' ', role('ui.bg'), '#12060a');
+      term.write(midX - Math.floor(msg.length / 2), midY - 1, msg, role('enemy.fast'));
+      term.write(midX - Math.floor(sub.length / 2), midY + 1, sub, role('ui.dim'));
     }
 
     term.flush();

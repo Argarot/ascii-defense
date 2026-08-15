@@ -117,7 +117,8 @@ async function main(): Promise<void> {
       map,
       enemyDefs: ENEMY_DEFS,
       towerDefs: TOWER_DEFS,
-      spawnEveryTicks: 20,
+      mode: 'waves',
+      coreHp: 50,
     });
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
@@ -159,15 +160,23 @@ async function main(): Promise<void> {
         sim.canBuildAt(hover.x, hover.y) &&
         sim.canAfford(TOWER_DEFS[selectedBuild].id),
       showGrid,
+      telegraph: sim.nextWaveEntries,
+      gameOver: sim.status === 'lost',
     });
 
     const hoverTower = hover ? sim.towerAt(hover.x, hover.y) : null;
     const infoTower = selTower ?? hoverTower;
     const def = infoTower ? sim.towerDef(infoTower) : null;
+    const eff = infoTower ? sim.stats(infoTower) : null;
     hud.render({
       scrap: sim.scrap,
       kills: sim.kills,
       coreDamage: sim.coreDamage,
+      coreHp: sim.coreHp,
+      coreHpMax: sim.coreHpMax,
+      wave: sim.wave,
+      nextFronts: sim.nextWaveEntries.length,
+      gameOver: sim.status === 'lost',
       L: sim.flow.L,
       seed,
       speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
@@ -179,14 +188,23 @@ async function main(): Promise<void> {
       })),
       selectedBuild,
       selectedTower:
-        infoTower && def
+        infoTower && def && eff
           ? {
               name: def.name ?? def.id,
               kills: infoTower.kills,
-              dmg: def.projectile.damage,
-              dps: ((def.projectile.damage / def.fireEveryTicks) * TICK_HZ).toFixed(1),
-              range: def.range,
+              dmg: eff.damage,
+              dps: ((eff.damage / eff.fireEveryTicks) * TICK_HZ).toFixed(1),
+              range: eff.range,
               priority: infoTower.priority,
+              paths: (def.paths ?? []).map((p, pi) => {
+                const cost = sim.upgradeCost(infoTower, pi);
+                return {
+                  name: p.name,
+                  tier: infoTower.tiers[pi],
+                  cost,
+                  affordable: cost !== null && sim.scrap >= cost,
+                };
+              }),
             }
           : null,
     });
@@ -229,6 +247,7 @@ async function main(): Promise<void> {
     if (!action) return;
     if (action.kind === 'build') selectedBuild = action.index;
     if (action.kind === 'priority' && selected) sim.setPriority(selected.x, selected.y, action.value);
+    if (action.kind === 'upgrade' && selected) sim.upgradeTower(selected.x, selected.y, action.path);
     dirty = true;
   });
   term.canvas.addEventListener('click', (e) => {

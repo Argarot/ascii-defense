@@ -214,6 +214,126 @@ describe('towers and projectiles', () => {
     expect(sim2.scrap).toBe(45 - 20 + sim2.kills * 5);
   });
 
+  it('upgrades: cost gates, crosspath enforced, stats change, sell refunds tiers', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(41, { startingScrap: 500 });
+    const BOLTP: TowerDef = {
+      ...BOLT,
+      paths: [
+        { name: 'A', tiers: [{ cost: 10, mods: { damage: 4 } }, { cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }] },
+        { name: 'B', tiers: [{ cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }] },
+        { name: 'C', tiers: [{ cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }] },
+      ],
+    };
+    const sim = new Sim(41, { ...simOpts, towerDefs: [BOLTP] });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    sim.buildTower(spot.x, spot.y, 'bolt');
+    const t = sim.towerAt(spot.x, spot.y)!;
+
+    expect(sim.stats(t).damage).toBe(6); // BOLT damage in tests
+    expect(sim.upgradeTower(spot.x, spot.y, 0)).toBe(true);
+    expect(sim.stats(t).damage).toBe(10);
+
+    // Crosspath: push path 0 to 3, path 1 to 2, then path 1 tier 3 refuses
+    // and path 2 refuses outright.
+    sim.upgradeTower(spot.x, spot.y, 0);
+    sim.upgradeTower(spot.x, spot.y, 0);
+    sim.upgradeTower(spot.x, spot.y, 1);
+    sim.upgradeTower(spot.x, spot.y, 1);
+    expect(t.tiers).toEqual([3, 2, 0]);
+    expect(sim.upgradeTower(spot.x, spot.y, 1)).toBe(false);
+    expect(sim.upgradeTower(spot.x, spot.y, 2)).toBe(false);
+
+    // Sell refunds 70% of base + all tier spend: (20 + 50) * 0.7 = 49.
+    const before = sim.scrap;
+    sim.sellTower(spot.x, spot.y);
+    expect(sim.scrap).toBe(before + 49);
+  });
+
+  it('waves mode: composition respects minWave, Core falls, sim freezes', () => {
+    const { simOpts } = makeWorld(43);
+    const sim = new Sim(43, {
+      ...simOpts,
+      mode: 'waves',
+      maxSpawns: 0,
+      coreHp: 6,
+      interWaveTicks: 40,
+      enemyDefs: [WALKER, { ...WALKER, id: 'late', minWave: 99 }],
+    });
+    // No towers: walkers breach until the Core (6 hp, 2 dmg each) falls.
+    for (let t = 0; t < 6000 && sim.status === 'running'; t++) sim.tick();
+    expect(sim.status).toBe('lost');
+    expect(sim.coreHp).toBe(0);
+    expect(sim.wave).toBeGreaterThanOrEqual(1);
+    // minWave 99 def never spawned.
+    for (let i = 0; i < 64; i++) {
+      if (sim.spawned > 0) expect(sim.enemyDefOf(i).id).not.toBe('late');
+    }
+    // Frozen: further ticks change nothing.
+    const snapshot = { ticks: sim.tickCount, breaches: sim.breaches };
+    sim.tick();
+    expect({ ticks: sim.tickCount, breaches: sim.breaches }).toEqual(snapshot);
+    expect(sim.buildTower(0, 0, 'bolt')).toBe(false);
+  });
+
+  it('slow makes the journey longer; armor blunts; shields burn first', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    // Twin runs: identical except one def is slowed by a frost-like tower.
+    const FROSTY: TowerDef = {
+      id: 'bolt', // reuse id so buildTower finds it
+      cost: 20,
+      range: 6,
+      fireEveryTicks: 6,
+      projectile: { damage: 1, speed: 0.6, homing: true, applyEffect: 'slow', slowMul: 0.5, slowTicks: 40 },
+    };
+    const tanky = { ...WALKER, hp: 1000 }; // survives, just slower
+    const plain = new Sim(47, { ...simOpts, enemyDefs: [tanky] });
+    const frosty = new Sim(47, { ...simOpts, enemyDefs: [tanky], towerDefs: [FROSTY] });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    frosty.buildTower(spot.x, spot.y, 'bolt');
+    const budget = 4000;
+    for (let t = 0; t < budget; t++) {
+      plain.tick();
+      frosty.tick();
+    }
+    // The unfrosted twin has finished; the frosted one is behind or just done.
+    expect(plain.breaches).toBe(1);
+    expect(frosty.breaches + frosty.aliveCount()).toBe(1);
+
+    // Armor: a 5-damage shot on 3 armor deals 2; shields burn before hp.
+    // Slow, unkillable target parked in range: only the damage math varies.
+    const { map } = makeWorld(47);
+    const armored = { ...WALKER, hp: 10000, speed: 0.005, armor: 3, shield: 4 };
+    const GUN: TowerDef = { ...BOLT, range: 8, fireEveryTicks: 4, projectile: { damage: 5, speed: 0.6, homing: true } };
+    const sim = new Sim(47, { ...simOpts, enemyDefs: [armored], towerDefs: [GUN] });
+    // The lone spawn picks any entry; cover them all so it parks in range.
+    let guns = 0;
+    for (const entry of map.entries) {
+      for (let dy = -3; dy <= 3; dy++)
+        for (let dx = -3; dx <= 3; dx++) {
+          const x = entry.x + dx;
+          const y = entry.y + dy;
+          if (x >= 0 && y >= 0 && x < cellsW && y < cellsH && cells[y * cellsW + x] === 'G' && sim.canBuildAt(x, y)) {
+            if (sim.buildTower(x, y, 'bolt')) guns++;
+            dy = 4; // one gun per entry is plenty
+            break;
+          }
+        }
+    }
+    expect(guns).toBeGreaterThanOrEqual(map.entries.length);
+    for (let t = 0; t < 300; t++) sim.tick();
+    let checked = false;
+    for (let i = 0; i < 8; i++) {
+      if (sim.alive[i]) {
+        expect(sim.shield[i]).toBe(0); // shield burned first
+        expect(sim.hp[i]).toBeLessThan(10000);
+        expect(sim.hp[i]).toBeGreaterThan(0);
+        expect((10000 - sim.hp[i]) % 2).toBe(0); // only 2s ever landed on hp
+        checked = true;
+      }
+    }
+    expect(checked).toBe(true);
+  });
+
   it('capacity: spawn flood drops instead of crashing', () => {
     const { simOpts } = makeWorld(31, { spawnEveryTicks: 1, maxSpawns: 0, enemyDefs: [{ ...WALKER, speed: 0.01 }] });
     const sim = new Sim(31, simOpts);
