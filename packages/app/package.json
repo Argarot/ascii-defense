@@ -6,6 +6,7 @@
   "dependencies": {
     "@ascii-defense/content": "*",
     "@ascii-defense/engine": "*",
-    "@ascii-defense/render": "*"
+    "@ascii-defense/render": "*",
+    "@ascii-defense/view": "*"
   }
 }
