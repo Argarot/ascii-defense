@@ -19,9 +19,14 @@ Conventions:
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
-| D1 | **Buildable density** — how tiles keep tower slots in the tens, not thousands (PRD §4.3; preferred: sparse-ground tile library) | before 1.4 | Daniil + dev |
-| D2 | **The Wall** — cut / flyer-blocker / ground-denial (PRD §5.5; preferred: cut) | before 1.4 | Daniil + dev |
+| D1 | ~~Buildable density~~ **RESOLVED 2026-08-15**: the map generator controls ground amount/placement directly; density is a generation knob tuned as data (PRD §4.4) | — | closed |
+| D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |
 | D3 | **Material language** — glyph vocabulary for metal/stone/energy/organic (ASSETS §5) | before 1.4 art authoring | Daniil + dev |
+
+**2026-08-15 pivot** (PRD §1, §13): player tile-laying cut; maps are generated
+at run start (Core tile center, `entries` carved paths, ore by road distance).
+Flyers cut. Core = HP pool + branching tower funded by Ore. Tile machinery and
+Tile Smith survive as generator input and meta progression.
 
 ---
 
@@ -69,7 +74,9 @@ not the logic. Decision: Daniil, 2026-08-15.)*
 - [x] 1.3.3 Tile model: native 5×5 grids, **derived center-or-nothing connectors** (PRD §4.2), rotation, single validity function. *(PR #8)*
 - [x] 1.3.4 Placement legality: edge agreement, no road off-board, contact + **road-join rule** (road tiles must extend the network — found by the property test catching disconnected networks). Draft→place flow itself lands with the run loop (M2). *(PR #8)*
 - [x] 1.3.5 Starter library: 11 tiles authored native 5×5 in `content/assets/tiles/library.json`; 7×7 `tiledefs.json` + `to5()` downsampling hack removed. Semantic validation via engine in harness CI test. *(PR #8)*
-- [ ] 1.3.6 Dijkstra flow fields over cells: ground + flying; yields `L`.
+- [ ] 1.3.6 Dijkstra flow field over cells toward the Core (single field — flyers cut); yields `L`.
+- [ ] 1.3.10 **Map generator** (pivot): Core tile center, carve `entries` paths to board edges with `targetPathLength` windiness, tile by connector signature from the pool, fill terrain with ore weighted by road distance. Tests: entry count, reachability, determinism, measured `L`.
+- [ ] 1.3.11 Sim skeleton: enemy walkers (subcell coords) spawning at entries, marching the flow field to the Core; animated demo with speed controls.
 - [ ] 1.3.7 Terrain rendering: weighted glyph pools, mixing hash, boundary shading (lit/mid/dark). *(pools + hash exist in demo; boundary shading and the view-package home remain)*
 - [x] 1.3.8 Connectivity tests: 35 seeded boards over sizes 2×1…14×7 + adversarial battery (off-center roads, corner roads, split routes, roads-to-nowhere, edge spawns, boundary violations, rotation identities, road-join). *(PR #8)*
 - [x] 1.3.9 **Tile Smith** authoring tool: paint a 5×5 grid at `/tilesmith.html`, live derived connectors, verdict + export gated by engine `validateTileCells`, shared terrain styling with the game view. *(new item, Daniil 2026-08-15; PR #10)*

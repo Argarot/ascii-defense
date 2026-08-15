@@ -56,8 +56,10 @@ round trip before authoring a library against it.
 
 - Seeded RNG with named streams; fixed 20 Hz tick; pause / 1× / 2× / 4×.
 - Three-level grid; **subcell entity coordinates**; occupancy array.
-- Tile library, connector matching, legality, and the tile-laying flow.
-- Dijkstra flow field over cells (ground + flying); `L` in cells.
+- Tile library, connector matching, legality. *(Tile-laying flow superseded by
+  the 2026-08-15 pivot: a **map generator** assembles the board at run start —
+  Core tile center, `entries` carved paths, ore by road distance.)*
+- Dijkstra flow field over cells; `L` in cells. *(One field: flyers are cut.)*
 - Terrain rendering with background painting and shading.
 
 **Gate:** connectivity property test — seeded boards across edge-biased sizes
@@ -67,9 +69,10 @@ space where invalid states are unrepresentable tests the RNG, not the logic.)
 
 ### Phase 4 — the game *(3–4 sessions)*
 
-- 4 towers with complete 3×5 trees, crosspathing enforced; Wall.
-- 6 enemies across 2 damage types and 5 traits; targeting; projectiles.
-- Waves, Scrap, lives, win/lose; Refinery and Ore banking.
+- 4 towers with complete 3×5 trees, crosspathing enforced; the Core with its
+  branch tree (Wall is cut — PRD §5.3).
+- 6 enemies across 2 damage types and 4 traits; targeting; projectiles.
+- Waves, Scrap, Core health and enemy `damage`, win/lose; Refinery and Ore banking.
 - **HUD** — build palette, tower inspector with crosspath legality, tile hand,
   wave state, speed controls. *This is a first-class item, not a line: it is the
   entire surface the player touches, and it was previously under-scoped.*
@@ -86,8 +89,8 @@ point is worth building if the answer is no.
 
 ## M2 — A complete run *(3–4 sessions)*
 
-Full board, escalating waves, drafts between tiles, save/resume, run summary.
-4 more towers, ~8 more enemies.
+Full difficulty arc, escalating waves, Core branch progression, save/resume,
+run summary. 4 more towers, ~8 more enemies.
 
 ## M3 — Trustworthy difficulty *(2–3 sessions)*
 
@@ -140,11 +143,12 @@ than Daniil, and the offset may vary by wave and by build.
 diff. *Fallback:* bounded dynamic difficulty adjustment, clamped so it can
 never trivialise or brick a run.
 
-**2 — The tile-laying loop may not be fun.** It is now the core of the game
-rather than a feature, so if it is flat, the game is flat.
-*Mitigation:* it is the first thing playable in M1, and Tower Dominion and Rogue
-Tower both demonstrate the loop works. *Nothing structural depends on it being
-fun except everything.*
+**2 — Generated maps may be samey.** *(Replaced the tile-laying risk after the
+2026-08-15 pivot.)* If the generator's output blurs together, runs blur
+together, and the roguelite dies.
+*Mitigation:* map knobs are difficulty data and tunable per threat level; the
+tile pool grows via meta progression, so variety is content, not code; the
+generator is seeded, so a boring map is a reproducible bug report.
 
 **3 — Art volume.** 8 towers × 15 tiers + terrain + enemies + UI, all
 hand-drawn at 5×3.
