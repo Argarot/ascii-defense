@@ -87,7 +87,7 @@ const spleen = readBdf('vendor/spleen/spleen-5x8.bdf');
 const allUnscii = [...unscii.keys()].filter((cp) => cp >= 0x20).sort((a, b) => a - b);
 const allSpleen = [...spleen.keys()].filter((cp) => cp >= 0x20).sort((a, b) => a - b);
 
-emit('public/assets/glyphset.json', [8, 8], allUnscii, 'unscii-8 (public domain) — complete', unscii);
-emit('public/assets/glyphset-cp437.json', [8, 8], [...range(0x20, 0x7e), ...CP437_HIGH], 'unscii-8, CP437 repertoire', unscii);
-emit('public/assets/glyphset-spleen.json', [5, 8], allSpleen, 'spleen 5x8 (BSD-2-Clause) F. Cambus — complete', spleen);
+emit('packages/app/public/assets/glyphset.json', [8, 8], allUnscii, 'unscii-8 (public domain) — complete', unscii);
+emit('packages/app/public/assets/glyphset-cp437.json', [8, 8], [...range(0x20, 0x7e), ...CP437_HIGH], 'unscii-8, CP437 repertoire', unscii);
+emit('packages/app/public/assets/glyphset-spleen.json', [5, 8], allSpleen, 'spleen 5x8 (BSD-2-Clause) F. Cambus — complete', spleen);
 void FULL;

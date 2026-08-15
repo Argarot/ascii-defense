@@ -14,7 +14,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const SRC = 'vendor/unscii/unscii-8.hex';
-const OUT = 'public/assets/glyphset.json';
+const OUT = 'packages/app/public/assets/glyphset.json';
 
 /** Ranges we actually draw with. Everything else is dead weight in the atlas. */
 const RANGES = [

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Render owns the canvas and WebGL, so it gets the DOM lib. It still may
+    // not import engine — that direction is enforced by lint.
+    "lib": ["ES2022", "DOM"],
+    "rootDir": "src",
+    "outDir": "dist-types",
+    "tsBuildInfoFile": "dist-types/.tsbuildinfo"
+  },
+  "include": ["src"]
+}

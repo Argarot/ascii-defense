@@ -1,19 +1,16 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
-    "types": ["vite/client"],
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noUncheckedIndexedAccess": false,
-    "noFallthroughCasesInSwitch": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true
-  },
-  "include": ["src", "vite.config.ts"]
+  // Solution file: `tsc --build` walks the references. Per-package tsconfigs
+  // exist so each layer gets only the platform it is allowed to see — engine
+  // has no DOM lib, so an invariant violation is a type error, not a lint
+  // finding or a review comment.
+  "files": [],
+  "references": [
+    { "path": "packages/engine" },
+    { "path": "packages/content" },
+    { "path": "packages/render" },
+    { "path": "packages/view" },
+    { "path": "packages/bot" },
+    { "path": "packages/harness" },
+    { "path": "packages/app" }
+  ]
 }
