@@ -1,0 +1,75 @@
+{
+  "id": "tiledefs.v1",
+  "note": "Terrain tile library. Nomenclature: a GLYPH is one character; a CELL is 5x5 glyphs and is the placement unit a tower occupies; a TERRAIN TILE is 7x7 cells and is the Carcassonne-style piece the player lays. Each tile is a 7x7 grid of cell types plus edge connectors. Adding tiles here needs no engine change.",
+  "cellsPerTile": 7,
+  "glyphsPerCell": 5,
+  "legend": {
+    "G": "ground - buildable",
+    "R": "road - pathable, never buildable",
+    "K": "rock - blocked",
+    "O": "ore - buildable, mines Ore",
+    "S": "spawn - enemy entry"
+  },
+  "tiles": [
+    {
+      "id": "spawn_e",
+      "name": "breach",
+      "conn": ["e"],
+      "cells": ["GGGGGGG", "GGGGGGG", "GGGGGGG", "SRRRRRR", "GGGGGGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "straight_we",
+      "name": "causeway",
+      "conn": ["w", "e"],
+      "cells": ["GGGGGGG", "GGGGGGG", "GGGGGGG", "RRRRRRR", "GGGGGGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "straight_we_rock",
+      "name": "cutting",
+      "conn": ["w", "e"],
+      "cells": ["GGGGGGG", "GGKGGGG", "GGGGGGG", "RRRRRRR", "GGGGGGG", "GGGGKGG", "GGGGGGG"]
+    },
+    {
+      "id": "straight_we_ore",
+      "name": "seam",
+      "conn": ["w", "e"],
+      "cells": ["GGGGGGG", "GGGGGGG", "GOGGGGG", "RRRRRRR", "GGGGGGG", "GGGGGOG", "GGGGGGG"]
+    },
+    {
+      "id": "corner_ws",
+      "name": "bend south",
+      "conn": ["w", "s"],
+      "cells": ["GGGGGGG", "GGGGGGG", "GGGGGGG", "RRRRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG"]
+    },
+    {
+      "id": "corner_wn",
+      "name": "bend north",
+      "conn": ["w", "n"],
+      "cells": ["GGGRGGG", "GGGRGGG", "GGGRGGG", "RRRRGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "corner_ne",
+      "name": "bend east",
+      "conn": ["n", "e"],
+      "cells": ["GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRRRR", "GGGGGGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "corner_se",
+      "name": "bend up",
+      "conn": ["s", "e"],
+      "cells": ["GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGRRRR", "GGGRGGG", "GGGRGGG", "GGGRGGG"]
+    },
+    {
+      "id": "tee_wns",
+      "name": "junction",
+      "conn": ["w", "n", "s"],
+      "cells": ["GGGRGGG", "GGGRGGG", "GGGRGGG", "RRRRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG"]
+    },
+    {
+      "id": "straight_ns",
+      "name": "ascent",
+      "conn": ["n", "s"],
+      "cells": ["GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG"]
+    }
+  ]
+}

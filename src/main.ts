@@ -1,17 +1,16 @@
 /**
- * Mini-tile board: 5x5-cell tiles, no block glyphs, colour-only shading.
+ * Terrain tiles at the agreed nomenclature.
  *
- * NOT the game. Feedback implemented:
- *   - Blocks removed from terrain entirely. Fill comes from the classic ASCII
- *     luminance ramp (glyph by density) and tone comes from colour.
- *   - Shading is per-row colour on the boundary of a terrain mass. No geometry,
- *     no walls, no occlusion.
- *   - Tiles down from 7x7 to 5x5, so the board holds ~4x more tiles at the same
- *     cell size. Towers are correspondingly simpler and lean on glyph shape and
- *     path colour for identity.
+ *   GLYPH  one character, 8x8 px (unscii-8)
+ *   CELL   5x5 glyphs, 40x40 px — the placement unit a tower occupies
+ *   TILE   7x7 cells, 280x280 px — the Carcassonne piece the player lays
  *
- * Exposes window.__png() so the real rendered pixels can be captured, rather
- * than re-typeset into a different font elsewhere.
+ * Tiles come from public/assets/tiledefs.json: a 7x7 grid of cell types plus
+ * edge connectors. Placement is legal only where connectors match, so road
+ * connectivity holds by construction. Adding tiles needs no engine change.
+ *
+ * Void is black; every placed cell paints a background, so the boundary
+ * between built terrain and void is unmistakable.
  */
 import { GLTerm } from './term/GLTerm';
 import type { GlyphSet } from './term/GLTerm';
@@ -19,28 +18,31 @@ import type { GlyphSet } from './term/GLTerm';
 const BASE = import.meta.env.BASE_URL;
 const load = <T>(p: string): Promise<T> => fetch(`${BASE}assets/${p}`).then((r) => r.json() as Promise<T>);
 
+interface TileDef { id: string; name: string; conn: string[]; cells: string[] }
+interface TileDefs { cellsPerTile: number; glyphsPerCell: number; tiles: TileDef[] }
 interface Piece { art: string[]; ink: string[] }
-interface Shade { ramp: string[]; top: string; mid: string; bot: string }
-interface Tiles {
-  tile: number;
-  inkMap: Record<string, string | null>;
-  towers: Record<string, Piece>;
-  enemy: Piece;
-  terrain: Record<string, Shade>;
-}
+interface Mini { towers: Record<string, Piece>; enemy: Piece; inkMap: Record<string, string | null> }
 
 const PAL: Record<string, string> = {
-  'tower.shadow': '#0c1017', 'tower.frame': '#6f8299', 'tower.body': '#93a8bf',
-  'tower.edge': '#bccfe2', 'tower.core': '#ffffff',
-  'enemy.body': '#933d3d', 'enemy.edge': '#e86868', 'enemy.eye': '#ffd166',
-  frontier: '#1c3529', frontierLit: '#3f7256',
-  card: '#33475e', cardLit: '#8aa0b8', shadow: '#070a0e',
-  text: '#d3dae7', dim: '#65758a', accent: '#2ee6a0', bg: '#04060a',
+  'tower.shadow': '#0c1017', 'tower.frame': '#7286a0', 'tower.body': '#98adc4',
+  'tower.edge': '#c3d5e8', 'tower.core': '#ffffff',
+  'enemy.body': '#a04545', 'enemy.edge': '#f07070', 'enemy.eye': '#ffd166',
+  text: '#d3dae7', dim: '#65758a', accent: '#2ee6a0', bg: '#000000',
 };
 const PATHS = ['#4cc9f0', '#ffb703', '#c08cff', '#5ce68c'];
 
-const TX = 42, TY = 21;
-type Kind = 'void' | 'ground' | 'road' | 'rock' | 'ore' | 'spawn';
+// Terrain: foreground ramp + a background so placed ground never reads as void.
+const TERRAIN: Record<string, { ramp: string[]; fg: string; fgLit: string; bg: string }> = {
+  G: { ramp: [' ', ' ', ' ', '·', "'", '`', ','], fg: '#3d4f61', fgLit: '#54687d', bg: '#141c25' },
+  R: { ramp: [':', ';', ':', '·', '='], fg: '#93abc4', fgLit: '#c2d6ea', bg: '#333f4d' },
+  K: { ramp: ['#', '%', '@', '&'], fg: '#5a6a7c', fgLit: '#8698ab', bg: '#1b232c' },
+  O: { ramp: ['¤', '*', '·', '¤'], fg: '#ffd15c', fgLit: '#fff0b0', bg: '#2a2415' },
+  S: { ramp: ['»', '»', ':', '·'], fg: '#ff9090', fgLit: '#ffd0d0', bg: '#331a1a' },
+};
+
+const BX = 6, BY = 4;                      // board, in tiles
+const DIRS = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] } as const;
+const OPP: Record<string, string> = { n: 's', s: 'n', e: 'w', w: 'e' };
 
 function hash2(x: number, y: number, s: number): number {
   let h = (x | 0) * 374761393 + (y | 0) * 668265263 + s * 2246822519;
@@ -49,152 +51,138 @@ function hash2(x: number, y: number, s: number): number {
 }
 
 async function main(): Promise<void> {
-  const [glyphs, T] = await Promise.all([load<GlyphSet>('glyphset.json'), load<Tiles>('tiles.json')]);
-  const S = T.tile;
+  const [glyphs, defs, mini] = await Promise.all([
+    load<GlyphSet>('glyphset.json'),
+    load<TileDefs>('tiledefs.json'),
+    load<Mini>('tiles.json'),
+  ]);
+  const C = defs.cellsPerTile;    // 7
+  const Gp = defs.glyphsPerCell;  // 5
+  const TG = C * Gp;              // 35 glyphs per tile edge
+
   const app = document.getElementById('app')!;
-  const COLS = TX * S + 16, ROWS = TY * S + 5;
-  const term = new GLTerm(glyphs, { cols: COLS, rows: ROWS, cellPx: 8, background: PAL.bg });
+  const HAND = 11;
+  const term = new GLTerm(glyphs, { cols: BX * TG + HAND + 2, rows: BY * TG + 4, cellPx: 8, background: PAL.bg });
   app.appendChild(term.canvas);
   const note = document.createElement('div');
   note.className = 'hud';
   app.appendChild(note);
 
-  const tiles: Kind[] = new Array(TX * TY).fill('void');
-  const at = (x: number, y: number): Kind => (x < 0 || y < 0 || x >= TX || y >= TY ? 'void' : tiles[y * TX + x]);
-  const set = (x: number, y: number, k: Kind): void => { if (x >= 0 && y >= 0 && x < TX && y < TY) tiles[y * TX + x] = k; };
+  const byId = new Map(defs.tiles.map((t) => [t.id, t]));
+  const board: (TileDef | null)[] = new Array(BX * BY).fill(null);
+  const put = (x: number, y: number, d: TileDef): void => { board[y * BX + x] = d; };
+  const get = (x: number, y: number): TileDef | null => (x < 0 || y < 0 || x >= BX || y >= BY ? null : board[y * BX + x]);
+
+  // Lay a connected chain, honouring connectors at every step.
   {
-    let cx = 1, cy = 11;
-    set(0, 11, 'spawn');
-    const spine: [number, number][] = [];
-    for (let i = 0; i < 78; i++) {
-      spine.push([cx, cy]);
-      set(cx, cy, 'road');
-      const r = hash2(i, 7, 3);
-      if (i < 18) { cx++; if (r < 0.28 && cy > 3) cy--; else if (r > 0.76 && cy < TY - 4) cy++; }
-      else if (i < 30) { cy--; if (r > 0.55) cx++; }
-      else if (i < 46) { cx++; if (r < 0.3 && cy < TY - 4) cy++; }
-      else if (i < 58) { cy++; if (r > 0.6) cx++; }
-      else { cx++; if (r < 0.3 && cy > 3) cy--; }
-      cx = Math.min(TX - 2, cx); cy = Math.max(1, Math.min(TY - 2, cy));
+    let x = 0, y = 1, entry = '';
+    put(0, 1, byId.get('spawn_e')!);
+    let exit = 'e';
+    for (let step = 0; step < 14; step++) {
+      const [dx, dy] = DIRS[exit as keyof typeof DIRS];
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= BX || ny >= BY) break;
+      entry = OPP[exit];
+      const cands = defs.tiles.filter((t) => t.id !== 'spawn_e' && t.conn.includes(entry) && t.conn.length >= 2);
+      if (!cands.length) break;
+      const d = cands[Math.floor(hash2(nx, ny, step + 5) * cands.length) % cands.length];
+      if (get(nx, ny)) break;
+      put(nx, ny, d);
+      const exits = d.conn.filter((c) => c !== entry);
+      exit = exits[Math.floor(hash2(nx, ny, step + 90) * exits.length) % exits.length];
+      x = nx; y = ny;
     }
-    for (const [rx, ry] of spine)
-      for (let dy = -2; dy <= 2; dy++)
-        for (let dx = -2; dx <= 2; dx++) {
-          if (at(rx + dx, ry + dy) !== 'void') continue;
-          const h = hash2(rx + dx, ry + dy, 11);
-          const near = Math.abs(dx) <= 1 && Math.abs(dy) <= 1;
-          if (h > 0.91) set(rx + dx, ry + dy, 'rock');
-          else if (h < 0.06) set(rx + dx, ry + dy, 'ore');
-          else if (near || h < 0.45) set(rx + dx, ry + dy, 'ground');
-        }
   }
-  const towerKeys = Object.keys(T.towers);
-  const towers: { id: number; kind: string; path: number }[] = [];
-  for (let i = 0; i < tiles.length && towers.length < 34; i++)
-    if (tiles[i] === 'ground' && hash2(i, 5, 23) > 0.70)
-      towers.push({ id: i, kind: towerKeys[towers.length % towerKeys.length], path: towers.length % PATHS.length });
-  const placed = tiles.filter((k) => k !== 'void').length;
+  const placedTiles = board.filter(Boolean).length;
 
-  const frontier = new Set<number>();
-  for (let y = 0; y < TY; y++)
-    for (let x = 0; x < TX; x++)
-      if (at(x, y) === 'void' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => at(x + dx, y + dy) !== 'void'))
-        frontier.add(y * TX + x);
+  // Towers on ground cells, spread out.
+  const towerKeys = Object.keys(mini.towers);
+  const towers: { tx: number; ty: number; cx: number; cy: number; kind: string; path: number }[] = [];
+  for (let ty = 0; ty < BY; ty++)
+    for (let tx = 0; tx < BX; tx++) {
+      const d = get(tx, ty);
+      if (!d) continue;
+      for (let cy = 0; cy < C; cy++)
+        for (let cx = 0; cx < C; cx++)
+          if (d.cells[cy][cx] === 'G' && hash2(tx * 100 + cx, ty * 100 + cy, 41) > 0.86)
+            towers.push({ tx, ty, cx, cy, kind: towerKeys[towers.length % towerKeys.length], path: towers.length % PATHS.length });
+    }
 
-  function drawPiece(p: Piece, x: number, y: number, path: string, bg?: string): void {
+  function drawPiece(p: Piece, gx: number, gy: number, path: string, bg: string): void {
     for (let r = 0; r < p.art.length; r++)
       for (let c = 0; c < p.art[r].length; c++) {
-        const role = T.inkMap[(p.ink[r] ?? '')[c] ?? '.'];
+        const role = mini.inkMap[(p.ink[r] ?? '')[c] ?? '.'];
         if (!role) continue;
-        term.put(x + c, y + r, p.art[r][c], role === 'PATH' ? path : (PAL[role] ?? '#f0f'), bg);
+        term.put(gx + c, gy + r, p.art[r][c], role === 'PATH' ? path : (PAL[role] ?? '#f0f'), bg);
       }
   }
 
   const OY = 3;
   function frame(): void {
     term.clear(PAL.bg);
-    term.write(0, 0, `mini tiles — ${S}x${S} cells (${S * 8}x${S * 8} px) · board ${TX}x${TY} = ${TX * TY} slots · ${placed} placed · ${towers.length} towers`, PAL.accent);
-    term.write(0, 1, 'no block glyphs. terrain is the ASCII luminance ramp; shading is colour only, applied at the edge of a terrain mass.', PAL.dim);
+    term.write(0, 0, `glyph 8px → cell ${Gp}x${Gp} glyphs (${Gp * 8}px) → tile ${C}x${C} cells (${TG * 8}px) · board ${BX}x${BY} = ${BX * BY} tile slots, ${placedTiles} laid`, PAL.accent);
+    term.write(0, 1, 'void is black; every laid cell paints a background, so the terrain edge is unmistakable. tiles come from tiledefs.json.', PAL.dim);
 
-    for (let ty = 0; ty < TY; ty++) {
-      for (let tx = 0; tx < TX; tx++) {
-        const k = at(tx, ty);
-        const bx = tx * S, by = OY + ty * S;
-        if (k === 'void') {
-          if (frontier.has(ty * TX + tx))
-            for (let y = 0; y < S; y++) for (let x = 0; x < S; x++)
-              if (hash2(bx + x, by + y, 33) < 0.06)
-                term.put(bx + x, by + y, '·', hash2(bx + x, by + y, 34) < 0.3 ? PAL.frontierLit : PAL.frontier);
-          continue;
-        }
-        const sh = T.terrain[k];
-        const openTop = at(tx, ty - 1) !== k;
-        const openBot = at(tx, ty + 1) !== k;
-        for (let y = 0; y < S; y++) {
-          for (let x = 0; x < S; x++) {
-            const g = sh.ramp[Math.floor(hash2(bx + x, by + y, 6) * sh.ramp.length) % sh.ramp.length];
-            if (g === ' ') continue;
-            const col = (y === 0 && openTop) ? sh.top : (y === S - 1 && openBot) ? sh.bot : sh.mid;
-            term.put(bx + x, by + y, g, col);
+    for (let ty = 0; ty < BY; ty++) {
+      for (let tx = 0; tx < BX; tx++) {
+        const d = get(tx, ty);
+        if (!d) continue;
+        for (let cy = 0; cy < C; cy++) {
+          for (let cx = 0; cx < C; cx++) {
+            const t = TERRAIN[d.cells[cy][cx]] ?? TERRAIN.G;
+            const gx0 = tx * TG + cx * Gp, gy0 = OY + ty * TG + cy * Gp;
+            for (let y = 0; y < Gp; y++)
+              for (let x = 0; x < Gp; x++) {
+                const gx = gx0 + x, gy = gy0 + y;
+                const g = t.ramp[Math.floor(hash2(gx, gy, 6) * t.ramp.length) % t.ramp.length];
+                term.put(gx, gy, g, hash2(gx, gy, 9) < 0.18 ? t.fgLit : t.fg, t.bg);
+              }
           }
         }
       }
     }
 
-    for (const t of towers) {
-      const tx = t.id % TX, ty = (t.id / TX) | 0;
-      const bx = tx * S, by = OY + ty * S;
-      for (let x = 0; x < S; x++) term.put(bx + x, by + S, '_', PAL.shadow);
-      drawPiece(T.towers[t.kind], bx, by, PATHS[t.path], PAL['tower.shadow']);
-    }
+    for (const tw of towers)
+      drawPiece(mini.towers[tw.kind], tw.tx * TG + tw.cx * Gp, OY + tw.ty * TG + tw.cy * Gp, PATHS[tw.path], PAL['tower.shadow']);
 
     let n = 0;
-    for (let y = 0; y < TY && n < 60; y++)
-      for (let x = 0; x < TX && n < 60; x++)
-        if (at(x, y) === 'road' && hash2(x, y, 51) > 0.70) { drawPiece(T.enemy, x * S + 1, OY + y * S + 1, '#fff'); n++; }
+    for (let ty = 0; ty < BY && n < 40; ty++)
+      for (let tx = 0; tx < BX && n < 40; tx++) {
+        const d = get(tx, ty);
+        if (!d) continue;
+        for (let cy = 0; cy < C && n < 40; cy++)
+          for (let cx = 0; cx < C && n < 40; cx++)
+            if (d.cells[cy][cx] === 'R' && hash2(tx * 77 + cx, ty * 77 + cy, 61) > 0.80) {
+              drawPiece(mini.enemy, tx * TG + cx * Gp + 1, OY + ty * TG + cy * Gp + 1, '#fff', TERRAIN.R.bg);
+              n++;
+            }
+      }
 
-    // hand
-    const hx = TX * S + 2;
-    term.write(hx, OY - 1, 'place', PAL.accent);
-    const kinds: Kind[] = ['road', 'ground', 'rock'];
-    kinds.forEach((k, i) => {
-      const cy = OY + 1 + i * (S + 4);
-      const sh = T.terrain[k];
-      for (let x = 0; x < S + 2; x++) { term.put(hx + x, cy, '-', i === 0 ? PAL.cardLit : PAL.card); term.put(hx + x, cy + S + 1, '-', i === 0 ? PAL.cardLit : PAL.card); }
-      for (let y = 1; y <= S; y++) { term.put(hx, cy + y, '|', i === 0 ? PAL.cardLit : PAL.card); term.put(hx + S + 1, cy + y, '|', i === 0 ? PAL.cardLit : PAL.card); }
-      for (let y = 0; y < S; y++)
-        for (let x = 0; x < S; x++) {
-          const g = sh.ramp[Math.floor(hash2(x + i * 9, y, 6) * sh.ramp.length) % sh.ramp.length];
-          if (g !== ' ') term.put(hx + 1 + x, cy + 1 + y, g, y === 0 ? sh.top : y === S - 1 ? sh.bot : sh.mid);
+    // Hand: tiles shown schematically, one glyph per cell.
+    const hx = BX * TG + 2;
+    term.write(hx, OY - 1, 'hand', PAL.accent);
+    ['corner_ws', 'straight_we_ore', 'tee_wns'].forEach((id, i) => {
+      const d = byId.get(id)!;
+      const cy = OY + 1 + i * (C + 4);
+      for (let y = 0; y < C; y++)
+        for (let x = 0; x < C; x++) {
+          const t = TERRAIN[d.cells[y][x]] ?? TERRAIN.G;
+          term.put(hx + x, cy + y, d.cells[y][x] === 'R' ? '=' : d.cells[y][x] === 'G' ? '·' : d.cells[y][x] === 'O' ? '¤' : '#', t.fgLit, t.bg);
         }
-      term.write(hx, cy + S + 2, `${i + 1}.${k.slice(0, 4)}`, i === 0 ? PAL.text : PAL.dim);
+      for (const c of d.conn) {
+        if (c === 'w') term.put(hx - 1, cy + 3, '╡', PAL['tower.edge']);
+        if (c === 'e') term.put(hx + C, cy + 3, '╞', PAL['tower.edge']);
+        if (c === 'n') term.put(hx + 3, cy - 1, '╨', PAL['tower.edge']);
+        if (c === 's') term.put(hx + 3, cy + C, '╥', PAL['tower.edge']);
+      }
+      term.write(hx, cy + C + 2, d.name.slice(0, 9), i === 0 ? PAL.text : PAL.dim);
     });
 
-    term.write(0, ROWS - 1, 'towers 5x5, four families distinguished by shape and path colour · enemies 3x2', PAL.dim);
     term.flush();
     (window as unknown as Record<string, unknown>).__screen = () => term.toText();
     requestAnimationFrame(frame);
   }
-
-  // Capture the real pixels, flipped (readPixels is bottom-up).
-  (window as unknown as Record<string, unknown>).__png = (): string => {
-    const gl = (term.canvas.getContext('webgl2') as WebGL2RenderingContext);
-    const w = term.canvas.width, h = term.canvas.height;
-    const px = new Uint8Array(w * h * 4);
-    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
-    const out = document.createElement('canvas');
-    out.width = w; out.height = h;
-    const c2 = out.getContext('2d')!;
-    const img = c2.createImageData(w, h);
-    for (let y = 0; y < h; y++) {
-      const src = (h - 1 - y) * w * 4, dst = y * w * 4;
-      img.data.set(px.subarray(src, src + w * 4), dst);
-    }
-    c2.putImageData(img, 0, 0);
-    return out.toDataURL('image/png');
-  };
-
-  note.textContent = `mini tile board — ${TX}x${TY} tiles at ${S}x${S} cells, 1:1 at 8px`;
+  note.textContent = `tile hierarchy — ${BX}x${BY} tiles, ${towers.length} towers`;
   frame();
 }
 
