@@ -1,0 +1,60 @@
+{
+  "$schema": "../../schema/tiles.schema.json",
+  "tiles": [
+    {
+      "id": "spawn",
+      "name": "breach",
+      "cells": ["GGGGG", "GGGGG", "GGSRR", "GGGGG", "GGGGG"]
+    },
+    {
+      "id": "straight",
+      "name": "causeway",
+      "cells": ["GGGGG", "GGGGG", "RRRRR", "GGGGG", "GGGGG"]
+    },
+    {
+      "id": "corner",
+      "name": "elbow",
+      "cells": ["GGGGG", "GGGGG", "RRRGG", "GGRGG", "GGRGG"]
+    },
+    {
+      "id": "tee",
+      "name": "junction",
+      "cells": ["GGGGG", "GGGGG", "RRRRR", "GGRGG", "GGRGG"]
+    },
+    {
+      "id": "cross",
+      "name": "crossroads",
+      "cells": ["GGRGG", "GGRGG", "RRRRR", "GGRGG", "GGRGG"]
+    },
+    {
+      "id": "spur",
+      "name": "dead end",
+      "cells": ["GGGGG", "GGGGG", "RRRGG", "GGGGG", "GGGGG"]
+    },
+    {
+      "id": "scurve",
+      "name": "switchback",
+      "cells": ["GGGGG", "GRRRG", "RRGRR", "GGGGG", "GGGGG"]
+    },
+    {
+      "id": "ore_road",
+      "name": "vein crossing",
+      "cells": ["GGGGG", "GOOGG", "RRRRR", "GGGOG", "GGGGG"]
+    },
+    {
+      "id": "rock_corner",
+      "name": "cliff bend",
+      "cells": ["GKKGG", "GKGGG", "RRRGG", "GGRGG", "GKRGG"]
+    },
+    {
+      "id": "rock_field",
+      "name": "scree",
+      "cells": ["GGGGG", "GKKGG", "GKKKG", "GGKKG", "GGGGG"]
+    },
+    {
+      "id": "meadow",
+      "name": "clearing",
+      "cells": ["GGGGG", "GGGGG", "GGGGG", "GGGGG", "GGGGG"]
+    }
+  ]
+}

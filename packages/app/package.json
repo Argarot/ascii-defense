@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@ascii-defense/content": "*",
+    "@ascii-defense/engine": "*",
     "@ascii-defense/render": "*"
   }
 }

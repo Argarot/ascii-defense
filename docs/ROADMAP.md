@@ -60,7 +60,10 @@ round trip before authoring a library against it.
 - Dijkstra flow field over cells (ground + flying); `L` in cells.
 - Terrain rendering with background painting and shading.
 
-**Gate:** property test — 10,000 generated boards, connectivity always holds.
+**Gate:** connectivity property test — seeded boards across edge-biased sizes
+plus an adversarial unit battery. (Originally "10,000 generated boards";
+rescoped once connectors became derived-by-construction — mass-generating a
+space where invalid states are unrepresentable tests the RNG, not the logic.)
 
 ### Phase 4 — the game *(3–4 sessions)*
 
