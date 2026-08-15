@@ -80,9 +80,14 @@ const CP437_HIGH = [
 ];
 
 const unscii = readHex('vendor/unscii/unscii-8.hex');
-emit('public/assets/glyphset.json', [8, 8], FULL, 'unscii-8 (public domain)', unscii);
-emit('public/assets/glyphset-cp437.json', [8, 8], [...range(0x20, 0x7e), ...CP437_HIGH], 'unscii-8 restricted to CP437-class', unscii);
-
 const spleen = readBdf('vendor/spleen/spleen-5x8.bdf');
-console.log(`spleen BDF parsed: ${spleen.size} glyphs available`);
-emit('public/assets/glyphset-spleen.json', [5, 8], FULL, 'spleen 5x8 (BSD-2-Clause) — F. Cambus', spleen);
+
+// Ship EVERY glyph each font has. Restricting the atlas buys nothing — it is
+// a few tens of kB — and it artificially caps what the art can reach for.
+const allUnscii = [...unscii.keys()].filter((cp) => cp >= 0x20).sort((a, b) => a - b);
+const allSpleen = [...spleen.keys()].filter((cp) => cp >= 0x20).sort((a, b) => a - b);
+
+emit('public/assets/glyphset.json', [8, 8], allUnscii, 'unscii-8 (public domain) — complete', unscii);
+emit('public/assets/glyphset-cp437.json', [8, 8], [...range(0x20, 0x7e), ...CP437_HIGH], 'unscii-8, CP437 repertoire', unscii);
+emit('public/assets/glyphset-spleen.json', [5, 8], allSpleen, 'spleen 5x8 (BSD-2-Clause) F. Cambus — complete', spleen);
+void FULL;
