@@ -187,8 +187,12 @@ export class HudPanel {
       t.tiers.forEach((tier, ti) => {
         term.write(0, y, `T${ti + 1}`, role('ui.dim'));
         y++;
+        // Side-by-side either/or boxes (Daniil): the fork reads as a fork.
+        const colW = Math.floor(W / 2);
         tier.choices.forEach((c, ci) => {
-          const label = c.state === 'chosen' ? ` [${c.name}] *` : ` [${c.name} $${c.cost}]`;
+          const x0 = ci * colW;
+          const short = c.name.length > colW - 7 ? c.name.slice(0, colW - 8) : c.name;
+          const label = c.state === 'chosen' ? `[${short}]*` : `[${short} $${c.cost}]`;
           const colour =
             c.state === 'chosen'
               ? role('ui.accent')
@@ -197,12 +201,12 @@ export class HudPanel {
                   ? role('ui.text')
                   : role('ui.dim')
                 : role('ui.grid');
-          term.write(0, y, label, colour);
+          term.write(x0, y, label, colour);
           if (c.state === 'available') {
-            this.regions.push({ row: y, x0: 0, x1: Math.max(label.length, 20), action: { kind: 'choose', tier: ti, option: ci } });
+            this.regions.push({ row: y, x0, x1: x0 + colW, action: { kind: 'choose', tier: ti, option: ci } });
           }
-          y++;
         });
+        y += 2;
       });
       term.write(0, y + 1, 'X sells (70% back)', role('ui.dim'));
     } else {

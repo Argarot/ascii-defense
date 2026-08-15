@@ -1,5 +1,22 @@
 # ASCII Defense
 
+**A roguelite tower defense rendered entirely in ASCII (spleen 5x8, WebGL2).**
+The game generates the battlefield - a Core at the center, tree-shaped roads
+carved to the board edges - and you defend it: build Bolt/Mortar/Frost towers,
+commit to either/or upgrade tiers, survive escalating telegraphed waves.
+Deterministic to the tick: a seed is a shareable, replayable world.
+
+**Play the current build:** <https://argarot.github.io/ascii-defense/>
+(`?seed=N` pins a world - same seed, same everything, any machine).
+Author terrain tiles at [/tilesmith.html](https://argarot.github.io/ascii-defense/tilesmith.html) -
+the export button obeys the same engine legality the game does.
+
+Docs: [PRD](docs/PRD.md) - [Architecture](docs/ARCHITECTURE.md) -
+[Roadmap](docs/ROADMAP.md) - [WBS](docs/WBS.md) - [Assets](docs/ASSETS.md) -
+[Contributing](CONTRIBUTING.md) - [Handover](HANDOVER.md)
+
+---
+
 A roguelite tower defense game that runs in the browser and draws everything —
 terrain, towers, enemies, menus — as characters on a grid.
 

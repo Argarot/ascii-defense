@@ -1,6 +1,6 @@
 # ASCII Defense — Product Requirements
 
-Status: **scoping complete, M1 not started.** Live: <https://argarot.github.io/ascii-defense/>
+Status: **M1 in flight - Phases 1 & 3 done, Phase 4 nearly done (Core tree, Refinery/Ore, replay remain).** Live: <https://argarot.github.io/ascii-defense/>
 
 This document specifies *what the game is*. It deliberately names no glyph, no
 colour and no pixel — those live in [ASSETS.md](ASSETS.md) and in data files.

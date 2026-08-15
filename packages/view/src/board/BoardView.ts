@@ -285,17 +285,39 @@ export class BoardView {
       term.put(gx + 3, gy + 1, '!', '#ffffff', '#8a2231');
     }
 
-    // Selection brackets last, over everything: the selected cell's corner
-    // glyphs get light box-drawing corners in the accent colour.
+    // Selection brackets last, over everything. Selecting any Core cell
+    // brackets the WHOLE Core block (Daniil) - the building is the unit,
+    // not one of its nine cells.
     if (state.selected) {
-      const { x, y } = state.selected;
-      const gx0 = x * CELL_W;
-      const gy0 = offsetY + y * CELL_H;
+      let x0 = state.selected.x;
+      let y0 = state.selected.y;
+      let x1 = x0;
+      let y1 = y0;
+      if (this.cellType(state.selected) === 'C') {
+        const seen = new Set<number>([y0 * this.cellsW + x0]);
+        const stack = [[x0, y0]];
+        while (stack.length) {
+          const [cx, cy] = stack.pop()!;
+          x0 = Math.min(x0, cx); x1 = Math.max(x1, cx);
+          y0 = Math.min(y0, cy); y1 = Math.max(y1, cy);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+            const nx = cx + dx; const ny = cy + dy;
+            const k = ny * this.cellsW + nx;
+            if (nx >= 0 && ny >= 0 && nx < this.cellsW && ny < this.cellsH && this.cells[k] === 'C' && !seen.has(k)) {
+              seen.add(k); stack.push([nx, ny]);
+            }
+          }
+        }
+      }
+      const gx0 = x0 * CELL_W;
+      const gy0 = offsetY + y0 * CELL_H;
+      const gx1 = x1 * CELL_W + CELL_W - 1;
+      const gy1 = offsetY + y1 * CELL_H + CELL_H - 1;
       const accent = role('ui.accent');
-      term.put(gx0, gy0, '\u250c', accent);
-      term.put(gx0 + CELL_W - 1, gy0, '\u2510', accent);
-      term.put(gx0, gy0 + CELL_H - 1, '\u2514', accent);
-      term.put(gx0 + CELL_W - 1, gy0 + CELL_H - 1, '\u2518', accent);
+      term.put(gx0, gy0, '┌', accent);
+      term.put(gx1, gy0, '┐', accent);
+      term.put(gx0, gy1, '└', accent);
+      term.put(gx1, gy1, '┘', accent);
     }
 
     // The end. A dark band across the middle so the message owns the eye.

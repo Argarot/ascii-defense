@@ -66,7 +66,7 @@ async function main(): Promise<void> {
   // The HUD beside the board, full height at 2x glyph size (10x16 px -
   // integer multiple, the bitmap font stays crisp).
   const hudTerm = new GLTerm(glyphs, {
-    cols: 25,
+    cols: 30,
     rows: Math.floor((mapY * TILE_SIZE * CELL_H * GLYPH_PX_H) / (GLYPH_PX_H * 2)),
     cellPx: GLYPH_PX_W * 2,
     cellPxH: GLYPH_PX_H * 2,
@@ -154,29 +154,6 @@ async function main(): Promise<void> {
       : buildTarget && selected
         ? { x: selected.x, y: selected.y, r: TOWER_DEFS[previewIdx].range }
         : null;
-    view.render({
-      hover,
-      selected,
-      enemies: collectEnemies(),
-      towers,
-      projectiles,
-      range,
-      // Green only when the sim would actually accept the click: placeable
-      // AND affordable.
-      hoverBuildable:
-        hover !== null &&
-        sim.canBuildAt(hover.x, hover.y) &&
-        sim.canAfford(TOWER_DEFS[selectedBuild].id),
-      showGrid,
-      rangeIsPreview: !selTower && buildTarget,
-      telegraph: sim.nextWaveEntries,
-      gameOver: sim.status === 'lost',
-      pulses: sim.pulses
-        .map((pu) => ({ x: pu.x, y: pu.y, r: pu.r, age01: (sim.tickCount - pu.tick) / 10 }))
-        .filter((pu) => pu.age01 >= 0 && pu.age01 <= 1),
-      phase: animPhase,
-    });
-
     const hoverTower = hover ? sim.towerAt(hover.x, hover.y) : null;
     const infoTower = selTower ?? hoverTower;
     const def = infoTower ? sim.towerDef(infoTower) : null;
@@ -194,6 +171,33 @@ async function main(): Promise<void> {
       range: Math.round(e.range * 10) / 10,
       slow: e.slowTicks,
     });
+    view.render({
+      hover,
+      selected,
+      enemies: collectEnemies(),
+      towers,
+      projectiles,
+      // A hovered upgrade that grows range previews it on the map, pulsing.
+      range:
+        selTower && effPreview && effPreview.range !== eff?.range
+          ? { x: selTower.cellX, y: selTower.cellY, r: effPreview.range }
+          : range,
+      // Green only when the sim would actually accept the click: placeable
+      // AND affordable.
+      hoverBuildable:
+        hover !== null &&
+        sim.canBuildAt(hover.x, hover.y) &&
+        sim.canAfford(TOWER_DEFS[selectedBuild].id),
+      showGrid,
+      rangeIsPreview: (!selTower && buildTarget) || (selTower !== null && effPreview !== null),
+      telegraph: sim.nextWaveEntries,
+      gameOver: sim.status === 'lost',
+      pulses: sim.pulses
+        .map((pu) => ({ x: pu.x, y: pu.y, r: pu.r, age01: (sim.tickCount - pu.tick) / 10 }))
+        .filter((pu) => pu.age01 >= 0 && pu.age01 <= 1),
+      phase: animPhase,
+    });
+
     hud.render({
       scrap: sim.scrap,
       kills: sim.kills,
@@ -245,7 +249,11 @@ async function main(): Promise<void> {
   app.style.display = 'flex';
   app.style.alignItems = 'flex-start';
   app.style.gap = '6px';
-  app.appendChild(term.canvas);
+  // Board + its caption stack in a left column; the caption stays under the
+  // board (Daniil), leaving the panel the full height beside them.
+  const leftCol = document.createElement('div');
+  leftCol.appendChild(term.canvas);
+  app.appendChild(leftCol);
   app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
   cap.className = 'hud';
@@ -257,7 +265,7 @@ async function main(): Promise<void> {
   smithLink.textContent = 'tile smith \u2192';
   smithLink.style.color = '#4cc9f0';
   cap.appendChild(smithLink);
-  app.appendChild(cap);
+  leftCol.appendChild(cap);
 
   const same = (a: CellRef | null, b: CellRef | null): boolean =>
     a === b || (a !== null && b !== null && a.x === b.x && a.y === b.y);
