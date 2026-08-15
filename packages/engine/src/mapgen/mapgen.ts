@@ -105,9 +105,15 @@ export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOption
   // SAME stream (state simply advances), so a seed still means one exact map
   // and no failure ever reaches a player. Ten strikes before we admit defeat.
   let lastError: unknown;
-  for (let attempt = 0; attempt < 10; attempt++) {
+  for (let attempt = 0; attempt < 25; attempt++) {
     try {
-      return generateMapOnce(rng, lib, opts);
+      // Later whole-map attempts progressively relax the demands: fewer
+      // required slots per walk corners fewer walkers.
+      const relaxed =
+        attempt < 10
+          ? opts
+          : { ...opts, targetPathLength: Math.max(1, opts.targetPathLength >> (attempt < 18 ? 1 : 2)) };
+      return generateMapOnce(rng, lib, relaxed);
     } catch (e) {
       lastError = e;
     }

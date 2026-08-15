@@ -250,6 +250,21 @@ describe('map generation v2 - trees, void, spread', () => {
       }
   });
 
+  it('never fails across 200 seeds at the demo knob extremes', () => {
+    // The player-facing guarantee: whatever the demo's randomized knobs draw,
+    // a map comes out. 5 entries + long paths on 14x7 is the worst case that
+    // reached a player once - it must not again.
+    for (let seed = 1; seed <= 200; seed++) {
+      const map = generateMap(createRng(seed).stream('map'), LIB, {
+        width: 14,
+        height: 7,
+        entries: 5,
+        targetPathLength: 26,
+      });
+      expect(map.entries.length).toBe(5);
+    }
+  });
+
   it('rejects zero entries', () => {
     expect(() =>
       generateMap(createRng(1).stream('map'), LIB, { width: 5, height: 5, entries: 0, targetPathLength: 3 }),

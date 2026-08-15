@@ -192,24 +192,23 @@ export class BoardView {
           const dx = ux - cx;
           const dy = uy - cy;
           if (Math.abs(Math.sqrt(dx * dx + dy * dy) - r) <= band) {
-            term.tint(gx, offsetY + gy, '#2b4d6e');
+            // Brighten what is already there - the ring wears the terrain's
+            // own tone instead of flat paint (Daniil).
+            term.shade(gx, offsetY + gy, 1.9, 0.07);
           }
         }
     }
 
-    // Tile seams, on demand (G key): a single background-tinted glyph per
-    // corner - subtle by request; the eye assembles the grid from dots.
+    // Tile seams, on demand (G key): ONE brightened glyph per tile (top-left
+    // corner - corners touch, so one per tile draws the whole lattice), shaded
+    // relative to the terrain underneath rather than flat-painted.
     if (state.showGrid) {
-      const seam = '#3a4d63';
       const TGX = TILE_SIZE * CELL_W;
       const TGY = TILE_SIZE * CELL_H;
       for (let ty = 0; ty < this.opts.mapY; ty++)
         for (let tx = 0; tx < this.opts.mapX; tx++) {
           if (!slotAt(this.board, tx, ty)) continue;
-          term.tint(tx * TGX, offsetY + ty * TGY, seam);
-          term.tint(tx * TGX + TGX - 1, offsetY + ty * TGY, seam);
-          term.tint(tx * TGX, offsetY + ty * TGY + TGY - 1, seam);
-          term.tint(tx * TGX + TGX - 1, offsetY + ty * TGY + TGY - 1, seam);
+          term.shade(tx * TGX, offsetY + ty * TGY, 2.4, 0.1);
         }
     }
 

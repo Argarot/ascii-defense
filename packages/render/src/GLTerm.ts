@@ -224,6 +224,20 @@ export class GLTerm {
     this.data[o + 8] = b[2];
   }
 
+  /**
+   * Shade a cell's EXISTING background - multiply toward brighter (>1) or
+   * darker (<1), with a small additive floor so shading reads even over
+   * pure black. Overlays keep the terrain's own tone instead of painting
+   * flat colour over it.
+   */
+  shade(x: number, y: number, mul: number, add = 0.05): void {
+    if (x < 0 || y < 0 || x >= this.cols || y >= this.rows) return;
+    const o = (y * this.cols + x) * FLOATS_PER_CELL;
+    for (let c = 6; c <= 8; c++) {
+      this.data[o + c] = Math.min(1, this.data[o + c] * mul + add);
+    }
+  }
+
   put(x: number, y: number, ch: string, fg: string, bg?: string): void {
     if (x < 0 || y < 0 || x >= this.cols || y >= this.rows) return;
     const slot = this.index.get(ch.codePointAt(0) ?? 32);
