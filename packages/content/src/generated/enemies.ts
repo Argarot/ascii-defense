@@ -24,6 +24,18 @@ export interface EnemyRoster {
        */
       bounty?: number;
       traits?: ('armoured' | 'shielded' | 'fast' | 'swarm')[];
+      /**
+       * Flat damage reduction per hit; hits always deal at least 1.
+       */
+      armor?: number;
+      /**
+       * Absorb pool burned before hp.
+       */
+      shield?: number;
+      /**
+       * First wave this enemy may appear in.
+       */
+      minWave?: number;
     },
     ...{
       id: string;
@@ -39,6 +51,18 @@ export interface EnemyRoster {
        */
       bounty?: number;
       traits?: ('armoured' | 'shielded' | 'fast' | 'swarm')[];
+      /**
+       * Flat damage reduction per hit; hits always deal at least 1.
+       */
+      armor?: number;
+      /**
+       * Absorb pool burned before hp.
+       */
+      shield?: number;
+      /**
+       * First wave this enemy may appear in.
+       */
+      minWave?: number;
     }[]
   ];
 }
@@ -108,6 +132,21 @@ export const enemiesSchema = {
               ]
             },
             "uniqueItems": true
+          },
+          "armor": {
+            "description": "Flat damage reduction per hit; hits always deal at least 1.",
+            "type": "number",
+            "minimum": 0
+          },
+          "shield": {
+            "description": "Absorb pool burned before hp.",
+            "type": "number",
+            "minimum": 0
+          },
+          "minWave": {
+            "description": "First wave this enemy may appear in.",
+            "type": "integer",
+            "minimum": 1
           }
         }
       }

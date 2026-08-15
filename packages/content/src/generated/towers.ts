@@ -44,7 +44,200 @@ export interface TowerRoster {
          * Status effect id applied on hit (slow, burn, ...). Reserved.
          */
         applyEffect?: string | null;
+        /**
+         * Speed multiplier while slowed (applyEffect slow).
+         */
+        slowMul?: number;
+        /**
+         * Slow duration in ticks.
+         */
+        slowTicks?: number;
       };
+      /**
+       * Three upgrade paths of five tiers (PRD 5.2). Crosspathing (one path to 5, a second to 2, the third stays 0) is enforced by the engine, not here.
+       *
+       * @minItems 3
+       * @maxItems 3
+       */
+      paths?: [
+        {
+          name: string;
+          /**
+           * @minItems 5
+           * @maxItems 5
+           */
+          tiers: [
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            }
+          ];
+        },
+        {
+          name: string;
+          /**
+           * @minItems 5
+           * @maxItems 5
+           */
+          tiers: [
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            }
+          ];
+        },
+        {
+          name: string;
+          /**
+           * @minItems 5
+           * @maxItems 5
+           */
+          tiers: [
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            }
+          ];
+        }
+      ];
     },
     ...{
       id: string;
@@ -80,7 +273,200 @@ export interface TowerRoster {
          * Status effect id applied on hit (slow, burn, ...). Reserved.
          */
         applyEffect?: string | null;
+        /**
+         * Speed multiplier while slowed (applyEffect slow).
+         */
+        slowMul?: number;
+        /**
+         * Slow duration in ticks.
+         */
+        slowTicks?: number;
       };
+      /**
+       * Three upgrade paths of five tiers (PRD 5.2). Crosspathing (one path to 5, a second to 2, the third stays 0) is enforced by the engine, not here.
+       *
+       * @minItems 3
+       * @maxItems 3
+       */
+      paths?: [
+        {
+          name: string;
+          /**
+           * @minItems 5
+           * @maxItems 5
+           */
+          tiers: [
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            }
+          ];
+        },
+        {
+          name: string;
+          /**
+           * @minItems 5
+           * @maxItems 5
+           */
+          tiers: [
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            }
+          ];
+        },
+        {
+          name: string;
+          /**
+           * @minItems 5
+           * @maxItems 5
+           */
+          tiers: [
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            },
+            {
+              cost: number;
+              mods?: {
+                damage?: number;
+                range?: number;
+                fireEveryTicks?: number;
+                explodeRadius?: number;
+                slowTicks?: number;
+              };
+            }
+          ];
+        }
+      ];
     }[]
   ];
 }
@@ -185,6 +571,75 @@ export const towersSchema = {
                   "null"
                 ],
                 "default": null
+              },
+              "slowMul": {
+                "description": "Speed multiplier while slowed (applyEffect slow).",
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1
+              },
+              "slowTicks": {
+                "description": "Slow duration in ticks.",
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "paths": {
+            "description": "Three upgrade paths of five tiers (PRD 5.2). Crosspathing (one path to 5, a second to 2, the third stays 0) is enforced by the engine, not here.",
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "tiers"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "tiers": {
+                  "type": "array",
+                  "minItems": 5,
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "cost"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "cost": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "mods": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "damage": {
+                            "type": "number"
+                          },
+                          "range": {
+                            "type": "number"
+                          },
+                          "fireEveryTicks": {
+                            "type": "number"
+                          },
+                          "explodeRadius": {
+                            "type": "number"
+                          },
+                          "slowTicks": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           }

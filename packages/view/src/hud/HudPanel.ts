@@ -16,6 +16,14 @@ import type { GLTerm } from '@ascii-defense/render';
 import { PRIORITIES, type Priority } from '@ascii-defense/engine';
 import { role } from '../palette';
 
+export interface HudPathInfo {
+  name: string;
+  tier: number;
+  /** Next tier's cost, or null when maxed/crosspath-locked. */
+  cost: number | null;
+  affordable: boolean;
+}
+
 export interface HudTowerInfo {
   name: string;
   kills: number;
@@ -23,12 +31,19 @@ export interface HudTowerInfo {
   dps: string;
   range: number;
   priority: Priority;
+  paths: readonly HudPathInfo[];
 }
 
 export interface HudState {
   scrap: number;
   kills: number;
   coreDamage: number;
+  coreHp: number;
+  coreHpMax: number;
+  wave: number;
+  /** Fronts the next wave attacks from. */
+  nextFronts: number;
+  gameOver: boolean;
   L: number;
   seed: number;
   /** "1x", "2x", "4x" or "PAUSED". */
@@ -45,7 +60,8 @@ export interface HudState {
 
 export type HudAction =
   | { kind: 'priority'; value: Priority }
-  | { kind: 'build'; index: number };
+  | { kind: 'build'; index: number }
+  | { kind: 'upgrade'; path: number };
 
 interface Region {
   row: number;
@@ -85,27 +101,44 @@ export class HudPanel {
     this.regions = [];
     term.clear(role('ui.bg'));
 
-    // Row 0 - resources and run status. Scrap first: it is the number the
-    // player's eyes return to before every decision.
+    // Row 0 - the vitals: Scrap, the Core's health, the wave clock.
     term.write(0, 0, `SCRAP ${s.scrap}`, role('ui.accent'));
-    const status = `kills ${s.kills} \u00b7 core -${s.coreDamage} \u00b7 ${s.speedLabel} \u00b7 L=${s.L} \u00b7 seed ${s.seed}`;
+    const coreCol = s.coreHp <= s.coreHpMax / 4 ? role('enemy.fast') : role('ui.text');
+    term.write(12, 0, `CORE ${s.coreHp}/${s.coreHpMax}`, coreCol);
+    term.write(26, 0, `WAVE ${s.wave} \u00b7 next: ${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'}`, role('ui.text'));
+    const status = `kills ${s.kills} \u00b7 ${s.speedLabel} \u00b7 L=${s.L} \u00b7 seed ${s.seed}`;
     term.write(term.cols - status.length, 0, status, role('ui.dim'));
 
-    // Row 1 - inspector.
+    // Row 1 - inspector, plus the priority selector when a tower is up.
     term.write(0, 1, s.inspector, role('ui.text'));
-
-    // Row 2 - actions: priorities for a selected tower, else the palette.
     if (s.selectedTower) {
-      const t = s.selectedTower;
-      const lead = `${t.name} \u00b7 ${t.dmg} dmg \u00b7 ${t.dps}/s \u00b7 range ${t.range} \u00b7 kills ${t.kills} \u00b7 priority: `;
-      term.write(0, 2, lead, role('ui.text'));
-      let x = lead.length;
+      let x = term.cols - 44;
+      term.write(x - 10, 1, 'priority: ', role('ui.dim'));
       for (const p of PRIORITIES) {
         const label = PRIORITY_LABEL[p];
-        term.write(x, 2, label, p === t.priority ? role('ui.accent') : role('ui.dim'));
-        this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'priority', value: p } });
+        term.write(x, 1, label, p === s.selectedTower.priority ? role('ui.accent') : role('ui.dim'));
+        this.regions.push({ row: 1, x0: x, x1: x + label.length, action: { kind: 'priority', value: p } });
         x += label.length + 2;
       }
+    }
+
+    // Row 2 - actions: upgrade paths for a selected tower, else the palette.
+    if (s.gameOver) {
+      term.write(0, 2, 'THE CORE HAS FALLEN \u00b7 press R for a new run', role('enemy.fast'));
+    } else if (s.selectedTower) {
+      const t = s.selectedTower;
+      const lead = `${t.name} \u00b7 ${t.dmg} dmg \u00b7 ${t.dps}/s \u00b7 rng ${t.range} \u00b7 kills ${t.kills} \u00b7 `;
+      term.write(0, 2, lead, role('ui.text'));
+      let x = lead.length;
+      t.paths.forEach((p, pi) => {
+        const label =
+          p.cost === null ? `[${p.name} ${p.tier}/5 \u2014]` : `[${p.name} ${p.tier}/5 $${p.cost}]`;
+        const colour =
+          p.cost === null ? role('ui.dim') : p.affordable ? role('ui.accent') : role('ui.text');
+        term.write(x, 2, label, colour);
+        if (p.cost !== null) this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'upgrade', path: pi } });
+        x += label.length + 2;
+      });
     } else {
       let x = 0;
       term.write(x, 2, 'build: ', role('ui.dim'));

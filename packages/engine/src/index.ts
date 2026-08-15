@@ -41,4 +41,13 @@ export { Sim, TICK_HZ, SELL_REFUND } from './sim/sim';
 export type { SimOptions, Tower } from './sim/sim';
 export { PRIORITIES, pickTarget } from './sim/targeting';
 export type { Priority, TargetCandidate } from './sim/targeting';
-export type { EnemyDef, TowerDef, ProjectileSpec } from './sim/defs';
+export { canUpgrade, effectiveStats } from './sim/defs';
+export type {
+  EnemyDef,
+  TowerDef,
+  ProjectileSpec,
+  TowerPathDef,
+  TierDef,
+  StatMods,
+  EffectiveStats,
+} from './sim/defs';

@@ -16,7 +16,49 @@
       "speed": 0.12,
       "damage": 1,
       "bounty": 3,
+      "minWave": 2,
       "traits": ["fast"]
+    },
+    {
+      "id": "swarmling",
+      "name": "swarmling",
+      "hp": 6,
+      "speed": 0.14,
+      "damage": 1,
+      "bounty": 1,
+      "minWave": 3,
+      "traits": ["swarm", "fast"]
+    },
+    {
+      "id": "brute",
+      "name": "brute",
+      "hp": 90,
+      "speed": 0.045,
+      "damage": 3,
+      "bounty": 8,
+      "minWave": 4,
+      "armor": 3,
+      "traits": ["armoured"]
+    },
+    {
+      "id": "shell",
+      "name": "shellback",
+      "hp": 25,
+      "speed": 0.06,
+      "damage": 2,
+      "bounty": 7,
+      "minWave": 5,
+      "shield": 30,
+      "traits": ["shielded"]
+    },
+    {
+      "id": "husk",
+      "name": "husk",
+      "hp": 160,
+      "speed": 0.035,
+      "damage": 5,
+      "bounty": 12,
+      "minWave": 6
     }
   ]
 }
