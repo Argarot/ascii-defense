@@ -1,11 +1,21 @@
 /**
- * Bootstrap and input wiring - nothing else. What the board looks like lives
- * in view (BoardView); what the board IS lives in engine. This file connects
- * the mouse and keyboard to both.
+ * Bootstrap, input and the FRAME clock - nothing else. The sim owns ticks
+ * (fixed 20 Hz, invariant 6); this file only decides how many ticks each
+ * animation frame is worth (pause/1x/2x/4x) and hands the accumulator to
+ * requestAnimationFrame. What things look like lives in view; what things
+ * ARE lives in engine.
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { TILE_SIZE, TileLibrary, createRng, generateMap } from '@ascii-defense/engine';
+import {
+  Sim,
+  TICK_HZ,
+  TILE_SIZE,
+  TileLibrary,
+  createRng,
+  generateMap,
+  resolveCells,
+} from '@ascii-defense/engine';
 import { BoardView, CELL_W, CELL_H, role } from '@ascii-defense/view';
 import type { CellRef } from '@ascii-defense/view';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -17,6 +27,8 @@ const load = <T>(p: string): Promise<T> =>
 
 const GLYPH_PX_W = 5;
 const GLYPH_PX_H = 8;
+const TICK_MS = 1000 / TICK_HZ;
+const SPEEDS = [0, 1, 2, 4] as const;
 
 async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
@@ -47,8 +59,9 @@ async function main(): Promise<void> {
 
   let hover: CellRef | null = null;
   let selected: CellRef | null = null;
-
-  const draw = (): void => view.render({ hover, selected });
+  let sim!: Sim;
+  let speedIdx = 1; // start at 1x
+  let dirty = true;
 
   const setSeed = (s: number): void => {
     seed = s;
@@ -61,9 +74,36 @@ async function main(): Promise<void> {
       targetPathLength: 12,
     });
     view.setMap(map, seed);
+    sim = new Sim(seed, {
+      cells: resolveCells(map.board, lib),
+      cellsW: mapX * TILE_SIZE,
+      cellsH: mapY * TILE_SIZE,
+      map,
+      spawnEveryTicks: 25,
+      speed: 0.06,
+    });
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
-    draw();
+    dirty = true;
+  };
+
+  const collectEnemies = (): { x: number; y: number }[] => {
+    const out: { x: number; y: number }[] = [];
+    for (let i = 0; i < sim.posX.length; i++) {
+      if (sim.alive[i]) out.push({ x: sim.posX[i], y: sim.posY[i] });
+    }
+    return out;
+  };
+
+  const draw = (): void => {
+    const speed = SPEEDS[speedIdx];
+    view.render({
+      hover,
+      selected,
+      enemies: collectEnemies(),
+      status: `breaches ${sim.breaches} \u00b7 ${speed === 0 ? 'PAUSED (space)' : `${speed}x`} \u00b7 L=${sim.flow.L}`,
+    });
+    dirty = false;
   };
 
   const app = document.getElementById('app')!;
@@ -71,7 +111,8 @@ async function main(): Promise<void> {
   const cap = document.createElement('div');
   cap.className = 'hud';
   cap.textContent =
-    `spleen 5x8 \u00b7 map by engine generateMap: Core center, 3 carved entries, ore richer far from the road \u00b7 `;
+    `spleen 5x8 \u00b7 engine: generated map, 20 Hz fixed tick, flow field to the Core, subcell walkers \u00b7 ` +
+    `space pauses, 1/2/3 set speed, R rerolls \u00b7 `;
   const smithLink = document.createElement('a');
   smithLink.href = 'tilesmith.html';
   smithLink.textContent = 'tile smith \u2192';
@@ -86,27 +127,68 @@ async function main(): Promise<void> {
     const next = view.cellFromPixel(e.offsetX, e.offsetY);
     if (!same(next, hover)) {
       hover = next;
-      draw();
+      dirty = true;
     }
   });
   term.canvas.addEventListener('mouseleave', () => {
     hover = null;
-    draw();
+    dirty = true;
   });
   term.canvas.addEventListener('click', (e) => {
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
     selected = same(cell, selected) ? null : cell; // click again to deselect
-    draw();
+    dirty = true;
   });
   window.addEventListener('keydown', (e) => {
     if (e.key === 'r' || e.key === 'R') setSeed((seed + 1 + (Date.now() % 997)) % 1_000_000);
+    if (e.key === ' ') {
+      speedIdx = speedIdx === 0 ? 1 : 0;
+      dirty = true;
+      e.preventDefault();
+    }
+    if (e.key === '1') { speedIdx = 1; dirty = true; }
+    if (e.key === '2') { speedIdx = 2; dirty = true; }
+    if (e.key === '3') { speedIdx = 3; dirty = true; }
     if (e.key === 'Escape') {
       selected = null;
-      draw();
+      dirty = true;
     }
   });
 
+  // ---- the frame loop ------------------------------------------------------
+  // Accumulate scaled wall time; every full TICK_MS runs exactly one tick.
+  // Speed changes tick FREQUENCY, never tick size (invariant 6). dt is
+  // clamped so a backgrounded tab does not fast-forward on return.
+  let last = performance.now();
+  let acc = 0;
+  const frame = (now: number): void => {
+    const dt = Math.min(now - last, 250);
+    last = now;
+    acc += dt * SPEEDS[speedIdx];
+    let ran = 0;
+    while (acc >= TICK_MS && ran < 32) {
+      sim.tick();
+      acc -= TICK_MS;
+      ran++;
+    }
+    if (ran > 0 || dirty) draw();
+    requestAnimationFrame(frame);
+  };
+
   setSeed(seed);
+  draw(); // first paint synchronously - rAF may be throttled in hidden tabs
+  requestAnimationFrame(frame);
+
+  // Debug handle for headless verification (the browser pane throttles rAF,
+  // see CONTRIBUTING). Steps the sim and redraws on demand; harmless in prod.
+  (globalThis as Record<string, unknown>).__ad = {
+    step: (n: number): { breaches: number; alive: number } => {
+      for (let i = 0; i < n; i++) sim.tick();
+      draw();
+      return { breaches: sim.breaches, alive: sim.aliveCount() };
+    },
+    enemies: collectEnemies,
+  };
 }
 
 main().catch((e) => {

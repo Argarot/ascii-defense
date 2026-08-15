@@ -34,3 +34,8 @@ export type { Board, Placement, PlaceOptions } from './tiles/board';
 
 export { generateMap } from './mapgen/mapgen';
 export type { GeneratedMap, MapGenOptions, CellRef } from './mapgen/mapgen';
+
+export { computeFlowField } from './sim/flow';
+export type { FlowField } from './sim/flow';
+export { Sim, TICK_HZ } from './sim/sim';
+export type { SimOptions } from './sim/sim';
