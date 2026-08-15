@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
 
 // Project Pages are served from https://<user>.github.io/<repo>/, so every asset
 // URL in a production build needs that prefix. The dev server serves from root.
@@ -21,5 +22,12 @@ export default defineConfig(({ command, isPreview }) => ({
     // copied from public/. Without this both land in dist/assets and a bundled
     // file could shadow a sprite.
     assetsDir: 'build',
+    rollupOptions: {
+      // Two pages: the game, and the Tile Smith authoring tool.
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        tilesmith: fileURLToPath(new URL('./tilesmith.html', import.meta.url)),
+      },
+    },
   },
 }));

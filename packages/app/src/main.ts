@@ -64,7 +64,12 @@ async function main(): Promise<void> {
   cap.className = 'hud';
   cap.textContent =
     `spleen 5x8 \u00b7 board by engine growBoard (derived connectors, road-join rule) \u00b7 ` +
-    `hover + selection are view-layer; the engine never knows a mouse exists`;
+    `hover + selection are view-layer; the engine never knows a mouse exists \u00b7 `;
+  const smithLink = document.createElement('a');
+  smithLink.href = 'tilesmith.html';
+  smithLink.textContent = 'tile smith \u2192';
+  smithLink.style.color = '#4cc9f0';
+  cap.appendChild(smithLink);
   app.appendChild(cap);
 
   const same = (a: CellRef | null, b: CellRef | null): boolean =>
