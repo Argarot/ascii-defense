@@ -1,0 +1,6 @@
++----------------------+
+| ASCII DEFENSE        |
+| wave 3   $120   #4   |
+| [T]ower  [U]pgrade   |
+| speed 2x   lives 18  |
++----------------------+
