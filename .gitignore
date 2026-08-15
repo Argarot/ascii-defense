@@ -1,7 +1,14 @@
 node_modules/
 dist/
+dist-types/
 .vite/
 *.local
+
+# Collaboration assessment log — deliberately not part of the project
+POSTMORTEM.md
+
+# Claude Code local permission grants are per-machine
+.claude/settings.local.json
 
 # Editors / OS
 .vscode/*
