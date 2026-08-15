@@ -186,6 +186,34 @@ describe('towers and projectiles', () => {
     expect(run()).toEqual(run());
   });
 
+  it('economy: builds cost, kills pay, selling refunds 70%', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(37, { startingScrap: 45 });
+    const sim = new Sim(37, simOpts);
+    const a = buildSpotNear(cells, cellsW, cellsH, 0);
+    const b = buildSpotNear(cells, cellsW, cellsH, 1);
+    const c = buildSpotNear(cells, cellsW, cellsH, 2);
+
+    expect(sim.buildTower(a.x, a.y, 'bolt')).toBe(true); // 45 -> 25
+    expect(sim.buildTower(b.x, b.y, 'bolt')).toBe(true); // 25 -> 5
+    expect(sim.scrap).toBe(5);
+    expect(sim.canAfford('bolt')).toBe(false);
+    expect(sim.buildTower(c.x, c.y, 'bolt')).toBe(false); // broke, cell stays free
+    expect(sim.canBuildAt(c.x, c.y)).toBe(true);
+
+    expect(sim.sellTower(b.x, b.y)).toBe(true); // +14 (floor of 20*0.7)
+    expect(sim.scrap).toBe(19);
+
+    // Bounties: run with towers and confirm scrap grows past pure refunds.
+    const withBounty = { ...simOpts, enemyDefs: [{ ...WALKER, bounty: 5 }] };
+    const sim2 = new Sim(37, withBounty);
+    const spot = buildSpotNear(cells, cellsW, cellsH, 0);
+    sim2.buildTower(spot.x, spot.y, 'bolt');
+    for (let t = 0; t < 2000; t++) sim2.tick();
+    expect(sim2.kills).toBeGreaterThan(0);
+    // withBounty inherits startingScrap 45 from the spread above.
+    expect(sim2.scrap).toBe(45 - 20 + sim2.kills * 5);
+  });
+
   it('capacity: spawn flood drops instead of crashing', () => {
     const { simOpts } = makeWorld(31, { spawnEveryTicks: 1, maxSpawns: 0, enemyDefs: [{ ...WALKER, speed: 0.01 }] });
     const sim = new Sim(31, simOpts);
