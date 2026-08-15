@@ -51,10 +51,17 @@ jobs:
       - name: Browser tests (render, WebGL2)
         run: npx vitest run --project browser
 
+      - name: Content validation and linter
+        run: node tools/validate-content.mjs
+
+      # Generated types must match the schemas in the same commit. Regenerate
+      # and fail on any diff - committed types can never drift.
+      - name: Content type drift check
+        run: |
+          node tools/build-content-types.mjs
+          git diff --exit-code packages/content/src/generated
+
       # Proves the production bundle still assembles; Pages deploys only from
       # main via pages.yml, so this is a check, not a deployment.
       - name: Build
         run: npm run build
-
-      # Session 2 of Phase 1 adds here: browser-mode/snapshot tests (WBS
-      # 1.1.6-1.1.7) and content schema validation (WBS 1.1.8).

@@ -1,0 +1,32 @@
+{
+  "$schema": "../schema/palette.schema.json",
+  "roles": {
+    "ui.bg": "#000000",
+    "ui.text": "#d3dae7",
+    "ui.dim": "#65758a",
+    "ui.accent": "#2ee6a0",
+    "tower.frame": "#7286a0",
+    "tower.core": "#ffffff",
+    "tower.ground": "#0c1017",
+    "enemy.eye": "#ffd166",
+    "path.1": "#4cc9f0",
+    "path.2": "#ffb703",
+    "path.3": "#c08cff",
+    "path.4": "#5ce68c",
+    "terrain.ground.mid": "#3d4f61",
+    "terrain.ground.lit": "#54687d",
+    "terrain.ground.dark": "#141c25",
+    "terrain.road.mid": "#93abc4",
+    "terrain.road.lit": "#c2d6ea",
+    "terrain.road.dark": "#333f4d",
+    "terrain.rock.mid": "#5a6a7c",
+    "terrain.rock.lit": "#8698ab",
+    "terrain.rock.dark": "#1b232c",
+    "terrain.ore.mid": "#ffd15c",
+    "terrain.ore.lit": "#fff0b0",
+    "terrain.ore.dark": "#2a2415",
+    "terrain.spawn.mid": "#ff9090",
+    "terrain.spawn.lit": "#ffd0d0",
+    "terrain.spawn.dark": "#331a1a"
+  }
+}

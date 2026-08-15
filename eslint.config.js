@@ -32,6 +32,8 @@ export default tseslint.config(
       'node_modules/',
       'vendor/',
       'REXPaint-v*/',
+      // Codegen output: linting it means linting the generator's style.
+      'packages/content/src/generated/',
     ],
   },
   js.configs.recommended,
