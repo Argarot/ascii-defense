@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // No DOM on purpose — the engine is headless by invariant, and this is
+    // where that stops being a convention and becomes a compile error.
+    "lib": ["ES2022"],
+    "rootDir": "src",
+    "outDir": "dist-types",
+    "tsBuildInfoFile": "dist-types/.tsbuildinfo"
+  },
+  "include": ["src"]
+}

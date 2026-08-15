@@ -11,8 +11,8 @@
  * palette breadth (unscii, 6.7x more glyphs) against per-cell drawing room
  * (spleen, 1.7x more glyphs inside each cell).
  */
-import { GLTerm } from './term/GLTerm';
-import type { GlyphSet } from './term/GLTerm';
+import { GLTerm } from '@ascii-defense/render';
+import type { GlyphSet } from '@ascii-defense/render';
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '5';
