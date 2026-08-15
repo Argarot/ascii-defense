@@ -4,77 +4,156 @@
     {
       "id": "core_end",
       "name": "the Core (terminus)",
-      "cells": ["GGGGG", "GCCCG", "GCCCR", "GCCCG", "GGGGG"]
+      "cells": [
+        "GGGGG",
+        "GCCCG",
+        "GCCCR",
+        "GCCCG",
+        "GGGGG"
+      ]
     },
     {
       "id": "core_l",
       "name": "the Core (corner)",
-      "cells": ["GGGGG", "GCCCG", "GCCCR", "GCCCG", "GGRGG"]
+      "cells": [
+        "GGGGG",
+        "GCCCG",
+        "GCCCR",
+        "GCCCG",
+        "GGRGG"
+      ]
     },
     {
       "id": "core_i",
       "name": "the Core (through)",
-      "cells": ["GGGGG", "GCCCG", "RCCCR", "GCCCG", "GGGGG"]
+      "cells": [
+        "GGGGG",
+        "GCCCG",
+        "RCCCR",
+        "GCCCG",
+        "GGGGG"
+      ]
     },
     {
       "id": "core_t",
       "name": "the Core (tri)",
-      "cells": ["GGRGG", "GCCCG", "RCCCR", "GCCCG", "GGGGG"]
+      "cells": [
+        "GGRGG",
+        "GCCCG",
+        "RCCCR",
+        "GCCCG",
+        "GGGGG"
+      ]
     },
     {
       "id": "core_x",
       "name": "the Core (nexus)",
-      "cells": ["GGRGG", "GCCCG", "RCCCR", "GCCCG", "GGRGG"]
+      "cells": [
+        "GGRGG",
+        "GCCCG",
+        "RCCCR",
+        "GCCCG",
+        "GGRGG"
+      ]
     },
     {
       "id": "straight",
       "name": "causeway",
-      "cells": ["GGGGG", "GGGGG", "RRRRR", "GGGGG", "GGGGG"]
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "RRRRR",
+        "GGGGG",
+        "GGGGG"
+      ]
     },
     {
       "id": "corner",
       "name": "elbow",
-      "cells": ["GGGGG", "GGGGG", "RRRGG", "GGRGG", "GGRGG"]
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "RRRGG",
+        "GGRGG",
+        "GGRGG"
+      ]
     },
     {
       "id": "tee",
       "name": "junction",
-      "cells": ["GGGGG", "GGGGG", "RRRRR", "GGRGG", "GGRGG"]
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "RRRRR",
+        "GGRGG",
+        "GGRGG"
+      ]
     },
     {
       "id": "cross",
       "name": "crossroads",
-      "cells": ["GGRGG", "GGRGG", "RRRRR", "GGRGG", "GGRGG"]
+      "cells": [
+        "GGRGG",
+        "GGRGG",
+        "RRRRR",
+        "GGRGG",
+        "GGRGG"
+      ]
     },
     {
       "id": "scurve",
       "name": "switchback",
-      "cells": ["GGGGG", "GRRRG", "RRGRR", "GGGGG", "GGGGG"]
-    },
-    {
-      "id": "ore_road",
-      "name": "vein crossing",
-      "cells": ["GGGGG", "GOOGG", "RRRRR", "GGGOG", "GGGGG"]
+      "cells": [
+        "GGGGG",
+        "GRRRG",
+        "RRGRR",
+        "GGGGG",
+        "GGGGG"
+      ]
     },
     {
       "id": "rock_corner",
       "name": "cliff bend",
-      "cells": ["GKKGG", "GKGGG", "RRRGG", "GGRGG", "GKRGG"]
+      "cells": [
+        "GKKGG",
+        "GKGGG",
+        "RRRGG",
+        "GGRGG",
+        "GKRGG"
+      ]
     },
     {
       "id": "meadow",
       "name": "clearing",
-      "cells": ["GGGGG", "GGGGG", "GGGGG", "GGGGG", "GGGGG"]
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGGG"
+      ]
     },
     {
       "id": "rock_field",
       "name": "scree",
-      "cells": ["GGGGG", "GKKGG", "GKKKG", "GGKKG", "GGGGG"]
+      "cells": [
+        "GGGGG",
+        "GKKGG",
+        "GKKKG",
+        "GGKKG",
+        "GGGGG"
+      ]
     },
     {
       "id": "ore_pocket",
       "name": "rich vein",
-      "cells": ["GGGGG", "GOOGG", "GOOOG", "KGOGG", "GGGGG"]
+      "cells": [
+        "GGGGG",
+        "GOOGG",
+        "GOOOG",
+        "KGOGG",
+        "GGGGG"
+      ]
     }
   ]
 }

@@ -61,17 +61,18 @@ async function main(): Promise<void> {
   let selected: CellRef | null = null;
   let sim!: Sim;
   let speedIdx = 1; // start at 1x
+  let showGrid = false;
   let dirty = true;
 
   const setSeed = (s: number): void => {
     seed = s;
     // Difficulty knobs (PRD sec 4.4) - hardcoded demo values until threat
-    // levels exist: 3 fronts, paths forced to wander 12 slots before exiting.
+    // levels exist: 4 fronts spread by sector, long winding roads.
     const map = generateMap(createRng(seed).stream('map'), lib, {
       width: mapX,
       height: mapY,
-      entries: 3,
-      targetPathLength: 12,
+      entries: 4,
+      targetPathLength: 16,
     });
     view.setMap(map, seed);
     sim = new Sim(seed, {
@@ -79,8 +80,8 @@ async function main(): Promise<void> {
       cellsW: mapX * TILE_SIZE,
       cellsH: mapY * TILE_SIZE,
       map,
-      spawnEveryTicks: 25,
-      speed: 0.06,
+      spawnEveryTicks: 20,
+      speed: 0.08,
     });
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
@@ -101,6 +102,7 @@ async function main(): Promise<void> {
       hover,
       selected,
       enemies: collectEnemies(),
+      showGrid,
       status: `breaches ${sim.breaches} \u00b7 ${speed === 0 ? 'PAUSED (space)' : `${speed}x`} \u00b7 L=${sim.flow.L}`,
     });
     dirty = false;
@@ -149,6 +151,7 @@ async function main(): Promise<void> {
     if (e.key === '1') { speedIdx = 1; dirty = true; }
     if (e.key === '2') { speedIdx = 2; dirty = true; }
     if (e.key === '3') { speedIdx = 3; dirty = true; }
+    if (e.key === 'g' || e.key === 'G') { showGrid = !showGrid; dirty = true; }
     if (e.key === 'Escape') {
       selected = null;
       dirty = true;

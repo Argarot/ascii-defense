@@ -2,16 +2,18 @@
  * Map generation (PRD sec 4.3). Carve first, tile second:
  *
  *   1. place the Core slot near the board center
- *   2. random-walk `entries` paths from the Core to the board edge, each
- *      winding until it has spent `targetPathLength` slots before it may exit
- *   3. every walked slot needs a tile whose DERIVED connector signature
+ *   2. carve a road TREE: self-avoiding walks that never re-enter existing
+ *      road, so every entry has exactly one route to the Core and no other
+ *      road exists (no loops, by construction). The first walk leaves the
+ *      Core; later walks branch off a random existing road slot. Each walk is
+ *      assigned a compass sector so the tree spreads across the whole board
+ *      instead of clumping in one half.
+ *   3. every walked slot gets a tile whose DERIVED connector signature
  *      matches the carved topology - picked from the pool by signature
- *   4. every other slot gets roadless terrain; ore likelihood rises with
- *      distance from the road
- *
- * The carve decides the topology and the tiles merely dress it, which is what
- * makes "entries reach the Core" true by construction here too: a walk IS a
- * path, and signature-matched tiles reproduce exactly the walked edges.
+ *   4. slots within FILL_RADIUS of the road get roadless terrain (ore
+ *      likelier with distance - reach vs greed); farther slots stay VOID.
+ *      The map hugs its roads; emptiness reads as unclaimed land, not as a
+ *      half-finished screen.
  *
  * Difficulty knobs (PRD sec 4.4): more entries = harder, longer paths =
  * easier. Both are data, decided by threat level, not by this module.
@@ -42,6 +44,9 @@ export interface GeneratedMap {
   /** Center of the Core tile, in cell coordinates. */
   core: CellRef;
 }
+
+/** Roadless slots farther than this (in slots) from the road stay void. */
+export const FILL_RADIUS = 3;
 
 const EDGE_DELTA: Record<Edge, [number, number]> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 const CENTER = (TILE_SIZE - 1) / 2;
@@ -94,77 +99,112 @@ export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOption
   if (entries < 1) throw new Error('a map needs at least one entry');
   const index = indexLibrary(lib);
 
+  const slotIdx = (x: number, y: number): number => y * width + x;
+
   // ---- 1. the Core slot, near the center with a little seeded jitter -------
   const coreX = Math.floor(width / 2) + (width > 4 ? rng.int(-1, 1) : 0);
   const coreY = Math.floor(height / 2) + (height > 4 ? rng.int(-1, 1) : 0);
+  const coreK = slotIdx(coreX, coreY);
 
-  // ---- 2. carve paths ------------------------------------------------------
-  // roadEdges[slot] = the edges of that slot that carry road.
+  // ---- 2. carve the road tree ---------------------------------------------
+  // roadEdges[slot] = edges of that slot carrying road. roadSlots is the set
+  // of carved slots (incl. the Core); walkOrder remembers insertion order so
+  // branch-start picks are deterministic.
   const roadEdges = new Map<number, Set<Edge>>();
-  const slotIdx = (x: number, y: number): number => y * width + x;
-  const addEdge = (x: number, y: number, e: Edge): void => {
-    const k = slotIdx(x, y);
+  const roadSlots = new Set<number>([coreK]);
+  const walkOrder: number[] = [coreK];
+  const entryCells: CellRef[] = [];
+
+  const addEdge = (k: number, e: Edge): void => {
     const set = roadEdges.get(k) ?? new Set<Edge>();
     set.add(e);
     roadEdges.set(k, set);
   };
 
-  const entryCells: CellRef[] = [];
-  const usedExits = new Set<string>(); // "slot:edge" - two walks may not share an exit
-  const maxSteps = Math.max(targetPathLength * 4, width * height);
+  // Sectors spread the tree: each walk is nudged toward its own board edge,
+  // in seeded-shuffled order so no side is systematically favoured.
+  const sectors = rng.shuffle(EDGES);
 
   for (let n = 0; n < entries; n++) {
-    let x = coreX;
-    let y = coreY;
-    let steps = 0;
-    let cameFrom: Edge | null = null; // edge we entered the current slot by
+    const sector = sectors[n % sectors.length];
+    let done = false;
 
-    for (;;) {
-      const wandering = steps < targetPathLength && steps < maxSteps;
-      const options: { e: Edge; exits: boolean }[] = [];
-      for (const e of EDGES) {
-        if (cameFrom === e) continue; // no immediate backtrack
-        const [dx, dy] = EDGE_DELTA[e];
-        const nx = x + dx;
-        const ny = y + dy;
-        const exits = nx < 0 || ny < 0 || nx >= width || ny >= height;
-        if (exits && wandering) continue; // not allowed to leave yet
-        if (exits && usedExits.has(`${slotIdx(x, y)}:${e}`)) continue; // entry taken
-        if (!exits && nx === coreX && ny === coreY) continue; // never re-enter the Core
-        options.push({ e, exits });
-      }
-      if (options.length === 0) {
-        if (wandering) {
-          // Cornered while wandering (tiny boards): stop wandering, retry
-          // with exits allowed.
-          steps = targetPathLength;
-          continue;
+    // A walk that corners itself rolls back completely and retries from a
+    // different branch point - partial roads never leak into the map.
+    for (let attempt = 0; attempt < 24 && !done; attempt++) {
+      // Later attempts accept shorter paths rather than failing the map.
+      const target = attempt < 8 ? targetPathLength : Math.max(1, targetPathLength >> (attempt < 16 ? 1 : 2));
+      const startK =
+        n === 0 ? coreK : walkOrder[rng.int(0, walkOrder.length - 1)];
+      let x = startK % width;
+      let y = Math.floor(startK / width);
+      let steps = 0;
+      let cameFrom: Edge | null = null;
+      const newSlots: number[] = [];
+      const newEdges: [number, Edge][] = [];
+
+      const tryWalk = (): boolean => {
+        for (;;) {
+          const wandering = steps < target;
+          const legal: { e: Edge; exits: boolean }[] = [];
+          for (const e of EDGES) {
+            if (cameFrom === e) continue;
+            const [dx, dy] = EDGE_DELTA[e];
+            const nx = x + dx;
+            const ny = y + dy;
+            const exits = nx < 0 || ny < 0 || nx >= width || ny >= height;
+            if (exits) {
+              if (wandering) continue;
+              legal.push({ e, exits });
+              continue;
+            }
+            // Tree rule: never step into existing road (loops impossible),
+            // nor into slots this walk already claimed.
+            if (roadSlots.has(slotIdx(nx, ny))) continue;
+            if (newSlots.includes(slotIdx(nx, ny))) continue;
+            legal.push({ e, exits });
+          }
+          if (legal.length === 0) return false;
+
+          // Once the walk has earned its length it takes the first exit
+          // available (sector-preferred) - wandering past the target would
+          // hog slots and starve later walks on small boards. While
+          // wandering, a gentle sector bias spreads the tree across the map.
+          let choice: { e: Edge; exits: boolean };
+          const exitMoves = legal.filter((o) => o.exits);
+          if (!wandering && exitMoves.length > 0) {
+            choice = exitMoves.find((o) => o.e === sector) ?? rng.pick(exitMoves);
+          } else {
+            const sectorMove = legal.find((o) => o.e === sector);
+            choice = sectorMove && rng.chance(0.35) ? sectorMove : rng.pick(legal);
+          }
+
+          newEdges.push([slotIdx(x, y), choice.e]);
+          if (choice.exits) {
+            entryCells.push(edgeCell(x, y, choice.e));
+            return true;
+          }
+          const [dx, dy] = EDGE_DELTA[choice.e];
+          x += dx;
+          y += dy;
+          newSlots.push(slotIdx(x, y));
+          newEdges.push([slotIdx(x, y), OPPOSITE[choice.e]]);
+          cameFrom = OPPOSITE[choice.e];
+          steps++;
         }
-        // Fully cornered: relax the soft bans (core re-entry) and keep
-        // walking on-board; only true dead ends throw.
-        for (const e of EDGES) {
-          if (cameFrom === e) continue;
-          const [dx, dy] = EDGE_DELTA[e];
-          if (x + dx < 0 || y + dy < 0 || x + dx >= width || y + dy >= height) continue;
-          options.push({ e, exits: false });
+      };
+
+      if (tryWalk()) {
+        for (const k of newSlots) {
+          roadSlots.add(k);
+          walkOrder.push(k);
         }
-        if (options.length === 0) {
-          throw new Error(`mapgen cornered at (${x},${y}) - board too small for ${entries} entries`);
-        }
+        for (const [k, e] of newEdges) addEdge(k, e);
+        done = true;
       }
-      const choice = rng.pick(options);
-      addEdge(x, y, choice.e);
-      if (choice.exits) {
-        usedExits.add(`${slotIdx(x, y)}:${choice.e}`);
-        entryCells.push(edgeCell(x, y, choice.e));
-        break;
-      }
-      const [dx, dy] = EDGE_DELTA[choice.e];
-      x += dx;
-      y += dy;
-      addEdge(x, y, OPPOSITE[choice.e]);
-      cameFrom = OPPOSITE[choice.e];
-      steps++;
+    }
+    if (!done) {
+      throw new Error(`mapgen: could not carve entry ${n + 1}/${entries} on a ${width}x${height} board`);
     }
   }
 
@@ -174,10 +214,10 @@ export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOption
     const x = k % width;
     const y = Math.floor(k / width);
     const key = sigKey(edges);
-    const pool = (x === coreX && y === coreY ? index.core : index.road).get(key);
+    const pool = (k === coreK ? index.core : index.road).get(key);
     if (!pool || pool.length === 0) {
       throw new Error(
-        `tile pool has no ${x === coreX && y === coreY ? 'core' : 'road'} tile with signature '${key}' - ` +
+        `tile pool has no ${k === coreK ? 'core' : 'road'} tile with signature '${key}' - ` +
           'the generator needs every 1-4 connector shape (see content/assets/tiles/library.json)',
       );
     }
@@ -185,8 +225,7 @@ export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOption
     board = place(board, pick.tileId, pick.rotation, x, y);
   }
 
-  // ---- 4. fill everything else; ore rises with distance from the road -----
-  // BFS slot-distance from the road network.
+  // ---- 4. fill near the road; the rest of the world stays void ------------
   const dist = new Array<number>(width * height).fill(-1);
   const queue: number[] = [...roadEdges.keys()];
   for (const k of queue) dist[k] = 0;
@@ -211,6 +250,7 @@ export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOption
     for (let x = 0; x < width; x++) {
       const k = slotIdx(x, y);
       if (roadEdges.has(k)) continue;
+      if (dist[k] > FILL_RADIUS) continue; // unclaimed land stays void
       // Reach vs greed (PRD sec 4.1): adjacent to the road ore is rare,
       // three slots out it is common.
       const oreChance = Math.min(0.05 + 0.22 * (dist[k] - 1), 0.75);

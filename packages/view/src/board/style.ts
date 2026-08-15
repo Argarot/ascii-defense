@@ -33,25 +33,40 @@ export function hash2(x: number, y: number, s: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
+export interface TerrainShade {
+  bg?: string;
+  /** This cell is the top edge of its terrain mass: light the top glyph row. */
+  litTop?: boolean;
+  /** Bottom edge of its mass: sink the bottom row toward the background. */
+  shadowBottom?: boolean;
+}
+
 /**
  * Draw one cell's 5x3 glyphs of terrain texture at glyph position (gx0, gy0).
  * The hash is keyed on glyph coordinates, so the same cell at the same screen
  * position always textures identically.
+ *
+ * Boundary shading (ASSETS sec 3): depth comes from shading, never geometry.
+ * Consistent light: highlights top, shadow bottom, everywhere.
  */
 export function drawTerrainCell(
   term: GLTerm,
   kind: CellType,
   gx0: number,
   gy0: number,
-  bgOverride?: string,
+  shade: TerrainShade = {},
 ): void {
   const pool = POOLS[kind];
   const lit = role(`terrain.${TERRAIN_KEY[kind]}.lit`);
   const mid = role(`terrain.${TERRAIN_KEY[kind]}.mid`);
-  const bg = bgOverride ?? role(`terrain.${TERRAIN_KEY[kind]}.dark`);
+  const dark = role(`terrain.${TERRAIN_KEY[kind]}.dark`);
+  const bg = shade.bg ?? dark;
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
       const g = pool[Math.floor(hash2(gx0 + x, gy0 + y, 6) * pool.length) % pool.length];
-      term.put(gx0 + x, gy0 + y, g, hash2(gx0 + x, gy0 + y, 9) < 0.2 ? lit : mid, bg);
+      let fg = hash2(gx0 + x, gy0 + y, 9) < 0.2 ? lit : mid;
+      if (shade.litTop && y === 0) fg = lit;
+      if (shade.shadowBottom && y === CELL_H - 1) fg = dark; // sinks into the bg
+      term.put(gx0 + x, gy0 + y, g, fg, bg);
     }
 }
