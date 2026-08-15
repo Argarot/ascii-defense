@@ -34,8 +34,22 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Unit tests
-        run: npm test
+      - name: Unit tests (node)
+        run: npx vitest run --project node
+
+      # Playwright headless Chromium; WebGL2 arrives via SwiftShader software
+      # rendering on the runner. The render tests are the canary for that path.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests (render, WebGL2)
+        run: npx vitest run --project browser
 
       # Proves the production bundle still assembles; Pages deploys only from
       # main via pages.yml, so this is a check, not a deployment.
