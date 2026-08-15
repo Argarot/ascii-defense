@@ -33,11 +33,23 @@ round-trip) parked until Daniil is at his laptop. Phase 4 is nearly done:
 
 ## How we work (hard-learned, do not relearn)
 
+- **An approved scope is a contract — finish it in the turn it was approved.**
+  Do not split an agreed block into "part 1 / part 2", and never announce a
+  deferral inside a summary. If a split looks necessary, STOP and ASK first
+  (what's at risk, proposed split, cost of not splitting). A repeated identical
+  request from Daniil is an escalation, not a fresh go-ahead. *(This was the
+  single biggest process failure of sessions 1–10; see POSTMORTEM end-of-day
+  review.)*
 - Feature branch + PR per work package; merge only on green CI **using gh's
   own exit code** — piping `gh pr checks` through `tail` once merged a red PR.
 - Every session ends with something Daniil can SEE at the live URL; lead
-  summaries with that. He gives feedback as screenshots + observed symptoms;
-  translate symptoms into construction guarantees, not tunings.
+  summaries with that, and always give the link **cache-busted** (`?cb=…`) —
+  stale bundles have produced two false bug reports. He gives feedback as
+  screenshots + observed symptoms; translate symptoms into construction
+  guarantees, not tunings.
+- In summaries, mark features that are **planned but NOT BUILT YET** explicitly
+  when adjacent features ship — otherwise absence reads as a bug (it did, for
+  the Core's tree).
 - Non-ASCII in source only as `\uXXXX` (scratchpad script `escape-nonascii.mjs`
   exists); Edit tool cannot change escape *spellings* — use a script.
 - Verification in the browser pane: rAF is frozen when the pane is hidden —
