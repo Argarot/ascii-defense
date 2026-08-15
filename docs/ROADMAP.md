@@ -1,95 +1,104 @@
-# ASCII Defense — Roadmap & Estimates
+# ASCII Defense — Roadmap
 
-A "session" = one focused working stretch, roughly a few hours.
+A "session" is one focused working stretch, roughly a few hours.
 
-These docs are written to be **handed off**. Anything load-bearing is stated
-explicitly rather than left as conversational context. Start with
-[HANDOFF.md](HANDOFF.md).
+Read [PRD.md](PRD.md) first, then [ARCHITECTURE.md](ARCHITECTURE.md), then
+[CONTRIBUTING.md](../CONTRIBUTING.md). This file assumes all three.
 
 ---
 
-## M0 — Foundation & delivery path ✅ COMPLETE
+## M0 — Foundation ✅ COMPLETE
 
-- Vite 7 + TypeScript strict, zero runtime dependencies.
-- `src/term/Term.ts` — glyph atlas + dirty-cell renderer. 0.93 ms/frame at
-  120×50 with 400 entities, against 17.22 ms/frame for naive `fillText`.
-- GitHub Actions building and deploying to Pages.
-- Apache-2.0, PRD, architecture, roadmap.
+- WebGL2 glyph renderer, chosen on measurement (canvas 2D fails at 6,000 cells).
+- Bitmap font pipeline: `.hex` and `.bdf` parsed to 1-bit atlases at build time.
+- GitHub Actions → Pages, live and verified by loading the deployed page.
+- Apache-2.0, PRD, architecture, assets, contributing.
+- **Presentation decided by measurement, not argument**: spleen 5×8, 5×3-glyph
+  cells, 5×5-cell tiles, tile-laying core loop, shading-based depth.
 
-**Live: <https://argarot.github.io/ascii-defense/>** — verified by loading the
-deployed page and confirming it renders, not by trusting a green check.
+Live: <https://argarot.github.io/ascii-defense/>
 
-## M1 — The fun test *(6–8 sessions)*
+---
 
-One battle. No run structure. Everything needed to answer "is this fun?"
+## M1 — The fun test *(8–11 sessions)*
 
-*Re-estimated up from 4–5. The renderer is being rebuilt on WebGL2, the art
-pipeline now runs through an external tool, and subcell coordinates touch the
-sim from the start. All three were decided after the first estimate.*
+One board. Lay tiles, build towers, survive waves. Everything needed to answer
+"is this fun?" and nothing else.
 
-- **WebGL2 renderer** replacing the canvas `Term`: instanced quads, white glyph
-  atlas, 24-bit per-cell colour. The `put/write/clear/flush/toText` API is
-  preserved; only the guts change. Canvas 2D measured 38 ms/frame under real
-  animation load and is not viable — see ARCHITECTURE §4.
-- **unscii-8** vendored (public domain), 8×8 square cells, 240×135 grid.
-- **`tools/rexpaint-import`** — REXPaint XML/CSV → runtime sprite JSON.
-- **Subcell entity coordinates** from day one — ARCHITECTURE §4a.
-- Workspace restructure into `packages/*`; lint rules for `no-Math.random` and
-  `engine-must-not-import-DOM`.
+Sequenced so the risky, foundational parts come first.
+
+### Phase 1 — harness before game code *(2 sessions)*
+
+Nothing game-shaped. This is what makes the next twenty sessions cheap, and
+building it afterwards is how projects end up untested.
+
+- Workspaces: `engine content render view bot harness app` + `tools`.
+- ESLint with the custom rules enforcing invariants 1–3 in CONTRIBUTING.
+- Vitest + **Browser Mode + Playwright** (the renderer cannot be tested in Node).
+- **`ci.yml`** — typecheck, lint, unit, golden, snapshot, content validation.
+- `pure-rand` replacing the biased hand-rolled PRNG in the mocks.
+- Text-snapshot infrastructure built on `GLTerm.toText()`.
+- Content pipeline: schemas, `json-schema-to-typescript`, `ajv`, content linter.
+
+**Gate:** CI green on an empty game.
+
+### Phase 2 — art pipeline proof *(0.5 session, needs Daniil)*
+
+- `tools/build-rexpaint-font.mjs` — spleen atlas as a 16-column PNG.
+- Install the font into REXPaint, author **one** tower and **one** terrain tile.
+- `tools/rexpaint-import.mjs` — `.xp` → runtime JSON.
+- Render the imported art in the browser.
+
+**Gate:** a sprite drawn in REXPaint appears in the game unchanged. Prove the
+round trip before authoring a library against it.
+
+### Phase 3 — the board *(2–3 sessions)*
+
 - Seeded RNG with named streams; fixed 20 Hz tick; pause / 1× / 2× / 4×.
-- Content pipeline: JSON schemas, generated types, validation, content linter.
-- Map procgen: terrain, road carving, meaningful shortcuts, ore node scattering
-  weighted by distance from path.
-- Dijkstra flow field (ground + flying) and the **speculative field** that backs
-  the path-preview overlay.
-- Occupancy grid; 3×2 placement; click targeting.
-- Sprite system loading from JSON.
-- 5 towers with complete 3×5 trees, crosspathing enforced. 6 enemies across the
-  two damage types and five traits.
-- Wave composition; Scrap; lives; win/lose.
-- Mouse-first HUD: range preview, **path preview**, build palette, upgrade panel
-  showing all three paths and which remain legal.
-- **Smoke harness** — the bot exists, crudely, and produces margin numbers.
-- Replay record/playback with the golden state-hash test.
+- Three-level grid; **subcell entity coordinates**; occupancy array.
+- Tile library, connector matching, legality, and the tile-laying flow.
+- Dijkstra flow field over cells (ground + flying); `L` in cells.
+- Terrain rendering with background painting and shading.
 
-**Exit gate:** Daniil plays it and says whether it is fun. Nothing past this
+**Gate:** property test — 10,000 generated boards, connectivity always holds.
+
+### Phase 4 — the game *(3–4 sessions)*
+
+- 4 towers with complete 3×5 trees, crosspathing enforced; Wall.
+- 6 enemies across 2 damage types and 5 traits; targeting; projectiles.
+- Waves, Scrap, lives, win/lose; Refinery and Ore banking.
+- **HUD** — build palette, tower inspector with crosspath legality, tile hand,
+  wave state, speed controls. *This is a first-class item, not a line: it is the
+  entire surface the player touches, and it was previously under-scoped.*
+- Replay record/playback; golden state-hash test.
+
+### Phase 5 — smoke harness *(0.5–1 session)*
+
+- Crude bot; `harness calibrate` and `harness check`; per-wave margin table.
+
+**M1 exit gate:** Daniil plays it and says whether it is fun. Nothing past this
 point is worth building if the answer is no.
 
-## M2 — A complete game *(3–4 sessions)*
+---
 
-The smallest thing that is a whole game rather than a demo.
+## M2 — A complete run *(3–4 sessions)*
 
-- 8 battles in sequence, escalating; draft 1-of-3 between each.
-- Ore banking (per-tier record, one tier active).
-- 5-node tech tree — enough to prove the loop, not the full tree.
-- Run state machine, save/resume, versioned persistence with migration tests.
-- Win and lose screens; run summary.
-
-Deliberately **not** here: branching node maps, shops, forges, events, bosses.
-They are expansion, not core.
-
-**Exit gate:** a run can be played start to finish, won or lost, and resumed.
+Full board, escalating waves, drafts between tiles, save/resume, run summary.
+4 more towers, ~8 more enemies.
 
 ## M3 — Trustworthy difficulty *(2–3 sessions)*
 
-- Bot promoted from smoke to a real single policy.
-- `harness calibrate` — solves budget curves from measured margin, writes them
-  to `content/balance/curves.json` as reviewable data.
-- Human offset constant measured from Daniil's recorded replays.
-- `harness check` in CI; fails on drift.
-- Unwinnable/trivial seed detection across ≥500 seeds.
-- In-game autopilot toggle.
-
-**Exit gate:** injected regressions are caught; no unwinnable or trivial seed.
+Real bot policy; calibrated curves committed as reviewable data; human offset
+from Daniil's replays; `balance.yml` gate; unwinnable/trivial seed detection;
+tech tree stage 1; in-game autopilot.
 
 ---
 
 ## ◆ Decision point
 
-**Roughly 9–12 sessions in, there is a complete, balanced, replayable game.**
-
-Everything below is expansion, and should only be built if the answer to "is
-this fun and do I want more of it?" is yes.
+**~14–18 sessions in there is a complete, balanced, replayable game.** Everything
+below is expansion and should only be built if the answer to "is this fun and do
+I want more of it?" is yes.
 
 ---
 
@@ -97,76 +106,67 @@ this fun and do I want more of it?" is yes.
 
 | Item | Sessions |
 |---|---|
-| **Effects system** — subcell particles, projectiles, impacts, explosions, tower animation; hot-reloadable definitions, templating, importance-scaled timing | 2–3 |
-| Branching node map, shops, forges, events | 2–3 |
-| Act bosses with unique mechanics | 1–2 |
-| Towers 6–9 (Acid, Arc Coil, Bastion, Rail Lance) | 2–3 |
-| Enemy traits 6–11; third damage type | 1–2 |
-| Full art pass: terrain, enemies, particles, UI chrome, biomes | 2–3 |
-| Tech tree stage 2 (full tree, 5 disciplines) | 1–2 |
+| Effects: subcell particles, projectiles, impacts, tower animation | 2–3 |
+| Full art pass + material language + biomes | 2–3 |
+| Towers 5–9; traits 6–11; third damage type | 2–4 |
+| Tech tree stage 2 | 1–2 |
+| Daily challenges + replay sharing | 0.5–1 |
 | Ore tiers activated | 0.5 |
-| Daily challenges + replay sharing UI | 0.5–1 |
-| Tech tree stage 3 (Potency nodes) — *optional, see PRD §10* | 1–2 |
+| Tech tree stage 3 (Potency) — optional | 1–2 |
 
 ---
 
-## Totals, honestly
+## Totals
 
 | | Sessions |
 |---|---|
-| M1–M3 — complete playable game | **11–15** |
-| M4+ — everything else | +10–18 |
-| **Full scope as described** | **21–33** |
+| M1–M3 — complete playable game | **14–18** |
+| M4+ | +8–15 |
+| **Full scope** | **22–33** |
 
-Two earlier numbers were wrong and are corrected here. The original 11–15
-underestimated the tuning tail: the last 20% of balance work across 100+
-upgrades is not 20% of the effort. Scoping *everything* was honestly 25–35; the
-cuts in this revision — 8 towers instead of 14, 2 damage types instead of 4,
-5 traits instead of 11, node maps deferred — bring it to 17–27, with the
-genuinely playable milestone at 9–12.
+M1 grew from 6–8 to 8–11 because the HUD was previously a bullet point, the
+modular package split is real work, and the art pipeline now has a proof step.
 
 ---
 
 ## Risks
 
 **1 — Calibration may not transfer from bot to human.** The bot will play worse
-than Daniil, and the offset between them may not be a constant — it may vary by
-wave, by build, by map.
-*Mitigation:* the harness ships in M1, so divergence surfaces early; budget
-curves are committed data, so retuning is a diff, not a code change.
-*Fallback:* bounded dynamic difficulty adjustment — a clamped correction on
-`k(w)` that can never trivialise or brick a run.
+than Daniil, and the offset may vary by wave and by build.
+*Mitigation:* harness ships in M1; curves are committed data, so retuning is a
+diff. *Fallback:* bounded dynamic difficulty adjustment, clamped so it can
+never trivialise or brick a run.
 
-**2 — Mazing may be unreadable even with the overlay.** Flow-field routing is
-genuinely hard to convey.
-*Mitigation:* the speculative field lives in the engine, so preview and reality
-cannot disagree. If it still doesn't land, the fallback is raising ground cost
-until shortcuts are rare and mazing becomes a minor optimisation rather than a
-core mechanic — a content-level change.
+**2 — The tile-laying loop may not be fun.** It is now the core of the game
+rather than a feature, so if it is flat, the game is flat.
+*Mitigation:* it is the first thing playable in M1, and Tower Dominion and Rogue
+Tower both demonstrate the loop works. *Nothing structural depends on it being
+fun except everything.*
 
-**3 — Mining may feel flat.** Balanced purely by opportunity cost, with nothing
-threatening extractors.
-*Mitigation:* the decision is real from the first extractor because Ore never
-helps the current run. If it still feels inert, Raiders remain designed-in — the
-wave generator supports per-wave objective splits from the start.
+**3 — Art volume.** 8 towers × 15 tiers + terrain + enemies + UI, all
+hand-drawn at 5×3.
+*Mitigation:* REXPaint instead of hand-typed JSON; the material language defined
+once, up front; M1 ships 4 towers complete rather than 8 half-done.
 
-**4 — The tuning tail is the schedule risk, not the features.** Every estimate
-above assumes content that is *authored*; making 100+ upgrades feel good is
-open-ended.
-*Mitigation:* the content linter flags cost-to-power outliers mechanically, and
-the harness makes "did this get better or worse" measurable rather than a
-matter of opinion.
+**4 — The tuning tail is the schedule risk, not the features.** Making 100+
+upgrades feel good is open-ended. The linter and harness make "better or worse"
+measurable rather than a matter of opinion.
 
 ---
 
 ## Daniil's actions
 
-**Done:** GitHub account, `gh` with a repo-scoped fine-grained token, repo,
-Pages.
+**Done:** GitHub, scoped token, repo, Pages, REXPaint installed, and every
+presentation decision.
 
-**Next, at the M1 gate:** play it. Report whether placing and upgrading feels
-good, whether the board reads clearly, and whether mazing is a decision you
-actually think about. Record a few runs — those replays become the human offset
-constant in M3.
+**Next, at the Phase 2 gate:** draw one tower with me in REXPaint so we prove
+the round trip before building a library on it.
+
+**Before Phase 4:** define the material language jointly — which glyph
+combinations mean metal, stone, energy. It is the highest-leverage art decision
+and a taste call.
+
+**At the M1 gate:** play it, and record a few runs — those replays become the
+human offset in M3.
 
 Running cost remains **$0**.

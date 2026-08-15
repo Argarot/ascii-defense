@@ -1,410 +1,263 @@
-# ASCII Defense — Technical Vision
+# ASCII Defense — Architecture
 
-Status: **scoping complete.** M0 shipped; M1 not started.
+Status: **M0 shipped, M1 not started.**
 
 ---
 
-## 1. Stack, and why
+## 1. The modularity contract
 
-| Choice | Why | Rejected alternative |
+The requirement is that any one aspect can be changed without touching the
+others — swap the font, the cell size, the difficulty curve, the enemy roster or
+the HUD, and nothing else needs to know.
+
+That is achieved by one rule, stated once and enforced by lint:
+
+> **The engine knows no glyphs, no colours and no pixels.**
+> It knows ids, cells, ticks and numbers. Nothing in `engine/` may branch on
+> appearance.
+
+Everything else follows. Layers, innermost first — **each layer may import only
+from layers above it in this list:**
+
+| Layer | Knows about | Never knows about |
 |---|---|---|
-| **TypeScript** | The sim is a rules engine. Types are what keep 100+ upgrade definitions authorable. Same language in browser and headless harness. | JS (unmaintainable at this content volume); Rust/WASM (build complexity buys nothing — we measured 17× headroom); Python (Pyodide is megabytes and slow to start) |
-| **Vite 7** | Verified: install, typecheck and prod build in under a second. Static output drops onto Pages. | — |
-| **npm workspaces** | Real package boundaries, no extra tooling. npm 12 is already installed. | pnpm/turbo — not installed, no benefit at this size |
-| **Vitest** | Shares the Vite config. | Jest — separate transform pipeline, no gain |
-| **No game engine** | It is a character grid. Phaser/Pixi would add megabytes over a `<canvas>` we drive in under 1 ms. | |
-| **No React in the game** | The board is one canvas; the HUD is a few panels. | |
-| **`rot-js`: read, don't depend** | BSD-3-Clause. Its display layer is slower than what we measured and we need a TD flow field, not its A*. Take ideas, not the dependency. | |
+| `engine` | rules, ids, cells, ticks, RNG | glyphs, colours, DOM, pixels |
+| `content` | JSON data + schemas | anything executable |
+| `render` | glyphs, colours, atlas, WebGL | towers, waves, tiles, game rules |
+| `view` | **both** engine state and render calls | — |
+| `app` | screens, input, wiring | game rules |
 
-Runtime dependencies: **target zero.**
+`view` is the **only** place where game concepts and drawing meet. It is
+deliberately thin: it reads engine state, asks the asset registry what that
+state looks like, and calls `render`.
+
+### What "swap the font and only JSON changes" actually means
+
+| Change | Touches |
+|---|---|
+| Different font | `content/assets/fonts/*.json`, render config, **and the art must be redrawn** |
+| Different cell size | same as above |
+| Different palette | `content/assets/palette.json` |
+| New tower | `content/assets/towers/*.json` + art |
+| New terrain tile | `content/assets/tiles/*.json` + art |
+| Difficulty retune | `content/balance/curves.json` |
+| New enemy trait | `engine/enemies` + content |
+
+Engine, view and render logic are untouched by everything above the line.
+**ASCII art cannot be auto-scaled**, so changing cell size always means
+re-authoring art. That is unavoidable and worth stating plainly rather than
+implying otherwise.
 
 ## 2. Repository layout
 
 ```
-ascii-defense/
-├─ packages/
-│  ├─ engine/           # headless simulation. ZERO DOM references.
-│  │  ├─ src/rng/           seeded PRNG, named streams
-│  │  ├─ src/grid/          terrain, occupancy, flow field
-│  │  ├─ src/sim/           tick loop, towers, enemies, projectiles
-│  │  ├─ src/procgen/       maps, ore nodes, wave composition
-│  │  ├─ src/balance/       budget tables, k(w), path scaling, metaPowerIndex
-│  │  ├─ src/economy/       Scrap, Ore, node depletion, cost curves
-│  │  ├─ src/meta/          tech tree graph, unlocks, persistence
-│  │  ├─ src/replay/        seed + input log record/playback
-│  │  └─ src/run/           run state machine, drafting, save/load
-│  ├─ content/          # DATA — JSON, validated against schemas
-│  │  ├─ towers/*.json
-│  │  ├─ enemies/*.json
-│  │  ├─ sprites/*.json
-│  │  ├─ tech/*.json
-│  │  ├─ balance/*.json     calibrated budget curves (harness output)
-│  │  ├─ schema/*.schema.json
-│  │  └─ src/index.ts       loads, validates, exposes generated types
-│  ├─ term/             # canvas character display (SHIPPED in M0)
-│  ├─ web/              # game app: screens, HUD, input, overlays, storage
-│  ├─ bot/              # the single policy bot
-│  └─ harness/          # headless CLI: calibration, regression, reports
-├─ assets/fonts/
-├─ docs/
-├─ tools/               # schema→types codegen, content linter
-└─ .github/workflows/
+packages/
+├─ engine/                    headless. ZERO DOM. ZERO appearance.
+│  ├─ rng/                    seeded PRNG, named streams
+│  ├─ grid/                   cells, occupancy, flow field
+│  ├─ tiles/                  tile placement, connector matching, legality
+│  ├─ sim/                    tick loop, towers, projectiles, targeting
+│  ├─ enemies/                traits, composition, spawning
+│  ├─ difficulty/             budget curves, k(w), L scaling, metaPowerIndex
+│  ├─ economy/                Scrap, Ore per tier, costs
+│  ├─ meta/                   tech tree graph, unlocks, persistence
+│  ├─ replay/                 seed + input log, record and playback
+│  └─ run/                    run state machine, drafting, save/load
+├─ content/                   DATA ONLY. no logic.
+│  ├─ assets/fonts/           glyphset-*.json  (generated)
+│  ├─ assets/terrain/         terrain appearance per cell type
+│  ├─ assets/tiles/           tile definitions + connectors
+│  ├─ assets/towers/          stats, trees, art per tier
+│  ├─ assets/enemies/         stats, traits, art
+│  ├─ assets/upgrades/        modifiers and relics
+│  ├─ assets/ui/              HUD, menu and tech-tree chrome
+│  ├─ balance/                calibrated curves (harness output)
+│  ├─ schema/                 *.schema.json
+│  └─ src/registry.ts         loads, validates, exposes typed lookups
+├─ render/                    glyph grid only
+│  ├─ GLTerm.ts               WebGL2 instanced renderer
+│  ├─ atlas.ts                1-bit bitmaps -> texture
+│  └─ config.ts               cell size in glyphs, glyph size in px
+├─ view/                      the ONLY layer that knows both sides
+│  ├─ board/                  terrain, towers, enemies, effects
+│  ├─ hud/                    build palette, wave state, tile hand
+│  ├─ menus/
+│  └─ techtree/
+├─ bot/                       one policy; regression detector
+├─ harness/                   headless CLI: calibrate, check, report
+└─ app/                       screens, input, bootstrap
+tools/                        font build, REXPaint import, schema codegen
+vendor/                       unscii-8.hex, spleen-5x8.bdf
 ```
 
-**The hard rule:** `engine` and `content` never import from `term` or `web`.
-Enforced by a lint rule, not by discipline. It is what makes the harness
-possible.
+**Enforced by lint, not discipline:** `engine` and `content` may not import
+`render`, `view`, `app` or the DOM. `render` may not import `engine`.
 
-## 3. Content is JSON with a schema
+## 3. Rendering
 
-Content must be editable without touching TypeScript, so it lives as JSON. To
-keep that from becoming untyped mush, every file declares `$schema`:
+### Why WebGL2
 
-```jsonc
-// packages/content/towers/bolt_turret.json
-{
-  "$schema": "../schema/tower.schema.json",
-  "id": "bolt_turret",
-  "name": "Bolt Turret",
-  "glyph": "^",
-  "size": [3, 2],
-  "cost": 90,
-  "damageType": "kinetic",
-  "sprite": "bolt_turret",
-  "base": { "damage": 4, "cooldownTicks": 12, "range": 5.5, "pierce": 1 },
-  "paths": {
-    "A": { "name": "Velocity", "tiers": [ /* 5 */ ] },
-    "B": { "name": "Caliber",  "tiers": [ /* 5 */ ] },
-    "C": { "name": "Optics",   "tiers": [ /* 5 */ ] }
-  }
-}
-```
+Measured, at 100% cell churn with true per-cell colour:
 
-What this buys, in order of importance:
+| Grid | Cells | Canvas 2D | **WebGL2** |
+|---|---:|---:|---:|
+| 120×50 | 6,000 | 38.0 ms | **0.51 ms** |
+| 240×90 | 21,600 | 118.8 ms | **1.32 ms** |
+| 320×120 | 38,400 | 212.1 ms | **2.36 ms** |
 
-1. **VS Code validates and autocompletes while editing** — from `$schema`, with
-   no tooling to install.
-2. **TS types are generated from the schemas** (`tools/schema-to-types`), so
-   engine and data cannot drift. Types are committed, and CI fails if
-   regenerating them produces a diff.
-3. **CI validates every file** against its schema before anything builds.
-4. **A content linter** (`tools/content-lint`) flags what schemas cannot:
-   non-monotonic upgrade costs, cost-to-power outliers, orphaned sprite or
-   effect references, unreachable tech nodes. This is what keeps 100+ upgrades
-   from rotting over months.
+Canvas 2D fails at the smallest useful grid, and its atlas must rasterise each
+glyph *per colour*, capping near 64. WebGL carries colour as a per-instance
+vertex attribute, so 24-bit per glyph is free.
 
-Sprites are JSON too, and live under `public/assets/` so they are **fetched at
-runtime rather than bundled** — edit a file, reload, see the change, no rebuild.
-Full format in [ASSETS.md](ASSETS.md); the short version is parallel `art` and
-`ink` grids resolved through a role palette:
-
-```jsonc
-{
-  "id": "tower_bolt", "size": [7, 4], "bg": "tower.shadow",
-  "inkMap": { ".": null, "f": "tower.frame", "c": "PATH", "w": "tower.core" },
-  "tiers": {
-    "1": { "art": ["  ___  ", " /:::\\ ", "[|-O-|]", " \\___/ "],
-           "ink": ["..fff..", ".fbbbf.", "efbcbfe", ".fffff."] }
-  }
-}
-```
-
-`.` is transparent, so terrain shows through the gaps in a drawing. `"PATH"`
-resolves to the instance's upgrade path colour, so one drawing serves all three
-specialisations.
-
-**The engine knows no glyphs.** It knows sprite ids, ink keys and footprints.
-This is why the PRD names no characters — if it did, the library would not be
-the source of truth.
-
-Vite's `build.assetsDir` is set to `build/` so bundled output lands in
-`dist/build/` and `dist/assets/` stays purely the art library. Without that both
-share `dist/assets/` and a bundled file could shadow a sprite.
-
-## 4. Rendering — WebGL2, and why canvas 2D was rejected
-
-**The first benchmark measured the wrong workload.** It used ~13% cell churn and
-16 colours, which flattered dirty-cell diffing and produced 0.93 ms/frame. The
-actual target — dense grid, heavy animation, true per-cell colour — changes most
-of the screen every frame, and diffing stops helping entirely.
-
-Re-measured with 100% cell churn, 224 glyphs, 24-bit per-cell colour,
-`gl.finish()` for honest GPU timing, and canvases removed from the compositor:
-
-| Grid | Cells | Canvas 2D (dirty) | Canvas 2D (full) | **WebGL2** |
-|---|---:|---:|---:|---:|
-| 120×50 | 6,000 | 38.0 ms | 34.9 ms | **0.51 ms** |
-| 240×90 | 21,600 | 118.8 ms | 125.1 ms | **1.32 ms** |
-| 320×120 | 38,400 | 212.1 ms | 203.2 ms | **2.36 ms** |
-| 400×150 | 60,000 | 333.4 ms | 270.5 ms | 26.9 ms |
-
-Canvas 2D fails at the *smallest* useful grid: 38 ms is 26 fps at 6,000 cells
-before any game logic runs. Verified the GL path actually draws rather than
-merely running fast — `readPixels` reports 40.7% ink and 59,019 distinct
-colours. The knee at 60,000 cells is real and undiagnosed; 320×120 at 2.36 ms
-leaves ample headroom, so it does not block us.
-
-**The colour ceiling is the structural argument.** A canvas atlas rasterises
-every glyph *per colour*, so it caps at ~64 colours — every canvas run in the
-benchmark reported the cap hit. WebGL carries colour as a per-instance vertex
-attribute, so 24-bit colour per cell costs nothing. Rich colour is simply not
-affordable on the canvas backend.
-
-### Architecture
-
-Following [xterm.js's WebGL renderer](https://github.com/xtermjs/xterm.js/pull/1790):
-
-- Glyphs rasterised **white** into one atlas texture, alpha as coverage. Colour
-  is never baked in.
-- One static unit quad, drawn with `drawArraysInstanced` — one instance per cell.
-- Per-instance attributes packed into a `Float32Array`: cell x/y, glyph index,
-  fg rgb, bg rgb. Uploaded with `bufferSubData` once per frame.
-- Fragment shader: `mix(bg, fg, coverage)`.
-
-No dirty-cell diffing. At these speeds it is unnecessary complexity, and it
-actively misleads about worst-case cost.
-
-**API is unchanged.** `put / write / clear / flush / toText` survive from the
-canvas implementation; only the guts are replaced. `toText()` remains valuable
-for assertable screen state in tests.
+One white glyph atlas, one instanced quad, a `Float32Array` of per-glyph
+instance data uploaded per frame, `mix(bg, fg, coverage)` in the fragment
+shader. No dirty-cell diffing — unnecessary at these speeds and it misleads
+about worst-case cost.
 
 ### Font
 
-**[unscii-8](https://github.com/viznut/unscii)** — 8×8 bitmap Unicode font,
-*"Public Domain (or CC-0)"* (the GPL exception covers only `unscii-16-full` and
-Unifont-derived files, which we do not use). Ships as **woff**.
+**spleen 5×8**, BSD-2-Clause, F. Cambus. 472 glyphs: printable ASCII, **braille
+patterns**, and light box drawing. Parsed from `vendor/spleen/spleen-5x8.bdf`
+into 1-bit bitmaps and expanded into an atlas at load, drawn with `NEAREST`.
 
-Chosen because it is derived from C64, Amiga, CPC and IBM PC ROM fonts, so block
-elements and box drawing are first-class; and because bitmap fonts stay crisp at
-8 px where antialiased vector fonts go mushy. Bitmap fonts must be used at
-native size or integer multiples — which fixes the cell to **8×8 px**.
+No webfont: at this size the browser's rasteriser would decide what the art
+looks like.
 
-**Cells are square**, which removes the 1:1.7 aspect correction from every piece
-of art authoring: what you draw is what you see.
+**Braille is the reason for this font.** It supplies a genuine dot-density ramp
+(`⠁⠂⠄⠈` … `⣿⡿⢿⣻`) that nothing else in the set provides, and it is what terrain
+shading uses in place of block elements.
 
-### Grid
+**Consequences of choosing spleen, recorded so they are not rediscovered:**
 
-**240 × 135 cells at 8×8 px = 1920 × 1080.** 240 columns is the maximum at
-native 8 px on a 1920-wide display; usable area is nearer 232×128 after browser
-chrome. Roughly 32,400 cells, measured at ~2 ms/frame fully animated.
+- **No Latin-1.** `´ ¯ ¤ § µ ° « »` do not exist. Art is ASCII + braille + light
+  box drawing.
+- **No block elements.** `█▓▒░` do not exist; braille replaces them.
+- **Only light box drawing.** UI chrome cannot use `╔═╗`.
+- **Glyphs are 5×8, not square.** Square-ish cells require a 5×3 glyph grid.
 
-## 3b. Reserve the shape, ship one value
+## 4. The grid, and subcell coordinates
 
-A recurring principle, stated once here instead of three times elsewhere. Where
-a future feature would otherwise force a rewrite, the *shape* ships now and
-carries a single value:
+Three levels — glyph, cell (5×3 glyphs), tile (5×5 cells) — per PRD §3.
+
+**Entity positions are stored in subcell units from M1.** Cogmind positions
+particles on a subcell grid inside every cell, which is why its effects flow
+rather than snap. Retrofitting that into a cell-resolution sim means rewriting
+movement, collision and rendering, so the shape ships now even though the
+effects system does not.
+
+This is one instance of a general pattern:
 
 | Reserved | Ships as | Avoids |
 |---|---|---|
-| Ore stored per tier — `{ "1": 240 }` | one tier | a save migration |
-| `metaPowerIndex` in the difficulty model | pinned near 1.0 | re-deriving balance |
-| Subcell entity coordinates (§4a) | 1×1 subcells | rewriting movement and collision |
-| **Path identity as a data field, not a colour** | colour only | rewriting the sim for accessibility |
+| Ore stored per tier | one tier | a save migration |
+| `metaPowerIndex` in the model | pinned near 1.0 | re-deriving balance |
+| Subcell coordinates | 1×1 subcells | rewriting movement |
+| **Path identity as data, not colour** | colour only | rewriting the sim for accessibility |
 
-That last one is deliberate and worth spelling out. Encoding upgrade path purely
-in hue fails for roughly 8% of men. Full colour-vision-deficiency support is
-**out of scope for now by decision**, but the sim stores `pathId` as data and
-the renderer chooses how to present it. Adding a redundant channel later — a
-marker glyph, a border treatment — is then a renderer and asset change, not a
-core change. Nothing in the engine may branch on colour.
+That last one is deliberate. Encoding upgrade path purely in hue fails for ~8%
+of men. Full colour-vision-deficiency support is **out of scope by decision**,
+but the sim stores `pathId` and the view decides presentation, so adding a
+redundant channel later is a view and asset change. **Nothing in the engine may
+branch on colour.**
 
-## 4a. Subcell coordinates — built in M1, used later
+## 5. Pathfinding
 
-Effects are deferred past M1, but the coordinate system they need is not.
+Dijkstra flow field over the **cell** grid, from the Core outward. A full board
+is roughly 3,400 cells — sub-millisecond. Recomputed on build/sell and on tile
+placement, not per tick. Two fields: ground, and flying (straight line).
 
-Cogmind positions particles on a **9×9 subcell grid inside every cell** — a
-100×100 map carries a 900×900 positioning grid — which is why its effects move
-fluidly instead of snapping character to character. Retrofitting that into a
-sim whose entities live at cell resolution is a rewrite of movement, collision
-and rendering.
+Yields `L`, effective road length in cells, feeding the difficulty model.
 
-So: **the simulation stores entity positions in subcell units from M1**, and the
-renderer divides down when drawing. Costs almost nothing now; makes the effects
-system in M2+ additive rather than invasive. Same pattern as per-tier Ore
-storage and `metaPowerIndex` — reserve the shape, ship one value.
+Because tiles guarantee connectivity by construction, there is **no
+"is a path still available" check anywhere**. If you find yourself writing one,
+something upstream is wrong.
 
-Effect *definitions* will follow Cogmind's model when built: external
-hot-reloadable data files, a template system generating recoloured variants, and
-duration scaled by importance (100–200 ms for light hits, 300–1500 ms for heavy
-weapons and explosions).
+## 6. Determinism
 
-## 5. Occupancy and footprints
+- One seeded PRNG (`pure-rand`, MIT). **`Math.random` banned by lint** — the
+  hand-rolled xorshift used in the mocks is biased and must not ship.
+- **Named streams** so map, waves and combat draw independently.
+- **Fixed 20 Hz tick.** No frame delta reaches the simulation.
+- Rendering reads the sim; it never writes to it.
+- **Replay** = `{ version, seed, contentHash, inputs: [{tick, action}] }`.
+  `contentHash` matters: a replay recorded against different content is not
+  replayable and must say so rather than diverge silently.
+- **Golden test:** seed + scripted inputs → 2,000 ticks → state hash.
 
-Cells are square, so footprints are stated in plain cells with no aspect
-correction. Sizes **never change** with tier.
+## 7. Data layout
 
-| Class | Cells | Pixels |
-|---|---|---|
-| Wall | 4 × 4 | 32 × 32 |
-| Tower | 12 × 10 | 96 × 80 |
-| Heavy tower | 16 × 14 | 128 × 112 |
-| Enemy, small | 4 × 4 | 32 × 32 |
-| Enemy, medium | 6 × 6 | 48 × 48 |
-| Enemy, large | 10 × 10 | 80 × 80 |
-| Boss | 20 × 18 | 160 × 144 |
+- **Enemies**: structure-of-arrays typed arrays; hundreds alive.
+- **Towers**: plain objects; dozens, rich upgrade state.
+- **Occupancy**: one `Uint16Array` over cells, cell → owner id.
+- **Tiles**: small array of tile-def ids plus rotation.
 
-A `Uint16Array` over the board maps each cell to its owner id, or 0. With a
-~240×105 play area (reserving rows for UI), 12×10 towers plus spacing give
-roughly 160 placement slots — ample for 20–25 towers.
+Not a general ECS — entity kinds here are fixed and few.
 
-It is the single source of truth for buildability, click targeting and
-pathability. Placement is a rectangle scan; no per-tower geometry maths exists
-anywhere else. Because footprints are fixed, placement is checked once and never
-re-checked — the UI/engine contract that growth would have required does not
-exist.
+## 8. Content pipeline
 
-## 6. Pathfinding and the preview overlay
+All content is JSON with a `$schema`, so editors validate while typing. Types
+are generated from schemas (`json-schema-to-typescript`, MIT) and committed; CI
+fails if regenerating produces a diff. `ajv` (MIT) validates at load. A content
+linter flags what schemas cannot: non-monotonic upgrade costs, cost-to-power
+outliers, orphaned art references, unreachable tech nodes.
 
-Dijkstra flow field from the Core outward over the terrain cost grid (Red Blob
-Games' approach). Each tile stores distance-to-Core and its cheapest outgoing
-direction; enemies just read their current tile.
+Everything visual is reached through **one asset registry**. `view` never reads
+an asset file directly.
 
-- Recomputed **only on build/sell**, not per tick. ~2,300 tiles is sub-millisecond.
-- **Two fields**: ground, and flying (straight line, no field). Burrowing added
-  later if the trait returns.
-- Yields `L`, effective path length, feeding the wave budget (PRD §8.3).
+## 9. Testing and QA
 
-**The preview overlay is part of this system, not the UI layer.** On build-hover
-the engine computes a *speculative* field for the hypothetical placement and
-returns both routes. The UI only renders what the engine says. This is the one
-feature that makes mazing legible, and putting the speculation in the engine is
-what keeps preview and reality identical by construction.
-
-## 7. Determinism and replay
-
-Non-negotiable. It is the foundation of calibration, regression testing,
-bug reproduction, save/resume and daily challenges.
-
-- One seeded PRNG (xorshift128+/PCG). **`Math.random` banned by lint rule.**
-- **Named streams** — map generation, wave composition and combat draw from
-  independent sequences, so changing combat code cannot reshuffle maps.
-- **Fixed 20 Hz tick.** No frame delta reaches the simulation. Speed controls
-  change ticks-per-frame, never tick size.
-- Rendering reads the sim and never writes to it.
-
-**Replay format:** `{ version, seed, contentHash, inputs: [{tick, action}] }`.
-Kilobytes. Playback re-runs the sim and asserts the final state hash matches.
-
-`contentHash` matters: a replay recorded against different tower data is not
-replayable, and must say so rather than silently diverging.
-
-**Golden test:** seed + scripted inputs → 2,000 ticks → state hash. If that hash
-moves unintentionally, CI fails. The single most valuable test in the project.
-
-## 8. Simulation data layout
-
-- **Enemies**: structure-of-arrays (`Float32Array` positions, `Uint16Array` HP,
-  `Uint32Array` trait bitflags). Hundreds alive; cache-friendly, allocation-free.
-- **Towers**: plain objects. Dozens at most, rich upgrade state.
-- **Projectiles**: pooled ring buffer.
-- **Occupancy**: one `Uint16Array`, cell → owner id.
-- **Ore nodes**: plain objects carrying `tier` and remaining yield.
-
-Not a general ECS. Entity kinds here are fixed and few; the indirection would
-cost more than it buys.
-
-## 9. Stat resolution pipeline
-
-Order is explicit, documented and unit-tested, because this is where upgrade
-systems rot:
-
-```
-base → path tier bonuses → crosspath synergies → aura buffs
-     → run modifiers → temporary effects → resolved (cached, recomputed on change)
-```
-
-## 10. Balance calibration
-
-The harness produces the shipped numbers; it does not merely check them.
-
-```
-tools/harness calibrate --seeds 500 --waves 12
-  → runs the bot against candidate budget curves
-  → records clear margin, lives lost, leak %, time-to-kill distribution
-  → solves for the curve hitting target margin per wave
-  → writes packages/content/balance/curves.json
-
-tools/harness check
-  → re-runs against the frozen curves
-  → fails if measured margin drifts beyond tolerance
-```
-
-Calibration output is **committed data**, reviewable in a diff like any other
-content. A balance change is a visible change.
-
-The bot is one policy, treated as a **regression detector**. Absolute difficulty
-comes from a human offset constant measured against Daniil's recorded replays —
-which is another thing replays give us for free.
-
-## 11. Testing
+**Text snapshots are the backbone.** `GLTerm.toText()` renders screen state as
+plain text, so golden files are git-diffable and a failing test shows the actual
+screen in the PR diff. Strictly better than image comparison here.
 
 | Layer | What | Where |
 |---|---|---|
-| Unit | RNG streams, flow field, crosspath legality, stat pipeline order, occupancy | Vitest |
-| Property | 10,000 maps → path always exists, buildable area and shortcut count in range | Vitest |
-| Golden | Seeded run → state hash after N ticks | Vitest, CI gate |
-| Replay | Recorded human runs replay to identical final state | Vitest |
-| Content | Schema validation, generated-types drift, content linter | CI |
-| Balance | Calibrated curves vs. measured margin | `harness check`, CI |
-| Manual | Does it feel good | Daniil. The one thing that cannot be automated. |
+| Unit | RNG streams, flow field, connector matching, crosspath legality, stat pipeline | Vitest |
+| Property | 10k generated boards: connectivity holds, no orphaned tiles | Vitest |
+| Golden | seeded run → state hash | Vitest, CI gate |
+| Text snapshot | rendered screens as diffable text | Vitest browser mode |
+| Replay | recorded runs replay to identical state | Vitest |
+| Content | schema validation, type drift, linter | CI |
+| Balance | calibrated curves vs measured margin | harness, CI |
+| Manual | does it feel good | Daniil |
 
-## 12. Persistence
+**The renderer cannot be tested in Node** — no WebGL. Vitest 4 Browser Mode with
+the Playwright provider runs real Chromium; Browser Mode is stable as of
+Vitest 4.
 
-Two `localStorage` stores, versioned separately:
+## 10. CI/CD
 
-- `ad.meta.v1` — banked Ore (per tier), purchased tech nodes, unlocks, settings.
-  Must survive forever; losing it destroys progression.
-- `ad.run.v1` — in-progress run snapshot. Disposable; a failed migration may
-  discard it with a message rather than attempt repair.
+**Exists today:** `pages.yml` only.
 
-Loaders are pure `(oldShape) => newShape` functions chained in sequence, unit
-tested against captured fixtures of every shipped shape. For a project meant to
-accrete content for months, this is the difference between adding a tower and
-stranding a save.
+**Not built yet** — an earlier draft of this document described these as if they
+existed, which was wrong:
 
-Ore is stored as a **per-tier record** (`{ "1": 240 }`) from day one, so ore
-tiers arrive as content rather than as a migration.
+- `ci.yml` — typecheck, lint, unit + golden + snapshot + replay, content validation
+- `balance.yml` — `harness check`, fails on drift
 
-## 13. CI/CD
+Both land in M1 Phase 1, before any game code.
 
-**Built today:** `pages.yml` only — build and deploy to Pages on `main`.
+## 11. Verified environment
 
-**Not built yet** (an earlier draft of this document described these as if they
-existed, which was wrong):
-
-- `ci.yml` — typecheck, lint, unit + golden + replay tests, content validation.
-- `balance.yml` — `harness check`, posts a report, fails on drift.
-
-Both land in Phase 1, before any game code.
-
-Verified free on public repositories:
-[Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)
-(1 GB site, 100 GB/month bandwidth), [GitHub Free](https://github.com/pricing)
-includes Pages, Actions minutes free for public repos.
-
-## 14. Verified environment
-
-| Tool | Status |
+| | |
 |---|---|
-| Node | v22.23.2 ✅ |
-| npm | 12.0.2 ✅ |
-| git | 2.33.0.windows.2 ✅ |
-| `gh` CLI | 2.97.0 ✅, fine-grained token scoped to this repo only |
-| Vite build | ✅ locally and on a clean CI runner |
-| Canvas ASCII perf | ✅ measured, 17× headroom |
-| Push + Pages deploy | ✅ live at <https://argarot.github.io/ascii-defense/> |
+| Node / npm / git | v22.23.2 / 12.0.2 / 2.33.0 ✅ |
+| `gh` | 2.97.0, fine-grained token scoped to this repo only ✅ |
+| WebGL2 | ANGLE / D3D11, RTX 2060 ✅ |
+| Build + Pages deploy | ✅ live |
+| REXPaint | v1.70 present, custom-font pipeline verified compatible |
 
-**Cannot be automated:** creating the Pages *site* is refused to both
-`GITHUB_TOKEN` and repo-scoped fine-grained PATs. Enabled once by hand; recorded
-in a comment in `.github/workflows/pages.yml`.
+Environment traps are in [CONTRIBUTING.md](../CONTRIBUTING.md) — read them
+before debugging anything.
 
 ---
 
 ## Sources
 
 - [Red Blob Games — Flow Field Pathfinding for Tower Defense](https://www.redblobgames.com/pathfinding/tower-defense/)
-- [rot.js (BSD-3-Clause)](https://github.com/ondras/rot.js/)
-- [Bloons Wiki — Crosspathing](https://bloons.fandom.com/wiki/Crosspathing)
-- [A Novel Procedural Content Generation Algorithm for Tower Defense Games (ACM)](https://dl.acm.org/doi/fullHtml/10.1145/3564982.3564993)
-- [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)
-- [JetBrains Mono (OFL-1.1)](https://github.com/JetBrains/JetBrainsMono)
+- [Cogmind — ASCII particle effects](https://www.gridsagegames.com/blog/2014/03/particle-effects/)
+- [Stone Story RPG — ASCII art tutorial](https://stonestoryrpg.com/ascii_tutorial.html)
+- [xterm.js WebGL renderer](https://github.com/xtermjs/xterm.js/pull/1790)
+- [spleen (BSD-2-Clause)](https://github.com/fcambus/spleen)
+- [unscii (public domain)](https://github.com/viznut/unscii)
+- [REXPaint](https://www.gridsagegames.com/rexpaint/) · [manual](https://www.gridsagegames.com/rexpaint/manual.txt)

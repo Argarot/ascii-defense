@@ -1,223 +1,159 @@
 # Asset library
 
-**The engine knows no glyphs.** It knows sprite ids, ink keys and footprints.
-Which characters get drawn, and in what colour, is decided entirely here.
+**The engine knows no glyphs.** It knows ids, cells and footprints. Which
+characters get drawn, and in what colour, is decided entirely here.
 
-That separation is the reason no glyph appears in [PRD.md](PRD.md). If you find
-yourself writing `'^' = Bolt Turret` in a design document, the design has leaked
-into the art and something is wrong.
-
-Live example of everything below: `public/assets/` — loaded at runtime by the
-preview, so editing a file and reloading changes the game with no rebuild.
+That is why [PRD.md](PRD.md) names no glyph. If you find yourself writing
+`'^' = Bolt Turret` in a design document, the design has leaked into the art.
 
 ---
 
-## 1. Principle: identity is the silhouette
-
-A tower is not a character with decoration around it. It is a **drawing**, and it
-is recognised the way any sprite is recognised — by its overall shape.
-
-```
-   ___        .=^=.      ./=^=\.
-  /:::\      /#####\     [#####]
- [|-O-|]     [|-O-|]     [|<O>|]
-  \___/      '\___/'     '\###/'
-
-  tier 1      tier 3      tier 5
-```
-
-Same object, same footprint, three tiers. Detail density and brightness climb;
-the shape stays recognisable. This is what "grows in intricacy" means — nothing
-about the drawing's size changes.
-
-## 2. The canvas you are drawing on
+## 1. The canvas you are drawing on
 
 | | |
 |---|---|
-| **Font** | [unscii-8](https://github.com/viznut/unscii), 8×8 bitmap, public domain |
-| **Cell** | 8 × 8 px — **square**, so no aspect correction. What you draw is what you see. |
-| **Grid** | 240 × 135 cells (1920 × 1080), ~232 × 128 usable |
-| **Character set** | printable ASCII + Latin-1 supplement + **block elements and box drawing** |
-| **Colour** | 24-bit per cell, foreground and background, no palette cap |
+| **Font** | [spleen 5×8](https://github.com/fcambus/spleen), BSD-2-Clause, F. Cambus |
+| **Glyph** | 5 × 8 px — **not square** |
+| **Cell** | **5 × 3 glyphs** = 25 × 24 px — the placement unit, one tower per cell |
+| **Tile** | 5 × 5 cells = 125 × 120 px — the piece the player lays |
+| **Board** | ~15 × 9 tiles on 1920 × 1200 |
+| **Colour** | 24-bit per glyph, foreground and background, no palette cap |
 
-### Character set
+### What spleen gives you, and what it does not
 
-Strict 7-bit ASCII was rejected: 95 glyphs is too small a vocabulary to shade
-with, and it is the main reason the first asset pass looked thin. The set is now
-roughly Stone Story's 256 symbols **plus** block elements and box drawing:
+**472 glyphs: printable ASCII, braille patterns, light box drawing.**
+
+- ✅ **Braille is the point.** `⠁⠂⠄⠈⠐⠠⡀⢀` through `⣿⡿⢿⣻⣽⣾⣷` is a genuine
+  dot-density ramp with far finer steps than punctuation. It is what terrain
+  shading uses.
+- ❌ **No Latin-1.** `´ ¯ ¤ § µ ° « »` do not exist. This was a deliberate trade:
+  spleen's 5-wide glyph buys 15 glyphs per cell against unscii's 9, and towers
+  had been the weakest thing in every mock.
+- ❌ **No block elements.** `█▓▒░` do not exist. Braille replaces them.
+- ⚠️ **Light box drawing only.** UI chrome uses `─│┌┐└┘├┤┬┴┼`, never `╔═╗`.
+
+Measured in the final comparison: both fonts resolved **65 distinct glyphs** in
+terrain. We use 14% of spleen. Palette breadth was never the binding constraint;
+per-cell drawing room was.
+
+## 2. Authoring: REXPaint with a generated spleen font
+
+[REXPaint](https://www.gridsagegames.com/rexpaint/) is free, Windows-native, and
+already in the working folder. Its
+[manual](https://www.gridsagegames.com/rexpaint/manual.txt) confirms the three
+things this pipeline needs:
+
+- fonts load from **16-column PNG bitmaps** listed in `data/fonts/_config.xt`
+- **more than 256 glyphs** are supported via additional rows
+- **non-square glyphs are supported** — "rectangles are acceptable"
+- `.xp` stores **glyph indices, not codepoints**, so it is format-agnostic
+
+So the round trip is exact:
 
 ```
-ASCII        ! " # $ % & ' ( ) * + , - . / 0-9 : ; < = > ? @ A-Z [ \ ] ^ _ ` a-z { | } ~
-Latin-1      ´ ‾ ¡ · ° « » ÷ ± ¬ ¦ ¤ § µ ¶ ¸ ¹ ² ³ ¼ ½ ¾
-Blocks       █ ▓ ▒ ░ ▀ ▄ ▌ ▐ ▖ ▗ ▘ ▝ ▚ ▞
-Box drawing  ─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬ ╭ ╮ ╯ ╰
+vendor/spleen/spleen-5x8.bdf
+        │  tools/build-fonts.mjs
+        ▼
+content/assets/fonts/glyphset-spleen.json      ← runtime atlas (index → codepoint)
+        │  tools/build-rexpaint-font.mjs
+        ▼
+REXPaint data/fonts/spleen-5x8.png (16 cols)   ← same index order
+        │  author art
+        ▼
+*.xp  ──  tools/rexpaint-import.mjs  ──▶  content/assets/**/*.json
 ```
 
-**Half-blocks are the highest-value addition.** `▀ ▄ ▌ ▐` effectively double
-resolution along one axis, giving a 16×8 or 8×16 effective grid per cell for
-silhouettes and shading. `█ ▓ ▒ ░` give a clean four-step density ramp that is
-far more controllable than punctuation dithering.
+Because both the runtime atlas and the REXPaint font are generated from the same
+source in the same order, a glyph index in a `.xp` file means exactly the same
+glyph at runtime. **Braille included** — the constraint that worried us was
+CP437, and REXPaint is only CP437 *by default*.
 
-This means the game is textmode art rather than ASCII in the strict sense. That
-is a deliberate trade of purity for the art actually looking good.
+One usability note: REXPaint requires the GUI font and art font to share glyph
+dimensions, so the editor UI will also render at 5×8. Cramped but workable.
 
-## 3. Size classes
-
-| Class | Cells | Pixels |
-|---|---|---|
-| Wall | 4 × 4 | 32 × 32 |
-| **Tower** | **12 × 10** | 96 × 80 |
-| Heavy tower | 16 × 14 | 128 × 112 |
-| Enemy, small | 4 × 4 | 32 × 32 |
-| Enemy, medium | 6 × 6 | 48 × 48 |
-| Enemy, large | 10 × 10 | 80 × 80 |
-| Boss | 20 × 18 | 160 × 144 |
-
-A 96 × 80 px tower is a real sprite with room for genuine detail — roughly ten
-times the drawing area of the 7×4 sketches it replaces.
-
-## 2b. Authoring: REXPaint, not a text editor
-
-Sprites are drawn in **[REXPaint](https://www.gridsagegames.com/rexpaint/)** —
-free, Windows-native, multi-layer, written by Cogmind's developer — and
-converted by `tools/rexpaint-import` into the runtime JSON.
-
-Hand-typing art into JSON is why the first pass was primitive. Nobody draws well
-in a text editor. REXPaint gives a palette picker, layers, shape tools and
-undo, and exports XML/CSV that maps cleanly onto our art/ink grids.
-
-The runtime format below stays the build artifact; `.xp` sources are committed
-alongside it so the art remains editable.
+Commit `.xp` sources alongside the generated JSON so art stays editable.
 
 ## 3. Sprite format
+
+Art is a grid of glyphs plus a parallel grid of **ink keys** naming colour roles.
 
 ```jsonc
 {
   "id": "tower_bolt",
-  "name": "Bolt Turret",
-  "size": [7, 4],
-  "bg": "tower.shadow",        // backing colour, lifts the sprite off terrain
-  "inkMap": {
-    ".": null,                 // transparent — terrain shows through
-    "f": "tower.frame",
-    "b": "tower.body",
-    "e": "tower.edge",
-    "c": "PATH",               // resolves to the instance's upgrade path colour
-    "w": "tower.core"
-  },
+  "cell": [5, 3],
   "tiers": {
     "1": {
-      "art": ["  ___  ", " /:::\\ ", "[|-O-|]", " \\___/ "],
-      "ink": ["..fff..", ".fbbbf.", "efbcbfe", ".fffff."]
+      "art": [".-^-.", "|[O]|", "'---'"],
+      "ink": ["fffff", "fcwcf", "fffff"]
     }
-  }
+  },
+  "inkMap": { "f": "tower.frame", "c": "PATH", "w": "tower.core", ".": null }
 }
 ```
 
-**`art` and `ink` are parallel grids.** Every cell of `art` has a matching cell
-of `ink` naming the colour role. Both must be exactly `size[1]` rows of
-`size[0]` characters — validated, and a mismatch is reported rather than drawn.
+- `art[r].length` must equal `cell[0]`; `art.length` must equal `cell[1]`.
+  Validated; a mismatch is reported, not drawn.
+- **`.` is transparent** — terrain shows through, so sprites do not read as
+  rectangular stamps.
+- **`"PATH"` resolves to the instance's upgrade path colour**, so one drawing
+  serves all three specialisations instead of needing three copies.
 
-Two keys carry the system:
-
-- **`.` → transparent.** Cells that aren't part of the drawing let terrain
-  through, which is what stops sprites reading as rectangular stamps.
-- **`"PATH"` → the instance's upgrade path colour.** One drawing serves all
-  three specialisations; it recolours itself instead of needing three copies.
-
-Sheets (`enemies.json`) hold several sprites sharing one `inkMap`.
+Terrain is a **weighted glyph pool per cell type** plus three colours (lit, mid,
+dark), applied per row at the boundary of a terrain mass. That is where depth
+comes from — shading, never geometry.
 
 ## 4. Palette
 
-`palette.json` maps role names to colours. Sprites never contain a hex value —
-they name roles, and the palette decides. That is what makes biome re-tinting a
+`palette.json` maps role names to colours. **Sprites never contain a hex value**
+— they name roles, and the palette decides. That is what makes a biome re-tint a
 palette swap rather than an art rewrite.
 
-```jsonc
-{
-  "terrain": { "ground": "#26323f", "road": "#46566b", "ore": "#e8b52a", ... },
-  "tower":   { "shadow": "#11161d", "frame": "#4e5f73", "core": "#e8f0ff", ... },
-  "path":    { "A": "#4cc9f0", "B": "#ffb703", "C": "#c08cff" },
-  "enemy":   { "body": "#7d3535", "edge": "#e05a5a", "eye": "#ffd166", ... }
-}
-```
+## 5. Authoring rules
 
-## 5. Terrain: surface, not noise
+From [Stone Story RPG's tutorial](https://stonestoryrpg.com/ascii_tutorial.html),
+the best published source on making this look good:
 
-Terrain is the easiest thing to get wrong, and the two rules that fix it were
-both learned by getting it wrong first:
-
-**Ground is mostly empty.** A `density` of ~0.09 — nine percent of tiles carry a
-speck, the rest are blank. Filling every tile with a random character produces
-visual static that makes entities hard to pick out. Sparse specks read as
-ground; dense ones read as noise.
-
-**Glyph choice must use a *mixing* hash.** The obvious `(x*a + y*b) % n` is
-linear, and lays down clearly visible diagonal stripes across open ground. Use
-an integer hash with shift/multiply mixing. This one cost a full iteration to
-notice.
-
-**Class boundaries get explicit edge treatment.** The road is drawn as a band
-with distinct edge rows, not as a smear of punctuation. Rock formations get lit
-caps on their top row. Edges are what make regions read as *surfaces*.
-
-```jsonc
-"ground": { "glyphs": [".", "'", "`", ",", ":"], "density": 0.09,
-            "ink": "terrain.ground", "dimChance": 0.55, "dimInk": "terrain.groundDim" },
-"road":   { "glyphs": [":", ":", ".", ":", ",", ":"], "density": 0.92,
-            "ink": "terrain.road", "litChance": 0.14, "litInk": "terrain.roadLit" }
-```
-
-## 6. Authoring rules
-
-Distilled from [Stone Story RPG's ASCII tutorial](https://stonestoryrpg.com/ascii_tutorial.html),
-which is the best published source on making this look good:
-
-- **Material language.** Fix a vocabulary where specific symbol combinations
-  consistently mean metal, stone, energy, organic. Players absorb it without
-  being taught, and it is what makes art read as *objects* rather than texture.
-  Define it once, apply it everywhere.
-- **Anti-alias edges** with blend characters — half-blocks and lighter density
-  glyphs along a boundary soften the step between shapes.
-- **Dither for tone.** Space marks out to get gradation; `█ ▓ ▒ ░` is the
-  controllable ramp, punctuation the fine one.
-- **Negative space is form.** Gaps do as much work as marks.
-- **Ground your sprites.** A solid dark block beneath a figure reads as shadow
-  and pulls it off the terrain.
-- **Consistent light** — highlights top-left, shadow bottom-right, everywhere.
+- **Material language.** Fix a vocabulary where specific combinations
+  consistently mean metal, stone, energy, organic. Players absorb it untaught,
+  and it is what makes art read as *objects* rather than texture.
+  **Define this before drawing anything else.**
+- **Anti-alias edges** with lighter-density glyphs along a boundary.
+- **Dither for tone.** Braille is the fine ramp; punctuation the coarse one.
+- **Negative space is form.**
+- **Ground your sprites** — a dark row beneath a figure reads as shadow.
+- **Consistent light**: highlights top-left, shadow bottom-right, everywhere.
 - **Silhouette first.** If it is not recognisable in one colour, more colours
   will not save it.
-- **Subtractive animation** — build the full frame, then remove elements
-  progressively to produce motion.
-- **Legibility is the tie-breaker.** Any sprite that makes enemy count or tower
-  state harder to read gets simplified. This overrides every rule above.
+- **Legibility is the tie-breaker**, and it overrides every rule above.
 
-## 7. Validation
+Two terrain rules learned by getting them wrong:
 
-`validateSprite()` checks geometry today and moves into CI in M1, alongside:
+- **Ground is mostly empty** — roughly 9% of glyphs carry a mark. Filling every
+  glyph produces static that buries entities.
+- **Glyph choice must use a *mixing* hash.** `(x*a + y*b) % n` is linear and
+  lays visible diagonal moiré across open ground.
 
-- every `ink` key exists in the sprite's `inkMap`
+## 6. Validation
+
+Enforced in CI:
+
+- art/ink grids match the declared `cell`
+- every ink key exists in the sprite's `inkMap`
 - every `inkMap` value resolves in the palette
-- every `spriteId` referenced by content exists
-- every sprite is referenced by something
+- **every glyph used exists in the font** — the loader filters through
+  `term.has()` and reports, so a missing glyph is never silently dropped
+- every referenced sprite id exists, and every sprite is referenced
 
-## 8. Still to do
+## 7. Still to do
 
-**Everything currently in `public/assets/` is obsolete.** It was drawn at 7×4
-against a 95-glyph set with a 64-colour cap, by hand, in JSON. All three
-constraints are gone. Treat it as a format demonstration, not as art.
+Everything currently under `public/assets/` is **scale and format demonstration,
+not art**. It is hand-typed, was drawn against three different fonts across the
+week, and should be replaced wholesale.
 
-Outstanding:
-
-- Redraw every sprite in REXPaint at the new size classes, with the full
-  character set and the material language defined.
-- Define the material language itself — which glyph combinations mean metal,
-  stone, energy, organic — before drawing anything else.
-- Terrain: biome palettes, rock formation shapes, road surface variants.
-- Animation frames. The format supports named frames; none are authored.
-- Effects: projectiles, impacts, explosions, death animations. Deferred past M1
-  by decision, but the subcell coordinate system that makes them fluid ships in
-  M1 (ARCHITECTURE §4a).
-- UI chrome: panels, borders, the tech tree screen.
-- Directional muzzle overlay — a single cell on the sprite perimeter in the
-  firing direction, giving the read of a rotating turret for almost nothing.
+- Define the material language — before any sprite.
+- Redraw terrain, towers and enemies in REXPaint at 5×3.
+- Biome palettes.
+- Animation frames — the format supports named frames; none are authored.
+- Effects: projectiles, impacts, explosions, deaths. Deferred past M1 by
+  decision; the subcell coordinates they need ship in M1.
+- UI chrome: HUD, tile hand, menus, tech tree — light box drawing only.

@@ -1,326 +1,269 @@
 # ASCII Defense — Product Requirements
 
-Status: **scoping complete.** M0 (delivery path) is live at
-<https://argarot.github.io/ascii-defense/>. No game code written yet.
+Status: **scoping complete, M1 not started.** Live: <https://argarot.github.io/ascii-defense/>
+
+This document specifies *what the game is*. It deliberately names no glyph, no
+colour and no pixel — those live in [ASSETS.md](ASSETS.md) and in data files.
 
 ---
 
 ## 1. What it is
 
-A roguelite tower defense game in the browser, drawing everything — terrain,
-towers, enemies, projectiles, menus — as coloured ASCII characters on a
-monospace grid.
+A roguelite tower defense game in the browser. Everything — terrain, towers,
+enemies, effects, menus — is drawn as characters on a grid.
 
-A **run** is a sequence of procedurally generated battles with a draft between
-each. You lose when the Core falls; you keep mined Ore and spend it on a
-permanent tech tree.
+**You build the map, then defend it.** Most of the board starts empty. Every few
+waves you lay a terrain tile from a drafted hand, extending the road, opening
+buildable ground, and pushing the enemy spawn further away. When you run out of
+room to expand, the run is effectively over.
 
 ## 2. Design pillars
 
-| Pillar | What it means | What it rules out |
+| Pillar | Means | Rules out |
 |---|---|---|
-| **Every placement is a build decision** | Deep evolution trees with a hard crosspathing limit; towers occupy real space | "Buy the best tower, spam it" |
-| **Every run is reproducible** | A run is a seed plus an input log. Replays, daily challenges, bug reports and the regression corpus all fall out of this | Non-deterministic simulation |
-| **Never unwinnable, never trivial** | Road is never buildable; wave budgets are calibrated from measured play | Hand-tuned levels; RNG that hands you a dead run |
-| **Density over decoration** | ASCII's advantage is showing more state at once than a graphical game can. Use it | Prettiness that costs legibility |
-| **Content is data, not code** | Towers, enemies, sprites and tech nodes are JSON validated against a schema | Adding a tower requiring engine changes |
+| **You author the map** | Tile-laying is the core decision, not a side system | Procedurally generated levels you merely react to |
+| **Invalid states are unrepresentable** | Connector matching guarantees a connected road; road cells are never buildable | Runtime "is this still solvable?" checks |
+| **Every placement is a build decision** | Deep evolution trees with a hard crosspathing limit | "Buy the best tower, spam it" |
+| **Every run is reproducible** | A run is a seed plus an input log | Non-deterministic simulation |
+| **Content is data** | Terrain, towers, enemies, upgrades, fonts and art are all JSON | Adding a tower requiring engine changes |
+| **Swappable presentation** | The simulation knows no glyphs, colours or pixels | Any engine code that branches on appearance |
 
-## 3. Core loop
+## 3. The three-level grid
 
-```
-Run start ──► Battle 1 ──► draft 1 of 3 ──► Battle 2 ──► ... ──► Battle 8 ──► win
-                 │
-             Core falls ──► run ends ──► banked Ore ──► tech tree ──► next run starts wider
-```
+Fixed nomenclature, used everywhere in code and docs:
 
-A battle is 8–12 waves. A run is ~30 minutes at 2× speed.
+| Level | Size | Role |
+|---|---|---|
+| **Glyph** | 1 character (5×8 px) | Smallest drawable unit |
+| **Cell** | 5×3 glyphs (25×24 px) | **The placement unit.** One tower occupies exactly one cell |
+| **Terrain tile** | 5×5 cells (125×120 px) | The Carcassonne piece the player lays |
 
-Branching node maps, shops, forges, events and bosses are **deliberately not in
-the core loop** — see [ROADMAP.md](ROADMAP.md). They add nothing if the battles
-are not fun, so they are gated behind proving that they are.
+A 1920×1200 display holds roughly **15×9 = 135 tiles**, or ~3,400 cells.
+
+Cells and tiles are square within 4%. Glyphs are **not** square (5×8), so art is
+authored in glyph grids and the aspect is absorbed by the cell shape.
 
 ## 4. The map
 
-| Tile | Pathable | Buildable | Role |
+### 4.1 Cell types
+
+| Type | Pathable | Buildable | Notes |
 |---|---|---|---|
-| **Road** | yes, cost 1.0 | **no** | The guaranteed route |
-| **Ground** | yes, cost 1.4 | yes | Open terrain you build on |
-| **Rock** | no | no | Procgen obstacle, free wall |
-| **Ore node** | yes, cost 1.4 | yes (see §6) | Mining site |
+| **Road** | yes | **never** | The route. Never buildable, ever. |
+| **Ground** | yes | yes | Where towers go |
+| **Rock** | no | no | Blocked |
+| **Ore** | yes | yes | Buildable; a Refinery here mines Ore |
+| **Spawn** | yes | no | Enemy entry point |
 
-*How any of this looks is not specified here. See [ASSETS.md](ASSETS.md).*
+### 4.2 Tiles and connectors
 
-Enemies walk the **cheapest** route to the Core via a flow field. Because ground
-costs more than road, shortcuts across open terrain exist naturally; building on
-them closes them and pushes enemies back onto the long road.
+Each terrain tile is a 5×5 grid of cell types plus **edge connectors** naming
+which edges carry road. A tile may be laid only where its connectors agree with
+every already-placed neighbour on their shared edge.
 
-There is no "bypass zone" system. Shortcuts are an emergent consequence of the
-cost model, and the generator's only job is to ensure meaningful ones exist.
+**Connectivity therefore holds by construction.** The game never validates that
+a path exists, because a disconnected board cannot be built. This is the same
+class of guarantee as "road is never buildable", and both are load-bearing.
 
-Two properties fall out, both deliberate:
+### 4.3 Buildable density is unresolved
 
-- **The game can never become unwinnable.** Road is never buildable, so a valid
-  route always exists. This invariant is load-bearing — never replace it with a
-  "check if still passable" validation.
-- **Mazing is an economic decision.** Walls (1×1) cost Scrap and space.
+A full board is ~135 tiles × 25 cells = **~3,400 cells**. If most are ground,
+that is roughly 2,000 tower slots — an order of magnitude more than a tower
+defense wants. A TD is interesting at tens of towers, not thousands.
 
-### 4.1 The path-preview overlay is a requirement, not polish
+**This must be resolved before M1 Phase 4.** Options, not exclusive:
 
-Flow-field pathing is unreadable without help. If you cannot see where enemies
-will go *before* committing Scrap, mazing is guesswork and the mechanic dies.
+- Tiles carry far fewer ground cells — mostly road, rock and impassable scenery,
+  with a handful of buildable spots each. This is the likeliest answer and is
+  purely a content change to the tile library.
+- Towers cost enough that Scrap, not space, is the binding constraint.
+- A hard cap on simultaneous towers.
 
-The board must show, at all times, the current route; and on build-hover, the
-route **as it would be** if that placement happened. This ships in M1.
+The first is preferred because it needs no new mechanic and makes tile choice
+matter more: *"how many build spots does this tile give me"* becomes a reason to
+pick one tile over another.
+
+### 4.4 The board is the run length
+
+Board size × waves-per-tile = run length. At 135 tile slots and one tile every
+two waves, a full board is a ~270-wave run; a smaller board is a shorter run.
+
+**Run length is tuned by resizing the board**, which is one number, rather than
+by authoring content. Difficulty must rise such that a player who fills the
+board is comprehensively unable to hold it.
 
 ## 5. Towers
 
-### 5.1 Crosspathing
+### 5.1 Footprint
 
-Three upgrade paths of five tiers. **One path may reach tier 5, a second may
-reach tier 2, the third stays at 0.** One rule turns 8 towers into a large build
-space.
+A tower occupies **exactly one cell** and never changes size. This kills, by
+construction, every "can I fit this here" and "can I upgrade this" failure mode
+we previously designed mitigations for.
 
-### 5.2 Fixed footprint, growing intricacy
+### 5.2 Crosspathing
 
-A tower is a **drawing**, not a character with decoration around it. Standard
-towers occupy **12 × 10 cells** (96 × 80 px); heavies 16 × 14. Cells are square,
-so no aspect correction applies. **Footprints never change.**
+Three upgrade paths of five tiers. **One path may reach tier 5, a second tier 2,
+the third stays at 0.** Eight towers plus that rule is a large build space.
 
-Tiering up is expressed entirely through the artwork — detail density, frame
-elaboration, path-coloured accents and brightness all climb, while the
-silhouette stays recognisable. Identity comes from the whole shape, not from any
-one character.
-
-Nothing about *what those drawings contain* is specified in this document. Sizes
-appear here only because footprint is a mechanical property: it determines
-placement, buildable area and how many towers a board can hold. Appearance lives
-in [ASSETS.md](ASSETS.md) and in `public/assets/`.
-
-*Growth-on-upgrade was considered and cut: it bought one visual moment at the
-cost of occupancy re-checking, a UI/engine contract, and a "cannot upgrade,
-neighbour in the way" failure mode.*
-
-**Consequence for the board:** the grid is **240 × 135 cells at 8 × 8 px**
-(1920 × 1080). That is a full desktop display, and is why the game is
-desktop-only — a consequence of the art direction rather than a preference.
+Tiering changes the artwork within the cell — frame detail, accent colour,
+brightness — never the footprint.
 
 ### 5.3 Families
 
-M1 ships the first five. Full target is **8 towers + Wall** — not 14. Eight
-well-tuned towers with crosspathing already yields more build space than can be
-balanced in reasonable time.
+M1 ships the first four. Target is **8 towers + Wall**, not 14.
 
-| Tower | Sprite id | Size | Role | Path A | Path B | Path C | Milestone |
-|---|---|---|---|---|---|---|---|
-| Bolt Turret | `tower_bolt` | 7×4 | cheap single target | Velocity | Caliber | Optics | M1 |
-| Mortar | `tower_mortar` | 7×4 | AoE, minimum range | Payload | Cadence | Ordnance | M1 |
-| Frost Emitter | `tower_frost` | 7×4 | slow aura | Chill | Shatter | Field | M1 |
-| Refinery | `tower_refinery` | 7×4 | economy (§6) | Yield | Extraction | Logistics | M1 |
-| Wall | `wall` | 3×2 | no attack, closes shortcuts | — | — | — | M1 |
-| Acid Sprayer | `tower_acid` | 7×4 | DoT, armour shred | Corrosion | Volatility | Saturation | M4 |
-| Arc Coil | `tower_arc` | 7×4 | chain lightning | Conductivity | Overcharge | Capacitor | M4 |
-| Bastion | `tower_bastion` | 7×4 | buff aura | Command | Logistics | Fortify | M4 |
-| Rail Lance | `tower_rail` | 9×5 | long-range line pierce | Focus | Penetration | Overwatch | M4 |
+| Tower | Role | Path A | Path B | Path C | Milestone |
+|---|---|---|---|---|---|
+| Bolt Turret | cheap single target | Velocity | Caliber | Optics | M1 |
+| Mortar | AoE, minimum range | Payload | Cadence | Ordnance | M1 |
+| Frost Emitter | slow aura | Chill | Shatter | Field | M1 |
+| Refinery | economy (§6) | Yield | Extraction | — | M1 |
+| ~~Wall~~ | **UNRESOLVED — see below** | — | — | — | — |
+| Acid Sprayer | DoT, armour shred | Corrosion | Volatility | Saturation | M4 |
+| Arc Coil | chain lightning | Conductivity | Overcharge | Capacitor | M4 |
+| Bastion | buff aura | Command | Logistics | Fortify | M4 |
+| Rail Lance | long-range line pierce | Focus | Penetration | Overwatch | M4 |
 
-## 6. Economy: one building, two futures
+**The Wall is unresolved and must be decided before M1 Phase 4.** It existed to
+make mazing cost money — you spent Scrap to lengthen the enemy path. Tile-laying
+replaced mazing entirely: the road now comes from tiles, and a wall on ground
+blocks nothing. As specified it is a tower that does nothing.
+
+Three options, in order of preference:
+
+1. **Cut it.** Simplest. Mazing lives in tile placement now.
+2. **Repurpose as a blocker for *flyers*** — a tall obstruction that forces
+   flying enemies to divert. Gives the flying trait a counter it currently lacks.
+3. **Repurpose as a cheap ground-denial piece** that occupies a cell so enemies
+   with off-road behaviour cannot cross it. Only meaningful if such enemies exist.
+
+## 6. Economy
 
 **Scrap** funds the run. **Ore** is meta-only, banks at run's end, and buys tech
-tree nodes. Ore can never be spent during a run.
+tree nodes. Ore is never spendable during a run.
 
-There is **one** economy building — the Refinery — and its upgrade tree *is* the
-spend-now-or-invest-later decision:
+The **Refinery** is the one two-path tower. Yield produces Scrap anywhere;
+Extraction produces Ore but only on an ore cell. Site selection is therefore a
+pre-commitment.
 
-The Refinery is the **one two-path exception** in the game. A third path was
-drafted ("Logistics — throughput, range, adjacency") and cut: it was filler
-sitting beside two sharp choices. Refineries produce resources, nothing else.
+**Mining is balanced by opportunity cost alone.** No enemy hunts refineries, and
+wave budgets are never reduced to compensate for mining. Compensating would
+refund the cost that makes the decision matter.
 
-| Path | Produces | Requires |
-|---|---|---|
-| **Yield** | Scrap per wave | anywhere |
-| **Extraction** | Ore per wave | must be built **on an ore node** |
+> **The general rule:** the difficulty model offsets choices that increase
+> combat power, and ignores choices that do not. Mining buys no combat power, so
+> it is not offset. Lengthening the road does, so it is offset — sub-linearly.
 
-Because the Extraction path requires an ore node, **site selection is a
-pre-commitment**: you choose where to build already knowing which future you
-intend. And because ore nodes sit far from the path, mining pulls your money and
-your buildable space away from your defense.
-
-### 6.1 Mining is balanced by opportunity cost alone
-
-Scrap spent on Extraction is Scrap not spent on defense, and the waves do not
-care. There is no enemy that hunts extractors, and **wave budgets are not
-reduced to compensate for mining**.
-
-This is deliberate. Compensating would refund the very cost that makes the
-decision matter. It also keeps `C(w)` — Scrap earnable by wave `w` — a pure
-function of waves cleared, independent of player choice, which removes a
-feedback loop from the difficulty system.
-
-### 6.2 The general principle
-
-> The difficulty model offsets choices that **increase combat power**, and
-> ignores choices that do not.
-
-Mining buys no combat power, so it is not offset — you simply end up weaker.
-Mazing *does* buy combat power (more time in range), so it is partially offset,
-sub-linearly (§8.3). One rule, applied consistently.
-
-### 6.3 Ore tiers — reserved, not built
-
-Ore nodes carry a `tier` field, and each battle has a tier-weight table so that
-deeper battles can roll richer nodes. **Stage one ships one tier and a weight
-table of `[1.0]`.** The schema, the banking code and the tech-tree costs all
-carry tier from day one, so adding tiers later is content, not surgery.
+Ore is stored **per tier** from day one, shipping with one tier active, so
+richer ore later is content rather than a save migration.
 
 ## 7. Enemies
 
-Start narrow. **Two damage types** (Kinetic, Energy) and **five traits**:
+Start narrow: **two damage types** (Kinetic, Energy) and **five traits** —
+`armoured`, `shielded`, `fast`, `flying`, `swarm`. Each trait poses a counter
+question. Flyers ignore the road entirely and are the structural answer to
+over-extending the path.
 
-`armoured` (flat reduction, wants Kinetic) · `shielded` (regenerating overshield,
-wants burst) · `fast` · `flying` (ignores pathing, flies straight at the Core) ·
-`swarm` (many, cheap, wants AoE)
-
-M1 ships six enemies across that matrix. A 4×11 damage-type × trait matrix was
-cut: it is 44 interactions, mostly unexercised, and it is precisely where
-balance bugs breed. Traits expand only once the small matrix is proven.
-
-Flyers are the structural counter to over-mazing and must exist from M1.
-
-Enemies are drawn sprites too, and **size class carries threat**: 4×4 for swarm
-units, 6×6 for line infantry and flyers, 10×10 for armoured, 20×18 for bosses.
-You should be able to read what is coming from the silhouettes alone.
+M1 ships six enemies across that matrix. Traits expand only once the small
+matrix is proven; a 4×11 matrix is 44 interactions and is where balance bugs
+breed.
 
 ## 8. Difficulty: calibrated, not derived
 
-### 8.1 What changed and why
-
-An earlier draft computed achievable DPS analytically from Scrap earned. That
-was dishonest: DPS is not a function of money. One maxed tower and ten cheap
-ones represent the same spend and wildly different defense, and the difference
-was being hidden inside a fudge factor.
-
-**Wave budgets are measured, not derived.**
-
-### 8.2 How budgets are produced
+Wave budgets are **measured, not computed**. An earlier draft derived achievable
+DPS analytically from Scrap earned; that was dishonest, because one maxed tower
+and ten cheap ones represent the same spend and wildly different defense.
 
 ```
-1. Analytic prior       — a rough starting curve, used only as an initial guess
-                          and as an outlier alarm
-2. Bot calibration      — the bot plays N seeds against candidate budgets;
-                          record clear margin, lives lost, leak %, time-to-kill
-3. Solve                — pick the budget curve putting the reference policy at
-                          the target margin for each wave
-4. Human offset         — a measured constant between bot performance and real
-                          play, from Daniil's recorded runs
-5. Freeze               — the resulting curve ships as data in content/balance/
-6. Guard                — the harness re-runs on every change; drift beyond
-                          tolerance fails CI
+1. Analytic prior    a rough starting curve, used as an initial guess and an
+                     outlier alarm only
+2. Bot calibration   the bot plays N seeds against candidate budgets; record
+                     clear margin, lives lost, leak %, time-to-kill
+3. Solve             pick the curve putting the reference policy at target margin
+4. Human offset      a measured constant between bot and real play, from
+                     recorded replays
+5. Freeze            the curve ships as data in content/balance/
+6. Guard             the harness re-runs on every change; drift fails CI
 ```
 
-The harness therefore **produces the shipped numbers** rather than validating a
-model. That is why it exists in M1, not M3.
+Two live inputs remain: **`L`**, effective road length in cells, offsetting
+sub-linearly as `(L/L_base)^p` with `p ≈ 0.5` — at `p = 0` extending the road is
+dominant, at `p = 1` it is pointless; and **`M`**, `metaPowerIndex`, summarising
+permanent tech-tree power, near 1.0 until stat nodes exist.
 
-### 8.3 The two live inputs that remain
+`k(w)`, the pressure curve, is the one hand-authored difficulty knob.
 
-- **`L`, effective path length** — read from the flow field. Wave EHP scales
-  **sub-linearly** with it: `(L / L_base) ^ p`, with `p ≈ 0.5` as a calibrated
-  knob. Doubling your path roughly doubles time-in-range but only raises wave
-  EHP by ~40%, so mazing stays a real edge without becoming mandatory. `p = 0`
-  makes mazing dominant; `p = 1` makes it pointless.
-- **`M`, metaPowerIndex** — a scalar summarising permanent tech-tree power. Near
-  1.0 while the tree grants only unlocks. Present in the model from day one so
-  that adding stat nodes later moves a number the model already reads.
+## 9. The bot
 
-`k(w)`, the pressure curve — rising across a run, spiking at finales, dipping
-after — remains the one hand-authored difficulty knob.
-
-## 9. The bot: a regression detector, not an oracle
-
-Writing a TD bot that plays *well* is plausibly harder than the game. A greedy
-bot will be worse than a human, so calibrating difficulty to it alone produces a
-game that is too easy.
-
-**One** bot, honestly framed:
-
-- **Primary job:** regression detection. "Did this change make wave 14 harder?"
-  is answerable with high confidence and is most of the value.
-- **Secondary job:** absolute difficulty, via a measured human offset that
-  Daniil's real runs establish.
-- **Free bonus:** an in-game autopilot to watch at 4×.
+**One** policy, framed honestly as a **regression detector** — "did this change
+make wave 14 harder?" is answerable with confidence and is most of the value.
+Absolute difficulty comes from a human offset measured against real replays. An
+in-game autopilot falls out for free.
 
 ## 10. Meta progression
 
-Ore buys a tech tree. Built in stages, gated behind the core loop being fun.
+Ore buys a tech tree, staged and gated behind the core loop being fun.
 
 | Stage | Grants | When |
 |---|---|---|
-| **1** | ~5 nodes: unlock a tower, unlock a starting relic, +1 draft option, unlock Threat Level 2 | M2 |
-| **2** | Full tree: 5 disciplines, alternate tier-5s, capped economy nodes | M4+ |
-| **3** | Potency nodes (permanent stat increases) | only if wanted |
+| 1 | ~5 nodes: a tower, a starting relic, +1 draft option, Threat Level 2 | M3 |
+| 2 | Full tree: five disciplines, alternate tier-5s, capped economy nodes | M4+ |
+| 3 | Potency nodes — permanent stat increases | optional |
 
 Stage 3 makes `metaPowerIndex` a real variable, at which point the harness must
-validate `seeds × meta tiers` instead of `seeds`. That multiplies CI time for
-every balance change afterwards, which is why it is last and optional.
+validate `seeds × meta tiers`. That multiplies CI time for every balance change,
+which is why it is last and optional.
 
-## 11. Determinism and replays — a headline feature
+## 11. Determinism and replays
 
-The fixed 20 Hz tick and seeded RNG are already paid for. What they buy:
+A run is a **seed plus an input log** — kilobytes. That buys shareable replays,
+daily challenges, bug reports as files, and a regression corpus of real play.
+The fixed 20 Hz tick and seeded RNG are already paid for; this is what they buy.
 
-- **A run is a seed plus an input log** — on the order of kilobytes.
-- **Shareable replays.** Watch anyone's run, at any speed.
-- **Daily challenges.** A date-derived seed. Essentially free.
-- **Bug reports as files.** "It broke" becomes a reproducible artifact.
-- **A regression corpus of real play** — replays double as integration tests.
+## 12. Presentation
 
-This is not an implementation detail. It is one of the most valuable things the
-architecture gives us and should be surfaced in the UI.
+Specified in [ASSETS.md](ASSETS.md). Settled: **spleen 5×8** (BSD-2-Clause), a
+5×3-glyph cell, 24-bit colour per glyph, WebGL2 rendering, and art authored in
+REXPaint against a generated spleen font.
 
-## 12. Art direction and effects
+**Effects — projectiles, impacts, explosions, tower animation — ship after M1**,
+following Cogmind's model: hot-reloadable definition files, templated recolour
+variants, duration scaled by importance. The **subcell coordinate system they
+need ships in M1**, because retrofitting it would mean rewriting movement,
+collision and rendering.
 
-Specified separately, in [ASSETS.md](ASSETS.md), and implemented as a runtime
-asset library. **This document names no glyphs and no colours** — if it did, the
-library would not be the source of truth.
+## 13. Deliberately rejected
 
-Settled: a **240 × 135 grid of square 8 × 8 px cells**, rendered by WebGL2 with
-24-bit colour per cell; the [unscii-8](https://github.com/viznut/unscii) bitmap
-font (public domain); a character set of ASCII plus Latin-1 plus **block
-elements and box drawing** — half-blocks effectively double resolution, and
-`█ ▓ ▒ ░` gives a controllable density ramp. Strictly speaking this makes the
-game textmode art rather than ASCII, which is a deliberate trade of purity for
-the art being good. Sprites are authored in **REXPaint** and imported.
+Recorded so they are not re-proposed:
 
-### Effects — deferred, but not designed away
+- **Pseudo-3D / tilted projection.** Occlusion hides the board, which is fatal
+  for a TD; it fights the mostly-void expanding board; it doubles the art and
+  adds a projection layer. Depth comes from shading instead.
+- **Hex tiles.** Workable logically, but diagonal edges step badly at this
+  scale, REXPaint canvases are rectangular, and rectangular sprites sit badly in
+  hexes. Square wins on art-pipeline cost.
+- **Block elements as the main visual tool.** Rejected on taste; also moot,
+  since spleen has none.
+- **CP437 / Dwarf Fortress idiom.** Rejected on aesthetics.
+- **Sub-tile walls.** Rejected; tile-laying supplies mazing granularity instead.
+- **Bypass / shortcut zones.** Superseded by tile-laying. The path is explicit
+  from tiles rather than emergent from a cost field.
+- **Growth-on-upgrade footprints.** Bought one visual moment for a whole class
+  of failure modes.
 
-Projectiles, impacts, explosions and tower animation were **absent** from
-earlier drafts, not merely under-specified. They ship after M1, following
-Cogmind's model: effect definitions in hot-reloadable data files, a template
-system generating recoloured variants, and duration scaled by importance
-(100–200 ms for light hits, 300–1500 ms for heavy weapons).
+## 14. Out of scope
 
-**One piece cannot wait.** Cogmind positions particles on a 9×9 subcell grid
-inside every cell, which is why its effects flow instead of snapping. Entity
-positions are therefore stored in **subcell units from M1** — retrofitting that
-later would mean rewriting movement, collision and rendering. Reserve the shape,
-ship one value; the same pattern as ore tiers and `metaPowerIndex`.
+Mobile/touch · multiplayer · sound · accounts or cloud saves · a terminal build.
 
-The existing asset library is now **obsolete** — drawn at the old size against a
-95-glyph set with a 64-colour cap. It stands only as a format demonstration.
+## 15. Acceptance criteria
 
-## 13. Out of scope
+**M1 — the fun test.** Lay tiles, build and upgrade towers across waves on one
+board, win or lose. Daniil plays it and says whether it is fun.
 
-Mobile/touch · multiplayer · sound · accounts or cloud saves · non-ASCII
-graphics · a terminal build (the renderer permits one; not a deliverable).
+**M2 — a complete run.** Full board, escalating waves, drafts, Ore banking,
+save/resume.
 
-## 14. Acceptance criteria
+**M3 — trustworthy difficulty.** Calibrated curves; harness catches injected
+regressions; no unwinnable or trivial seed across ≥500 runs. Tech tree stage 1.
 
-**M1 — the fun test.** One procedural battle, 5 towers with complete trees, 6
-enemies, 10 waves, path-preview overlay, mouse control, smoke harness. Daniil
-plays it and says whether it is fun.
-
-**M2 — a complete game.** 8 battles in sequence, draft between each, Ore
-banking, 5-node tech tree, save/resume. A run can be won or lost.
-
-**M3 — trustworthy difficulty.** Calibrated budget curves; harness detects
-injected regressions; no unwinnable or trivial seed across ≥500 runs.
-
-**M4+ — expansion**, only past the decision point: node maps, shops, bosses,
-towers 6–9, biomes, the full art pass.
+**M4+ — expansion.** Effects system, towers 5–9, biomes, full art pass.

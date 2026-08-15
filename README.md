@@ -1,69 +1,82 @@
 # ASCII Defense
 
 A roguelite tower defense game that runs in the browser and draws everything —
-terrain, towers, enemies, projectiles, menus — as coloured ASCII characters on a
-monospace grid.
+terrain, towers, enemies, menus — as characters on a grid.
 
-**Status: M0.** The delivery path is being proven. What is deployed right now is
-a render-loop demo, not the game. See [docs/ROADMAP.md](docs/ROADMAP.md).
+**You build the map, then defend it.** Most of the board starts empty. Every few
+waves you lay a terrain tile from a drafted hand, extending the road and opening
+new ground. When you run out of room to expand, the run is over.
 
-▶ **[Play the current build](https://argarot.github.io/ascii-defense/)**
+**Status: M0 complete.** What is deployed is a rendering and scale study, not the
+game. See [docs/ROADMAP.md](docs/ROADMAP.md).
+
+▶ **[Current build](https://argarot.github.io/ascii-defense/)**
 
 ---
 
 ## What it will be
 
-- **Deep tower evolution.** Three upgrade paths of five tiers per tower, with a
-  hard crosspathing limit — one path to tier 5, a second to tier 2, the third
-  stays locked. Eight tower families produce a very large build space.
-- **Every run is reproducible.** A run is a seed plus an input log, a couple of
+- **You author the map.** Terrain tiles are Carcassonne pieces with edge
+  connectors. A tile is legal only where its connectors match — so a connected
+  road holds *by construction*, and the game never checks whether the board is
+  still solvable.
+- **Deep tower evolution.** Three upgrade paths of five tiers, with a hard
+  crosspathing limit: one path to tier 5, a second to tier 2, the third locked.
+- **Mining the margins.** Ore is meta-only and never helps the current run, so
+  every refinery is a bet against your own survival, funding a permanent tech
+  tree instead.
+- **Every run is reproducible.** A run is a seed plus an input log — a couple of
   kilobytes. That gives shareable replays, daily challenges, bug reports as
   files, and a regression corpus built from real play.
-- **Mazing without unwinnable states.** Road is pathable but never buildable, so
-  a valid route always exists — a structural guarantee, not a runtime check.
-  Building on shortcuts lengthens the route; a live preview shows you where
-  enemies will go before you spend.
-- **Mining the margins.** Ore sits far from the path. The Refinery's upgrade
-  tree *is* the decision: one path pays Scrap that helps you now, another pays
-  Ore that only helps future runs. Nothing compensates you for choosing wrong.
 - **Difficulty measured, not guessed.** Wave budgets are calibrated from a bot
   playing hundreds of seeded runs, then committed as reviewable data. A balance
   change shows up in a diff.
 
-Full design in [docs/PRD.md](docs/PRD.md); technical approach in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); build order and conventions in
-[docs/HANDOFF.md](docs/HANDOFF.md).
+## Technical shape
 
-## Running it locally
+Rendered by **WebGL2** at 24-bit colour per glyph — canvas 2D was measured at
+38 ms/frame under real animation load and rejected. The font is
+**[spleen 5×8](https://github.com/fcambus/spleen)** (BSD-2-Clause), parsed from
+BDF into a 1-bit atlas at build time; its **braille patterns** supply the
+density ramp that terrain shading uses.
 
-Requires Node 22 or newer.
+Three levels, used consistently everywhere: **glyph** (5×8 px) → **cell**
+(5×3 glyphs, one tower) → **terrain tile** (5×5 cells).
+
+The simulation knows no glyphs, colours or pixels. Art is authored in
+**REXPaint** against a generated spleen font and imported as JSON.
+
+## Running it
+
+Requires Node 22+.
 
 ```bash
 npm install
+```
+
+```bash
 npm run dev
 ```
 
-Then open the URL Vite prints (default <http://localhost:5173>).
+Other scripts: `npm run typecheck`, `npm run build`, `npm run preview`.
 
-Other scripts:
+To regenerate the glyph atlases from the vendored fonts:
 
 ```bash
-npm run typecheck   # tsc --noEmit
-npm run build       # typecheck, then production build into dist/
-npm run preview     # serve the production build locally
+node tools/build-fonts.mjs
 ```
 
-## Why the rendering is fast
+## Documentation
 
-Drawing a character grid naively — `fillText` per cell, every frame — costs
-about 17 ms/frame at 120x50 with 400 moving entities. That is already over
-budget at 60 fps before any game logic exists.
+| | |
+|---|---|
+| What the game is | [docs/PRD.md](docs/PRD.md) |
+| How it is built | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| How it looks, and the art pipeline | [docs/ASSETS.md](docs/ASSETS.md) |
+| What happens next | [docs/ROADMAP.md](docs/ROADMAP.md) |
+| Invariants and environment traps | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
-`src/term/Term.ts` instead pre-rasterises every (glyph, colour) pair into an
-offscreen atlas and repaints only cells that changed between frames. Same scene:
-**0.93 ms/frame**, roughly 17x headroom. Numbers were measured before the
-approach was chosen, not after.
+## Licence
 
-## License
-
-[Apache-2.0](LICENSE).
+[Apache-2.0](LICENSE). Vendored fonts keep their own: unscii is public domain,
+spleen is BSD-2-Clause.
