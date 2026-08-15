@@ -126,8 +126,10 @@ async function main(): Promise<void> {
   app.style.alignItems = 'flex-start';
 
   function panel(glyphs: GlyphSet, style: Style, cw: number, ch: number, px: number, pxh: number, label: string, sub: string): void {
-    const cols = Math.floor(1180 / (cw * px)) * cw;   // whole cells
-    const rows = Math.floor(1000 / (ch * pxh)) * ch;
+    // Sized so all three panels sit side by side on a 1920 screen — a
+    // comparison you have to scroll between is not a comparison.
+    const cols = Math.floor(600 / (cw * px)) * cw;   // whole cells
+    const rows = Math.floor(940 / (ch * pxh)) * ch;
     const term = new GLTerm(glyphs, { cols, rows: rows + 4, cellPx: px, cellPxH: pxh, background: PAL.bg });
     const wrap = document.createElement('div');
     wrap.appendChild(term.canvas);
