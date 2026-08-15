@@ -36,10 +36,13 @@ Conventions:
 - [x] 1.1.3 ESLint 9 flat config with **invariant rules**: `Math.random` ban (inv 1); DOM-global ban in headless packages (inv 2); layer-import boundaries via `eslint-plugin-boundaries` v7 (inv 3); `node:` builtins banned outside harness/tools. All rules proven to fire on planted violations. *(PR #2)*
 - [x] 1.1.4 Vitest 4 for Node-side unit tests; 11 RNG tests. *(PR #3)*
 - [x] 1.1.5 `pure-rand` seeded PRNG with named streams (`map|drafts|waves|combat` as a union type) in `engine/rng`; golden values frozen against dependency drift; state round-trip tested for M2 save/resume. The mock xorshift survives only as `main.ts` demo layout hashing, replaced wholesale in Phase 3. *(PR #3)*
-- [ ] 1.1.6 Vitest Browser Mode + Playwright provider; prove GLTerm renders in real Chromium under test.
-- [ ] 1.1.7 Text-snapshot infrastructure on `GLTerm.toText()`; one golden screen committed and diffable.
-- [ ] 1.1.8 Content pipeline: `content/schema/*.schema.json`, `json-schema-to-typescript` codegen (committed types, CI fails on drift), `ajv` validation at load, content linter skeleton.
-- [~] 1.1.9 `ci.yml`: typecheck, lint, unit, **build** run on every PR *(PR #4)*. Still to add in session 2: browser/snapshot job, content validation job.
+- [x] 1.1.6 Vitest Browser Mode + Playwright provider; 5 GLTerm tests in real Chromium incl. pixel-exact readback; headless WebGL2 proven on the CI runner (SwiftShader). *(PR #5)*
+- [x] 1.1.7 Text-snapshot infrastructure on `GLTerm.toText()`; `hud-frame.golden.txt` committed and diffable. *(PR #5)*
+- [x] 1.1.8 Content pipeline: palette + sprite schemas, codegen with embedded schema objects (committed, CI fails on drift), `ajv` validation at load, content linter with honest idle reporting. First asset: `palette.json`. *(PR #6)*
+- [x] 1.1.9 `ci.yml` complete: lint, typecheck, unit, browser (Playwright cached), content validation, drift check, build — on every PR. *(PRs #4-#6)*
+
+**Phase 1 gate: PASSED — CI green on an empty game. Tagged `v0.1.0`.**
+Bonus: demo rebuilt as a seeded board through the real pipeline (PR #7); live page verified pixel-identical to local build for a pinned seed.
 
 ### 1.2 Phase 2 — art pipeline proof *(~0.5 session, needs Daniil)*
 
