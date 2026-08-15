@@ -57,8 +57,12 @@ const FLOATS_PER_CELL = 9;
 export interface GLTermOptions {
   cols: number;
   rows: number;
-  /** On-screen pixels per cell. 8 is native; larger values scale up crisply. */
+  /** On-screen pixels per glyph, horizontally. Native for the font, or an
+   *  integer multiple — a bitmap font at a fractional scale is mush. */
   cellPx?: number;
+  /** Vertical pixels per glyph. Defaults to cellPx. Set this for non-square
+   *  fonts such as spleen 5x8. */
+  cellPxH?: number;
   background?: string;
 }
 
@@ -73,6 +77,7 @@ export class GLTerm {
   readonly cols: number;
   readonly rows: number;
   readonly cellPx: number;
+  readonly cellPxH: number;
 
   private gl: WebGL2RenderingContext;
   private data: Float32Array;
@@ -87,12 +92,13 @@ export class GLTerm {
     this.cols = opts.cols;
     this.rows = opts.rows;
     this.cellPx = opts.cellPx ?? 8;
+    this.cellPxH = opts.cellPxH ?? this.cellPx;
     this.cellCount = this.cols * this.rows;
     this.bgDefault = rgb(opts.background ?? '#07090c');
 
     this.canvas = document.createElement('canvas');
     this.canvas.width = this.cols * this.cellPx;
-    this.canvas.height = this.rows * this.cellPx;
+    this.canvas.height = this.rows * this.cellPxH;
     this.canvas.style.width = `${this.cols * this.cellPx}px`;
     this.canvas.style.imageRendering = 'pixelated';
 

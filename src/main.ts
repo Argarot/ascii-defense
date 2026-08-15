@@ -1,15 +1,16 @@
 /**
- * Cell-size comparison at 5x5-cell terrain tiles.
+ * Font / palette comparison at the chosen geometry (option C).
  *
- * One shared tile map, rendered three times into panels of identical physical
- * size, differing only in how many glyphs make up a cell:
+ *   A  unscii-8, full ~1010-glyph palette, cell 3x3 glyphs, tile 5x5 cells
+ *   B  unscii-8 restricted to the CP437-class repertoire (221 glyphs) and
+ *      rendered in the Dwarf Fortress idiom: block shades for terrain,
+ *      box-drawing for structures
+ *   C  spleen 5x8 (BSD-2-Clause), a real non-square bitmap font. Only 210 of
+ *      our palette codepoints exist in it — no Latin-1 at all — so terrain and
+ *      towers are redrawn from ASCII and light box drawing only.
  *
- *   A  cell = 5x5 glyphs  -> tile 25 glyphs = 200 px  ->  9x6 = 54 tiles on 1920x1200
- *   B  cell = 4x4 glyphs  -> tile 20 glyphs = 160 px  -> 12x7 = 84 tiles
- *   C  cell = 3x3 glyphs  -> tile 15 glyphs = 120 px  -> 16x10 = 160 tiles
- *
- * Panels are the same glyph dimensions, so the difference you see is real
- * relative density, not a zoom.
+ * Cells are square in A and B. In C the glyph is 5x8, so a square-ish cell is
+ * 3 wide x 2 tall (15x16 px), which makes tiles smaller and denser still.
  */
 import { GLTerm } from './term/GLTerm';
 import type { GlyphSet } from './term/GLTerm';
@@ -19,31 +20,57 @@ const load = <T>(p: string): Promise<T> => fetch(`${BASE}assets/${p}`).then((r) 
 
 interface TileDef { id: string; name: string; conn: string[]; cells: string[] }
 interface TileDefs { tiles: TileDef[] }
-interface Piece { art: string[]; ink: string[] }
-interface Art {
-  inkMap: Record<string, string | null>;
-  towers: Record<string, Record<string, Piece>>;
-  enemies: Record<string, Piece>;
-}
 
 const PAL: Record<string, string> = {
-  'tower.frame': '#7286a0', 'tower.body': '#98adc4', 'tower.core': '#ffffff',
-  'enemy.body': '#a04545', 'enemy.edge': '#f07070', 'enemy.eye': '#ffd166',
+  frame: '#7286a0', body: '#98adc4', core: '#ffffff',
+  eBody: '#a04545', eEye: '#ffd166',
   text: '#d3dae7', dim: '#65758a', accent: '#2ee6a0', bg: '#000000',
 };
 const PATHS = ['#4cc9f0', '#ffb703', '#c08cff', '#5ce68c'];
 
-const TERRAIN: Record<string, { ramp: string[]; fg: string; fgLit: string; bg: string }> = {
-  G: { ramp: [' ', ' ', ' ', '·', "'", '`', ','], fg: '#3d4f61', fgLit: '#54687d', bg: '#141c25' },
-  R: { ramp: [':', ';', ':', '·', '='], fg: '#93abc4', fgLit: '#c2d6ea', bg: '#333f4d' },
-  K: { ramp: ['#', '%', '@', '&'], fg: '#5a6a7c', fgLit: '#8698ab', bg: '#1b232c' },
-  O: { ramp: ['¤', '*', '·', '¤'], fg: '#ffd15c', fgLit: '#fff0b0', bg: '#2a2415' },
-  S: { ramp: ['»', '»', ':', '·'], fg: '#ff9090', fgLit: '#ffd0d0', bg: '#331a1a' },
+type Style = {
+  terrain: Record<string, { ramp: string[]; fg: string; fgLit: string; bg: string }>;
+  towers: string[][];   // 3x3 art, one per family
+  enemy: string;
 };
 
-const TC = 5;              // cells per tile edge — agreed
-const MAPX = 10, MAPY = 8; // logical map, in tiles
-const PANEL = 75;          // panel size in glyphs, identical for all three
+const S_FULL: Style = {
+  terrain: {
+    G: { ramp: [' ', ' ', ' ', '·', "'", '`', ','], fg: '#3d4f61', fgLit: '#54687d', bg: '#141c25' },
+    R: { ramp: [':', ';', ':', '·', '='], fg: '#93abc4', fgLit: '#c2d6ea', bg: '#333f4d' },
+    K: { ramp: ['#', '%', '@', '&'], fg: '#5a6a7c', fgLit: '#8698ab', bg: '#1b232c' },
+    O: { ramp: ['¤', '*', '·', '¤'], fg: '#ffd15c', fgLit: '#fff0b0', bg: '#2a2415' },
+    S: { ramp: ['»', '»', ':', '·'], fg: '#ff9090', fgLit: '#ffd0d0', bg: '#331a1a' },
+  },
+  towers: [[',-,', '|O|', '`-´'], ['\\|/', '|@|', '`-´'], ['\\*/', '¤O¤', '/*\\'], ['-¤-', '|$|', '`-´']],
+  enemy: '(o)',
+};
+
+const S_DF: Style = {
+  terrain: {
+    G: { ramp: ['░', ' ', ' ', '░', '·'], fg: '#39485a', fgLit: '#4d5f74', bg: '#10161d' },
+    R: { ramp: ['▒', '░', '▒', '▓'], fg: '#8fa6bd', fgLit: '#c0d4e8', bg: '#2e3945' },
+    K: { ramp: ['█', '▓', '█', '▒'], fg: '#5f7085', fgLit: '#8ea0b4', bg: '#191f27' },
+    O: { ramp: ['◘', '░', '▒', '¤'], fg: '#ffd15c', fgLit: '#fff0b0', bg: '#2a2415' },
+    S: { ramp: ['▓', '▒', '»', '░'], fg: '#ff9090', fgLit: '#ffd0d0', bg: '#331a1a' },
+  },
+  towers: [['┌─┐', '│Ω│', '└─┘'], ['╔═╗', '║Θ║', '╚═╝'], ['┌─┐', '│§│', '└─┘'], ['╒═╕', '│Φ│', '╘═╛']],
+  enemy: '☼',
+};
+
+const S_SPLEEN: Style = {
+  terrain: {
+    G: { ramp: [' ', ' ', ' ', '.', "'", '`', ','], fg: '#3d4f61', fgLit: '#54687d', bg: '#141c25' },
+    R: { ramp: [':', ';', ':', '.', '='], fg: '#93abc4', fgLit: '#c2d6ea', bg: '#333f4d' },
+    K: { ramp: ['#', '%', '@', '&'], fg: '#5a6a7c', fgLit: '#8698ab', bg: '#1b232c' },
+    O: { ramp: ['*', '+', '.', '*'], fg: '#ffd15c', fgLit: '#fff0b0', bg: '#2a2415' },
+    S: { ramp: ['>', '>', ':', '.'], fg: '#ff9090', fgLit: '#ffd0d0', bg: '#331a1a' },
+  },
+  towers: [[',-,', '|O|', "'-'"], ['\\|/', '|@|', "'-'"], ['\\*/', '*O*', '/*\\'], ['-+-', '|$|', "'-'"]],
+  enemy: '(o)',
+};
+
+const TC = 5, MAPX = 14, MAPY = 12;
 const DIRS = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] } as const;
 const OPP: Record<string, string> = { n: 's', s: 'n', e: 'w', w: 'e' };
 
@@ -52,52 +79,36 @@ function hash2(x: number, y: number, s: number): number {
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
-
-/** Shrink a 7x7 authored tile to 5x5 by sampling — keeps the library usable. */
 function to5(cells: string[]): string[] {
   const out: string[] = [];
   for (let y = 0; y < TC; y++) {
     let row = '';
-    for (let x = 0; x < TC; x++) {
-      const sy = Math.min(6, Math.round((y * 6) / (TC - 1)));
-      const sx = Math.min(6, Math.round((x * 6) / (TC - 1)));
-      row += cells[sy][sx];
-    }
+    for (let x = 0; x < TC; x++) row += cells[Math.round((y * 6) / 4)][Math.round((x * 6) / 4)];
     out.push(row);
   }
   return out;
 }
 
 async function main(): Promise<void> {
-  const [glyphs, defs, art] = await Promise.all([
+  const [gFull, gCp, gSp, defs] = await Promise.all([
     load<GlyphSet>('glyphset.json'),
+    load<GlyphSet>('glyphset-cp437.json'),
+    load<GlyphSet>('glyphset-spleen.json'),
     load<TileDefs>('tiledefs.json'),
-    load<Art>('tiles.json'),
   ]);
   const lib = defs.tiles.map((t) => ({ ...t, cells: to5(t.cells) }));
   const byId = new Map(lib.map((t) => [t.id, t]));
 
-  const app = document.getElementById('app')!;
-  const term = new GLTerm(glyphs, { cols: PANEL * 3 + 8, rows: PANEL + 6, cellPx: 8, background: PAL.bg });
-  app.appendChild(term.canvas);
-  const note = document.createElement('div');
-  note.className = 'hud';
-  app.appendChild(note);
-
-  // ---- one shared map, laid by connector matching
   const board: (typeof lib[0] | null)[] = new Array(MAPX * MAPY).fill(null);
   const get = (x: number, y: number) => (x < 0 || y < 0 || x >= MAPX || y >= MAPY ? null : board[y * MAPX + x]);
+  board[5 * MAPX] = byId.get('spawn_e')!;
   {
-    // Grow from a queue of open connector ends rather than a single chain, so
-    // one blocked exit does not stop the whole layout.
-    board[3 * MAPX + 0] = byId.get('spawn_e')!;
-    const open: { x: number; y: number; entry: string }[] = [{ x: 1, y: 3, entry: 'w' }];
+    const open = [{ x: 1, y: 5, entry: 'w' }];
     let guard = 0;
-    while (open.length && guard++ < 400) {
+    while (open.length && guard++ < 600) {
       const { x, y, entry } = open.shift()!;
       if (x < 0 || y < 0 || x >= MAPX || y >= MAPY || get(x, y)) continue;
       const cands = lib.filter((t) => t.id !== 'spawn_e' && t.conn.includes(entry));
-      if (!cands.length) continue;
       const d = cands[Math.floor(hash2(x, y, guard + 5) * cands.length) % cands.length];
       board[y * MAPX + x] = d;
       for (const c of d.conn) {
@@ -109,89 +120,73 @@ async function main(): Promise<void> {
   }
   const laid = board.filter(Boolean).length;
 
-  const towerKeys = ['bolt', 'mortar', 'frost', 'refinery'];
-  const towers: { tx: number; ty: number; cx: number; cy: number; k: string; p: number }[] = [];
-  for (let ty = 0; ty < MAPY; ty++)
-    for (let tx = 0; tx < MAPX; tx++) {
-      const d = get(tx, ty);
-      if (!d) continue;
-      for (let cy = 0; cy < TC; cy++)
-        for (let cx = 0; cx < TC; cx++)
-          if (d.cells[cy][cx] === 'G' && hash2(tx * 100 + cx, ty * 100 + cy, 41) > 0.72)
-            towers.push({ tx, ty, cx, cy, k: towerKeys[towers.length % 4], p: towers.length % 4 });
-    }
+  const app = document.getElementById('app')!;
+  app.style.display = 'flex';
+  app.style.gap = '10px';
+  app.style.alignItems = 'flex-start';
 
-  function drawPanel(ox: number, oy: number, Gp: number, label: string): void {
-    const TG = TC * Gp;
-    const tilesAcross = Math.ceil(PANEL / TG);
-    term.write(ox, oy - 3, label, PAL.accent);
-    const across = Math.floor(1920 / (TG * 8)), down = Math.floor(1150 / (TG * 8));
-    term.write(ox, oy - 2, `tile ${TG * 8}px · ${across}x${down} = ${across * down} tiles on a 1920x1200 screen`, PAL.dim);
+  function panel(glyphs: GlyphSet, style: Style, cw: number, ch: number, px: number, pxh: number, label: string, sub: string): void {
+    const cols = Math.floor(1180 / (cw * px)) * cw;   // whole cells
+    const rows = Math.floor(1000 / (ch * pxh)) * ch;
+    const term = new GLTerm(glyphs, { cols, rows: rows + 4, cellPx: px, cellPxH: pxh, background: PAL.bg });
+    const wrap = document.createElement('div');
+    wrap.appendChild(term.canvas);
+    const cap = document.createElement('div');
+    cap.className = 'hud';
+    cap.textContent = sub;
+    wrap.appendChild(cap);
+    app.appendChild(wrap);
 
-    for (let ty = 0; ty < tilesAcross; ty++) {
-      for (let tx = 0; tx < tilesAcross; tx++) {
+    const TGx = TC * cw, TGy = TC * ch;
+    const across = Math.floor(cols / TGx), down = Math.floor(rows / TGy);
+    term.clear(PAL.bg);
+    term.write(0, 0, label, PAL.accent);
+    term.write(0, 1, `${across}x${down} = ${across * down} tiles visible`, PAL.dim);
+
+    const OY = 3;
+    let towerN = 0;
+    for (let ty = 0; ty < down; ty++)
+      for (let tx = 0; tx < across; tx++) {
         const d = get(tx, ty);
         if (!d) continue;
         for (let cy = 0; cy < TC; cy++)
           for (let cx = 0; cx < TC; cx++) {
-            const t = TERRAIN[d.cells[cy][cx]] ?? TERRAIN.G;
-            for (let y = 0; y < Gp; y++)
-              for (let x = 0; x < Gp; x++) {
-                const gx = tx * TG + cx * Gp + x, gy = ty * TG + cy * Gp + y;
-                if (gx >= PANEL || gy >= PANEL) continue;
-                const g = t.ramp[Math.floor(hash2(gx + ox, gy, 6) * t.ramp.length) % t.ramp.length];
-                term.put(ox + gx, oy + gy, g, hash2(gx + ox, gy, 9) < 0.18 ? t.fgLit : t.fg, t.bg);
+            const t = style.terrain[d.cells[cy][cx]] ?? style.terrain.G;
+            const gx0 = tx * TGx + cx * cw, gy0 = OY + ty * TGy + cy * ch;
+            for (let y = 0; y < ch; y++)
+              for (let x = 0; x < cw; x++) {
+                const g = t.ramp[Math.floor(hash2(gx0 + x, gy0 + y, 6) * t.ramp.length) % t.ramp.length];
+                term.put(gx0 + x, gy0 + y, g, hash2(gx0 + x, gy0 + y, 9) < 0.18 ? t.fgLit : t.fg, t.bg);
               }
+            // tower
+            if (d.cells[cy][cx] === 'G' && hash2(tx * 100 + cx, ty * 100 + cy, 41) > 0.72) {
+              const art = style.towers[towerN % 4];
+              const col = PATHS[towerN % 4];
+              towerN++;
+              for (let r = 0; r < Math.min(ch, art.length); r++)
+                for (let c = 0; c < Math.min(cw, art[r].length); c++) {
+                  const chr = art[r][c];
+                  if (chr === ' ') continue;
+                  term.put(gx0 + c, gy0 + r, chr, chr === 'O' || chr === 'Ω' || chr === 'Θ' || chr === '§' || chr === 'Φ' || chr === '@' || chr === '$' ? col : PAL.frame, '#0c1017');
+                }
+            }
+            if (d.cells[cy][cx] === 'R' && hash2(tx * 77 + cx, ty * 77 + cy, 61) > 0.80) {
+              for (let i = 0; i < Math.min(cw, style.enemy.length); i++)
+                term.put(gx0 + i, gy0, style.enemy[i], PAL.eEye, style.terrain.R.bg);
+            }
           }
       }
-    }
-
-    const tArt = art.towers[String(Gp)];
-    for (const tw of towers) {
-      const gx = tw.tx * TG + tw.cx * Gp, gy = tw.ty * TG + tw.cy * Gp;
-      if (gx + Gp > PANEL || gy + Gp > PANEL) continue;
-      const p = tArt[tw.k];
-      for (let r = 0; r < p.art.length; r++)
-        for (let c = 0; c < p.art[r].length; c++) {
-          const role = art.inkMap[(p.ink[r] ?? '')[c] ?? '.'];
-          if (!role) continue;
-          term.put(ox + gx + c, oy + gy + r, p.art[r][c], role === 'PATH' ? PATHS[tw.p] : (PAL[role] ?? '#f0f'), '#0c1017');
-        }
-    }
-
-    const eArt = art.enemies[String(Gp)];
-    let n = 0;
-    for (let ty = 0; ty < tilesAcross && n < 24; ty++)
-      for (let tx = 0; tx < tilesAcross && n < 24; tx++) {
-        const d = get(tx, ty);
-        if (!d) continue;
-        for (let cy = 0; cy < TC && n < 24; cy++)
-          for (let cx = 0; cx < TC && n < 24; cx++)
-            if (d.cells[cy][cx] === 'R' && hash2(tx * 77 + cx, ty * 77 + cy, 61) > 0.68) {
-              const gx = tx * TG + cx * Gp, gy = ty * TG + cy * Gp;
-              if (gx + 3 > PANEL || gy + eArt.art.length > PANEL) continue;
-              for (let r = 0; r < eArt.art.length; r++)
-                for (let c = 0; c < eArt.art[r].length; c++) {
-                  const role = art.inkMap[(eArt.ink[r] ?? '')[c] ?? '.'];
-                  if (role) term.put(ox + gx + c, oy + gy + r, eArt.art[r][c], PAL[role] ?? '#f0f', TERRAIN.R.bg);
-                }
-              n++;
-            }
-      }
-  }
-
-  function frame(): void {
-    term.clear(PAL.bg);
-    term.write(0, 0, `terrain tile = ${TC}x${TC} cells · same map, same panel size, three cell sizes · ${laid} tiles laid, ${towers.length} towers`, PAL.text);
-    drawPanel(0, 4, 5, 'A · cell 5x5 glyphs');
-    drawPanel(PANEL + 4, 4, 4, 'B · cell 4x4 glyphs');
-    drawPanel(PANEL * 2 + 8, 4, 3, 'C · cell 3x3 glyphs');
     term.flush();
-    (window as unknown as Record<string, unknown>).__screen = () => term.toText();
-    requestAnimationFrame(frame);
   }
-  note.textContent = 'cell-size comparison at 5x5-cell tiles';
-  frame();
+
+  panel(gFull, S_FULL, 3, 3, 8, 8, 'A · unscii-8, full palette', `${gFull.codepoints.length} glyphs · cell 3x3 · tile 120px`);
+  panel(gCp, S_DF, 3, 3, 8, 8, 'B · CP437-class, DF idiom', `${gCp.codepoints.length} glyphs · cell 3x3 · tile 120px`);
+  panel(gSp, S_SPLEEN, 3, 2, 5, 8, 'C · spleen 5x8, no Latin-1', `${gSp.codepoints.length} glyphs · cell 3x2 (15x16px) · tile 75x80px`);
+
+  const n = document.createElement('div');
+  n.className = 'hud';
+  n.textContent = `same map, ${laid} tiles laid`;
+  app.appendChild(n);
 }
 
 main().catch((e) => {
