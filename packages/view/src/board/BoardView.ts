@@ -176,8 +176,9 @@ export class BoardView {
         }
       }
 
-    // Tile seams, on demand (G key): a faint corner mark per placed tile -
-    // enough to count tiles by, dim enough to vanish during play.
+    // Tile seams, on demand (G key): L-shaped corner brackets per placed
+    // tile, drawn with light box glyphs - distinctly visible when wanted,
+    // dim enough (ui.grid) not to fight the terrain.
     if (state.showGrid) {
       const gridCol = role('ui.grid');
       const TGX = TILE_SIZE * CELL_W;
@@ -185,12 +186,30 @@ export class BoardView {
       for (let ty = 0; ty < this.opts.mapY; ty++)
         for (let tx = 0; tx < this.opts.mapX; tx++) {
           if (!slotAt(this.board, tx, ty)) continue;
-          const gx0 = tx * TGX;
-          const gy0 = offsetY + ty * TGY;
-          term.put(gx0, gy0, '+', gridCol);
-          term.put(gx0 + TGX - 1, gy0, '+', gridCol);
-          term.put(gx0, gy0 + TGY - 1, '+', gridCol);
-          term.put(gx0 + TGX - 1, gy0 + TGY - 1, '+', gridCol);
+          const x0 = tx * TGX;
+          const x1 = tx * TGX + TGX - 1;
+          const y0 = offsetY + ty * TGY;
+          const y1 = offsetY + ty * TGY + TGY - 1;
+          // Top-left \u250c\u2500\u2500 / \u2502
+          term.put(x0, y0, '\u250c', gridCol);
+          term.put(x0 + 1, y0, '\u2500', gridCol);
+          term.put(x0 + 2, y0, '\u2500', gridCol);
+          term.put(x0, y0 + 1, '\u2502', gridCol);
+          // Top-right \u2500\u2500\u2510 / \u2502
+          term.put(x1, y0, '\u2510', gridCol);
+          term.put(x1 - 1, y0, '\u2500', gridCol);
+          term.put(x1 - 2, y0, '\u2500', gridCol);
+          term.put(x1, y0 + 1, '\u2502', gridCol);
+          // Bottom-left \u2502 / \u2514\u2500\u2500
+          term.put(x0, y1, '\u2514', gridCol);
+          term.put(x0 + 1, y1, '\u2500', gridCol);
+          term.put(x0 + 2, y1, '\u2500', gridCol);
+          term.put(x0, y1 - 1, '\u2502', gridCol);
+          // Bottom-right \u2502 / \u2500\u2500\u2518
+          term.put(x1, y1, '\u2518', gridCol);
+          term.put(x1 - 1, y1, '\u2500', gridCol);
+          term.put(x1 - 2, y1, '\u2500', gridCol);
+          term.put(x1, y1 - 1, '\u2502', gridCol);
         }
     }
 
