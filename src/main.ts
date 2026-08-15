@@ -16,7 +16,11 @@ import { GLTerm } from './term/GLTerm';
 import type { GlyphSet } from './term/GLTerm';
 
 const BASE = import.meta.env.BASE_URL;
-const load = <T>(p: string): Promise<T> => fetch(`${BASE}assets/${p}`).then((r) => r.json() as Promise<T>);
+// Files under public/ keep a stable URL, so the Pages CDN happily serves a
+// stale copy after a deploy. Bump this whenever an asset changes.
+const ASSET_V = '4';
+const load = <T>(p: string): Promise<T> =>
+  fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
 interface TileDef { id: string; name: string; conn: string[]; cells: string[] }
 interface TileDefs { tiles: TileDef[] }
@@ -114,9 +118,11 @@ async function main(): Promise<void> {
 
   const board: (typeof lib[0] | null)[] = new Array(MAPX * MAPY).fill(null);
   const get = (x: number, y: number) => (x < 0 || y < 0 || x >= MAPX || y >= MAPY ? null : board[y * MAPX + x]);
-  board[6 * MAPX] = byId.get('spawn_e')!;
+  // Start near the top-left: every panel shows the same corner of the map, and
+  // the smallest panel only reaches a few tile rows down.
+  board[1 * MAPX] = byId.get('spawn_e')!;
   {
-    const open = [{ x: 1, y: 6, entry: 'w' }];
+    const open = [{ x: 1, y: 1, entry: 'w' }];
     let guard = 0;
     while (open.length && guard++ < 900) {
       const { x, y, entry } = open.shift()!;
