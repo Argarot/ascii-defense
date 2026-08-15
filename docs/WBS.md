@@ -88,10 +88,10 @@ battery; sim deterministic cross-machine against the live deploy.
 
 ### 1.4 Phase 4 — the game *(~3–4 sessions)* — **blocked by D1, D2, D3**
 
-- [ ] 1.4.1 Tower framework: one cell footprint, 3×5 upgrade trees, crosspath rule (5/2/0) enforced in engine + tests.
-- [ ] 1.4.2 Bolt Turret, Mortar, Frost Emitter, Refinery — stats and trees as content; art per D3.
-- [ ] 1.4.3 Enemies: SoA storage, 2 damage types, 5 traits, 6 enemy defs; movement on flow field; flyers straight-line.
-- [ ] 1.4.4 Targeting + projectiles (subcell); damage resolution.
+- [~] 1.4.1 Tower framework: one-cell footprint ✓, occupancy `Uint16Array` ✓ (stable indices on sell), build/sell ✓ *(PR #17)*. Upgrade trees + crosspath rule: session C.
+- [~] 1.4.2 Bolt Turret shipped with stats as content; projectile spec scaffolding (homing/pierce/explosive/effects) reserved per Daniil *(PRs #16-17)*. Mortar, Frost, Refinery: sessions C-D.
+- [~] 1.4.3 Enemies: SoA storage ✓, hp/speed/damage as content ✓, 2 defs (grunt, skitter) ✓, movement on flow field ✓ *(PRs #16-17)*. Damage types + full trait matrix + 4 more defs: session C. ~~flyers~~ cut.
+- [x] 1.4.4 Targeting (first-on-path, deterministic ties) + subcell projectiles + damage resolution + kill credit. Cross-content CI rule: projectiles must outrun enemies. *(PR #17)*
 - [ ] 1.4.5 Waves, Scrap, lives, win/lose; wave budgets from analytic prior with `L` offset `(L/L_base)^0.5`.
 - [ ] 1.4.6 Refinery economy: Yield → Scrap anywhere; Extraction → Ore on ore cells only; Ore banked per tier.
 - [~] 1.4.7 **HUD** (first-class): build palette, tower inspector with crosspath legality, tile hand, wave state, speed controls. *(early slice shipped ahead of schedule, PR #9: BoardView in `view`, pixel→cell mapping, hover highlight, click-select with brackets, cell inspector line)*
