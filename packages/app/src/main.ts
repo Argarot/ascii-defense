@@ -16,7 +16,7 @@ import {
   generateMap,
   resolveCells,
 } from '@ascii-defense/engine';
-import { BoardView, CELL_W, CELL_H, role } from '@ascii-defense/view';
+import { BoardView, CELL_W, CELL_H, HUD_ROWS, role } from '@ascii-defense/view';
 import type { CellRef } from '@ascii-defense/view';
 import { validateEnemies, validateTowers } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -46,10 +46,10 @@ async function main(): Promise<void> {
   const lib = new TileLibrary(tileLibraryJson.tiles);
 
   const mapX = 14, mapY = 7;
-  const OY = 4; // HUD rows above the board (title, help, inspector, gap)
   const term = new GLTerm(glyphs, {
     cols: mapX * TILE_SIZE * CELL_W,
-    rows: mapY * TILE_SIZE * CELL_H + OY,
+    // Board on top, HUD text rows below it (Daniil: HUD lives at the bottom).
+    rows: mapY * TILE_SIZE * CELL_H + HUD_ROWS,
     cellPx: GLYPH_PX_W,
     cellPxH: GLYPH_PX_H,
     background: role('ui.bg'),
@@ -58,7 +58,6 @@ async function main(): Promise<void> {
   const view = new BoardView(term, lib, {
     mapX,
     mapY,
-    offsetY: OY,
     glyphPxW: GLYPH_PX_W,
     glyphPxH: GLYPH_PX_H,
   });
@@ -106,10 +105,10 @@ async function main(): Promise<void> {
     dirty = true;
   };
 
-  const collectEnemies = (): { x: number; y: number }[] => {
-    const out: { x: number; y: number }[] = [];
+  const collectEnemies = (): { x: number; y: number; id: string }[] => {
+    const out: { x: number; y: number; id: string }[] = [];
     for (let i = 0; i < sim.posX.length; i++) {
-      if (sim.alive[i]) out.push({ x: sim.posX[i], y: sim.posY[i] });
+      if (sim.alive[i]) out.push({ x: sim.posX[i], y: sim.posY[i], id: sim.enemyDefOf(i).id });
     }
     return out;
   };
@@ -131,12 +130,18 @@ async function main(): Promise<void> {
     for (let i = 0; i < sim.projX.length; i++) {
       if (sim.projAlive[i]) projectiles.push({ x: sim.projX[i], y: sim.projY[i] });
     }
+    // Selected tower shows its true reach - "range 6" as paint, not prose.
+    const selTower = selected ? sim.towerAt(selected.x, selected.y) : null;
+    const range = selTower
+      ? { x: selTower.cellX, y: selTower.cellY, r: sim.towerDef(selTower).range }
+      : null;
     view.render({
       hover,
       selected,
       enemies: collectEnemies(),
       towers,
       projectiles,
+      range,
       hoverBuildable: hover !== null && sim.canBuildAt(hover.x, hover.y),
       inspectorOverride: describeTower(selected) ?? describeTower(hover),
       showGrid,

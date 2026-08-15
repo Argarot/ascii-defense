@@ -43,6 +43,19 @@ describe('GLTerm in a real browser', () => {
     }
   });
 
+  it('tint changes only the background, leaving glyph and foreground alone', () => {
+    const term = makeTerm();
+    term.put(0, 0, '#', '#ff0000'); // solid red glyph on black
+    term.tint(0, 0, '#0000ff');     // blue background underneath
+    term.flush();
+    // Solid glyph covers all pixels, so the cell reads pure red - the glyph
+    // survived. The neighbouring empty cell tinted blue proves bg changed.
+    expect(readCell(term, 0, 0).slice(0, 3)).toEqual(new Uint8Array([255, 0, 0]));
+    term.tint(1, 0, '#0000ff');
+    term.flush();
+    expect(readCell(term, 1, 0).slice(0, 3)).toEqual(new Uint8Array([0, 0, 255]));
+  });
+
   it('carries distinct per-cell colour', () => {
     const term = makeTerm();
     term.put(0, 0, '#', '#ff0000');
