@@ -124,6 +124,8 @@ export default tseslint.config(
     files: ['engine', 'content', 'bot', 'render', 'view', 'app'].map(
       (p) => `packages/${p}/**/*.ts`,
     ),
+    // Vite configs run in Node at build time, never in the bundle.
+    ignores: ['**/vite.config.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
