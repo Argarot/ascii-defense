@@ -30,7 +30,6 @@ const TOWERS = [
   ['* . *', '|<8>|', "* ' *"],
   ['=====', '|{$}|', "'---'"],
 ];
-const ENEMY = '<(o)>';
 const TOWER_CORE = /[O@$8]/;
 
 const DESCRIBE: Record<CellType, string> = {
@@ -60,6 +59,10 @@ export interface BoardViewOptions {
 export interface RenderState {
   hover: CellRef | null;
   selected: CellRef | null;
+  /** Walker positions in continuous cell units (subcell resolution). */
+  enemies?: readonly { x: number; y: number }[];
+  /** Right side of the title row: sim status (breaches, speed). */
+  status?: string;
 }
 
 export class BoardView {
@@ -117,6 +120,9 @@ export class BoardView {
 
     term.clear(role('ui.bg'));
     term.write(0, 0, `ASCII DEFENSE \u00b7 generated map \u00b7 seed ${this.seed}`, role('ui.accent'));
+    if (state.status) {
+      term.write(this.cellsW * CELL_W - state.status.length, 0, state.status, role('ui.accent'));
+    }
     term.write(
       0,
       1,
@@ -156,11 +162,16 @@ export class BoardView {
               term.put(gx0 + c, gy0 + r, chr, TOWER_CORE.test(chr) ? col : role('tower.frame'), hoverBg ?? role('tower.ground'));
             }
         }
-        if (kind === 'R' && decor.chance(0.12))
-          for (let i = 0; i < Math.min(CELL_W, ENEMY.length); i++)
-            if (term.has(ENEMY[i]))
-              term.put(gx0 + i, gy0, ENEMY[i], role('enemy.eye'), hoverBg ?? role('terrain.road.dark'));
       }
+
+    // Real walkers, drawn at subcell resolution: continuous cell coords map
+    // to the 5x3 glyph grid, so motion has 5 horizontal steps per cell
+    // instead of snapping cell to cell.
+    for (const e of state.enemies ?? []) {
+      const gx = Math.floor(e.x * CELL_W);
+      const gy = offsetY + Math.floor(e.y * CELL_H);
+      term.put(gx, gy, '@', role('enemy.eye'));
+    }
 
     // Selection brackets last, over everything: the selected cell's corner
     // glyphs get light box-drawing corners in the accent colour.
