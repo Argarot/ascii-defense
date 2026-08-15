@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Font comparison with COMPLETE glyph sets.
  *
  *   A  unscii-8, all 3159 glyphs, cell 3x3           tile 120x120 px
@@ -18,7 +18,7 @@ import type { GlyphSet } from './term/GLTerm';
 const BASE = import.meta.env.BASE_URL;
 // Files under public/ keep a stable URL, so the Pages CDN happily serves a
 // stale copy after a deploy. Bump this whenever an asset changes.
-const ASSET_V = '4';
+const ASSET_V = '5';
 const load = <T>(p: string): Promise<T> =>
   fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
@@ -38,15 +38,15 @@ interface Style {
   enemy: string;
 }
 
-// Wide pools. No blocks or box drawing in terrain — those stay UI-only —
+// Wide pools. No blocks or box drawing in terrain вЂ” those stay UI-only вЂ”
 // except in the DF idiom, where they are the idiom.
 const RICH: Style = {
   pools: {
-    G: '          ·`\',.¸˚°᛫∙⋅ˑ˷ʻʼ‚·´¯˘˙˚˛˝ͺ΄᾿῀ᛠᚹ',
-    R: ':;·,=≈÷∴∵…‥·⁚⁝ːˈ¦¬±∓⌐≡≠∼∽',
-    K: '#%@&§¤ØΦΨЖШЩÞÐÆŊŦĦıΞΠΣΩ¶Җ',
-    O: '¤*◊○●◘•∙◦∘⊙⊚⊛✳✴※☼',
-    S: '»›☼◄►▸▹≫⋙',
+    G: '          В·`\',.ВёЛљВ°б›«в€™в‹…Л‘Л·К»КјвЂљВ·ВґВЇЛЛ™ЛљЛ›ЛќНєО„бѕїбїЂб› бљ№',
+    R: ':;В·,=в‰€Г·в€ґв€µвЂ¦вЂҐВ·вЃљвЃќЛђЛ€В¦В¬В±в€“вЊђв‰Ўв‰ в€јв€Ѕ',
+    K: '#%@&В§В¤ГО¦ОЁР–РЁР©ГћГђГ†ЕЉЕ¦Д¦Д±ОћО ОЈО©В¶Т–',
+    O: 'В¤*в—Љв—‹в—Џв—вЂўв€™в—¦в€вЉ™вЉљвЉ›вњівњґвЂ»вј',
+    S: 'В»вЂєвјв—„в–єв–ёв–№в‰«в‹™',
   },
   cols: {
     G: ['#3d4f61', '#54687d', '#141c25'],
@@ -55,32 +55,32 @@ const RICH: Style = {
     O: ['#ffd15c', '#fff0b0', '#2a2415'],
     S: ['#ff9090', '#ffd0d0', '#331a1a'],
   },
-  towers: [[',-,', '|Ω|', '`-´'], ['\\|/', '|Φ|', '`-´'], ['\\*/', '¤Θ¤', '/*\\'], ['-¤-', '|Ψ|', '`-´']],
+  towers: [[',-,', '|О©|', '`-Вґ'], ['\\|/', '|О¦|', '`-Вґ'], ['\\*/', 'В¤ОВ¤', '/*\\'], ['-В¤-', '|ОЁ|', '`-Вґ']],
   enemy: '(o)',
 };
 
 const DF: Style = {
   pools: {
-    G: '     ░░·.,░▒',
-    R: '▒░▒▓▒░▓▒',
-    K: '█▓█▒█▓',
-    O: '◘¤▒░◙',
-    S: '▓▒»░►',
+    G: '     в–‘в–‘В·.,в–‘в–’',
+    R: 'в–’в–‘в–’в–“в–’в–‘в–“в–’',
+    K: 'в–€в–“в–€в–’в–€в–“',
+    O: 'в—В¤в–’в–‘в—™',
+    S: 'в–“в–’В»в–‘в–є',
   },
   cols: RICH.cols,
-  towers: [['┌─┐', '│Ω│', '└─┘'], ['╔═╗', '║Θ║', '╚═╝'], ['╓─╖', '║§║', '╙─╜'], ['╒═╕', '│Φ│', '╘═╛']],
-  enemy: '☼',
+  towers: [['в”Њв”Ђв”ђ', 'в”‚О©в”‚', 'в””в”Ђв”'], ['в•”в•ђв•—', 'в•‘Ов•‘', 'в•љв•ђв•ќ'], ['в•“в”Ђв•–', 'в•‘В§в•‘', 'в•™в”Ђв•њ'], ['в•’в•ђв••', 'в”‚О¦в”‚', 'в•в•ђв•›']],
+  enemy: 'вј',
 };
 
 // spleen: ASCII + braille + light box drawing. Braille gives a genuine
 // density ramp, which is the most useful thing this font has.
 const SPL: Style = {
   pools: {
-    G: '          .\'`,⠀⠁⠂⠄⠈⠐⠠⡀⢀',
-    R: ':;.,=⠉⠒⠤⠶⠛⠿-_~',
-    K: '#%@&⣿⡿⢿⣻⣽⣾⣷$WMB',
-    O: '*+.o⠿⠾⠽⠻O0',
-    S: '>>:.⠈⠘⠸',
+    G: '          .\'`,в Ђв Ѓв ‚в „в €в ђв  вЎЂвўЂ',
+    R: ':;.,=в ‰в ’в ¤в ¶в ›в ї-_~',
+    K: '#%@&вЈївЎївўївЈ»вЈЅвЈѕвЈ·$WMB',
+    O: '*+.oв їв ѕв Ѕв »O0',
+    S: '>>:.в €в в ё',
   },
   cols: RICH.cols,
   towers: [[',-,', '|O|', "'-'"], ['\\|/', '|@|', "'-'"], ['\\*/', '*8*', '/*\\'], ['-+-', '|$|', "'-'"]],
@@ -118,25 +118,25 @@ async function main(): Promise<void> {
 
   const board: (typeof lib[0] | null)[] = new Array(MAPX * MAPY).fill(null);
   const get = (x: number, y: number) => (x < 0 || y < 0 || x >= MAPX || y >= MAPY ? null : board[y * MAPX + x]);
-  // Start near the top-left: every panel shows the same corner of the map, and
-  // the smallest panel only reaches a few tile rows down.
+  // Constraint fill rather than branch-and-drop: visit every cell in order and
+  // pick any tile whose connectors agree with each already-placed neighbour on
+  // their shared edge. A dying branch no longer strands the rest of the map.
   board[1 * MAPX] = byId.get('spawn_e')!;
-  {
-    const open = [{ x: 1, y: 1, entry: 'w' }];
-    let guard = 0;
-    while (open.length && guard++ < 900) {
-      const { x, y, entry } = open.shift()!;
-      if (x < 0 || y < 0 || x >= MAPX || y >= MAPY || get(x, y)) continue;
-      const cands = lib.filter((t) => t.id !== 'spawn_e' && t.conn.includes(entry));
-      const d = cands[Math.floor(hash2(x, y, guard + 5) * cands.length) % cands.length];
-      board[y * MAPX + x] = d;
-      for (const c of d.conn) {
-        if (c === entry) continue;
-        const [dx, dy] = DIRS[c as keyof typeof DIRS];
-        open.push({ x: x + dx, y: y + dy, entry: OPP[c] });
-      }
+  for (let y = 0; y < MAPY; y++)
+    for (let x = 0; x < MAPX; x++) {
+      if (get(x, y)) continue;
+      const cands = lib.filter((t) => {
+        if (t.id === 'spawn_e') return false;
+        for (const [dir, [dx, dy]] of Object.entries(DIRS)) {
+          const nb = get(x + dx, y + dy);
+          if (!nb) continue;                       // unplaced: no constraint
+          if (nb.conn.includes(OPP[dir]) !== t.conn.includes(dir)) return false;
+        }
+        return true;
+      });
+      if (!cands.length) continue;
+      board[y * MAPX + x] = cands[Math.floor(hash2(x, y, 17) * cands.length) % cands.length];
     }
-  }
   const laid = board.filter(Boolean).length;
 
   const app = document.getElementById('app')!;
@@ -161,7 +161,7 @@ async function main(): Promise<void> {
     wrap.appendChild(term.canvas);
     const cap = document.createElement('div');
     cap.className = 'hud';
-    cap.textContent = `${glyphs.codepoints.length} in font · ${usable} distinct in terrain`;
+    cap.textContent = `${glyphs.codepoints.length} in font В· ${usable} distinct in terrain`;
     wrap.appendChild(cap);
     app.appendChild(wrap);
 
@@ -169,7 +169,7 @@ async function main(): Promise<void> {
     const across = Math.floor(cols / TGx), down = Math.floor(rows / TGy);
     term.clear(PAL.bg);
     term.write(0, 0, label, PAL.accent);
-    term.write(0, 1, `${across}x${down} shown · tile ${TGx * px}x${TGy * pxh}px`, PAL.dim);
+    term.write(0, 1, `${across}x${down} shown В· tile ${TGx * px}x${TGy * pxh}px`, PAL.dim);
 
     const OY = 3;
     let tn = 0;
@@ -195,7 +195,7 @@ async function main(): Promise<void> {
                 for (let c = 0; c < Math.min(cw, art[r].length); c++) {
                   const chr = art[r][c];
                   if (chr === ' ' || !term.has(chr)) continue;
-                  term.put(gx0 + c, gy0 + r, chr, /[ΩΦΘΨO@$§8]/.test(chr) ? col : PAL.frame, '#0c1017');
+                  term.put(gx0 + c, gy0 + r, chr, /[О©О¦ООЁO@$В§8]/.test(chr) ? col : PAL.frame, '#0c1017');
                 }
             }
             if (kind === 'R' && hash2(tx * 77 + cx, ty * 77 + cy, 61) > 0.82)
@@ -206,10 +206,10 @@ async function main(): Promise<void> {
     term.flush();
   }
 
-  panel(gFull, RICH, 3, 3, 8, 8, 'A · unscii-8 full · cell 3x3');
-  panel(gCp, DF, 3, 3, 8, 8, 'B · CP437 / DF idiom');
-  panel(gSp, SPL, 3, 2, 5, 8, 'C · spleen · cell 3x2');
-  panel(gSp, SPL, 5, 5, 5, 8, 'D · spleen · cell 5x5');
+  panel(gFull, RICH, 3, 3, 8, 8, 'A В· unscii-8 full В· cell 3x3');
+  panel(gCp, DF, 3, 3, 8, 8, 'B В· CP437 / DF idiom');
+  panel(gSp, SPL, 3, 2, 5, 8, 'C В· spleen В· cell 3x2');
+  panel(gSp, SPL, 5, 5, 5, 8, 'D В· spleen В· cell 5x5');
 
   const n = document.createElement('div');
   n.className = 'hud';
@@ -221,3 +221,4 @@ main().catch((e) => {
   document.getElementById('app')!.textContent = `failed: ${String(e)}`;
   console.error(e);
 });
+

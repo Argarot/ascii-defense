@@ -70,6 +70,42 @@
       "name": "ascent",
       "conn": ["n", "s"],
       "cells": ["GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG"]
+    },
+    {
+      "id": "meadow",
+      "name": "flats",
+      "conn": [],
+      "cells": ["GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "quarry",
+      "name": "quarry",
+      "conn": [],
+      "cells": ["GGGGGGG", "GKKGGGG", "GKKGGGG", "GGGGGGG", "GGGGOGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "cap_w",
+      "name": "spur w",
+      "conn": ["w"],
+      "cells": ["GGGGGGG", "GGGGGGG", "GGGGGGG", "RRRRGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "cap_e",
+      "name": "spur e",
+      "conn": ["e"],
+      "cells": ["GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGRRRR", "GGGGGGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "cap_n",
+      "name": "spur n",
+      "conn": ["n"],
+      "cells": ["GGGRGGG", "GGGRGGG", "GGGRGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG"]
+    },
+    {
+      "id": "cap_s",
+      "name": "spur s",
+      "conn": ["s"],
+      "cells": ["GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGGGGG", "GGGRGGG", "GGGRGGG", "GGGRGGG"]
     }
   ]
 }
