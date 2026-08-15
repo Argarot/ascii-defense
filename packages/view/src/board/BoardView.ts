@@ -12,7 +12,6 @@
 import {
   TILE_SIZE,
   TileLibrary,
-  createRng,
   resolveCells,
   slotAt,
   type Board,
@@ -25,12 +24,9 @@ import { CELL_H, CELL_W, drawTerrainCell } from './style';
 
 export { CELL_W, CELL_H } from './style';
 
-const TOWERS = [
-  ['.-^-.', '|[O]|', "'---'"],
-  ['\\ | /', '|(@)|', "'---'"],
-  ['* . *', '|<8>|', "* ' *"],
-  ['=====', '|{$}|', "'---'"],
-];
+// Bolt Turret placeholder art; the real sprite pipeline (Phase 2) replaces
+// this with REXPaint-authored tiers.
+const TOWER_ART = ['.-^-.', '|[O]|', "'---'"];
 const TOWER_CORE = /[O@$8]/;
 
 const DESCRIBE: Record<CellType, string> = {
@@ -62,6 +58,14 @@ export interface RenderState {
   selected: CellRef | null;
   /** Walker positions in continuous cell units (subcell resolution). */
   enemies?: readonly { x: number; y: number }[];
+  /** Live towers, in cell coordinates. */
+  towers?: readonly { x: number; y: number }[];
+  /** Projectiles in flight, continuous cell units. */
+  projectiles?: readonly { x: number; y: number }[];
+  /** The hovered cell accepts a build right now (sim's verdict, not ours). */
+  hoverBuildable?: boolean;
+  /** Replaces the inspector line when the app knows better (tower stats). */
+  inspectorOverride?: string;
   /** Right side of the title row: sim status (breaches, speed). */
   status?: string;
   /** Faint markers on tile corners - the map's seams, visible on demand. */
@@ -119,7 +123,6 @@ export class BoardView {
   render(state: RenderState): void {
     const term = this.term;
     const { offsetY } = this.opts;
-    const decor = createRng(this.seed).stream('combat');
 
     term.clear(role('ui.bg'));
     term.write(0, 0, `ASCII DEFENSE \u00b7 generated map \u00b7 seed ${this.seed}`, role('ui.accent'));
@@ -132,9 +135,13 @@ export class BoardView {
       `hover inspects \u00b7 click selects \u00b7 R rerolls \u00b7 G tile seams \u00b7 ?seed=${this.seed} pins this map \u00b7 ${this.map.entries.length} entries, one unique road each`,
       role('ui.dim'),
     );
-    term.write(0, 2, this.describeCell(state.selected ?? state.hover), role('ui.text'));
+    term.write(
+      0,
+      2,
+      state.inspectorOverride ?? this.describeCell(state.selected ?? state.hover),
+      role('ui.text'),
+    );
 
-    let towerN = 0;
     for (let cy = 0; cy < this.cellsH; cy++)
       for (let cx = 0; cx < this.cellsW; cx++) {
         const kind = this.cells[cy * this.cellsW + cx];
@@ -151,7 +158,9 @@ export class BoardView {
           continue;
         }
 
-        const hoverBg = hovered ? '#2a3a4d' : undefined;
+        // Buildable-and-hovered glows green: the sim said yes, the view shows
+        // it. Ordinary hover stays neutral blue-grey.
+        const hoverBg = hovered ? (state.hoverBuildable ? '#17402f' : '#2a3a4d') : undefined;
         // Boundary shading only for landmass types: roads read as routes and
         // the Core has its own look; ground/rock/ore get mass edges.
         const shaded = kind === 'G' || kind === 'K' || kind === 'O';
@@ -162,19 +171,20 @@ export class BoardView {
           litTop: shaded && north !== kind,
           shadowBottom: shaded && south !== kind,
         });
-
-        if (kind === 'G' && decor.chance(0.16)) {
-          const art = TOWERS[towerN % TOWERS.length];
-          const col = role(`path.${(towerN % 4) + 1}`);
-          towerN++;
-          for (let r = 0; r < CELL_H; r++)
-            for (let c = 0; c < CELL_W; c++) {
-              const chr = art[r][c];
-              if (chr === ' ' || !term.has(chr)) continue;
-              term.put(gx0 + c, gy0 + r, chr, TOWER_CORE.test(chr) ? col : role('tower.frame'), hoverBg ?? role('tower.ground'));
-            }
-        }
       }
+
+    // Real towers - the demo's fake scatter is gone; every tower drawn here
+    // exists in the sim, occupies its cell, and has a kill count.
+    for (const t of state.towers ?? []) {
+      const gx0 = t.x * CELL_W;
+      const gy0 = offsetY + t.y * CELL_H;
+      for (let r = 0; r < CELL_H; r++)
+        for (let c = 0; c < CELL_W; c++) {
+          const chr = TOWER_ART[r][c];
+          if (chr === ' ' || !term.has(chr)) continue;
+          term.put(gx0 + c, gy0 + r, chr, TOWER_CORE.test(chr) ? role('path.1') : role('tower.frame'), role('tower.ground'));
+        }
+    }
 
     // Tile seams, on demand (G key): L-shaped corner brackets per placed
     // tile, drawn with light box glyphs - distinctly visible when wanted,
@@ -220,6 +230,13 @@ export class BoardView {
       const gx = Math.floor(e.x * CELL_W);
       const gy = offsetY + Math.floor(e.y * CELL_H);
       term.put(gx, gy, '@', role('enemy.eye'));
+    }
+
+    // Projectiles: single bright glyphs streaking at subcell resolution.
+    for (const p of state.projectiles ?? []) {
+      const gx = Math.floor(p.x * CELL_W);
+      const gy = offsetY + Math.floor(p.y * CELL_H);
+      term.put(gx, gy, '*', role('tower.core'));
     }
 
     // Selection brackets last, over everything: the selected cell's corner

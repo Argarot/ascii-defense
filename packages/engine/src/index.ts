@@ -38,4 +38,5 @@ export type { GeneratedMap, MapGenOptions, CellRef } from './mapgen/mapgen';
 export { computeFlowField } from './sim/flow';
 export type { FlowField } from './sim/flow';
 export { Sim, TICK_HZ } from './sim/sim';
-export type { SimOptions } from './sim/sim';
+export type { SimOptions, Tower } from './sim/sim';
+export type { EnemyDef, TowerDef, ProjectileSpec } from './sim/defs';

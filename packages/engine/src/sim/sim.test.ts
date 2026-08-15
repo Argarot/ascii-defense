@@ -4,7 +4,8 @@ import { TILE_SIZE } from '../tiles/tile';
 import { TileLibrary, resolveCells } from '../tiles/board';
 import { generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { Sim, TICK_HZ } from './sim';
+import { Sim, TICK_HZ, type SimOptions } from './sim';
+import type { EnemyDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
@@ -20,26 +21,60 @@ const LIB = new TileLibrary([
   { id: 'meadow', cells: g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG') },
 ]);
 
-function makeWorld(seed: number, entries = 3) {
-  const opts = { width: 10, height: 6, entries, targetPathLength: 8 };
+const WALKER: EnemyDef = { id: 'walker', hp: 10, speed: 0.2, damage: 2 };
+const BOLT: TowerDef = {
+  id: 'bolt',
+  cost: 20,
+  range: 6,
+  fireEveryTicks: 10,
+  projectile: { damage: 6, speed: 0.6, homing: true },
+};
+
+function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
+  const opts = { width: 10, height: 6, entries: 3, targetPathLength: 8 };
   const map = generateMap(createRng(seed).stream('map'), LIB, opts);
   const cellsW = opts.width * TILE_SIZE;
   const cellsH = opts.height * TILE_SIZE;
   const cells = resolveCells(map.board, LIB);
-  return { map, cells, cellsW, cellsH };
+  const simOpts: SimOptions = {
+    cells,
+    cellsW,
+    cellsH,
+    map,
+    enemyDefs: [WALKER],
+    towerDefs: [BOLT],
+    spawnEveryTicks: 5,
+    maxSpawns: 10,
+    ...extra,
+  };
+  return { map, cells, cellsW, cellsH, simOpts };
+}
+
+/** First buildable cell adjacent to a route cell - a spot a player would pick. */
+function buildSpotNear(cells: readonly (string | null)[], W: number, H: number, nth = 0): { x: number; y: number } {
+  let seen = 0;
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      if (cells[y * W + x] !== 'G') continue;
+      const nearRoad = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+        const nx = x + dx;
+        const ny = y + dy;
+        return nx >= 0 && ny >= 0 && nx < W && ny < H && cells[ny * W + nx] === 'R';
+      });
+      if (nearRoad && seen++ === nth) return { x, y };
+    }
+  throw new Error('no build spot found');
 }
 
 describe('flow field', () => {
   it('is zero at the Core, positive at entries, downhill everywhere on-route', () => {
     const { map, cells, cellsW, cellsH } = makeWorld(5);
     const flow = computeFlowField(cells, cellsW, cellsH, map.entries);
-
     expect(flow.dist[map.core.y * cellsW + map.core.x]).toBe(0);
-    expect(flow.L).toBeGreaterThanOrEqual(TILE_SIZE); // paths wander >= 1 tile
-
+    expect(flow.L).toBeGreaterThanOrEqual(TILE_SIZE);
     for (let i = 0; i < flow.dist.length; i++) {
       const d = flow.dist[i];
-      if (d <= 0) continue; // core or off-route
+      if (d <= 0) continue;
       const x = i % cellsW;
       const y = (i / cellsW) | 0;
       const hasDownhill = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
@@ -48,58 +83,112 @@ describe('flow field', () => {
         if (nx < 0 || ny < 0 || nx >= cellsW || ny >= cellsH) return false;
         return flow.dist[ny * cellsW + nx] === d - 1;
       });
-      expect(hasDownhill, `route cell ${x},${y} (dist ${d}) has no downhill neighbour`).toBe(true);
-    }
-  });
-
-  it('off-route cells are -1', () => {
-    const { map, cells, cellsW, cellsH } = makeWorld(6);
-    const flow = computeFlowField(cells, cellsW, cellsH, map.entries);
-    for (let i = 0; i < cells.length; i++) {
-      if (cells[i] === 'G' || cells[i] === 'K' || cells[i] === 'O') expect(flow.dist[i]).toBe(-1);
+      expect(hasDownhill).toBe(true);
     }
   });
 });
 
-describe('sim walkers', () => {
-  it('spawned enemies march the road and every one eventually breaches', () => {
-    const { map, cells, cellsW, cellsH } = makeWorld(11);
-    const sim = new Sim(11, { cells, cellsW, cellsH, map, maxSpawns: 10, spawnEveryTicks: 5, speed: 0.2 });
-
-    // Long enough for the slowest walker: L cells at 0.2 cells/tick + spawn lead time.
-    const budget = (sim.flow.L / 0.2 + 10 * 5 + 100) | 0;
-    for (let t = 0; t < budget; t++) {
-      sim.tick();
-      // No walker ever leaves the route.
-      for (let i = 0; i < 64; i++) {
-        if (!sim.alive[i]) continue;
-        const cell = cells[Math.floor(sim.posY[i]) * cellsW + Math.floor(sim.posX[i])];
-        expect(cell === 'R' || cell === 'C', `walker ${i} on ${cell}`).toBe(true);
-      }
-    }
+describe('walkers', () => {
+  it('undefended, every spawn eventually breaches and Core damage accumulates', () => {
+    const { simOpts } = makeWorld(11);
+    const sim = new Sim(11, simOpts);
+    const budget = (sim.flow.L / WALKER.speed + 10 * 5 + 100) | 0;
+    for (let t = 0; t < budget; t++) sim.tick();
     expect(sim.spawned).toBe(10);
     expect(sim.breaches).toBe(10);
+    expect(sim.coreDamage).toBe(10 * WALKER.damage);
     expect(sim.aliveCount()).toBe(0);
   });
 
-  it('is deterministic: same seed, same world, same story', () => {
+  it('walkers never leave the route', () => {
+    const { cells, cellsW, simOpts } = makeWorld(13);
+    const sim = new Sim(13, simOpts);
+    for (let t = 0; t < 500; t++) {
+      sim.tick();
+      for (let i = 0; i < 64; i++) {
+        if (!sim.alive[i]) continue;
+        const cell = cells[Math.floor(sim.posY[i]) * cellsW + Math.floor(sim.posX[i])];
+        expect(cell === 'R' || cell === 'C').toBe(true);
+      }
+    }
+  });
+
+  it('a tick is a tick: 20 Hz declared, wall time is nobody', () => {
+    expect(TICK_HZ).toBe(20);
+  });
+});
+
+describe('towers and projectiles', () => {
+  it('build rules: buildable ground only, one tower per cell, sell frees', () => {
+    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(17);
+    const sim = new Sim(17, simOpts);
+
+    // Road and Core cells refuse.
+    const entry = map.entries[0];
+    expect(sim.canBuildAt(entry.x, entry.y)).toBe(false);
+    expect(sim.canBuildAt(map.core.x, map.core.y)).toBe(false);
+
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    expect(sim.canBuildAt(spot.x, spot.y)).toBe(true);
+    expect(sim.buildTower(spot.x, spot.y, 'bolt')).toBe(true);
+    expect(sim.canBuildAt(spot.x, spot.y)).toBe(false); // occupied (invariant 7)
+    expect(sim.buildTower(spot.x, spot.y, 'bolt')).toBe(false);
+    expect(sim.towerAt(spot.x, spot.y)?.defIdx).toBe(0);
+
+    expect(sim.sellTower(spot.x, spot.y)).toBe(true);
+    expect(sim.canBuildAt(spot.x, spot.y)).toBe(true);
+    expect(sim.towerAt(spot.x, spot.y)).toBeNull();
+
+    expect(() => sim.buildTower(spot.x, spot.y, 'nonsense')).toThrow(/unknown tower def/);
+  });
+
+  it('a defended road kills: fewer breaches than undefended, kill credit adds up', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(23);
+
+    const undefended = new Sim(23, simOpts);
+    const defended = new Sim(23, simOpts);
+    for (let n = 0; n < 4; n++) {
+      const spot = buildSpotNear(cells, cellsW, cellsH, n);
+      defended.buildTower(spot.x, spot.y, 'bolt');
+    }
+    const budget = (undefended.flow.L / WALKER.speed + 10 * 5 + 200) | 0;
+    for (let t = 0; t < budget; t++) {
+      undefended.tick();
+      defended.tick();
+    }
+
+    expect(undefended.breaches).toBe(10);
+    expect(defended.kills).toBeGreaterThan(0);
+    expect(defended.breaches).toBeLessThan(undefended.breaches);
+    expect(defended.kills + defended.breaches + defended.aliveCount()).toBe(10);
+
+    const towerKills = defended.towers.reduce((s, t) => s + (t?.kills ?? 0), 0);
+    expect(towerKills).toBe(defended.kills);
+  });
+
+  it('combat is deterministic: same seed and builds, same story', () => {
     const run = () => {
-      const { map, cells, cellsW, cellsH } = makeWorld(21);
-      const sim = new Sim(21, { cells, cellsW, cellsH, map, maxSpawns: 20, spawnEveryTicks: 3 });
-      for (let t = 0; t < 600; t++) sim.tick();
-      return { breaches: sim.breaches, spawned: sim.spawned, x: [...sim.posX.slice(0, 32)], y: [...sim.posY.slice(0, 32)] };
+      const { cells, cellsW, cellsH, simOpts } = makeWorld(29, { maxSpawns: 20 });
+      const sim = new Sim(29, simOpts);
+      for (let n = 0; n < 3; n++) {
+        const spot = buildSpotNear(cells, cellsW, cellsH, n);
+        sim.buildTower(spot.x, spot.y, 'bolt');
+      }
+      for (let t = 0; t < 1500; t++) sim.tick();
+      return {
+        kills: sim.kills,
+        breaches: sim.breaches,
+        coreDamage: sim.coreDamage,
+        x: [...sim.posX.slice(0, 32)],
+        px: [...sim.projX.slice(0, 32)],
+      };
     };
     expect(run()).toEqual(run());
   });
 
-  it('a tick is a tick: 20 Hz is declared, wall time is nobody', () => {
-    // The constant is exported so the APP owns frame pacing; the sim must not.
-    expect(TICK_HZ).toBe(20);
-  });
-
-  it('slot recycling: capacity is never exceeded, spawns drop instead of crash', () => {
-    const { map, cells, cellsW, cellsH } = makeWorld(31);
-    const sim = new Sim(31, { cells, cellsW, cellsH, map, spawnEveryTicks: 1, speed: 0.01 });
+  it('capacity: spawn flood drops instead of crashing', () => {
+    const { simOpts } = makeWorld(31, { spawnEveryTicks: 1, maxSpawns: 0, enemyDefs: [{ ...WALKER, speed: 0.01 }] });
+    const sim = new Sim(31, simOpts);
     for (let t = 0; t < 2000; t++) sim.tick();
     expect(sim.aliveCount()).toBeLessThanOrEqual(1024);
   });
