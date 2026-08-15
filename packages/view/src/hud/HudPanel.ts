@@ -1,16 +1,13 @@
 /**
- * The HUD: a separate glyph surface below the board at 2x font size
- * (10x16 px per glyph - an integer multiple, so the bitmap font stays
- * crisp). This text is meant to be READ, unlike the board's texture
- * (Daniil, session B feedback).
+ * The HUD: a full-height side panel at 2x font (10x16 px per glyph - integer
+ * multiple, crisp), to the right of a 12-tile board. This text is meant to
+ * be READ (Daniil), and the visual tier tree needs the vertical room.
  *
- * Mouse-first (agreed rule): everything actionable here is clickable.
- * render() records the glyph rectangle of every actionable label, and
- * actionAt() maps a canvas pixel back to the action - the words on screen
- * and the click targets cannot drift apart because they are the same data.
- *
- * Four rows: resources/status, inspector, actions (build palette or the
- * selected tower's priority selector), help.
+ * Mouse-first: every actionable label is a click region, and HOVERING a
+ * region previews it - palette hover previews that tower's radius on the
+ * board, choice hover previews the post-purchase stats in pulsing green.
+ * The words, the buttons and the previews are all the same region data, so
+ * they cannot drift apart.
  */
 import type { GLTerm } from '@ascii-defense/render';
 import { PRIORITIES, type Priority } from '@ascii-defense/engine';
@@ -27,12 +24,19 @@ export interface HudTierInfo {
   choices: readonly HudChoiceInfo[];
 }
 
-export interface HudTowerInfo {
-  name: string;
-  kills: number;
+export interface HudStats {
   dmg: number;
   dps: string;
   range: number;
+  slow: number;
+}
+
+export interface HudTowerInfo {
+  name: string;
+  kills: number;
+  stats: HudStats;
+  /** Post-purchase stats while hovering an available choice; else null. */
+  preview: HudStats | null;
   priority: Priority;
   tiers: readonly HudTierInfo[];
 }
@@ -40,27 +44,21 @@ export interface HudTowerInfo {
 export interface HudState {
   scrap: number;
   kills: number;
-  coreDamage: number;
   coreHp: number;
   coreHpMax: number;
   wave: number;
-  /** Fronts the next wave attacks from. */
   nextFronts: number;
   gameOver: boolean;
   L: number;
   seed: number;
-  /** "1x", "2x", "4x" or "PAUSED". */
   speedLabel: string;
-  /** Cell or tower description for the inspector row. */
   inspector: string;
-  /** The build palette; one entry per buildable tower def. */
   palette: readonly { name: string; cost: number; affordable: boolean }[];
-  /** Which palette entry is the active build choice. */
   selectedBuild: number;
-  /** A buildable empty tile is selected - palette clicks build THERE. */
   buildTargetSelected: boolean;
-  /** Set when the selection is a tower - swaps the action row to priorities. */
   selectedTower: HudTowerInfo | null;
+  /** Animation phase 0..1 - preview numbers pulse on it. */
+  phase: number;
 }
 
 export type HudAction =
@@ -71,7 +69,7 @@ export type HudAction =
 interface Region {
   row: number;
   x0: number;
-  x1: number; // exclusive
+  x1: number;
   action: HudAction;
 }
 
@@ -91,7 +89,6 @@ export class HudPanel {
     private glyphPxH: number,
   ) {}
 
-  /** Canvas pixel -> the action under it, or null. */
   actionAt(px: number, py: number): HudAction | null {
     const gx = Math.floor(px / this.glyphPxW);
     const gy = Math.floor(py / this.glyphPxH);
@@ -105,41 +102,93 @@ export class HudPanel {
     const term = this.term;
     this.regions = [];
     term.clear(role('ui.bg'));
+    const W = term.cols;
+    const blink = s.phase % 1 < 0.5;
+    const previewCol = blink ? role('path.4') : role('ui.accent');
 
-    // Row 0 - the vitals: Scrap, the Core's health, the wave clock.
-    term.write(0, 0, `SCRAP ${s.scrap}`, role('ui.accent'));
-    const coreCol = s.coreHp <= s.coreHpMax / 4 ? role('enemy.fast') : role('ui.text');
-    term.write(12, 0, `CORE ${s.coreHp}/${s.coreHpMax}`, coreCol);
-    term.write(26, 0, `WAVE ${s.wave} \u00b7 next: ${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'}`, role('ui.text'));
-    const status = `kills ${s.kills} \u00b7 ${s.speedLabel} \u00b7 L=${s.L} \u00b7 seed ${s.seed}`;
-    term.write(term.cols - status.length, 0, status, role('ui.dim'));
+    // ---- header + vitals ---------------------------------------------------
+    term.write(0, 0, 'ASCII DEFENSE', role('ui.accent'));
+    term.write(0, 1, `seed ${s.seed} \u00b7 ${s.speedLabel}`, role('ui.dim'));
+    term.write(0, 3, `SCRAP ${s.scrap}`, role('ui.accent'));
+    const hpFrac = s.coreHpMax > 0 ? s.coreHp / s.coreHpMax : 0;
+    const barLen = Math.round(hpFrac * (W - 2));
+    const coreCol = hpFrac <= 0.25 ? role('enemy.fast') : role('terrain.core.mid');
+    term.write(0, 4, `CORE ${s.coreHp}/${s.coreHpMax}`, coreCol);
+    term.write(0, 5, '='.repeat(Math.max(0, barLen)), coreCol);
+    term.write(0, 7, `WAVE ${s.wave}`, role('ui.text'));
+    term.write(0, 8, `next: ${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'} \u00b7 kills ${s.kills}`, role('ui.dim'));
+    term.write(0, 9, `road L=${s.L}`, role('ui.dim'));
 
-    // Row 1 - inspector, plus the priority selector when a tower is up.
-    term.write(0, 1, s.inspector, role('ui.text'));
-    if (s.selectedTower) {
-      let x = term.cols - 44;
-      term.write(x - 10, 1, 'priority: ', role('ui.dim'));
-      for (const p of PRIORITIES) {
-        const label = PRIORITY_LABEL[p];
-        term.write(x, 1, label, p === s.selectedTower.priority ? role('ui.accent') : role('ui.dim'));
-        this.regions.push({ row: 1, x0: x, x1: x + label.length, action: { kind: 'priority', value: p } });
-        x += label.length + 2;
-      }
-    }
+    // ---- build palette (vertical, hover previews radius on the board) ------
+    term.write(0, 11, 'BUILD', role('ui.dim'));
+    s.palette.forEach((p, i) => {
+      const row = 12 + i;
+      const marker = i === s.selectedBuild ? '>' : ' ';
+      const label = `${marker}${p.name} $${p.cost}`;
+      term.write(0, row, label, i === s.selectedBuild ? role('ui.accent') : p.affordable ? role('ui.text') : role('ui.dim'));
+      this.regions.push({ row, x0: 0, x1: Math.max(label.length, 20), action: { kind: 'build', index: i } });
+    });
+    term.write(
+      0,
+      12 + s.palette.length + 1,
+      s.buildTargetSelected ? 'click a tower: builds on' : 'select a tile on the map,',
+      s.buildTargetSelected ? role('ui.accent') : role('ui.dim'),
+    );
+    term.write(
+      0,
+      13 + s.palette.length + 1,
+      s.buildTargetSelected ? 'the selected tile' : 'then pick a tower here',
+      s.buildTargetSelected ? role('ui.accent') : role('ui.dim'),
+    );
 
-    // Row 2 - actions: upgrade paths for a selected tower, else the palette.
+    // ---- selection ---------------------------------------------------------
+    let y = 18;
+    term.write(0, y++, '-'.repeat(W), role('ui.grid'));
     if (s.gameOver) {
-      term.write(0, 2, 'THE CORE HAS FALLEN \u00b7 press R for a new run', role('enemy.fast'));
+      term.write(0, y + 1, 'THE CORE HAS FALLEN', role('enemy.fast'));
+      term.write(0, y + 3, 'press R for a new run', role('ui.text'));
     } else if (s.selectedTower) {
       const t = s.selectedTower;
-      const lead = `${t.name} \u00b7 ${t.dmg} dmg \u00b7 ${t.dps}/s \u00b7 rng ${t.range} \u00b7 `;
-      term.write(0, 2, lead, role('ui.text'));
-      let x = lead.length;
+      term.write(0, y++, t.name, role('ui.accent'));
+      term.write(0, y++, `kills ${t.kills}`, role('ui.dim'));
+      y++;
+      // Stats, with hover-preview deltas pulsing green (Daniil: see what
+      // you are buying BEFORE you buy it).
+      const stat = (label: string, cur: number | string, pre: number | string | null): void => {
+        term.write(0, y, `${label} ${cur}`, role('ui.text'));
+        if (pre !== null && `${pre}` !== `${cur}`) {
+          term.write(`${label} ${cur}`.length + 1, y, `-> ${pre}`, previewCol);
+        }
+        y++;
+      };
+      stat('dmg  ', t.stats.dmg, t.preview ? t.preview.dmg : null);
+      stat('dps  ', t.stats.dps, t.preview ? t.preview.dps : null);
+      stat('range', t.stats.range, t.preview ? t.preview.range : null);
+      if (t.stats.slow > 0 || (t.preview && t.preview.slow > 0)) {
+        stat('slow ', `${t.stats.slow}t`, t.preview ? `${t.preview.slow}t` : null);
+      }
+      y++;
+      term.write(0, y++, 'priority', role('ui.dim'));
+      let px = 0;
+      let prow = y;
+      for (const p of PRIORITIES) {
+        const label = PRIORITY_LABEL[p];
+        if (px + label.length > W) {
+          px = 0;
+          prow++;
+        }
+        term.write(px, prow, label, p === t.priority ? role('ui.accent') : role('ui.dim'));
+        this.regions.push({ row: prow, x0: px, x1: px + label.length, action: { kind: 'priority', value: p } });
+        px += label.length + 1;
+      }
+      y = prow + 2;
+      // ---- the tree: tiers as rows, choices as boxes ----------------------
+      term.write(0, y++, 'UPGRADES', role('ui.dim'));
       t.tiers.forEach((tier, ti) => {
-        term.write(x, 2, `T${ti + 1}`, role('ui.dim'));
-        x += 3;
+        term.write(0, y, `T${ti + 1}`, role('ui.dim'));
+        y++;
         tier.choices.forEach((c, ci) => {
-          const label = c.state === 'chosen' ? `[${c.name} \u2713]` : `[${c.name} $${c.cost}]`;
+          const label = c.state === 'chosen' ? ` [${c.name}] *` : ` [${c.name} $${c.cost}]`;
           const colour =
             c.state === 'chosen'
               ? role('ui.accent')
@@ -148,45 +197,32 @@ export class HudPanel {
                   ? role('ui.text')
                   : role('ui.dim')
                 : role('ui.grid');
-          term.write(x, 2, label, colour);
+          term.write(0, y, label, colour);
           if (c.state === 'available') {
-            this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'choose', tier: ti, option: ci } });
+            this.regions.push({ row: y, x0: 0, x1: Math.max(label.length, 20), action: { kind: 'choose', tier: ti, option: ci } });
           }
-          x += label.length + 1;
+          y++;
         });
-        x += 2;
       });
+      term.write(0, y + 1, 'X sells (70% back)', role('ui.dim'));
     } else {
-      let x = 0;
-      term.write(x, 2, 'build: ', role('ui.dim'));
-      x += 7;
-      s.palette.forEach((item, index) => {
-        const marker = index === s.selectedBuild ? '>' : ' ';
-        const label = `${marker}${item.name} $${item.cost}`;
-        term.write(
-          x,
-          2,
-          label,
-          index === s.selectedBuild ? role('ui.accent') : item.affordable ? role('ui.text') : role('ui.dim'),
-        );
-        this.regions.push({ row: 2, x0: x, x1: x + label.length, action: { kind: 'build', index } });
-        x += label.length + 3;
-      });
-      term.write(
-        x,
-        2,
-        s.buildTargetSelected ? '<- click a tower to build on the selected tile' : '(select a tile, then pick a tower here)',
-        s.buildTargetSelected ? role('ui.accent') : role('ui.dim'),
-      );
+      // Cell inspector, wrapped to panel width.
+      const words = s.inspector.split(' ');
+      let line = '';
+      for (const w of words) {
+        if ((line + ' ' + w).trim().length > W) {
+          term.write(0, y++, line.trim(), role('ui.text'));
+          line = w;
+        } else {
+          line = line + ' ' + w;
+        }
+      }
+      if (line.trim()) term.write(0, y++, line.trim(), role('ui.text'));
     }
 
-    // Row 3 - help.
-    term.write(
-      0,
-      3,
-      'space pause \u00b7 1/2/3 speed \u00b7 click build/select \u00b7 F/L/C/W or click priority \u00b7 X sell \u00b7 G seams \u00b7 R new map \u00b7 Esc deselect',
-      role('ui.dim'),
-    );
+    // ---- help footer -------------------------------------------------------
+    const help = ['space pause \u00b7 1/2/3 speed', 'F/L/C/W priority \u00b7 X sell', 'G seams \u00b7 R new map', 'Esc deselect'];
+    help.forEach((h, i) => term.write(0, term.rows - help.length + i, h, role('ui.dim')));
 
     term.flush();
   }
