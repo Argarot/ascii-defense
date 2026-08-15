@@ -12,16 +12,19 @@ colour and no pixel — those live in [ASSETS.md](ASSETS.md) and in data files.
 A roguelite tower defense game in the browser. Everything — terrain, towers,
 enemies, effects, menus — is drawn as characters on a grid.
 
-**You build the map, then defend it.** Most of the board starts empty. Every few
-waves you lay a terrain tile from a drafted hand, extending the road, opening
-buildable ground, and pushing the enemy spawn further away. When you run out of
-room to expand, the run is effectively over.
+**The game generates the battlefield; you defend the Core.** At run start the
+map is assembled from terrain tiles: the Core near the middle, roads winding
+from the board edges to it, terrain and ore filling the rest. Every open road
+end is an entry — enemies march from all of them toward the Core. Map shape is
+the difficulty dial (§4.4), and the tile pool itself is meta progression: you
+unlock richer terrain tiles between runs, and eventually author your own
+(§10). *(Pivoted 2026-08-15 from player tile-laying — see §13.)*
 
 ## 2. Design pillars
 
 | Pillar | Means | Rules out |
 |---|---|---|
-| **You author the map** | Tile-laying is the core decision, not a side system | Procedurally generated levels you merely react to |
+| **The map is the difficulty dial** | Entries, path length and terrain mix are the knobs the game turns; the tile pool is meta progression the player curates and eventually authors | Hand-designed fixed levels; player tile-laying mid-run |
 | **Invalid states are unrepresentable** | Connector matching guarantees a connected road; road cells are never buildable | Runtime "is this still solvable?" checks |
 | **Every placement is a build decision** | Deep evolution trees with a hard crosspathing limit | "Buy the best tower, spam it" |
 | **Every run is reproducible** | A run is a seed plus an input log | Non-deterministic simulation |
@@ -52,8 +55,12 @@ authored in glyph grids and the aspect is absorbed by the cell shape.
 | **Road** | yes | **never** | The route. Never buildable, ever. |
 | **Ground** | yes | yes | Where towers go |
 | **Rock** | no | no | Blocked |
-| **Ore** | yes | yes | Buildable; a Refinery here mines Ore |
-| **Spawn** | yes | no | Enemy entry point |
+| **Ore** | yes | yes | Buildable; a Refinery here mines Ore. Generation places ore richer the farther from the road — reach vs. greed |
+| **Core** | yes | no | The Core's own cells, center of its tile. What enemies march toward |
+
+*(The former Spawn cell type is gone: entries are **derived** — an open road
+end at the board edge is a spawn point, the same philosophy as derived
+connectors. Nothing declares a spawn; the map's shape simply has them.)*
 
 ### 4.2 Tiles and connectors
 
@@ -69,42 +76,67 @@ content CI and the authoring tool): roads touch edges only at centers; all
 road/spawn cells form one connected group; a road that exists reaches at least
 one edge; spawns are interior cells.
 
-Placement legality: every shared edge agrees (both road, or both not); a
-connector may not face off the board — roads to nowhere are unrepresentable;
-in-game, a tile must touch the existing landmass, and **a road-carrying tile
-must join the existing road** (≥1 matched road edge), so the network stays one
-component growing from the spawn. Roadless scenery tiles need only contact.
+Assembly legality: every interior shared edge agrees (both road, or both not);
+a road may cross the **board** edge only where generation routed an entry —
+those crossings are the spawn points. The road network is one component
+containing the Core, because generation carves paths outward from the Core and
+tiles them; roadless terrain fills the rest.
 
 **Connectivity therefore holds by construction.** The game never validates that
-a path exists, because a disconnected board cannot be built. This is the same
+a path exists, because a disconnected map cannot be assembled. This is the same
 class of guarantee as "road is never buildable", and both are load-bearing.
 
-### 4.3 Buildable density is unresolved
+### 4.3 Map generation
 
-A full board is ~135 tiles × 25 cells = **~3,400 cells**. If most are ground,
-that is roughly 2,000 tower slots — an order of magnitude more than a tower
-defense wants. A TD is interesting at tens of towers, not thousands.
+At run start, seeded from the run seed (stream `map`):
 
-**This must be resolved before M1 Phase 4.** Options, not exclusive:
+1. The **Core tile** is placed near the board center.
+2. **Paths are carved** from the Core to the board edge — `entries` of them,
+   winding until each reaches `targetPathLength` before it may exit. Where a
+   path leaves the board is an entry.
+3. Each road slot becomes a tile whose **connector signature** matches the
+   carved topology, drawn from the unlocked tile pool.
+4. Remaining slots fill with roadless terrain from the pool; **ore likelihood
+   rises with distance from the road**.
 
-- Tiles carry far fewer ground cells — mostly road, rock and impassable scenery,
-  with a handful of buildable spots each. This is the likeliest answer and is
-  purely a content change to the tile library.
-- Towers cost enough that Scrap, not space, is the binding constraint.
-- A hard cap on simultaneous towers.
+The generator only produces maps; it never checks them. Whether a map is
+*interesting* is a content question (which tiles are in the pool) and a knob
+question (§4.4), not a validity question.
 
-The first is preferred because it needs no new mechanic and makes tile choice
-matter more: *"how many build spots does this tile give me"* becomes a reason to
-pick one tile over another.
+### 4.4 Map parameters are the difficulty dial
 
-### 4.4 The board is the run length
+Difficulty is shaped by the generator's knobs, not by authoring levels:
 
-Board size × waves-per-tile = run length. At 135 tile slots and one tile every
-two waves, a full board is a ~270-wave run; a smaller board is a shorter run.
+- **More entries → harder.** Each entry is a front; attention and coverage
+  divide.
+- **Longer paths → easier.** More time on the road is more time under fire.
+  The difficulty model already offsets road length sub-linearly (§8's `L`).
+- **Terrain mix** — buildable ground near the road, ore far from it, rock in
+  the way — tunes how comfortable a map is, and comes from the tile pool.
 
-**Run length is tuned by resizing the board**, which is one number, rather than
-by authoring content. Difficulty must rise such that a player who fills the
-board is comprehensively unable to hold it.
+Buildable density (formerly open question D1) is resolved by the same knobs:
+the generator decides how much ground exists and where, so "tens of towers,
+not thousands" is a generation target, tuned as data.
+
+### 4.5 The Core
+
+The Core is a special tile placed near the board center; its center cells are
+Core cells; roads attach to its connectors. Mechanically:
+
+- **The Core has health.** Each enemy that reaches it deals its `damage`
+  parameter — bigger and later-wave enemies carry bigger numbers. Health can
+  be restored or increased during a run (mechanisms deliberately open).
+  Health reaching zero ends the run.
+- **The Core is itself a tower** — with its own progression tree, unusually
+  broad at the root: branches like gunner, mortar, slow-field, **miner**. On
+  choosing a branch the others lock for the run, so the choice is a build
+  identity, not a shopping list.
+- **Core upgrades are paid in the cheapest meta-currency tier (Ore t1), never
+  Scrap** — the Core does not compete with towers for the run economy; it
+  competes with the tech tree for your banked Ore. *(Consequence, recorded:
+  Ore mined in-run and spent on the Core buys combat power, so §6's "mining
+  is not offset" rule gains an explicit exception — the calibration model
+  must account for Core investment. Accepted 2026-08-15.)*
 
 ## 5. Towers
 
@@ -124,7 +156,7 @@ brightness — never the footprint.
 
 ### 5.3 Families
 
-M1 ships the first four. Target is **8 towers + Wall**, not 14.
+M1 ships the first four. Target is **8 towers + the Core**, not 14.
 
 | Tower | Role | Path A | Path B | Path C | Milestone |
 |---|---|---|---|---|---|
@@ -138,23 +170,21 @@ M1 ships the first four. Target is **8 towers + Wall**, not 14.
 | Bastion | buff aura | Command | Logistics | Fortify | M4 |
 | Rail Lance | long-range line pierce | Focus | Penetration | Overwatch | M4 |
 
-**The Wall is unresolved and must be decided before M1 Phase 4.** It existed to
-make mazing cost money — you spent Scrap to lengthen the enemy path. Tile-laying
-replaced mazing entirely: the road now comes from tiles, and a wall on ground
-blocks nothing. As specified it is a tower that does nothing.
+**The Wall is CUT** *(resolved 2026-08-15, formerly decision D2)*. Its original
+job (paid mazing) died with player tile-laying; its fallback job (flyer
+blocker) died with flyers (§7); ground denial is meaningless when no enemy
+leaves the road. A tower with no job is not content, it is clutter.
 
-Three options, in order of preference:
-
-1. **Cut it.** Simplest. Mazing lives in tile placement now.
-2. **Repurpose as a blocker for *flyers*** — a tall obstruction that forces
-   flying enemies to divert. Gives the flying trait a counter it currently lacks.
-3. **Repurpose as a cheap ground-denial piece** that occupies a cell so enemies
-   with off-road behaviour cannot cross it. Only meaningful if such enemies exist.
+**The Core is the fifth M1 "tower"** — see §4.5. Its branch tree (gunner /
+mortar / slow-field / miner, one branch locks the rest) is authored as tower
+content in the same format; what makes it special is its funding (Ore, not
+Scrap) and that it is placed by the generator, not the player.
 
 ## 6. Economy
 
-**Scrap** funds the run. **Ore** is meta-only, banks at run's end, and buys tech
-tree nodes. Ore is never spendable during a run.
+**Scrap** funds the run. **Ore** banks at run's end and buys tech tree nodes.
+The one in-run Ore sink is the **Core** (§4.5) — towers are Scrap, the Core is
+Ore, so they never compete for the same pool.
 
 The **Refinery** is the one two-path tower. Yield produces Scrap anywhere;
 Extraction produces Ore but only on an ore cell. Site selection is therefore a
@@ -165,22 +195,28 @@ wave budgets are never reduced to compensate for mining. Compensating would
 refund the cost that makes the decision matter.
 
 > **The general rule:** the difficulty model offsets choices that increase
-> combat power, and ignores choices that do not. Mining buys no combat power, so
-> it is not offset. Lengthening the road does, so it is offset — sub-linearly.
+> combat power, and ignores choices that do not. Longer roads increase power
+> (more time under fire), so `L` is offset — sub-linearly. **Known exception:**
+> Ore routed into the Core buys combat power; calibration must model some
+> Core investment rather than pretending mining is inert (§4.5, accepted
+> 2026-08-15).
 
 Ore is stored **per tier** from day one, shipping with one tier active, so
 richer ore later is content rather than a save migration.
 
 ## 7. Enemies
 
-Start narrow: **two damage types** (Kinetic, Energy) and **five traits** —
-`armoured`, `shielded`, `fast`, `flying`, `swarm`. Each trait poses a counter
-question. Flyers ignore the road entirely and are the structural answer to
-over-extending the path.
+Start narrow: **two damage types** (Kinetic, Energy) and **four traits** —
+`armoured`, `shielded`, `fast`, `swarm`. Each trait poses a counter question.
+Every enemy carries a **`damage` parameter** — what it costs the Core's health
+on a breach — scaling with size and wave number.
+
+**Flyers are cut** *(Daniil, 2026-08-15)*: their structural job (punishing
+over-extension) vanished with player tile-laying, and nobody here likes them.
+All enemies follow the road; there is exactly one flow field.
 
 M1 ships six enemies across that matrix. Traits expand only once the small
-matrix is proven; a 4×11 matrix is 44 interactions and is where balance bugs
-breed.
+matrix is proven; a wide matrix is where balance bugs breed.
 
 ## 8. Difficulty: calibrated, not derived
 
@@ -220,9 +256,17 @@ Ore buys a tech tree, staged and gated behind the core loop being fun.
 
 | Stage | Grants | When |
 |---|---|---|
-| 1 | ~5 nodes: a tower, a starting relic, +1 draft option, Threat Level 2 | M3 |
-| 2 | Full tree: five disciplines, alternate tier-5s, capped economy nodes | M4+ |
+| 1 | ~5 nodes: a tower, a starting relic, **+1 terrain tile unlock**, Threat Level 2 | M3 |
+| 2 | Full tree: five disciplines, alternate tier-5s, capped economy nodes, **terrain tile pool expansion** | M4+ |
 | 3 | Potency nodes — permanent stat increases | optional |
+
+**Map authorship lives here.** Unlocking terrain tiles enriches what the
+generator can build — the player curates the world their runs happen in. The
+endgame of that arc: once every pre-made tile is unlocked, **Tile Smith opens
+in-game** — after a run, spend meta-currency to author your own tile (the
+same tool, the same engine legality, already built) and add it to the pool.
+The "you author the map" identity from the original design survives, one
+level up. *(Daniil, 2026-08-15.)*
 
 Stage 3 makes `metaPowerIndex` a real variable, at which point the harness must
 validate `seeds × meta tiers`. That multiplies CI time for every balance change,
@@ -259,11 +303,23 @@ Recorded so they are not re-proposed:
 - **Block elements as the main visual tool.** Rejected on taste; also moot,
   since spleen has none.
 - **CP437 / Dwarf Fortress idiom.** Rejected on aesthetics.
-- **Sub-tile walls.** Rejected; tile-laying supplies mazing granularity instead.
-- **Bypass / shortcut zones.** Superseded by tile-laying. The path is explicit
+- **Sub-tile walls.** Rejected; tile granularity supplies the mazing detail.
+- **Bypass / shortcut zones.** Superseded by tiles. The path is explicit
   from tiles rather than emergent from a cost field.
 - **Growth-on-upgrade footprints.** Bought one visual moment for a whole class
   of failure modes.
+- **Player tile-laying during the run** *(2026-08-15)*. Was pillar #1; cut
+  because it converged on being an ASCII Tower Dominion. The tile system it
+  produced (derived connectors, legality, Tile Smith) survives wholesale in
+  the map generator and in meta progression (§10) — the *mechanic* was cut,
+  not the machinery. If reconsidered, that machinery makes it a content
+  change, not a rewrite.
+- **Flyers** *(2026-08-15)*. Their structural job (punishing over-extension)
+  died with tile-laying, and Daniil hates them. One flow field, all enemies
+  on the road.
+- **The Wall** *(2026-08-15, was D2)*. Every candidate job died: paid mazing
+  (no player laying), flyer blocking (no flyers), ground denial (no off-road
+  enemies).
 
 ## 14. Out of scope
 
@@ -271,11 +327,11 @@ Mobile/touch · multiplayer · sound · accounts or cloud saves · a terminal bu
 
 ## 15. Acceptance criteria
 
-**M1 — the fun test.** Lay tiles, build and upgrade towers across waves on one
-board, win or lose. Daniil plays it and says whether it is fun.
+**M1 — the fun test.** A generated map; build and upgrade towers across waves;
+defend the Core; win or lose. Daniil plays it and says whether it is fun.
 
-**M2 — a complete run.** Full board, escalating waves, drafts, Ore banking,
-save/resume.
+**M2 — a complete run.** Full difficulty arc, escalating waves, Core branches,
+Ore banking, save/resume.
 
 **M3 — trustworthy difficulty.** Calibrated curves; harness catches injected
 regressions; no unwinnable or trivial seed across ≥500 runs. Tech tree stage 1.
