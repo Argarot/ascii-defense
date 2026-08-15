@@ -54,20 +54,24 @@ export interface TowerRoster {
         slowTicks?: number;
       };
       /**
-       * Three upgrade paths of five tiers (PRD 5.2). Crosspathing (one path to 5, a second to 2, the third stays 0) is enforced by the engine, not here.
+       * projectile fires shots; pulse hits everything in range on cooldown (no projectile).
+       */
+      attack?: 'projectile' | 'pulse';
+      /**
+       * Tower Dominion-style tree: 3 tiers, each an either/or choice, mutually exclusive, unlocked in order. 2+4+8 = 14 tower variants.
        *
        * @minItems 3
        * @maxItems 3
        */
-      paths?: [
+      tiers?: [
         {
-          name: string;
           /**
-           * @minItems 5
-           * @maxItems 5
+           * @minItems 2
+           * @maxItems 2
            */
-          tiers: [
+          choices: [
             {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -78,36 +82,7 @@ export interface TowerRoster {
               };
             },
             {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -120,13 +95,13 @@ export interface TowerRoster {
           ];
         },
         {
-          name: string;
           /**
-           * @minItems 5
-           * @maxItems 5
+           * @minItems 2
+           * @maxItems 2
            */
-          tiers: [
+          choices: [
             {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -137,36 +112,7 @@ export interface TowerRoster {
               };
             },
             {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -179,13 +125,13 @@ export interface TowerRoster {
           ];
         },
         {
-          name: string;
           /**
-           * @minItems 5
-           * @maxItems 5
+           * @minItems 2
+           * @maxItems 2
            */
-          tiers: [
+          choices: [
             {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -196,36 +142,7 @@ export interface TowerRoster {
               };
             },
             {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -283,20 +200,24 @@ export interface TowerRoster {
         slowTicks?: number;
       };
       /**
-       * Three upgrade paths of five tiers (PRD 5.2). Crosspathing (one path to 5, a second to 2, the third stays 0) is enforced by the engine, not here.
+       * projectile fires shots; pulse hits everything in range on cooldown (no projectile).
+       */
+      attack?: 'projectile' | 'pulse';
+      /**
+       * Tower Dominion-style tree: 3 tiers, each an either/or choice, mutually exclusive, unlocked in order. 2+4+8 = 14 tower variants.
        *
        * @minItems 3
        * @maxItems 3
        */
-      paths?: [
+      tiers?: [
         {
-          name: string;
           /**
-           * @minItems 5
-           * @maxItems 5
+           * @minItems 2
+           * @maxItems 2
            */
-          tiers: [
+          choices: [
             {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -307,36 +228,7 @@ export interface TowerRoster {
               };
             },
             {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -349,13 +241,13 @@ export interface TowerRoster {
           ];
         },
         {
-          name: string;
           /**
-           * @minItems 5
-           * @maxItems 5
+           * @minItems 2
+           * @maxItems 2
            */
-          tiers: [
+          choices: [
             {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -366,36 +258,7 @@ export interface TowerRoster {
               };
             },
             {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -408,13 +271,13 @@ export interface TowerRoster {
           ];
         },
         {
-          name: string;
           /**
-           * @minItems 5
-           * @maxItems 5
+           * @minItems 2
+           * @maxItems 2
            */
-          tiers: [
+          choices: [
             {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -425,36 +288,7 @@ export interface TowerRoster {
               };
             },
             {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
-              cost: number;
-              mods?: {
-                damage?: number;
-                range?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-              };
-            },
-            {
+              name: string;
               cost: number;
               mods?: {
                 damage?: number;
@@ -585,33 +419,41 @@ export const towersSchema = {
               }
             }
           },
-          "paths": {
-            "description": "Three upgrade paths of five tiers (PRD 5.2). Crosspathing (one path to 5, a second to 2, the third stays 0) is enforced by the engine, not here.",
+          "attack": {
+            "description": "projectile fires shots; pulse hits everything in range on cooldown (no projectile).",
+            "enum": [
+              "projectile",
+              "pulse"
+            ],
+            "default": "projectile"
+          },
+          "tiers": {
+            "description": "Tower Dominion-style tree: 3 tiers, each an either/or choice, mutually exclusive, unlocked in order. 2+4+8 = 14 tower variants.",
             "type": "array",
             "minItems": 3,
             "maxItems": 3,
             "items": {
               "type": "object",
               "required": [
-                "name",
-                "tiers"
+                "choices"
               ],
               "additionalProperties": false,
               "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "tiers": {
+                "choices": {
                   "type": "array",
-                  "minItems": 5,
-                  "maxItems": 5,
+                  "minItems": 2,
+                  "maxItems": 2,
                   "items": {
                     "type": "object",
                     "required": [
+                      "name",
                       "cost"
                     ],
                     "additionalProperties": false,
                     "properties": {
+                      "name": {
+                        "type": "string"
+                      },
                       "cost": {
                         "type": "number",
                         "minimum": 0

@@ -49,7 +49,7 @@ export interface ProjectileSpec {
   slowTicks?: number;
 }
 
-/** Additive stat deltas an upgrade tier applies. */
+/** Additive stat deltas an upgrade choice applies. */
 export interface StatMods {
   damage?: number;
   range?: number;
@@ -58,14 +58,15 @@ export interface StatMods {
   slowTicks?: number;
 }
 
-export interface TierDef {
+export interface ChoiceDef {
+  name: string;
   cost: number;
   mods?: StatMods;
 }
 
-export interface TowerPathDef {
-  name: string;
-  tiers: readonly TierDef[];
+/** One tier: an either/or, mutually exclusive choice (Tower Dominion style). */
+export interface TowerTierDef {
+  choices: readonly ChoiceDef[];
 }
 
 export interface TowerDef {
@@ -75,12 +76,14 @@ export interface TowerDef {
   /** Cells. */
   range: number;
   fireEveryTicks: number;
+  /** 'projectile' fires shots; 'pulse' hits everything in range on cooldown. */
+  attack?: 'projectile' | 'pulse';
   projectile: ProjectileSpec;
-  /** Three upgrade paths of five tiers (PRD 5.2). */
-  paths?: readonly TowerPathDef[];
+  /** 3 tiers x 2 exclusive choices = 14 tower variants (Daniil's redesign). */
+  tiers?: readonly TowerTierDef[];
 }
 
-/** The stats a tower actually fights with after its upgrades fold in. */
+/** The stats a tower actually fights with after its choices fold in. */
 export interface EffectiveStats {
   damage: number;
   range: number;
@@ -90,20 +93,18 @@ export interface EffectiveStats {
 }
 
 /**
- * PRD 5.2 crosspathing: one path may reach tier 5, a second tier 2, the
- * third stays at 0. Pure - the HUD greys out exactly what this refuses.
+ * Tiered either/or progression: tier t opens once tier t-1 is chosen; a
+ * chosen tier is final (mutually exclusive with its sibling). Pure - the
+ * HUD's locked/available states come from this same function.
  */
-export function canUpgrade(tiers: readonly [number, number, number], path: number): boolean {
-  if (path < 0 || path > 2) return false;
-  const next: [number, number, number] = [...tiers] as [number, number, number];
-  next[path]++;
-  if (next[path] > 5) return false;
-  const sorted = [...next].sort((a, b) => b - a);
-  return sorted[1] <= 2 && sorted[2] === 0;
+export function canChoose(choices: readonly number[], tier: number): boolean {
+  if (tier < 0 || tier >= 3) return false;
+  if (choices[tier] !== -1) return false; // already committed
+  return tier === 0 || choices[tier - 1] !== -1;
 }
 
-/** Fold a tower's base stats and its taken tiers into what it fights with. */
-export function effectiveStats(def: TowerDef, tiers: readonly [number, number, number]): EffectiveStats {
+/** Fold a tower's base stats and its committed choices. */
+export function effectiveStats(def: TowerDef, choices: readonly number[]): EffectiveStats {
   const out: EffectiveStats = {
     damage: def.projectile.damage,
     range: def.range,
@@ -111,16 +112,16 @@ export function effectiveStats(def: TowerDef, tiers: readonly [number, number, n
     explodeRadius: def.projectile.explodeRadius ?? 0,
     slowTicks: def.projectile.slowTicks ?? 0,
   };
-  def.paths?.forEach((p, pi) => {
-    for (let t = 0; t < tiers[pi]; t++) {
-      const m = p.tiers[t]?.mods;
-      if (!m) continue;
-      out.damage += m.damage ?? 0;
-      out.range += m.range ?? 0;
-      out.fireEveryTicks += m.fireEveryTicks ?? 0;
-      out.explodeRadius += m.explodeRadius ?? 0;
-      out.slowTicks += m.slowTicks ?? 0;
-    }
+  def.tiers?.forEach((tierDef, ti) => {
+    const pick = choices[ti];
+    if (pick === undefined || pick < 0) return;
+    const m = tierDef.choices[pick]?.mods;
+    if (!m) return;
+    out.damage += m.damage ?? 0;
+    out.range += m.range ?? 0;
+    out.fireEveryTicks += m.fireEveryTicks ?? 0;
+    out.explodeRadius += m.explodeRadius ?? 0;
+    out.slowTicks += m.slowTicks ?? 0;
   });
   out.fireEveryTicks = Math.max(2, out.fireEveryTicks);
   return out;

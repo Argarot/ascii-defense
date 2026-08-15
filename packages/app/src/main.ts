@@ -135,8 +135,8 @@ async function main(): Promise<void> {
 
   const draw = (): void => {
     const speed = SPEEDS[speedIdx];
-    const towers: { x: number; y: number }[] = [];
-    for (const t of sim.towers) if (t) towers.push({ x: t.cellX, y: t.cellY });
+    const towers: { x: number; y: number; id: string }[] = [];
+    for (const t of sim.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: sim.towerDef(t).id });
     const projectiles: { x: number; y: number }[] = [];
     for (let i = 0; i < sim.projX.length; i++) {
       if (sim.projAlive[i]) projectiles.push({ x: sim.projX[i], y: sim.projY[i] });
@@ -162,6 +162,10 @@ async function main(): Promise<void> {
       showGrid,
       telegraph: sim.nextWaveEntries,
       gameOver: sim.status === 'lost',
+      pulses: sim.pulses
+        .map((pu) => ({ x: pu.x, y: pu.y, r: pu.r, age01: (sim.tickCount - pu.tick) / 10 }))
+        .filter((pu) => pu.age01 >= 0 && pu.age01 <= 1),
+      phase: animPhase,
     });
 
     const hoverTower = hover ? sim.towerAt(hover.x, hover.y) : null;
@@ -196,15 +200,19 @@ async function main(): Promise<void> {
               dps: ((eff.damage / eff.fireEveryTicks) * TICK_HZ).toFixed(1),
               range: eff.range,
               priority: infoTower.priority,
-              paths: (def.paths ?? []).map((p, pi) => {
-                const cost = sim.upgradeCost(infoTower, pi);
-                return {
-                  name: p.name,
-                  tier: infoTower.tiers[pi],
-                  cost,
-                  affordable: cost !== null && sim.scrap >= cost,
-                };
-              }),
+              tiers: (def.tiers ?? []).map((tierDef, ti) => ({
+                choices: tierDef.choices.map((c, ci) => {
+                  const chosen = infoTower.choices[ti] === ci;
+                  const rejected = infoTower.choices[ti] !== -1 && !chosen;
+                  const available = sim.choiceCost(infoTower, ti, ci) !== null;
+                  return {
+                    name: c.name,
+                    cost: c.cost,
+                    state: chosen ? ('chosen' as const) : rejected ? ('rejected' as const) : available ? ('available' as const) : ('locked' as const),
+                    affordable: sim.scrap >= c.cost,
+                  };
+                }),
+              })),
             }
           : null,
     });
@@ -247,7 +255,7 @@ async function main(): Promise<void> {
     if (!action) return;
     if (action.kind === 'build') selectedBuild = action.index;
     if (action.kind === 'priority' && selected) sim.setPriority(selected.x, selected.y, action.value);
-    if (action.kind === 'upgrade' && selected) sim.upgradeTower(selected.x, selected.y, action.path);
+    if (action.kind === 'choose' && selected) sim.chooseTier(selected.x, selected.y, action.tier, action.option);
     dirty = true;
   });
   term.canvas.addEventListener('click', (e) => {
@@ -293,17 +301,23 @@ async function main(): Promise<void> {
   // clamped so a backgrounded tab does not fast-forward on return.
   let last = performance.now();
   let acc = 0;
+  let animPhase = 0;
   const frame = (now: number): void => {
     const dt = Math.min(now - last, 250);
     last = now;
     acc += dt * SPEEDS[speedIdx];
+    animPhase = (now / 900) % 1; // breathing UI, independent of sim speed
     let ran = 0;
     while (acc >= TICK_MS && ran < 32) {
       sim.tick();
       acc -= TICK_MS;
       ran++;
     }
-    if (ran > 0 || dirty) draw();
+    // Redraw every frame: telegraphs breathe and pulses expand even while
+    // the player thinks; the renderer costs well under a millisecond.
+    draw();
+    void ran;
+    void dirty;
     requestAnimationFrame(frame);
   };
 

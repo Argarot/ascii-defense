@@ -214,39 +214,34 @@ describe('towers and projectiles', () => {
     expect(sim2.scrap).toBe(45 - 20 + sim2.kills * 5);
   });
 
-  it('upgrades: cost gates, crosspath enforced, stats change, sell refunds tiers', () => {
+  it('choices: cost gates, order enforced, exclusive, stats change, sell refunds', () => {
     const { cells, cellsW, cellsH, simOpts } = makeWorld(41, { startingScrap: 500 });
-    const BOLTP: TowerDef = {
+    const BOLTT: TowerDef = {
       ...BOLT,
-      paths: [
-        { name: 'A', tiers: [{ cost: 10, mods: { damage: 4 } }, { cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }] },
-        { name: 'B', tiers: [{ cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }] },
-        { name: 'C', tiers: [{ cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }, { cost: 10 }] },
+      tiers: [
+        { choices: [{ name: 'A1', cost: 10, mods: { damage: 4 } }, { name: 'B1', cost: 10 }] },
+        { choices: [{ name: 'A2', cost: 20 }, { name: 'B2', cost: 20 }] },
+        { choices: [{ name: 'A3', cost: 40 }, { name: 'B3', cost: 40 }] },
       ],
     };
-    const sim = new Sim(41, { ...simOpts, towerDefs: [BOLTP] });
+    const sim = new Sim(41, { ...simOpts, towerDefs: [BOLTT] });
     const spot = buildSpotNear(cells, cellsW, cellsH);
     sim.buildTower(spot.x, spot.y, 'bolt');
     const t = sim.towerAt(spot.x, spot.y)!;
 
-    expect(sim.stats(t).damage).toBe(6); // BOLT damage in tests
-    expect(sim.upgradeTower(spot.x, spot.y, 0)).toBe(true);
+    expect(sim.stats(t).damage).toBe(6); // BOLT test damage
+    expect(sim.chooseTier(spot.x, spot.y, 1, 0)).toBe(false); // tier 2 locked
+    expect(sim.chooseTier(spot.x, spot.y, 0, 0)).toBe(true);
     expect(sim.stats(t).damage).toBe(10);
+    expect(sim.chooseTier(spot.x, spot.y, 0, 1)).toBe(false); // committed = final
+    expect(sim.chooseTier(spot.x, spot.y, 1, 1)).toBe(true);
+    expect(sim.chooseTier(spot.x, spot.y, 2, 0)).toBe(true);
+    expect(t.choices).toEqual([0, 1, 0]);
 
-    // Crosspath: push path 0 to 3, path 1 to 2, then path 1 tier 3 refuses
-    // and path 2 refuses outright.
-    sim.upgradeTower(spot.x, spot.y, 0);
-    sim.upgradeTower(spot.x, spot.y, 0);
-    sim.upgradeTower(spot.x, spot.y, 1);
-    sim.upgradeTower(spot.x, spot.y, 1);
-    expect(t.tiers).toEqual([3, 2, 0]);
-    expect(sim.upgradeTower(spot.x, spot.y, 1)).toBe(false);
-    expect(sim.upgradeTower(spot.x, spot.y, 2)).toBe(false);
-
-    // Sell refunds 70% of base + all tier spend: (20 + 50) * 0.7 = 49.
+    // Sell refunds 70% of base + all committed choices: (20+10+20+40)*0.7 = 63.
     const before = sim.scrap;
     sim.sellTower(spot.x, spot.y);
-    expect(sim.scrap).toBe(before + 49);
+    expect(sim.scrap).toBe(before + 63);
   });
 
   it('waves mode: composition respects minWave, Core falls, sim freezes', () => {
@@ -328,6 +323,49 @@ describe('towers and projectiles', () => {
         expect(sim.hp[i]).toBeLessThan(10000);
         expect(sim.hp[i]).toBeGreaterThan(0);
         expect((10000 - sim.hp[i]) % 2).toBe(0); // only 2s ever landed on hp
+        checked = true;
+      }
+    }
+    expect(checked).toBe(true);
+  });
+
+  it('pulse towers hit everything in range on cooldown, no projectiles', () => {
+    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const PULSER: TowerDef = {
+      id: 'bolt',
+      cost: 20,
+      range: 8,
+      fireEveryTicks: 10,
+      attack: 'pulse',
+      projectile: { damage: 3, speed: 1, applyEffect: 'slow', slowMul: 0.5, slowTicks: 20 },
+    };
+    const parked = { ...WALKER, hp: 10000, speed: 0.005 };
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [PULSER] });
+    for (const entry of map.entries) {
+      for (let dy = -3; dy <= 3; dy++) {
+        let placed = false;
+        for (let dx = -3; dx <= 3; dx++) {
+          const x = entry.x + dx;
+          const y = entry.y + dy;
+          if (x >= 0 && y >= 0 && x < cellsW && y < cellsH && sim.canBuildAt(x, y)) {
+            if (sim.buildTower(x, y, 'bolt')) placed = true;
+            break;
+          }
+        }
+        if (placed) break;
+      }
+    }
+    for (let t = 0; t < 300; t++) sim.tick();
+    // No projectiles ever; damage lands in exact pulse-damage multiples.
+    let anyProj = 0;
+    for (let i = 0; i < sim.projAlive.length; i++) anyProj += sim.projAlive[i];
+    expect(anyProj).toBe(0);
+    expect(sim.pulses.length).toBeGreaterThan(0);
+    let checked = false;
+    for (let i = 0; i < 8; i++) {
+      if (sim.alive[i]) {
+        expect(sim.hp[i]).toBeLessThan(10000);
+        expect((10000 - sim.hp[i]) % 3).toBe(0);
         checked = true;
       }
     }

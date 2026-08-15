@@ -24,10 +24,16 @@ import { CELL_H, CELL_W, drawTerrainCell } from './style';
 
 export { CELL_W, CELL_H } from './style';
 
-// Bolt Turret placeholder art; the real sprite pipeline (Phase 2) replaces
-// this with REXPaint-authored tiers.
-const TOWER_ART = ['.-^-.', '|[O]|', "'---'"];
-const TOWER_CORE = /[O@$8]/;
+// Per-tower placeholder art; the real sprite pipeline (Phase 2) replaces
+// these with REXPaint-authored tiers. Distinct silhouettes so types read at
+// a glance (Daniil).
+const TOWER_ART_BY_ID: Record<string, { art: string[]; coreRole: string }> = {
+  bolt: { art: ['.-^-.', '|[O]|', "'---'"], coreRole: 'path.1' },
+  mortar: { art: [',===.', '|(M)|', "'---'"], coreRole: 'path.2' },
+  frost: { art: ['*~.~*', '<(F)>', '*~.~*'], coreRole: 'enemy.shell' },
+};
+const TOWER_ART_DEFAULT = { art: ['.-^-.', '|[?]|', "'---'"], coreRole: 'path.3' };
+const TOWER_CORE = /[OMF?]/;
 
 // Per-enemy-type look, so the roster is readable on the board. Placeholder
 // until sprites; unknown ids fall back to the classic '@'.
@@ -69,8 +75,8 @@ export interface RenderState {
   /** Walkers in continuous cell units (subcell resolution), with their def id
    *  so each enemy type reads differently on the board. */
   enemies?: readonly { x: number; y: number; id?: string }[];
-  /** Live towers, in cell coordinates. */
-  towers?: readonly { x: number; y: number }[];
+  /** Live towers, in cell coordinates, with their def id for per-type art. */
+  towers?: readonly { x: number; y: number; id?: string }[];
   /** Projectiles in flight, continuous cell units. */
   projectiles?: readonly { x: number; y: number }[];
   /** The hovered cell accepts a build right now (sim's verdict, not ours). */
@@ -83,6 +89,10 @@ export interface RenderState {
   telegraph?: readonly CellRef[];
   /** The Core has fallen; draw the end screen over everything. */
   gameOver?: boolean;
+  /** Expanding pulse rings: age01 runs 0 (just fired) to 1 (full range). */
+  pulses?: readonly { x: number; y: number; r: number; age01: number }[];
+  /** Animation phase 0..1 for breathing UI (telegraphs). */
+  phase?: number;
 }
 
 export class BoardView {
@@ -169,13 +179,34 @@ export class BoardView {
     // Real towers - the demo's fake scatter is gone; every tower drawn here
     // exists in the sim, occupies its cell, and has a kill count.
     for (const t of state.towers ?? []) {
+      const look = (t.id && TOWER_ART_BY_ID[t.id]) || TOWER_ART_DEFAULT;
       const gx0 = t.x * CELL_W;
       const gy0 = offsetY + t.y * CELL_H;
       for (let r = 0; r < CELL_H; r++)
         for (let c = 0; c < CELL_W; c++) {
-          const chr = TOWER_ART[r][c];
+          const chr = look.art[r][c];
           if (chr === ' ' || !term.has(chr)) continue;
-          term.put(gx0 + c, gy0 + r, chr, TOWER_CORE.test(chr) ? role('path.1') : role('tower.frame'), role('tower.ground'));
+          term.put(gx0 + c, gy0 + r, chr, TOWER_CORE.test(chr) ? role(look.coreRole) : role('tower.frame'), role('tower.ground'));
+        }
+    }
+
+    // Pulse rings: each recent emission expands from its tower to full range
+    // and fades - drawn with relative shading so it reads as light, not paint.
+    for (const pu of state.pulses ?? []) {
+      const rNow = pu.r * pu.age01;
+      const band = 0.24;
+      const minGx = Math.max(0, Math.floor((pu.x - rNow - 1) * CELL_W));
+      const maxGx = Math.min(this.cellsW * CELL_W - 1, Math.ceil((pu.x + rNow + 1) * CELL_W));
+      const minGy = Math.max(0, Math.floor((pu.y - rNow - 1) * CELL_H));
+      const maxGy = Math.min(this.cellsH * CELL_H - 1, Math.ceil((pu.y + rNow + 1) * CELL_H));
+      const strength = 1 + 1.4 * (1 - pu.age01);
+      for (let gy = minGy; gy <= maxGy; gy++)
+        for (let gx = minGx; gx <= maxGx; gx++) {
+          const ux = (gx + 0.5) / CELL_W - pu.x;
+          const uy = (gy + 0.5) / CELL_H - pu.y;
+          if (Math.abs(Math.sqrt(ux * ux + uy * uy) - rNow) <= band) {
+            term.shade(gx, offsetY + gy, strength, 0.08);
+          }
         }
     }
 
@@ -239,11 +270,14 @@ export class BoardView {
 
     // Telegraphs: where the next wave will pour in. A loud '!' at each
     // upcoming entry, so repositioning happens before the wave, not during.
+    const breathe = 1.3 + 1.5 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1);
     for (const t of state.telegraph ?? []) {
-      const gx = t.x * CELL_W + 2;
-      const gy = offsetY + t.y * CELL_H + 1;
-      term.put(gx, gy, '!', role('enemy.fast'));
-      term.shade(gx, gy, 1.8, 0.1);
+      const gx = t.x * CELL_W;
+      const gy = offsetY + t.y * CELL_H;
+      term.put(gx + 1, gy + 1, '!', role('enemy.fast'));
+      term.put(gx + 3, gy + 1, '!', role('enemy.fast'));
+      for (let yy = 0; yy < CELL_H; yy++)
+        for (let xx = 0; xx < CELL_W; xx++) term.shade(gx + xx, gy + yy, breathe, 0.12);
     }
 
     // Selection brackets last, over everything: the selected cell's corner

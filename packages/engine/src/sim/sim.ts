@@ -21,7 +21,7 @@ import { isBuildable, type CellType } from '../grid/cells';
 import type { GeneratedMap, CellRef } from '../mapgen/mapgen';
 import { computeFlowField, type FlowField } from './flow';
 import { pickTarget, type Priority, type TargetCandidate } from './targeting';
-import { canUpgrade, effectiveStats, type EffectiveStats, type EnemyDef, type TowerDef } from './defs';
+import { canChoose, effectiveStats, type EffectiveStats, type EnemyDef, type TowerDef } from './defs';
 
 export const TICK_HZ = 20;
 
@@ -51,8 +51,8 @@ export interface Tower {
   cooldown: number;
   kills: number;
   priority: Priority;
-  /** Tiers taken per upgrade path (PRD 5.2). */
-  tiers: [number, number, number];
+  /** Committed choice per tier; -1 = not yet chosen (either/or tree). */
+  choices: [number, number, number];
 }
 
 export const SELL_REFUND = 0.7;
@@ -103,6 +103,8 @@ export class Sim {
   readonly occupancy: Uint16Array;
 
   tickCount = 0;
+  /** Recent pulse emissions for the view's expanding rings. */
+  pulses: { x: number; y: number; r: number; tick: number }[] = [];
   breaches = 0;
   coreDamage = 0;
   spawned = 0;
@@ -169,31 +171,31 @@ export class Sim {
     const def = this.opts.towerDefs[defIdx];
     if (this.scrap < def.cost) return false;
     this.scrap -= def.cost;
-    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, kills: 0, priority: 'first', tiers: [0, 0, 0] });
+    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, kills: 0, priority: 'first', choices: [-1, -1, -1] });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
     return true;
   }
 
-  /** Cost of the tower's next tier on a path, or null if maxed/illegal. */
-  upgradeCost(t: Tower, path: number): number | null {
+  /** Cost of taking a tier's option, or null when locked/committed/absent. */
+  choiceCost(t: Tower, tier: number, option: number): number | null {
     const def = this.opts.towerDefs[t.defIdx];
-    if (!def.paths || !canUpgrade(t.tiers, path)) return null;
-    return def.paths[path].tiers[t.tiers[path]].cost;
+    if (!def.tiers || !canChoose(t.choices, tier)) return null;
+    return def.tiers[tier]?.choices[option]?.cost ?? null;
   }
 
-  upgradeTower(x: number, y: number, path: number): boolean {
+  chooseTier(x: number, y: number, tier: number, option: number): boolean {
     if (this.status !== 'running') return false;
     const t = this.towerAt(x, y);
     if (!t) return false;
-    const cost = this.upgradeCost(t, path);
+    const cost = this.choiceCost(t, tier, option);
     if (cost === null || this.scrap < cost) return false;
     this.scrap -= cost;
-    t.tiers[path]++;
+    t.choices[tier] = option;
     return true;
   }
 
   stats(t: Tower): EffectiveStats {
-    return effectiveStats(this.opts.towerDefs[t.defIdx], t.tiers);
+    return effectiveStats(this.opts.towerDefs[t.defIdx], t.choices);
   }
 
   setPriority(x: number, y: number, priority: Priority): boolean {
@@ -221,10 +223,12 @@ export class Sim {
       // Refund the base cost plus everything sunk into tiers.
       const def = this.opts.towerDefs[tower.defIdx];
       let sunk = def.cost;
-      def.paths?.forEach((p, pi) => {
-        for (let ti = 0; ti < tower.tiers[pi]; ti++) sunk += p.tiers[ti].cost;
+      def.tiers?.forEach((tierDef, ti) => {
+        const pick = tower.choices[ti];
+        if (pick >= 0) sunk += tierDef.choices[pick].cost;
       });
-      this.scrap += Math.floor(sunk * SELL_REFUND);
+      // +epsilon: 90*0.7 is 62.999... in IEEE; the player is owed 63.
+      this.scrap += Math.floor(sunk * SELL_REFUND + 1e-6);
     }
     this.towers[idx - 1] = null;
     this.occupancy[y * this.opts.cellsW + x] = 0;
@@ -279,7 +283,7 @@ export class Sim {
       this.betweenTimer = this.interWaveTicks;
       // Compose the wave: bigger and meaner as numbers grow.
       const waves = this.rng.stream('waves');
-      const count = 6 + 3 * (this.wave - 1);
+      const count = 6 + 4 * (this.wave - 1);
       const available: number[] = [];
       this.opts.enemyDefs.forEach((d, i) => {
         if ((d.minWave ?? 1) <= this.wave) available.push(i);
@@ -290,7 +294,7 @@ export class Sim {
       return;
     }
     if (this.spawnQueue.length > 0 && --this.intraTimer <= 0) {
-      this.intraTimer = 8;
+      this.intraTimer = 6;
       const defIdx = this.spawnQueue.shift()!;
       const entry = this.waveEntries[(this.spawned + this.wave) % this.waveEntries.length];
       this.spawn(entry, defIdx);
@@ -305,7 +309,10 @@ export class Sim {
     this.gen[i]++;
     this.spawned++;
     this.enemyDefIdx[i] = defIdx;
-    this.hp[i] = def.hp;
+    // Waves scale hp steeply: holding wave N with wave N-3's firepower must
+    // fail (Daniil). Trickle mode stays flat for tests.
+    const hpScale = this.mode === 'waves' ? 1 + 0.18 * Math.max(0, this.wave - 1) : 1;
+    this.hp[i] = def.hp * hpScale;
     this.shield[i] = def.shield ?? 0;
     this.slowTicks[i] = 0;
     this.slowMul[i] = 1;
@@ -323,6 +330,16 @@ export class Sim {
       if (!tower) continue;
       if (--tower.cooldown > 0) continue;
       const eff = this.stats(tower);
+      const def = this.opts.towerDefs[tower.defIdx];
+      if (def.attack === 'pulse') {
+        // No projectile: the tower IS the payload. Fires only when someone
+        // is inside the field; hits everyone inside it at once.
+        const any = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, eff.range, 'closest');
+        if (any === -1) continue;
+        tower.cooldown = eff.fireEveryTicks;
+        this.emitPulse(ti, tower, eff);
+        continue;
+      }
       const target = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, eff.range, tower.priority);
       if (target === -1) continue;
       tower.cooldown = eff.fireEveryTicks;
@@ -435,27 +452,53 @@ export class Sim {
 
   /** Armor blunts, shields burn first, slows apply, deaths pay bounties. */
   private damageEnemy(enemy: number, p: number): void {
+    this.applyDamage(enemy, this.projDamage[p], this.projSlowMul[p], this.projSlowTicks[p], this.projTowerIdx[p]);
+  }
+
+  private applyDamage(enemy: number, raw: number, slowMulN: number, slowTicksN: number, towerIdx: number): void {
     if (!this.alive[enemy]) return;
     const def = this.opts.enemyDefs[this.enemyDefIdx[enemy]];
-    let dmg = Math.max(1, this.projDamage[p] - (def.armor ?? 0));
+    let dmg = Math.max(1, raw - (def.armor ?? 0));
     if (this.shield[enemy] > 0) {
       const absorbed = Math.min(this.shield[enemy], dmg);
       this.shield[enemy] -= absorbed;
       dmg -= absorbed;
     }
     this.hp[enemy] -= dmg;
-    if (this.projSlowTicks[p] > 0) {
-      this.slowTicks[enemy] = Math.max(this.slowTicks[enemy], this.projSlowTicks[p]);
-      this.slowMul[enemy] = this.projSlowMul[p];
+    if (slowTicksN > 0) {
+      this.slowTicks[enemy] = Math.max(this.slowTicks[enemy], slowTicksN);
+      this.slowMul[enemy] = slowMulN;
     }
     if (this.hp[enemy] <= 0) {
       this.alive[enemy] = 0;
       this.freeEnemies.push(enemy);
       this.kills++;
       this.scrap += def.bounty ?? 0;
-      const tower = this.towers[this.projTowerIdx[p]];
+      const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
     }
+  }
+
+  private emitPulse(towerIdx: number, tower: Tower, eff: EffectiveStats): void {
+    const spec = this.opts.towerDefs[tower.defIdx].projectile;
+    const cx = tower.cellX + 0.5;
+    const cy = tower.cellY + 0.5;
+    const r2 = eff.range * eff.range;
+    for (let i = 0; i < this.enemyHigh; i++) {
+      if (!this.alive[i]) continue;
+      const dx = this.posX[i] - cx;
+      const dy = this.posY[i] - cy;
+      if (dx * dx + dy * dy > r2) continue;
+      this.applyDamage(
+        i,
+        eff.damage,
+        spec.applyEffect === 'slow' ? (spec.slowMul ?? 0.6) : 0,
+        spec.applyEffect === 'slow' ? eff.slowTicks : 0,
+        towerIdx,
+      );
+    }
+    this.pulses.push({ x: cx, y: cy, r: eff.range, tick: this.tickCount });
+    if (this.pulses.length > 24) this.pulses.shift();
   }
 
   private despawnProj(p: number): void {
