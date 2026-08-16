@@ -469,3 +469,58 @@ describe('production - Refinery and Ore (1.4.6)', () => {
     expect(sim.ore[0]).toBeGreaterThan(0); // it spent the whole time mining
   });
 });
+
+describe('finite ore + the run ends (session 13)', () => {
+  it('a vein depletes, the cell reverts to ground, the refinery goes idle', () => {
+    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
+    const sim = new Sim(11, simOpts);
+    const spot = cellOfType(cells, cellsW, cellsH, 'O');
+    const dep = map.deposits.find((d) => d.x === spot.x && d.y === spot.y)!;
+    expect(dep).toBeDefined();
+    sim.buildTower(spot.x, spot.y, 'refinery');
+    // Mine until dry: amount cycles at 1/cycle, then the world changes.
+    for (let t = 0; t < (dep.amount + 2) * 40; t++) sim.tick();
+    expect(sim.ore[0]).toBe(dep.amount); // every unit mined, not one more
+    expect(sim.cellAt(spot.x, spot.y)).toBe('G'); // spent veins are ground
+    expect(sim.depositAt(spot.x, spot.y)!.left).toBe(0);
+    const before = sim.ore[0];
+    for (let t = 0; t < 200; t++) sim.tick();
+    expect(sim.ore[0]).toBe(before); // idle forever after
+  });
+
+  it('holding the final wave WINS; a won run stays won', () => {
+    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 100000, finalWave: 2 });
+    const sim = new Sim(61, simOpts);
+    let guard = 0;
+    while (sim.status === 'running' && guard++ < 100000) {
+      sim.tick();
+      if (sim.offer) sim.pickRelic(0);
+    }
+    expect(sim.status).toBe('won');
+    expect(sim.wave).toBe(2);
+    const h = sim.hashState();
+    sim.tick();
+    expect(sim.hashState()).toBe(h); // frozen in victory
+  });
+
+  it('every 5th wave carries an elite surge of the heaviest available enemy', () => {
+    const heavy: EnemyDef = { id: 'tank', hp: 500, speed: 0.03, damage: 9, minWave: 1 };
+    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 100000, enemyDefs: [WALKER, heavy] });
+    const sim = new Sim(61, simOpts);
+    let guard = 0;
+    let wave5Spawned = 0;
+    let sawTankInWave5 = false;
+    while (sim.wave <= 5 && guard++ < 200000) {
+      sim.tick();
+      if (sim.offer) sim.pickRelic(0);
+      if (sim.wave === 5) {
+        for (let i = 0; i < 128; i++) {
+          if (sim.alive[i] && sim.enemyDefOf(i).id === 'tank') sawTankInWave5 = true;
+        }
+        wave5Spawned = sim.spawned;
+      }
+    }
+    expect(wave5Spawned).toBeGreaterThan(0);
+    expect(sawTankInWave5).toBe(true);
+  });
+});

@@ -36,6 +36,8 @@ export interface HudStats {
 export interface HudTowerInfo {
   name: string;
   kills: number;
+  /** Producers: the vein under the tower. null for fighters. */
+  deposit: { left: number; initial: number } | null;
   stats: HudStats;
   /** Post-purchase stats while hovering an available choice; else null. */
   preview: HudStats | null;
@@ -53,6 +55,9 @@ export interface HudState {
   /** Held relics; the full inventory panel arrives with the Core vessel (1.6.4). */
   relicCount: number;
   kills: number;
+  /** 0 = endless; otherwise the wave that wins the run (D6). */
+  finalWave: number;
+  victory: boolean;
   coreHp: number;
   coreHpMax: number;
   wave: number;
@@ -196,7 +201,7 @@ export class HudPanel {
     const coreCol = hpFrac <= 0.25 ? role('enemy.fast') : role('terrain.core.mid');
     term.write(0, 4, `CORE ${s.coreHp}/${s.coreHpMax}`, coreCol);
     term.write(0, 5, '='.repeat(Math.max(0, barLen)), coreCol);
-    term.write(0, 7, `WAVE ${s.wave}`, role('ui.text'));
+    term.write(0, 7, s.finalWave > 0 ? `WAVE ${s.wave}/${s.finalWave}` : `WAVE ${s.wave}`, role('ui.text'));
     if (s.relicCount > 0) {
       const rl = `RELICS ${s.relicCount}`;
       term.write(W - rl.length, 7, rl, role('ui.accent'));
@@ -230,7 +235,11 @@ export class HudPanel {
 
     // ---- selection ---------------------------------------------------------
     term.write(0, y++, '-'.repeat(W), role('ui.grid'));
-    if (s.gameOver) {
+    if (s.victory) {
+      term.write(0, y + 1, 'THE CORE STANDS', role('terrain.core.lit'));
+      term.write(0, y + 2, `wave ${s.finalWave} held`, role('ui.accent'));
+      term.write(0, y + 4, 'press R for a new run', role('ui.text'));
+    } else if (s.gameOver) {
       term.write(0, y + 1, 'THE CORE HAS FALLEN', role('enemy.fast'));
       term.write(0, y + 3, 'press R for a new run', role('ui.text'));
     } else if (s.cache) {
@@ -311,7 +320,15 @@ export class HudPanel {
     } else if (s.selectedTower) {
       const t = s.selectedTower;
       term.write(0, y++, t.name, role('ui.accent'));
-      term.write(0, y++, `kills ${t.kills}`, role('ui.dim'));
+      if (t.deposit) {
+        // A refinery's kills are meaningless; its DEPOSIT is its life story.
+        const frac = t.deposit.initial > 0 ? t.deposit.left / t.deposit.initial : 0;
+        const col = t.deposit.left === 0 ? role('enemy.fast') : role('terrain.ore.lit');
+        term.write(0, y++, t.deposit.left === 0 ? 'VEIN SPENT' : `deposit ${t.deposit.left}/${t.deposit.initial}`, col);
+        term.write(0, y++, '='.repeat(Math.max(0, Math.round(frac * (W - 2)))), col);
+      } else {
+        term.write(0, y++, `kills ${t.kills}`, role('ui.dim'));
+      }
       y++;
       // Stats, with hover-preview deltas pulsing green (Daniil: see what
       // you are buying BEFORE you buy it).

@@ -34,6 +34,8 @@ export function hash2(x: number, y: number, s: number): number {
 }
 
 export interface TerrainShade {
+  /** Ore only: remaining richness 0..1; scales the gold-speck density. */
+  richness?: number;
   bg?: string;
   /** This cell is the top edge of its terrain mass: light the top glyph row. */
   litTop?: boolean;
@@ -61,10 +63,16 @@ export function drawTerrainCell(
   const mid = role(`terrain.${TERRAIN_KEY[kind]}.mid`);
   const dark = role(`terrain.${TERRAIN_KEY[kind]}.dark`);
   const bg = shade.bg ?? dark;
+  // Ore richness scales which glyphs still show GOLD: a rich vein sparkles,
+  // a drawn-down one fades toward rock, a spent one has nothing left to say
+  // (PRD sec 6 - "where is the money" is answered by looking).
+  const rockMid = role('terrain.rock.mid');
+  const richness = kind === 'O' ? (shade.richness ?? 1) : 1;
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
       const g = pool[Math.floor(hash2(gx0 + x, gy0 + y, 6) * pool.length) % pool.length];
       let fg = hash2(gx0 + x, gy0 + y, 9) < 0.2 ? lit : mid;
+      if (kind === 'O' && hash2(gx0 + x, gy0 + y, 13) > richness) fg = rockMid;
       if (shade.litTop && y === 0) fg = lit;
       if (shade.shadowBottom && y === CELL_H - 1) fg = dark; // sinks into the bg
       term.put(gx0 + x, gy0 + y, g, fg, bg);
