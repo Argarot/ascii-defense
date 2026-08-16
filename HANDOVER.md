@@ -20,11 +20,10 @@ deliberately last, so it stays parked. Phase 4 is nearly done:
   pulse attacks (Frost), armor/shield/slow mechanics, select-then-build flow,
   full-height side-panel HUD (2× font, 30 cols) with visual tree + hover
   previews (stats AND range ring).
-- **OPEN: 1.4.6 (Refinery + Ore) and 1.4.8 (replay + golden hash).** These are
-  the outstanding tail of the twice-deferred "session D" block. They are the
-  next thing built, before anything else.
-- **NEW: Phase 6, the relic layer** (WBS 1.6, PRD §7) — added 2026-08-16,
-  sequenced before Phase 5, inside the M1 fun-test gate.
+- **DONE 2026-08-16 (PRs #32, #33): 1.4.6 Refinery + Ore, 1.4.8 replay +
+  golden hash.** Phase 4 is COMPLETE. The session-D debt is paid.
+- **NEXT: Phase 6, the relic layer** (WBS 1.6, PRD §7) — sequenced before
+  Phase 5, inside the M1 fun-test gate. No decision blockers (D4, D5 closed).
 
 ## The 2026-08-16 design session (read PRD §7 before touching Phase 6)
 
@@ -72,16 +71,24 @@ Hard constraints that came out of it, all now in the PRD:
 
 ## Next block, in order
 
-1. **1.4.6 Refinery + Ore** — Ore in `Sim` stored per tier; Refinery produces
-   only on `O`; app holds cross-run Ore (module var + reroll counter, wipes
-   after 3 — demo rule); HUD readout; mapgen ore-floor guarantee.
-2. **1.4.8 Replay + golden hash** — `{version, seed, contentHash, inputs}`,
-   playback, 2,000-tick state-hash test. **Reserve the Phase 6 action shapes in
-   the union now** (`claimCache`, `prospect`, `pickRelic`, `buyRelic`,
-   `rerollOffer`, `fireActive`, `useConsumable`) so the relic layer needs no
-   migration. This project's reserve-the-shape pattern has paid out four times.
-3. **Phase 6** — 1.6.1 hooks → 1.6.2 offers → 1.6.3 content → 1.6.4 Core
-   vessel → 1.6.5 draws + caches → 1.6.6 prospecting.
+**Phase 6** — 1.6.1 hooks → 1.6.2 offers → 1.6.3 content → 1.6.4 Core
+vessel → 1.6.5 draws + caches → 1.6.6 prospecting. ~2 sessions. Gate: a run
+where two relics combine into something absurd, reproduced from its seed +
+input log. Then Phase 5 (bot + harness), then the M1 fun test.
+
+What 1.4.6/1.4.8 left ready for it:
+
+- The replay action union already carries all seven Phase 6 shapes;
+  `Sim.applyAction` rejects them (`default: false`) — implementing a feature
+  means adding its case there and its recording in the new mutation method.
+- The Refinery's off-vein timer HOLDS instead of ticking, so prospecting
+  (K→O mid-run) resumes idle refineries naturally. Prospect must also update
+  `SimOptions.cells` — note it is `readonly` today; 1.6.6 makes the Sim own a
+  mutable copy.
+- `production.scrap` exists in schema + engine split logic — `foundry` is a
+  content/hook change only.
+- The Survey tier path is NOT in the shipped Refinery content — it replaces
+  one of the six choices when 1.6.6 lands, so no player ever buys a no-op.
 
 Both Phase 6 decisions are **closed** (Daniil, 2026-08-16): **D4** — offers
 every 3 waves, pick 1 of 3. **D5** — flat pool in M1, `rarity` in the schema
@@ -125,15 +132,6 @@ from the first commit but unused. Nothing in Phase 6 is decision-blocked.
   session when at laptop.
 
 ## Key architectural seams
-
-**For 1.4.6 (Ore):** add to `Sim` like `scrap`; ore only counts when the tower
-stands on an `O` cell — the engine has `cells` at hand. Store per tier from day
-one (invariant 9) even with one tier live.
-
-**For 1.4.8 (replay):** the Sim's entire mutation surface is four methods —
-`buildTower`, `chooseTier`, `setPriority`, `sellTower` — plus `tick()`. That is
-the complete input log; log `{tick, action}` inside those methods.
-`hashState()` = FNV over the typed arrays + counters.
 
 **For 1.6.1 (hooks):** `effectiveStats(def, choices)` in
 `packages/engine/src/sim/defs.ts` is the single fold point where every tower
