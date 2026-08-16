@@ -86,5 +86,6 @@ Windows 10, PowerShell 5.1, Node v22.23.2, npm 12.0.2, git 2.33.0.
 | How it is built | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | How it looks, and the art pipeline | [docs/ASSETS.md](docs/ASSETS.md) |
 | What happens next | [docs/ROADMAP.md](docs/ROADMAP.md) |
+| Where each request Daniil made went | [docs/FEEDBACK.md](docs/FEEDBACK.md) |
 
 Read the PRD before the architecture; read this file before touching anything.

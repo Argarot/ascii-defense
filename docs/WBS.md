@@ -28,7 +28,7 @@ Conventions:
 | D7 | ~~Hidden-tab behaviour~~ **RESOLVED 2026-08-16**: the **simulation keeps running** in a Web Worker; an explicit PAUSED indicator covers deliberate pauses only. Also buys in-browser bot runs without freezing the UI | — | closed |
 | D8 | **The printing-trade lexicon** — naming for towers, enemies, upgrades, currencies (PRD §13). Gets its **own short session**; none of the first candidates landed. Must close before art | before 2.12 | Daniil + dev |
 | D9 | **Activate multiple Ore tiers?** Storage is already per-tier (invariant 9), so deferring is free. **Trigger:** activate when the tech tree exists and needs gating (M3+) — not while one currency is still unbalanced. Richness tiers (2.6) deliver the "reach further for better" dynamic meanwhile | at M3 | Daniil + dev |
-| D10 | **Road-shape variance** — generated 5×5 tile variants (cheap, no refactor) vs 7×7 tiles. **Decision: try generation first.** Trigger for revisiting 7×7: generated variants still read as samey after 2.15 | after 2.15 | dev, on evidence |
+| D10 | ~~Road-shape variance~~ **RESOLVED 2026-08-16**: the constraint was never tile size — it was the validity rule confining roads to the interior 3×3 (PRD §4.2.1). Drop that, add route-as-a-graph (2.16), then generate variants (2.15). 7×7 stays a fallback only if the widened vocabulary still reads samey | — | closed |
 
 **2026-08-15 pivot** (PRD §1, §14): player tile-laying cut; maps are generated
 at run start (Core tile center, `entries` carved paths, ore by road distance).
@@ -183,16 +183,15 @@ but the question the milestone existed to answer is answered.
 - [ ] 2.13 **UI infrastructure**: scrollable panels, larger illustrated relic cards, hidden-tab behaviour (D7). The modal layer from 1.6.2 is the foundation.
 - [ ] 2.14 **Enemy readouts** (PRD §8): shields as a bracket around the glyph, destroyed separately from the body so any enemy may carry one; health and status effects as marks beside the glyph (braille is a candidate). No tooltips.
 - [ ] 2.15 **Generated tile variants** (D10): emit candidate 5×5 grids programmatically, filter through the shared `validateTileCells`, commit the survivors. Road shape variance and less rectilinear roads (visual V3) for the cost of one script — no re-authoring, no invariant touched. The library goes from 11 tiles to hundreds.
-- [ ] 2.16 **The road identity model** — one package, pulled early *(revised 2026-08-16)*. Previously split across 2.16 / 4.8 / 4.9 as if they were three features; they are one change with three symptoms. Today a road cell is just `R`, so two adjacent road cells are necessarily the same network — which is precisely why parallel roads cannot touch without merging, why bridges are impossible, and why one road per tile edge caps the shape vocabulary at sixteen signatures.
-  - road cells carry a **lane identity**; the route becomes a **graph** of nodes, not a grid of cells
-  - edge connectors become a **set of offsets** (still derived from the drawn cells, never declared)
-  - flow field, movement, targeting distance and `L` all read the graph
-  - Tile Smith updated to author multi-road tiles, **plus an "add to pool" button** (Daniil, 2026-08-16) so a tile made in the tool joins the library without a manual step
+- [ ] 2.16 **Roads that touch without connecting** *(revised 2026-08-16 — Daniil corrected an earlier misreading; see PRD §4.2.1)*. Three parts:
+  - **connectors stay centre-pegged** — unchanged, and the offset-connector idea is withdrawn
+  - **drop the validity rule** forbidding road cells on non-centre border cells; this alone is what unlocks the shape vocabulary, and it is a validator change plus a Tile Smith update
+  - **the route becomes a graph**: road cells form components within a tile, joining across tiles only through matching centre connectors, so adjacent roads no longer fuse. Flow field, movement, targeting distance and `L` all read the graph. *This part is the actual work, and it is the mechanism bridges (4.9) need.*
+  - Tile Smith gains an **"add to pool" button** (Daniil) so a tile authored in the tool joins the library without a manual step
 
-  **Why early:** it changes path length, and path length feeds the difficulty
-  model. Doing it after balance means re-balancing; doing it after the tile
-  library grows means re-authoring. It is the single largest source of avoidable
-  rework in the project, and Daniil flagged the sequencing risk directly.
+  **Why early:** it changes path length, which feeds the difficulty model, and it
+  changes what a legal tile is, right before the tile library grows by two orders
+  of magnitude (2.15). Late means re-balancing and re-authoring.
 
 ## M3 — Trustworthy difficulty *(coarse)*
 
@@ -212,7 +211,7 @@ but the question the milestone existed to answer is answered.
 
   **Why before the art pass:** sprites authored as single static frames get
   re-authored once animation exists. Engine first, then naming, then art.
-- [x] 4.8 ~~Offset connectors~~ **MERGED into 2.16** *(2026-08-16)* and pulled forward — it is one half of the road identity model, not a standalone late feature.
+- [x] 4.8 ~~Offset connectors~~ **WITHDRAWN 2026-08-16.** Proposed by me, declined by Daniil, and correctly: connectors stay centre-pegged. What was actually needed is the validity relaxation plus route-as-a-graph, now 2.16.
 - [ ] 4.9 **Bridges** — the *content* half, once 2.16 ships the model: tiles where two roads cross without merging. Cheap after 2.16, impossible before it.
 - [ ] 4.10 **Attack shapes** (PRD §5.5): chain, beam over a run of road, arc/wedge AoE. Arc Coil and Rail Lance in the §5.3 roster already reserve two of these.
 - [ ] 4.11 **Per-upgrade tower visuals** (PRD §5.2, blocked by D3): each committed choice legible on the tower — a second barrel as a second glyph, background colour for what glyphs cannot say.

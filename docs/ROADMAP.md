@@ -223,7 +223,7 @@ most exciting:
 | Do early because… | Item |
 |---|---|
 | every tuning number gets computed twice without it | the balance lab |
-| it changes path length, which feeds difficulty, and the tile library, which grows | the road identity model |
+| it changes path length (→ difficulty) and what a legal tile is (→ the library grows next) | roads that touch without connecting |
 | every sprite gets authored twice without it | the effects & animation engine |
 | art illustrates names | the naming pass |
 | calibrating a moving target is waste | the bot comes *last*, not first |
@@ -232,7 +232,7 @@ most exciting:
 |---|---|---|---|
 | 12 | **The balance lab** | WBS 1.5.3 headless runner + 1.5.4 analytic model; then a difficulty curve **derived** from it. Plus quick triage (preview fold bug, consumables free slots, cut `foundry`, 8× speed) | The lab predicts the breach wave for a given build, and a headless run **matches the prediction**. The wave-48 screenshot is the first thing it explains |
 | 13 | **Scarcity + the run ends** | Finite ore deposits with richness, 10× slower mining, refinery deposit readout; final wave + victory (D6), boss/elite waves. Numbers from the lab | A run **ends** — you win at wave N or die trying. Coasting with 5 towers dies |
-| 14 | **Road identity** | WBS 2.16 — lane ids, route as a graph, offset connectors, flow/targeting/`L` on the graph, Tile Smith rework + "add to pool" | Two roads run parallel and adjacent without merging; enemies never switch lanes; determinism intact |
+| 14 | **Roads that touch without connecting** | WBS 2.16 — drop the border-cell validity rule (connectors stay centre-pegged), route becomes a graph so adjacent roads stop fusing, flow/targeting/`L` follow, Tile Smith rework + "add to pool" | Two roads run side by side, touching, on separate routes; enemies never switch between them; determinism intact |
 | 15 | **Map variance** | Generated tile variants filtered through the shared validator (D10), less rectilinear roads, boon ground, prospecting rework | Two seeds read as genuinely different maps; the pool goes from 11 tiles to hundreds |
 | 16 | **Effects & animation engine** | WBS 4.1 — frame model, effect entities, sim-event pipeline, explosions, spread, tower cycles, terrain drift, void-as-water | The board is alive and nothing about it touches the simulation |
 | 17 | **Enemies mean something** | Damage types + resistances/immunities, shield brackets, health and status marks, +2–3 enemies. Verified in the lab | **No single tower type clears a wave** — proven by a lab sweep, not by opinion |

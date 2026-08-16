@@ -2,7 +2,8 @@
 
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
 [docs/PRD.md](docs/PRD.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) →
-[docs/WBS.md](docs/WBS.md) → this file. The gitignored `POSTMORTEM.md` holds
+[docs/WBS.md](docs/WBS.md) → [docs/FEEDBACK.md](docs/FEEDBACK.md) → this
+file. The gitignored `POSTMORTEM.md` holds
 collaboration findings (append as things happen — standing practice).
 
 Live build: <https://argarot.github.io/ascii-defense/> (always verify
@@ -10,106 +11,77 @@ cache-busted; stale bundles have caused two false bug reports).
 
 ## Where the project is
 
-M1: Phases 1 and 3 complete (tagged v0.1.0, v0.2.0). Phase 2 (REXPaint art
-round-trip) parked until Daniil is at his laptop — and graphics polish is
-deliberately last, so it stays parked. Phase 4 is nearly done:
+**M1 exit gate: PASSED 2026-08-16.** Daniil played past wave 48: *"the game is
+fun now, it’s just very unbalanced and with quite a few holes still."* That is
+the judgement the milestone existed to obtain. Everything after is balance and
+depth, not a question of whether to continue.
 
-- DONE: towers (Bolt/Mortar/Frost) with either/or tier trees (3 tiers × 2
-  exclusive choices — PRD §5.2), Scrap economy, targeting priorities, waves
-  with telegraphed fronts + steep scaling (+18% hp/wave), Core health + defeat,
-  pulse attacks (Frost), armor/shield/slow mechanics, select-then-build flow,
-  full-height side-panel HUD (2× font, 30 cols) with visual tree + hover
-  previews (stats AND range ring).
-- **DONE 2026-08-16 (PRs #32, #33): 1.4.6 Refinery + Ore, 1.4.8 replay +
-  golden hash.** Phase 4 is COMPLETE. The session-D debt is paid.
-- **NEXT: Phase 6, the relic layer** (WBS 1.6, PRD §7) — sequenced before
-  Phase 5, inside the M1 fun-test gate. No decision blockers (D4, D5 closed).
+Complete: Phase 1 (harness, `v0.1.0`), Phase 3 (board, `v0.2.0`), Phase 4 (the
+game — towers, enemies, economy, waves, HUD, Refinery + Ore, replay + golden
+hash), Phase 6 (the relic layer entire — hooks, offers, modal, eleven relics,
+Core vessel with slot inventory, Ore draw/reroll, caches, prospecting).
 
-## The 2026-08-16 design session (read PRD §7 before touching Phase 6)
+Outstanding M1 work: Phase 2 (art round-trip, re-planned — see below), Phase 5
+(split: measurement now, bot much later), Phase 7 (post-playtest triage).
 
-The Core was going to be a fifth tower: pick a type, then a 3-tier tree, paid
-in Ore. **Cut before implementation.** The argument that killed it, because it
-will come up again: a handful of symmetric, individually-balanced purchases
-cannot produce a build-breaking run, and the build-breaking run is what a
-roguelite is *for*. Four buys that each add a percentage have nothing to
-combine.
+## What the two playtests changed
 
-What replaced it:
+Read [docs/FEEDBACK.md](docs/FEEDBACK.md) before planning anything — it indexes
+every request to its PRD section, WBS ID and session, including deferrals with
+their triggers and declines with their reasons.
 
-- **The Core is the vessel**, not a tower. HP, plus it holds the run's relics
-  and is where actives fire and consumables are spent. No tree of its own.
-- **Relics are rule-breakers acquired mid-run**, run-local, authored as data:
-  *"overkill carries to the next enemy"*, not *"+15% damage"*. Three kinds:
-  passive / active / consumable. ~20 in M1, target ~6–10 acquisitions per run
-  (below that, combinations never happen and the layer does nothing).
-- **Two axes.** Tower trees are planned power: strict, symmetric, Scrap. Relics
-  are found power. The strictness is load-bearing — a rule only feels broken if
-  it was iron first.
-- **Acquisition, in build order:** B wave-clear pick-1-of-3 (guarantees
-  cadence) → C Ore draw/reroll at the Core (Ore's in-run sink) → A map caches
-  (makes this map's shape matter). Each is shippable alone.
+The headline findings, because they reshaped the plan:
 
-Hard constraints that came out of it, all now in the PRD:
+- **Threat grew linearly while player power compounded.** Wave 48, five towers
+  placed forty waves earlier, Core untouched. Not a tuning error — a shape
+  error (PRD §9.1). Every run must end in death, including the god run.
+- **Both economies saturated.** 42k Scrap, 28k Ore, nothing to spend either on.
+  Ore deposits become finite with richness (PRD §6); mining slows ~10×.
+- **The relic layer switched itself off.** Eleven relics, caches deal
+  duplicates, the unheld pool empties and offers stop with no message. Needs a
+  far bigger pool plus fusion and salvage (PRD §7.6).
+- **The road shape vocabulary is thin** — and the cause is a *validity rule*,
+  not tile size and not the connector model (PRD §4.2.1). Connectors stay
+  centre-pegged; roads gain the right to touch without connecting.
+- **Animation is engine work**, and had been mis-filed as an art chore.
 
-- **No relic may combine both options of a tier.** A tower has 5×3 glyphs and
-  14 defined visual states; "both paths" invents states with no possible art.
-  The art budget is a design constraint, not a rendering detail (§5.2, §14).
-- **Caches are claimed by selecting and paying, never by building on them** —
-  building is not a cost when you can sell the tower back immediately.
-- **The Refinery mines Ore only, on ore cells.** Its Scrap-anywhere path is cut
-  and survives as the `foundry` relic. Its tree now sells reach: Extraction
-  (deeper output) / Survey (unlocks prospecting).
-- **Prospecting reveals, it does not roll.** Every rock cell is dealt its
-  contents (ore / cache / nothing) at generation, so no runtime randomness and
-  replays stay exact. Selecting a rock offers Prospect for Scrap.
-- **Only Road and Core are on the route.** Ground and Ore are open, not
-  walkable. Therefore opening a rock cell can never create a shortcut. The PRD
-  table said otherwise for months (pre-pivot leftover) and a dead
-  `isPathable()` encoded the same error — both corrected/deleted 2026-08-16.
-- **Mid-run meta tree, road mutation, and wave-dial powers are all rejected**
-  with reasons in §14. Do not re-propose.
+## Next, in order
 
-## Next block, in order
+Sessions and gates live in [ROADMAP.md](docs/ROADMAP.md#session-ledger). Short
+form:
 
-**Phase 6 is COMPLETE** *(2026-08-16, PRs #36-#42)*: hooks, offers + modal,
-eleven relics, Core vessel with slot inventory, Ore draw/reroll, map caches,
-rocks-as-containers + prospecting behind Survey. Gate passed: combos compose
-and relic runs replay bit-identically. The relic pool stands at 11 of the
-~20 target (1.6.3 stays [~]) - the rest is pure content, addable any time.
+1. **Session 12 — the balance lab** (WBS 1.5.3/1.5.4). Headless runner plus an
+   analytic model, then a difficulty curve *derived* from it rather than
+   guessed. Riding along: the preview fold bug, consumables freeing their slot,
+   cutting the `foundry` relic, 8× speed. Gate: the lab predicts a breach wave
+   and a headless run matches the prediction.
+2. Session 13 — finite ore, slower mining, the run ends (D6 finite).
+3. Session 14 — roads that touch without connecting (WBS 2.16).
+4. Sessions 15–24 — map variance, the effects engine, damage types, attack
+   shapes, relic economy, legibility + Worker, naming, art, the meta loop, and
+   only then the bot and calibration.
 
-**M1 GATE PASSED 2026-08-16** — Daniil played to wave 14+: *"the game is fun
-now, it's just very unbalanced and with quite a few holes still."* The question
-M1 existed to answer is answered; everything after is balance and depth.
+Open decisions: **D3** material language (before art), **D8** the printing-trade
+lexicon (own session; first candidates rejected), **D9** Ore tiers (deferred,
+trigger recorded). D4–D7 and D10 are closed — see the WBS table.
 
-**NEXT: Phase 7 triage** (WBS 1.7, ~0.5 session) — the preview fold bug, the
-relic pool draining silently, the difficulty shape (PRD sec 9.1), 8x speed,
-refinery deposit readout. Then **Phase 5** (bot + harness, with relic picks),
-then **M2** — which the playtest reshaped from "more content" into "make the
-existing systems demand decisions" (finite ore, relic fusion, real damage
-types, run end).
+## Architectural seams for what is next
 
-Four decisions are open and blocking: **D5** relic rarity (reopened with play
-evidence), **D6** does a run end, **D7** hidden-tab behaviour, **D8** the
-printing-trade lexicon. Ask; do not pick silently.
-
-Historical notes (what earlier blocks left ready - now consumed):
-
-- The replay action union already carries all seven Phase 6 shapes;
-  `Sim.applyAction` rejects them (`default: false`) — implementing a feature
-  means adding its case there and its recording in the new mutation method.
-- The Refinery's off-vein timer HOLDS instead of ticking, so prospecting
-  (K→O mid-run) resumes idle refineries naturally. Prospect must also update
-  `SimOptions.cells` — note it is `readonly` today; 1.6.6 makes the Sim own a
-  mutable copy.
-- `production.scrap` exists in schema + engine split logic — `foundry` is a
-  content/hook change only.
-- The Survey tier path is NOT in the shipped Refinery content — it replaces
-  one of the six choices when 1.6.6 lands, so no player ever buys a no-op.
-
-Both Phase 6 decisions are **closed** (Daniil, 2026-08-16): **D4** — offers
-every 3 waves, pick 1 of 3. **D5** — flat pool in M1, `rarity` in the schema
-from the first commit but unused. Nothing in Phase 6 is decision-blocked.
-
+- **The balance lab is mostly built already**: `engine` is DOM-free and
+  deterministic, so it runs headless in Node today. What is missing is the
+  measurement layer (place a loadout from a spec, run N waves, report leak,
+  margin, TTK) and the sweep runner. `harness` is its home.
+- **Roads that touch without connecting**: `computeFlowField` BFSes over every
+  `isRouteCell` 4-connected — that adjacency IS the merging. It becomes a graph
+  built from within-tile components joined by matching centre connectors.
+  `validateTileCells` is shared by the game, CI and Tile Smith, so the validity
+  relaxation lands in one function.
+- **Effects engine**: `Sim.pulses` is the accidental prototype of a sim-event →
+  view effect pipeline. Keep effects out of the simulation (invariant 2).
+- **Save/resume is nearly free**: a save IS the seed plus the input log, which
+  replay already produces.
+- Every reserved replay action shape is now implemented, and `applyAction`’s
+  default arm is `a satisfies never` — the union is compile-checked.
 ## How we work (hard-learned, do not relearn)
 
 - **An approved scope is a contract — finish it in the turn it was approved.**
