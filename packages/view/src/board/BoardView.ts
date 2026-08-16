@@ -50,6 +50,7 @@ const ENEMY_LOOK: Record<string, { glyph: string; roleName: string }> = {
 const DESCRIBE: Record<CellType, string> = {
   G: 'ground \u00b7 buildable',
   R: 'road \u00b7 NEVER buildable',
+  r: 'road \u00b7 NEVER buildable \u00b7 lane B',
   K: 'rock \u00b7 blocked',
   O: 'ore \u00b7 buildable \u00b7 a refinery here mines Ore',
   C: 'the CORE \u00b7 protect this \u00b7 every road leads here',

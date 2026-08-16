@@ -14,6 +14,7 @@ export const POOLS: Record<CellType, string> = {
   G: "          .'`,\u2800\u2801\u2802\u2804\u2808\u2810\u2820\u2840\u2880\u2803\u2809",
   R: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   K: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
+  r: ':;.,=⠉⠒⠤⠶⠛⠿-_~⠐⠠',
   O: '*+.o\u283f\u283e\u283d\u283bO0\u2837',
   C: '\u28ff\u28f7\u28ef@O0\u28f6',
 };
@@ -21,6 +22,7 @@ export const POOLS: Record<CellType, string> = {
 export const TERRAIN_KEY: Record<CellType, string> = {
   G: 'ground',
   R: 'road',
+  r: 'road',
   K: 'rock',
   O: 'ore',
   C: 'core',

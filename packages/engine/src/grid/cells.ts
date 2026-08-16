@@ -7,9 +7,26 @@
  * edge is a spawn point (PRD sec 4.1) - the same philosophy as derived
  * connectors. C is the Core's own substance, the thing enemies march toward.
  */
-export type CellType = 'G' | 'R' | 'K' | 'O' | 'C';
+export type CellType = 'G' | 'R' | 'r' | 'K' | 'O' | 'C';
 
-export const CELL_TYPES: readonly CellType[] = ['G', 'R', 'K', 'O', 'C'];
+export const CELL_TYPES: readonly CellType[] = ['G', 'R', 'r', 'K', 'O', 'C'];
+
+/**
+ * Lane identity (PRD sec 4.2.1, session 14): 'R' and 'r' are BOTH road -
+ * same look, same rules, same unbuildability - but they are different LANES
+ * within a tile. Two touching road cells of different lanes do not connect:
+ * that is what lets parallel roads run side by side without merging. Lanes
+ * are tile-local; crossings join whatever lane owns each side's connector.
+ */
+export function isRoad(c: CellType): boolean {
+  return c === 'R' || c === 'r';
+}
+
+/** Same-tile route adjacency: same lane, or the Core welds any lane to it. */
+export function lanesJoin(a: CellType, b: CellType): boolean {
+  if (a === 'C' || b === 'C') return true;
+  return a === b;
+}
 
 export function isCellType(c: string): c is CellType {
   return (CELL_TYPES as readonly string[]).includes(c);
@@ -26,7 +43,7 @@ export function isCellType(c: string): c is CellType {
  * opening a rock cell could create a shortcut. Ground is open, not walkable.
  */
 export function isRouteCell(c: CellType): boolean {
-  return c === 'R' || c === 'C';
+  return c === 'R' || c === 'r' || c === 'C';
 }
 
 /** Towers may be built here. Road is never buildable (invariant 4). */

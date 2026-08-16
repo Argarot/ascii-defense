@@ -29,6 +29,7 @@ import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
+import { loadMintedTiles } from './mintedTiles';
 
 // Content enters the app validated or not at all (ARCHITECTURE sec 8).
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
@@ -54,7 +55,10 @@ const FINAL_WAVE = 20;
 
 async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
-  const lib = new TileLibrary(tileLibraryJson.tiles);
+  // Minted tiles (Tile Smith's ADD TO POOL) join the shipped library - the
+  // generator picks them by signature like any other tile.
+  const minted = loadMintedTiles();
+  const lib = new TileLibrary([...tileLibraryJson.tiles, ...minted]);
 
   const mapX = 12, mapY = 7; // 2 tile columns ceded to the side panel (Daniil)
   const boardCols = mapX * TILE_SIZE * CELL_W;

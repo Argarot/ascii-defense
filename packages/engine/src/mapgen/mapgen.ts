@@ -19,7 +19,7 @@
  * easier. Both are data, decided by threat level, not by this module.
  */
 import type { RngStream } from '../rng/rng';
-import { EDGES, OPPOSITE, TILE_SIZE, type Edge, type Rotation } from './../tiles/tile';
+import { EDGES, OPPOSITE, TILE_SIZE, crossingsInterconnect, type Edge, type Rotation } from './../tiles/tile';
 import { TileLibrary, createBoard, place, resolveCells, type Board } from '../tiles/board';
 
 export interface MapGenOptions {
@@ -140,6 +140,10 @@ function indexLibrary(lib: TileLibrary): {
       const edges = new Set<Edge>(EDGES.filter((e) => connectors[e]));
       const hasCore = cells.some((row) => row.includes('C'));
       const hasRoad = edges.size > 0;
+      // A carved slot needs the tile to route BETWEEN its edges, not merely
+      // present them; multi-lane tiles that do not interconnect stay out of
+      // the road pools (session 14 - connectivity by construction).
+      if (hasRoad && !crossingsInterconnect(cells)) continue;
       const key = sigKey(edges);
       if (hasCore) {
         const list = core.get(key) ?? [];
