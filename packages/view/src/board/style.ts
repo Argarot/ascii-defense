@@ -15,6 +15,10 @@ export const POOLS: Record<CellType, string> = {
   R: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   K: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
   r: ':;.,=⠉⠒⠤⠶⠛⠿-_~⠐⠠',
+  '^': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  'v': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  '<': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  '>': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   O: '*+.o\u283f\u283e\u283d\u283bO0\u2837',
   C: '\u28ff\u28f7\u28ef@O0\u28f6',
 };
@@ -23,6 +27,10 @@ export const TERRAIN_KEY: Record<CellType, string> = {
   G: 'ground',
   R: 'road',
   r: 'road',
+  '^': 'road',
+  'v': 'road',
+  '<': 'road',
+  '>': 'road',
   K: 'rock',
   O: 'ore',
   C: 'core',
@@ -64,12 +72,19 @@ export function drawTerrainCell(
   const lit = role(`terrain.${TERRAIN_KEY[kind]}.lit`);
   const mid = role(`terrain.${TERRAIN_KEY[kind]}.mid`);
   const dark = role(`terrain.${TERRAIN_KEY[kind]}.dark`);
-  const bg = shade.bg ?? dark;
+  const mix = (h1: string, h2: string, t01: number): string => {
+    const p = (h: string, i: number): number => parseInt(h.slice(i, i + 2), 16);
+    const c = (i: number): string => Math.round(p(h1, i) + (p(h2, i) - p(h1, i)) * t01).toString(16).padStart(2, '0');
+    return '#' + c(1) + c(3) + c(5);
+  };
+  const bg = shade.bg ?? (kind === 'O' ? mix(role('terrain.rock.dark'), dark, shade.richness ?? 1) : dark);
   // Ore richness scales which glyphs still show GOLD: a rich vein sparkles,
   // a drawn-down one fades toward rock, a spent one has nothing left to say
   // (PRD sec 6 - "where is the money" is answered by looking).
   const rockMid = role('terrain.rock.mid');
   const richness = kind === 'O' ? (shade.richness ?? 1) : 1;
+  const dirGlyph: Partial<Record<CellType, string>> = { '^': '\u2191', 'v': '\u2193', '<': '\u2190', '>': '\u2192' };
+  const isDir = dirGlyph[kind] !== undefined;
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
       const g = pool[Math.floor(hash2(gx0 + x, gy0 + y, 6) * pool.length) % pool.length];
@@ -77,6 +92,10 @@ export function drawTerrainCell(
       if (kind === 'O' && hash2(gx0 + x, gy0 + y, 13) > richness) fg = rockMid;
       if (shade.litTop && y === 0) fg = lit;
       if (shade.shadowBottom && y === CELL_H - 1) fg = dark; // sinks into the bg
+      if (isDir && x === 2 && y === 1) {
+        term.put(gx0 + x, gy0 + y, dirGlyph[kind]!, lit, bg);
+        continue;
+      }
       term.put(gx0 + x, gy0 + y, g, fg, bg);
     }
 }

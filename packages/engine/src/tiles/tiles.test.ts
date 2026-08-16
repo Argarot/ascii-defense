@@ -57,6 +57,20 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     expect(validateTileCells(bad).join()).toMatch(/derives no crossing/);
   });
 
+  it('DIRECTIONAL: an S-fold touches itself without merging (playtest 3)', () => {
+    // A road folding back on itself: enters west centre, runs east along
+    // row 2, folds at the border and returns west along row 1, exits...
+    // nowhere else - one crossing, one component, and the folded segments
+    // TOUCH vertically without connecting (no shortcut across the fold).
+    const sFold = g('GGGGG', 'G<<<G', 'R>>^G', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(sFold)).toEqual([]);
+    const conn = deriveConnectors(sFold);
+    expect(conn).toEqual({ n: false, e: false, s: false, w: true });
+    // The fold is airtight: (1,1)'<' above (1,2)'>' do not join - an enemy
+    // walking the road cannot cut the corner.
+    // (Proven at flow level in sim.test's route-graph spec.)
+  });
+
   it('LANES: touching roads of different lanes are separate components', () => {
     // Two vertical lanes side by side, TOUCHING, each with its own... only
     // one centre per edge - so lane R crosses north, lane r crosses south.

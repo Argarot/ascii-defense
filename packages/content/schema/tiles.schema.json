@@ -22,7 +22,7 @@
             "type": "array",
             "minItems": 5,
             "maxItems": 5,
-            "items": { "type": "string", "pattern": "^[GRrKOC]{5}$" }
+            "items": { "type": "string", "pattern": "^[GRrKOC^v<>]{5}$" }
           }
         }
       }

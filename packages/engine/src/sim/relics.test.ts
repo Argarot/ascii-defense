@@ -364,33 +364,49 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
     expect(sim.canBuildDefAt(c.x, c.y, 'bolt')).toBe(true); // ground again
   });
 
-  it('prospecting: gated behind Survey, reveals EXACTLY what generation dealt', () => {
-    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(83, { startingScrap: 5000 });
+  it('prospecting is a JOB: costs scrap AND time, reveals what generation dealt', () => {
+    const { map, simOpts } = makeWorld(83, { startingScrap: 5000, maxSpawns: 1 });
     const sim = new Sim(83, simOpts);
-    const rock = cellOfType(cells, cellsW, cellsH, 'K');
-    expect(sim.prospect(rock.x, rock.y)).toBe(false); // locked: no Survey anywhere
-    // Unlock: refinery on a vein, tier 1 then Survey at tier 2.
+    const rc = map.rockContents[0];
+    // No unlock needed (playtest 3): anyone may start a job.
+    expect(sim.prospect(rc.x, rc.y)).toBe(true);
+    expect(sim.prospect(rc.x, rc.y)).toBe(false); // already running
+    expect(sim.cellAt(rc.x, rc.y)).toBe('K'); // NOT instant
+    for (let t = 0; t < 599; t++) sim.tick();
+    expect(sim.cellAt(rc.x, rc.y)).toBe('K'); // still digging at base speed
+    sim.tick();
+    // Revealed: exactly what was dealt.
+    if (rc.yields === 'ore') {
+      expect(sim.cellAt(rc.x, rc.y)).toBe('O');
+      expect(sim.depositAt(rc.x, rc.y)!.left).toBe(rc.depositAmount);
+      expect(sim.canBuildDefAt(rc.x, rc.y, 'refinery')).toBe(true);
+    } else {
+      expect(sim.cellAt(rc.x, rc.y)).toBe('G');
+    }
+  });
+
+  it('Survey refineries accelerate nearby jobs and prospect on their own', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(83, { startingScrap: 5000, maxSpawns: 1 });
+    const sim = new Sim(83, simOpts);
+    // A Survey refinery on a vein; find a rock within its chebyshev-2 reach.
     const vein = cellOfType(cells, cellsW, cellsH, 'O');
     sim.buildTower(vein.x, vein.y, 'refinery');
     sim.chooseTier(vein.x, vein.y, 0, 0);
     sim.chooseTier(vein.x, vein.y, 1, 1); // Survey
-    expect(sim.prospectUnlocked()).toBe(true);
-    // Break every rock; each must reveal exactly its dealt contents.
-    let opened = 0;
-    for (const rc of map.rockContents) {
-      const heldBefore = sim.heldRelics.length;
-      expect(sim.prospect(rc.x, rc.y)).toBe(true);
-      opened++;
-      const now = sim.cellAt(rc.x, rc.y);
-      if (rc.yields === 'ore') expect(now).toBe('O');
-      else expect(now).toBe('G');
-      expect(sim.heldRelics.length).toBe(heldBefore + (rc.yields === 'cache' ? 1 : 0));
-      expect(sim.prospect(rc.x, rc.y)).toBe(false); // no longer rock
+    let nearRock: { x: number; y: number } | null = null;
+    for (let dy = -2; dy <= 2 && !nearRock; dy++)
+      for (let dx = -2; dx <= 2; dx++)
+        if (sim.cellAt(vein.x + dx, vein.y + dy) === 'K') { nearRock = { x: vein.x + dx, y: vein.y + dy }; break; }
+    if (nearRock) {
+      // AUTONOMOUS: within a tick the refinery starts a free job nearby.
+      const scrap0 = sim.scrap;
+      sim.tick();
+      expect(sim.prospectJobAt(nearRock.x, nearRock.y)).not.toBeNull();
+      expect(sim.scrap).toBe(scrap0); // free - Survey pays with the slot it occupies
+      // FASTER: speed 2 (one Survey tower near) finishes in half the time.
+      for (let t = 0; t < 300; t++) sim.tick();
+      expect(sim.cellAt(nearRock.x, nearRock.y)).not.toBe('K');
     }
-    expect(opened).toBeGreaterThan(0);
-    // Prospected ore is real ore: a refinery goes on it.
-    const ore = map.rockContents.find((r) => r.yields === 'ore');
-    if (ore) expect(sim.canBuildDefAt(ore.x, ore.y, 'refinery')).toBe(true);
   });
 
   it('a run with claims and prospects replays bit-identically', () => {
@@ -403,7 +419,7 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
     for (let t = 0; t < 100; t++) sim.tick();
     sim.claimCache(map.caches[0].x, map.caches[0].y);
     sim.prospect(map.rockContents[0].x, map.rockContents[0].y);
-    for (let t = 0; t < 100; t++) sim.tick();
+    for (let t = 0; t < 700; t++) sim.tick(); // the job completes mid-run
 
     const fresh = new Sim(83, simOpts);
     let i = 0;

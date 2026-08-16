@@ -117,6 +117,8 @@ export const OFFER_REROLL_COST = 8;
 export const CACHE_CLAIM_COST = 40;
 /** Scrap price of prospecting a rock cell (PRD sec 4.6). */
 export const PROSPECT_COST = 25;
+/** Base prospect duration: breaking rock is a COMMITMENT, not a purchase. */
+export const PROSPECT_TICKS = 600;
 
 export interface Tower {
   cellX: number;
@@ -228,6 +230,8 @@ export class Sim {
   readonly cellChanges: { x: number; y: number; t: CellType }[] = [];
   /** Indices into map.caches already claimed. */
   readonly claimedCaches: number[] = [];
+  /** Active prospect jobs: cell index -> ticks remaining. */
+  readonly prospectJobs = new Map<number, number>();
   /** Remaining ore per vein cell (key = cell index). Finite: PRD sec 6. */
   private readonly depositLeft = new Map<number, number>();
   private readonly depositInit = new Map<number, number>();
@@ -532,49 +536,104 @@ export class Sim {
     return true;
   }
 
-  /** Prospecting is unlocked by a committed tower choice that grants it (Survey). */
-  prospectUnlocked(): boolean {
+  /** Towers whose committed Survey choice aids prospecting near (x, y). */
+  private surveySpeed(x: number, y: number): number {
+    let speed = 1;
     for (const t of this.towers) {
       if (!t) continue;
+      if (Math.max(Math.abs(t.cellX - x), Math.abs(t.cellY - y)) > 2) continue;
       const tiers = this.opts.towerDefs[t.defIdx].tiers;
       if (!tiers) continue;
       for (let ti = 0; ti < t.choices.length; ti++) {
         const pick = t.choices[ti];
-        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === 'prospect') return true;
+        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === 'prospect') speed++;
       }
     }
-    return false;
+    return Math.min(4, speed);
+  }
+
+  /** The active prospect job at (x, y), for the rock card's progress bar. */
+  prospectJobAt(x: number, y: number): { remaining: number; total: number } | null {
+    const r = this.prospectJobs.get(y * this.opts.cellsW + x);
+    return r === undefined ? null : { remaining: r, total: PROSPECT_TICKS };
   }
 
   /**
-   * Break a rock open and REVEAL what generation dealt it (PRD sec 4.6):
-   * an ore vein, a relic cache, or nothing but clear ground. Only ever adds
-   * off-route buildable land - the flow field cannot change.
+   * START breaking a rock open (PRD sec 4.6, revised: no unlock - anyone may
+   * prospect, paying Scrap AND TIME). The reveal happens when the job
+   * completes; Survey refineries nearby speed it up and start jobs of their
+   * own for free.
    */
   prospect(x: number, y: number): boolean {
     if (this.status !== 'running') return false;
-    if (this.cellAt(x, y) !== 'K' || !this.prospectUnlocked()) return false;
+    if (this.cellAt(x, y) !== 'K') return false;
+    const k = y * this.opts.cellsW + x;
+    if (this.prospectJobs.has(k)) return false;
     if (this.scrap < PROSPECT_COST) return false;
     this.scrap -= PROSPECT_COST;
-    const found = this.opts.map.rockContents.find((r) => r.x === x && r.y === y);
-    const yields = found?.yields ?? 'none';
-    const t: CellType = yields === 'ore' ? 'O' : 'G';
-    this.cellsMut[y * this.opts.cellsW + x] = t;
-    this.cellChanges.push({ x, y, t });
-    if (yields === 'ore') {
-      const k = y * this.opts.cellsW + x;
-      const amount = found?.depositAmount ?? 30;
-      this.depositLeft.set(k, amount);
-      this.depositInit.set(k, amount);
-      this.depositTier.set(k, 1);
-    }
-    if (yields === 'cache' && this.opts.relicDefs) {
-      this.heldRelics.push((found!.poolIdx ?? 0) % this.opts.relicDefs.length);
-      this.relicCooldowns.push(0);
-      this.refold();
-    }
+    this.prospectJobs.set(k, PROSPECT_TICKS);
     this.inputs.push({ tick: this.tickCount, a: { t: 'prospect', x, y } });
     return true;
+  }
+
+  /** Jobs tick down (Survey towers accelerate); completion reveals the deal. */
+  private prospectPhase(): void {
+    for (const [k, remaining] of this.prospectJobs) {
+      const x = k % this.opts.cellsW;
+      const y = Math.floor(k / this.opts.cellsW);
+      const next = remaining - this.surveySpeed(x, y);
+      if (next > 0) {
+        this.prospectJobs.set(k, next);
+        continue;
+      }
+      this.prospectJobs.delete(k);
+      const found = this.opts.map.rockContents.find((r) => r.x === x && r.y === y);
+      const yields = found?.yields ?? 'none';
+      const t: CellType = yields === 'ore' ? 'O' : 'G';
+      this.cellsMut[k] = t;
+      this.cellChanges.push({ x, y, t });
+      if (yields === 'ore') {
+        const amount = found?.depositAmount ?? 30;
+        this.depositLeft.set(k, amount);
+        this.depositInit.set(k, amount);
+        this.depositTier.set(k, 1);
+      }
+      if (yields === 'cache' && this.opts.relicDefs) {
+        this.heldRelics.push((found!.poolIdx ?? 0) % this.opts.relicDefs.length);
+        this.relicCooldowns.push(0);
+        this.refold();
+      }
+    }
+    // Survey refineries prospect their surroundings AUTONOMOUSLY (free):
+    // one job at a time each, nearest rock first, deterministic scan.
+    for (const t of this.towers) {
+      if (!t) continue;
+      const tiers = this.opts.towerDefs[t.defIdx].tiers;
+      if (!tiers) continue;
+      let hasSurvey = false;
+      for (let ti = 0; ti < t.choices.length; ti++) {
+        const pick = t.choices[ti];
+        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === 'prospect') hasSurvey = true;
+      }
+      if (!hasSurvey) continue;
+      let busy = false;
+      for (const [k] of this.prospectJobs) {
+        const jx = k % this.opts.cellsW;
+        const jy = Math.floor(k / this.opts.cellsW);
+        if (Math.max(Math.abs(t.cellX - jx), Math.abs(t.cellY - jy)) <= 2) busy = true;
+      }
+      if (busy) continue;
+      outer: for (let dy = -2; dy <= 2; dy++)
+        for (let dx = -2; dx <= 2; dx++) {
+          const rx = t.cellX + dx;
+          const ry = t.cellY + dy;
+          if (this.cellAt(rx, ry) !== 'K') continue;
+          const rk = ry * this.opts.cellsW + rx;
+          if (this.prospectJobs.has(rk)) continue;
+          this.prospectJobs.set(rk, PROSPECT_TICKS);
+          break outer;
+        }
+    }
   }
 
   /**
@@ -716,6 +775,7 @@ export class Sim {
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
     u32(this.status === 'won' ? 1 : 0);
     for (const [k, v] of this.depositLeft) { u32(k); u32(v); }
+    for (const [k, v] of this.prospectJobs) { u32(k); u32(v); }
     u32(this.betweenTimer); u32(this.intraTimer); u32(this.spawnTimer);
     for (const q of this.spawnQueue) u32(q);
     for (const e of this.waveEntries) { u32(e.x); u32(e.y); }
@@ -779,6 +839,7 @@ export class Sim {
     else this.tricklePhase();
     this.towerPhase();
     this.productionPhase();
+    this.prospectPhase();
     this.projectilePhase();
     this.walkPhase();
   }
