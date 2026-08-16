@@ -20,8 +20,9 @@ import { createRng, type Rng } from '../rng/rng';
 import { isBuildable, type CellType } from '../grid/cells';
 import type { GeneratedMap, CellRef } from '../mapgen/mapgen';
 import { computeFlowField, type FlowField } from './flow';
-import { pickTarget, type Priority, type TargetCandidate } from './targeting';
+import { PRIORITIES, pickTarget, type Priority, type TargetCandidate } from './targeting';
 import { canChoose, effectiveStats, type EffectiveStats, type EnemyDef, type TowerDef } from './defs';
+import type { ReplayAction, ReplayInput } from './replay';
 
 export const TICK_HZ = 20;
 
@@ -124,6 +125,13 @@ export class Sim {
   /** 'running' until the Core falls. */
   status: 'running' | 'lost' = 'running';
 
+  /**
+   * The run's input log, recorded inside the mutation methods themselves -
+   * the ONLY mutation surface - so the log cannot drift from what happened.
+   * {seed, this} is the whole run (PRD sec 12).
+   */
+  readonly inputs: ReplayInput[] = [];
+
   // ---- waves ----
   wave = 0;
   /** Entries the CURRENT wave uses; next wave's are telegraphed. */
@@ -185,6 +193,7 @@ export class Sim {
     const prodCooldown = def.production ? effectiveStats(def, [-1, -1, -1]).productionEveryTicks : 0;
     this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, priority: 'first', choices: [-1, -1, -1] });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
+    this.inputs.push({ tick: this.tickCount, a: { t: 'build', x, y, defId } });
     return true;
   }
 
@@ -209,6 +218,7 @@ export class Sim {
     if (cost === null || this.scrap < cost) return false;
     this.scrap -= cost;
     t.choices[tier] = option;
+    this.inputs.push({ tick: this.tickCount, a: { t: 'choose', x, y, tier, option } });
     return true;
   }
 
@@ -220,6 +230,7 @@ export class Sim {
     const t = this.towerAt(x, y);
     if (!t) return false;
     t.priority = priority;
+    this.inputs.push({ tick: this.tickCount, a: { t: 'priority', x, y, priority } });
     return true;
   }
 
@@ -250,7 +261,80 @@ export class Sim {
     }
     this.towers[idx - 1] = null;
     this.occupancy[y * this.opts.cellsW + x] = 0;
+    this.inputs.push({ tick: this.tickCount, a: { t: 'sell', x, y } });
     return true;
+  }
+
+  /**
+   * Playback dispatcher: one recorded action in, the same mutation out.
+   * Reserved Phase 6 actions return false until their features exist - a
+   * replay carrying them is from a newer REPLAY_VERSION and never gets here.
+   */
+  applyAction(a: ReplayAction): boolean {
+    switch (a.t) {
+      case 'build': return this.buildTower(a.x, a.y, a.defId);
+      case 'choose': return this.chooseTier(a.x, a.y, a.tier, a.option);
+      case 'priority': return this.setPriority(a.x, a.y, a.priority);
+      case 'sell': return this.sellTower(a.x, a.y);
+      default: return false; // Phase 6 shapes, not yet implemented
+    }
+  }
+
+  /**
+   * FNV-1a over the full mutable state: every SoA lane to its high-water
+   * mark, counters, timers, queues, towers, occupancy. Two sims with equal
+   * hashes evolved identically; the golden replay test freezes one such hash
+   * as the regression anchor (WBS 1.4.8). Float lanes hash by IEEE bit
+   * pattern - determinism rules (sqrt-not-hypot, fixed tie-breaks) are what
+   * make those bits reproducible cross-machine.
+   */
+  hashState(): number {
+    let h = 0x811c9dc5;
+    const u32 = (v: number): void => {
+      h ^= v & 0xff; h = Math.imul(h, 0x01000193);
+      h ^= (v >>> 8) & 0xff; h = Math.imul(h, 0x01000193);
+      h ^= (v >>> 16) & 0xff; h = Math.imul(h, 0x01000193);
+      h ^= (v >>> 24) & 0xff; h = Math.imul(h, 0x01000193);
+    };
+    const f32 = (arr: Float32Array, n: number): void => {
+      const bits = new Uint32Array(arr.buffer, 0, n);
+      for (let i = 0; i < n; i++) u32(bits[i]);
+    };
+    const i16 = (arr: Int16Array | Uint16Array, n: number): void => {
+      for (let i = 0; i < n; i++) u32(arr[i]);
+    };
+
+    u32(this.tickCount); u32(this.scrap); u32(this.coreHp); u32(this.coreDamage);
+    u32(this.wave); u32(this.kills); u32(this.breaches); u32(this.spawned);
+    u32(this.status === 'running' ? 1 : 0);
+    for (const o of this.ore) u32(o);
+    u32(this.betweenTimer); u32(this.intraTimer); u32(this.spawnTimer);
+    for (const q of this.spawnQueue) u32(q);
+    for (const e of this.waveEntries) { u32(e.x); u32(e.y); }
+    for (const e of this.nextWaveEntries) { u32(e.x); u32(e.y); }
+
+    const eh = this.enemyHigh;
+    f32(this.posX, eh); f32(this.posY, eh); f32(this.hp, eh); f32(this.shield, eh);
+    f32(this.slowMul, eh); f32(this.tgtX, eh); f32(this.tgtY, eh);
+    i16(this.slowTicks, eh); i16(this.gen, eh);
+    for (let i = 0; i < eh; i++) u32((this.alive[i] << 8) | this.enemyDefIdx[i]);
+    for (const s of this.freeEnemies) u32(s);
+
+    const ph = this.projHigh;
+    f32(this.projX, ph); f32(this.projY, ph); f32(this.projVX, ph); f32(this.projVY, ph);
+    f32(this.projDamage, ph); f32(this.projSpeed, ph); f32(this.projRadius, ph); f32(this.projSlowMul, ph);
+    i16(this.projTtl, ph); i16(this.projTargetGen, ph); i16(this.projSlowTicks, ph); i16(this.projTowerIdx, ph);
+    for (let i = 0; i < ph; i++) { u32(this.projAlive[i]); u32(this.projTarget[i]); u32(this.projHoming[i]); }
+    for (const s of this.freeProj) u32(s);
+
+    i16(this.occupancy, this.occupancy.length);
+    for (const t of this.towers) {
+      if (!t) { u32(0xdead); continue; }
+      u32(t.cellX); u32(t.cellY); u32(t.defIdx); u32(t.cooldown); u32(t.prodCooldown); u32(t.kills);
+      u32(PRIORITIES.indexOf(t.priority));
+      for (const c of t.choices) u32(c + 1);
+    }
+    return h >>> 0;
   }
 
   enemyDefOf(slot: number): EnemyDef {

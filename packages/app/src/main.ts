@@ -8,10 +8,12 @@
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import {
+  REPLAY_VERSION,
   Sim,
   TICK_HZ,
   TILE_SIZE,
   TileLibrary,
+  contentHashOf,
   createRng,
   effectiveStats,
   generateMap,
@@ -415,6 +417,16 @@ async function main(): Promise<void> {
     canBuild: (x: number, y: number): boolean => sim.canBuildAt(x, y),
     cellAt: (x: number, y: number): string | null => sim.cellAt(x, y),
     ore: (): number => sim.ore[0],
+    // The whole run as a file (PRD sec 12): paste this into a bug report and
+    // the run is reproducible to the tick.
+    replay: (): string =>
+      JSON.stringify({
+        version: REPLAY_VERSION,
+        seed,
+        contentHash: contentHashOf(ENEMY_DEFS, TOWER_DEFS),
+        inputs: sim.inputs,
+      }),
+    hash: (): number => sim.hashState(),
     reroll: (): void => {
       bankForReroll();
       setSeed((seed + 1) % 1_000_000);
