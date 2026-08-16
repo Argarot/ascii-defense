@@ -57,8 +57,13 @@ form:
    geometric difficulty, finite ore with visible richness, the run ends at
    wave 20 with victory, elite waves + Juggernaut, and the full lane model
    (in-tile lanes, directional connectors, route-as-graph, Tile Smith ADD TO
-   POOL). Next per the ledger: **session 15 — map variance** (generated tile
-   variants through the shared validator, boon ground, prospecting rework).
+   POOL). Playtest-3 fixes shipped (PR #57): directional roads (^v<>) replacing the
+   lane-letter model for authoring, timed+autonomous prospecting, 2× offer
+   cards on an overlay terminal, loud reroll, absolute richness visuals,
+   ore readouts, Tile Smith add-UX. Next: **session 15 — map variance, the
+   big one**: carve v3 with edge partitions (2.17 — makes two-touching-turn
+   tiles actually appear), generated tile variants (2.15), boon ground
+   (2.9), threat-level knob bundles.
 2. Session 13 — finite ore, slower mining, the run ends (D6 finite).
 3. Session 14 — roads that touch without connecting (WBS 2.16).
 4. Sessions 15–24 — map variance, the effects engine, damage types, attack
