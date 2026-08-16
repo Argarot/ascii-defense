@@ -85,7 +85,7 @@ Windows 10, PowerShell 5.1, Node v22.23.2, npm 12.0.2, git 2.33.0.
 | What the game is | [docs/PRD.md](docs/PRD.md) |
 | How it is built | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | How it looks, and the art pipeline | [docs/ASSETS.md](docs/ASSETS.md) |
-| What happens next | [docs/ROADMAP.md](docs/ROADMAP.md) |
-| Where each request Daniil made went | [docs/FEEDBACK.md](docs/FEEDBACK.md) |
+| What happens next, session by session | [docs/ROADMAP.md](docs/ROADMAP.md) |
+| The work checklist, and where each request landed | [docs/WBS.md](docs/WBS.md) |
 
 Read the PRD before the architecture; read this file before touching anything.
