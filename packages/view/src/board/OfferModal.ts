@@ -43,7 +43,7 @@ export class OfferModal {
     return null;
   }
 
-  render(term: GLTerm, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean }): void {
+  render(term: GLTerm, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean; ore: number }): void {
     this.regions = [];
     const totalW = cards.length * CARD_W + (cards.length - 1) * GAP;
     const x0 = Math.max(0, Math.floor((term.cols - totalW) / 2));
@@ -85,12 +85,20 @@ export class OfferModal {
       this.regions.push({ x0: cx, y0, x1: cx + CARD_W, y1: y0 + CARD_H, option: i });
     });
     if (reroll) {
-      // Channel C's second half: pay Ore, deal a fresh three.
-      const label = ` REROLL OFFER - ${reroll.cost} ore `;
-      const rx = Math.floor((term.cols - label.length) / 2);
-      const ry = y0 + CARD_H + 1;
-      term.write(rx, ry, label, reroll.can ? role('ui.bg') : role('ui.dim'), reroll.can ? role('terrain.ore.lit') : role('ui.grid'));
-      if (reroll.can) this.regions.push({ x0: rx, y0: ry, x1: rx + label.length, y1: ry + 1, option: -1 });
+      // Channel C's second half - a BUTTON the size of a card row, not a
+      // whisper (Daniil could not find it). Two rows tall, always visible;
+      // grey only when Ore cannot cover it.
+      const label = reroll.can
+        ? `REROLL OFFER \u2014 ${reroll.cost} ore (you have ${reroll.ore})`
+        : `reroll costs ${reroll.cost} ore \u2014 you have ${reroll.ore}`;
+      const bw = Math.max(label.length + 6, 44);
+      const rx = Math.floor((term.cols - bw) / 2);
+      const ry = y0 + CARD_H + 2;
+      const fg = reroll.can ? role('ui.bg') : role('ui.dim');
+      const bg = reroll.can ? role('terrain.ore.lit') : role('ui.grid');
+      for (let row = 0; row < 2; row++) term.write(rx, ry + row, ' '.repeat(bw), fg, bg);
+      term.write(rx + Math.floor((bw - label.length) / 2), ry + 1, label, fg, bg);
+      if (reroll.can) this.regions.push({ x0: rx, y0: ry, x1: rx + bw, y1: ry + 2, option: -1 });
     }
   }
 }

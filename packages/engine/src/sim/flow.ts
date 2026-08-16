@@ -15,7 +15,7 @@
  * Yields `L`, the effective road length feeding the difficulty model
  * (PRD sec 9): the longest entry-to-Core walk in cells.
  */
-import { isRoad, isRouteCell, lanesJoin, type CellType } from '../grid/cells';
+import { isRoad, isRouteCell, roadsConnect, type CellType } from '../grid/cells';
 import { TILE_SIZE } from '../tiles/tile';
 import type { CellRef } from '../mapgen/mapgen';
 
@@ -60,7 +60,7 @@ function stepAllowed(
   const ty = Math.floor(y / TILE_SIZE);
   const ntx = Math.floor(nx / TILE_SIZE);
   const nty = Math.floor(ny / TILE_SIZE);
-  if (tx === ntx && ty === nty) return lanesJoin(a, b);
+  if (tx === ntx && ty === nty) return roadsConnect(a, b, Math.sign(nx - x), Math.sign(ny - y));
 
   // Crossing a tile boundary: only centre-to-centre, and only when each side
   // continues its road inward (same-lane or Core) - the directional rule.
@@ -82,7 +82,7 @@ function stepAllowed(
     const inward = cells[iy * width + ix];
     if (inward === null) return false;
     if (centre === 'C' || inward === 'C') return true;
-    return isRoad(inward) && lanesJoin(centre, inward);
+    return isRoad(inward) && roadsConnect(centre, inward, dx, dy);
   };
   // Each side's inward direction points AWAY from the boundary.
   return inwardOk(x, y, x - nx, y - ny) && inwardOk(nx, ny, nx - x, ny - y);

@@ -11,7 +11,7 @@
  * A declared connector cannot disagree with the drawn cells because there is
  * no declared connector.
  */
-import { isCellType, isRoad, isRouteCell, lanesJoin, type CellType } from '../grid/cells';
+import { isCellType, isRoad, isRouteCell, roadsConnect, type CellType } from '../grid/cells';
 
 export const TILE_SIZE = 5;
 const CENTER = 2; // (TILE_SIZE - 1) / 2
@@ -39,6 +39,9 @@ export function cellAt(cells: readonly string[], x: number, y: number): CellType
   return cells[y][x] as CellType;
 }
 
+/** Directional glyphs rotate WITH the grid: up becomes right, and so on. */
+const ROTATE_GLYPH: Record<string, string> = { '^': '>', '>': 'v', 'v': '<', '<': '^' };
+
 /** Rotate the grid one quarter turn clockwise, k times. Pure. */
 export function rotateCells(cells: readonly string[], k: Rotation): string[] {
   let out = cells.slice();
@@ -48,7 +51,10 @@ export function rotateCells(cells: readonly string[], k: Rotation): string[] {
     for (let y = 0; y < TILE_SIZE; y++) {
       let row = '';
       // Clockwise: new (x, y) reads old (y, SIZE-1-x).
-      for (let x = 0; x < TILE_SIZE; x++) row += prev[TILE_SIZE - 1 - x][y];
+      for (let x = 0; x < TILE_SIZE; x++) {
+        const c = prev[TILE_SIZE - 1 - x][y];
+        row += ROTATE_GLYPH[c] ?? c;
+      }
       out.push(row);
     }
   }
@@ -67,7 +73,8 @@ export function deriveConnectors(cells: readonly string[]): Connectors {
     const centre = cellAt(cells, cx, cy);
     if (!isRoad(centre)) return false;
     const inward = cellAt(cells, ix, iy);
-    return (isRoad(inward) || inward === 'C') && lanesJoin(centre, inward);
+    if (!isRoad(inward) && inward !== 'C') return false;
+    return roadsConnect(centre, inward, ix - cx, iy - cy);
   };
   return {
     n: crossing(CENTER, 0, CENTER, 1),
@@ -154,7 +161,7 @@ export function validateTileCells(cells: readonly string[]): string[] {
           const ny = y + dy;
           const k = key(nx, ny);
           if (!inRoute.has(k) || comp.has(k)) continue;
-          if (!lanesJoin(cellAt(cells, x, y), cellAt(cells, nx, ny))) continue;
+          if (!roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) continue;
           comp.add(k);
           stack.push([nx, ny]);
         }
@@ -205,7 +212,7 @@ export function crossingsInterconnect(cells: readonly string[]): boolean {
       const k = key(nx, ny);
       if (seen.has(k)) continue;
       if (!isRouteCell(cellAt(cells, nx, ny))) continue;
-      if (!lanesJoin(cellAt(cells, x, y), cellAt(cells, nx, ny))) continue;
+      if (!roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) continue;
       seen.add(k);
       stack.push([nx, ny]);
     }

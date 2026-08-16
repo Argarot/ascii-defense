@@ -9,6 +9,7 @@ import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import {
   CACHE_CLAIM_COST,
+  DEPOSIT_MAX,
   OFFER_REROLL_COST,
   PROSPECT_COST,
   RELIC_DRAW_COST,
@@ -87,6 +88,20 @@ async function main(): Promise<void> {
     background: role('ui.bg'),
   });
   const hud = new HudPanel(hudTerm, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
+  // The offer modal draws on its OWN overlay terminal at 2x font (Daniil:
+  // the cards were unreadable at board size). Absolute-positioned over the
+  // board; shown only while an offer stands.
+  const modalTerm = new GLTerm(glyphs, {
+    cols: Math.floor(boardCols / 2),
+    rows: Math.floor((mapY * TILE_SIZE * CELL_H) / 2),
+    cellPx: GLYPH_PX_W * 2,
+    cellPxH: GLYPH_PX_H * 2,
+    background: '#00000000',
+  });
+  modalTerm.canvas.style.position = 'absolute';
+  modalTerm.canvas.style.left = '0';
+  modalTerm.canvas.style.top = '0';
+  modalTerm.canvas.style.display = 'none';
   const offerModal = new OfferModal();
 
   // Seed from the URL if pinned, else from the clock (Math.random is banned
@@ -247,7 +262,7 @@ async function main(): Promise<void> {
     const out: { x: number; y: number; frac: number }[] = [];
     for (const d of currentMap?.deposits ?? []) {
       const dep = sim.depositAt(d.x, d.y);
-      if (dep) out.push({ x: d.x, y: d.y, frac: dep.initial > 0 ? dep.left / dep.initial : 0 });
+      if (dep) out.push({ x: d.x, y: d.y, frac: dep.left / DEPOSIT_MAX });
     }
     return out;
   };
@@ -353,19 +368,17 @@ async function main(): Promise<void> {
     // The offer pop-up paints OVER the finished board frame; closing it is
     // simply not painting it - the board underneath was never disturbed.
     const offer = sim.offerDefs();
+    modalTerm.canvas.style.display = offer ? '' : 'none';
     if (offer) {
+      modalTerm.clear('#10151cd8');
       offerModal.render(
-        term,
+        modalTerm,
         offer.map((d) => ({ name: d.name, kind: d.kind, desc: d.desc })),
         sim.wave,
         animPhase,
-        { cost: OFFER_REROLL_COST, can: sim.ore[0] >= OFFER_REROLL_COST },
+        { cost: OFFER_REROLL_COST, can: sim.ore[0] >= OFFER_REROLL_COST, ore: sim.ore[0] },
       );
-      // BoardView.render flushed to the GPU before we painted; without this
-      // second flush the modal exists only in the CPU glyph buffer - text
-      // snapshots see it, the SCREEN does not. Found by Daniil clicking
-      // cards he could not see.
-      term.flush();
+      modalTerm.flush();
     }
 
     hud.render({
@@ -384,7 +397,13 @@ async function main(): Promise<void> {
       L: sim.flow.L,
       seed,
       speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
-      inspector: view.describeCell(selected ?? hover),
+      inspector:
+        view.describeCell(selected ?? hover) +
+        (() => {
+          const c = selected ?? hover;
+          const dep = c ? sim.depositAt(c.x, c.y) : null;
+          return dep && sim.cellAt(c!.x, c!.y) === 'O' ? ` \u00b7 ore left ${dep.left}/${dep.initial}` : '';
+        })(),
       palette: (buildTarget && !(selected && sim.cacheAt(selected.x, selected.y)) ? palette : []).map((d) => ({
         name: d.name ?? d.id,
         cost: d.cost,
@@ -400,7 +419,14 @@ async function main(): Promise<void> {
           : null,
       rock:
         selected && sim.cellAt(selected.x, selected.y) === 'K'
-          ? { cost: PROSPECT_COST, affordable: sim.scrap >= PROSPECT_COST, unlocked: sim.prospectUnlocked() }
+          ? {
+              cost: PROSPECT_COST,
+              affordable: sim.scrap >= PROSPECT_COST,
+              job: (() => {
+                const j = sim.prospectJobAt(selected.x, selected.y);
+                return j ? { pct: Math.round(((j.total - j.remaining) / j.total) * 100) } : null;
+              })(),
+            }
           : null,
       selectedTower:
         infoTower && def && eff
@@ -441,7 +467,9 @@ async function main(): Promise<void> {
   // Board + its caption stack in a left column; the caption stays under the
   // board (Daniil), leaving the panel the full height beside them.
   const leftCol = document.createElement('div');
+  leftCol.style.position = 'relative';
   leftCol.appendChild(term.canvas);
+  leftCol.appendChild(modalTerm.canvas);
   app.appendChild(leftCol);
   app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
@@ -504,15 +532,14 @@ async function main(): Promise<void> {
     if (action.kind === 'prospect' && selected) sim.prospect(selected.x, selected.y);
     dirty = true;
   });
+  modalTerm.canvas.addEventListener('click', (e) => {
+    if (sim.offer === null) return;
+    const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
+    if (option === -1) sim.rerollOffer();
+    else if (option !== null) pickOffer(option);
+    dirty = true;
+  });
   term.canvas.addEventListener('click', (e) => {
-    // An offer up = the board IS the modal; clicks route to its cards.
-    if (sim.offer !== null) {
-      const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W, GLYPH_PX_H);
-      if (option === -1) sim.rerollOffer();
-      else if (option !== null) pickOffer(option);
-      dirty = true;
-      return;
-    }
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
     if (targeting !== null) {
       if (cell) sim.fireActive(targeting, cell.x, cell.y);

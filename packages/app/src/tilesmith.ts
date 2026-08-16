@@ -28,6 +28,10 @@ const BRUSH_LABEL: Record<CellType, string> = {
   G: 'G ground',
   R: 'R road',
   r: 'r road (lane B)',
+  '^': '\u2191 road up',
+  'v': '\u2193 road down',
+  '<': '\u2190 road left',
+  '>': '\u2192 road right',
   K: 'K rock',
   O: 'O ore',
   C: 'C core',
@@ -36,6 +40,10 @@ const BRUSH_BG: Record<CellType, string> = {
   G: '#3d4f61',
   R: '#93abc4',
   r: '#7a94b0',
+  '^': '#86a0bc',
+  'v': '#86a0bc',
+  '<': '#86a0bc',
+  '>': '#86a0bc',
   K: '#5a6a7c',
   O: '#ffd15c',
   C: '#2bbfae',
@@ -162,13 +170,21 @@ async function main(): Promise<void> {
     copyBtn.textContent = 'copied \u2713';
     setTimeout(() => (copyBtn.textContent = 'copy JSON'), 1200);
   });
+  let justAdded = '';
   addBtn.addEventListener('click', () => {
     const tile: { id: string; name?: string; cells: string[] } = { id: idInput.value.trim(), cells: [...cells] };
     const name = nameInput.value.trim();
     if (name) tile.name = name;
     addMintedTile(tile);
-    addBtn.textContent = 'added \u2713 (in the pool next map)';
-    setTimeout(() => (addBtn.textContent = 'ADD TO POOL'), 1600);
+    justAdded = tile.id;
+    // Confirmation POPUP, then the button greys until the tile changes -
+    // flashing "duplicate id" right after a successful add read as an error
+    // (Daniil, playtest 3).
+    const pop = document.createElement('div');
+    pop.textContent = `\u2713 '${tile.id}' added to the pool - it can appear on the next map`;
+    pop.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1f6f43;color:#eafff2;padding:10px 18px;border-radius:4px;z-index:10;font-family:inherit';
+    document.body.appendChild(pop);
+    setTimeout(() => pop.remove(), 2200);
     update();
   });
   actions.appendChild(addBtn);
@@ -210,8 +226,9 @@ async function main(): Promise<void> {
     const id = idInput.value.trim();
     const idOk = /^[a-z][a-z0-9_]*$/.test(id);
     const minted = loadMintedTiles();
+    if (id !== justAdded) justAdded = '';
     addNote.textContent = minted.length > 0 ? `minted pool: ${minted.length} tile(s) \u00b7 they join the generator on the next map` : 'minted tiles join the generator on the next map (this browser only)';
-    const dupe = tileLibraryJson.tiles.some((t) => t.id === id) || minted.some((t) => t.id === id);
+    const dupe = id !== justAdded && (tileLibraryJson.tiles.some((t) => t.id === id) || minted.some((t) => t.id === id));
     if (!idOk) errors.push(`id '${id}' must be lowercase letters, digits, underscores`);
     if (dupe) errors.push(`id '${id}' already exists in the library`);
 
@@ -222,7 +239,8 @@ async function main(): Promise<void> {
       if (name) tile.name = name;
       out.textContent = JSON.stringify(tile, null, 2);
       copyBtn.disabled = false;
-      addBtn.disabled = false;
+      addBtn.disabled = id === justAdded; // just added: grey, not an error
+      if (id === justAdded) verdict.innerHTML = '<span class="verdict-ok">\u2713 in the pool \u2014 change the tile or id to mint another</span>';
       out.style.display = '';
     } else {
       verdict.innerHTML =

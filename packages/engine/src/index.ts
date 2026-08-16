@@ -4,7 +4,7 @@
 export { createRng, streamFromState } from './rng/rng';
 export type { Rng, RngStream, RngStreamName } from './rng/rng';
 
-export { CELL_TYPES, isCellType, isRouteCell, isBuildable, isRoad, lanesJoin } from './grid/cells';
+export { CELL_TYPES, isCellType, isRouteCell, isBuildable, isRoad, lanesJoin, roadsConnect, ROAD_DIR } from './grid/cells';
 export type { CellType } from './grid/cells';
 
 export {
@@ -32,12 +32,12 @@ export {
 } from './tiles/board';
 export type { Board, Placement, PlaceOptions } from './tiles/board';
 
-export { generateMap, ORE_FLOOR } from './mapgen/mapgen';
+export { generateMap, ORE_FLOOR, DEPOSIT_MAX } from './mapgen/mapgen';
 export type { GeneratedMap, MapGenOptions, CellRef, CacheRef, RockContent, OreDeposit } from './mapgen/mapgen';
 
 export { computeFlowField } from './sim/flow';
 export type { FlowField } from './sim/flow';
-export { Sim, TICK_HZ, SELL_REFUND, OFFER_EVERY_WAVES, RELIC_DRAW_COST, OFFER_REROLL_COST, CACHE_CLAIM_COST, PROSPECT_COST, DEFAULT_DIFFICULTY, waveHpScale, waveCount } from './sim/sim';
+export { Sim, TICK_HZ, SELL_REFUND, OFFER_EVERY_WAVES, RELIC_DRAW_COST, OFFER_REROLL_COST, CACHE_CLAIM_COST, PROSPECT_COST, PROSPECT_TICKS, DEFAULT_DIFFICULTY, waveHpScale, waveCount } from './sim/sim';
 export type { DifficultySpec } from './sim/sim';
 export type { SimOptions, Tower } from './sim/sim';
 export { REPLAY_VERSION, contentHashOf, fnv1a, playReplay } from './sim/replay';
