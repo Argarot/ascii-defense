@@ -48,6 +48,8 @@ export interface HudTowerInfo {
 export interface HudState {
   scrap: number;
   ore: number;
+  /** Held relics; the full inventory panel arrives with the Core vessel (1.6.4). */
+  relicCount: number;
   kills: number;
   coreHp: number;
   coreHpMax: number;
@@ -158,6 +160,10 @@ export class HudPanel {
     term.write(0, 4, `CORE ${s.coreHp}/${s.coreHpMax}`, coreCol);
     term.write(0, 5, '='.repeat(Math.max(0, barLen)), coreCol);
     term.write(0, 7, `WAVE ${s.wave}`, role('ui.text'));
+    if (s.relicCount > 0) {
+      const rl = `RELICS ${s.relicCount}`;
+      term.write(W - rl.length, 7, rl, role('ui.accent'));
+    }
     term.write(0, 8, `next: ${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'} \u00b7 kills ${s.kills}`, role('ui.dim'));
     term.write(0, 9, `road L=${s.L}`, role('ui.dim'));
 

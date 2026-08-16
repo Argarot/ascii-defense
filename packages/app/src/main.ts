@@ -19,12 +19,13 @@ import {
   generateMap,
   resolveCells,
 } from '@ascii-defense/engine';
-import { BoardView, HudPanel, CELL_W, CELL_H, role } from '@ascii-defense/view';
+import { BoardView, HudPanel, OfferModal, CELL_W, CELL_H, role } from '@ascii-defense/view';
 import type { CellRef } from '@ascii-defense/view';
-import { validateEnemies, validateTowers } from '@ascii-defense/content';
+import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
+import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 
 // Content enters the app validated or not at all (ARCHITECTURE sec 8).
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
@@ -33,6 +34,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 }
 const ENEMY_DEFS = must(validateEnemies.check(enemiesJson), 'enemies roster').enemies;
 const TOWER_DEFS = must(validateTowers.check(towersJson), 'towers roster').towers;
+const RELIC_DEFS = must(validateRelics.check(relicsJson), 'relic pool').relics;
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '5';
@@ -75,6 +77,7 @@ async function main(): Promise<void> {
     background: role('ui.bg'),
   });
   const hud = new HudPanel(hudTerm, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
+  const offerModal = new OfferModal();
 
   // Seed from the URL if pinned, else from the clock (Math.random is banned
   // everywhere, and the whole point is that the seed is the only entropy).
@@ -89,6 +92,27 @@ async function main(): Promise<void> {
   let selectedBuildId = TOWER_DEFS[0].id; // def id of the active build choice
   let hudHover: import('@ascii-defense/view').HudAction | null = null;
   let dirty = true;
+
+  // An offer freezes time: auto-pause when it appears, restore the previous
+  // speed on pick. The pause is app-level - the sim never wall-clock waits,
+  // so replays and the bot are untouched (they pick between ticks).
+  let offerWasUp = false;
+  let speedBeforeOffer = 1;
+  const syncOfferPause = (): void => {
+    const up = sim.offer !== null;
+    if (up && !offerWasUp) {
+      speedBeforeOffer = speedIdx === 0 ? 1 : speedIdx;
+      speedIdx = 0;
+    }
+    if (!up && offerWasUp) speedIdx = speedBeforeOffer;
+    offerWasUp = up;
+  };
+  const pickOffer = (option: number): void => {
+    if (sim.pickRelic(option)) {
+      syncOfferPause();
+      dirty = true;
+    }
+  };
 
   // Ore carries across rerolls in memory - the demo stand-in for M2's real
   // banking (PRD sec 6). Three carries, then the fourth reroll wipes: enough
@@ -138,6 +162,7 @@ async function main(): Promise<void> {
       mode: 'waves',
       coreHp: 50,
       startingOre: carriedOre,
+      relicDefs: RELIC_DEFS,
     });
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
@@ -238,9 +263,22 @@ async function main(): Promise<void> {
       phase: animPhase,
     });
 
+    // The offer pop-up paints OVER the finished board frame; closing it is
+    // simply not painting it - the board underneath was never disturbed.
+    const offer = sim.offerDefs();
+    if (offer) {
+      offerModal.render(
+        term,
+        offer.map((d) => ({ name: d.name, kind: d.kind, desc: d.desc })),
+        sim.wave,
+        animPhase,
+      );
+    }
+
     hud.render({
       scrap: sim.scrap,
       ore: sim.ore[0],
+      relicCount: sim.heldRelics.length,
       kills: sim.kills,
       coreHp: sim.coreHp,
       coreHpMax: sim.coreHpMax,
@@ -357,6 +395,12 @@ async function main(): Promise<void> {
     dirty = true;
   });
   term.canvas.addEventListener('click', (e) => {
+    // An offer up = the board IS the modal; clicks route to its cards.
+    if (sim.offer !== null) {
+      const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W, GLYPH_PX_H);
+      if (option !== null) pickOffer(option);
+      return;
+    }
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
     // Select-first flow (Daniil): clicking never builds. Pick the tile,
     // then pick the tower in the HUD; the preview ring breathes meanwhile.
@@ -364,6 +408,11 @@ async function main(): Promise<void> {
     dirty = true;
   });
   window.addEventListener('keydown', (e) => {
+    // While an offer is up, 1/2/3 pick cards (speed keys are moot: paused).
+    if (sim.offer !== null && (e.key === '1' || e.key === '2' || e.key === '3')) {
+      pickOffer(Number(e.key) - 1);
+      return;
+    }
     if (e.key === 'r' || e.key === 'R') {
       bankForReroll();
       setSeed((seed + 1 + (Date.now() % 997)) % 1_000_000);
@@ -409,6 +458,7 @@ async function main(): Promise<void> {
       acc -= TICK_MS;
       ran++;
     }
+    syncOfferPause(); // an offer born this frame pauses before the next
     // Redraw every frame: telegraphs breathe and pulses expand even while
     // the player thinks; the renderer costs well under a millisecond.
     draw();
@@ -440,10 +490,19 @@ async function main(): Promise<void> {
     // Text snapshots of both terminals - the reliable way to verify UI from
     // a headless pane (rAF frozen, screenshots refused - session 10).
     hudText: (): string => hudTerm.toText(),
+    boardText: (): string => term.toText(),
     select: (x: number, y: number): void => {
       selected = { x, y };
       draw();
     },
+    offer: (): string[] | null => sim.offerDefs()?.map((d) => d.id) ?? null,
+    pick: (option: number): boolean => {
+      const ok = sim.pickRelic(option);
+      syncOfferPause();
+      draw();
+      return ok;
+    },
+    relics: (): string[] => sim.heldRelicInfo().map((h) => h.def.id),
     // The whole run as a file (PRD sec 12): paste this into a bug report and
     // the run is reproducible to the tick.
     replay: (): string =>

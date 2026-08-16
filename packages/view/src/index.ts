@@ -3,6 +3,8 @@
 export { BoardView } from './board/BoardView';
 export type { BoardViewOptions, CellRef, RenderState } from './board/BoardView';
 export { HudPanel } from './hud/HudPanel';
+export { OfferModal } from './board/OfferModal';
+export type { OfferCard } from './board/OfferModal';
 export type { HudState, HudTowerInfo, HudTierInfo, HudChoiceInfo, HudAction } from './hud/HudPanel';
 export { CELL_W, CELL_H, drawTerrainCell } from './board/style';
 export { role } from './palette';
