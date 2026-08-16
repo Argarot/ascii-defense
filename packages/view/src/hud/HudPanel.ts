@@ -66,6 +66,8 @@ export interface HudState {
   selectedBuild: number;
   buildTargetSelected: boolean;
   selectedTower: HudTowerInfo | null;
+  /** The Core card, when a Core cell is selected. */
+  core: HudCoreInfo | null;
   /** Animation phase 0..1 - preview numbers pulse on it. */
   phase: number;
 }
@@ -73,7 +75,26 @@ export interface HudState {
 export type HudAction =
   | { kind: 'priority'; value: Priority }
   | { kind: 'build'; index: number }
-  | { kind: 'choose'; tier: number; option: number };
+  | { kind: 'choose'; tier: number; option: number }
+  | { kind: 'relic'; index: number };
+
+/** One inventory slot on the Core card. Empty slots render too (Daniil). */
+export interface HudRelicSlot {
+  /** Two-letter tag, '' when empty. */
+  label: string;
+  name: string;
+  state: 'empty' | 'passive' | 'ready' | 'cooling' | 'consumable' | 'used';
+  /** Seconds until an active is ready again; 0 otherwise. */
+  cooldownSec: number;
+}
+
+export interface HudCoreInfo {
+  hp: number;
+  hpMax: number;
+  slots: readonly HudRelicSlot[];
+  /** "Name - desc" of the hovered slot, or null. */
+  hoverDesc: string | null;
+}
 
 interface Region {
   row: number;
@@ -202,6 +223,48 @@ export class HudPanel {
     if (s.gameOver) {
       term.write(0, y + 1, 'THE CORE HAS FALLEN', role('enemy.fast'));
       term.write(0, y + 3, 'press R for a new run', role('ui.text'));
+    } else if (s.core) {
+      // ---- the Core card: the vessel and its relic slots (1.6.4) ----------
+      const c = s.core;
+      term.write(0, y++, 'THE CORE', role('terrain.core.lit'));
+      const frac = c.hpMax > 0 ? c.hp / c.hpMax : 0;
+      const hpCol = frac <= 0.25 ? role('enemy.fast') : role('terrain.core.mid');
+      term.write(0, y++, `hp ${c.hp}/${c.hpMax}`, hpCol);
+      term.write(0, y++, '='.repeat(Math.max(0, Math.round(frac * (W - 2)))), hpCol);
+      y++;
+      term.write(0, y++, 'RELIC SLOTS', role('ui.dim'));
+      // Stone Story-style grid: empty slots render as empty boxes - what you
+      // COULD hold is as visible as what you do (Daniil).
+      const perRow = 6;
+      const slotW = 5;
+      c.slots.forEach((slot, i) => {
+        const x0 = (i % perRow) * slotW;
+        const row = y + Math.floor(i / perRow);
+        const [fg, bg, text] =
+          slot.state === 'empty'
+            ? [role('ui.grid'), role('ui.bg'), '[  ]']
+            : slot.state === 'ready'
+              ? [role('ui.bg'), role('ui.accent'), `[${slot.label}]`]
+              : slot.state === 'cooling'
+                ? [role('ui.dim'), role('ui.grid'), `[${String(Math.min(99, slot.cooldownSec)).padStart(2)}]`]
+                : slot.state === 'consumable'
+                  ? [role('ui.bg'), role('terrain.ore.lit'), `[${slot.label}]`]
+                  : slot.state === 'used'
+                    ? [role('ui.grid'), role('ui.bg'), `[--]`]
+                    : [role('ui.text'), role('ui.grid'), `[${slot.label}]`]; // passive
+        term.write(x0, row, text, fg, bg);
+        if (slot.state !== 'empty') {
+          this.regions.push({ row, x0, x1: x0 + 4, action: { kind: 'relic', index: i } });
+        }
+      });
+      y += Math.ceil(c.slots.length / perRow) + 1;
+      if (c.hoverDesc) {
+        for (const line of this.wrap(c.hoverDesc, W, 4)) term.write(0, y++, line, role('ui.text'));
+      } else {
+        term.write(0, y++, 'hover a slot for details;', role('ui.dim'));
+        term.write(0, y++, 'click actives to fire,', role('ui.dim'));
+        term.write(0, y++, 'consumables to use', role('ui.dim'));
+      }
     } else if (s.selectedTower) {
       const t = s.selectedTower;
       term.write(0, y++, t.name, role('ui.accent'));
