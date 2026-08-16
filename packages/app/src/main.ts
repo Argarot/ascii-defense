@@ -86,7 +86,7 @@ async function main(): Promise<void> {
   let sim!: Sim;
   let speedIdx = 1; // start at 1x
   let showGrid = false;
-  let selectedBuild = 0; // palette index of the active build choice
+  let selectedBuildId = TOWER_DEFS[0].id; // def id of the active build choice
   let hudHover: import('@ascii-defense/view').HudAction | null = null;
   let dirty = true;
 
@@ -144,6 +144,16 @@ async function main(): Promise<void> {
     dirty = true;
   };
 
+  // Dynamic palette (Daniil): with a buildable tile selected, offer ONLY the
+  // towers legal there - a vein offers the Refinery, ground offers fighters.
+  // With nothing selected, the full roster shows for browsing.
+  const paletteDefs = (): (typeof TOWER_DEFS)[number][] => {
+    if (selected && sim.canBuildAt(selected.x, selected.y)) {
+      return TOWER_DEFS.filter((d) => sim.canBuildDefAt(selected!.x, selected!.y, d.id));
+    }
+    return TOWER_DEFS;
+  };
+
   const collectEnemies = (): { x: number; y: number; id: string }[] => {
     const out: { x: number; y: number; id: string }[] = [];
     for (let i = 0; i < sim.posX.length; i++) {
@@ -165,11 +175,15 @@ async function main(): Promise<void> {
     const buildTarget = selected !== null && sim.canBuildAt(selected.x, selected.y);
     // Hovering a palette entry previews THAT tower's radius (the staged-tile
     // ring follows the mouse, not just the last click - Daniil's fix).
-    const previewIdx = hudHover?.kind === 'build' ? hudHover.index : selectedBuild;
+    const palette = paletteDefs();
+    const previewDef =
+      (hudHover?.kind === 'build' ? palette[hudHover.index] : undefined) ??
+      palette.find((d) => d.id === selectedBuildId) ??
+      palette[0];
     const range = selTower
       ? { x: selTower.cellX, y: selTower.cellY, r: sim.stats(selTower).range }
-      : buildTarget && selected
-        ? { x: selected.x, y: selected.y, r: TOWER_DEFS[previewIdx].range }
+      : buildTarget && selected && previewDef
+        ? { x: selected.x, y: selected.y, r: previewDef.range }
         : null;
     const hoverTower = hover ? sim.towerAt(hover.x, hover.y) : null;
     const infoTower = selTower ?? hoverTower;
@@ -204,14 +218,19 @@ async function main(): Promise<void> {
           ? { x: selTower.cellX, y: selTower.cellY, r: effPreview.range }
           : range,
       // Green only when the sim would actually accept the click: placeable
-      // AND affordable.
+      // for SOME tower and affordable for the staged one.
       hoverBuildable:
         hover !== null &&
         sim.canBuildAt(hover.x, hover.y) &&
-        sim.canAfford(TOWER_DEFS[selectedBuild].id),
+        previewDef !== undefined &&
+        sim.canAfford(previewDef.id),
       showGrid,
       rangeIsPreview: (!selTower && buildTarget) || (selTower !== null && effPreview !== null),
+      // Blink = the NEXT wave will enter here; steady = spawning RIGHT NOW.
+      // One marker for both read as a lie when a telegraphed entry sat quiet
+      // for a whole wave (Daniil's report).
       telegraph: sim.nextWaveEntries,
+      activeEntries: sim.spawnRemaining() > 0 ? sim.waveEntries : [],
       gameOver: sim.status === 'lost',
       pulses: sim.pulses
         .map((pu) => ({ x: pu.x, y: pu.y, r: pu.r, age01: (sim.tickCount - pu.tick) / 10 }))
@@ -232,12 +251,12 @@ async function main(): Promise<void> {
       seed,
       speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
       inspector: view.describeCell(selected ?? hover),
-      palette: TOWER_DEFS.map((d) => ({
+      palette: palette.map((d) => ({
         name: d.name ?? d.id,
         cost: d.cost,
         affordable: sim.canAfford(d.id),
       })),
-      selectedBuild,
+      selectedBuild: palette.findIndex((d) => d.id === selectedBuildId),
       buildTargetSelected: buildTarget,
       phase: animPhase,
       selectedTower:
@@ -326,10 +345,11 @@ async function main(): Promise<void> {
     const action = hud.actionAt(e.offsetX, e.offsetY);
     if (!action) return;
     if (action.kind === 'build') {
-      selectedBuild = action.index;
-      // The palette IS the build button when a tile is staged.
-      if (selected && sim.canBuildAt(selected.x, selected.y)) {
-        sim.buildTower(selected.x, selected.y, TOWER_DEFS[action.index].id);
+      const def = paletteDefs()[action.index];
+      if (def) {
+        selectedBuildId = def.id;
+        // The palette IS the build button when a tile is staged.
+        if (selected) sim.buildTower(selected.x, selected.y, def.id);
       }
     }
     if (action.kind === 'priority' && selected) sim.setPriority(selected.x, selected.y, action.value);
@@ -417,6 +437,13 @@ async function main(): Promise<void> {
     canBuild: (x: number, y: number): boolean => sim.canBuildAt(x, y),
     cellAt: (x: number, y: number): string | null => sim.cellAt(x, y),
     ore: (): number => sim.ore[0],
+    // Text snapshots of both terminals - the reliable way to verify UI from
+    // a headless pane (rAF frozen, screenshots refused - session 10).
+    hudText: (): string => hudTerm.toText(),
+    select: (x: number, y: number): void => {
+      selected = { x, y };
+      draw();
+    },
     // The whole run as a file (PRD sec 12): paste this into a bug report and
     // the run is reproducible to the tick.
     replay: (): string =>

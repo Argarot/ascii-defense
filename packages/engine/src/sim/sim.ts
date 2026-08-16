@@ -181,11 +181,27 @@ export class Sim {
     return def !== undefined && this.scrap >= def.cost;
   }
 
+  /**
+   * Per-def placement legality (Daniil, 2026-08-16): ore producers go ON ore
+   * nodes and nowhere else; every other tower stays OFF them - an ore node is
+   * Refinery ground, not premium tower ground. Derived from the def's
+   * production block, so it is content-driven with no extra schema field.
+   * Phase 6's buildLegality hook (relics like Vein Tap / Foundry) widens
+   * exactly this function.
+   */
+  canBuildDefAt(x: number, y: number, defId: string): boolean {
+    if (!this.canBuildAt(x, y)) return false;
+    const def = this.opts.towerDefs.find((d) => d.id === defId);
+    if (!def) return false;
+    const minesOre = (def.production?.ore ?? 0) > 0;
+    return minesOre === (this.cellAt(x, y) === 'O');
+  }
+
   buildTower(x: number, y: number, defId: string): boolean {
     if (this.status !== 'running') return false;
-    if (!this.canBuildAt(x, y)) return false;
     const defIdx = this.opts.towerDefs.findIndex((d) => d.id === defId);
     if (defIdx === -1) throw new Error(`unknown tower def '${defId}'`);
+    if (!this.canBuildDefAt(x, y, defId)) return false;
     const def = this.opts.towerDefs[defIdx];
     if (this.scrap < def.cost) return false;
     this.scrap -= def.cost;
@@ -335,6 +351,11 @@ export class Sim {
       for (const c of t.choices) u32(c + 1);
     }
     return h >>> 0;
+  }
+
+  /** Enemies still queued to spawn in the current wave. */
+  spawnRemaining(): number {
+    return this.spawnQueue.length;
   }
 
   enemyDefOf(slot: number): EnemyDef {

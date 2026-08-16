@@ -419,13 +419,21 @@ describe('production - Refinery and Ore (1.4.6)', () => {
     expect(sim.ore[0]).toBe(2);
   });
 
-  it('off the vein it mines nothing', () => {
+  it('placement is exclusive both ways: refinery only ON ore, fighters only OFF it', () => {
     const { cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
     const sim = new Sim(11, simOpts);
-    const spot = buildSpotNear(cells, cellsW, cellsH); // a G cell
-    expect(sim.buildTower(spot.x, spot.y, 'refinery')).toBe(true);
-    for (let t = 0; t < 400; t++) sim.tick();
-    expect(sim.ore[0]).toBe(0);
+    const ground = buildSpotNear(cells, cellsW, cellsH); // a G cell
+    const vein = cellOfType(cells, cellsW, cellsH, 'O');
+    // Refinery refuses ground; bolt refuses the vein (ore is Refinery ground).
+    expect(sim.canBuildDefAt(ground.x, ground.y, 'refinery')).toBe(false);
+    expect(sim.buildTower(ground.x, ground.y, 'refinery')).toBe(false);
+    expect(sim.canBuildDefAt(vein.x, vein.y, 'bolt')).toBe(false);
+    expect(sim.buildTower(vein.x, vein.y, 'bolt')).toBe(false);
+    // And the pairings that SHOULD work still do.
+    expect(sim.canBuildDefAt(ground.x, ground.y, 'bolt')).toBe(true);
+    expect(sim.canBuildDefAt(vein.x, vein.y, 'refinery')).toBe(true);
+    // Refused builds never enter the replay log.
+    expect(sim.inputs.length).toBe(0);
   });
 
   it('tier choices fold into yield and cycle speed', () => {
