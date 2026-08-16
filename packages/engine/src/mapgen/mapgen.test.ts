@@ -196,11 +196,8 @@ describe('map generation v2 - trees, void, spread', () => {
           if (isRoadSlot[k]) continue;
           if (p) {
             expect(dist[k], `filled slot ${k} too far from road`).toBeLessThanOrEqual(ORE_REACH);
-            if (dist[k] > FILL_RADIUS) {
-              // The outer ring is resources-or-nothing.
-              const cells = LIB.resolved(p.tileId, p.rotation).cells;
-              expect(cells.some((row) => row.includes('O')), `outer-ring slot ${k} must carry ore`).toBe(true);
-            }
+            // Since playtest 4 the outer ring may also carry plain ground
+            // (enclosed voids read as bugs); the void-beyond rule remains.
           } else {
             expect(dist[k], `void slot ${k} should have been filled`).toBeGreaterThan(FILL_RADIUS);
           }

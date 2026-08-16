@@ -536,20 +536,27 @@ export class Sim {
     return true;
   }
 
-  /** Towers whose committed Survey choice aids prospecting near (x, y). */
-  private surveySpeed(x: number, y: number): number {
-    let speed = 1;
+  /** Towers holding a given survey capability. */
+  private surveyCount(cap: 'surveySpeed' | 'surveyAuto'): number {
+    let n = 0;
     for (const t of this.towers) {
       if (!t) continue;
-      if (Math.max(Math.abs(t.cellX - x), Math.abs(t.cellY - y)) > 2) continue;
       const tiers = this.opts.towerDefs[t.defIdx].tiers;
       if (!tiers) continue;
       for (let ti = 0; ti < t.choices.length; ti++) {
         const pick = t.choices[ti];
-        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === 'prospect') speed++;
+        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === cap) n++;
       }
     }
-    return Math.min(4, speed);
+    return n;
+  }
+
+  /**
+   * Every Survey tower speeds EVERY job - global and stacking (Daniil,
+   * playtest 4), capped so five refineries do not make rock free.
+   */
+  prospectSpeed(): number {
+    return Math.min(5, 1 + this.surveyCount('surveySpeed'));
   }
 
   /** The active prospect job at (x, y), for the rock card's progress bar. */
@@ -578,10 +585,12 @@ export class Sim {
 
   /** Jobs tick down (Survey towers accelerate); completion reveals the deal. */
   private prospectPhase(): void {
+    const speed = this.prospectSpeed();
     for (const [k, remaining] of this.prospectJobs) {
       const x = k % this.opts.cellsW;
       const y = Math.floor(k / this.opts.cellsW);
-      const next = remaining - this.surveySpeed(x, y);
+      void x; void y;
+      const next = remaining - speed;
       if (next > 0) {
         this.prospectJobs.set(k, next);
         continue;
@@ -604,8 +613,9 @@ export class Sim {
         this.refold();
       }
     }
-    // Survey refineries prospect their surroundings AUTONOMOUSLY (free):
-    // one job at a time each, nearest rock first, deterministic scan.
+    // AUTOMATION towers prospect their surroundings autonomously (free):
+    // one job at a time each, nearest rock first, deterministic scan. A
+    // PARALLEL capability to Survey's speed, not the same switch (Daniil).
     for (const t of this.towers) {
       if (!t) continue;
       const tiers = this.opts.towerDefs[t.defIdx].tiers;
@@ -613,7 +623,7 @@ export class Sim {
       let hasSurvey = false;
       for (let ti = 0; ti < t.choices.length; ti++) {
         const pick = t.choices[ti];
-        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === 'prospect') hasSurvey = true;
+        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === 'surveyAuto') hasSurvey = true;
       }
       if (!hasSurvey) continue;
       let busy = false;

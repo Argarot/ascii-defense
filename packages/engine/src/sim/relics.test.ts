@@ -38,7 +38,7 @@ const REFINERY: TowerDef = {
   production: { ore: 1, everyTicks: 40 },
   tiers: [
     { choices: [{ name: 'Wide Bore', cost: 10, mods: { production: 1 } }, { name: 'Fast Cycle', cost: 10, mods: { productionEveryTicks: -15 } }] },
-    { choices: [{ name: 'Deep Drill', cost: 10, mods: { production: 1 } }, { name: 'Survey', cost: 10, unlocks: 'prospect' }] },
+    { choices: [{ name: 'Deep Drill', cost: 10, mods: { production: 1 } }, { name: 'Survey', cost: 10, unlocks: 'surveyAuto' }] },
     { choices: [{ name: 'Mother Lode', cost: 10, mods: { production: 2 } }, { name: 'Perpetual', cost: 10, mods: { productionEveryTicks: -10 } }] },
   ],
 };
@@ -385,7 +385,7 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
     }
   });
 
-  it('Survey refineries accelerate nearby jobs and prospect on their own', () => {
+  it('Automation refineries prospect on their own (parallel to Survey speed)', () => {
     const { cells, cellsW, cellsH, simOpts } = makeWorld(83, { startingScrap: 5000, maxSpawns: 1 });
     const sim = new Sim(83, simOpts);
     // A Survey refinery on a vein; find a rock within its chebyshev-2 reach.
@@ -403,8 +403,8 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
       sim.tick();
       expect(sim.prospectJobAt(nearRock.x, nearRock.y)).not.toBeNull();
       expect(sim.scrap).toBe(scrap0); // free - Survey pays with the slot it occupies
-      // FASTER: speed 2 (one Survey tower near) finishes in half the time.
-      for (let t = 0; t < 300; t++) sim.tick();
+      // Automation is not speed: the free job runs at base pace.
+      for (let t = 0; t < 601; t++) sim.tick();
       expect(sim.cellAt(nearRock.x, nearRock.y)).not.toBe('K');
     }
   });

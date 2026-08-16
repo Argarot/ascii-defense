@@ -341,6 +341,44 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     }
   }
 
+  // No enclosed voids (Daniil, playtest 4): void is COASTLINE, not holes.
+  // Any empty slot that cannot reach the board border through other empty
+  // slots is inside the map's hull and gets terrain like its neighbours.
+  {
+    const reach = new Array<boolean>(width * height).fill(false);
+    const q: number[] = [];
+    for (let x = 0; x < width; x++) {
+      for (const y of [0, height - 1]) {
+        const k = slotIdx(x, y);
+        if (!roadEdges.has(k) && dist[k] > ORE_REACH && !reach[k]) { reach[k] = true; q.push(k); }
+      }
+    }
+    for (let y = 0; y < height; y++) {
+      for (const x of [0, width - 1]) {
+        const k = slotIdx(x, y);
+        if (!roadEdges.has(k) && dist[k] > ORE_REACH && !reach[k]) { reach[k] = true; q.push(k); }
+      }
+    }
+    for (let qi = 0; qi < q.length; qi++) {
+      const k = q[qi];
+      const x = k % width;
+      const y = Math.floor(k / width);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const nk = slotIdx(nx, ny);
+        if (reach[nk] || roadEdges.has(nk) || dist[nk] <= ORE_REACH) continue;
+        reach[nk] = true;
+        q.push(nk);
+      }
+    }
+    // Enclosed void slots become fillable: mark them as if within reach.
+    for (let k = 0; k < width * height; k++) {
+      if (!roadEdges.has(k) && dist[k] > ORE_REACH && !reach[k]) dist[k] = ORE_REACH; // outer-ring rules apply
+    }
+  }
+
   // The ore floor is pre-committed, not checked after: a seeded shuffle of
   // every fillable slot marks the first ORE_FLOOR as guaranteed ore, and the
   // fill loop honours the marks. The guarantee therefore holds by
@@ -360,10 +398,12 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       if (roadEdges.has(k)) continue;
       if (dist[k] > ORE_REACH) continue; // unclaimed land stays void
       if (dist[k] > FILL_RADIUS) {
-        // The outer ring exists only for resources: ore or nothing. This is
-        // what keeps maps from carrying useless land (Daniil).
+        // The outer ring exists for resources - ore, or plain ground when
+        // the slot is enclosed (holes read as bugs, not as coastline).
         if (guaranteedOre.has(k) || (index.filler.ore.length > 0 && rng.chance(0.3))) {
           board = place(board, rng.pick(index.filler.ore), rng.pick([0, 1, 2, 3] as const), x, y);
+        } else if (index.filler.plain.length > 0 && rng.chance(0.55)) {
+          board = place(board, rng.pick(index.filler.plain), rng.pick([0, 1, 2, 3] as const), x, y);
         }
         continue;
       }

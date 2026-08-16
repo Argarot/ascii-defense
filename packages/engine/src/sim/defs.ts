@@ -164,8 +164,10 @@ export interface ChoiceDef {
   name: string;
   cost: number;
   mods?: StatMods;
-  /** Capability grant: 'prospect' opens rock prospecting (Survey - PRD sec 5.3). */
-  unlocks?: 'prospect';
+  /** Capability grants (PRD sec 5.3): surveySpeed towers each speed EVERY
+   *  prospect job (global, stacking); surveyAuto towers start free jobs on
+   *  rock near themselves. Parallel choices, not one boolean. */
+  unlocks?: 'surveySpeed' | 'surveyAuto';
 }
 
 /** One tier: an either/or, mutually exclusive choice (Tower Dominion style). */
