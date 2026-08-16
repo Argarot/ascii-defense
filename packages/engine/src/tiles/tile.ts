@@ -220,6 +220,59 @@ export function crossingsInterconnect(cells: readonly string[]): boolean {
   return crossings.every(([x, y]) => seen.has(key(x, y)));
 }
 
+/**
+ * The tile's edge PARTITION (session 15, carve v3): which crossings belong
+ * to which internal road segment. A classic routing tile is one group
+ * ("e.n.s"); a twin-bend is two ("e.n|s.w"). The generator indexes road
+ * tiles by this key, so a slot hosting two separate path segments can be
+ * tiled - the thing Daniil's two-touching-turns tile needed to exist.
+ */
+export function tilePartition(cells: readonly string[]): Edge[][] {
+  const conn = deriveConnectors(cells);
+  const crossingOf: [Edge, number, number][] = [
+    ['n', CENTER, 0],
+    ['s', CENTER, TILE_SIZE - 1],
+    ['w', 0, CENTER],
+    ['e', TILE_SIZE - 1, CENTER],
+  ];
+  const groups: Edge[][] = [];
+  const claimed = new Set<Edge>();
+  for (const [edge, sx, sy] of crossingOf) {
+    if (!conn[edge] || claimed.has(edge)) continue;
+    // Flood this crossing's component; collect every crossing it contains.
+    const key = (x: number, y: number): number => y * TILE_SIZE + x;
+    const seen = new Set<number>([key(sx, sy)]);
+    const stack: [number, number][] = [[sx, sy]];
+    while (stack.length) {
+      const [x, y] = stack.pop()!;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) continue;
+        const k = key(nx, ny);
+        if (seen.has(k) || !isRouteCell(cellAt(cells, nx, ny))) continue;
+        if (!roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) continue;
+        seen.add(k);
+        stack.push([nx, ny]);
+      }
+    }
+    const group: Edge[] = [];
+    for (const [e2, x2, y2] of crossingOf) {
+      if (conn[e2] && seen.has(key(x2, y2))) {
+        group.push(e2);
+        claimed.add(e2);
+      }
+    }
+    groups.push(group.sort());
+  }
+  return groups.sort((a, b) => a.join('.').localeCompare(b.join('.')));
+}
+
+/** Canonical partition key, e.g. "e.n.s" or "e.n|s.w". */
+export function partitionKey(groups: readonly (readonly Edge[])[]): string {
+  return groups.map((g) => [...g].sort().join('.')).sort().join('|');
+}
+
 /** Convenience: validate a content TileDef (id + grid). */
 export function validateTile(def: TileDef): string[] {
   const errors = validateTileCells(def.cells);

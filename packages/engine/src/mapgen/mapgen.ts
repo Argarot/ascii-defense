@@ -19,7 +19,7 @@
  * easier. Both are data, decided by threat level, not by this module.
  */
 import type { RngStream } from '../rng/rng';
-import { EDGES, OPPOSITE, TILE_SIZE, crossingsInterconnect, type Edge, type Rotation } from './../tiles/tile';
+import { EDGES, OPPOSITE, TILE_SIZE, partitionKey, tilePartition, type Edge, type Rotation } from './../tiles/tile';
 import { TileLibrary, createBoard, place, resolveCells, type Board } from '../tiles/board';
 
 export interface MapGenOptions {
@@ -140,15 +140,17 @@ function indexLibrary(lib: TileLibrary): {
       const edges = new Set<Edge>(EDGES.filter((e) => connectors[e]));
       const hasCore = cells.some((row) => row.includes('C'));
       const hasRoad = edges.size > 0;
-      // A carved slot needs the tile to route BETWEEN its edges, not merely
-      // present them; multi-lane tiles that do not interconnect stay out of
-      // the road pools (session 14 - connectivity by construction).
-      if (hasRoad && !crossingsInterconnect(cells)) continue;
-      const key = sigKey(edges);
+      // Carve v3: road tiles are indexed by their edge PARTITION, so a tile
+      // whose crossings split into two separate segments (twin bends) is
+      // dealt exactly where the carve routed two separate path segments -
+      // and never onto a single-path slot (session 14's boot crash).
+      const key = hasRoad ? partitionKey(tilePartition(cells)) : sigKey(edges);
       if (hasCore) {
-        const list = core.get(key) ?? [];
+        // The Core's crossings must interconnect (all roads reach it).
+        if (tilePartition(cells).length > 1) continue;
+        const list = core.get(sigKey(edges)) ?? [];
         list.push({ tileId: id, rotation });
-        core.set(key, list);
+        core.set(sigKey(edges), list);
       } else if (hasRoad) {
         const list = road.get(key) ?? [];
         list.push({ tileId: id, rotation });
@@ -205,7 +207,10 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   // roadEdges[slot] = edges of that slot carrying road. roadSlots is the set
   // of carved slots (incl. the Core); walkOrder remembers insertion order so
   // branch-start picks are deterministic.
+  // Per slot: one or two SEGMENTS, each a set of edges (carve v3). Two
+  // segments in one slot = two roads passing without merging.
   const roadEdges = new Map<number, Set<Edge>>();
+  const secondSegment = new Map<number, Set<Edge>>();
   const roadSlots = new Set<number>([coreK]);
   const walkOrder: number[] = [coreK];
   const entryCells: CellRef[] = [];
@@ -237,11 +242,12 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       let cameFrom: Edge | null = null;
       const newSlots: number[] = [];
       const newEdges: [number, Edge][] = [];
+      const newTunnels: [number, Set<Edge>][] = [];
 
       const tryWalk = (): boolean => {
         for (;;) {
           const wandering = steps < target;
-          const legal: { e: Edge; exits: boolean }[] = [];
+          const legal: { e: Edge; exits: boolean; tunnel?: Edge }[] = [];
           for (const e of EDGES) {
             if (cameFrom === e) continue;
             const [dx, dy] = EDGE_DELTA[e];
@@ -253,10 +259,40 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
               legal.push({ e, exits });
               continue;
             }
-            // Tree rule: never step into existing road (loops impossible),
-            // nor into slots this walk already claimed.
-            if (roadSlots.has(slotIdx(nx, ny))) continue;
-            if (newSlots.includes(slotIdx(nx, ny))) continue;
+            const nk = slotIdx(nx, ny);
+            if (roadSlots.has(nk) || newSlots.includes(nk)) {
+              // Carve v3: a TURNING TUNNEL through an occupied slot. The
+              // walk enters via e and leaves perpendicular, as a second
+              // segment - two roads in one slot, never merging. Only over
+              // single-segment non-core slots, and only when the landing
+              // slot is free; representable partitions are the two
+              // twin-bend forms, guaranteed by the perpendicular turn.
+              if (nk === coreK || secondSegment.has(nk) || newTunnels.some(([tk]) => tk === nk)) continue;
+              const existing = roadEdges.get(nk);
+              if (!existing) continue;
+              const enter = OPPOSITE[e];
+              if (existing.has(enter)) continue;
+              for (const out of EDGES) {
+                if (out === enter || out === OPPOSITE[enter]) continue; // must TURN
+                if (existing.has(out)) continue;
+                const [ox, oy] = EDGE_DELTA[out];
+                const lx = nx + ox;
+                const ly = ny + oy;
+                const landExit = lx < 0 || ly < 0 || lx >= width || ly >= height;
+                if (!landExit) {
+                  const lk = slotIdx(lx, ly);
+                  if (roadSlots.has(lk) || newSlots.includes(lk)) continue;
+                }
+                if (wandering && landExit) continue;
+                // Only tunnel where a tile EXISTS for the resulting
+                // partition - no tile, no move, connectivity by construction.
+                const pk = partitionKey([[...existing] as Edge[], [enter, out] as Edge[]]);
+                if (!index.road.has(pk)) continue;
+                legal.push({ e, exits: false, tunnel: out });
+                break;
+              }
+              continue;
+            }
             legal.push({ e, exits });
           }
           if (legal.length === 0) return false;
@@ -265,7 +301,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
           // available (sector-preferred) - wandering past the target would
           // hog slots and starve later walks on small boards. While
           // wandering, a gentle sector bias spreads the tree across the map.
-          let choice: { e: Edge; exits: boolean };
+          let choice: { e: Edge; exits: boolean; tunnel?: Edge };
           const exitMoves = legal.filter((o) => o.exits);
           if (!wandering && exitMoves.length > 0) {
             choice = exitMoves.find((o) => o.e === sector) ?? rng.pick(exitMoves);
@@ -280,6 +316,26 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
             return true;
           }
           const [dx, dy] = EDGE_DELTA[choice.e];
+          if (choice.tunnel) {
+            // Pass through the occupied slot as a second segment and land
+            // beyond its far side (or exit the board there).
+            const tk = slotIdx(x + dx, y + dy);
+            newTunnels.push([tk, new Set<Edge>([OPPOSITE[choice.e], choice.tunnel])]);
+            const [ox, oy] = EDGE_DELTA[choice.tunnel];
+            const lx = x + dx + ox;
+            const ly = y + dy + oy;
+            if (lx < 0 || ly < 0 || lx >= width || ly >= height) {
+              entryCells.push(edgeCell(x + dx, y + dy, choice.tunnel));
+              return true;
+            }
+            x = lx;
+            y = ly;
+            newSlots.push(slotIdx(x, y));
+            newEdges.push([slotIdx(x, y), OPPOSITE[choice.tunnel]]);
+            cameFrom = OPPOSITE[choice.tunnel];
+            steps += 2;
+            continue;
+          }
           x += dx;
           y += dy;
           newSlots.push(slotIdx(x, y));
@@ -295,6 +351,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
           walkOrder.push(k);
         }
         for (const [k, e] of newEdges) addEdge(k, e);
+        for (const [k, seg] of newTunnels) secondSegment.set(k, seg);
         done = true;
       }
     }
@@ -308,12 +365,18 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   for (const [k, edges] of roadEdges) {
     const x = k % width;
     const y = Math.floor(k / width);
-    const key = sigKey(edges);
+    const second = secondSegment.get(k);
+    const key =
+      k === coreK
+        ? sigKey(edges)
+        : second
+          ? partitionKey([[...edges] as Edge[], [...second] as Edge[]])
+          : partitionKey([[...edges] as Edge[]]);
     const pool = (k === coreK ? index.core : index.road).get(key);
     if (!pool || pool.length === 0) {
       throw new Error(
-        `tile pool has no ${k === coreK ? 'core' : 'road'} tile with signature '${key}' - ` +
-          'the generator needs every 1-4 connector shape (see content/assets/tiles/library.json)',
+        `tile pool has no ${k === coreK ? 'core' : 'road'} tile for '${key}' - ` +
+          'the generator needs every routed shape (see content/assets/tiles/library.json)',
       );
     }
     const pick = rng.pick(pool);

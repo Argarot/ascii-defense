@@ -154,6 +154,257 @@
         "GGKGG",
         "GGGGG"
       ]
+    },
+    {
+      "id": "twin_bend",
+      "name": "Twin Bend",
+      "cells": [
+        "GG|GG",
+        "GGL7G",
+        "-7GL-",
+        "GL7GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_ns_1",
+      "cells": [
+        "GG|GG",
+        "GG|GG",
+        "GG|GG",
+        "GG|GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_ns_2",
+      "cells": [
+        "GG|F7",
+        "GG|||",
+        "GGLJ|",
+        "GGF-J",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_ns_3",
+      "cells": [
+        "GG|GG",
+        "GFJGG",
+        "GL7GG",
+        "GG|GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_ns_4",
+      "cells": [
+        "GG|GG",
+        "GG|GG",
+        "GFJGG",
+        "GL7GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_ew_1",
+      "cells": [
+        "GGGGG",
+        "GF7GG",
+        "-JL--",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ew_2",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-----",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ew_3",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "--7F-",
+        "GGLJG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ew_4",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-7F--",
+        "GLJGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ne_1",
+      "cells": [
+        "GG|GG",
+        "GG|GG",
+        "GGL--",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ne_2",
+      "cells": [
+        "GG|GG",
+        "GGL7G",
+        "GGGL-",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ne_3",
+      "cells": [
+        "GG|GG",
+        "GFJGG",
+        "GL---",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ne_4",
+      "cells": [
+        "GG|GG",
+        "GG|GG",
+        "GFJF-",
+        "G|GL7",
+        "GL--J"
+      ]
+    },
+    {
+      "id": "gen_nw_1",
+      "cells": [
+        "GG|GG",
+        "GG|GG",
+        "--JGG",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_nw_2",
+      "cells": [
+        "GG|GG",
+        "GG|GG",
+        "-7|GG",
+        "GLJGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_nw_3",
+      "cells": [
+        "GG|GG",
+        "GFJGG",
+        "-JGGG",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_nw_4",
+      "cells": [
+        "GG|GG",
+        "GG|GG",
+        "-7L7G",
+        "GL-JG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_se_1",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGF-",
+        "GGFJG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_se_2",
+      "cells": [
+        "GGGGG",
+        "F--7G",
+        "|F7L-",
+        "|||GG",
+        "LJ|GG"
+      ]
+    },
+    {
+      "id": "gen_se_3",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GF---",
+        "GL7GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_se_4",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGF--",
+        "GG|GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_sw_1",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-7GGG",
+        "GL7GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_sw_2",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "--7GG",
+        "GG|GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_sw_3",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "---7G",
+        "GGFJG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_sw_4",
+      "cells": [
+        "GGGF7",
+        "GF-J|",
+        "-JF7|",
+        "GG|||",
+        "GG|LJ"
+      ]
     }
   ]
 }
