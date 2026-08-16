@@ -46,6 +46,12 @@ was a drift surface, not an aid.)*
 V6→2.14 · V7→4.11 · V8→4.12 · V9→4.12 · V10→4.1 · V11→4.11 · V12→4.14
 *(marked, not committed — visual size only)* · V13→2.14
 
+**Round 3 (playtest 3):** difficulty ✓ · reroll visibility→#57 · 2× cards→#57 ·
+richness density+bg→#57 · timed/auto prospecting→#57 (2.11) · ore readout on
+select→#57 · directional roads replacing lane letters→#57 · Tile Smith add
+UX→#57 · two-turn tiles unused by carve→**2.17 (the fix is the carve, stated
+openly)** · "bigger sessions"→ledger rescoped
+
 **Round 2:** consumables free slots→1.7.6 · cut `foundry`→1.7.7 · 10× slower
 mining→1.7.8 · ore tiers→D9 · Tile Smith "add"→2.16 · balance maths→1.5.3/1.5.4 ·
 Phase 5 too early→split · content too late→ledger reordered · animation is
@@ -205,11 +211,12 @@ but the question the milestone existed to answer is answered.
 - [ ] 2.8 **Damage types decide fights** (PRD §8): Kinetic/Energy become real via resistance and immunity, so no single tower answers every wave. The direct answer to "2-3 mortars demolish everything".
 - [ ] 2.9 **Boon ground** (PRD §4.7): overlay cells granting a permanent modifier to whatever is built on them; must read as ground, and keep telegraphing under a tower without corrupting its 14 states.
 - [ ] 2.10 **Tower legibility** (PRD §5.4): full stat block, written descriptions on every upgrade choice (same card mechanic as relics), previews folding all live modifiers.
-- [ ] 2.11 **Prospecting rework** (PRD §4.6): drop the unlock; prospecting costs Scrap **and time** for everyone; the Refinery tier choice becomes a real ability (auto-prospect adjacent rock, or faster).
+- [x] 2.11 *(PR #57)* **Prospecting rework**: unlock dropped, 25 scrap + 600 ticks for everyone, PROSPECTING n% bar; Survey refineries accelerate nearby jobs (to 4×) and start free jobs autonomously.
 - [ ] 2.12 **The naming pass** (PRD §13, D8): printing-trade vocabulary across towers, enemies, upgrades, currencies. Before any art.
 - [ ] 2.13 **UI infrastructure**: scrollable panels, larger illustrated relic cards, hidden-tab behaviour (D7). The modal layer from 1.6.2 is the foundation.
 - [ ] 2.14 **Enemy readouts** (PRD §8): shields as a bracket around the glyph, destroyed separately from the body so any enemy may carry one; health and status effects as marks beside the glyph (braille is a candidate). No tooltips.
-- [ ] 2.15 **Generated tile variants** (D10): emit candidate 5×5 grids programmatically, filter through the shared `validateTileCells`, commit the survivors. Road shape variance and less rectilinear roads (visual V3) for the cost of one script — no re-authoring, no invariant touched. The library goes from 11 tiles to hundreds.
+- [ ] 2.15 **Generated tile variants** (D10): emit candidate 5×5 grids programmatically — now with the directional vocabulary (S-folds, border-huggers) — filter through the shared `validateTileCells`, commit the survivors. The library goes from 11 tiles to hundreds.
+- [ ] 2.17 **Carve v3 — multi-segment slots** (playtest 3, item 9): the carve learns to route two separate path segments through one slot, indexing road tiles by their edge PARTITION (e.g. {n,w}+{s,e}) instead of one flat signature. This is what makes Daniil's two-touching-turns tile — valid and mintable today — actually appear on maps. Also unlocks far denser road layouts on small boards.
 - [x] 2.16 *(PR #55, 2026-08-16)* **Roads that touch without connecting** — the full in-tile lane model (Daniil's call): 'r' as a second lane in the cell alphabet; connectors derive **directionally** (centre + inward continuation); border roads legal, orphan lanes rejected; the route is a **graph** (per-cell allowed-direction mask shared by BFS and the walk phase — enemies never lane-hop); Tile Smith lane brush + **ADD TO POOL** (localStorage pool, engine-revalidated on load, joins the generator). Found live: multi-lane tiles share boolean signatures with routing tiles, so the library index now demands a road-slot tile's crossings interconnect — connectivity stays by construction.
 
 ## M3 — Trustworthy difficulty *(sequenced after M4/M5: calibrating before the
