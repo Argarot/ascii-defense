@@ -22,11 +22,23 @@ Conventions:
 | D1 | ~~Buildable density~~ **RESOLVED 2026-08-15**: the map generator controls ground amount/placement directly; density is a generation knob tuned as data (PRD §4.4) | — | closed |
 | D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |
 | D3 | **Material language** — glyph vocabulary for metal/stone/energy/organic (ASSETS §5) | before 1.4 art authoring | Daniil + dev |
+| D4 | **Wave-clear offer cadence** — every N waves (proposal: 3, giving ~6 picks in a 20-wave run) | before 1.6.2 | Daniil |
+| D5 | **Relic rarity tiers** — ship flat in M1 with the field reserved, or weight the pool from the start? | before 1.6.3 content authoring | dev, on M1 play evidence |
 
-**2026-08-15 pivot** (PRD §1, §13): player tile-laying cut; maps are generated
+**2026-08-15 pivot** (PRD §1, §14): player tile-laying cut; maps are generated
 at run start (Core tile center, `entries` carved paths, ore by road distance).
-Flyers cut. Core = HP pool + branching tower funded by Ore. Tile machinery and
-Tile Smith survive as generator input and meta progression.
+Flyers cut. Tile machinery and Tile Smith survive as generator input and meta
+progression.
+
+**2026-08-16 — the relic layer** (PRD §7, new Phase 6 below). The Core's own
+branch tree is **cut before implementation**; the Core becomes the vessel that
+holds run-local relics. Rationale: a handful of symmetric balanced purchases
+cannot produce a build-breaking run, which is what a roguelite is for. Also
+settled: the Refinery mines Ore only (its Scrap path becomes a relic), caches
+are claimed by paying not by building, prospecting reveals rock contents dealt
+at generation, and no relic may ever combine both options of a tier (art
+budget — PRD §5.2, §14). M1 grew by ~2 sessions; the relic layer is inside the
+fun-test gate, not after it.
 
 ---
 
@@ -93,14 +105,30 @@ battery; sim deterministic cross-machine against the live deploy.
 - [x] 1.4.3 Six enemies across the trait matrix (armor blunts, shields burn first, fast/swarm stats), minWave gating. Damage types (Kinetic/Energy): deferred to D with the Core branches. *(PRs #16, #23)*
 - [x] 1.4.4 Targeting (first-on-path, deterministic ties) + subcell projectiles + damage resolution + kill credit. Cross-content CI rule: projectiles must outrun enemies. *(PR #17)*
 - [x] 1.4.5 Scrap economy + waves with telegraphed widening fronts + Core health and defeat. Budget curves from analytic prior: M3 calibration. *(PRs #19, #23)*
-- [ ] 1.4.6 **NEXT (D part 2b)**: Refinery + Ore (3-reroll in-memory persistence for the demo); Core as selectable entity - type choice then tier tree, paid in Ore.
+- [ ] 1.4.6 **NEXT — Refinery + Ore.** Refinery tower producing Ore **only** on an `O` cell (PRD §5.3); Ore in `Sim`, stored per tier; cross-run persistence in the app (survives 3 rerolls, then wipes — demo rule); HUD Ore readout; mapgen ore-floor guarantee (PRD §4.3). *Rescoped 2026-08-16: the Core's type-choice-and-tier-tree half is **cut, not deferred** (PRD §14) and replaced by 1.6; the Refinery's Yield/Scrap path is cut and becomes relic `foundry` (1.6.3).*
 - [x] 1.4.7 HUD complete for M1: 2× panel, build palette, tower inspector w/ crosspath-aware upgrade buttons, priority selector, range circle, telegraphs, Core vitals, defeat banner. Mouse-first. *(PRs #9, #18-#20, #23)*
-- [ ] 1.4.8 **NEXT (D part 2b)**: Replay `{version, seed, contentHash, inputs}` record/playback; golden state-hash test (2,000 ticks).
+- [ ] 1.4.8 **NEXT — Replay + golden hash.** `{version, seed, contentHash, inputs}` record/playback; golden state-hash test (2,000 ticks). The action union **reserves the Phase 6 shapes now** — `claimCache`, `prospect`, `pickRelic`, `buyRelic`, `rerollOffer`, `fireActive`, `useConsumable` — so the relic layer needs no replay migration. *(Reserve-the-shape; it has paid out four times on this project.)*
+
+### 1.6 Phase 6 — the power layer *(~2 sessions)* — **runs before 1.5**
+
+Relics: rule-breakers acquired mid-run (PRD §7). Numbered 6 because IDs are
+stable once assigned; sequenced before Phase 5 because calibrating a game that
+is missing its power layer produces curves we would throw away.
+
+- [ ] 1.6.1 **Hook layer** (engine). Fixed, deterministic application order over named seams: `globalStatModifier` (folds in `effectiveStats`, the one existing fold point), `onKill`, `onDamage`, `onProjectileSpawn`, `onWaveStart`, `buildLegality`, `economyRate`. Relic JSON schema + codegen + ajv validation + content linter entry. Kinds `passive | active | consumable` and a reserved `rarity` field all present from the first commit even where M1 ships none of a kind.
+- [ ] 1.6.2 **Acquisition B** — wave-clear offer, pick 1 of 3, seeded from a new `relics` RNG stream. Blocked on D4 (cadence).
+- [ ] 1.6.3 **Relic content** — ~20 across the three kinds, incl. `overflow`, `frostbite`, `tithe`, `splinter`, `veinTap`, `loadbearing`, `foundry`, `deepVein`, `orbital`, `stasis` (PRD §7.4). Blocked on D5 (rarity).
+- [ ] 1.6.4 **Core as vessel** — Core HP surface + relic inventory panel + active firing with cooldown display + consumable use. No tier tree.
+- [ ] 1.6.5 **Acquisition C then A** — Ore draw/reroll at the Core; then map caches as a mapgen overlay, claimed by selecting the cell and paying (never by building on it — PRD §14).
+- [ ] 1.6.6 **Prospecting** — rock contents dealt at generation (ore / cache / nothing); rock cells selectable with a Prospect card costing Scrap; gated behind the Refinery's Survey path. Opening rock only ever yields off-route cells, so the flow field is untouched by construction.
+
+**Phase 6 gate: a run where two relics combine into something absurd,
+reproduced exactly from its seed + input log.**
 
 ### 1.5 Phase 5 — smoke harness *(~0.5–1 session)*
 
-- [ ] 1.5.1 Crude bot policy (build/upgrade heuristic).
-- [ ] 1.5.2 `harness calibrate` / `harness check` CLI; per-wave margin table output.
+- [ ] 1.5.1 Crude bot policy (build/upgrade heuristic, **plus relic picks** — they are part of run power).
+- [ ] 1.5.2 `harness calibrate` / `harness check` CLI; per-wave margin table output. Calibration targets a distribution over relic draws, not a point (PRD §9).
 
 **M1 exit gate: Daniil plays it and says whether it is fun.**
 
@@ -109,10 +137,10 @@ battery; sim deterministic cross-machine against the live deploy.
 ## M2 — A complete run *(coarse; decompose when M1 exits)*
 
 - [ ] 2.1 Full board scale, escalating waves, run end conditions.
-- [ ] 2.2 Draft flow between tiles (3-choice hand or similar).
-- [ ] 2.3 Save/resume; run summary screen.
-- [ ] 2.4 Ore banking → persistent meta store.
-- [ ] 2.5 +4 towers, +~8 enemies (content, on the proven pipeline).
+- [ ] 2.2 ~~Draft flow between tiles~~ **CUT 2026-08-16** — a survivor of the pre-pivot design that should have died with player tile-laying on 2026-08-15. Replaced by relic pool expansion on the Phase 6 machinery.
+- [ ] 2.3 Save/resume (must serialise relic state + the input log); run summary screen listing the relics the run was built on.
+- [ ] 2.4 Ore banking → persistent meta store; relic pool unlock set persisted alongside it.
+- [ ] 2.5 +4 towers, +~8 enemies, +relics (content, on the proven pipeline).
 
 ## M3 — Trustworthy difficulty *(coarse)*
 
