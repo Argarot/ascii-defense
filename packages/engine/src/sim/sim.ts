@@ -383,6 +383,12 @@ export class Sim {
     return this.foldStats({ ...t, choices: [...choices] as [number, number, number] });
   }
 
+  /** The boon under (x, y), or null (PRD sec 4.7). */
+  boonAt(x: number, y: number): 'range' | 'damage' | 'rate' | null {
+    for (const b of this.opts.map.boons ?? []) if (b.x === x && b.y === y) return b.boon;
+    return null;
+  }
+
   /** Tier fold, then the relic fold on top - the ONE place relics touch stats. */
   stats(t: Tower): EffectiveStats {
     return this.foldStats(t);
@@ -399,6 +405,12 @@ export class Sim {
         out.range *= f.coreAdjacentRangeMul;
       }
     }
+    // Boon ground (PRD sec 4.7): the CELL buffs whoever stands on it, after
+    // every other fold - the map's own contribution to a build.
+    const boon = this.boonAt(t.cellX, t.cellY);
+    if (boon === 'range') out.range += 2;
+    else if (boon === 'damage') out.damage *= 1.25;
+    else if (boon === 'rate') out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / 1.25));
     return out;
   }
 

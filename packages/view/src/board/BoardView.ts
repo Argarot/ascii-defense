@@ -103,6 +103,8 @@ export interface RenderState {
   caches?: readonly CellRef[];
   /** Ore cells' remaining richness 0..1 - scales the gold-speck density. */
   oreRichness?: readonly { x: number; y: number; frac: number }[];
+  /** Boon cells (PRD sec 4.7) - tinted, and STILL tinted under a tower. */
+  boons?: readonly { x: number; y: number }[];
   /** The Core has fallen; draw the end screen over everything. */
   gameOver?: boolean;
   /** Expanding pulse rings: age01 runs 0 (just fired) to 1 (full range). */
@@ -297,6 +299,17 @@ export class BoardView {
       const gx = Math.floor(p.x * CELL_W);
       const gy = offsetY + Math.floor(p.y * CELL_H);
       term.put(gx, gy, '*', role('tower.core'));
+    }
+
+    // Boon ground: corner tint that stays visible when a tower stands on
+    // it (bg-only writes never disturb the tower's glyphs) - the telegraph
+    // Daniil specified in PRD sec 4.7.
+    for (const b of state.boons ?? []) {
+      const gx = b.x * CELL_W;
+      const gy = offsetY + b.y * CELL_H;
+      for (const [cx, cy] of [[0, 0], [CELL_W - 1, 0], [0, CELL_H - 1], [CELL_W - 1, CELL_H - 1]] as const) {
+        term.tint(gx + cx, gy + cy, '#1f5f52');
+      }
     }
 
     // Unclaimed caches: a bright '?' plate - something IS here, go pay for

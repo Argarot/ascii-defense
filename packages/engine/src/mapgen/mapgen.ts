@@ -68,6 +68,17 @@ export interface RockContent {
  * left, so "where is the money" is answered by looking. Tier is the D9
  * shape: everything ships tier 1; richer tiles arrive as purchases (M7).
  */
+/**
+ * Boon ground (PRD sec 4.7): a ground cell that permanently modifies
+ * whatever is built on it. An overlay like caches - the tile library never
+ * knows. Dealt at generation; the map, not a shop, decides where power is.
+ */
+export interface BoonRef {
+  x: number;
+  y: number;
+  boon: 'range' | 'damage' | 'rate';
+}
+
 export interface OreDeposit {
   x: number;
   y: number;
@@ -86,6 +97,8 @@ export interface GeneratedMap {
   rockContents: RockContent[];
   /** Every ore cell's finite vein (PRD sec 6). */
   deposits: OreDeposit[];
+  /** Boon cells (PRD sec 4.7); empty when relicPoolSize is absent. */
+  boons: BoonRef[];
 }
 
 /** Roadless slots farther than this (in slots) from the road stay void. */
@@ -105,6 +118,8 @@ export const ORE_REACH = 3;
 export const ORE_FLOOR = 2;
 /** Caches per map when the relic layer is on (channel A of PRD sec 7.3). */
 export const CACHE_COUNT = 2;
+/** Boon cells per map (PRD sec 4.7). */
+export const BOON_COUNT = 2;
 /** What a rock cell secretly holds: ore, a cache, or (mostly) nothing. */
 export const ROCK_ORE_CHANCE = 0.3;
 export const ROCK_CACHE_CHANCE = 0.12;
@@ -487,6 +502,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   const caches: CacheRef[] = [];
   const rockContents: RockContent[] = [];
   const deposits: OreDeposit[] = [];
+  const boons: BoonRef[] = [];
   const poolSize = opts.relicPoolSize ?? 0;
   {
     const cellsNow = resolveCells(board, lib);
@@ -513,8 +529,13 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
           farGround.push({ x: cx, y: cy });
         }
       }
-    for (const spot of rng.shuffle(farGround).slice(0, CACHE_COUNT)) {
+    const shuffled = rng.shuffle(farGround);
+    for (const spot of shuffled.slice(0, CACHE_COUNT)) {
       caches.push({ x: spot.x, y: spot.y, poolIdx: rng.int(0, poolSize - 1) });
+    }
+    const BOONS: BoonRef['boon'][] = ['range', 'damage', 'rate'];
+    for (const spot of shuffled.slice(CACHE_COUNT, CACHE_COUNT + BOON_COUNT)) {
+      boons.push({ x: spot.x, y: spot.y, boon: BOONS[rng.int(0, BOONS.length - 1)] });
     }
   }
 
@@ -525,6 +546,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     caches,
     rockContents,
     deposits,
+    boons,
   };
 
   function edgeCell(sx: number, sy: number, e: Edge): CellRef {
