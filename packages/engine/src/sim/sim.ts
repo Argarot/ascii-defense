@@ -526,6 +526,13 @@ export class Sim {
     return this.spawnQueue.length;
   }
 
+  /** Ticks until the next wave begins; 0 while a wave is in progress. */
+  ticksToNextWave(): number {
+    if (this.mode !== 'waves') return 0;
+    if (this.spawnQueue.length > 0 || this.aliveCount() > 0) return 0;
+    return Math.max(0, this.betweenTimer);
+  }
+
   enemyDefOf(slot: number): EnemyDef {
     return this.opts.enemyDefs[this.enemyDefIdx[slot]];
   }

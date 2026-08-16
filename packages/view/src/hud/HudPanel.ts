@@ -48,6 +48,8 @@ export interface HudTowerInfo {
 export interface HudState {
   scrap: number;
   ore: number;
+  /** Seconds until the next wave; 0 while one is in progress. */
+  nextWaveIn: number;
   /** Held relics; the full inventory panel arrives with the Core vessel (1.6.4). */
   relicCount: number;
   kills: number;
@@ -148,6 +150,10 @@ export class HudPanel {
 
     // ---- header + vitals ---------------------------------------------------
     term.write(0, 0, 'ASCII DEFENSE', role('ui.accent'));
+    if (s.nextWaveIn > 0) {
+      const cd = `next wave ${s.nextWaveIn}s`;
+      term.write(W - cd.length, 0, cd, role('enemy.fast'));
+    }
     term.write(0, 1, `seed ${s.seed} \u00b7 ${s.speedLabel}`, role('ui.dim'));
     term.write(0, 3, `SCRAP ${s.scrap}`, role('ui.accent'));
     // Ore on the same line, right-aligned: the two currencies never compete
@@ -168,34 +174,30 @@ export class HudPanel {
     term.write(0, 9, `road L=${s.L}`, role('ui.dim'));
 
     // ---- build palette (vertical, hover previews radius on the board) ------
-    // Dynamic (Daniil): the app already filters this list to what is legal on
-    // the selected tile - a vein shows only the Refinery, ground shows only
-    // fighters. Rows are buttons: selected = accent plate, else dark plate.
-    term.write(0, 11, 'BUILD', role('ui.dim'));
-    s.palette.forEach((p, i) => {
-      const row = 12 + i;
-      const sel = i === s.selectedBuild;
-      const label = `${p.name} $${p.cost}`;
-      this.button(0, row, W - 8, label, sel ? role('ui.bg') : p.affordable ? role('ui.text') : role('ui.dim'), sel ? role('ui.accent') : role('ui.grid'));
-      this.regions.push({ row, x0: 0, x1: W - 8, action: { kind: 'build', index: i } });
-    });
-    term.write(
-      0,
-      12 + s.palette.length + 1,
-      s.buildTargetSelected ? 'click a button: builds on' : 'select a tile on the map,',
-      s.buildTargetSelected ? role('ui.accent') : role('ui.dim'),
-    );
-    term.write(
-      0,
-      13 + s.palette.length + 1,
-      s.buildTargetSelected ? 'the selected tile' : 'then pick a tower here',
-      s.buildTargetSelected ? role('ui.accent') : role('ui.dim'),
-    );
+    // Shown ONLY when an empty buildable tile is selected (Daniil): the
+    // palette is the answer to "what can go HERE", not a permanent fixture.
+    // The app filters it to what is legal on that tile - a vein offers the
+    // Refinery, ground offers fighters. Rows are buttons.
+    let y = 11;
+    if (s.palette.length > 0) {
+      term.write(0, y++, 'BUILD', role('ui.dim'));
+      s.palette.forEach((p, i) => {
+        const sel = i === s.selectedBuild;
+        const label = `${p.name} $${p.cost}`;
+        this.button(0, y, W - 8, label, sel ? role('ui.bg') : p.affordable ? role('ui.text') : role('ui.dim'), sel ? role('ui.accent') : role('ui.grid'));
+        this.regions.push({ row: y, x0: 0, x1: W - 8, action: { kind: 'build', index: i } });
+        y++;
+      });
+      term.write(0, y + 1, 'click a button: builds on', role('ui.accent'));
+      term.write(0, y + 2, 'the selected tile', role('ui.accent'));
+      y += 4;
+    } else if (!s.selectedTower && !s.gameOver) {
+      term.write(0, y++, 'select an empty tile to', role('ui.dim'));
+      term.write(0, y++, 'build on it', role('ui.dim'));
+      y += 2;
+    }
 
     // ---- selection ---------------------------------------------------------
-    // Below the palette, wherever the (dynamic) palette ends - a fixed row
-    // here collided with the guidance text the moment a fourth tower shipped.
-    let y = 12 + s.palette.length + 3;
     term.write(0, y++, '-'.repeat(W), role('ui.grid'));
     if (s.gameOver) {
       term.write(0, y + 1, 'THE CORE HAS FALLEN', role('enemy.fast'));
