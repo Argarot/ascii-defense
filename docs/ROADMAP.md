@@ -188,6 +188,51 @@ in the room. Building it after the gate would mean asking the question twice.
 
 ---
 
+## Session ledger
+
+Phases describe *what*; this describes *when*, session by session. Added
+2026-08-16 at Daniil's request — the phase view had become hard to locate
+oneself in. A "session" is one focused working stretch.
+
+### Done
+
+| # | Session | Shipped | Gate |
+|---|---|---|---|
+| 0 | Foundation (M0) | WebGL2 glyph renderer chosen by measurement, bitmap font pipeline, Actions → Pages, PRD/architecture/assets/contributing | Live page loads |
+| 1 | Takeover + harness | npm workspaces, ESLint invariant rules, Vitest, `pure-rand` streams, content pipeline, WBS created | — |
+| 2 | Phase 1 gate | Browser-mode tests on real Chromium, headless WebGL2 proven on CI, seeded demo | **CI green on an empty game** · `v0.1.0` |
+| 3 | Tiles | Tile model, derived centre-or-nothing connectors, legality, Tile Smith authoring tool | Connectivity property test |
+| 4 | The pivot | Player tile-laying and flyers **cut**; map generator, road trees, sim skeleton, 20 Hz tick | Cross-machine tick determinism |
+| 5 | First blood | Towers, enemies, targeting, subcell projectiles, damage resolution | Defended road kills |
+| 6 | Economy + HUD | Scrap, waves, Core health, build palette, range rings | — |
+| 7 | Tuning | Mapgen fixes from a screenshot; useless-land rules | Daniil's own seed verified |
+| 8 | Depth | Mortar AoE, Frost slow, shading, mapgen hardening | — |
+| 9 | Tree redesign | Crosspathing **cut** for 3 either/or tiers (14 variants) | *(a red PR merged — gate was theatre; fixed)* |
+| 10 | Side panel | Full-height HUD, visual tier tree, hover previews, select-then-build | Phase 3 complete · `v0.2.0` |
+| 11 | Relics (long) | Design pivot for the Core; Refinery + Ore; replay + golden hash; **Phase 6 entire** — hook layer, offers, modal, Core vessel with slots, Ore sinks, caches, prospecting | **Phase 6 gate**: combos compose, relic runs replay bit-identically |
+
+**M1 exit gate: PASSED 2026-08-16** — *"the game is fun now, it's just very
+unbalanced and with quite a few holes still."*
+
+### Planned
+
+| # | Session | Contents | Gate |
+|---|---|---|---|
+| 12 | **Triage + scarcity** | WBS 1.7 (preview fold bug, pool exhaustion, consumables free slots, cut `foundry`, 8× speed) + 2.6 finite ore deposits + 10× slower mining + first-pass geometric difficulty | **A run that kills you.** Coasting with 4 towers must lose |
+| 13 | **Phase 5 — the harness** | Crude bot incl. relic picks, `harness calibrate` / `check`, per-wave margin table, **long-run soak** | Harness reproduces the death wave and catches an injected regression |
+| 14 | **The run ends** | WBS 2.1 — final wave, victory, boss/elite waves, front escalation (D6 finite) | A run can be **won**, and coasting still loses |
+| 15 | **Relic economy** | WBS 2.7 — bigger pool, rarity weighting (D5), fusion, salvage, more consumables, more slots | Full slots is a decision, not a wall |
+| 16 | **Enemies matter** | WBS 2.8 damage types + resistances, 2.14 enemy readouts (shield brackets, health/status marks) | No single tower type clears a wave |
+| 17 | **Legibility + worker** | WBS 2.10 stat blocks and upgrade descriptions, 2.13 scroll + larger cards, sim in a Web Worker (D7) | Nothing on screen lies; a hidden tab keeps simulating |
+| 18 | **Map variance** | WBS 2.15 generated tile variants (D10), 2.16 route-as-graph, 2.9 boon ground, 2.11 prospecting rework | Two seeds read as genuinely different maps |
+| 19 | **Naming** *(short)* | D8 — the printing-trade lexicon, jointly | A lexicon Daniil likes, before any art |
+| 20 | **Art round trip** | Phase 2 — tooling generates `.xp` candidates, REXPaint used for judgement not production | A sprite drawn/reviewed in REXPaint appears in game unchanged |
+| 21+ | **M2 tail → M3** | Save/resume, Ore banking, +4 towers/+8 enemies; then calibration, `balance.yml`, human offset | M3 gates |
+
+M4 (effects, full art pass, offset connectors, bridges, towers 5–9) stays
+à la carte behind the M3 decision point.
+---
+
 ## Risks
 
 **1 — Calibration may not transfer from bot to human.** The bot will play worse

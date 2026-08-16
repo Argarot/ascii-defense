@@ -23,10 +23,12 @@ Conventions:
 | D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |
 | D3 | **Material language** — glyph vocabulary for metal/stone/energy/organic (ASSETS §5) | before 1.4 art authoring | Daniil + dev |
 | D4 | ~~Wave-clear offer cadence~~ **RESOLVED 2026-08-16**: every **3 waves**, pick 1 of 3. ~6 guaranteed picks in a 20-wave run, ~11 acquisitions once caches and Ore draws are counted — above the ~6–10 floor at which combinations start happening (PRD §7.1) | — | closed |
-| D5 | ~~Relic rarity tiers~~ **REOPENED 2026-08-16** — the play evidence D5 was waiting for arrived: a flat pool deals run-breaking relics as readily as filler, so draw order decides the ceiling. Weight the pool | before 2.7 | dev + Daniil |
-| D6 | **Does a run end?** Finite (final wave + victory, meta rewards depth) vs endless scored by depth. Blocks the difficulty arc — you cannot tune a curve without knowing where it stops | before 2.1 | Daniil |
-| D7 | **Hidden-tab behaviour** — explicit visible pause (~30 min) vs simulation in a Web Worker (~1 session, also buys in-browser bot runs). Silent stalling is rejected either way (PRD §14) | before 2.13 | Daniil |
-| D8 | **The printing-trade lexicon** — the naming pass for towers, enemies, upgrades, currencies (PRD §13). A taste call, and it must close before art since art illustrates names | before 2.12 | Daniil + dev |
+| D5 | ~~Relic rarity tiers~~ **RESOLVED 2026-08-16 (second pass)**: yes — rarity weights the pool so run-breaking relics are rare and filler is common. The flat pool was correct until play evidence existed; it now does. Weighting lands in 2.7 | — | closed |
+| D6 | ~~Does a run end?~~ **RESOLVED 2026-08-16**: **finite** — a final wave and a victory. Simpler to playtest and to calibrate against; endless-scored-by-depth may return later as a separate mode | — | closed |
+| D7 | ~~Hidden-tab behaviour~~ **RESOLVED 2026-08-16**: the **simulation keeps running** in a Web Worker; an explicit PAUSED indicator covers deliberate pauses only. Also buys in-browser bot runs without freezing the UI | — | closed |
+| D8 | **The printing-trade lexicon** — naming for towers, enemies, upgrades, currencies (PRD §13). Gets its **own short session**; none of the first candidates landed. Must close before art | before 2.12 | Daniil + dev |
+| D9 | **Activate multiple Ore tiers?** Storage is already per-tier (invariant 9), so deferring is free. **Trigger:** activate when the tech tree exists and needs gating (M3+) — not while one currency is still unbalanced. Richness tiers (2.6) deliver the "reach further for better" dynamic meanwhile | at M3 | Daniil + dev |
+| D10 | **Road-shape variance** — generated 5×5 tile variants (cheap, no refactor) vs 7×7 tiles. **Decision: try generation first.** Trigger for revisiting 7×7: generated variants still read as samey after 2.15 | after 2.15 | dev, on evidence |
 
 **2026-08-15 pivot** (PRD §1, §14): player tile-laying cut; maps are generated
 at run start (Core tile center, `entries` carved paths, ore by road distance).
@@ -148,6 +150,9 @@ calibration work, because they corrupt the evidence calibration would gather.
 - [ ] 1.7.3 **Difficulty shape** (PRD §9.1) — threat scales geometrically, composition escalates in kind, so no build reaches a stable state. First-pass formula only; calibration is M3.
 - [ ] 1.7.4 Speed control gains 8× (the frame loop already tolerates it: 32 ticks/frame ≈ 96×).
 - [ ] 1.7.5 Refinery card shows remaining deposit instead of kills (pairs with 2.6).
+- [ ] 1.7.6 **A used consumable frees its slot.** It currently occupies one forever as `[--]` — a bug, not a design. Touches the held-relic arrays, so replay indices and `hashState` move with it.
+- [ ] 1.7.7 **Cut the `foundry` relic** and its now-dead `offVeinScrap` engine knob (Daniil: a relic that deletes the Refinery's siting decision). Dead knobs mislead the next context — see the `isPathable` correction.
+- [ ] 1.7.8 **Mining 10x slower** (Daniil), landing together with finite deposits (2.6) so scarcity arrives on both sides at once.
 
 **M1 exit gate: PASSED 2026-08-16.** *"The game is fun now, it’s just very
 unbalanced and with quite a few holes still."* Phases 5 and 7 remain as M1 work,
@@ -171,6 +176,8 @@ but the question the milestone existed to answer is answered.
 - [ ] 2.12 **The naming pass** (PRD §13, D8): printing-trade vocabulary across towers, enemies, upgrades, currencies. Before any art.
 - [ ] 2.13 **UI infrastructure**: scrollable panels, larger illustrated relic cards, hidden-tab behaviour (D7). The modal layer from 1.6.2 is the foundation.
 - [ ] 2.14 **Enemy readouts** (PRD §8): shields as a bracket around the glyph, destroyed separately from the body so any enemy may carry one; health and status effects as marks beside the glyph (braille is a candidate). No tooltips.
+- [ ] 2.15 **Generated tile variants** (D10): emit candidate 5×5 grids programmatically, filter through the shared `validateTileCells`, commit the survivors. Road shape variance and less rectilinear roads (visual V3) for the cost of one script — no re-authoring, no invariant touched. The library goes from 11 tiles to hundreds.
+- [ ] 2.16 **Route as a graph** (reserve-the-shape for bridges, PRD §4.2.2): the flow field returns route NODES rather than raw cells, 1:1 with cells today. Bridges then extend the model instead of rewriting movement, targeting and `L`. Daniil asked for this early specifically to avoid the retrofit.
 
 ## M3 — Trustworthy difficulty *(coarse)*
 
