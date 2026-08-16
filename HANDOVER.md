@@ -71,17 +71,17 @@ Hard constraints that came out of it, all now in the PRD:
 
 ## Next block, in order
 
-**Phase 6 session A is DONE** *(2026-08-16, PRs #36-#37)*: hooks, offers,
-modal, eleven relics. **Session B remains**: 1.6.4 Core vessel (inventory
-panel, active-fire button with cooldown, consumable use - actives currently
-fire only via `__ad`/replay, deliberately), 1.6.5 Ore draw/reroll + map
-caches, 1.6.6 rocks as clickable containers + prospecting (Survey path
-replaces a Refinery choice; Sim must own a mutable cells copy). Gate: a run
-where two relics combine into something absurd, reproduced from its seed +
-input log. Then Phase 5 (bot + harness; bot must pick relics), then the M1
-fun test.
+**Phase 6 is COMPLETE** *(2026-08-16, PRs #36-#42)*: hooks, offers + modal,
+eleven relics, Core vessel with slot inventory, Ore draw/reroll, map caches,
+rocks-as-containers + prospecting behind Survey. Gate passed: combos compose
+and relic runs replay bit-identically. The relic pool stands at 11 of the
+~20 target (1.6.3 stays [~]) - the rest is pure content, addable any time.
 
-What 1.4.6/1.4.8 left ready for it:
+**NEXT: Phase 5** (WBS 1.5, ~0.5-1 session): crude bot policy INCLUDING
+relic picks, `harness calibrate`/`check` CLI, per-wave margin table. Then
+the M1 exit gate: Daniil plays the fun test.
+
+Historical notes (what earlier blocks left ready - now consumed):
 
 - The replay action union already carries all seven Phase 6 shapes;
   `Sim.applyAction` rejects them (`default: false`) — implementing a feature
