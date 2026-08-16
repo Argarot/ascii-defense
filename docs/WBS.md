@@ -193,7 +193,7 @@ but the question the milestone existed to answer is answered.
 
 ---
 
-## M2 — A complete run *(coarse; decompose when M1 exits)*
+## M2 — A complete run *(decomposed 2026-08-16 when M1 exited)*
 
 - [ ] 2.1 **The difficulty arc**: full board scale, escalating waves, and a run END (blocked by D6). Implements PRD §9.1 properly — 1.7.3 is the first pass, this is the shaped version with elites, boss waves and front escalation.
 - [ ] 2.2 ~~Draft flow between tiles~~ **CUT 2026-08-16** — a survivor of the pre-pivot design that should have died with player tile-laying on 2026-08-15. Replaced by relic pool expansion on the Phase 6 machinery.
@@ -220,7 +220,8 @@ but the question the milestone existed to answer is answered.
   changes what a legal tile is, right before the tile library grows by two orders
   of magnitude (2.15). Late means re-balancing and re-authoring.
 
-## M3 — Trustworthy difficulty *(coarse)*
+## M3 — Trustworthy difficulty *(sequenced after M4/M5: calibrating before the
+content and the shell settle would produce curves we throw away)*
 
 - [ ] 3.1 Real bot policy; calibration runs across seed corpus.
 - [ ] 3.2 Calibrated curves committed as data; `balance.yml` CI gate.
@@ -228,23 +229,69 @@ but the question the milestone existed to answer is answered.
 - [ ] 3.4 Unwinnable/trivial seed detection across ≥500 runs, measured with the relic layer held fixed — trivial-by-relic is the feature, trivial-by-map is the defect (PRD §9).
 - [ ] 3.5 Tech tree stage 1 (~5 nodes); in-game autopilot.
 
-## M4+ — Expansion *(à la carte, decompose on demand)*
+## M4 — The shell *(it becomes a product)*
 
-- [ ] 4.1 **Effects & animation ENGINE** — pulled forward out of M4 *(Daniil, 2026-08-16: "this is not just a rexpaint session, it's a new engine mechanics")*. Correctly identified as engine work that was mis-filed as an art chore:
-  - a **frame model** in the sprite schema (a sprite is N frames plus a cadence)
-  - **effect entities** with lifetimes and timelines, spawned from sim events — the `pulses` array is the accidental prototype of this
-  - a sim-event → view pipeline that keeps effects OUT of the simulation (presentation stays swappable, invariant 2)
-  - subcell particles, explosions, projectile **spread**, tower idle cycles, terrain drift, void-as-water
+*(Was "M4+ Expansion", a bucket rather than a plan — Daniil, 2026-08-16. The
+shell is sequenced BEFORE calibration and art because it is what makes external
+playtesting possible at all: today a stranger handed the URL gets a debug
+harness with no context.)*
 
-  **Why before the art pass:** sprites authored as single static frames get
-  re-authored once animation exists. Engine first, then naming, then art.
-- [x] 4.8 ~~Offset connectors~~ **WITHDRAWN 2026-08-16.** Proposed by me, declined by Daniil, and correctly: connectors stay centre-pegged. What was actually needed is the validity relaxation plus route-as-a-graph, now 2.16.
-- [ ] 4.9 **Bridges** — the *content* half, once 2.16 ships the model: tiles where two roads cross without merging. Cheap after 2.16, impossible before it.
-- [ ] 4.10 **Attack shapes** (PRD §5.5): chain, beam over a run of road, arc/wedge AoE. Arc Coil and Rail Lance in the §5.3 roster already reserve two of these.
-- [ ] 4.11 **Per-upgrade tower visuals** (PRD §5.2, blocked by D3): each committed choice legible on the tower — a second barrel as a second glyph, background colour for what glyphs cannot say.
-- [ ] 4.12 **Void becomes water** with procedural blending at the terrain border (PRD §13); border cells can never carry road, so the overwrite is always safe.
-- [ ] 4.13 Illustrated relic cards and slot icons (PRD §7.2) — the slot grid ships functional in M1 and gets its art here.
-- [ ] 4.14 Boss enemies drawn multiple glyphs wide on a one-cell footprint (PRD §14 — visual size only, never mechanical).
-- [ ] 4.2 Full art pass, material language everywhere, biome palettes.
-- [ ] 4.3 Towers 5–9; traits 6–11; third damage type.
-- [ ] 4.4 Tech tree stage 2; 4.5 dailies + replay sharing; 4.6 ore tiers; 4.7 potency (optional).
+- [ ] 4.15 **Screen stack** in the view — screens push/pop, board renders beneath where it should. Generalises the relic-offer modal rather than duplicating it. No screen owns game state.
+- [ ] 4.16 **Title / main menu**: new run · continue · workshop · settings · how to play.
+- [ ] 4.17 **Run setup**: threat level, optional pinned seed, chosen starting loadout later.
+- [ ] 4.18 **Pause overlay** and an explicit paused state (pairs with the Worker, 2.13).
+- [ ] 4.19 **Run summary screen** — what killed you, which wave, what you built, relics taken, Ore banked. A designed screen: it is the moment that produces another run or ends the session.
+- [ ] 4.20 **Persistence** (PRD §15.2): meta state (Ore, unlocks, history, settings) in localStorage; run state as seed + input log (**a save IS a replay**). Schema versioned, migrate-or-say-so, never wipe silently.
+- [ ] 4.21 **Save export / import** — a file. Cheap, moves progress between machines, and gives us reproducible bug reports for free.
+- [ ] 4.22 **Settings screen**: reduced motion, colourblind palette, text scale, keybinds, wipe data.
+- [ ] 4.23 **Onboarding** (PRD §15.3): contextual first-encounter prompts, a How-to-play screen, gentle opening waves. No forced tutorial.
+- [ ] 4.24 **Accessibility** (PRD §15.4): colourblind palette values, full keyboard operation, reduced motion honoured by the effects engine, HUD text scale.
+
+**M4 gate: a stranger opens the link, starts a run from a menu, loses, reads why,
+and starts another — with progress surviving a reload.**
+
+## M5 — Content completeness
+
+- [ ] 5.1 Towers to **8** (Acid Sprayer, Arc Coil, Bastion, Rail Lance — PRD §5.3), each with a full tier tree and a distinct attack shape.
+- [ ] 5.2 Enemies to **~14**, covering the trait matrix and both damage types with real resistances.
+- [ ] 5.3 Relics to **~40**, weighted by rarity, with fusion recipes that make sense.
+- [ ] 5.4 Tile pool to **~100+** via generation (2.15) plus authored specials.
+- [ ] 5.5 Threat levels as data — the generator knobs bound into named difficulties.
+
+**M5 gate: two runs do not resemble each other.**
+
+## M6 — Presentation at scale
+
+*(Deliberately after M5: authoring art for four towers and then again for eight
+is the same mistake as authoring sprites before the animation engine.)*
+
+- [ ] 6.1 Art round-trip **proof** (Phase 2 gate) — kept early and small; the rest of M6 waits.
+- [ ] 6.2 Full art pass: towers with per-upgrade visual identity (V11), enemies with trait markers, terrain, UI.
+- [ ] 6.3 Effects at scale: every attack shape, impact and death authored against the engine from 4.1.
+- [ ] 6.4 Biomes — palette and tile-pool variants per threat level.
+- [ ] 6.5 Sound: **still out of scope** (PRD §16). Recorded here so the omission is a decision, not an oversight.
+
+**M6 gate: the board reads as a place, not a diagram.**
+
+## M7 — Meta progression, full
+
+- [ ] 7.1 Tech tree stage 2 — five disciplines, alternate tier-5s, capped economy nodes (PRD §11).
+- [ ] 7.2 Relic pool and tile pool unlocks wired to the tree.
+- [ ] 7.3 Run history and personal bests — the reason to open the game on day nine.
+- [ ] 7.4 Daily challenges (a fixed seed per day) and replay sharing — both nearly free given determinism.
+- [ ] 7.5 Tile Smith as an in-game meta feature (PRD §11) — the authorship endgame.
+- [ ] 7.6 Tech tree stage 3, Potency — **optional**, and the trigger for `seeds × meta tiers` in CI.
+
+**M7 gate: finishing a run visibly changes the next one.**
+
+## M8 — Beta hardening and release
+
+- [ ] 8.1 Performance budget enforced: 60 fps at full board, bundle and asset budgets tracked in CI.
+- [ ] 8.2 Browser support matrix; WebGL2 absence handled with an honest message.
+- [ ] 8.3 Error handling audit — every throw reachable from a player path gets a recovery story.
+- [ ] 8.4 Save migration tested across versions, including the corrupt-save path.
+- [ ] 8.5 **External playtest** — strangers, no explanation offered, observed. The first evidence that is not Daniil.
+- [ ] 8.6 Release process: versioning, changelog, tagged beta, a way for players to send a replay file back.
+- [ ] 8.7 Licences and attribution verified (Apache-2.0; spleen BSD-2-Clause).
+
+**M8 gate: the stable-beta bar in PRD §17.**
