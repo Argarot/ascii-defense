@@ -28,7 +28,9 @@ export type ReplayAction =
   | { t: 'pickRelic'; option: number }
   | { t: 'buyRelic' }
   | { t: 'rerollOffer' }
-  | { t: 'fireActive'; x?: number; y?: number }
+  // relicId added 2026-08-16 while still reserved (multiple held actives need
+  // disambiguation); no recorded replay ever carried the old shape.
+  | { t: 'fireActive'; relicId: string; x?: number; y?: number }
   | { t: 'useConsumable'; relicId: string };
 
 /** One recorded input: applied after `tick` ticks have completed. */

@@ -37,13 +37,13 @@ export type { GeneratedMap, MapGenOptions, CellRef } from './mapgen/mapgen';
 
 export { computeFlowField } from './sim/flow';
 export type { FlowField } from './sim/flow';
-export { Sim, TICK_HZ, SELL_REFUND } from './sim/sim';
+export { Sim, TICK_HZ, SELL_REFUND, OFFER_EVERY_WAVES } from './sim/sim';
 export type { SimOptions, Tower } from './sim/sim';
 export { REPLAY_VERSION, contentHashOf, fnv1a, playReplay } from './sim/replay';
 export type { Replay, ReplayAction, ReplayInput } from './sim/replay';
 export { PRIORITIES, pickTarget } from './sim/targeting';
 export type { Priority, TargetCandidate } from './sim/targeting';
-export { canChoose, effectiveStats } from './sim/defs';
+export { canChoose, effectiveStats, foldRelics, EMPTY_FOLD } from './sim/defs';
 export type {
   EnemyDef,
   TowerDef,
@@ -52,4 +52,8 @@ export type {
   ChoiceDef,
   StatMods,
   EffectiveStats,
+  RelicDef,
+  RelicKind,
+  RelicEffects,
+  RelicFold,
 } from './sim/defs';

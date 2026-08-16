@@ -1,0 +1,109 @@
+{
+  "$schema": "../../schema/relics.schema.json",
+  "relics": [
+    {
+      "id": "overflow",
+      "name": "Overflow",
+      "kind": "passive",
+      "desc": "Overkill damage chains to the nearest enemy. Chain kills chain again.",
+      "effects": {
+        "overkillCarry": true
+      }
+    },
+    {
+      "id": "frostbite",
+      "name": "Frostbite",
+      "kind": "passive",
+      "desc": "Slowed enemies take +50% damage from everything.",
+      "effects": {
+        "slowedDamageMul": 1.5
+      }
+    },
+    {
+      "id": "tithe",
+      "name": "Tithe",
+      "kind": "passive",
+      "desc": "Every kill refunds 2 Scrap.",
+      "effects": {
+        "killRefundScrap": 2
+      }
+    },
+    {
+      "id": "splinter",
+      "name": "Splinter",
+      "kind": "passive",
+      "desc": "Explosions detonate twice.",
+      "effects": {
+        "explodeTwice": true
+      }
+    },
+    {
+      "id": "vein_tap",
+      "name": "Vein Tap",
+      "kind": "passive",
+      "desc": "You may build on rock.",
+      "effects": {
+        "buildOnRock": true
+      }
+    },
+    {
+      "id": "loadbearing",
+      "name": "Loadbearing",
+      "kind": "passive",
+      "desc": "Towers touching the Core block get triple range.",
+      "effects": {
+        "coreAdjacentRangeMul": 3
+      }
+    },
+    {
+      "id": "ballistics",
+      "name": "Ballistics Lab",
+      "kind": "passive",
+      "desc": "All towers deal +20% damage.",
+      "effects": {
+        "damageMul": 1.2
+      }
+    },
+    {
+      "id": "foundry",
+      "name": "Foundry",
+      "kind": "consumable",
+      "desc": "Use: refineries may stand anywhere, producing Scrap off the vein. Lasts the run.",
+      "effects": {
+        "offVeinScrap": true
+      }
+    },
+    {
+      "id": "orbital",
+      "name": "Orbital Lance",
+      "kind": "active",
+      "desc": "Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly.",
+      "cooldownTicks": 1800,
+      "effects": {
+        "orbitalDamage": 400,
+        "orbitalRadius": 3
+      }
+    },
+    {
+      "id": "stasis",
+      "name": "Stasis Field",
+      "kind": "active",
+      "desc": "Freeze every enemy for 4 seconds. Towers keep firing.",
+      "cooldownTicks": 2400,
+      "effects": {
+        "freezeTicks": 80
+      }
+    },
+    {
+      "id": "deep_vein",
+      "name": "Deep Vein",
+      "kind": "active",
+      "desc": "Refineries produce five-fold for 20 seconds.",
+      "cooldownTicks": 2400,
+      "effects": {
+        "productionMul": 5,
+        "boostTicks": 400
+      }
+    }
+  ]
+}

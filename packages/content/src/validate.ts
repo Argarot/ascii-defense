@@ -11,9 +11,10 @@ import { Ajv, type ValidateFunction } from 'ajv';
 import { enemiesSchema, type EnemyRoster } from './generated/enemies';
 import { paletteSchema, type Palette } from './generated/palette';
 import { spriteSchema, type Sprite } from './generated/sprite';
+import { relicsSchema, type RelicPool } from './generated/relics';
 import { towersSchema, type TowerRoster } from './generated/towers';
 
-export type { Palette, Sprite, EnemyRoster, TowerRoster };
+export type { Palette, Sprite, EnemyRoster, TowerRoster, RelicPool };
 
 export interface ContentError {
   /** JSON path into the document, e.g. "/roles/ui.bg". */
@@ -47,3 +48,4 @@ export const validatePalette: Validator<Palette> = wrap<Palette>(ajv.compile(pal
 export const validateSprite: Validator<Sprite> = wrap<Sprite>(ajv.compile(spriteSchema));
 export const validateEnemies: Validator<EnemyRoster> = wrap<EnemyRoster>(ajv.compile(enemiesSchema));
 export const validateTowers: Validator<TowerRoster> = wrap<TowerRoster>(ajv.compile(towersSchema));
+export const validateRelics: Validator<RelicPool> = wrap<RelicPool>(ajv.compile(relicsSchema));
