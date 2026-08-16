@@ -122,6 +122,37 @@ describe('offers (1.6.2 engine half)', () => {
   });
 });
 
+describe('the Ore sinks - draw and reroll (1.6.5)', () => {
+  it('buyRelic: pays Ore, draws from the unheld pool, records', () => {
+    const { simOpts } = makeWorld(71, { startingOre: 20 });
+    const sim = new Sim(71, simOpts);
+    expect(sim.buyRelic()).toBe(true);
+    expect(sim.ore[0]).toBe(5);
+    expect(sim.heldRelics.length).toBe(1);
+    expect(sim.buyRelic()).toBe(false); // 5 < 15: broke
+    expect(sim.inputs.filter((i) => i.a.t === 'buyRelic').length).toBe(1);
+    // Determinism: same seed, same ore, same draw.
+    const sim2 = new Sim(71, simOpts);
+    sim2.buyRelic();
+    expect(sim2.heldRelics).toEqual(sim.heldRelics);
+  });
+
+  it('rerollOffer: needs a standing offer and Ore, deals a fresh three', () => {
+    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 10000, startingOre: 10 });
+    const sim = new Sim(61, simOpts);
+    expect(sim.rerollOffer()).toBe(false); // no offer up
+    let guard = 0;
+    while (sim.offer === null && guard++ < 60000) sim.tick();
+    const before = [...sim.offer!];
+    expect(sim.rerollOffer()).toBe(true);
+    expect(sim.ore[0]).toBe(2);
+    expect(sim.offer!.length).toBe(3);
+    expect(sim.rerollOffer()).toBe(false); // 2 < 8: broke
+    // A reroll is a fresh deal, not a shuffle of the same three.
+    expect(sim.offer).not.toEqual(before);
+  });
+});
+
 describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
   it('ballistics: global damage multiplier folds into stats', () => {
     const { cells, cellsW, cellsH, simOpts } = makeWorld(11);

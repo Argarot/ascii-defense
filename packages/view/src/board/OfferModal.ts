@@ -22,6 +22,7 @@ interface CardRegion {
   y0: number;
   x1: number;
   y1: number;
+  /** Card index, or -1 for the reroll button. */
   option: number;
 }
 
@@ -42,7 +43,7 @@ export class OfferModal {
     return null;
   }
 
-  render(term: GLTerm, cards: readonly OfferCard[], wave: number, phase: number): void {
+  render(term: GLTerm, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean }): void {
     this.regions = [];
     const totalW = cards.length * CARD_W + (cards.length - 1) * GAP;
     const x0 = Math.max(0, Math.floor((term.cols - totalW) / 2));
@@ -83,5 +84,13 @@ export class OfferModal {
       term.write(cx + Math.floor((CARD_W - hint.length) / 2), y0 + CARD_H - 2, hint, role('ui.accent'), role('ui.bg'));
       this.regions.push({ x0: cx, y0, x1: cx + CARD_W, y1: y0 + CARD_H, option: i });
     });
+    if (reroll) {
+      // Channel C's second half: pay Ore, deal a fresh three.
+      const label = ` REROLL OFFER - ${reroll.cost} ore `;
+      const rx = Math.floor((term.cols - label.length) / 2);
+      const ry = y0 + CARD_H + 1;
+      term.write(rx, ry, label, reroll.can ? role('ui.bg') : role('ui.dim'), reroll.can ? role('terrain.ore.lit') : role('ui.grid'));
+      if (reroll.can) this.regions.push({ x0: rx, y0: ry, x1: rx + label.length, y1: ry + 1, option: -1 });
+    }
   }
 }

@@ -76,7 +76,8 @@ export type HudAction =
   | { kind: 'priority'; value: Priority }
   | { kind: 'build'; index: number }
   | { kind: 'choose'; tier: number; option: number }
-  | { kind: 'relic'; index: number };
+  | { kind: 'relic'; index: number }
+  | { kind: 'coreDraw' };
 
 /** One inventory slot on the Core card. Empty slots render too (Daniil). */
 export interface HudRelicSlot {
@@ -94,6 +95,9 @@ export interface HudCoreInfo {
   slots: readonly HudRelicSlot[];
   /** "Name - desc" of the hovered slot, or null. */
   hoverDesc: string | null;
+  /** Ore price of a blind draw; the button greys when unaffordable or pool-dry. */
+  drawCost: number;
+  canDraw: boolean;
 }
 
 interface Region {
@@ -258,6 +262,11 @@ export class HudPanel {
         }
       });
       y += Math.ceil(c.slots.length / perRow) + 1;
+      // Channel C (PRD sec 7.3): spend banked Ore on a blind draw.
+      const drawLabel = `DRAW RELIC  ${c.drawCost} ore`;
+      this.button(0, y, W - 6, drawLabel, c.canDraw ? role('ui.bg') : role('ui.dim'), c.canDraw ? role('terrain.ore.lit') : role('ui.grid'));
+      if (c.canDraw) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'coreDraw' } });
+      y += 2;
       if (c.hoverDesc) {
         for (const line of this.wrap(c.hoverDesc, W, 4)) term.write(0, y++, line, role('ui.text'));
       } else {
