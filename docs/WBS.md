@@ -137,8 +137,14 @@ reproduced exactly from its seed + input log.**
 
 ### 1.5 Phase 5 — smoke harness *(~0.5–1 session)*
 
-- [ ] 1.5.1 Crude bot policy (build/upgrade heuristic, **plus relic picks** — they are part of run power).
-- [ ] 1.5.2 `harness calibrate` / `harness check` CLI; per-wave margin table output. Calibration targets a distribution over relic draws, not a point (PRD §9).
+**Split 2026-08-16.** A bot calibrating against systems that are still changing
+is wasted work, but *measurement* is needed immediately. 1.5.3/1.5.4 come first;
+1.5.1/1.5.2 wait until damage types, relics and the difficulty shape have settled.
+
+- [ ] 1.5.3 **Balance lab — headless runner** *(next)*. The real `Sim`, no renderer, at full speed: place a loadout from a spec, run N waves, report leak %, margin, time-to-kill, breach wave, economy curves. Exact by construction because it IS the game. The engine is already DOM-free and deterministic, so this is a measurement layer, not a new simulator.
+- [ ] 1.5.4 **Balance lab — analytic model** *(next)*. Closed form: coverage × exposure time × effective DPS against a wave HP pool, with armor/shield/slow folded in. Answers "what threatens this build at wave 30" instantly and sweeps thousands of configurations. The analytic model proposes, the headless runner verifies, and the **gap between them is itself a bug detector** (PRD §9 always specified this two-layer shape; only the order was wrong).
+- [ ] 1.5.1 ~~Crude bot policy~~ **DEFERRED** until systems settle — build/upgrade heuristic plus relic picks.
+- [ ] 1.5.2 ~~`harness calibrate` / `check` CLI~~ **DEFERRED** with 1.5.1. Calibration targets a distribution over relic draws, not a point (PRD §9).
 
 ### 1.7 Phase 7 — post-playtest triage *(~0.5 session, next)*
 
@@ -177,7 +183,16 @@ but the question the milestone existed to answer is answered.
 - [ ] 2.13 **UI infrastructure**: scrollable panels, larger illustrated relic cards, hidden-tab behaviour (D7). The modal layer from 1.6.2 is the foundation.
 - [ ] 2.14 **Enemy readouts** (PRD §8): shields as a bracket around the glyph, destroyed separately from the body so any enemy may carry one; health and status effects as marks beside the glyph (braille is a candidate). No tooltips.
 - [ ] 2.15 **Generated tile variants** (D10): emit candidate 5×5 grids programmatically, filter through the shared `validateTileCells`, commit the survivors. Road shape variance and less rectilinear roads (visual V3) for the cost of one script — no re-authoring, no invariant touched. The library goes from 11 tiles to hundreds.
-- [ ] 2.16 **Route as a graph** (reserve-the-shape for bridges, PRD §4.2.2): the flow field returns route NODES rather than raw cells, 1:1 with cells today. Bridges then extend the model instead of rewriting movement, targeting and `L`. Daniil asked for this early specifically to avoid the retrofit.
+- [ ] 2.16 **The road identity model** — one package, pulled early *(revised 2026-08-16)*. Previously split across 2.16 / 4.8 / 4.9 as if they were three features; they are one change with three symptoms. Today a road cell is just `R`, so two adjacent road cells are necessarily the same network — which is precisely why parallel roads cannot touch without merging, why bridges are impossible, and why one road per tile edge caps the shape vocabulary at sixteen signatures.
+  - road cells carry a **lane identity**; the route becomes a **graph** of nodes, not a grid of cells
+  - edge connectors become a **set of offsets** (still derived from the drawn cells, never declared)
+  - flow field, movement, targeting distance and `L` all read the graph
+  - Tile Smith updated to author multi-road tiles, **plus an "add to pool" button** (Daniil, 2026-08-16) so a tile made in the tool joins the library without a manual step
+
+  **Why early:** it changes path length, and path length feeds the difficulty
+  model. Doing it after balance means re-balancing; doing it after the tile
+  library grows means re-authoring. It is the single largest source of avoidable
+  rework in the project, and Daniil flagged the sequencing risk directly.
 
 ## M3 — Trustworthy difficulty *(coarse)*
 
@@ -189,9 +204,16 @@ but the question the milestone existed to answer is answered.
 
 ## M4+ — Expansion *(à la carte, decompose on demand)*
 
-- [ ] 4.1 Effects system (subcell particles, projectiles, impacts, animation) — including explosions, projectile **spread**, and a **living board**: terrain drift and 2–3 frame tower cycles (PRD §13). The renderer already redraws every frame, so this is authoring cost, not engine cost.
-- [ ] 4.8 **Offset connectors** (PRD §4.2.1): edge connector becomes a set of offsets, so parallel roads may touch without merging. Re-authors the tile library, the signature index and Tile Smith. **Lands before the tile pool grows** (§11) or it has to be done twice.
-- [ ] 4.9 **Bridges** (PRD §4.2.2): roads cross without merging. Turns the route from a grid BFS into a graph where a bridge cell holds two nodes; movement, targeting distance and `L` all follow. Depends on 4.8.
+- [ ] 4.1 **Effects & animation ENGINE** — pulled forward out of M4 *(Daniil, 2026-08-16: "this is not just a rexpaint session, it's a new engine mechanics")*. Correctly identified as engine work that was mis-filed as an art chore:
+  - a **frame model** in the sprite schema (a sprite is N frames plus a cadence)
+  - **effect entities** with lifetimes and timelines, spawned from sim events — the `pulses` array is the accidental prototype of this
+  - a sim-event → view pipeline that keeps effects OUT of the simulation (presentation stays swappable, invariant 2)
+  - subcell particles, explosions, projectile **spread**, tower idle cycles, terrain drift, void-as-water
+
+  **Why before the art pass:** sprites authored as single static frames get
+  re-authored once animation exists. Engine first, then naming, then art.
+- [x] 4.8 ~~Offset connectors~~ **MERGED into 2.16** *(2026-08-16)* and pulled forward — it is one half of the road identity model, not a standalone late feature.
+- [ ] 4.9 **Bridges** — the *content* half, once 2.16 ships the model: tiles where two roads cross without merging. Cheap after 2.16, impossible before it.
 - [ ] 4.10 **Attack shapes** (PRD §5.5): chain, beam over a run of road, arc/wedge AoE. Arc Coil and Rail Lance in the §5.3 roster already reserve two of these.
 - [ ] 4.11 **Per-upgrade tower visuals** (PRD §5.2, blocked by D3): each committed choice legible on the tower — a second barrel as a second glyph, background colour for what glyphs cannot say.
 - [ ] 4.12 **Void becomes water** with procedural blending at the terrain border (PRD §13); border cells can never carry road, so the overwrite is always safe.

@@ -216,21 +216,38 @@ unbalanced and with quite a few holes still."*
 
 ### Planned
 
+**Re-planned 2026-08-16** after Daniil pushed back on the first ordering. The
+order below is derived from *what causes rework if done late*, not from what is
+most exciting:
+
+| Do early because… | Item |
+|---|---|
+| every tuning number gets computed twice without it | the balance lab |
+| it changes path length, which feeds difficulty, and the tile library, which grows | the road identity model |
+| every sprite gets authored twice without it | the effects & animation engine |
+| art illustrates names | the naming pass |
+| calibrating a moving target is waste | the bot comes *last*, not first |
+
 | # | Session | Contents | Gate |
 |---|---|---|---|
-| 12 | **Triage + scarcity** | WBS 1.7 (preview fold bug, pool exhaustion, consumables free slots, cut `foundry`, 8× speed) + 2.6 finite ore deposits + 10× slower mining + first-pass geometric difficulty | **A run that kills you.** Coasting with 4 towers must lose |
-| 13 | **Phase 5 — the harness** | Crude bot incl. relic picks, `harness calibrate` / `check`, per-wave margin table, **long-run soak** | Harness reproduces the death wave and catches an injected regression |
-| 14 | **The run ends** | WBS 2.1 — final wave, victory, boss/elite waves, front escalation (D6 finite) | A run can be **won**, and coasting still loses |
-| 15 | **Relic economy** | WBS 2.7 — bigger pool, rarity weighting (D5), fusion, salvage, more consumables, more slots | Full slots is a decision, not a wall |
-| 16 | **Enemies matter** | WBS 2.8 damage types + resistances, 2.14 enemy readouts (shield brackets, health/status marks) | No single tower type clears a wave |
-| 17 | **Legibility + worker** | WBS 2.10 stat blocks and upgrade descriptions, 2.13 scroll + larger cards, sim in a Web Worker (D7) | Nothing on screen lies; a hidden tab keeps simulating |
-| 18 | **Map variance** | WBS 2.15 generated tile variants (D10), 2.16 route-as-graph, 2.9 boon ground, 2.11 prospecting rework | Two seeds read as genuinely different maps |
-| 19 | **Naming** *(short)* | D8 — the printing-trade lexicon, jointly | A lexicon Daniil likes, before any art |
-| 20 | **Art round trip** | Phase 2 — tooling generates `.xp` candidates, REXPaint used for judgement not production | A sprite drawn/reviewed in REXPaint appears in game unchanged |
-| 21+ | **M2 tail → M3** | Save/resume, Ore banking, +4 towers/+8 enemies; then calibration, `balance.yml`, human offset | M3 gates |
-
-M4 (effects, full art pass, offset connectors, bridges, towers 5–9) stays
-à la carte behind the M3 decision point.
+| 12 | **The balance lab** | WBS 1.5.3 headless runner + 1.5.4 analytic model; then a difficulty curve **derived** from it. Plus quick triage (preview fold bug, consumables free slots, cut `foundry`, 8× speed) | The lab predicts the breach wave for a given build, and a headless run **matches the prediction**. The wave-48 screenshot is the first thing it explains |
+| 13 | **Scarcity + the run ends** | Finite ore deposits with richness, 10× slower mining, refinery deposit readout; final wave + victory (D6), boss/elite waves. Numbers from the lab | A run **ends** — you win at wave N or die trying. Coasting with 5 towers dies |
+| 14 | **Road identity** | WBS 2.16 — lane ids, route as a graph, offset connectors, flow/targeting/`L` on the graph, Tile Smith rework + "add to pool" | Two roads run parallel and adjacent without merging; enemies never switch lanes; determinism intact |
+| 15 | **Map variance** | Generated tile variants filtered through the shared validator (D10), less rectilinear roads, boon ground, prospecting rework | Two seeds read as genuinely different maps; the pool goes from 11 tiles to hundreds |
+| 16 | **Effects & animation engine** | WBS 4.1 — frame model, effect entities, sim-event pipeline, explosions, spread, tower cycles, terrain drift, void-as-water | The board is alive and nothing about it touches the simulation |
+| 17 | **Enemies mean something** | Damage types + resistances/immunities, shield brackets, health and status marks, +2–3 enemies. Verified in the lab | **No single tower type clears a wave** — proven by a lab sweep, not by opinion |
+| 18 | **Towers & attack shapes** | Chain, beam over a run of road, arc/wedge AoE (needs 16); towers 5–7 | Each new tower answers a wave the others cannot |
+| 19 | **Relic economy** | Bigger pool, rarity weighting (D5), fusion, salvage, more consumables, more slots | Full slots is a decision, not a wall; the lab bounds the relic-driven power spread |
+| 20 | **Legibility + worker** | Stat blocks, upgrade descriptions, scrollable panels, larger cards, sim in a Web Worker (D7) | Nothing on screen lies; a hidden tab keeps simulating |
+| 21 | **Naming** *(short)* | D8 — the printing-trade lexicon, jointly | A lexicon Daniil likes, before a single sprite |
+| 22 | **Art round trip + first real art** | Phase 2: tooling generates `.xp` candidates, REXPaint for judgement; terrain, towers and enemies authored against the animation engine | A sprite reviewed in REXPaint appears in game unchanged — and the game looks like a game |
+| 23 | **The meta loop** | Save/resume (**nearly free — a save IS the seed plus the input log**), Ore banking, tech tree stage 1, relic pool unlocks | Finishing a run changes the next one |
+| 24+ | **Calibration** | WBS 1.5.1/1.5.2 — bot policy, `calibrate`/`check`, human offset from Daniil’s replays, `balance.yml` gate | M3 gates |
+What remains genuinely M4-and-later: the full art pass at scale, bridges as tile
+content (cheap once 2.16 ships), towers 8–9, tech tree stages 2–3, dailies and
+replay sharing. The effects engine, offset connectors and the balance harness all
+moved earlier — each was mis-filed as "expansion" when it was really
+"foundation something later depends on".
 ---
 
 ## Risks
