@@ -102,6 +102,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             },
             {
               name: string;
@@ -121,6 +125,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             }
           ];
         },
@@ -148,6 +156,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             },
             {
               name: string;
@@ -167,6 +179,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             }
           ];
         },
@@ -194,6 +210,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             },
             {
               name: string;
@@ -213,6 +233,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             }
           ];
         }
@@ -310,6 +334,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             },
             {
               name: string;
@@ -329,6 +357,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             }
           ];
         },
@@ -356,6 +388,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             },
             {
               name: string;
@@ -375,6 +411,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             }
           ];
         },
@@ -402,6 +442,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             },
             {
               name: string;
@@ -421,6 +465,10 @@ export interface TowerRoster {
                  */
                 productionEveryTicks?: number;
               };
+              /**
+               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               */
+              unlocks?: 'prospect';
             }
           ];
         }
@@ -634,6 +682,12 @@ export const towersSchema = {
                             "type": "number"
                           }
                         }
+                      },
+                      "unlocks": {
+                        "description": "Capability grant: 'prospect' opens rock prospecting (Survey path).",
+                        "enum": [
+                          "prospect"
+                        ]
                       }
                     }
                   }

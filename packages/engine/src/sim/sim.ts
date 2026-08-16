@@ -65,6 +65,10 @@ export const OFFER_EVERY_WAVES = 3;
 export const RELIC_DRAW_COST = 15;
 /** Ore price of rerolling a standing offer. */
 export const OFFER_REROLL_COST = 8;
+/** Scrap price of claiming a cache (channel A - PRD sec 4.6, 7.3). */
+export const CACHE_CLAIM_COST = 40;
+/** Scrap price of prospecting a rock cell (PRD sec 4.6). */
+export const PROSPECT_COST = 25;
 
 export interface Tower {
   cellX: number;
@@ -168,6 +172,16 @@ export class Sim {
   private prodBoostMul = 1;
   /** Cells adjacent to (or part of) the Core block, for Loadbearing. */
   private readonly nearCore: Uint8Array;
+  /**
+   * The LIVE cell map. Starts as a copy of opts.cells; prospecting mutates
+   * it (K to O or G - never anything on the route, so the flow field is
+   * untouched by construction). The view reads changes via cellChanges.
+   */
+  private readonly cellsMut: (CellType | null)[];
+  /** Every cell mutation, in order - the view's terrain overrides. */
+  readonly cellChanges: { x: number; y: number; t: CellType }[] = [];
+  /** Indices into map.caches already claimed. */
+  readonly claimedCaches: number[] = [];
 
   // ---- waves ----
   wave = 0;
@@ -201,6 +215,7 @@ export class Sim {
     this.interWaveTicks = opts.interWaveTicks ?? 160;
     this.betweenTimer = Math.min(this.interWaveTicks, 60); // first wave comes fast
     this.occupancy = new Uint16Array(opts.cellsW * opts.cellsH);
+    this.cellsMut = opts.cells.slice();
     this.flow = computeFlowField(opts.cells, opts.cellsW, opts.cellsH, opts.map.entries);
     // Loadbearing's "adjacent to the Core": chebyshev-1 ring around C cells.
     this.nearCore = new Uint8Array(opts.cellsW * opts.cellsH);
@@ -221,7 +236,7 @@ export class Sim {
 
   canBuildAt(x: number, y: number): boolean {
     if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return false;
-    const t = this.opts.cells[y * this.opts.cellsW + x];
+    const t = this.cellsMut[y * this.opts.cellsW + x];
     return t !== null && isBuildable(t) && this.occupancy[y * this.opts.cellsW + x] === 0;
   }
 
@@ -243,6 +258,9 @@ export class Sim {
     if (cell === null || this.occupancy[y * this.opts.cellsW + x] !== 0) return false;
     const def = this.opts.towerDefs.find((d) => d.id === defId);
     if (!def) return false;
+    // An unclaimed cache blocks building outright: the claim card is the only
+    // interaction (Daniil - a tower on a cache would just be sold back).
+    if (this.cacheAt(x, y) !== null) return false;
     const minesOre = (def.production?.ore ?? 0) > 0;
     if (minesOre) {
       // Refineries live on veins; Foundry (relic) frees them to mine Scrap
@@ -274,7 +292,7 @@ export class Sim {
   /** The map's cell under (x, y), or null off-board/void. */
   cellAt(x: number, y: number): CellType | null {
     if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return null;
-    return this.opts.cells[y * this.opts.cellsW + x];
+    return this.cellsMut[y * this.opts.cellsW + x];
   }
 
   /** Cost of taking a tier's option, or null when locked/committed/absent. */
@@ -416,6 +434,73 @@ export class Sim {
     return true;
   }
 
+  /** The unclaimed cache at (x, y), or null. */
+  cacheAt(x: number, y: number): { poolIdx: number; cost: number } | null {
+    const idx = this.opts.map.caches.findIndex((c) => c.x === x && c.y === y);
+    if (idx === -1 || this.claimedCaches.includes(idx)) return null;
+    return { poolIdx: this.opts.map.caches[idx].poolIdx, cost: CACHE_CLAIM_COST };
+  }
+
+  /**
+   * Claim a cache: select and PAY - never build-to-claim, a tower can be
+   * sold back (Daniil, PRD sec 14). The relic inside was dealt at
+   * generation; a duplicate of something already held simply stacks in the
+   * fold (multipliers multiply).
+   */
+  claimCache(x: number, y: number): boolean {
+    if (this.status !== 'running' || !this.opts.relicDefs) return false;
+    const idx = this.opts.map.caches.findIndex((c) => c.x === x && c.y === y);
+    if (idx === -1 || this.claimedCaches.includes(idx)) return false;
+    if (this.scrap < CACHE_CLAIM_COST) return false;
+    this.scrap -= CACHE_CLAIM_COST;
+    this.claimedCaches.push(idx);
+    this.heldRelics.push(this.opts.map.caches[idx].poolIdx % this.opts.relicDefs.length);
+    this.relicCooldowns.push(0);
+    this.relicUsed.push(0);
+    this.refold();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'claimCache', x, y } });
+    return true;
+  }
+
+  /** Prospecting is unlocked by a committed tower choice that grants it (Survey). */
+  prospectUnlocked(): boolean {
+    for (const t of this.towers) {
+      if (!t) continue;
+      const tiers = this.opts.towerDefs[t.defIdx].tiers;
+      if (!tiers) continue;
+      for (let ti = 0; ti < t.choices.length; ti++) {
+        const pick = t.choices[ti];
+        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === 'prospect') return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Break a rock open and REVEAL what generation dealt it (PRD sec 4.6):
+   * an ore vein, a relic cache, or nothing but clear ground. Only ever adds
+   * off-route buildable land - the flow field cannot change.
+   */
+  prospect(x: number, y: number): boolean {
+    if (this.status !== 'running') return false;
+    if (this.cellAt(x, y) !== 'K' || !this.prospectUnlocked()) return false;
+    if (this.scrap < PROSPECT_COST) return false;
+    this.scrap -= PROSPECT_COST;
+    const found = this.opts.map.rockContents.find((r) => r.x === x && r.y === y);
+    const yields = found?.yields ?? 'none';
+    const t: CellType = yields === 'ore' ? 'O' : 'G';
+    this.cellsMut[y * this.opts.cellsW + x] = t;
+    this.cellChanges.push({ x, y, t });
+    if (yields === 'cache' && this.opts.relicDefs) {
+      this.heldRelics.push((found!.poolIdx ?? 0) % this.opts.relicDefs.length);
+      this.relicCooldowns.push(0);
+      this.relicUsed.push(0);
+      this.refold();
+    }
+    this.inputs.push({ tick: this.tickCount, a: { t: 'prospect', x, y } });
+    return true;
+  }
+
   useConsumable(relicId: string): boolean {
     if (this.status !== 'running') return false;
     const defs = this.opts.relicDefs ?? [];
@@ -498,7 +583,9 @@ export class Sim {
       case 'useConsumable': return this.useConsumable(a.relicId);
       case 'buyRelic': return this.buyRelic();
       case 'rerollOffer': return this.rerollOffer();
-      default: return false; // claimCache, prospect: 1.6.6
+      case 'claimCache': return this.claimCache(a.x, a.y);
+      case 'prospect': return this.prospect(a.x, a.y);
+      default: return a satisfies never; // the union is fully implemented
     }
   }
 
@@ -536,6 +623,8 @@ export class Sim {
     for (const c of this.relicCooldowns) u32(c);
     for (const u of this.relicUsed) u32(u);
     for (const o of this.offer ?? [-1]) u32(o + 1);
+    for (const c of this.claimedCaches) u32(c);
+    for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
     u32(this.betweenTimer); u32(this.intraTimer); u32(this.spawnTimer);
     for (const q of this.spawnQueue) u32(q);
     for (const e of this.waveEntries) { u32(e.x); u32(e.y); }

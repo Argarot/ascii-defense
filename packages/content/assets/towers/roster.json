@@ -186,11 +186,9 @@
               }
             },
             {
-              "name": "Twin Shaft",
+              "name": "Survey",
               "cost": 60,
-              "mods": {
-                "productionEveryTicks": -15
-              }
+              "unlocks": "prospect"
             }
           ]
         },
