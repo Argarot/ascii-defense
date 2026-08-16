@@ -20,7 +20,7 @@
  */
 import type { RngStream } from '../rng/rng';
 import { EDGES, OPPOSITE, TILE_SIZE, type Edge, type Rotation } from './../tiles/tile';
-import { TileLibrary, createBoard, place, type Board } from '../tiles/board';
+import { TileLibrary, createBoard, place, resolveCells, type Board } from '../tiles/board';
 
 export interface MapGenOptions {
   /** Board size in tile slots. */
@@ -30,11 +30,34 @@ export interface MapGenOptions {
   entries: number;
   /** Slots a path must wander before it may exit the board. Longer is easier. */
   targetPathLength: number;
+  /**
+   * Size of the unlocked relic pool. When > 0, caches are scattered and rock
+   * cells are dealt hidden contents (PRD sec 4.6) - each cache/find carries
+   * a specific pool index, decided HERE so nothing rolls dice mid-run.
+   */
+  relicPoolSize?: number;
 }
 
 export interface CellRef {
   x: number;
   y: number;
+}
+
+/** A visible relic cache: claimed by selecting the cell and paying (PRD sec 4.6). */
+export interface CacheRef {
+  x: number;
+  y: number;
+  /** Index into the unlocked relic pool, dealt at generation. */
+  poolIdx: number;
+}
+
+/** What a rock cell secretly holds; prospecting only ever REVEALS (PRD sec 4.6). */
+export interface RockContent {
+  x: number;
+  y: number;
+  yields: 'ore' | 'cache' | 'none';
+  /** Set when yields is 'cache'. */
+  poolIdx?: number;
 }
 
 export interface GeneratedMap {
@@ -43,6 +66,9 @@ export interface GeneratedMap {
   entries: CellRef[];
   /** Center of the Core tile, in cell coordinates. */
   core: CellRef;
+  /** Empty when relicPoolSize is absent. */
+  caches: CacheRef[];
+  rockContents: RockContent[];
 }
 
 /** Roadless slots farther than this (in slots) from the road stay void. */
@@ -60,6 +86,11 @@ export const ORE_REACH = 3;
  * average; capped by how many fillable slots the board actually has.
  */
 export const ORE_FLOOR = 2;
+/** Caches per map when the relic layer is on (channel A of PRD sec 7.3). */
+export const CACHE_COUNT = 2;
+/** What a rock cell secretly holds: ore, a cache, or (mostly) nothing. */
+export const ROCK_ORE_CHANCE = 0.3;
+export const ROCK_CACHE_CHANCE = 0.12;
 
 const EDGE_DELTA: Record<Edge, [number, number]> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 const CENTER = (TILE_SIZE - 1) / 2;
@@ -322,10 +353,44 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       board = place(board, rng.pick(pool), rng.pick([0, 1, 2, 3] as const), x, y);
     }
 
+  // ---- 5+6. deal the relic layer's map half (PRD sec 4.6) -----------------
+  // Caches on buildable ground away from the road (the same greed-vs-safety
+  // trade as ore), and every rock cell dealt its hidden contents. All decided
+  // here, on the map stream: nothing about the map ever rolls dice mid-run.
+  const caches: CacheRef[] = [];
+  const rockContents: RockContent[] = [];
+  const poolSize = opts.relicPoolSize ?? 0;
+  if (poolSize > 0) {
+    const cellsNow = resolveCells(board, lib);
+    const cellsW = width * TILE_SIZE;
+    const farGround: CellRef[] = [];
+    for (let cy = 0; cy < height * TILE_SIZE; cy++)
+      for (let cx = 0; cx < cellsW; cx++) {
+        const t = cellsNow[cy * cellsW + cx];
+        if (t === 'K') {
+          const roll = rng.int(0, 99);
+          const yields: RockContent['yields'] =
+            roll < ROCK_ORE_CHANCE * 100 ? 'ore' : roll < (ROCK_ORE_CHANCE + ROCK_CACHE_CHANCE) * 100 ? 'cache' : 'none';
+          rockContents.push(
+            yields === 'cache'
+              ? { x: cx, y: cy, yields, poolIdx: rng.int(0, poolSize - 1) }
+              : { x: cx, y: cy, yields },
+          );
+        } else if (t === 'G' && dist[slotIdx(Math.floor(cx / TILE_SIZE), Math.floor(cy / TILE_SIZE))] >= 2) {
+          farGround.push({ x: cx, y: cy });
+        }
+      }
+    for (const spot of rng.shuffle(farGround).slice(0, CACHE_COUNT)) {
+      caches.push({ x: spot.x, y: spot.y, poolIdx: rng.int(0, poolSize - 1) });
+    }
+  }
+
   return {
     board,
     entries: entryCells,
     core: { x: coreX * TILE_SIZE + CENTER, y: coreY * TILE_SIZE + CENTER },
+    caches,
+    rockContents,
   };
 
   function edgeCell(sx: number, sy: number, e: Edge): CellRef {

@@ -168,6 +168,8 @@ export interface ChoiceDef {
   name: string;
   cost: number;
   mods?: StatMods;
+  /** Capability grant: 'prospect' opens rock prospecting (Survey - PRD sec 5.3). */
+  unlocks?: 'prospect';
 }
 
 /** One tier: an either/or, mutually exclusive choice (Tower Dominion style). */

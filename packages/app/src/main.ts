@@ -8,7 +8,9 @@
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import {
+  CACHE_CLAIM_COST,
   OFFER_REROLL_COST,
+  PROSPECT_COST,
   RELIC_DRAW_COST,
   REPLAY_VERSION,
   Sim,
@@ -197,7 +199,7 @@ async function main(): Promise<void> {
         const knobs = createRng(seed).stream('map');
         const entries = knobs.int(2, 5);
         const targetPathLength = 8 + Math.max(knobs.int(0, 18), knobs.int(0, 18));
-        map = generateMap(knobs, lib, { width: mapX, height: mapY, entries, targetPathLength });
+        map = generateMap(knobs, lib, { width: mapX, height: mapY, entries, targetPathLength, relicPoolSize: RELIC_DEFS.length });
         break;
       } catch (err) {
         console.warn(`seed ${seed} could not generate, stepping`, err);
@@ -205,6 +207,7 @@ async function main(): Promise<void> {
       }
     }
     view.setMap(map);
+    currentMap = map;
     sim = new Sim(seed, {
       cells: resolveCells(map.board, lib),
       cellsW: mapX * TILE_SIZE,
@@ -230,6 +233,17 @@ async function main(): Promise<void> {
       return TOWER_DEFS.filter((d) => sim.canBuildDefAt(selected!.x, selected!.y, d.id));
     }
     return TOWER_DEFS;
+  };
+
+  // The app keeps the generated map (the sim's opts are private): caches are
+  // rendered from it, minus what the sim says is claimed.
+  let currentMap: import('@ascii-defense/engine').GeneratedMap | null = null;
+  const mapCaches = (): { x: number; y: number }[] => {
+    const out: { x: number; y: number }[] = [];
+    currentMap?.caches.forEach((c, i) => {
+      if (!sim.claimedCaches.includes(i)) out.push({ x: c.x, y: c.y });
+    });
+    return out;
   };
 
   const collectEnemies = (): { x: number; y: number; id: string }[] => {
@@ -287,8 +301,10 @@ async function main(): Promise<void> {
           ? `${((e.production / e.productionEveryTicks) * TICK_HZ).toFixed(2)}/s`
           : null,
     });
+    view.applyCellChanges(sim.cellChanges);
     view.render({
       hover,
+      caches: mapCaches(),
       selected,
       enemies: collectEnemies(),
       towers,
@@ -352,7 +368,7 @@ async function main(): Promise<void> {
       seed,
       speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
       inspector: view.describeCell(selected ?? hover),
-      palette: (buildTarget ? palette : []).map((d) => ({
+      palette: (buildTarget && !(selected && sim.cacheAt(selected.x, selected.y)) ? palette : []).map((d) => ({
         name: d.name ?? d.id,
         cost: d.cost,
         affordable: sim.canAfford(d.id),
@@ -361,6 +377,14 @@ async function main(): Promise<void> {
       buildTargetSelected: buildTarget,
       phase: animPhase,
       core: coreInfoFor(),
+      cache:
+        selected && sim.cacheAt(selected.x, selected.y)
+          ? { cost: CACHE_CLAIM_COST, affordable: sim.scrap >= CACHE_CLAIM_COST }
+          : null,
+      rock:
+        selected && sim.cellAt(selected.x, selected.y) === 'K'
+          ? { cost: PROSPECT_COST, affordable: sim.scrap >= PROSPECT_COST, unlocked: sim.prospectUnlocked() }
+          : null,
       selectedTower:
         infoTower && def && eff
           ? {
@@ -458,6 +482,8 @@ async function main(): Promise<void> {
     if (action.kind === 'choose' && selected) sim.chooseTier(selected.x, selected.y, action.tier, action.option);
     if (action.kind === 'relic') slotClicked(action.index);
     if (action.kind === 'coreDraw') sim.buyRelic();
+    if (action.kind === 'claimCache' && selected) sim.claimCache(selected.x, selected.y);
+    if (action.kind === 'prospect' && selected) sim.prospect(selected.x, selected.y);
     dirty = true;
   });
   term.canvas.addEventListener('click', (e) => {

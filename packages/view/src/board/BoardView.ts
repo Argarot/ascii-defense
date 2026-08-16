@@ -92,6 +92,8 @@ export interface RenderState {
   telegraph?: readonly CellRef[];
   /** Entries spawning RIGHT NOW - steady markers, no blink. */
   activeEntries?: readonly CellRef[];
+  /** Unclaimed relic caches - drawn as a bright find on the terrain. */
+  caches?: readonly CellRef[];
   /** The Core has fallen; draw the end screen over everything. */
   gameOver?: boolean;
   /** Expanding pulse rings: age01 runs 0 (just fired) to 1 (full range). */
@@ -117,7 +119,17 @@ export class BoardView {
   }
 
   /** Adopt a generated map. Generation is the app's business (engine call). */
+  /** Apply the sim's terrain mutations (prospected rocks). Idempotent. */
+  private appliedChanges = 0;
+  applyCellChanges(changes: readonly { x: number; y: number; t: string }[]): void {
+    for (; this.appliedChanges < changes.length; this.appliedChanges++) {
+      const c = changes[this.appliedChanges];
+      this.cells[c.y * this.cellsW + c.x] = c.t as (typeof this.cells)[number];
+    }
+  }
+
   setMap(map: GeneratedMap): void {
+    this.appliedChanges = 0;
     this.board = map.board;
     this.cells = resolveCells(this.board, this.lib);
   }
@@ -272,6 +284,16 @@ export class BoardView {
       const gx = Math.floor(p.x * CELL_W);
       const gy = offsetY + Math.floor(p.y * CELL_H);
       term.put(gx, gy, '*', role('tower.core'));
+    }
+
+    // Unclaimed caches: a bright '?' plate - something IS here, go pay for
+    // it. Claimed ones simply stop being drawn (the list shrinks).
+    for (const c of state.caches ?? []) {
+      const gx = c.x * CELL_W;
+      const gy = offsetY + c.y * CELL_H;
+      term.put(gx + 1, gy + 1, '[', role('terrain.ore.lit'));
+      term.put(gx + 2, gy + 1, '?', '#ffffff', '#5a4a12');
+      term.put(gx + 3, gy + 1, ']', role('terrain.ore.lit'));
     }
 
     // Entry markers, two honest states (Daniil: a blink at a quiet entry

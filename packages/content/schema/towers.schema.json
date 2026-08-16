@@ -202,6 +202,12 @@
                             "type": "number"
                           }
                         }
+                      },
+                      "unlocks": {
+                        "description": "Capability grant: 'prospect' opens rock prospecting (Survey path).",
+                        "enum": [
+                          "prospect"
+                        ]
                       }
                     }
                   }

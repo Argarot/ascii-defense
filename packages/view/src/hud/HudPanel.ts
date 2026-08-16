@@ -68,6 +68,10 @@ export interface HudState {
   selectedTower: HudTowerInfo | null;
   /** The Core card, when a Core cell is selected. */
   core: HudCoreInfo | null;
+  /** The claim card, when an unclaimed cache cell is selected (PRD sec 4.6). */
+  cache: { cost: number; affordable: boolean } | null;
+  /** The prospect card, when a rock cell is selected. */
+  rock: { cost: number; affordable: boolean; unlocked: boolean } | null;
   /** Animation phase 0..1 - preview numbers pulse on it. */
   phase: number;
 }
@@ -77,7 +81,9 @@ export type HudAction =
   | { kind: 'build'; index: number }
   | { kind: 'choose'; tier: number; option: number }
   | { kind: 'relic'; index: number }
-  | { kind: 'coreDraw' };
+  | { kind: 'coreDraw' }
+  | { kind: 'claimCache' }
+  | { kind: 'prospect' };
 
 /** One inventory slot on the Core card. Empty slots render too (Daniil). */
 export interface HudRelicSlot {
@@ -227,6 +233,36 @@ export class HudPanel {
     if (s.gameOver) {
       term.write(0, y + 1, 'THE CORE HAS FALLEN', role('enemy.fast'));
       term.write(0, y + 3, 'press R for a new run', role('ui.text'));
+    } else if (s.cache) {
+      // ---- the claim card: replaces the build palette on a cache ----------
+      term.write(0, y++, 'RELIC CACHE', role('terrain.ore.lit'));
+      y++;
+      for (const line of this.wrap('Something is sealed in here. Pay to open it - no tower required, none allowed.', W, 4)) {
+        term.write(0, y++, line, role('ui.text'));
+      }
+      y++;
+      const can = s.cache.affordable;
+      this.button(0, y, W - 6, `CLAIM - $${s.cache.cost}`, can ? role('ui.bg') : role('ui.dim'), can ? role('terrain.ore.lit') : role('ui.grid'));
+      if (can) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'claimCache' } });
+    } else if (s.rock) {
+      // ---- the prospect card: rocks are containers (PRD sec 4.6) ----------
+      term.write(0, y++, 'ROCK', role('ui.text'));
+      y++;
+      for (const line of this.wrap(
+        s.rock.unlocked
+          ? 'Blast it open: an ore vein, a sealed cache, or bare ground. Dealt when the map was made - prospecting only reveals.'
+          : 'Impenetrable for now. A Refinery with the Survey upgrade unlocks prospecting.',
+        W,
+        5,
+      )) {
+        term.write(0, y++, line, role('ui.dim'));
+      }
+      y++;
+      if (s.rock.unlocked) {
+        const can = s.rock.affordable;
+        this.button(0, y, W - 6, `PROSPECT - $${s.rock.cost}`, can ? role('ui.bg') : role('ui.dim'), can ? role('ui.accent') : role('ui.grid'));
+        if (can) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'prospect' } });
+      }
     } else if (s.core) {
       // ---- the Core card: the vessel and its relic slots (1.6.4) ----------
       const c = s.core;

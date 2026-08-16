@@ -29,7 +29,19 @@ const LIB = new TileLibrary([
 
 const WALKER: EnemyDef = { id: 'walker', hp: 10, speed: 0.2, damage: 2, bounty: 3 };
 const BOLT: TowerDef = { id: 'bolt', cost: 20, range: 6, fireEveryTicks: 10, projectile: { damage: 6, speed: 0.7, homing: true } };
-const REFINERY: TowerDef = { id: 'refinery', cost: 30, range: 0.5, fireEveryTicks: 1, attack: 'none', production: { ore: 1, everyTicks: 40 } };
+const REFINERY: TowerDef = {
+  id: 'refinery',
+  cost: 30,
+  range: 0.5,
+  fireEveryTicks: 1,
+  attack: 'none',
+  production: { ore: 1, everyTicks: 40 },
+  tiers: [
+    { choices: [{ name: 'Wide Bore', cost: 10, mods: { production: 1 } }, { name: 'Fast Cycle', cost: 10, mods: { productionEveryTicks: -15 } }] },
+    { choices: [{ name: 'Deep Drill', cost: 10, mods: { production: 1 } }, { name: 'Survey', cost: 10, unlocks: 'prospect' }] },
+    { choices: [{ name: 'Mother Lode', cost: 10, mods: { production: 2 } }, { name: 'Perpetual', cost: 10, mods: { productionEveryTicks: -10 } }] },
+  ],
+};
 
 const POOL: RelicDef[] = [
   { id: 'overflow', name: 'Overflow', kind: 'passive', desc: '', effects: { overkillCarry: true } },
@@ -45,7 +57,7 @@ const POOL: RelicDef[] = [
 
 function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
   const opts = { width: 10, height: 6, entries: 3, targetPathLength: 8 };
-  const map = generateMap(createRng(seed).stream('map'), LIB, opts);
+  const map = generateMap(createRng(seed).stream('map'), LIB, { ...opts, relicPoolSize: POOL.length });
   const cellsW = opts.width * TILE_SIZE;
   const cellsH = opts.height * TILE_SIZE;
   const cells = resolveCells(map.board, LIB);
@@ -332,3 +344,71 @@ function nthGround(cells: readonly (string | null)[], W: number, H: number, nth:
     }
   throw new Error('no ground spot');
 }
+
+describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)', () => {
+  it('caches: dealt at generation, claimed by paying, block building meanwhile', () => {
+    const { map, simOpts } = makeWorld(83, { startingScrap: 100 });
+    expect(map.caches.length).toBeGreaterThan(0);
+    const sim = new Sim(83, simOpts);
+    const c = map.caches[0];
+    expect(sim.cacheAt(c.x, c.y)).not.toBeNull();
+    expect(sim.canBuildDefAt(c.x, c.y, 'bolt')).toBe(false); // claim, never build
+    expect(sim.claimCache(c.x, c.y)).toBe(true);
+    expect(sim.scrap).toBe(60);
+    expect(sim.heldRelicInfo().map((h) => h.def.id)).toEqual([POOL[c.poolIdx % POOL.length].id]);
+    expect(sim.cacheAt(c.x, c.y)).toBeNull(); // claimed: gone
+    expect(sim.claimCache(c.x, c.y)).toBe(false);
+    expect(sim.canBuildDefAt(c.x, c.y, 'bolt')).toBe(true); // ground again
+  });
+
+  it('prospecting: gated behind Survey, reveals EXACTLY what generation dealt', () => {
+    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(83, { startingScrap: 5000 });
+    const sim = new Sim(83, simOpts);
+    const rock = cellOfType(cells, cellsW, cellsH, 'K');
+    expect(sim.prospect(rock.x, rock.y)).toBe(false); // locked: no Survey anywhere
+    // Unlock: refinery on a vein, tier 1 then Survey at tier 2.
+    const vein = cellOfType(cells, cellsW, cellsH, 'O');
+    sim.buildTower(vein.x, vein.y, 'refinery');
+    sim.chooseTier(vein.x, vein.y, 0, 0);
+    sim.chooseTier(vein.x, vein.y, 1, 1); // Survey
+    expect(sim.prospectUnlocked()).toBe(true);
+    // Break every rock; each must reveal exactly its dealt contents.
+    let opened = 0;
+    for (const rc of map.rockContents) {
+      const heldBefore = sim.heldRelics.length;
+      expect(sim.prospect(rc.x, rc.y)).toBe(true);
+      opened++;
+      const now = sim.cellAt(rc.x, rc.y);
+      if (rc.yields === 'ore') expect(now).toBe('O');
+      else expect(now).toBe('G');
+      expect(sim.heldRelics.length).toBe(heldBefore + (rc.yields === 'cache' ? 1 : 0));
+      expect(sim.prospect(rc.x, rc.y)).toBe(false); // no longer rock
+    }
+    expect(opened).toBeGreaterThan(0);
+    // Prospected ore is real ore: a refinery goes on it.
+    const ore = map.rockContents.find((r) => r.yields === 'ore');
+    if (ore) expect(sim.canBuildDefAt(ore.x, ore.y, 'refinery')).toBe(true);
+  });
+
+  it('a run with claims and prospects replays bit-identically', () => {
+    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(83, { startingScrap: 5000 });
+    const sim = new Sim(83, simOpts);
+    const vein = cellOfType(cells, cellsW, cellsH, 'O');
+    sim.buildTower(vein.x, vein.y, 'refinery');
+    sim.chooseTier(vein.x, vein.y, 0, 0);
+    sim.chooseTier(vein.x, vein.y, 1, 1);
+    for (let t = 0; t < 100; t++) sim.tick();
+    sim.claimCache(map.caches[0].x, map.caches[0].y);
+    sim.prospect(map.rockContents[0].x, map.rockContents[0].y);
+    for (let t = 0; t < 100; t++) sim.tick();
+
+    const fresh = new Sim(83, simOpts);
+    let i = 0;
+    while (fresh.tickCount < sim.tickCount) {
+      while (i < sim.inputs.length && sim.inputs[i].tick === fresh.tickCount) fresh.applyAction(sim.inputs[i++].a);
+      fresh.tick();
+    }
+    while (i < sim.inputs.length && sim.inputs[i].tick === fresh.tickCount) fresh.applyAction(sim.inputs[i++].a);
+    expect(fresh.hashState()).toBe(sim.hashState());
+  });
+});
