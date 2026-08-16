@@ -16,6 +16,9 @@ export {
   rotateCells,
   deriveConnectors,
   validateTileCells,
+  tilePartition,
+  partitionKey,
+  crossingsInterconnect,
   validateTile,
 } from './tiles/tile';
 export type { TileDef, Edge, Connectors, Rotation } from './tiles/tile';

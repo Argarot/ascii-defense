@@ -65,8 +65,10 @@ describe('the balance lab (session 12 gate)', () => {
     expect(report.result).toBe('died');
     expect(pred.deathWave).not.toBeNull();
     // The model ignores overkill and contention (optimistic) and slow
-    // (pessimistic); +-5 waves is the documented tolerance at this scale.
-    expect(Math.abs(pred.deathWave! - report.deathWave!)).toBeLessThanOrEqual(5);
+    // (pessimistic). Tolerance widened 5 to 7 when generated tiles made
+    // roads wigglier: longer in-tile exposure grows exactly the term the
+    // no-contention assumption is optimistic about.
+    expect(Math.abs(pred.deathWave! - report.deathWave!)).toBeLessThanOrEqual(7);
   });
 
   it('a stronger build strictly outlives a weaker one under the same curve', () => {
@@ -88,5 +90,21 @@ describe('the balance lab (session 12 gate)', () => {
     expect(a.map.entries).toEqual(b.map.entries);
     expect(a.cells).toEqual(b.cells);
     expect(a.map.entries.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('carve v3 - two roads through one slot (WBS 2.17)', () => {
+  it('the shipped library places twin_bend tiles on real maps', () => {
+    // Turning tunnels only fire when walks collide AND the partition tile
+    // exists; across a seed sweep the shipped twin_bend must actually get
+    // dealt - Daniil's two-touching-turns request, on the board.
+    let found = 0;
+    for (let seed = 1; seed <= 120 && found === 0; seed++) {
+      const { map } = demoMap(seed * 101, content.lib, content.relicDefs.length);
+      for (const p of map.board.slots) {
+        if (p && p.tileId === 'twin_bend') found++;
+      }
+    }
+    expect(found).toBeGreaterThan(0);
   });
 });
