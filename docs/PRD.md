@@ -625,6 +625,31 @@ themselves are run-local (§7.5); what persists is *which of them the game may
 offer you*. That gives the tech tree a job that grows with the content library
 instead of competing with it, and it means new relics are pure content forever.
 
+### 11.1 The tile pool is the ore economy *(Daniil, 2026-08-16 — resolves D9)*
+
+Ore tiers do not need a distribution rule in the generator. **They are tiles you
+buy.** A richer vein exists on the map because you purchased the tile that
+carries it, so rarity is an economic fact rather than a placement heuristic:
+
+- Special tiles are bought with meta-currency between runs and are **expensive**
+  — that is what makes them rare.
+- The pool holds **the number of copies you actually own**, so it is a multiset,
+  not a set. Generation may place at most that many per run (copies return
+  between runs; they are stock, not consumables).
+- **A tier-N ore node is bought with tier-(N-1) ore**, deliberately steeply. That
+  is the sink that gives lower tiers a purpose beyond accumulating.
+- Basic ore tiles are already in the pool and stay free.
+- Once Tile Smith opens in-game (below), **features price the tile**: richer
+  nodes cost more to mint, so the authoring tool and the economy share one
+  pricing function.
+
+*Where* a given tile lands barely matters; **how likely it is to appear is a
+knob**, and that knob is calibration input rather than a design constant.
+
+This collapses what looked like three systems — ore tiers, the tile pool as
+progression, and Tile Smith as a meta feature — into one. The engine keeps only
+the shape: ore cells carry a tier, costs are expressed per tier.
+
 **Map authorship lives here.** Unlocking terrain tiles enriches what the
 generator can build — the player curates the world their runs happen in. The
 endgame of that arc: once every pre-made tile is unlocked, **Tile Smith opens
@@ -838,7 +863,12 @@ deferred:
 
 ## 16. Out of scope
 
-Mobile/touch · multiplayer · sound · accounts or cloud saves · a terminal build.
+Mobile/touch · multiplayer · music · accounts or cloud saves · a terminal build.
+
+**Sound moved partly IN scope 2026-08-16** (Daniil): **minimal SFX for beta** —
+impacts, builds, wave start, UI. Not music, not a mix. A tower defense without
+impact feedback reads as dead, and the cheap version buys most of that; the
+expensive version (music, layering, dynamic mixing) stays out.
 
 ## 17. Acceptance criteria
 

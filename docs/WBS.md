@@ -27,7 +27,7 @@ Conventions:
 | D6 | ~~Does a run end?~~ **RESOLVED 2026-08-16**: **finite** — a final wave and a victory. Simpler to playtest and to calibrate against; endless-scored-by-depth may return later as a separate mode | — | closed |
 | D7 | ~~Hidden-tab behaviour~~ **RESOLVED 2026-08-16**: the **simulation keeps running** in a Web Worker; an explicit PAUSED indicator covers deliberate pauses only. Also buys in-browser bot runs without freezing the UI | — | closed |
 | D8 | **The printing-trade lexicon** — own mini-session, **before more towers/enemies** (Daniil). Dev's position to argue there: theme the *flavour* layer hard (enemies, relics, tier names, currencies) but keep **tower** names functionally readable — "Frost Emitter" tells you it slows, "Quoin" does not, and towers are picked under pressure | before 2.5/2.8 | Daniil + dev |
-| D9 | **Ore tiers — the MECHANICS, not just a gate** *(reframed by Daniil 2026-08-16)*. Ore cells carry a tier; costs are per-tier amounts; generation has a distribution model over tiers. The **shape lands with 2.6** (same code — later means touching it twice); only tier 1 is active. Open question is the **driver**: "further from road = rarer" is moot once deposits deplete. Dev proposes *richer tiers where they cost you something* — sealed in rock (prospecting reaches them) and on exposed cells near the road, so depletion pushes you outward into worse positions | driver: before 2.6 · activation: M3+ | Daniil + dev |
+| D9 | ~~Ore tier driver~~ **RESOLVED 2026-08-16**: there is no generator driver — **ore tiers are tiles you buy** (PRD §11.1). Rarity is economic: expensive tiles, owned in finite copies, with tier-N nodes bought using tier-(N-1) ore. Appearance likelihood is a calibration knob. Engine keeps only the shape (tiered cells, per-tier costs); the economy lands in M7 |
 | D10 | ~~Road-shape variance~~ **RESOLVED 2026-08-16**: the constraint was never tile size — it was the validity rule confining roads to the interior 3×3 (PRD §4.2.1). Drop that, add route-as-a-graph (2.16), then generate variants (2.15). 7×7 stays a fallback only if the widened vocabulary still reads samey | — | closed |
 
 ## Request index
@@ -200,7 +200,7 @@ but the question the milestone existed to answer is answered.
 - [ ] 2.3 Save/resume (must serialise relic state + the input log); run summary screen listing the relics the run was built on.
 - [ ] 2.4 Ore banking → persistent meta store; relic pool unlock set persisted alongside it.
 - [ ] 2.5 +4 towers, +~8 enemies, +relics (content, on the proven pipeline).
-- [ ] 2.6 **Finite ore deposits** (PRD §6): richness + quantity per ore cell set at generation, Refineries draw down and stop when exhausted, spent veins revert to ground. Gold-speck density on the cell tracks remaining richness, so "where is the money" is answered by looking.
+- [ ] 2.6 **Finite ore deposits** (PRD §6) — plus the **tier shape** (D9): ore cells carry a tier and costs are expressed per tier, with only tier 1 active; the tiles that carry richer tiers arrive with the shop (7.7). richness + quantity per ore cell set at generation, Refineries draw down and stop when exhausted, spent veins revert to ground. Gold-speck density on the cell tracks remaining richness, so "where is the money" is answered by looking.
 - [ ] 2.7 **Relic economy** (PRD §7.6): pool grown well beyond what one run can drain; **fusion** (several relics into one stronger) and **salvage** (trade back for Ore); a much larger share single-use; rarity weighting (D5). This is what makes more slots safe to add rather than trivialising.
 - [ ] 2.8 **Damage types decide fights** (PRD §8): Kinetic/Energy become real via resistance and immunity, so no single tower answers every wave. The direct answer to "2-3 mortars demolish everything".
 - [ ] 2.9 **Boon ground** (PRD §4.7): overlay cells granting a permanent modifier to whatever is built on them; must read as ground, and keep telegraphing under a tower without corrupting its 14 states.
@@ -269,7 +269,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 6.2 Full art pass: towers with per-upgrade visual identity (V11), enemies with trait markers, terrain, UI.
 - [ ] 6.3 Effects at scale: every attack shape, impact and death authored against the engine from 4.1.
 - [ ] 6.4 Biomes — palette and tile-pool variants per threat level.
-- [ ] 6.5 Sound: **still out of scope** (PRD §16). Recorded here so the omission is a decision, not an oversight.
+- [ ] 6.5 **Minimal SFX** (Daniil, 2026-08-16 — PRD §16): impacts, builds, wave start, UI. Not music, not a mix. Includes sourcing and licence clearance, which is the part that is not free.
 
 **M6 gate: the board reads as a place, not a diagram.**
 
@@ -279,7 +279,8 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 7.2 Relic pool and tile pool unlocks wired to the tree.
 - [ ] 7.3 Run history and personal bests — the reason to open the game on day nine.
 - [ ] 7.4 Daily challenges (a fixed seed per day) and replay sharing — both nearly free given determinism.
-- [ ] 7.5 Tile Smith as an in-game meta feature (PRD §11) — the authorship endgame.
+- [ ] 7.5 Tile Smith as an in-game meta feature (PRD §11) — the authorship endgame. **Features price the tile** (richer nodes cost more to mint), so the tool and the shop share one pricing function.
+- [ ] 7.7 **The tile shop** (PRD §11.1, resolves D9): special tiles bought with meta-currency; the pool becomes a **multiset of owned copies** rather than a set, so generation may place at most what you own; tier-N ore nodes purchased with tier-(N-1) ore. Appearance likelihood is a calibration knob, not a constant.
 - [ ] 7.6 Tech tree stage 3, Potency — **optional**, and the trigger for `seeds × meta tiers` in CI.
 
 **M7 gate: finishing a run visibly changes the next one.**
