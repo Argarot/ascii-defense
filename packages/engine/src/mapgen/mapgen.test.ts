@@ -3,6 +3,7 @@ import { createRng } from '../rng/rng';
 import { TILE_SIZE, deriveConnectors, validateTileCells } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt, type Board } from '../tiles/board';
 import { FILL_RADIUS, ORE_FLOOR, ORE_REACH, generateMap } from './mapgen';
+import { computeFlowField } from '../sim/flow';
 
 // The same tile shapes the shipped library provides, inline so engine tests
 // stay hermetic (engine may not import content).
@@ -287,5 +288,24 @@ describe('map generation v2 - trees, void, spread', () => {
     expect(() =>
       generateMap(createRng(1).stream('map'), LIB, { width: 5, height: 5, entries: 0, targetPathLength: 3 }),
     ).toThrow(/at least one entry/);
+  });
+});
+
+describe('lane tiles vs the generator (session 14)', () => {
+  it('a valid multi-lane tile never lands on a road slot - maps stay connected', () => {
+    // twin_stub presents n and s crossings on SEPARATE lanes: legal as a
+    // tile, but placed as a straight it would sever the carved path (found
+    // live - the boot crashed). The index must refuse it road duty.
+    const withLanes = new TileLibrary([
+      ...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })),
+      { id: 'twin_stub', cells: ['GGRGG', 'GGRGG', 'GGGGG', 'GGrGG', 'GGrGG'] },
+    ]);
+    for (let seed = 1; seed <= 20; seed++) {
+      const map = generateMap(createRng(seed * 11).stream('map'), withLanes, { width: 8, height: 5, entries: 3, targetPathLength: 8 });
+      const cells = resolveCells(map.board, withLanes);
+      // The real assertion: every entry reaches the Core through the graph.
+      const flow = computeFlowField(cells, 8 * TILE_SIZE, 5 * TILE_SIZE, map.entries);
+      expect(flow.L).toBeGreaterThan(0);
+    }
   });
 });

@@ -17,6 +17,7 @@ import {
 } from '@ascii-defense/engine';
 import { CELL_W, CELL_H, drawTerrainCell, role } from '@ascii-defense/view';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
+import { addMintedTile, loadMintedTiles } from './mintedTiles';
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '5';
@@ -26,6 +27,7 @@ const load = <T>(p: string): Promise<T> =>
 const BRUSH_LABEL: Record<CellType, string> = {
   G: 'G ground',
   R: 'R road',
+  r: 'r road (lane B)',
   K: 'K rock',
   O: 'O ore',
   C: 'C core',
@@ -33,6 +35,7 @@ const BRUSH_LABEL: Record<CellType, string> = {
 const BRUSH_BG: Record<CellType, string> = {
   G: '#3d4f61',
   R: '#93abc4',
+  r: '#7a94b0',
   K: '#5a6a7c',
   O: '#ffd15c',
   C: '#2bbfae',
@@ -147,6 +150,10 @@ async function main(): Promise<void> {
 
   const actions = document.createElement('div');
   actions.className = 'actions';
+  const addBtn = document.createElement('button');
+  addBtn.textContent = 'ADD TO POOL';
+  const addNote = document.createElement('div');
+  addNote.className = 'sub';
   const copyBtn = document.createElement('button');
   copyBtn.textContent = 'copy JSON';
   const out = document.createElement('pre');
@@ -155,8 +162,19 @@ async function main(): Promise<void> {
     copyBtn.textContent = 'copied \u2713';
     setTimeout(() => (copyBtn.textContent = 'copy JSON'), 1200);
   });
+  addBtn.addEventListener('click', () => {
+    const tile: { id: string; name?: string; cells: string[] } = { id: idInput.value.trim(), cells: [...cells] };
+    const name = nameInput.value.trim();
+    if (name) tile.name = name;
+    addMintedTile(tile);
+    addBtn.textContent = 'added \u2713 (in the pool next map)';
+    setTimeout(() => (addBtn.textContent = 'ADD TO POOL'), 1600);
+    update();
+  });
+  actions.appendChild(addBtn);
   actions.appendChild(copyBtn);
   right.appendChild(actions);
+  right.appendChild(addNote);
   right.appendChild(out);
 
   app.appendChild(left);
@@ -191,7 +209,9 @@ async function main(): Promise<void> {
     const errors = validateTileCells(cells);
     const id = idInput.value.trim();
     const idOk = /^[a-z][a-z0-9_]*$/.test(id);
-    const dupe = tileLibraryJson.tiles.some((t) => t.id === id);
+    const minted = loadMintedTiles();
+    addNote.textContent = minted.length > 0 ? `minted pool: ${minted.length} tile(s) \u00b7 they join the generator on the next map` : 'minted tiles join the generator on the next map (this browser only)';
+    const dupe = tileLibraryJson.tiles.some((t) => t.id === id) || minted.some((t) => t.id === id);
     if (!idOk) errors.push(`id '${id}' must be lowercase letters, digits, underscores`);
     if (dupe) errors.push(`id '${id}' already exists in the library`);
 
@@ -202,6 +222,7 @@ async function main(): Promise<void> {
       if (name) tile.name = name;
       out.textContent = JSON.stringify(tile, null, 2);
       copyBtn.disabled = false;
+      addBtn.disabled = false;
       out.style.display = '';
     } else {
       verdict.innerHTML =
@@ -211,6 +232,7 @@ async function main(): Promise<void> {
       out.textContent = '';
       out.style.display = 'none';
       copyBtn.disabled = true;
+      addBtn.disabled = true;
     }
   }
 

@@ -25,24 +25,55 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     expect(validateTileCells(MEADOW)).toEqual([]);
   });
 
-  it('rejects a road touching an edge off-center', () => {
-    const bad = g('GRGGG', 'GRGGG', 'GRGGG', 'GGGGG', 'GGGGG'); // road up column 1
-    expect(validateTileCells(bad).join()).toMatch(/off-center/);
+  // -- session 14: the border rule is GONE; lanes and crossings replace it --
+
+  it('a road up a non-centre column is legal IF it exits through a centre crossing', () => {
+    // Column 1 road turning to the west centre: hugs the edge, then crosses.
+    const ok = g('GRGGG', 'GRGGG', 'RRGGG', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(ok)).toEqual([]);
+    // ...but the crossing derives WEST only - the north border cell does not
+    // leak a connector (directional rule).
+    const conn = deriveConnectors(ok);
+    expect(conn).toEqual({ n: false, e: false, s: false, w: true });
   });
 
-  it('rejects a road in a corner (off-center on two edges at once)', () => {
-    const bad = g('RGGGG', 'RGGGG', 'RRGGG', 'GGGGG', 'GGGGG');
-    expect(validateTileCells(bad).length).toBeGreaterThan(0);
+  it('a border-hugging road with NO crossing anywhere is an orphan lane', () => {
+    const bad = g('GRGGG', 'GRGGG', 'GRGGG', 'GGGGG', 'GGGGG'); // column 1, no exit
+    expect(validateTileCells(bad).join()).toMatch(/derives no crossing/);
   });
 
-  it('rejects split road groups', () => {
-    const bad = g('GGRGG', 'GGRGG', 'GGGGG', 'GGRGG', 'GGRGG'); // n and s stubs, no middle
-    expect(validateTileCells(bad).join()).toMatch(/disconnected/);
+  it('split road stubs each need their own crossing - and then they are LEGAL', () => {
+    // n and s stubs, disconnected: under lane rules each is its own
+    // component, and each derives its own crossing - two roads in one tile.
+    const twoRoads = g('GGRGG', 'GGRGG', 'GGGGG', 'GGRGG', 'GGRGG');
+    expect(validateTileCells(twoRoads)).toEqual([]);
+    const conn = deriveConnectors(twoRoads);
+    expect(conn.n).toBe(true);
+    expect(conn.s).toBe(true);
   });
 
-  it('rejects a road that never reaches an edge center', () => {
-    const bad = g('GGGGG', 'GRRGG', 'GRRGG', 'GGGGG', 'GGGGG'); // interior blob
-    expect(validateTileCells(bad).join()).toMatch(/never reaches an edge/);
+  it('rejects an interior road blob with no crossing', () => {
+    const bad = g('GGGGG', 'GRRGG', 'GRRGG', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(bad).join()).toMatch(/derives no crossing/);
+  });
+
+  it('LANES: touching roads of different lanes are separate components', () => {
+    // Two vertical lanes side by side, TOUCHING, each with its own... only
+    // one centre per edge - so lane R crosses north, lane r crosses south.
+    const lanes = g('GGRGG', 'GGRGG', 'GGRrG', 'GGGrG', 'GGGrG');
+    // R path: (2,0)-(2,2) exits north... (2,2) centre? crossing south for r:
+    // r occupies (3,2)-(3,4): column 3 is not the south centre (2,4). Invalid!
+    expect(validateTileCells(lanes).join()).toMatch(/derives no crossing/);
+    // Give each lane its own centre crossing and it validates.
+    const good = g('GGRGG', 'GGRGG', 'GGRGG', 'GGrGG', 'GGrGG');
+    // R holds the north half through centre (2,2)... but R at (2,2) and r at
+    // (2,3) TOUCH without joining: R must cross north (yes, via (2,0)+(2,1))
+    // and r must cross south (via (2,4)+(2,3)). Both legal, one column, two
+    // lanes meeting head-on without merging.
+    expect(validateTileCells(good)).toEqual([]);
+    const conn = deriveConnectors(good);
+    expect(conn.n).toBe(true); // R's crossing
+    expect(conn.s).toBe(true); // r's crossing
   });
 
   it('rejects a core cell on any edge, even the center', () => {

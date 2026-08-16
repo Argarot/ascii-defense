@@ -524,3 +524,31 @@ describe('finite ore + the run ends (session 13)', () => {
     expect(sawTankInWave5).toBe(true);
   });
 });
+
+describe('the route is a graph - touching is not connecting (session 14)', () => {
+  it('border roads of adjacent tiles touch without joining; enemies cannot lane-hop', () => {
+    // Tile A: road hugs its EAST border, exits NORTH. Tile B (to its right):
+    // road hugs its WEST border, exits north too, ending at a Core cell.
+    // Their road columns are physically adjacent across the tile boundary.
+    const W = 10, H = 5;
+    const cells: (import('../grid/cells').CellType | null)[] = [];
+    const A = ['GGRRR', 'GGRGR', 'GGGGR', 'GGGGR', 'GGGGR'];
+    const B = ['RRRGG', 'RGRGG', 'RGGGG', 'RGGGG', 'RGGGG'];
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < 5; x++) cells.push(A[y][x] as import('../grid/cells').CellType);
+      for (let x = 0; x < 5; x++) cells.push(B[y][x] as import('../grid/cells').CellType);
+    }
+    // Plant the Core inside B's lane so ITS road resolves.
+    cells[1 * W + 7] = 'C'; // B local (2,1)
+    const flow = computeFlowField(cells, W, H, []);
+    // The two road columns touch at x=4|x=5 for every row - and not one
+    // step between them is allowed (E=2 from x=4, W=8 from x=5).
+    for (let y = 0; y < H; y++) {
+      expect(flow.allowed[y * W + 4] & 2).toBe(0);
+      expect(flow.allowed[y * W + 5] & 8).toBe(0);
+    }
+    // B's lane reaches the Core; A's lane - touching it the whole way - never does.
+    expect(flow.dist[4 * W + 5]).toBeGreaterThan(0); // B's border road: on the route
+    expect(flow.dist[4 * W + 4]).toBe(-1); // A's border road: a different road entirely
+  });
+});

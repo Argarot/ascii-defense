@@ -70,7 +70,7 @@ export const tilesSchema = {
             "maxItems": 5,
             "items": {
               "type": "string",
-              "pattern": "^[GRKOC]{5}$"
+              "pattern": "^[GRrKOC]{5}$"
             }
           }
         }

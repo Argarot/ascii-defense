@@ -1147,7 +1147,7 @@ export class Sim {
     // Stasis (relic active): the board freezes - nothing moves, slow timers
     // hold, towers keep firing. The get-out-of-jail card.
     if (this.tickCount < this.freezeUntil) return;
-    const { dist, width, height } = this.flow;
+    const { dist, width } = this.flow;
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;
       let speed = this.opts.enemyDefs[this.enemyDefIdx[i]].speed;
@@ -1179,10 +1179,14 @@ export class Sim {
           continue;
         }
         let found = false;
-        for (const [ddx, ddy] of [[0, -1], [1, 0], [0, 1], [-1, 0]] as const) {
-          const qx = cx + ddx;
-          const qy = cy + ddy;
-          if (qx < 0 || qy < 0 || qx >= width || qy >= height) continue;
+        const mask = this.flow.allowed[cy * width + cx];
+        for (let d = 0; d < 4; d++) {
+          // The allowed mask is the route GRAPH (session 14): a numerically
+          // downhill neighbour on a different lane is not a legal step -
+          // enemies never change lanes.
+          if ((mask & (1 << d)) === 0) continue;
+          const qx = cx + [0, 1, 0, -1][d];
+          const qy = cy + [-1, 0, 1, 0][d];
           if (dist[qy * width + qx] === here - 1) {
             this.tgtX[i] = qx + 0.5;
             this.tgtY[i] = qy + 0.5;
