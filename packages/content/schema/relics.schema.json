@@ -89,10 +89,6 @@
                 "type": "number",
                 "exclusiveMinimum": 0
               },
-              "offVeinScrap": {
-                "description": "Refineries place anywhere and produce Scrap off the vein (Foundry).",
-                "type": "boolean"
-              },
               "damageMul": {
                 "description": "Global tower damage multiplier.",
                 "type": "number",

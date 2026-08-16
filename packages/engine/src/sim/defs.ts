@@ -51,9 +51,9 @@ export interface ProjectileSpec {
 
 /**
  * Resource yield per cycle (Refinery). Ore counts only while the tower stands
- * on an ore cell - PRD sec 5.3. scrap is reserved shape for the foundry relic
- * (PRD sec 7.4): the field exists so the relic is a data change, not a schema
- * migration.
+ * on an ore cell - PRD sec 5.3. scrap remains reserved shape for future
+ * content; nothing shipped uses it (the foundry relic was cut 2026-08-16 -
+ * a relic that deletes the Refinery siting decision, Daniil).
  */
 export interface ProductionSpec {
   ore?: number;
@@ -75,7 +75,6 @@ export interface RelicEffects {
   explodeTwice?: boolean;
   buildOnRock?: boolean;
   coreAdjacentRangeMul?: number;
-  offVeinScrap?: boolean;
   damageMul?: number;
   fireRateMul?: number;
   rangeAdd?: number;
@@ -114,7 +113,6 @@ export interface RelicFold {
   explodeTwice: boolean;
   buildOnRock: boolean;
   coreAdjacentRangeMul: number;
-  offVeinScrap: boolean;
   damageMul: number;
   fireRateMul: number;
   rangeAdd: number;
@@ -127,7 +125,6 @@ export const EMPTY_FOLD: RelicFold = {
   explodeTwice: false,
   buildOnRock: false,
   coreAdjacentRangeMul: 1,
-  offVeinScrap: false,
   damageMul: 1,
   fireRateMul: 1,
   rangeAdd: 0,
@@ -145,7 +142,6 @@ export function foldRelics(defs: readonly RelicDef[]): RelicFold {
     out.explodeTwice ||= e.explodeTwice ?? false;
     out.buildOnRock ||= e.buildOnRock ?? false;
     out.coreAdjacentRangeMul *= e.coreAdjacentRangeMul ?? 1;
-    out.offVeinScrap ||= e.offVeinScrap ?? false;
     out.damageMul *= e.damageMul ?? 1;
     out.fireRateMul *= e.fireRateMul ?? 1;
     out.rangeAdd += e.rangeAdd ?? 0;

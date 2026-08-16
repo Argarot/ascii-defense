@@ -58,10 +58,6 @@ export interface RelicPool {
          */
         coreAdjacentRangeMul?: number;
         /**
-         * Refineries place anywhere and produce Scrap off the vein (Foundry).
-         */
-        offVeinScrap?: boolean;
-        /**
          * Global tower damage multiplier.
          */
         damageMul?: number;
@@ -142,10 +138,6 @@ export interface RelicPool {
          * Range multiplier for towers adjacent to the Core block (Loadbearing).
          */
         coreAdjacentRangeMul?: number;
-        /**
-         * Refineries place anywhere and produce Scrap off the vein (Foundry).
-         */
-        offVeinScrap?: boolean;
         /**
          * Global tower damage multiplier.
          */
@@ -274,10 +266,6 @@ export const relicsSchema = {
                 "description": "Range multiplier for towers adjacent to the Core block (Loadbearing).",
                 "type": "number",
                 "exclusiveMinimum": 0
-              },
-              "offVeinScrap": {
-                "description": "Refineries place anywhere and produce Scrap off the vein (Foundry).",
-                "type": "boolean"
               },
               "damageMul": {
                 "description": "Global tower damage multiplier.",

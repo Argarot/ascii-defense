@@ -160,8 +160,6 @@ export class Sim {
   readonly heldRelics: number[] = [];
   /** Ticks until each held active may fire again; 0 for non-actives. */
   readonly relicCooldowns: number[] = [];
-  /** 1 once a held consumable is spent; its effects then fold in for the run. */
-  readonly relicUsed: number[] = [];
   /** Pending pick-1-of-3, as pool indices; null when no offer is up. */
   offer: number[] | null = null;
   /** Wave the last offer was generated for - one offer per eligible wave. */
@@ -262,12 +260,7 @@ export class Sim {
     // interaction (Daniil - a tower on a cache would just be sold back).
     if (this.cacheAt(x, y) !== null) return false;
     const minesOre = (def.production?.ore ?? 0) > 0;
-    if (minesOre) {
-      // Refineries live on veins; Foundry (relic) frees them to mine Scrap
-      // anywhere buildable, Vein Tap extends that to rock.
-      if (cell === 'O') return true;
-      return this.fold.offVeinScrap && (cell === 'G' || (cell === 'K' && this.fold.buildOnRock));
-    }
+    if (minesOre) return cell === 'O'; // refineries live on veins, full stop
     if (cell === 'G') return true;
     if (cell === 'K') return this.fold.buildOnRock; // Vein Tap
     return false; // O is Refinery ground; R and C are never buildable
@@ -314,8 +307,22 @@ export class Sim {
     return true;
   }
 
+  /**
+   * A tower's stats under HYPOTHETICAL tier choices, through the same relic
+   * fold as the live number. Powers the upgrade preview; computing the
+   * preview from base stats while the display was folded is how a range-18
+   * tower once previewed 8.5 (the 1.7.1 bug).
+   */
+  statsWith(t: Tower, choices: readonly number[]): EffectiveStats {
+    return this.foldStats({ ...t, choices: [...choices] as [number, number, number] });
+  }
+
   /** Tier fold, then the relic fold on top - the ONE place relics touch stats. */
   stats(t: Tower): EffectiveStats {
+    return this.foldStats(t);
+  }
+
+  private foldStats(t: Tower): EffectiveStats {
     const out = effectiveStats(this.opts.towerDefs[t.defIdx], t.choices);
     const f = this.fold;
     if (f !== EMPTY_FOLD) {
@@ -333,11 +340,8 @@ export class Sim {
 
   private refold(): void {
     const defs = this.opts.relicDefs ?? [];
-    // Passives always count; consumables only once spent; actives contribute
-    // no always-on fold (their effects fire on use).
-    const live = this.heldRelics
-      .filter((di, i) => defs[di].kind === 'passive' || (defs[di].kind === 'consumable' && this.relicUsed[i] === 1))
-      .map((di) => defs[di]);
+    // Passives fold; actives and consumables act when fired/used instead.
+    const live = this.heldRelics.filter((di) => defs[di].kind === 'passive').map((di) => defs[di]);
     this.fold = live.length === 0 ? EMPTY_FOLD : foldRelics(live);
   }
 
@@ -347,9 +351,9 @@ export class Sim {
   }
 
   /** Held relics with their live state, for the inventory panel. */
-  heldRelicInfo(): { def: RelicDef; cooldown: number; used: boolean }[] {
+  heldRelicInfo(): { def: RelicDef; cooldown: number }[] {
     const defs = this.opts.relicDefs ?? [];
-    return this.heldRelics.map((di, i) => ({ def: defs[di], cooldown: this.relicCooldowns[i], used: this.relicUsed[i] === 1 }));
+    return this.heldRelics.map((di, i) => ({ def: defs[di], cooldown: this.relicCooldowns[i] }));
   }
 
   pickRelic(option: number): boolean {
@@ -357,7 +361,6 @@ export class Sim {
     if (!this.offer || option < 0 || option >= this.offer.length) return false;
     this.heldRelics.push(this.offer[option]);
     this.relicCooldowns.push(0); // actives arrive ready - the first firing is the sales pitch
-    this.relicUsed.push(0);
     this.offer = null;
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'pickRelic', option } });
@@ -416,7 +419,6 @@ export class Sim {
     this.ore[0] -= RELIC_DRAW_COST;
     this.heldRelics.push(this.rng.stream('relics').pick(pool));
     this.relicCooldowns.push(0);
-    this.relicUsed.push(0);
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'buyRelic' } });
     return true;
@@ -456,7 +458,6 @@ export class Sim {
     this.claimedCaches.push(idx);
     this.heldRelics.push(this.opts.map.caches[idx].poolIdx % this.opts.relicDefs.length);
     this.relicCooldowns.push(0);
-    this.relicUsed.push(0);
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'claimCache', x, y } });
     return true;
@@ -494,19 +495,32 @@ export class Sim {
     if (yields === 'cache' && this.opts.relicDefs) {
       this.heldRelics.push((found!.poolIdx ?? 0) % this.opts.relicDefs.length);
       this.relicCooldowns.push(0);
-      this.relicUsed.push(0);
       this.refold();
     }
     this.inputs.push({ tick: this.tickCount, a: { t: 'prospect', x, y } });
     return true;
   }
 
+  /**
+   * Spend a consumable: its effects apply ONCE (same knobs actives use, minus
+   * targeting), and the slot is vacated - a spent consumable freeing its slot
+   * is the point of carrying one (Daniil, 2026-08-16; it previously sat as a
+   * dead [--] marker forever).
+   */
   useConsumable(relicId: string): boolean {
     if (this.status !== 'running') return false;
     const defs = this.opts.relicDefs ?? [];
-    const hi = this.heldRelics.findIndex((di, i) => defs[di].id === relicId && defs[di].kind === 'consumable' && this.relicUsed[i] === 0);
+    const hi = this.heldRelics.findIndex((di) => defs[di].id === relicId && defs[di].kind === 'consumable');
     if (hi === -1) return false;
-    this.relicUsed[hi] = 1;
+    const e = defs[this.heldRelics[hi]].effects ?? {};
+    if (e.freezeTicks !== undefined) this.freezeUntil = this.tickCount + e.freezeTicks;
+    if (e.productionMul !== undefined) {
+      this.prodBoostUntil = this.tickCount + (e.boostTicks ?? 0);
+      this.prodBoostMul = e.productionMul;
+    }
+    if (e.killRefundScrap !== undefined) this.scrap += e.killRefundScrap; // flat grant when used as a one-shot
+    this.heldRelics.splice(hi, 1);
+    this.relicCooldowns.splice(hi, 1);
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'useConsumable', relicId } });
     return true;
@@ -621,7 +635,6 @@ export class Sim {
     u32(this.offerWave);
     for (const r of this.heldRelics) u32(r);
     for (const c of this.relicCooldowns) u32(c);
-    for (const u of this.relicUsed) u32(u);
     for (const o of this.offer ?? [-1]) u32(o + 1);
     for (const c of this.claimedCaches) u32(c);
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
@@ -699,8 +712,8 @@ export class Sim {
    * (PRD sec 5.3) - off the vein the cycle timer holds rather than ticking
    * toward nothing, so when prospecting (1.6.6) turns rock to ore mid-run, an
    * adjacent idle Refinery resumes instead of instantly paying out a stalled
-   * timer. scrap production is reserved shape (foundry relic) and pays
-   * unconditionally when content ever carries it.
+   * timer. scrap production is reserved shape and pays unconditionally
+   * when content ever carries it.
    */
   private productionPhase(): void {
     for (const tower of this.towers) {
@@ -711,9 +724,7 @@ export class Sim {
       const onVein = this.cellAt(tower.cellX, tower.cellY) === 'O';
       const oreShare = prod.ore ?? 0;
       const scrapShare = prod.scrap ?? 0;
-      // Foundry (relic): an off-vein miner produces Scrap instead of idling.
-      const foundry = !onVein && oreShare > 0 && this.fold.offVeinScrap;
-      if ((oreShare === 0 || (!onVein && !foundry)) && scrapShare === 0) continue; // idle: timer holds
+      if ((oreShare === 0 || !onVein) && scrapShare === 0) continue; // idle: timer holds
       if (--tower.prodCooldown > 0) continue;
       const eff = this.stats(tower);
       tower.prodCooldown = eff.productionEveryTicks;
@@ -724,7 +735,6 @@ export class Sim {
       // shipped content never does (ore-only), but the shape must not lie.
       const total = oreShare + scrapShare;
       if (oreShare > 0 && onVein) this.ore[0] += Math.round((yielded * oreShare) / total);
-      else if (foundry) this.scrap += Math.round((yielded * oreShare) / total);
       if (scrapShare > 0) this.scrap += Math.round((yielded * scrapShare) / total);
     }
   }
