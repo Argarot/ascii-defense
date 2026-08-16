@@ -61,6 +61,10 @@ export interface SimOptions {
 
 /** D4 (closed 2026-08-16): a pick-1-of-3 offer every this many waves. */
 export const OFFER_EVERY_WAVES = 3;
+/** Ore price of a blind draw from the pool at the Core (PRD sec 7.3 C). */
+export const RELIC_DRAW_COST = 15;
+/** Ore price of rerolling a standing offer. */
+export const OFFER_REROLL_COST = 8;
 
 export interface Tower {
   cellX: number;
@@ -372,6 +376,46 @@ export class Sim {
     return true;
   }
 
+  /** Unheld pool indices - what draws and offers may still deal. */
+  private unheldPool(): number[] {
+    const defs = this.opts.relicDefs ?? [];
+    const held = new Set(this.heldRelics);
+    const pool: number[] = [];
+    for (let i = 0; i < defs.length; i++) if (!held.has(i)) pool.push(i);
+    return pool;
+  }
+
+  /**
+   * The Core's Ore sink (PRD sec 7.3 channel C): pay Ore, draw blind from
+   * the pool. The draw spends 'relics'-stream randomness at ACTION time, so
+   * it rides the input log like every other decision.
+   */
+  buyRelic(): boolean {
+    if (this.status !== 'running' || !this.opts.relicDefs) return false;
+    if (this.ore[0] < RELIC_DRAW_COST) return false;
+    const pool = this.unheldPool();
+    if (pool.length === 0) return false;
+    this.ore[0] -= RELIC_DRAW_COST;
+    this.heldRelics.push(this.rng.stream('relics').pick(pool));
+    this.relicCooldowns.push(0);
+    this.relicUsed.push(0);
+    this.refold();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'buyRelic' } });
+    return true;
+  }
+
+  /** Pay Ore, deal a fresh 3 from the pool in place of the standing offer. */
+  rerollOffer(): boolean {
+    if (this.status !== 'running' || this.offer === null) return false;
+    if (this.ore[0] < OFFER_REROLL_COST) return false;
+    const pool = this.unheldPool();
+    if (pool.length === 0) return false;
+    this.ore[0] -= OFFER_REROLL_COST;
+    this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
+    this.inputs.push({ tick: this.tickCount, a: { t: 'rerollOffer' } });
+    return true;
+  }
+
   useConsumable(relicId: string): boolean {
     if (this.status !== 'running') return false;
     const defs = this.opts.relicDefs ?? [];
@@ -394,9 +438,7 @@ export class Sim {
     if (!defs || this.offer !== null) return;
     if (this.wave === 0 || this.wave % OFFER_EVERY_WAVES !== 0 || this.offerWave === this.wave) return;
     this.offerWave = this.wave;
-    const held = new Set(this.heldRelics);
-    const pool: number[] = [];
-    for (let i = 0; i < defs.length; i++) if (!held.has(i)) pool.push(i);
+    const pool = this.unheldPool();
     if (pool.length === 0) return;
     this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
   }
@@ -454,7 +496,9 @@ export class Sim {
       case 'pickRelic': return this.pickRelic(a.option);
       case 'fireActive': return this.fireActive(a.relicId, a.x, a.y);
       case 'useConsumable': return this.useConsumable(a.relicId);
-      default: return false; // claimCache, prospect, buyRelic, rerollOffer: 1.6.5/1.6.6
+      case 'buyRelic': return this.buyRelic();
+      case 'rerollOffer': return this.rerollOffer();
+      default: return false; // claimCache, prospect: 1.6.6
     }
   }
 

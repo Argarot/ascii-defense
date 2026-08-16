@@ -8,6 +8,8 @@
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import {
+  OFFER_REROLL_COST,
+  RELIC_DRAW_COST,
   REPLAY_VERSION,
   Sim,
   TICK_HZ,
@@ -126,6 +128,8 @@ async function main(): Promise<void> {
       hpMax: sim.coreHpMax,
       slots,
       hoverDesc: hov ? `${hov.def.name} - ${hov.def.desc}` : targeting ? 'click the map to aim, Esc cancels' : null,
+      drawCost: RELIC_DRAW_COST,
+      canDraw: sim.ore[0] >= RELIC_DRAW_COST && sim.heldRelics.length < RELIC_DEFS.length,
     };
   };
 
@@ -324,6 +328,7 @@ async function main(): Promise<void> {
         offer.map((d) => ({ name: d.name, kind: d.kind, desc: d.desc })),
         sim.wave,
         animPhase,
+        { cost: OFFER_REROLL_COST, can: sim.ore[0] >= OFFER_REROLL_COST },
       );
       // BoardView.render flushed to the GPU before we painted; without this
       // second flush the modal exists only in the CPU glyph buffer - text
@@ -452,13 +457,16 @@ async function main(): Promise<void> {
     if (action.kind === 'priority' && selected) sim.setPriority(selected.x, selected.y, action.value);
     if (action.kind === 'choose' && selected) sim.chooseTier(selected.x, selected.y, action.tier, action.option);
     if (action.kind === 'relic') slotClicked(action.index);
+    if (action.kind === 'coreDraw') sim.buyRelic();
     dirty = true;
   });
   term.canvas.addEventListener('click', (e) => {
     // An offer up = the board IS the modal; clicks route to its cards.
     if (sim.offer !== null) {
       const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W, GLYPH_PX_H);
-      if (option !== null) pickOffer(option);
+      if (option === -1) sim.rerollOffer();
+      else if (option !== null) pickOffer(option);
+      dirty = true;
       return;
     }
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
