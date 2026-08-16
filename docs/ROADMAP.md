@@ -20,7 +20,7 @@ Live: <https://argarot.github.io/ascii-defense/>
 
 ---
 
-## M1 — The fun test *(8–11 sessions)*
+## M1 — The fun test *(11–14 sessions)*
 
 One board. Lay tiles, build towers, survive waves. Everything needed to answer
 "is this fun?" and nothing else.
@@ -69,18 +69,44 @@ space where invalid states are unrepresentable tests the RNG, not the logic.)
 
 ### Phase 4 — the game *(3–4 sessions)*
 
-- 4 towers with complete 3×5 trees, crosspathing enforced; the Core with its
-  branch tree (Wall is cut — PRD §5.3).
+- 4 towers with complete 3-tier either/or trees (Wall is cut — PRD §5.3).
 - 6 enemies across 2 damage types and 4 traits; targeting; projectiles.
-- Waves, Scrap, Core health and enemy `damage`, win/lose; Refinery and Ore banking.
-- **HUD** — build palette, tower inspector with crosspath legality, tile hand,
-  wave state, speed controls. *This is a first-class item, not a line: it is the
-  entire surface the player touches, and it was previously under-scoped.*
+- Waves, Scrap, Core health and enemy `damage`, win/lose; Refinery and Ore.
+- **HUD** — build palette, tower inspector with tier legality, wave state,
+  speed controls. *This is a first-class item, not a line: it is the entire
+  surface the player touches, and it was previously under-scoped.*
 - Replay record/playback; golden state-hash test.
+
+*(The Core's own branch tree was cut here on 2026-08-16 — PRD §14 — and
+replaced by Phase 6 below.)*
+
+### Phase 6 — the power layer *(2 sessions)* — **runs before Phase 5**
+
+*(Added 2026-08-16. Numbered 6 because WBS IDs are stable once assigned;
+sequenced third-from-last because the fun test cannot be run without it.)*
+
+This is the layer that makes the game a roguelite instead of a tower defense
+with a seed: relics acquired mid-run that break rules rather than move numbers
+(PRD §7). It is placed before the harness because the harness calibrates
+against the game, and calibrating against a game missing its power layer would
+produce curves we would immediately throw away.
+
+- Engine **hook layer** — the seams relics modify, applied in a fixed
+  deterministic order. Relic schema, codegen, validation.
+- Acquisition **B** (wave-clear pick-1-of-3), then **C** (Ore draw/reroll at
+  the Core), then **A** (map caches claimed by selection).
+- ~20 relics as content across passive / active / consumable.
+- The **Core as vessel**: HP, relic inventory, active firing, cooldowns.
+- **Prospecting**: rock contents dealt at generation, revealed for Scrap;
+  gated behind the Refinery's Survey path.
+
+**Gate:** a run in which two relics combine into something absurd, reproduced
+from its seed and input log.
 
 ### Phase 5 — smoke harness *(0.5–1 session)*
 
 - Crude bot; `harness calibrate` and `harness check`; per-wave margin table.
+- The bot's policy includes relic picks — they are part of run power (PRD §9).
 
 **M1 exit gate:** Daniil plays it and says whether it is fun. Nothing past this
 point is worth building if the answer is no.
@@ -89,8 +115,8 @@ point is worth building if the answer is no.
 
 ## M2 — A complete run *(3–4 sessions)*
 
-Full difficulty arc, escalating waves, Core branch progression, save/resume,
-run summary. 4 more towers, ~8 more enemies.
+Full difficulty arc, escalating waves, save/resume, run summary. 4 more towers,
+~8 more enemies, more relics.
 
 ## M3 — Trustworthy difficulty *(2–3 sessions)*
 
@@ -126,12 +152,16 @@ I want more of it?" is yes.
 
 | | Sessions |
 |---|---|
-| M1–M3 — complete playable game | **14–18** |
+| M1–M3 — complete playable game | **17–21** |
 | M4+ | +8–15 |
-| **Full scope** | **22–33** |
+| **Full scope** | **25–36** |
 
 M1 grew from 6–8 to 8–11 because the HUD was previously a bullet point, the
 modular package split is real work, and the art pipeline now has a proof step.
+It grew again to 11–14 on 2026-08-16 when the relic layer (Phase 6) was added —
+the single largest scope increase of the project, taken deliberately because
+the M1 gate asks "is it fun?" and the honest answer needs the acquisition loop
+in the room. Building it after the gate would mean asking the question twice.
 
 ---
 
@@ -158,6 +188,15 @@ once, up front; M1 ships 4 towers complete rather than 8 half-done.
 **4 — The tuning tail is the schedule risk, not the features.** Making 100+
 upgrades feel good is open-ended. The linter and harness make "better or worse"
 measurable rather than a matter of opinion.
+
+**5 — Relics widen the difficulty distribution faster than calibration can
+track it** *(added 2026-08-16)*. Combinations are the point, and combinations
+are combinatorial: 20 relics is 190 pairs nobody play-tested.
+*Mitigation:* relics are data behind a fixed hook layer, so an offender is a
+one-line pool removal, not a code change; calibration targets a distribution
+rather than a point (PRD §9); and a run trivialised *by relics* is the feature
+working, so the harness must only alarm on maps, never on draws.
+*Fallback:* rarity tiers on the pool, which the schema reserves from day one.
 
 ---
 

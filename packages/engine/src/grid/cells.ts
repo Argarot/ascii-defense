@@ -15,14 +15,15 @@ export function isCellType(c: string): c is CellType {
   return (CELL_TYPES as readonly string[]).includes(c);
 }
 
-/** Enemies can traverse these on the ground. */
-export function isPathable(c: CellType): boolean {
-  return c === 'R' || c === 'G' || c === 'O' || c === 'C';
-}
-
 /**
  * Route-network membership: road, plus the Core cells the road delivers to.
  * Core cells derive no connectors (tile.ts) - roads end AT the Core.
+ *
+ * This is the ONLY notion of "enemies walk here" (PRD sec 4.1). A former
+ * isPathable() also called G and O traversable - a pre-pivot leftover, never
+ * called by anything, and contradicted by the flow field since it shipped.
+ * Deleted 2026-08-16 after it misled a fresh context into believing that
+ * opening a rock cell could create a shortcut. Ground is open, not walkable.
  */
 export function isRouteCell(c: CellType): boolean {
   return c === 'R' || c === 'C';
