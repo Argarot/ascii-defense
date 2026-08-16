@@ -182,10 +182,10 @@ calibration work, because they corrupt the evidence calibration would gather.
 - [ ] 1.7.2 **The pool runs dry silently** — 11 relics, caches deal duplicates, `unheldPool()` empties, `maybeOffer` returns early and the acquisition layer switches off with no message. Short term: more relics + an honest "pool exhausted" state. Real fix is 2.7.
 - [x] 1.7.3 *(PR #52)* **Difficulty shape, first pass**: difficulty is data (`DifficultySpec`); `hpGeometric 1.06` chosen from the lab sweep — naked ~10, competent ~23, god build ~26. Composition escalation is session 13; calibration M3.
 - [x] 1.7.4 *(PR #51)* Speed control gains 8× (the frame loop already tolerates it: 32 ticks/frame ≈ 96×).
-- [ ] 1.7.5 Refinery card shows remaining deposit instead of kills (pairs with 2.6).
+- [x] 1.7.5 *(PR #54)* Refinery card shows remaining deposit instead of kills.
 - [x] 1.7.6 *(PR #51)* **A used consumable frees its slot.** It currently occupies one forever as `[--]` — a bug, not a design. Touches the held-relic arrays, so replay indices and `hashState` move with it.
 - [x] 1.7.7 *(PR #51)* **Cut the `foundry` relic** and its now-dead `offVeinScrap` engine knob (Daniil: a relic that deletes the Refinery's siting decision). Dead knobs mislead the next context — see the `isPathable` correction.
-- [ ] 1.7.8 **Mining 10x slower** (Daniil), landing together with finite deposits (2.6) so scarcity arrives on both sides at once.
+- [x] 1.7.8 *(PR #54)* Mining 10× slower, landed with finite deposits.
 
 **M1 exit gate: PASSED 2026-08-16.** *"The game is fun now, it’s just very
 unbalanced and with quite a few holes still."* Phases 5 and 7 remain as M1 work,
@@ -195,12 +195,12 @@ but the question the milestone existed to answer is answered.
 
 ## M2 — A complete run *(decomposed 2026-08-16 when M1 exited)*
 
-- [ ] 2.1 **The difficulty arc**: full board scale, escalating waves, and a run END (blocked by D6). Implements PRD §9.1 properly — 1.7.3 is the first pass, this is the shaped version with elites, boss waves and front escalation.
+- [~] 2.1 *(PR #54, first shaped pass)* **The difficulty arc**: the run ENDS — finalWave 20 (lab-chosen), THE CORE STANDS victory, WAVE X/20; composition escalates in kind (weighted picks), every 5th wave carries an elite surge, Juggernaut anchors the late game. Remaining for M2: full board scale, front escalation, threat levels as data.
 - [ ] 2.2 ~~Draft flow between tiles~~ **CUT 2026-08-16** — a survivor of the pre-pivot design that should have died with player tile-laying on 2026-08-15. Replaced by relic pool expansion on the Phase 6 machinery.
 - [ ] 2.3 Save/resume (must serialise relic state + the input log); run summary screen listing the relics the run was built on.
 - [ ] 2.4 Ore banking → persistent meta store; relic pool unlock set persisted alongside it.
 - [ ] 2.5 +4 towers, +~8 enemies, +relics (content, on the proven pipeline).
-- [ ] 2.6 **Finite ore deposits** (PRD §6) — plus the **tier shape** (D9): ore cells carry a tier and costs are expressed per tier, with only tier 1 active; the tiles that carry richer tiers arrive with the shop (7.7). richness + quantity per ore cell set at generation, Refineries draw down and stop when exhausted, spent veins revert to ground. Gold-speck density on the cell tracks remaining richness, so "where is the money" is answered by looking.
+- [x] 2.6 *(PR #54)* **Finite ore deposits**: veins dealt at generation (30–90, tier field live-but-tier-1), refineries draw down and stop, spent cells revert to ground, gold-speck density tracks remaining richness, deposit readout replaces refinery kills. Mining 10× slower (1.7.8). Prospected rocks carry hidden vein sizes. richness + quantity per ore cell set at generation, Refineries draw down and stop when exhausted, spent veins revert to ground. Gold-speck density on the cell tracks remaining richness, so "where is the money" is answered by looking.
 - [ ] 2.7 **Relic economy** (PRD §7.6): pool grown well beyond what one run can drain; **fusion** (several relics into one stronger) and **salvage** (trade back for Ore); a much larger share single-use; rarity weighting (D5). This is what makes more slots safe to add rather than trivialising.
 - [ ] 2.8 **Damage types decide fights** (PRD §8): Kinetic/Energy become real via resistance and immunity, so no single tower answers every wave. The direct answer to "2-3 mortars demolish everything".
 - [ ] 2.9 **Boon ground** (PRD §4.7): overlay cells granting a permanent modifier to whatever is built on them; must read as ground, and keep telegraphing under a tower without corrupting its 14 states.
@@ -210,15 +210,7 @@ but the question the milestone existed to answer is answered.
 - [ ] 2.13 **UI infrastructure**: scrollable panels, larger illustrated relic cards, hidden-tab behaviour (D7). The modal layer from 1.6.2 is the foundation.
 - [ ] 2.14 **Enemy readouts** (PRD §8): shields as a bracket around the glyph, destroyed separately from the body so any enemy may carry one; health and status effects as marks beside the glyph (braille is a candidate). No tooltips.
 - [ ] 2.15 **Generated tile variants** (D10): emit candidate 5×5 grids programmatically, filter through the shared `validateTileCells`, commit the survivors. Road shape variance and less rectilinear roads (visual V3) for the cost of one script — no re-authoring, no invariant touched. The library goes from 11 tiles to hundreds.
-- [ ] 2.16 **Roads that touch without connecting** *(revised 2026-08-16 — Daniil corrected an earlier misreading; see PRD §4.2.1)*. Three parts:
-  - **connectors stay centre-pegged** — unchanged, and the offset-connector idea is withdrawn
-  - **drop the validity rule** forbidding road cells on non-centre border cells; this alone is what unlocks the shape vocabulary, and it is a validator change plus a Tile Smith update
-  - **the route becomes a graph**: road cells form components within a tile, joining across tiles only through matching centre connectors, so adjacent roads no longer fuse. Flow field, movement, targeting distance and `L` all read the graph. *This part is the actual work, and it is the mechanism bridges (4.9) need.*
-  - Tile Smith gains an **"add to pool" button** (Daniil) so a tile authored in the tool joins the library without a manual step — deliberately *here* rather than earlier: after the validity relaxation his tiles have more freedom, not less, so nothing minted gets invalidated
-
-  **Why early:** it changes path length, which feeds the difficulty model, and it
-  changes what a legal tile is, right before the tile library grows by two orders
-  of magnitude (2.15). Late means re-balancing and re-authoring.
+- [x] 2.16 *(PR #55, 2026-08-16)* **Roads that touch without connecting** — the full in-tile lane model (Daniil's call): 'r' as a second lane in the cell alphabet; connectors derive **directionally** (centre + inward continuation); border roads legal, orphan lanes rejected; the route is a **graph** (per-cell allowed-direction mask shared by BFS and the walk phase — enemies never lane-hop); Tile Smith lane brush + **ADD TO POOL** (localStorage pool, engine-revalidated on load, joins the generator). Found live: multi-lane tiles share boolean signatures with routing tiles, so the library index now demands a road-slot tile's crossings interconnect — connectivity stays by construction.
 
 ## M3 — Trustworthy difficulty *(sequenced after M4/M5: calibrating before the
 content and the shell settle would produce curves we throw away)*

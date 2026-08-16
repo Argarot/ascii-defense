@@ -53,9 +53,12 @@ The headline findings, because they reshaped the plan:
 Sessions and gates live in [ROADMAP.md](docs/ROADMAP.md#session-ledger). Short
 form:
 
-1. **Session 12 — DONE** (PRs #51–#52): triage shipped, difficulty is data,
-   the lab explained the wave-48/100 run (linear curve = no forcing function)
-   and chose hpGeometric 1.06. Run the sweep any time: `node tools/lab.mjs`.
+1. Sessions 12–14 — DONE (PRs #51–#55): the balance lab (`node tools/lab.mjs`),
+   geometric difficulty, finite ore with visible richness, the run ends at
+   wave 20 with victory, elite waves + Juggernaut, and the full lane model
+   (in-tile lanes, directional connectors, route-as-graph, Tile Smith ADD TO
+   POOL). Next per the ledger: **session 15 — map variance** (generated tile
+   variants through the shared validator, boon ground, prospecting rework).
 2. Session 13 — finite ore, slower mining, the run ends (D6 finite).
 3. Session 14 — roads that touch without connecting (WBS 2.16).
 4. Sessions 15–24 — map variance, the effects engine, damage types, attack
