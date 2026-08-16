@@ -17,7 +17,7 @@ import { uniformInt } from 'pure-rand/distribution/uniformInt';
  * independent stream and desync replays. Adding a subsystem means adding a
  * name here, which is the visibility we want.
  */
-export type RngStreamName = 'map' | 'drafts' | 'waves' | 'combat';
+export type RngStreamName = 'map' | 'drafts' | 'waves' | 'combat' | 'relics';
 
 export interface RngStream {
   readonly name: RngStreamName;

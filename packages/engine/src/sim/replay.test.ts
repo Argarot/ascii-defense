@@ -144,14 +144,18 @@ describe('replay (WBS 1.4.8)', () => {
     // you broke determinism or altered the sim's evolution - investigate
     // before touching the constant. If you did intend it, update the value
     // in the same commit and say why in its message.
-    expect(sim.hashState()).toBe(2829733585);
+    // 2829733585 -> 3000153804 on 2026-08-16: hashState grew to cover relic
+    // state (held/cooldowns/used/offer/freeze/boost) - a deliberate state-
+    // space extension, not a behaviour change; the replay round-trip test
+    // above proved bit-identical evolution before and after.
+    expect(sim.hashState()).toBe(3000153804);
   });
 
-  it('reserved Phase 6 actions are rejected, not misapplied', () => {
-    const { sim } = makeGoldenSim();
+  it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {
+    const { sim } = makeGoldenSim(); // no relicDefs: relic actions cannot apply
     expect(sim.applyAction({ t: 'pickRelic', option: 1 })).toBe(false);
     expect(sim.applyAction({ t: 'prospect', x: 1, y: 1 })).toBe(false);
-    expect(sim.applyAction({ t: 'fireActive' })).toBe(false);
+    expect(sim.applyAction({ t: 'fireActive', relicId: 'orbital' })).toBe(false);
     expect(sim.inputs.length).toBe(0); // rejected actions never enter the log
   });
 

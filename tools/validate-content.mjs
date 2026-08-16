@@ -32,6 +32,7 @@ const SCHEMA_FOR = {
   'tiles/': 'tiles.schema.json',
   'enemies/': 'enemies.schema.json',
   'towers/': 'towers.schema.json',
+  'relics/': 'relics.schema.json',
 };
 
 const ajv = new Ajv({ allErrors: true, strictTypes: false });

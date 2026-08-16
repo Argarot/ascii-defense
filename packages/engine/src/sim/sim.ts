@@ -21,7 +21,17 @@ import { isBuildable, type CellType } from '../grid/cells';
 import type { GeneratedMap, CellRef } from '../mapgen/mapgen';
 import { computeFlowField, type FlowField } from './flow';
 import { PRIORITIES, pickTarget, type Priority, type TargetCandidate } from './targeting';
-import { canChoose, effectiveStats, type EffectiveStats, type EnemyDef, type TowerDef } from './defs';
+import {
+  EMPTY_FOLD,
+  canChoose,
+  effectiveStats,
+  foldRelics,
+  type EffectiveStats,
+  type EnemyDef,
+  type RelicDef,
+  type RelicFold,
+  type TowerDef,
+} from './defs';
 import type { ReplayAction, ReplayInput } from './replay';
 
 export const TICK_HZ = 20;
@@ -45,7 +55,12 @@ export interface SimOptions {
   coreHp?: number;
   /** Waves: pause between waves, in ticks. */
   interWaveTicks?: number;
+  /** The unlocked relic pool (PRD sec 7). Absent = no relic layer (tests). */
+  relicDefs?: readonly RelicDef[];
 }
+
+/** D4 (closed 2026-08-16): a pick-1-of-3 offer every this many waves. */
+export const OFFER_EVERY_WAVES = 3;
 
 export interface Tower {
   cellX: number;
@@ -132,6 +147,24 @@ export class Sim {
    */
   readonly inputs: ReplayInput[] = [];
 
+  // ---- relics (PRD sec 7) ----
+  /** Indices into opts.relicDefs, in acquisition order. */
+  readonly heldRelics: number[] = [];
+  /** Ticks until each held active may fire again; 0 for non-actives. */
+  readonly relicCooldowns: number[] = [];
+  /** 1 once a held consumable is spent; its effects then fold in for the run. */
+  readonly relicUsed: number[] = [];
+  /** Pending pick-1-of-3, as pool indices; null when no offer is up. */
+  offer: number[] | null = null;
+  /** Wave the last offer was generated for - one offer per eligible wave. */
+  private offerWave = 0;
+  private fold: RelicFold = EMPTY_FOLD;
+  private freezeUntil = 0;
+  private prodBoostUntil = 0;
+  private prodBoostMul = 1;
+  /** Cells adjacent to (or part of) the Core block, for Loadbearing. */
+  private readonly nearCore: Uint8Array;
+
   // ---- waves ----
   wave = 0;
   /** Entries the CURRENT wave uses; next wave's are telegraphed. */
@@ -165,6 +198,18 @@ export class Sim {
     this.betweenTimer = Math.min(this.interWaveTicks, 60); // first wave comes fast
     this.occupancy = new Uint16Array(opts.cellsW * opts.cellsH);
     this.flow = computeFlowField(opts.cells, opts.cellsW, opts.cellsH, opts.map.entries);
+    // Loadbearing's "adjacent to the Core": chebyshev-1 ring around C cells.
+    this.nearCore = new Uint8Array(opts.cellsW * opts.cellsH);
+    for (let y = 0; y < opts.cellsH; y++)
+      for (let x = 0; x < opts.cellsW; x++) {
+        if (opts.cells[y * opts.cellsW + x] !== 'C') continue;
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && ny >= 0 && nx < opts.cellsW && ny < opts.cellsH) this.nearCore[ny * opts.cellsW + nx] = 1;
+          }
+      }
     if (this.mode === 'waves') this.nextWaveEntries = this.pickWaveEntries(1);
   }
 
@@ -190,11 +235,20 @@ export class Sim {
    * exactly this function.
    */
   canBuildDefAt(x: number, y: number, defId: string): boolean {
-    if (!this.canBuildAt(x, y)) return false;
+    const cell = this.cellAt(x, y);
+    if (cell === null || this.occupancy[y * this.opts.cellsW + x] !== 0) return false;
     const def = this.opts.towerDefs.find((d) => d.id === defId);
     if (!def) return false;
     const minesOre = (def.production?.ore ?? 0) > 0;
-    return minesOre === (this.cellAt(x, y) === 'O');
+    if (minesOre) {
+      // Refineries live on veins; Foundry (relic) frees them to mine Scrap
+      // anywhere buildable, Vein Tap extends that to rock.
+      if (cell === 'O') return true;
+      return this.fold.offVeinScrap && (cell === 'G' || (cell === 'K' && this.fold.buildOnRock));
+    }
+    if (cell === 'G') return true;
+    if (cell === 'K') return this.fold.buildOnRock; // Vein Tap
+    return false; // O is Refinery ground; R and C are never buildable
   }
 
   buildTower(x: number, y: number, defId: string): boolean {
@@ -238,8 +292,113 @@ export class Sim {
     return true;
   }
 
+  /** Tier fold, then the relic fold on top - the ONE place relics touch stats. */
   stats(t: Tower): EffectiveStats {
-    return effectiveStats(this.opts.towerDefs[t.defIdx], t.choices);
+    const out = effectiveStats(this.opts.towerDefs[t.defIdx], t.choices);
+    const f = this.fold;
+    if (f !== EMPTY_FOLD) {
+      out.damage *= f.damageMul;
+      out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / f.fireRateMul));
+      out.range += f.rangeAdd;
+      if (f.coreAdjacentRangeMul !== 1 && this.nearCore[t.cellY * this.opts.cellsW + t.cellX]) {
+        out.range *= f.coreAdjacentRangeMul;
+      }
+    }
+    return out;
+  }
+
+  // ---- relics (PRD sec 7) --------------------------------------------------
+
+  private refold(): void {
+    const defs = this.opts.relicDefs ?? [];
+    // Passives always count; consumables only once spent; actives contribute
+    // no always-on fold (their effects fire on use).
+    const live = this.heldRelics
+      .filter((di, i) => defs[di].kind === 'passive' || (defs[di].kind === 'consumable' && this.relicUsed[i] === 1))
+      .map((di) => defs[di]);
+    this.fold = live.length === 0 ? EMPTY_FOLD : foldRelics(live);
+  }
+
+  /** The pending offer as defs, for the modal; null when none. */
+  offerDefs(): RelicDef[] | null {
+    return this.offer ? this.offer.map((di) => this.opts.relicDefs![di]) : null;
+  }
+
+  /** Held relics with their live state, for the inventory panel. */
+  heldRelicInfo(): { def: RelicDef; cooldown: number; used: boolean }[] {
+    const defs = this.opts.relicDefs ?? [];
+    return this.heldRelics.map((di, i) => ({ def: defs[di], cooldown: this.relicCooldowns[i], used: this.relicUsed[i] === 1 }));
+  }
+
+  pickRelic(option: number): boolean {
+    if (this.status !== 'running') return false;
+    if (!this.offer || option < 0 || option >= this.offer.length) return false;
+    this.heldRelics.push(this.offer[option]);
+    this.relicCooldowns.push(0); // actives arrive ready - the first firing is the sales pitch
+    this.relicUsed.push(0);
+    this.offer = null;
+    this.refold();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'pickRelic', option } });
+    return true;
+  }
+
+  fireActive(relicId: string, x?: number, y?: number): boolean {
+    if (this.status !== 'running') return false;
+    const defs = this.opts.relicDefs ?? [];
+    const hi = this.heldRelics.findIndex((di) => defs[di].id === relicId && defs[di].kind === 'active');
+    if (hi === -1 || this.relicCooldowns[hi] > 0) return false;
+    const def = defs[this.heldRelics[hi]];
+    const e = def.effects ?? {};
+    if (e.orbitalDamage !== undefined) {
+      if (x === undefined || y === undefined) return false; // targeted active needs a target
+      const cx = x + 0.5;
+      const cy = y + 0.5;
+      const r = e.orbitalRadius ?? 1;
+      for (let i = 0; i < this.enemyHigh; i++) {
+        if (!this.alive[i]) continue;
+        const dx = this.posX[i] - cx;
+        const dy = this.posY[i] - cy;
+        if (Math.sqrt(dx * dx + dy * dy) <= r) this.applyDamage(i, e.orbitalDamage, 0, 0, -1);
+      }
+      this.pulses.push({ x: cx, y: cy, r, tick: this.tickCount });
+    }
+    if (e.freezeTicks !== undefined) this.freezeUntil = this.tickCount + e.freezeTicks;
+    if (e.productionMul !== undefined) {
+      this.prodBoostUntil = this.tickCount + (e.boostTicks ?? 0);
+      this.prodBoostMul = e.productionMul;
+    }
+    this.relicCooldowns[hi] = def.cooldownTicks ?? 0;
+    this.inputs.push({ tick: this.tickCount, a: { t: 'fireActive', relicId, x, y } });
+    return true;
+  }
+
+  useConsumable(relicId: string): boolean {
+    if (this.status !== 'running') return false;
+    const defs = this.opts.relicDefs ?? [];
+    const hi = this.heldRelics.findIndex((di, i) => defs[di].id === relicId && defs[di].kind === 'consumable' && this.relicUsed[i] === 0);
+    if (hi === -1) return false;
+    this.relicUsed[hi] = 1;
+    this.refold();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'useConsumable', relicId } });
+    return true;
+  }
+
+  /**
+   * Every OFFER_EVERY_WAVES-th completed wave puts up a pick-1-of-3 from the
+   * pool, minus what is already held (no duplicates - stacking comes from
+   * COMBINATIONS, not copies). Draws on the 'relics' stream, so map, waves
+   * and combat draws are untouched by the relic layer existing.
+   */
+  private maybeOffer(): void {
+    const defs = this.opts.relicDefs;
+    if (!defs || this.offer !== null) return;
+    if (this.wave === 0 || this.wave % OFFER_EVERY_WAVES !== 0 || this.offerWave === this.wave) return;
+    this.offerWave = this.wave;
+    const held = new Set(this.heldRelics);
+    const pool: number[] = [];
+    for (let i = 0; i < defs.length; i++) if (!held.has(i)) pool.push(i);
+    if (pool.length === 0) return;
+    this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
   }
 
   setPriority(x: number, y: number, priority: Priority): boolean {
@@ -292,7 +451,10 @@ export class Sim {
       case 'choose': return this.chooseTier(a.x, a.y, a.tier, a.option);
       case 'priority': return this.setPriority(a.x, a.y, a.priority);
       case 'sell': return this.sellTower(a.x, a.y);
-      default: return false; // Phase 6 shapes, not yet implemented
+      case 'pickRelic': return this.pickRelic(a.option);
+      case 'fireActive': return this.fireActive(a.relicId, a.x, a.y);
+      case 'useConsumable': return this.useConsumable(a.relicId);
+      default: return false; // claimCache, prospect, buyRelic, rerollOffer: 1.6.5/1.6.6
     }
   }
 
@@ -324,6 +486,12 @@ export class Sim {
     u32(this.wave); u32(this.kills); u32(this.breaches); u32(this.spawned);
     u32(this.status === 'running' ? 1 : 0);
     for (const o of this.ore) u32(o);
+    u32(this.freezeUntil); u32(this.prodBoostUntil); u32(Math.round(this.prodBoostMul * 1000));
+    u32(this.offerWave);
+    for (const r of this.heldRelics) u32(r);
+    for (const c of this.relicCooldowns) u32(c);
+    for (const u of this.relicUsed) u32(u);
+    for (const o of this.offer ?? [-1]) u32(o + 1);
     u32(this.betweenTimer); u32(this.intraTimer); u32(this.spawnTimer);
     for (const q of this.spawnQueue) u32(q);
     for (const e of this.waveEntries) { u32(e.x); u32(e.y); }
@@ -373,6 +541,9 @@ export class Sim {
   tick(): void {
     if (this.status !== 'running') return; // a fallen Core stays fallen
     this.tickCount++;
+    for (let i = 0; i < this.relicCooldowns.length; i++) {
+      if (this.relicCooldowns[i] > 0) this.relicCooldowns[i]--;
+    }
     if (this.mode === 'waves') this.wavePhase();
     else this.tricklePhase();
     this.towerPhase();
@@ -400,15 +571,21 @@ export class Sim {
       const onVein = this.cellAt(tower.cellX, tower.cellY) === 'O';
       const oreShare = prod.ore ?? 0;
       const scrapShare = prod.scrap ?? 0;
-      if ((oreShare === 0 || !onVein) && scrapShare === 0) continue; // idle: timer holds
+      // Foundry (relic): an off-vein miner produces Scrap instead of idling.
+      const foundry = !onVein && oreShare > 0 && this.fold.offVeinScrap;
+      if ((oreShare === 0 || (!onVein && !foundry)) && scrapShare === 0) continue; // idle: timer holds
       if (--tower.prodCooldown > 0) continue;
       const eff = this.stats(tower);
       tower.prodCooldown = eff.productionEveryTicks;
+      // Deep Vein (relic active): a timed multiplier on every yield.
+      const boost = this.tickCount < this.prodBoostUntil ? this.prodBoostMul : 1;
+      const yielded = eff.production * boost;
       // A def mixing ore and scrap splits the folded yield by its base ratio;
       // shipped content never does (ore-only), but the shape must not lie.
       const total = oreShare + scrapShare;
-      if (onVein && oreShare > 0) this.ore[0] += Math.round((eff.production * oreShare) / total);
-      if (scrapShare > 0) this.scrap += Math.round((eff.production * scrapShare) / total);
+      if (oreShare > 0 && onVein) this.ore[0] += Math.round((yielded * oreShare) / total);
+      else if (foundry) this.scrap += Math.round((yielded * oreShare) / total);
+      if (scrapShare > 0) this.scrap += Math.round((yielded * scrapShare) / total);
     }
   }
 
@@ -430,7 +607,8 @@ export class Sim {
 
   private wavePhase(): void {
     if (this.spawnQueue.length === 0 && this.aliveCount() === 0) {
-      // Between waves.
+      // Between waves. Wave completion is when offers appear (D4).
+      this.maybeOffer();
       if (--this.betweenTimer > 0) return;
       this.wave++;
       this.waveEntries = this.nextWaveEntries.length ? this.nextWaveEntries : this.pickWaveEntries(this.wave);
@@ -597,11 +775,15 @@ export class Sim {
     const iy = this.posY[enemy];
     this.damageEnemy(enemy, p);
     if (radius > 0) {
-      for (let i = 0; i < this.enemyHigh; i++) {
-        if (!this.alive[i] || i === enemy) continue;
-        const dx = this.posX[i] - ix;
-        const dy = this.posY[i] - iy;
-        if (Math.sqrt(dx * dx + dy * dy) <= radius) this.damageEnemy(i, p);
+      // Splinter (relic): the explosion resolves twice.
+      const blasts = this.fold.explodeTwice ? 2 : 1;
+      for (let rep = 0; rep < blasts; rep++) {
+        for (let i = 0; i < this.enemyHigh; i++) {
+          if (!this.alive[i] || i === enemy) continue;
+          const dx = this.posX[i] - ix;
+          const dy = this.posY[i] - iy;
+          if (Math.sqrt(dx * dx + dy * dy) <= radius) this.damageEnemy(i, p);
+        }
       }
     }
     this.despawnProj(p);
@@ -618,6 +800,9 @@ export class Sim {
     // Zero-damage attacks are pure control (Frost's base): effects land,
     // health does not move, armor's min-1 rule only applies to real hits.
     let dmg = raw <= 0 ? 0 : Math.max(1, raw - (def.armor ?? 0));
+    // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
+    // relic that turns Frost from utility into a damage amplifier.
+    if (dmg > 0 && this.slowTicks[enemy] > 0) dmg *= this.fold.slowedDamageMul;
     if (this.shield[enemy] > 0) {
       const absorbed = Math.min(this.shield[enemy], dmg);
       this.shield[enemy] -= absorbed;
@@ -629,13 +814,38 @@ export class Sim {
       this.slowMul[enemy] = slowMulN;
     }
     if (this.hp[enemy] <= 0) {
+      const overkill = -this.hp[enemy];
       this.alive[enemy] = 0;
       this.freeEnemies.push(enemy);
       this.kills++;
-      this.scrap += def.bounty ?? 0;
+      this.scrap += (def.bounty ?? 0) + this.fold.killRefundScrap; // Tithe
       const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
+      // Overflow (relic): excess damage chains to the nearest enemy, and a
+      // chain kill's excess chains again - kills feed kills. Terminates
+      // because every recursion step required a kill.
+      if (this.fold.overkillCarry && overkill >= 1) {
+        const next = this.nearestAlive(this.posX[enemy], this.posY[enemy]);
+        if (next !== -1) this.applyDamage(next, overkill, 0, 0, towerIdx);
+      }
     }
+  }
+
+  /** Nearest living enemy to a point; scan order breaks ties (determinism). */
+  private nearestAlive(x: number, y: number): number {
+    let best = -1;
+    let bestSq = Infinity;
+    for (let i = 0; i < this.enemyHigh; i++) {
+      if (!this.alive[i]) continue;
+      const dx = this.posX[i] - x;
+      const dy = this.posY[i] - y;
+      const dSq = dx * dx + dy * dy;
+      if (dSq < bestSq) {
+        bestSq = dSq;
+        best = i;
+      }
+    }
+    return best;
   }
 
   private emitPulse(towerIdx: number, tower: Tower, eff: EffectiveStats): void {
@@ -669,6 +879,9 @@ export class Sim {
   // ---- movement ------------------------------------------------------------
 
   private walkPhase(): void {
+    // Stasis (relic active): the board freezes - nothing moves, slow timers
+    // hold, towers keep firing. The get-out-of-jail card.
+    if (this.tickCount < this.freezeUntil) return;
     const { dist, width, height } = this.flow;
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;

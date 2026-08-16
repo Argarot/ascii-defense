@@ -61,6 +61,98 @@ export interface ProductionSpec {
   everyTicks: number;
 }
 
+/**
+ * Relics (PRD sec 7): rule modifiers, structurally matching the relics
+ * schema. Effects are NAMED ENGINE KNOBS - the fixed set of seams the sim
+ * implements. A new relic combining existing knobs is content; a new knob is
+ * an engine change. This is what keeps 190 untested pairs safe to ship: the
+ * pairs multiply, the knobs do not.
+ */
+export interface RelicEffects {
+  overkillCarry?: boolean;
+  slowedDamageMul?: number;
+  killRefundScrap?: number;
+  explodeTwice?: boolean;
+  buildOnRock?: boolean;
+  coreAdjacentRangeMul?: number;
+  offVeinScrap?: boolean;
+  damageMul?: number;
+  fireRateMul?: number;
+  rangeAdd?: number;
+  orbitalDamage?: number;
+  orbitalRadius?: number;
+  freezeTicks?: number;
+  productionMul?: number;
+  boostTicks?: number;
+}
+
+export type RelicKind = 'passive' | 'active' | 'consumable';
+
+export interface RelicDef {
+  id: string;
+  name: string;
+  kind: RelicKind;
+  /** Player-facing card text; the offer modal renders it. */
+  desc: string;
+  /** Reserved (D5); the M1 pool is flat. */
+  rarity?: 'common' | 'rare' | 'epic';
+  /** Actives: ticks between firings. */
+  cooldownTicks?: number;
+  effects?: RelicEffects;
+}
+
+/**
+ * The always-on modifiers folded from held relics: passives plus USED
+ * consumables (an unused consumable is a promise, not a power). Multipliers
+ * stack multiplicatively, adds additively - order-free, so determinism does
+ * not depend on acquisition order.
+ */
+export interface RelicFold {
+  overkillCarry: boolean;
+  slowedDamageMul: number;
+  killRefundScrap: number;
+  explodeTwice: boolean;
+  buildOnRock: boolean;
+  coreAdjacentRangeMul: number;
+  offVeinScrap: boolean;
+  damageMul: number;
+  fireRateMul: number;
+  rangeAdd: number;
+}
+
+export const EMPTY_FOLD: RelicFold = {
+  overkillCarry: false,
+  slowedDamageMul: 1,
+  killRefundScrap: 0,
+  explodeTwice: false,
+  buildOnRock: false,
+  coreAdjacentRangeMul: 1,
+  offVeinScrap: false,
+  damageMul: 1,
+  fireRateMul: 1,
+  rangeAdd: 0,
+};
+
+/** Fold the always-on effects of the given relics (see RelicFold). */
+export function foldRelics(defs: readonly RelicDef[]): RelicFold {
+  const out: RelicFold = { ...EMPTY_FOLD };
+  for (const d of defs) {
+    const e = d.effects;
+    if (!e) continue;
+    out.overkillCarry ||= e.overkillCarry ?? false;
+    out.slowedDamageMul *= e.slowedDamageMul ?? 1;
+    out.killRefundScrap += e.killRefundScrap ?? 0;
+    out.explodeTwice ||= e.explodeTwice ?? false;
+    out.buildOnRock ||= e.buildOnRock ?? false;
+    out.coreAdjacentRangeMul *= e.coreAdjacentRangeMul ?? 1;
+    out.offVeinScrap ||= e.offVeinScrap ?? false;
+    out.damageMul *= e.damageMul ?? 1;
+    out.fireRateMul *= e.fireRateMul ?? 1;
+    out.rangeAdd += e.rangeAdd ?? 0;
+  }
+  return out;
+}
+
 /** Additive stat deltas an upgrade choice applies. */
 export interface StatMods {
   damage?: number;
