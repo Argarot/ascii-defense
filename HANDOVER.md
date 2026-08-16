@@ -1,9 +1,12 @@
 # Handover — state as of 2026-08-16 (sessions 1–11)
 
+> **Updated once per working day, not per session** (Daniil, 2026-08-16). It
+> carries state and seams only; sequencing lives in the roadmap ledger and the
+> checklist in the WBS. Anything restated here is a drift surface.
+
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
 [docs/PRD.md](docs/PRD.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) →
-[docs/WBS.md](docs/WBS.md) → [docs/FEEDBACK.md](docs/FEEDBACK.md) → this
-file. The gitignored `POSTMORTEM.md` holds
+[docs/WBS.md](docs/WBS.md) → this file. The gitignored `POSTMORTEM.md` holds
 collaboration findings (append as things happen — standing practice).
 
 Live build: <https://argarot.github.io/ascii-defense/> (always verify
@@ -26,9 +29,9 @@ Outstanding M1 work: Phase 2 (art round-trip, re-planned — see below), Phase 5
 
 ## What the two playtests changed
 
-Read [docs/FEEDBACK.md](docs/FEEDBACK.md) before planning anything — it indexes
-every request to its PRD section, WBS ID and session, including deferrals with
-their triggers and declines with their reasons.
+Read the **request index** at the top of [docs/WBS.md](docs/WBS.md) before
+planning anything — it maps every request Daniil has made to the work item that
+owns it.
 
 The headline findings, because they reshaped the plan:
 

@@ -21,14 +21,41 @@ Conventions:
 |---|---|---|---|
 | D1 | ~~Buildable density~~ **RESOLVED 2026-08-15**: the map generator controls ground amount/placement directly; density is a generation knob tuned as data (PRD §4.4) | — | closed |
 | D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |
-| D3 | **Material language** — glyph vocabulary for metal/stone/energy/organic (ASSETS §5) | before 1.4 art authoring | Daniil + dev |
+| D3 | ~~Material language~~ **CLOSED 2026-08-16 as obsolete.** "Which glyphs mean metal vs stone" was a question from when we expected hand-authored art at volume. The live remnant is narrower — *what compositional rule makes 14 tower variants legible* (V11) — and it is not answerable in the abstract; it moves into the art session as a concrete question with sprites in front of us | — | closed |
 | D4 | ~~Wave-clear offer cadence~~ **RESOLVED 2026-08-16**: every **3 waves**, pick 1 of 3. ~6 guaranteed picks in a 20-wave run, ~11 acquisitions once caches and Ore draws are counted — above the ~6–10 floor at which combinations start happening (PRD §7.1) | — | closed |
 | D5 | ~~Relic rarity tiers~~ **RESOLVED 2026-08-16 (second pass)**: yes — rarity weights the pool so run-breaking relics are rare and filler is common. The flat pool was correct until play evidence existed; it now does. Weighting lands in 2.7 | — | closed |
 | D6 | ~~Does a run end?~~ **RESOLVED 2026-08-16**: **finite** — a final wave and a victory. Simpler to playtest and to calibrate against; endless-scored-by-depth may return later as a separate mode | — | closed |
 | D7 | ~~Hidden-tab behaviour~~ **RESOLVED 2026-08-16**: the **simulation keeps running** in a Web Worker; an explicit PAUSED indicator covers deliberate pauses only. Also buys in-browser bot runs without freezing the UI | — | closed |
-| D8 | **The printing-trade lexicon** — naming for towers, enemies, upgrades, currencies (PRD §13). Gets its **own short session**; none of the first candidates landed. Must close before art | before 2.12 | Daniil + dev |
-| D9 | **Activate multiple Ore tiers?** Storage is already per-tier (invariant 9), so deferring is free. **Trigger:** activate when the tech tree exists and needs gating (M3+) — not while one currency is still unbalanced. Richness tiers (2.6) deliver the "reach further for better" dynamic meanwhile | at M3 | Daniil + dev |
+| D8 | **The printing-trade lexicon** — own mini-session, **before more towers/enemies** (Daniil). Dev's position to argue there: theme the *flavour* layer hard (enemies, relics, tier names, currencies) but keep **tower** names functionally readable — "Frost Emitter" tells you it slows, "Quoin" does not, and towers are picked under pressure | before 2.5/2.8 | Daniil + dev |
+| D9 | **Ore tiers — the MECHANICS, not just a gate** *(reframed by Daniil 2026-08-16)*. Ore cells carry a tier; costs are per-tier amounts; generation has a distribution model over tiers. The **shape lands with 2.6** (same code — later means touching it twice); only tier 1 is active. Open question is the **driver**: "further from road = rarer" is moot once deposits deplete. Dev proposes *richer tiers where they cost you something* — sealed in rock (prospecting reaches them) and on exposed cells near the road, so depletion pushes you outward into worse positions | driver: before 2.6 · activation: M3+ | Daniil + dev |
 | D10 | ~~Road-shape variance~~ **RESOLVED 2026-08-16**: the constraint was never tile size — it was the validity rule confining roads to the interior 3×3 (PRD §4.2.1). Drop that, add route-as-a-graph (2.16), then generate variants (2.15). 7×7 stays a fallback only if the widened vocabulary still reads samey | — | closed |
+
+## Request index
+
+Daniil's numbered feedback → where it landed. Compact on purpose: the item
+text lives in the WBS entry, declines in PRD §14, deferrals in the table above.
+*(Replaced a separate FEEDBACK.md on 2026-08-16 — a third copy of the same facts
+was a drift surface, not an aid.)*
+
+**Round 1, mechanics:** 1→2.6 · 2→2.11 · 3→1.7.3+2.1 · 4→2.7 · 5→2.7 · 6→2.13 ·
+7→1.7.2 *(diagnosed: pool exhaustion, not a missing button)* · 8→2.16 · 9→4.9 ·
+10→2.8 · 11→4.10 · 12→2.9 · 13→4.1 · 14→1.7.4 · 15→1.7.5 · 16→2.13 (D7) ·
+17→2.10 · 18→2.10 · 19→1.7.1 *(a bug)* · 20→2.12 (D8)
+
+**Round 1, visuals:** V1→2.13+4.13 · V2→4.13 · V3→2.15 · V4→4.1 · V5→4.1 ·
+V6→2.14 · V7→4.11 · V8→4.12 · V9→4.12 · V10→4.1 · V11→4.11 · V12→4.14
+*(marked, not committed — visual size only)* · V13→2.14
+
+**Round 2:** consumables free slots→1.7.6 · cut `foundry`→1.7.7 · 10× slower
+mining→1.7.8 · ore tiers→D9 · Tile Smith "add"→2.16 · balance maths→1.5.3/1.5.4 ·
+Phase 5 too early→split · content too late→ledger reordered · animation is
+engine work→4.1 pulled forward
+
+**Declined** (reasons in PRD §14): both-tier relics · mechanically multi-cell
+enemies · offset connectors *(my proposal, withdrawn)* · build-to-claim caches ·
+mid-run tech tree · road mutation · silent hidden-tab simulation.
+
+---
 
 **2026-08-15 pivot** (PRD §1, §14): player tile-laying cut; maps are generated
 at run start (Core tile center, `entries` carved paths, ore by road distance).
@@ -187,7 +214,7 @@ but the question the milestone existed to answer is answered.
   - **connectors stay centre-pegged** — unchanged, and the offset-connector idea is withdrawn
   - **drop the validity rule** forbidding road cells on non-centre border cells; this alone is what unlocks the shape vocabulary, and it is a validator change plus a Tile Smith update
   - **the route becomes a graph**: road cells form components within a tile, joining across tiles only through matching centre connectors, so adjacent roads no longer fuse. Flow field, movement, targeting distance and `L` all read the graph. *This part is the actual work, and it is the mechanism bridges (4.9) need.*
-  - Tile Smith gains an **"add to pool" button** (Daniil) so a tile authored in the tool joins the library without a manual step
+  - Tile Smith gains an **"add to pool" button** (Daniil) so a tile authored in the tool joins the library without a manual step — deliberately *here* rather than earlier: after the validity relaxation his tiles have more freedom, not less, so nothing minted gets invalidated
 
   **Why early:** it changes path length, which feeds the difficulty model, and it
   changes what a legal tile is, right before the tile library grows by two orders
