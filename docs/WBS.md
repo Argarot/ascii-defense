@@ -22,8 +22,8 @@ Conventions:
 | D1 | ~~Buildable density~~ **RESOLVED 2026-08-15**: the map generator controls ground amount/placement directly; density is a generation knob tuned as data (PRD §4.4) | — | closed |
 | D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |
 | D3 | **Material language** — glyph vocabulary for metal/stone/energy/organic (ASSETS §5) | before 1.4 art authoring | Daniil + dev |
-| D4 | **Wave-clear offer cadence** — every N waves (proposal: 3, giving ~6 picks in a 20-wave run) | before 1.6.2 | Daniil |
-| D5 | **Relic rarity tiers** — ship flat in M1 with the field reserved, or weight the pool from the start? | before 1.6.3 content authoring | dev, on M1 play evidence |
+| D4 | ~~Wave-clear offer cadence~~ **RESOLVED 2026-08-16**: every **3 waves**, pick 1 of 3. ~6 guaranteed picks in a 20-wave run, ~11 acquisitions once caches and Ore draws are counted — above the ~6–10 floor at which combinations start happening (PRD §7.1) | — | closed |
+| D5 | ~~Relic rarity tiers~~ **RESOLVED 2026-08-16**: ship **flat** in M1; the `rarity` field is present in the schema from the first commit but unused. Rarity is a tuning answer to a question nobody has played yet — weighting the pool before the layer exists would be guessing, and the reserved field makes it a data change later | — | closed |
 
 **2026-08-15 pivot** (PRD §1, §14): player tile-laying cut; maps are generated
 at run start (Core tile center, `entries` carved paths, ore by road distance).
@@ -116,8 +116,8 @@ stable once assigned; sequenced before Phase 5 because calibrating a game that
 is missing its power layer produces curves we would throw away.
 
 - [ ] 1.6.1 **Hook layer** (engine). Fixed, deterministic application order over named seams: `globalStatModifier` (folds in `effectiveStats`, the one existing fold point), `onKill`, `onDamage`, `onProjectileSpawn`, `onWaveStart`, `buildLegality`, `economyRate`. Relic JSON schema + codegen + ajv validation + content linter entry. Kinds `passive | active | consumable` and a reserved `rarity` field all present from the first commit even where M1 ships none of a kind.
-- [ ] 1.6.2 **Acquisition B** — wave-clear offer, pick 1 of 3, seeded from a new `relics` RNG stream. Blocked on D4 (cadence).
-- [ ] 1.6.3 **Relic content** — ~20 across the three kinds, incl. `overflow`, `frostbite`, `tithe`, `splinter`, `veinTap`, `loadbearing`, `foundry`, `deepVein`, `orbital`, `stasis` (PRD §7.4). Blocked on D5 (rarity).
+- [ ] 1.6.2 **Acquisition B** — wave-clear offer **every 3 waves** (D4), pick 1 of 3, seeded from a new `relics` RNG stream. The stream is drawn from at offer time, not at generation: the offer depends on which relics are already held, so it cannot be dealt up front.
+- [ ] 1.6.3 **Relic content** — ~20 across the three kinds, incl. `overflow`, `frostbite`, `tithe`, `splinter`, `veinTap`, `loadbearing`, `foundry`, `deepVein`, `orbital`, `stasis` (PRD §7.4). Flat pool in M1, `rarity` reserved but unused (D5).
 - [ ] 1.6.4 **Core as vessel** — Core HP surface + relic inventory panel + active firing with cooldown display + consumable use. No tier tree.
 - [ ] 1.6.5 **Acquisition C then A** — Ore draw/reroll at the Core; then map caches as a mapgen overlay, claimed by selecting the cell and paying (never by building on it — PRD §14).
 - [ ] 1.6.6 **Prospecting** — rock contents dealt at generation (ore / cache / nothing); rock cells selectable with a Prospect card costing Scrap; gated behind the Refinery's Survey path. Opening rock only ever yields off-route cells, so the flow field is untouched by construction.

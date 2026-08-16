@@ -350,8 +350,14 @@ listed — each is independently shippable and useful alone.
 | **C** | **Ore purchase at the Core** — draw a relic, or reroll the offer | Gives Ore an in-run sink and creates the spend-now-versus-bank tension (§6) | reuses the HUD card |
 | **A** | **Map caches** — claimed by selecting the cell and paying (§4.6) | Makes *this* map's shape decide what is on offer; greed versus safety | mapgen overlay + claim card |
 
-Target cadence: **~6 from offers, ~3 from caches, ~2–3 bought** over a 20-wave
-run. Fewer than that and the layer does not fire.
+Target cadence: **~6 from offers** (one every 3 waves, decided 2026-08-16),
+**~3 from caches**, **~2–3 bought** over a 20-wave run. Fewer than that and the
+layer does not fire.
+
+M1 ships the pool **flat** — every relic equally likely. The schema carries a
+`rarity` field from the first commit and ignores it, because weighting a pool
+before anyone has played with it is guessing, and the reserved field makes it a
+data change rather than a migration.
 
 ### 7.4 The M1 set
 

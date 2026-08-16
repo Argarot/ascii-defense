@@ -83,9 +83,9 @@ Hard constraints that came out of it, all now in the PRD:
 3. **Phase 6** — 1.6.1 hooks → 1.6.2 offers → 1.6.3 content → 1.6.4 Core
    vessel → 1.6.5 draws + caches → 1.6.6 prospecting.
 
-Two decisions are open and blocking inside Phase 6: **D4** wave-clear cadence
-(proposal: every 3 waves) and **D5** relic rarity tiers (proposal: flat in M1,
-field reserved). Ask Daniil; do not pick silently.
+Both Phase 6 decisions are **closed** (Daniil, 2026-08-16): **D4** — offers
+every 3 waves, pick 1 of 3. **D5** — flat pool in M1, `rarity` in the schema
+from the first commit but unused. Nothing in Phase 6 is decision-blocked.
 
 ## How we work (hard-learned, do not relearn)
 
