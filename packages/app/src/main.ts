@@ -92,6 +92,55 @@ async function main(): Promise<void> {
   let selectedBuildId = TOWER_DEFS[0].id; // def id of the active build choice
   let hudHover: import('@ascii-defense/view').HudAction | null = null;
   let dirty = true;
+  /** Relic id awaiting a board-click target (Orbital); Esc cancels. */
+  let targeting: string | null = null;
+
+  // Two-letter slot tags: initials of the name's words ("Orbital Lance"->OL).
+  const slotTag = (name: string): string => {
+    const words = name.split(' ').filter(Boolean);
+    return (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();
+  };
+
+  const MIN_SLOTS = 12;
+  const coreInfoFor = (): import('@ascii-defense/view').HudCoreInfo | null => {
+    if (!selected || sim.cellAt(selected.x, selected.y) !== 'C') return null;
+    const held = sim.heldRelicInfo();
+    const slots = Array.from({ length: Math.max(MIN_SLOTS, held.length) }, (_, i): import('@ascii-defense/view').HudRelicSlot => {
+      const h = held[i];
+      if (!h) return { label: '', name: '', state: 'empty', cooldownSec: 0 };
+      const state =
+        h.def.kind === 'active'
+          ? h.cooldown > 0
+            ? ('cooling' as const)
+            : ('ready' as const)
+          : h.def.kind === 'consumable'
+            ? h.used
+              ? ('used' as const)
+              : ('consumable' as const)
+            : ('passive' as const);
+      return { label: slotTag(h.def.name), name: h.def.name, state, cooldownSec: Math.ceil(h.cooldown / TICK_HZ) };
+    });
+    const hov = hudHover?.kind === 'relic' ? held[hudHover.index] : undefined;
+    return {
+      hp: sim.coreHp,
+      hpMax: sim.coreHpMax,
+      slots,
+      hoverDesc: hov ? `${hov.def.name} - ${hov.def.desc}` : targeting ? 'click the map to aim, Esc cancels' : null,
+    };
+  };
+
+  /** Click a filled slot: actives fire (targeted ones arm), consumables use. */
+  const slotClicked = (index: number): void => {
+    const h = sim.heldRelicInfo()[index];
+    if (!h) return;
+    if (h.def.kind === 'consumable') {
+      sim.useConsumable(h.def.id);
+    } else if (h.def.kind === 'active' && h.cooldown === 0) {
+      if (h.def.effects?.orbitalDamage !== undefined) targeting = h.def.id;
+      else sim.fireActive(h.def.id);
+    }
+    dirty = true;
+  };
 
   // An offer freezes time: auto-pause when it appears, restore the previous
   // speed on pick. The pause is app-level - the sim never wall-clock waits,
@@ -205,11 +254,14 @@ async function main(): Promise<void> {
       (hudHover?.kind === 'build' ? palette[hudHover.index] : undefined) ??
       palette.find((d) => d.id === selectedBuildId) ??
       palette[0];
-    const range = selTower
-      ? { x: selTower.cellX, y: selTower.cellY, r: sim.stats(selTower).range }
-      : buildTarget && selected && previewDef
-        ? { x: selected.x, y: selected.y, r: previewDef.range }
-        : null;
+    const aimRelic = targeting !== null ? RELIC_DEFS.find((r) => r.id === targeting) : undefined;
+    const range = aimRelic && hover
+      ? { x: hover.x, y: hover.y, r: aimRelic.effects?.orbitalRadius ?? 1 }
+      : selTower
+        ? { x: selTower.cellX, y: selTower.cellY, r: sim.stats(selTower).range }
+        : buildTarget && selected && previewDef
+          ? { x: selected.x, y: selected.y, r: previewDef.range }
+          : null;
     const hoverTower = hover ? sim.towerAt(hover.x, hover.y) : null;
     const infoTower = selTower ?? hoverTower;
     const def = infoTower ? sim.towerDef(infoTower) : null;
@@ -250,7 +302,7 @@ async function main(): Promise<void> {
         previewDef !== undefined &&
         sim.canAfford(previewDef.id),
       showGrid,
-      rangeIsPreview: (!selTower && buildTarget) || (selTower !== null && effPreview !== null),
+      rangeIsPreview: targeting !== null || (!selTower && buildTarget) || (selTower !== null && effPreview !== null),
       // Blink = the NEXT wave will enter here; steady = spawning RIGHT NOW.
       // One marker for both read as a lie when a telegraphed entry sat quiet
       // for a whole wave (Daniil's report).
@@ -303,6 +355,7 @@ async function main(): Promise<void> {
       selectedBuild: palette.findIndex((d) => d.id === selectedBuildId),
       buildTargetSelected: buildTarget,
       phase: animPhase,
+      core: coreInfoFor(),
       selectedTower:
         infoTower && def && eff
           ? {
@@ -398,6 +451,7 @@ async function main(): Promise<void> {
     }
     if (action.kind === 'priority' && selected) sim.setPriority(selected.x, selected.y, action.value);
     if (action.kind === 'choose' && selected) sim.chooseTier(selected.x, selected.y, action.tier, action.option);
+    if (action.kind === 'relic') slotClicked(action.index);
     dirty = true;
   });
   term.canvas.addEventListener('click', (e) => {
@@ -408,6 +462,12 @@ async function main(): Promise<void> {
       return;
     }
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
+    if (targeting !== null) {
+      if (cell) sim.fireActive(targeting, cell.x, cell.y);
+      targeting = null;
+      dirty = true;
+      return;
+    }
     // Select-first flow (Daniil): clicking never builds. Pick the tile,
     // then pick the tower in the HUD; the preview ring breathes meanwhile.
     selected = same(cell, selected) ? null : cell;
@@ -442,6 +502,7 @@ async function main(): Promise<void> {
     }
     if (e.key === 'Escape') {
       selected = null;
+      targeting = null;
       dirty = true;
     }
   });
