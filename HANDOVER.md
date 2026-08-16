@@ -2,7 +2,8 @@
 
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
 [docs/PRD.md](docs/PRD.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) →
-[docs/WBS.md](docs/WBS.md) → this file. The gitignored `POSTMORTEM.md` holds
+[docs/WBS.md](docs/WBS.md) → [docs/FEEDBACK.md](docs/FEEDBACK.md) → this
+file. The gitignored `POSTMORTEM.md` holds
 collaboration findings (append as things happen — standing practice).
 
 Live build: <https://argarot.github.io/ascii-defense/> (always verify

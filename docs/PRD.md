@@ -103,31 +103,40 @@ tiles them; roadless terrain fills the rest.
 a path exists, because a disconnected map cannot be assembled. This is the same
 class of guarantee as "road is never buildable", and both are load-bearing.
 
-### 4.2.1 Offset connectors — planned relaxation *(Daniil, 2026-08-16)*
+### 4.2.1 Roads may touch without connecting *(Daniil, 2026-08-16)*
 
-Center-or-nothing forbids two parallel roads crossing one tile edge: both would
-land on the centre cell and merge. That costs the tile pool its most interesting
-shapes, and it is the reason bridges (§4.2.2) cannot exist.
+The tile pool has very few possible road shapes. The cause is not tile size and
+not the connector model — it is a **validity rule**, and the fix is three parts
+of which only the last is real work.
 
-**The rule relaxes to "any agreed offset".** An edge's connector becomes the SET
-of cell offsets carrying road; matching becomes set equality; a tile may carry
-two parallel roads across one edge without merging them. Connectors remain
-**derived from the drawn cells, never declared** — that half of the invariant is
-untouched, and it is the half that makes disagreement impossible.
+**1. Connectors stay pegged to edge centres.** A road crosses a tile edge only at
+that edge's centre cell; matching stays boolean; connectors stay derived. This is
+unchanged, deliberately. *(An earlier draft proposed relaxing connectors to a set
+of offsets. Withdrawn: it is a larger change that buys something nobody asked
+for, and centre-pegging keeps edge matching trivial.)*
 
-Why this is affordable now and was not before: center-or-nothing existed to make
-connectivity free while the *player* placed tiles arbitrarily. Since the
-2026-08-15 pivot the generator carves the topology first and tiles to match, so
-connectivity is guaranteed by the carve. The connector rule is no longer
-load-bearing for it — only for edge agreement.
+**2. The rule "roads touch edges only at centres" is dropped.** Today a road cell
+anywhere on a tile border is illegal, which confines every road to the interior
+3×3 plus four centre cells — **that** is why the shape vocabulary is so thin.
+Roads may occupy any cell. Only centre cells create connectors, and a road that
+runs through a centre cell creates one there, because connectors are derived from
+the drawn cells; authoring simply avoids centres it does not mean.
 
-Cost, stated plainly: every authored tile, the signature index and Tile Smith are
-reworked. **This lands before the tile pool grows** (§11), because re-authoring a
-large pool later is the expensive version of the same job.
+**3. Road cells stop merging by adjacency.** Once roads hug borders, tile A’s road
+on its right border sits next to tile B’s road on its left, and a cell-adjacency
+BFS fuses them into one route. So the route stops being "every road cell,
+4-connected" and becomes a **graph**: road cells form connected components within
+a tile, and components join across tiles **only** through matching centre
+connectors. Two roads may then run side by side, touching, on separate routes.
 
+Part 3 is the work, and it is the same mechanism bridges need (§4.2.2).
+Connectivity still holds by construction: the generator carves the topology and
+tiles to match, so the route graph is connected because it was built connected —
+never because it was checked.
 ### 4.2.2 Bridges
 
-With offset connectors, two roads can cross a tile without merging — a bridge.
+With the route as a graph (§4.2.1), two roads can cross a tile without merging — a
+bridge.
 Mechanically this is the larger change: the route stops being a grid where every
 road cell has one downhill neighbour, and becomes a **graph** in which a bridge
 cell holds two independent nodes. Movement, targeting distance and `L` all read
