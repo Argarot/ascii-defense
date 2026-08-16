@@ -94,6 +94,8 @@ export interface RenderState {
   activeEntries?: readonly CellRef[];
   /** Unclaimed relic caches - drawn as a bright find on the terrain. */
   caches?: readonly CellRef[];
+  /** Ore cells' remaining richness 0..1 - scales the gold-speck density. */
+  oreRichness?: readonly { x: number; y: number; frac: number }[];
   /** The Core has fallen; draw the end screen over everything. */
   gameOver?: boolean;
   /** Expanding pulse rings: age01 runs 0 (just fired) to 1 (full range). */
@@ -158,6 +160,9 @@ export class BoardView {
 
   render(state: RenderState): void {
     const term = this.term;
+    const richnessAt = state.oreRichness
+      ? new Map(state.oreRichness.map((r) => [r.y * this.cellsW + r.x, r.frac]))
+      : undefined;
     const offsetY = 0; // the board owns its whole surface; text lives in HudPanel
 
     term.clear(role('ui.bg'));
@@ -190,6 +195,7 @@ export class BoardView {
           bg: hoverBg,
           litTop: shaded && north !== kind,
           shadowBottom: shaded && south !== kind,
+          richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx) : undefined,
         });
       }
 

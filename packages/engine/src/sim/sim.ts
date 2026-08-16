@@ -59,6 +59,8 @@ export interface SimOptions {
   relicDefs?: readonly RelicDef[];
   /** Wave scaling knobs; DEFAULT_DIFFICULTY when absent. */
   difficulty?: DifficultySpec;
+  /** Hold this wave and the run is WON (D6). 0 = endless (tests, demos). */
+  finalWave?: number;
 }
 
 /**
@@ -191,8 +193,8 @@ export class Sim {
   readonly ore: number[] = [0];
   coreHp: number;
   readonly coreHpMax: number;
-  /** 'running' until the Core falls. */
-  status: 'running' | 'lost' = 'running';
+  /** 'running' until the Core falls - or the final wave is held (D6). */
+  status: 'running' | 'lost' | 'won' = 'running';
 
   /**
    * The run's input log, recorded inside the mutation methods themselves -
@@ -226,6 +228,10 @@ export class Sim {
   readonly cellChanges: { x: number; y: number; t: CellType }[] = [];
   /** Indices into map.caches already claimed. */
   readonly claimedCaches: number[] = [];
+  /** Remaining ore per vein cell (key = cell index). Finite: PRD sec 6. */
+  private readonly depositLeft = new Map<number, number>();
+  private readonly depositInit = new Map<number, number>();
+  private readonly depositTier = new Map<number, number>();
 
   // ---- waves ----
   wave = 0;
@@ -242,6 +248,7 @@ export class Sim {
   private readonly maxSpawns: number;
   private readonly interWaveTicks: number;
   private readonly difficulty: DifficultySpec;
+  private readonly finalWave: number;
   private spawnTimer = 0;
 
   constructor(
@@ -259,9 +266,16 @@ export class Sim {
     this.coreHp = this.coreHpMax;
     this.interWaveTicks = opts.interWaveTicks ?? 160;
     this.difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
+    this.finalWave = opts.finalWave ?? 0;
     this.betweenTimer = Math.min(this.interWaveTicks, 60); // first wave comes fast
     this.occupancy = new Uint16Array(opts.cellsW * opts.cellsH);
     this.cellsMut = opts.cells.slice();
+    for (const d of opts.map.deposits ?? []) {
+      const k = d.y * opts.cellsW + d.x;
+      this.depositLeft.set(k, d.amount);
+      this.depositInit.set(k, d.amount);
+      this.depositTier.set(k, d.tier);
+    }
     this.flow = computeFlowField(opts.cells, opts.cellsW, opts.cellsH, opts.map.entries);
     // Loadbearing's "adjacent to the Core": chebyshev-1 ring around C cells.
     this.nearCore = new Uint8Array(opts.cellsW * opts.cellsH);
@@ -484,6 +498,13 @@ export class Sim {
     return true;
   }
 
+  /** Remaining/initial vein at (x, y); null when not an ore cell. */
+  depositAt(x: number, y: number): { left: number; initial: number; tier: number } | null {
+    const k = y * this.opts.cellsW + x;
+    if (!this.depositInit.has(k)) return null;
+    return { left: this.depositLeft.get(k) ?? 0, initial: this.depositInit.get(k)!, tier: this.depositTier.get(k) ?? 1 };
+  }
+
   /** The unclaimed cache at (x, y), or null. */
   cacheAt(x: number, y: number): { poolIdx: number; cost: number } | null {
     const idx = this.opts.map.caches.findIndex((c) => c.x === x && c.y === y);
@@ -540,6 +561,13 @@ export class Sim {
     const t: CellType = yields === 'ore' ? 'O' : 'G';
     this.cellsMut[y * this.opts.cellsW + x] = t;
     this.cellChanges.push({ x, y, t });
+    if (yields === 'ore') {
+      const k = y * this.opts.cellsW + x;
+      const amount = found?.depositAmount ?? 30;
+      this.depositLeft.set(k, amount);
+      this.depositInit.set(k, amount);
+      this.depositTier.set(k, 1);
+    }
     if (yields === 'cache' && this.opts.relicDefs) {
       this.heldRelics.push((found!.poolIdx ?? 0) % this.opts.relicDefs.length);
       this.relicCooldowns.push(0);
@@ -686,6 +714,8 @@ export class Sim {
     for (const o of this.offer ?? [-1]) u32(o + 1);
     for (const c of this.claimedCaches) u32(c);
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
+    u32(this.status === 'won' ? 1 : 0);
+    for (const [k, v] of this.depositLeft) { u32(k); u32(v); }
     u32(this.betweenTimer); u32(this.intraTimer); u32(this.spawnTimer);
     for (const q of this.spawnQueue) u32(q);
     for (const e of this.waveEntries) { u32(e.x); u32(e.y); }
@@ -740,7 +770,7 @@ export class Sim {
   // ---- the tick ------------------------------------------------------------
 
   tick(): void {
-    if (this.status !== 'running') return; // a fallen Core stays fallen
+    if (this.status !== 'running') return; // a fallen Core stays fallen; a won run stays won
     this.tickCount++;
     for (let i = 0; i < this.relicCooldowns.length; i++) {
       if (this.relicCooldowns[i] > 0) this.relicCooldowns[i]--;
@@ -782,7 +812,20 @@ export class Sim {
       // A def mixing ore and scrap splits the folded yield by its base ratio;
       // shipped content never does (ore-only), but the shape must not lie.
       const total = oreShare + scrapShare;
-      if (oreShare > 0 && onVein) this.ore[0] += Math.round((yielded * oreShare) / total);
+      if (oreShare > 0 && onVein) {
+        const k = tower.cellY * this.opts.cellsW + tower.cellX;
+        const left = this.depositLeft.get(k) ?? 0;
+        const mined = Math.min(left, Math.round((yielded * oreShare) / total));
+        const tier = this.depositTier.get(k) ?? 1;
+        this.ore[tier - 1] = (this.ore[tier - 1] ?? 0) + mined;
+        this.depositLeft.set(k, left - mined);
+        if (left - mined <= 0) {
+          // The vein is spent: ordinary ground remains (PRD sec 6), and the
+          // refinery above it goes idle - which vein, how long, when to move.
+          this.cellsMut[k] = 'G';
+          this.cellChanges.push({ x: tower.cellX, y: tower.cellY, t: 'G' });
+        }
+      }
       if (scrapShare > 0) this.scrap += Math.round((yielded * scrapShare) / total);
     }
   }
@@ -805,6 +848,11 @@ export class Sim {
 
   private wavePhase(): void {
     if (this.spawnQueue.length === 0 && this.aliveCount() === 0) {
+      // Surviving the final wave IS the win (D6: a run ends).
+      if (this.finalWave > 0 && this.wave >= this.finalWave) {
+        this.status = 'won';
+        return;
+      }
       // Between waves. Wave completion is when offers appear (D4).
       this.maybeOffer();
       if (--this.betweenTimer > 0) return;
@@ -815,12 +863,32 @@ export class Sim {
       // Compose the wave: bigger and meaner as numbers grow.
       const waves = this.rng.stream('waves');
       const count = waveCount(this.difficulty, this.wave);
-      const available: number[] = [];
+      // Composition escalates in KIND, not only count (PRD sec 9.1): each
+      // enemy's weight grows with waves since it unlocked, so late waves
+      // are heavies-with-escort instead of a bigger version of wave 1.
+      const available: { idx: number; w: number }[] = [];
       this.opts.enemyDefs.forEach((d, i) => {
-        if ((d.minWave ?? 1) <= this.wave) available.push(i);
+        const mw = d.minWave ?? 1;
+        if (mw <= this.wave) available.push({ idx: i, w: 1 + (this.wave - mw) });
       });
+      const totalW = available.reduce((a, b) => a + b.w, 0);
       this.spawnQueue = [];
-      for (let n = 0; n < count; n++) this.spawnQueue.push(available[waves.int(0, available.length - 1)]);
+      for (let n = 0; n < count; n++) {
+        let roll = waves.int(0, totalW - 1);
+        let pick = available[0].idx;
+        for (const a of available) {
+          if (roll < a.w) { pick = a.idx; break; }
+          roll -= a.w;
+        }
+        this.spawnQueue.push(pick);
+      }
+      // Every 5th wave is an ELITE wave: a surge of the heaviest thing alive.
+      if (this.wave % 5 === 0) {
+        let heavy = available[0].idx;
+        for (const a of available) if (this.opts.enemyDefs[a.idx].hp > this.opts.enemyDefs[heavy].hp) heavy = a.idx;
+        const surge = Math.max(2, Math.ceil(count / 6));
+        for (let n = 0; n < surge; n++) this.spawnQueue.push(heavy);
+      }
       this.intraTimer = 0;
       return;
     }

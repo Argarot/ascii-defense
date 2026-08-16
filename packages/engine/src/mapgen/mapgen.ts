@@ -58,6 +58,21 @@ export interface RockContent {
   yields: 'ore' | 'cache' | 'none';
   /** Set when yields is 'cache'. */
   poolIdx?: number;
+  /** Set when yields is 'ore': the hidden vein's size. */
+  depositAmount?: number;
+}
+
+/**
+ * A finite ore vein (PRD sec 6): a quantity and a tier, dealt at generation.
+ * Richness IS amount - the view scales its gold-speck density by what is
+ * left, so "where is the money" is answered by looking. Tier is the D9
+ * shape: everything ships tier 1; richer tiles arrive as purchases (M7).
+ */
+export interface OreDeposit {
+  x: number;
+  y: number;
+  amount: number;
+  tier: number;
 }
 
 export interface GeneratedMap {
@@ -69,6 +84,8 @@ export interface GeneratedMap {
   /** Empty when relicPoolSize is absent. */
   caches: CacheRef[];
   rockContents: RockContent[];
+  /** Every ore cell's finite vein (PRD sec 6). */
+  deposits: OreDeposit[];
 }
 
 /** Roadless slots farther than this (in slots) from the road stay void. */
@@ -91,6 +108,9 @@ export const CACHE_COUNT = 2;
 /** What a rock cell secretly holds: ore, a cache, or (mostly) nothing. */
 export const ROCK_ORE_CHANCE = 0.3;
 export const ROCK_CACHE_CHANCE = 0.12;
+/** Vein size range; dealt per ore cell. Rich veins are visibly rich. */
+export const DEPOSIT_MIN = 30;
+export const DEPOSIT_MAX = 90;
 
 const EDGE_DELTA: Record<Edge, [number, number]> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 const CENTER = (TILE_SIZE - 1) / 2;
@@ -359,24 +379,30 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   // here, on the map stream: nothing about the map ever rolls dice mid-run.
   const caches: CacheRef[] = [];
   const rockContents: RockContent[] = [];
+  const deposits: OreDeposit[] = [];
   const poolSize = opts.relicPoolSize ?? 0;
-  if (poolSize > 0) {
+  {
     const cellsNow = resolveCells(board, lib);
     const cellsW = width * TILE_SIZE;
     const farGround: CellRef[] = [];
     for (let cy = 0; cy < height * TILE_SIZE; cy++)
       for (let cx = 0; cx < cellsW; cx++) {
         const t = cellsNow[cy * cellsW + cx];
-        if (t === 'K') {
+        if (t === 'O') {
+          // Every vein is finite, dealt here so replays stay exact (sec 6).
+          deposits.push({ x: cx, y: cy, amount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX), tier: 1 });
+        } else if (t === 'K' && poolSize > 0) {
           const roll = rng.int(0, 99);
           const yields: RockContent['yields'] =
             roll < ROCK_ORE_CHANCE * 100 ? 'ore' : roll < (ROCK_ORE_CHANCE + ROCK_CACHE_CHANCE) * 100 ? 'cache' : 'none';
           rockContents.push(
             yields === 'cache'
               ? { x: cx, y: cy, yields, poolIdx: rng.int(0, poolSize - 1) }
-              : { x: cx, y: cy, yields },
+              : yields === 'ore'
+                ? { x: cx, y: cy, yields, depositAmount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX) }
+                : { x: cx, y: cy, yields },
           );
-        } else if (t === 'G' && dist[slotIdx(Math.floor(cx / TILE_SIZE), Math.floor(cy / TILE_SIZE))] >= 2) {
+        } else if (t === 'G' && poolSize > 0 && dist[slotIdx(Math.floor(cx / TILE_SIZE), Math.floor(cy / TILE_SIZE))] >= 2) {
           farGround.push({ x: cx, y: cy });
         }
       }
@@ -391,6 +417,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     core: { x: coreX * TILE_SIZE + CENTER, y: coreY * TILE_SIZE + CENTER },
     caches,
     rockContents,
+    deposits,
   };
 
   function edgeCell(sx: number, sy: number, e: Edge): CellRef {

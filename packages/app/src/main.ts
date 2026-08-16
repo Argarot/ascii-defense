@@ -48,6 +48,9 @@ const GLYPH_PX_W = 5;
 const GLYPH_PX_H = 8;
 const TICK_MS = 1000 / TICK_HZ;
 const SPEEDS = [0, 1, 2, 4, 8] as const;
+// Hold this wave and the run is won (D6). Chosen from the lab: a competent
+// build dies ~23 under the current curve, so 20 is winnable and tense.
+const FINAL_WAVE = 20;
 
 async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
@@ -216,6 +219,7 @@ async function main(): Promise<void> {
       coreHp: 50,
       startingOre: carriedOre,
       relicDefs: RELIC_DEFS,
+      finalWave: FINAL_WAVE,
     });
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
@@ -235,6 +239,15 @@ async function main(): Promise<void> {
   // The app keeps the generated map (the sim's opts are private): caches are
   // rendered from it, minus what the sim says is claimed.
   let currentMap: import('@ascii-defense/engine').GeneratedMap | null = null;
+  const oreRichness = (): { x: number; y: number; frac: number }[] => {
+    const out: { x: number; y: number; frac: number }[] = [];
+    for (const d of currentMap?.deposits ?? []) {
+      const dep = sim.depositAt(d.x, d.y);
+      if (dep) out.push({ x: d.x, y: d.y, frac: dep.initial > 0 ? dep.left / dep.initial : 0 });
+    }
+    return out;
+  };
+
   const mapCaches = (): { x: number; y: number }[] => {
     const out: { x: number; y: number }[] = [];
     currentMap?.caches.forEach((c, i) => {
@@ -302,6 +315,7 @@ async function main(): Promise<void> {
     view.render({
       hover,
       caches: mapCaches(),
+      oreRichness: oreRichness(),
       selected,
       enemies: collectEnemies(),
       towers,
@@ -325,7 +339,7 @@ async function main(): Promise<void> {
       // for a whole wave (Daniil's report).
       telegraph: sim.nextWaveEntries,
       activeEntries: sim.spawnRemaining() > 0 ? sim.waveEntries : [],
-      gameOver: sim.status === 'lost',
+      gameOver: sim.status !== 'running',
       pulses: sim.pulses
         .map((pu) => ({ x: pu.x, y: pu.y, r: pu.r, age01: (sim.tickCount - pu.tick) / 10 }))
         .filter((pu) => pu.age01 >= 0 && pu.age01 <= 1),
@@ -361,6 +375,8 @@ async function main(): Promise<void> {
       nextFronts: sim.nextWaveEntries.length,
       nextWaveIn: Math.ceil(sim.ticksToNextWave() / TICK_HZ),
       gameOver: sim.status === 'lost',
+      victory: sim.status === 'won',
+      finalWave: FINAL_WAVE,
       L: sim.flow.L,
       seed,
       speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
@@ -387,6 +403,7 @@ async function main(): Promise<void> {
           ? {
               name: def.name ?? def.id,
               kills: infoTower.kills,
+              deposit: def.production ? (sim.depositAt(infoTower.cellX, infoTower.cellY) ?? { left: 0, initial: 1 }) : null,
               stats: toStats(eff),
               preview: effPreview ? toStats(effPreview) : null,
               offVein:

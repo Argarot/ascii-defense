@@ -17,7 +17,9 @@
       "damage": 1,
       "bounty": 3,
       "minWave": 2,
-      "traits": ["fast"]
+      "traits": [
+        "fast"
+      ]
     },
     {
       "id": "swarmling",
@@ -27,7 +29,10 @@
       "damage": 1,
       "bounty": 1,
       "minWave": 3,
-      "traits": ["swarm", "fast"]
+      "traits": [
+        "swarm",
+        "fast"
+      ]
     },
     {
       "id": "brute",
@@ -38,7 +43,9 @@
       "bounty": 8,
       "minWave": 4,
       "armor": 3,
-      "traits": ["armoured"]
+      "traits": [
+        "armoured"
+      ]
     },
     {
       "id": "shell",
@@ -49,7 +56,9 @@
       "bounty": 7,
       "minWave": 5,
       "shield": 30,
-      "traits": ["shielded"]
+      "traits": [
+        "shielded"
+      ]
     },
     {
       "id": "husk",
@@ -59,6 +68,16 @@
       "damage": 5,
       "bounty": 12,
       "minWave": 6
+    },
+    {
+      "id": "juggernaut",
+      "name": "Juggernaut",
+      "hp": 400,
+      "speed": 0.03,
+      "damage": 12,
+      "bounty": 20,
+      "armor": 6,
+      "minWave": 10
     }
   ]
 }

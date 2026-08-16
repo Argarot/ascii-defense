@@ -155,7 +155,7 @@
       "attack": "none",
       "production": {
         "ore": 1,
-        "everyTicks": 60
+        "everyTicks": 600
       },
       "tiers": [
         {
@@ -171,7 +171,7 @@
               "name": "Fast Cycle",
               "cost": 30,
               "mods": {
-                "productionEveryTicks": -15
+                "productionEveryTicks": -150
               }
             }
           ]
@@ -205,7 +205,7 @@
               "name": "Perpetual",
               "cost": 120,
               "mods": {
-                "productionEveryTicks": -10,
+                "productionEveryTicks": -100,
                 "production": 1
               }
             }

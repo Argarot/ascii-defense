@@ -33,7 +33,7 @@ export {
 export type { Board, Placement, PlaceOptions } from './tiles/board';
 
 export { generateMap, ORE_FLOOR } from './mapgen/mapgen';
-export type { GeneratedMap, MapGenOptions, CellRef, CacheRef, RockContent } from './mapgen/mapgen';
+export type { GeneratedMap, MapGenOptions, CellRef, CacheRef, RockContent, OreDeposit } from './mapgen/mapgen';
 
 export { computeFlowField } from './sim/flow';
 export type { FlowField } from './sim/flow';
