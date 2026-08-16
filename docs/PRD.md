@@ -600,7 +600,7 @@ consequences, both accepted deliberately:
   the average case. The bot's relic picks are part of its policy.
 - **A trivialised run is not automatically a bug.** *Trivial-by-relic is the
   feature; trivial-by-map is the defect.* M3's "no trivial seed across ≥500
-  runs" criterion (§16) is therefore measured with the relic layer held fixed —
+  runs" criterion (§17) is therefore measured with the relic layer held fixed —
   otherwise the harness will spend its life reporting the game working.
 
 ## 10. The bot
@@ -747,11 +747,100 @@ Recorded so they are not re-proposed:
   explicit and visible, or the simulation genuinely runs in a worker; the current
   behaviour — stalling without saying so — is the only unacceptable option.
 
-## 15. Out of scope
+## 15. The shell — from launch to quit
+
+*(Added 2026-08-16. Daniil: the docs described a simulation and called the rest
+"expansion". Everything here is what turns the simulation into something a
+stranger can be handed.)*
+
+Today the game starts instantly into a run configured by a URL parameter. That
+is a debug harness. A product answers: what do I see first, what happens when I
+die, what did I keep, and why would I start again.
+
+### 15.1 Screens and flow
+
+```
+launch → title → ┬─ new run → run setup → THE RUN ⇄ pause
+                 │                            ↓
+                 │                    victory / defeat
+                 │                            ↓
+                 │                      run summary ──┐
+                 ├─ continue (resume a saved run)     │
+                 ├─ workshop (the tech tree, §11)     │
+                 ├─ settings                          │
+                 └─ how to play          ←────────────┘
+```
+
+The view gains a **screen stack**: screens push and pop, and the board keeps
+rendering beneath when that makes sense. The relic offer modal is the prototype
+of this and should generalise into it rather than being duplicated.
+
+**No screen owns game state.** The sim remains the single source of truth; a
+screen reads it and sends actions, exactly as the HUD does now. A screen system
+that starts caching state is how save bugs are born.
+
+**The run summary is a designed screen, not a dialog.** What killed you, which
+wave, what you built, which relics you took, how much Ore you banked. It is the
+moment that either produces another run or ends the session.
+
+### 15.2 Persistence
+
+Two kinds of state, deliberately kept apart:
+
+| | Contents | Notes |
+|---|---|---|
+| **Run state** | seed + input log + tick | Determinism means **a save IS a replay**. Resuming is replaying at speed. Kilobytes, exact, and it doubles as the bug-report format (§12) |
+| **Meta state** | banked Ore, unlocks, run history, settings | Survives runs. The only thing that makes a second run different from the first |
+
+Stored in the browser. The consequence must be stated rather than discovered:
+**no accounts and no cloud saves** (§16), so progress is per-browser and
+clearing site data destroys it. Mitigated by **export/import of a save file** —
+which costs almost nothing, moves progress between machines, and gives us
+reproducible bug reports for free.
+
+Every save carries a **schema version**. On mismatch: migrate when we can,
+otherwise say so plainly and offer a reset. Never wipe silently, and never load
+a save we only half understand.
+
+### 15.3 Onboarding
+
+A first-timer must reach *"I understand what to do"* without reading anything.
+Contextual prompts at first encounter — the first buildable cell, the first
+relic offer, the first time the Core is selectable — a **How to play** screen
+for people who want the whole thing at once, and opening waves gentle enough to
+learn in. **No forced tutorial**; this genre teaches itself if the first ninety
+seconds are legible.
+
+### 15.4 Accessibility
+
+Invariant 10 has always promised that accessibility is a view change because
+nothing branches on colour. That promise gets cashed here, not indefinitely
+deferred:
+
+- a **colourblind-safe palette** variant — the roles already exist, only values
+  change
+- **full keyboard operation** of every screen
+- a **reduced-motion** setting, which the effects engine (§13) must respect from
+  the day it ships rather than have retrofitted
+- **text scale** for the HUD
+
+### 15.5 What "runs well" means
+
+- **60 fps at full board** on mid-range hardware, within the entity caps the sim
+  already enforces.
+- **WebGL2 is required.** A browser without it gets an honest message, not a
+  blank canvas.
+- **Bundle and asset budgets are tracked**, and a regression is flagged in the PR
+  that causes it (precedent: the ajv 9KB→134KB note).
+- **Every error reachable from a player path has a recovery story.** Engine
+  throws are for CI and dev surfaces (§4.3 precedent); players get a message and
+  a way forward.
+
+## 16. Out of scope
 
 Mobile/touch · multiplayer · sound · accounts or cloud saves · a terminal build.
 
-## 16. Acceptance criteria
+## 17. Acceptance criteria
 
 **M1 — the fun test. PASSED 2026-08-16.** Verdict: *"the game is fun now, it’s
 just very unbalanced and with quite a few holes still."* This is the judgement the
@@ -770,4 +859,30 @@ save/resume.
 regressions; no unwinnable or trivial seed across ≥500 runs *(measured with the
 relic layer held fixed — §9)*. Tech tree stage 1, including relic pool unlocks.
 
-**M4+ — expansion.** Effects system, towers 5–9, biomes, full art pass.
+**M4 — the shell.** A stranger can open the link, start a run from a menu,
+pause it, lose it, read why, and start another. Progress persists and survives a
+reload; a corrupt save says so instead of vanishing.
+
+**M5 — content completeness.** Enough towers, enemies, relics and tiles that two
+runs do not resemble each other.
+
+**M6 — presentation.** Everything the player sees is authored and animated; the
+board reads as a place rather than a diagram.
+
+**M7 — meta progression.** Finishing a run changes the next one, and there is a
+visible tree of things still to unlock.
+
+**M8 — STABLE BETA.** The shipping bar, and the definition of done for this
+project:
+
+- a stranger plays a full run without help, understands why they lost, and wants
+  another
+- shell complete: title, setup, pause, summary, settings, workshop, how-to-play
+- persistence versioned, with export/import; **no silent data loss**
+- calibrated difficulty; no unwinnable or trivial seed across ≥500 runs
+- content floor: **8 towers · ~14 enemies · ~40 relics · ~100 tiles**
+- art pass complete for everything on screen; reduced-motion honoured
+- colourblind palette, full keyboard operation
+- 60 fps at full board; WebGL2 absence handled honestly
+- no known crash and no known save-corruption path
+- licences and attribution correct (Apache-2.0; spleen BSD-2-Clause)

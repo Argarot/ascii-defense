@@ -123,71 +123,82 @@ of whether to keep building is settled.
 
 ---
 
-## M2 — A complete run *(5–7 sessions)*
+## M2 — A complete run *(sessions 12–21)*
 
-Reshaped 2026-08-16 by the first playtest. The headline is no longer "more
-content" but **making the existing systems demand decisions**: an economy that
-runs dry, a relic layer that can be spent rather than only filled, damage types
-that make one tower the wrong answer, and a difficulty curve that ends every run
-in death.
+Reshaped 2026-08-16 by the first playtest. The headline is not "more content"
+but **making the existing systems demand decisions**: an economy that runs dry,
+a relic layer that can be spent rather than only filled, damage types that make
+one tower the wrong answer, and a difficulty curve that ends every run in death.
 
-Full difficulty arc and a run END, finite ore deposits, relic fusion/salvage and
-rarity, real damage types, boon ground, tower legibility (stat blocks, upgrade
-descriptions, honest previews), the prospecting rework, the printing-trade naming
-pass, UI infrastructure, and enemy readouts. Plus save/resume, Ore banking, and 4
-more towers with ~8 more enemies.
+**Gate:** a full run, start to victory or death, that demands decisions
+throughout.
 
-Grew from 3–4 sessions because the playtest converted "add content" into "fix the
-shape of the systems the content sits on" — cheaper now than after the content
-exists.
+## M4 — The shell *(sessions 22–24)*
 
-## M3 — Trustworthy difficulty *(2–3 sessions)*
+The game stops being a simulation with a URL parameter and becomes something a
+stranger can be handed: title, run setup, pause, run summary, settings,
+persistence with versioning and export, onboarding, accessibility (PRD §15).
 
-Real bot policy; calibrated curves committed as reviewable data; human offset
-from Daniil's replays; `balance.yml` gate; unwinnable/trivial seed detection;
-tech tree stage 1; in-game autopilot.
+Sequenced **before** calibration and the art pass, because it is what makes
+external playtesting possible — and strangers are the only feedback source we
+have not yet used.
+
+**Gate:** a stranger opens the link, plays a run, loses, reads why, starts
+another; progress survives a reload.
+
+## M5 — Content completeness *(sessions 25–27)*
+
+8 towers, ~14 enemies, ~40 relics, ~100 tiles, threat levels as data.
+
+**Gate:** two runs do not resemble each other.
+
+## M3 — Trustworthy difficulty *(sessions 28–29)*
+
+Bot policy, calibration across a seed corpus, curves committed as reviewable
+data, human offset from Daniil’s replays, `balance.yml` CI gate, trivial and
+unwinnable seed detection.
+
+Numbered 3 because milestone IDs are stable once assigned; **sequenced here**
+because calibrating against content and a shell that are still moving produces
+curves we would immediately throw away.
+
+**Gate:** the harness catches an injected regression; no unwinnable or trivial
+seed across ≥500 runs.
+
+## M6 — Presentation at scale *(sessions 30–32)*
+
+Full art pass with per-upgrade tower identity, effects for every attack shape,
+biomes. The round-trip **proof** stays early and small (session 22); the
+authoring waits until there is final content to author for.
+
+**Gate:** the board reads as a place, not a diagram.
+
+## M7 — Meta progression, full *(sessions 33–34)*
+
+Tech tree stage 2, pool unlocks, run history, dailies, replay sharing, Tile
+Smith as an in-game feature.
+
+**Gate:** finishing a run visibly changes the next one.
+
+## M8 — Beta hardening and release *(sessions 35–36)*
+
+Performance and bundle budgets in CI, browser matrix, error-path audit, save
+migration testing, **external playtest with strangers**, release process.
+
+**Gate:** the stable-beta bar in PRD §17.
 
 ---
 
-## ◆ Decision point
+## ◆ Decision points
 
-**~14–18 sessions in there is a complete, balanced, replayable game.** Everything
-below is expansion and should only be built if the answer to "is this fun and do
-I want more of it?" is yes.
+**After M2 (~session 21):** the systems are complete and demand decisions. If it
+is not fun *here*, more content will not fix it.
 
----
-
-## M4+ — Expansion *(8–15 sessions, à la carte)*
-
-| Item | Sessions |
-|---|---|
-| Effects: subcell particles, projectiles, impacts, tower animation | 2–3 |
-| Full art pass + material language + biomes | 2–3 |
-| Towers 5–9; traits 6–11; third damage type | 2–4 |
-| Tech tree stage 2 | 1–2 |
-| Daily challenges + replay sharing | 0.5–1 |
-| Ore tiers activated | 0.5 |
-| Tech tree stage 3 (Potency) — optional | 1–2 |
+**After M4 (~session 24):** the first external playtest is possible. Strangers
+are the only evidence that has never been collected, and the answer changes what
+M5–M8 should contain.
 
 ---
-
-## Totals
-
-| | Sessions |
-|---|---|
-| M1–M3 — complete playable game | **20–25** |
-| M4+ | +10–18 |
-| **Full scope** | **30–43** |
-
-M1 grew from 6–8 to 8–11 because the HUD was previously a bullet point, the
-modular package split is real work, and the art pipeline now has a proof step.
-It grew again to 11–14 on 2026-08-16 when the relic layer (Phase 6) was added —
-the single largest scope increase of the project, taken deliberately because
-the M1 gate asks "is it fun?" and the honest answer needs the acquisition loop
-in the room. Building it after the gate would mean asking the question twice.
-
----
-
 ## Session ledger
 
 Phases describe *what*; this describes *when*, session by session. Added
@@ -240,9 +251,14 @@ most exciting:
 | 19 | **Towers & attack shapes** | Chain, beam over a run of road, arc/wedge AoE (needs 16); towers 5–7 | Each new tower answers a wave the others cannot |
 | 20 | **Relic economy** | Bigger pool, rarity weighting (D5), fusion, salvage, more consumables, more slots | Full slots is a decision, not a wall; the lab bounds the relic-driven power spread |
 | 21 | **Legibility + worker** | Stat blocks, upgrade descriptions, scrollable panels, larger cards, sim in a Web Worker (D7) | Nothing on screen lies; a hidden tab keeps simulating |
-| 22 | **Art round trip + first real art** | Phase 2: tooling generates `.xp` candidates, REXPaint for judgement; terrain, towers and enemies authored against the animation engine | A sprite reviewed in REXPaint appears in game unchanged — and the game looks like a game |
-| 23 | **The meta loop** | Save/resume (**nearly free — a save IS the seed plus the input log**), Ore banking, tech tree stage 1, relic pool unlocks | Finishing a run changes the next one |
-| 24+ | **Calibration** | WBS 1.5.1/1.5.2 — bot policy, `calibrate`/`check`, human offset from Daniil’s replays, `balance.yml` gate | M3 gates |
+| 22 | **Shell I — screens** | Screen stack (generalising the offer modal), title menu, run setup, pause overlay, run summary. Plus the art round-trip **proof** (Phase 2 gate, small) | A run starts from a menu and ends on a summary screen |
+| 23 | **Shell II — persistence** | Meta save (Ore, unlocks, history, settings), run save as seed + input log, schema versioning, export/import, settings screen | Close the tab mid-run, come back, continue. A corrupt save says so |
+| 24 | **Shell III — first contact** | Onboarding prompts, how-to-play, colourblind palette, keyboard operation, reduced motion | **A stranger plays unaided** — then actually hand it to one |
+| 25–27 | **Content completeness** | Towers to 8 with distinct attack shapes; enemies to ~14 across the trait matrix; relics to ~40 with fusion recipes; tile pool to ~100 | Two runs do not resemble each other |
+| 28–29 | **Calibration** | WBS 1.5.1/1.5.2 — bot policy, `calibrate`/`check`, human offset from Daniil’s replays, `balance.yml` gate, seed-corpus sweeps | Injected regression caught; no trivial or unwinnable seed in ≥500 runs |
+| 30–32 | **Presentation at scale** | Full art pass with per-upgrade tower identity, effects for every attack shape, biomes | The board reads as a place |
+| 33–34 | **Meta progression, full** | Tech tree stage 2, pool unlocks, run history, dailies, replay sharing, in-game Tile Smith | Finishing a run changes the next one |
+| 35–36 | **Beta hardening + release** | Perf and bundle budgets in CI, browser matrix, error-path audit, save migration tests, external playtest, release process | PRD §17 stable beta |
 What remains genuinely M4-and-later: the full art pass at scale, bridges as tile
 content (cheap once 2.16 ships), towers 8–9, tech tree stages 2–3, dailies and
 replay sharing. The effects engine, offset connectors and the balance harness all
