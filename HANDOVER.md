@@ -71,10 +71,15 @@ Hard constraints that came out of it, all now in the PRD:
 
 ## Next block, in order
 
-**Phase 6** — 1.6.1 hooks → 1.6.2 offers → 1.6.3 content → 1.6.4 Core
-vessel → 1.6.5 draws + caches → 1.6.6 prospecting. ~2 sessions. Gate: a run
+**Phase 6 session A is DONE** *(2026-08-16, PRs #36-#37)*: hooks, offers,
+modal, eleven relics. **Session B remains**: 1.6.4 Core vessel (inventory
+panel, active-fire button with cooldown, consumable use - actives currently
+fire only via `__ad`/replay, deliberately), 1.6.5 Ore draw/reroll + map
+caches, 1.6.6 rocks as clickable containers + prospecting (Survey path
+replaces a Refinery choice; Sim must own a mutable cells copy). Gate: a run
 where two relics combine into something absurd, reproduced from its seed +
-input log. Then Phase 5 (bot + harness), then the M1 fun test.
+input log. Then Phase 5 (bot + harness; bot must pick relics), then the M1
+fun test.
 
 What 1.4.6/1.4.8 left ready for it:
 
