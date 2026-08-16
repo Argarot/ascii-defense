@@ -168,8 +168,8 @@ reproduced exactly from its seed + input log.**
 is wasted work, but *measurement* is needed immediately. 1.5.3/1.5.4 come first;
 1.5.1/1.5.2 wait until damage types, relics and the difficulty shape have settled.
 
-- [ ] 1.5.3 **Balance lab — headless runner** *(next)*. The real `Sim`, no renderer, at full speed: place a loadout from a spec, run N waves, report leak %, margin, time-to-kill, breach wave, economy curves. Exact by construction because it IS the game. The engine is already DOM-free and deterministic, so this is a measurement layer, not a new simulator.
-- [ ] 1.5.4 **Balance lab — analytic model** *(next)*. Closed form: coverage × exposure time × effective DPS against a wave HP pool, with armor/shield/slow folded in. Answers "what threatens this build at wave 30" instantly and sweeps thousands of configurations. The analytic model proposes, the headless runner verifies, and the **gap between them is itself a bug detector** (PRD §9 always specified this two-layer shape; only the order was wrong).
+- [x] 1.5.3 **Balance lab — headless runner** *(PR #52, 2026-08-16)*. The real `Sim`, no renderer, at full speed: place a loadout from a spec, run N waves, report leak %, margin, time-to-kill, breach wave, economy curves. Exact by construction because it IS the game. The engine is already DOM-free and deterministic, so this is a measurement layer, not a new simulator.
+- [x] 1.5.4 **Balance lab — analytic model** *(PR #52)*. Closed form: coverage × exposure time × effective DPS against a wave HP pool, with armor/shield/slow folded in. Answers "what threatens this build at wave 30" instantly and sweeps thousands of configurations. The analytic model proposes, the headless runner verifies, and the **gap between them is itself a bug detector** (PRD §9 always specified this two-layer shape; only the order was wrong).
 - [ ] 1.5.1 ~~Crude bot policy~~ **DEFERRED** until systems settle — build/upgrade heuristic plus relic picks.
 - [ ] 1.5.2 ~~`harness calibrate` / `check` CLI~~ **DEFERRED** with 1.5.1. Calibration targets a distribution over relic draws, not a point (PRD §9).
 
@@ -178,13 +178,13 @@ is wasted work, but *measurement* is needed immediately. 1.5.3/1.5.4 come first;
 The wave-14 run produced both bugs and one shape error worth fixing before any
 calibration work, because they corrupt the evidence calibration would gather.
 
-- [ ] 1.7.1 **Preview fold bug** — the tower upgrade preview calls `effectiveStats()` directly, bypassing the relic fold, so with Loadbearing live a tower shows range 18 and previews 8.5. Route previews through `sim.stats()`; colour a change for the worse red (PRD §5.4).
+- [x] 1.7.1 *(PR #51)* **Preview fold bug** — the tower upgrade preview calls `effectiveStats()` directly, bypassing the relic fold, so with Loadbearing live a tower shows range 18 and previews 8.5. Route previews through `sim.stats()`; colour a change for the worse red (PRD §5.4).
 - [ ] 1.7.2 **The pool runs dry silently** — 11 relics, caches deal duplicates, `unheldPool()` empties, `maybeOffer` returns early and the acquisition layer switches off with no message. Short term: more relics + an honest "pool exhausted" state. Real fix is 2.7.
-- [ ] 1.7.3 **Difficulty shape** (PRD §9.1) — threat scales geometrically, composition escalates in kind, so no build reaches a stable state. First-pass formula only; calibration is M3.
-- [ ] 1.7.4 Speed control gains 8× (the frame loop already tolerates it: 32 ticks/frame ≈ 96×).
+- [x] 1.7.3 *(PR #52)* **Difficulty shape, first pass**: difficulty is data (`DifficultySpec`); `hpGeometric 1.06` chosen from the lab sweep — naked ~10, competent ~23, god build ~26. Composition escalation is session 13; calibration M3.
+- [x] 1.7.4 *(PR #51)* Speed control gains 8× (the frame loop already tolerates it: 32 ticks/frame ≈ 96×).
 - [ ] 1.7.5 Refinery card shows remaining deposit instead of kills (pairs with 2.6).
-- [ ] 1.7.6 **A used consumable frees its slot.** It currently occupies one forever as `[--]` — a bug, not a design. Touches the held-relic arrays, so replay indices and `hashState` move with it.
-- [ ] 1.7.7 **Cut the `foundry` relic** and its now-dead `offVeinScrap` engine knob (Daniil: a relic that deletes the Refinery's siting decision). Dead knobs mislead the next context — see the `isPathable` correction.
+- [x] 1.7.6 *(PR #51)* **A used consumable frees its slot.** It currently occupies one forever as `[--]` — a bug, not a design. Touches the held-relic arrays, so replay indices and `hashState` move with it.
+- [x] 1.7.7 *(PR #51)* **Cut the `foundry` relic** and its now-dead `offVeinScrap` engine knob (Daniil: a relic that deletes the Refinery's siting decision). Dead knobs mislead the next context — see the `isPathable` correction.
 - [ ] 1.7.8 **Mining 10x slower** (Daniil), landing together with finite deposits (2.6) so scarcity arrives on both sides at once.
 
 **M1 exit gate: PASSED 2026-08-16.** *"The game is fun now, it’s just very
