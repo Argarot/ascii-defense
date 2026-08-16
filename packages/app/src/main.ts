@@ -51,9 +51,16 @@ const GLYPH_PX_W = 5;
 const GLYPH_PX_H = 8;
 const TICK_MS = 1000 / TICK_HZ;
 const SPEEDS = [0, 1, 2, 4, 8] as const;
-// Hold this wave and the run is won (D6). Chosen from the lab: a competent
-// build dies ~23 under the current curve, so 20 is winnable and tense.
-const FINAL_WAVE = 20;
+// Threat levels as DATA (session 15): named bundles of generator knobs and
+// curve. ?threat=N picks one; the demo defaults to Standard.
+const THREAT_LEVELS = [
+  { name: 'Calm', entries: [2, 3] as const, pathBias: 12, finalWave: 15, hpGeometric: 1.05 },
+  { name: 'Standard', entries: [2, 5] as const, pathBias: 8, finalWave: 20, hpGeometric: 1.06 },
+  { name: 'Grim', entries: [3, 6] as const, pathBias: 5, finalWave: 25, hpGeometric: 1.08 },
+];
+const threatIdx = Math.min(THREAT_LEVELS.length - 1, Math.max(0, Number(new URLSearchParams(location.search).get('threat') ?? 1)));
+const THREAT = THREAT_LEVELS[threatIdx];
+const FINAL_WAVE = THREAT.finalWave;
 
 async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
@@ -217,8 +224,8 @@ async function main(): Promise<void> {
     for (;;) {
       try {
         const knobs = createRng(seed).stream('map');
-        const entries = knobs.int(2, 5);
-        const targetPathLength = 8 + Math.max(knobs.int(0, 18), knobs.int(0, 18));
+        const entries = knobs.int(THREAT.entries[0], THREAT.entries[1]);
+        const targetPathLength = THREAT.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18));
         map = generateMap(knobs, lib, { width: mapX, height: mapY, entries, targetPathLength, relicPoolSize: RELIC_DEFS.length });
         break;
       } catch (err) {
@@ -240,6 +247,7 @@ async function main(): Promise<void> {
       startingOre: carriedOre,
       relicDefs: RELIC_DEFS,
       finalWave: FINAL_WAVE,
+      difficulty: { hpLinear: 0.18, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
     });
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
@@ -335,6 +343,7 @@ async function main(): Promise<void> {
     view.render({
       hover,
       caches: mapCaches(),
+      boons: currentMap?.boons ?? [],
       oreRichness: oreRichness(),
       selected,
       enemies: collectEnemies(),
@@ -403,7 +412,9 @@ async function main(): Promise<void> {
         (() => {
           const c = selected ?? hover;
           const dep = c ? sim.depositAt(c.x, c.y) : null;
-          return dep && sim.cellAt(c!.x, c!.y) === 'O' ? ` \u00b7 ore left ${dep.left}/${dep.initial}` : '';
+          if (dep && sim.cellAt(c!.x, c!.y) === 'O') return ` \u00b7 ore left ${dep.left}/${dep.initial}`;
+          const boon = c ? sim.boonAt(c.x, c.y) : null;
+          return boon ? ` \u00b7 BOON: +${boon} for whatever is built here` : '';
         })(),
       palette: (buildTarget && !(selected && sim.cacheAt(selected.x, selected.y)) ? palette : []).map((d) => ({
         name: d.name ?? d.id,

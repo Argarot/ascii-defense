@@ -552,3 +552,17 @@ describe('the route is a graph - touching is not connecting (session 14)', () =>
     expect(flow.dist[4 * W + 4]).toBe(-1); // A's border road: a different road entirely
   });
 });
+
+describe('boon ground (session 15, PRD sec 4.7)', () => {
+  it('the cell buffs whoever stands on it, through the full stat fold', () => {
+    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(11);
+    // Plant a damage boon under a known ground cell (overlay: map data).
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    map.boons = [{ x: spot.x, y: spot.y, boon: 'damage' }];
+    const sim = new Sim(11, simOpts);
+    sim.buildTower(spot.x, spot.y, 'bolt');
+    const t = sim.towerAt(spot.x, spot.y)!;
+    expect(sim.stats(t).damage).toBeCloseTo(6 * 1.25);
+    expect(sim.boonAt(spot.x, spot.y)).toBe('damage');
+  });
+});
