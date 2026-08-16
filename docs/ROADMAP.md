@@ -108,15 +108,38 @@ from its seed and input log.
 - Crude bot; `harness calibrate` and `harness check`; per-wave margin table.
 - The bot's policy includes relic picks — they are part of run power (PRD §9).
 
-**M1 exit gate:** Daniil plays it and says whether it is fun. Nothing past this
-point is worth building if the answer is no.
+### Phase 7 — post-playtest triage *(0.5 session)*
+
+Bugs and one shape error from the first real run, fixed before calibration
+because they corrupt the evidence calibration would gather: the preview fold bug,
+the relic pool draining silently, and the difficulty curve growing linearly
+against compounding player power.
+
+**M1 exit gate: PASSED 2026-08-16.** Daniil played to wave 14 and beyond:
+*"the game is fun now, it’s just very unbalanced and with quite a few holes
+still."* The milestone existed to obtain that judgement, and it has it. Phases 2
+(art round-trip), 5 (harness) and 7 (triage) remain as M1 work, but the question
+of whether to keep building is settled.
 
 ---
 
-## M2 — A complete run *(3–4 sessions)*
+## M2 — A complete run *(5–7 sessions)*
 
-Full difficulty arc, escalating waves, save/resume, run summary. 4 more towers,
-~8 more enemies, more relics.
+Reshaped 2026-08-16 by the first playtest. The headline is no longer "more
+content" but **making the existing systems demand decisions**: an economy that
+runs dry, a relic layer that can be spent rather than only filled, damage types
+that make one tower the wrong answer, and a difficulty curve that ends every run
+in death.
+
+Full difficulty arc and a run END, finite ore deposits, relic fusion/salvage and
+rarity, real damage types, boon ground, tower legibility (stat blocks, upgrade
+descriptions, honest previews), the prospecting rework, the printing-trade naming
+pass, UI infrastructure, and enemy readouts. Plus save/resume, Ore banking, and 4
+more towers with ~8 more enemies.
+
+Grew from 3–4 sessions because the playtest converted "add content" into "fix the
+shape of the systems the content sits on" — cheaper now than after the content
+exists.
 
 ## M3 — Trustworthy difficulty *(2–3 sessions)*
 
@@ -152,9 +175,9 @@ I want more of it?" is yes.
 
 | | Sessions |
 |---|---|
-| M1–M3 — complete playable game | **17–21** |
-| M4+ | +8–15 |
-| **Full scope** | **25–36** |
+| M1–M3 — complete playable game | **20–25** |
+| M4+ | +10–18 |
+| **Full scope** | **30–43** |
 
 M1 grew from 6–8 to 8–11 because the HUD was previously a bullet point, the
 modular package split is real work, and the art pipeline now has a proof step.
@@ -180,10 +203,13 @@ together, and the roguelite dies.
 tile pool grows via meta progression, so variety is content, not code; the
 generator is seeded, so a boring map is a reproducible bug report.
 
-**3 — Art volume.** 8 towers × 15 tiers + terrain + enemies + UI, all
-hand-drawn at 5×3.
-*Mitigation:* REXPaint instead of hand-typed JSON; the material language defined
-once, up front; M1 ships 4 towers complete rather than 8 half-done.
+**3 — Art volume.** 8 towers × 14 variants + terrain + enemies + UI, all at 5×3 —
+and the playtest added per-upgrade visual identity, tower animation frames and
+living terrain on top.
+*Mitigation:* generate `.xp` candidates programmatically and use REXPaint for
+judgement rather than production; close the material language (D3) before the
+pass, not during it; keep variants compositional (a second barrel is a glyph
+swap, not a redraw) so 14 states cost far less than 14 drawings.
 
 **4 — The tuning tail is the schedule risk, not the features.** Making 100+
 upgrades feel good is open-ended. The linter and harness make "better or worse"
@@ -205,8 +231,16 @@ working, so the harness must only alarm on maps, never on draws.
 **Done:** GitHub, scoped token, repo, Pages, REXPaint installed, and every
 presentation decision.
 
-**Next, at the Phase 2 gate:** draw one tower with me in REXPaint so we prove
-the round trip before building a library on it.
+**Phase 2, revised 2026-08-16.** Daniil: *"I think you put way too much faith on
+my ability to REXPaint."* Fair, and the dependency was avoidable. `.xp` is a
+documented, gzipped binary format, so **the tooling can author it directly** —
+sprites get generated as `.xp` files, opened in REXPaint for review and taste
+edits, and imported back. That inverts the bottleneck: Daniil judges and adjusts
+art rather than producing it from scratch, and the round trip is still proven
+end to end (the gate is unchanged).
+
+A dedicated art session remains worthwhile — but as a pairing session over
+generated candidates, not a drawing lesson.
 
 **Before Phase 4:** define the material language jointly — which glyph
 combinations mean metal, stone, energy. It is the highest-leverage art decision
