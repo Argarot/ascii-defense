@@ -101,6 +101,7 @@ trigger recorded). D4–D7 and D10 are closed — see the WBS table.
   summaries with that, and always give the link **cache-busted** (`?cb=…`).
   He gives feedback as screenshots + observed symptoms; translate symptoms into
   construction guarantees, not tunings.
+- Every session ends with a plan for the next session, so if there is no corrective feedback, he can just prompt to keep going. If there was corrective feedback - make sure we are aligned before suggesting next steps. 
 - In summaries, mark features that are **planned but NOT BUILT YET** explicitly
   when adjacent features ship — otherwise absence reads as a bug (it did, for
   the Core's tree).
