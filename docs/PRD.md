@@ -58,7 +58,8 @@ authored in glyph grids and the aspect is absorbed by the cell shape.
 | **Road** | yes | **never** | The route. Never buildable, ever. |
 | **Ground** | no | yes | Where towers go |
 | **Rock** | no | no | Blocked. May hide ore or a cache (§4.6) |
-| **Ore** | no | yes | Buildable; a Refinery here mines Ore. Generation places ore richer the farther from the road — reach vs. greed |
+| **Ore** | no | yes | Buildable; a Refinery here mines Ore. **A deposit is finite and carries a richness** (§6). Generation places ore richer the farther from the road — reach vs. greed |
+| **Boon ground** | no | yes | Ground carrying a permanent modifier for whatever is built on it (§4.7). An overlay, not a tile type |
 | **Core** | yes | no | The Core's own cells, center of its tile. What enemies march toward |
 
 **"On the route" means enemies walk it.** Only Road and Core are — the flow
@@ -101,6 +102,38 @@ tiles them; roadless terrain fills the rest.
 **Connectivity therefore holds by construction.** The game never validates that
 a path exists, because a disconnected map cannot be assembled. This is the same
 class of guarantee as "road is never buildable", and both are load-bearing.
+
+### 4.2.1 Offset connectors — planned relaxation *(Daniil, 2026-08-16)*
+
+Center-or-nothing forbids two parallel roads crossing one tile edge: both would
+land on the centre cell and merge. That costs the tile pool its most interesting
+shapes, and it is the reason bridges (§4.2.2) cannot exist.
+
+**The rule relaxes to "any agreed offset".** An edge's connector becomes the SET
+of cell offsets carrying road; matching becomes set equality; a tile may carry
+two parallel roads across one edge without merging them. Connectors remain
+**derived from the drawn cells, never declared** — that half of the invariant is
+untouched, and it is the half that makes disagreement impossible.
+
+Why this is affordable now and was not before: center-or-nothing existed to make
+connectivity free while the *player* placed tiles arbitrarily. Since the
+2026-08-15 pivot the generator carves the topology first and tiles to match, so
+connectivity is guaranteed by the carve. The connector rule is no longer
+load-bearing for it — only for edge agreement.
+
+Cost, stated plainly: every authored tile, the signature index and Tile Smith are
+reworked. **This lands before the tile pool grows** (§11), because re-authoring a
+large pool later is the expensive version of the same job.
+
+### 4.2.2 Bridges
+
+With offset connectors, two roads can cross a tile without merging — a bridge.
+Mechanically this is the larger change: the route stops being a grid where every
+road cell has one downhill neighbour, and becomes a **graph** in which a bridge
+cell holds two independent nodes. Movement, targeting distance and `L` all read
+that graph instead of the cell grid.
+
+Sequenced after difficulty and balance: it buys variety, not a working game.
 
 ### 4.3 Map generation
 
@@ -204,8 +237,31 @@ Three consequences, all deliberate:
   is on the route (§4.1), so no shortcut can ever be opened and the flow field
   is untouched. Prospecting only ever *adds* buildable land.
 
-Prospecting needs no dedicated tower — it is an interaction with the cell, and
-the Refinery's tree gates whether it is available at all (§5.3).
+Prospecting needs no dedicated tower — it is an interaction with the cell.
+
+**It is not gated behind an unlock** *(revised 2026-08-16, after play)*. The
+first design put prospecting behind a Refinery tier choice, spending one of
+fourteen tower variants on a one-time boolean and taxing every Refinery
+thereafter for a switch that flips once. Instead: anyone may prospect, paying
+Scrap **and time** — the rock opens after a delay, so it is a commitment rather
+than a purchase. The Refinery tier choice becomes a genuine ability (prospect
+adjacent rock automatically, or faster), which is worth a slot in a way a
+boolean never was.
+
+### 4.7 Boon ground *(Daniil, 2026-08-16)*
+
+Some ground cells permanently modify whatever is built on them — a range
+platform, a heat sink, a power tap. An **overlay** like caches (§4.6), not a new
+tile type, so the tile library is untouched.
+
+Two presentation constraints, both load-bearing: the cell must still read as
+ground (it is buildable land, not a new terrain class), and it must keep
+telegraphing itself **after** a tower covers it without corrupting the tower’s
+own fourteen visual states (§5.2). Background colour is the channel; glyphs are
+already spoken for.
+
+Same family as ore and caches: the map, not a shop, decides what this run’s good
+decisions are (pillar 1).
 
 ## 5. Towers
 
@@ -232,6 +288,13 @@ constraint.** A tower has 5×3 glyphs to say what it is and which of 14 forms it
 took. Anything that produces a tower state *outside* those 14 has no possible
 visual, and a state the player cannot see is a bug wearing a feature's clothes.
 This is why no relic may combine both options of a tier (§7.2, §14).
+
+**Each committed choice should be legible on the tower itself** *(Daniil,
+2026-08-16)*: a second barrel becomes a second glyph, a heavier calibre a heavier
+frame, and background colour carries what glyphs cannot. A player should read a
+tower's build off the board, never out of a panel. This is the concrete form the
+material-language decision (D3) has to take, and the reason D3 closes before the
+art pass rather than during it.
 
 ### 5.3 Families
 
@@ -266,6 +329,31 @@ prospecting (§4.6) so the Refinery is how you *find* veins as well as work
 them. Mining Scrap off-vein survives only as a relic (§7.4) — a rule that gets
 broken, not a rule that ships broken.
 
+### 5.4 What a tower tells you
+
+Every tower shows a **full stat block** — damage, rate, DPS, range, area, effect
+strength and duration, lifetime damage and kills — and every upgrade choice
+carries a **written description**, on the same card mechanic relics use (§7.2).
+An either/or fork the player cannot read is a coin toss, and the design rests on
+those forks being decisions.
+
+**Previews fold every live modifier** *(bug, found 2026-08-16)*. A preview
+computed from base stats while the displayed value already includes relic effects
+compares two different quantities and quietly lies — observed as a tower showing
+range 18 previewing to 8.5. Previews render through the same fold as live stats,
+and a change for the worse renders in the colour of a change for the worse.
+
+### 5.5 Attack shapes
+
+Towers differ in the *shape* of what they do, not only its numbers — a chain that
+jumps between enemies, a beam covering a straight run of road, an arc sweeping a
+wedge rather than a circle. Shape is mechanical, not decorative: each suits a
+different piece of map geometry, and it is what makes a tower feel distinct
+before its stats are read.
+
+Projectiles carry **spread**, so a rapid or multi-shot tower visibly sprays
+instead of firing one glyph repeatedly down an identical line.
+
 ## 6. Economy
 
 **Scrap** funds the run: towers, tiers, cache claims and prospecting. **Ore**
@@ -281,6 +369,19 @@ not defending from.
 a run is Ore not banked toward the tech tree afterwards: survive now, or be
 permanently stronger later. That trade would carry the currency even if every
 relic were dull.
+
+**A deposit is finite** *(Daniil, 2026-08-16, after a wave-14 run banked 2,896
+Ore with nothing left to spend it on)*. Each ore cell carries a **richness** — a
+quantity and a rate, set at generation. A Refinery draws its deposit down and
+**stops when the vein is exhausted**, leaving ordinary ground behind.
+
+That turns the Refinery from a faucet into a decision with a clock: which vein,
+how long, when to move. It also puts the answer on the board — a rich vein shows
+more gold among its glyphs, a spent one none — so "where is the money" is
+answered by looking rather than by clicking.
+
+An infinite faucet feeding a finite sink was the real defect: the currency had
+scarcity on neither side.
 
 **Mining is balanced by opportunity cost alone.** No enemy hunts refineries, and
 wave budgets are never reduced to compensate for mining. Compensating would
@@ -389,6 +490,25 @@ the pool is a content list filtered by an unlocked set, everything unlocked in
 M1 (§11). This is the standard roguelite unlock model, and it is nearly free:
 one filter, no new system.
 
+### 7.6 Scarcity, fusion, and why slots are not the constraint
+
+*(Added 2026-08-16, after a run filled every slot within a minute and then stopped
+receiving offers entirely: the pool was exhausted, so the acquisition layer
+switched itself off in silence.)*
+
+- **Relics outnumber slots by a wide margin.** A pool a single run can drain is a
+  mechanic with an expiry date. Unlocks (§11) gate which part of it is live.
+- **Held relics are spendable, not merely accumulated.** Fusion — combine several
+  into one stronger relic — and salvage — trade one back for Ore — turn a full
+  inventory into a decision instead of a wall. Fusion is also what lets slot count
+  grow without making the layer *more* trivial: capacity rises, scarcity holds.
+- **A far larger share are single-use.** A consumable spent is a slot freed and a
+  decision made; a passive held is a number that never asks anything again.
+
+**Rarity is reopened** (was D5, closed flat "until play evidence"). The evidence
+arrived: a flat pool deals game-breaking relics as readily as filler, so a run's
+ceiling is set by draw order rather than by play.
+
 ## 8. Enemies
 
 Start narrow: **two damage types** (Kinetic, Energy) and **four traits** —
@@ -402,6 +522,19 @@ All enemies follow the road; there is exactly one flow field.
 
 M1 ships six enemies across that matrix. Traits expand only once the small
 matrix is proven; a wide matrix is where balance bugs breed.
+
+**Damage types must decide fights** *(Daniil, 2026-08-16: "2-3 fully upgraded
+mortars absolutely demolish everything")*. Kinetic and Energy are specified but
+inert — nothing resists either, so no enemy poses a question and no tower is a
+wrong answer. Resistance and immunity turn the composition of a wave into a
+demand for a composition of *towers*, which is the entire content of "every
+placement is a build decision". One tower type clearing every wave is precisely
+the failure that rule exists to prevent.
+
+**Traits show on the enemy, not in a legend.** A shield is drawn as a bracket
+around the glyph and destroyed separately from the body, so any enemy may carry
+one and the player watches it break; status effects and remaining health read off
+marks beside the glyph rather than out of a tooltip.
 
 ## 9. Difficulty: calibrated, not derived
 
@@ -427,6 +560,26 @@ dominant, at `p = 1` it is pointless; and **`M`**, `metaPowerIndex`, summarising
 permanent tech-tree power, near 1.0 until stat nodes exist.
 
 `k(w)`, the pressure curve, is the one hand-authored difficulty knob.
+
+### 9.1 Every run ends in death *(Daniil, 2026-08-16)*
+
+Observed: three or four upgraded towers held past wave 30 with no further input
+and an untouched Core. That is not a tuning error but a shape error — **threat
+grew linearly while player power compounded**, so beyond some wave the run
+stabilises forever and the roguelite stops being one.
+
+> **There is no stable state.** Threat grows faster than any achievable build, so
+> every run ends in death — including the run with the god combination. A great
+> build buys *how far you get*, never *whether you survive*.
+
+Concretely: threat scales geometrically rather than additively; wave composition
+escalates in kind and not only in count; and player power is bounded by finite
+build sites and finite Ore (§6). A god build should reach far deeper and still
+lose.
+
+**A run therefore needs an end** — a final wave and a victory, or an explicit
+endless mode scored by depth. "Play until bored" is the single outcome that
+teaches the player nothing and gives meta progression nothing to reward.
 
 **Relics make run power a distribution, not a number** *(added 2026-08-16)*.
 Everything above assumes the bot plays a fixed system; §7 makes each run's
@@ -486,6 +639,23 @@ The fixed 20 Hz tick and seeded RNG are already paid for; this is what they buy.
 Specified in [ASSETS.md](ASSETS.md). Settled: **spleen 5×8** (BSD-2-Clause), a
 5×3-glyph cell, 24-bit colour per glyph, WebGL2 rendering, and art authored in
 REXPaint against a generated spleen font.
+
+**The board is alive.** Terrain drifts, towers cycle through two or three frames
+of their own artwork, projectiles spray, explosions bloom, and background colour
+does far more work than it does today. A static field reads as a diagram; the same
+board with slow, cheap motion reads as a place. The renderer already redraws every
+frame, so animation costs authoring time rather than engine work.
+
+**Void becomes something rather than nothing.** Unclaimed land should be water or
+another readable surface, and the border where terrain meets it should blend
+procedurally instead of cutting sharply. By construction those border cells can
+never carry road (§4.2), so a procedural overwrite there is always safe.
+
+**Names come from the printing trade** *(Daniil, 2026-08-16)*. A game built out of
+glyphs should take its vocabulary from typesetting and the press — kerning,
+ligature, slug, quoin, pica, leading, widow, orphan, dingbat. Puns encouraged.
+Cheap to do and impossible to retrofit: **names settle before the art pass**,
+because the art illustrates the names.
 
 **Effects — projectiles, impacts, explosions, tower animation — ship after M1**,
 following Cogmind's model: hot-reloadable definition files, templated recolour
@@ -555,6 +725,18 @@ Recorded so they are not re-proposed:
 - **Claiming a cache by building a tower on it** *(Daniil, 2026-08-16)*. Not a
   cost: sell the tower immediately afterwards and the relic was free. Caches
   are claimed by selecting the cell and paying (§4.6).
+- **Mechanically multi-cell enemies** *(2026-08-16)*. A larger boss should be
+  drawn wider — but giving it a real multi-cell footprint costs the SoA layout,
+  collision, shield resolution, targeting and pathing, to buy nothing the player
+  can perceive. Enemies walk single-file and never collide, so a boss drawn three
+  glyphs wide with a one-cell footprint looks identical and is nearly free. Visual
+  size yes; mechanical size no.
+- **Prospecting as a one-time unlock** *(2026-08-16)*. Shipped in Phase 6 and cut
+  after play: it spent a tower variant on a boolean (§4.6).
+- **Silently simulating while the tab is hidden** *(2026-08-16)*. Returning to a
+  Core that died while the player was elsewhere is hostile. Either the pause is
+  explicit and visible, or the simulation genuinely runs in a worker; the current
+  behaviour — stalling without saying so — is the only unacceptable option.
 
 ## 15. Out of scope
 
@@ -562,9 +744,10 @@ Mobile/touch · multiplayer · sound · accounts or cloud saves · a terminal bu
 
 ## 16. Acceptance criteria
 
-**M1 — the fun test.** A generated map; build and upgrade towers across waves;
-**acquire relics and have at least one run go gloriously wrong in your favour**;
-defend the Core; win or lose. Daniil plays it and says whether it is fun.
+**M1 — the fun test. PASSED 2026-08-16.** Verdict: *"the game is fun now, it’s
+just very unbalanced and with quite a few holes still."* This is the judgement the
+entire milestone existed to obtain. Fun is confirmed; everything after this is
+balance and depth, not a question of whether to continue.
 
 *(Amended 2026-08-16: the relic layer is inside the M1 gate, not after it. The
 gate asks "is this fun?", and answering it with a competent tower defense that

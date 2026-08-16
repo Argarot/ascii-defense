@@ -23,7 +23,10 @@ Conventions:
 | D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |
 | D3 | **Material language** — glyph vocabulary for metal/stone/energy/organic (ASSETS §5) | before 1.4 art authoring | Daniil + dev |
 | D4 | ~~Wave-clear offer cadence~~ **RESOLVED 2026-08-16**: every **3 waves**, pick 1 of 3. ~6 guaranteed picks in a 20-wave run, ~11 acquisitions once caches and Ore draws are counted — above the ~6–10 floor at which combinations start happening (PRD §7.1) | — | closed |
-| D5 | ~~Relic rarity tiers~~ **RESOLVED 2026-08-16**: ship **flat** in M1; the `rarity` field is present in the schema from the first commit but unused. Rarity is a tuning answer to a question nobody has played yet — weighting the pool before the layer exists would be guessing, and the reserved field makes it a data change later | — | closed |
+| D5 | ~~Relic rarity tiers~~ **REOPENED 2026-08-16** — the play evidence D5 was waiting for arrived: a flat pool deals run-breaking relics as readily as filler, so draw order decides the ceiling. Weight the pool | before 2.7 | dev + Daniil |
+| D6 | **Does a run end?** Finite (final wave + victory, meta rewards depth) vs endless scored by depth. Blocks the difficulty arc — you cannot tune a curve without knowing where it stops | before 2.1 | Daniil |
+| D7 | **Hidden-tab behaviour** — explicit visible pause (~30 min) vs simulation in a Web Worker (~1 session, also buys in-browser bot runs). Silent stalling is rejected either way (PRD §14) | before 2.13 | Daniil |
+| D8 | **The printing-trade lexicon** — the naming pass for towers, enemies, upgrades, currencies (PRD §13). A taste call, and it must close before art since art illustrates names | before 2.12 | Daniil + dev |
 
 **2026-08-15 pivot** (PRD §1, §14): player tile-laying cut; maps are generated
 at run start (Core tile center, `entries` carved paths, ore by road distance).
@@ -135,29 +138,58 @@ reproduced exactly from its seed + input log.**
 - [ ] 1.5.1 Crude bot policy (build/upgrade heuristic, **plus relic picks** — they are part of run power).
 - [ ] 1.5.2 `harness calibrate` / `harness check` CLI; per-wave margin table output. Calibration targets a distribution over relic draws, not a point (PRD §9).
 
-**M1 exit gate: Daniil plays it and says whether it is fun.**
+### 1.7 Phase 7 — post-playtest triage *(~0.5 session, next)*
+
+The wave-14 run produced both bugs and one shape error worth fixing before any
+calibration work, because they corrupt the evidence calibration would gather.
+
+- [ ] 1.7.1 **Preview fold bug** — the tower upgrade preview calls `effectiveStats()` directly, bypassing the relic fold, so with Loadbearing live a tower shows range 18 and previews 8.5. Route previews through `sim.stats()`; colour a change for the worse red (PRD §5.4).
+- [ ] 1.7.2 **The pool runs dry silently** — 11 relics, caches deal duplicates, `unheldPool()` empties, `maybeOffer` returns early and the acquisition layer switches off with no message. Short term: more relics + an honest "pool exhausted" state. Real fix is 2.7.
+- [ ] 1.7.3 **Difficulty shape** (PRD §9.1) — threat scales geometrically, composition escalates in kind, so no build reaches a stable state. First-pass formula only; calibration is M3.
+- [ ] 1.7.4 Speed control gains 8× (the frame loop already tolerates it: 32 ticks/frame ≈ 96×).
+- [ ] 1.7.5 Refinery card shows remaining deposit instead of kills (pairs with 2.6).
+
+**M1 exit gate: PASSED 2026-08-16.** *"The game is fun now, it’s just very
+unbalanced and with quite a few holes still."* Phases 5 and 7 remain as M1 work,
+but the question the milestone existed to answer is answered.
 
 ---
 
 ## M2 — A complete run *(coarse; decompose when M1 exits)*
 
-- [ ] 2.1 Full board scale, escalating waves, run end conditions.
+- [ ] 2.1 **The difficulty arc**: full board scale, escalating waves, and a run END (blocked by D6). Implements PRD §9.1 properly — 1.7.3 is the first pass, this is the shaped version with elites, boss waves and front escalation.
 - [ ] 2.2 ~~Draft flow between tiles~~ **CUT 2026-08-16** — a survivor of the pre-pivot design that should have died with player tile-laying on 2026-08-15. Replaced by relic pool expansion on the Phase 6 machinery.
 - [ ] 2.3 Save/resume (must serialise relic state + the input log); run summary screen listing the relics the run was built on.
 - [ ] 2.4 Ore banking → persistent meta store; relic pool unlock set persisted alongside it.
 - [ ] 2.5 +4 towers, +~8 enemies, +relics (content, on the proven pipeline).
+- [ ] 2.6 **Finite ore deposits** (PRD §6): richness + quantity per ore cell set at generation, Refineries draw down and stop when exhausted, spent veins revert to ground. Gold-speck density on the cell tracks remaining richness, so "where is the money" is answered by looking.
+- [ ] 2.7 **Relic economy** (PRD §7.6): pool grown well beyond what one run can drain; **fusion** (several relics into one stronger) and **salvage** (trade back for Ore); a much larger share single-use; rarity weighting (D5). This is what makes more slots safe to add rather than trivialising.
+- [ ] 2.8 **Damage types decide fights** (PRD §8): Kinetic/Energy become real via resistance and immunity, so no single tower answers every wave. The direct answer to "2-3 mortars demolish everything".
+- [ ] 2.9 **Boon ground** (PRD §4.7): overlay cells granting a permanent modifier to whatever is built on them; must read as ground, and keep telegraphing under a tower without corrupting its 14 states.
+- [ ] 2.10 **Tower legibility** (PRD §5.4): full stat block, written descriptions on every upgrade choice (same card mechanic as relics), previews folding all live modifiers.
+- [ ] 2.11 **Prospecting rework** (PRD §4.6): drop the unlock; prospecting costs Scrap **and time** for everyone; the Refinery tier choice becomes a real ability (auto-prospect adjacent rock, or faster).
+- [ ] 2.12 **The naming pass** (PRD §13, D8): printing-trade vocabulary across towers, enemies, upgrades, currencies. Before any art.
+- [ ] 2.13 **UI infrastructure**: scrollable panels, larger illustrated relic cards, hidden-tab behaviour (D7). The modal layer from 1.6.2 is the foundation.
+- [ ] 2.14 **Enemy readouts** (PRD §8): shields as a bracket around the glyph, destroyed separately from the body so any enemy may carry one; health and status effects as marks beside the glyph (braille is a candidate). No tooltips.
 
 ## M3 — Trustworthy difficulty *(coarse)*
 
 - [ ] 3.1 Real bot policy; calibration runs across seed corpus.
 - [ ] 3.2 Calibrated curves committed as data; `balance.yml` CI gate.
 - [ ] 3.3 Human offset measured from Daniil's recorded replays.
-- [ ] 3.4 Unwinnable/trivial seed detection across ≥500 runs.
+- [ ] 3.4 Unwinnable/trivial seed detection across ≥500 runs, measured with the relic layer held fixed — trivial-by-relic is the feature, trivial-by-map is the defect (PRD §9).
 - [ ] 3.5 Tech tree stage 1 (~5 nodes); in-game autopilot.
 
 ## M4+ — Expansion *(à la carte, decompose on demand)*
 
-- [ ] 4.1 Effects system (subcell particles, projectiles, impacts, animation).
+- [ ] 4.1 Effects system (subcell particles, projectiles, impacts, animation) — including explosions, projectile **spread**, and a **living board**: terrain drift and 2–3 frame tower cycles (PRD §13). The renderer already redraws every frame, so this is authoring cost, not engine cost.
+- [ ] 4.8 **Offset connectors** (PRD §4.2.1): edge connector becomes a set of offsets, so parallel roads may touch without merging. Re-authors the tile library, the signature index and Tile Smith. **Lands before the tile pool grows** (§11) or it has to be done twice.
+- [ ] 4.9 **Bridges** (PRD §4.2.2): roads cross without merging. Turns the route from a grid BFS into a graph where a bridge cell holds two nodes; movement, targeting distance and `L` all follow. Depends on 4.8.
+- [ ] 4.10 **Attack shapes** (PRD §5.5): chain, beam over a run of road, arc/wedge AoE. Arc Coil and Rail Lance in the §5.3 roster already reserve two of these.
+- [ ] 4.11 **Per-upgrade tower visuals** (PRD §5.2, blocked by D3): each committed choice legible on the tower — a second barrel as a second glyph, background colour for what glyphs cannot say.
+- [ ] 4.12 **Void becomes water** with procedural blending at the terrain border (PRD §13); border cells can never carry road, so the overwrite is always safe.
+- [ ] 4.13 Illustrated relic cards and slot icons (PRD §7.2) — the slot grid ships functional in M1 and gets its art here.
+- [ ] 4.14 Boss enemies drawn multiple glyphs wide on a one-cell footprint (PRD §14 — visual size only, never mechanical).
 - [ ] 4.2 Full art pass, material language everywhere, biome palettes.
 - [ ] 4.3 Towers 5–9; traits 6–11; third damage type.
 - [ ] 4.4 Tech tree stage 2; 4.5 dailies + replay sharing; 4.6 ore tiers; 4.7 potency (optional).

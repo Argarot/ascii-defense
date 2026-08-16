@@ -77,9 +77,20 @@ rocks-as-containers + prospecting behind Survey. Gate passed: combos compose
 and relic runs replay bit-identically. The relic pool stands at 11 of the
 ~20 target (1.6.3 stays [~]) - the rest is pure content, addable any time.
 
-**NEXT: Phase 5** (WBS 1.5, ~0.5-1 session): crude bot policy INCLUDING
-relic picks, `harness calibrate`/`check` CLI, per-wave margin table. Then
-the M1 exit gate: Daniil plays the fun test.
+**M1 GATE PASSED 2026-08-16** — Daniil played to wave 14+: *"the game is fun
+now, it's just very unbalanced and with quite a few holes still."* The question
+M1 existed to answer is answered; everything after is balance and depth.
+
+**NEXT: Phase 7 triage** (WBS 1.7, ~0.5 session) — the preview fold bug, the
+relic pool draining silently, the difficulty shape (PRD sec 9.1), 8x speed,
+refinery deposit readout. Then **Phase 5** (bot + harness, with relic picks),
+then **M2** — which the playtest reshaped from "more content" into "make the
+existing systems demand decisions" (finite ore, relic fusion, real damage
+types, run end).
+
+Four decisions are open and blocking: **D5** relic rarity (reopened with play
+evidence), **D6** does a run end, **D7** hidden-tab behaviour, **D8** the
+printing-trade lexicon. Ask; do not pick silently.
 
 Historical notes (what earlier blocks left ready - now consumed):
 
