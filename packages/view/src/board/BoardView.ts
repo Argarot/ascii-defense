@@ -88,8 +88,10 @@ export interface RenderState {
   range?: { x: number; y: number; r: number } | null;
   /** The range shown is a pre-build preview: pulse it. */
   rangeIsPreview?: boolean;
-  /** Entries the NEXT wave attacks from - telegraphed with '!' markers. */
+  /** Entries the NEXT wave attacks from - telegraphed with blinking '!' markers. */
   telegraph?: readonly CellRef[];
+  /** Entries spawning RIGHT NOW - steady markers, no blink. */
+  activeEntries?: readonly CellRef[];
   /** The Core has fallen; draw the end screen over everything. */
   gameOver?: boolean;
   /** Expanding pulse rings: age01 runs 0 (just fired) to 1 (full range). */
@@ -272,8 +274,15 @@ export class BoardView {
       term.put(gx, gy, '*', role('tower.core'));
     }
 
-    // Telegraphs: where the next wave will pour in. A loud '!' at each
-    // upcoming entry, so repositioning happens before the wave, not during.
+    // Entry markers, two honest states (Daniil: a blink at a quiet entry
+    // reads as a lie). STEADY plate = enemies are entering here right now;
+    // BREATHING '!' = the next wave will enter here. An entry can be both.
+    for (const t of state.activeEntries ?? []) {
+      const gx = t.x * CELL_W;
+      const gy = offsetY + t.y * CELL_H;
+      term.put(gx + 1, gy + 1, '>', '#ffffff', '#8a2231');
+      term.put(gx + 3, gy + 1, '>', '#ffffff', '#8a2231');
+    }
     const breathe = 1.3 + 1.5 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1);
     for (const t of state.telegraph ?? []) {
       const gx = t.x * CELL_W;

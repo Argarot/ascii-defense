@@ -82,7 +82,7 @@ function nearRoadSpots(sim: Sim, W: number, H: number, count: number): { x: numb
   const out: { x: number; y: number }[] = [];
   for (let y = 0; y < H && out.length < count; y++)
     for (let x = 0; x < W && out.length < count; x++) {
-      if (!sim.canBuildAt(x, y)) continue;
+      if (!sim.canBuildDefAt(x, y, 'bolt')) continue;
       const nearRoad = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => sim.cellAt(x + dx, y + dy) === 'R');
       if (nearRoad) out.push({ x, y });
     }
@@ -98,7 +98,7 @@ function playGoldenRun(sim: Sim): void {
   sim.buildTower(spots[1].x, spots[1].y, 'bolt');
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++)
-      if (sim.cellAt(x, y) === 'O' && sim.canBuildAt(x, y)) {
+      if (sim.canBuildDefAt(x, y, 'refinery')) {
         sim.buildTower(x, y, 'refinery');
         y = H; break;
       }

@@ -103,6 +103,39 @@ export class HudPanel {
     return null;
   }
 
+  /**
+   * A clickable label rendered as a BUTTON: a solid background plate the
+   * full width of its region, so the click target is visible instead of
+   * implied (Daniil: options should look like buttons, not clickable text).
+   * Returns nothing; the caller registers the region itself.
+   */
+  private button(x: number, row: number, w: number, label: string, fg: string, bg: string): void {
+    const padded = (' ' + label).padEnd(w, ' ').slice(0, w);
+    this.term.write(x, row, padded, fg, bg);
+  }
+
+  /** Greedy word-wrap into at most `maxLines` lines of width `w`. */
+  private wrap(text: string, w: number, maxLines: number): string[] {
+    const lines: string[] = [];
+    let line = '';
+    for (const word of text.split(' ')) {
+      if (line !== '' && line.length + 1 + word.length > w) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = line === '' ? word : line + ' ' + word;
+      }
+    }
+    if (line !== '') lines.push(line);
+    // Never silently drop words: cram the tail into the last allowed line.
+    if (lines.length > maxLines) {
+      const head = lines.slice(0, maxLines - 1);
+      head.push(lines.slice(maxLines - 1).join(' ').slice(0, w));
+      return head;
+    }
+    return lines;
+  }
+
   render(s: HudState): void {
     const term = this.term;
     this.regions = [];
@@ -129,18 +162,21 @@ export class HudPanel {
     term.write(0, 9, `road L=${s.L}`, role('ui.dim'));
 
     // ---- build palette (vertical, hover previews radius on the board) ------
+    // Dynamic (Daniil): the app already filters this list to what is legal on
+    // the selected tile - a vein shows only the Refinery, ground shows only
+    // fighters. Rows are buttons: selected = accent plate, else dark plate.
     term.write(0, 11, 'BUILD', role('ui.dim'));
     s.palette.forEach((p, i) => {
       const row = 12 + i;
-      const marker = i === s.selectedBuild ? '>' : ' ';
-      const label = `${marker}${p.name} $${p.cost}`;
-      term.write(0, row, label, i === s.selectedBuild ? role('ui.accent') : p.affordable ? role('ui.text') : role('ui.dim'));
-      this.regions.push({ row, x0: 0, x1: Math.max(label.length, 20), action: { kind: 'build', index: i } });
+      const sel = i === s.selectedBuild;
+      const label = `${p.name} $${p.cost}`;
+      this.button(0, row, W - 8, label, sel ? role('ui.bg') : p.affordable ? role('ui.text') : role('ui.dim'), sel ? role('ui.accent') : role('ui.grid'));
+      this.regions.push({ row, x0: 0, x1: W - 8, action: { kind: 'build', index: i } });
     });
     term.write(
       0,
       12 + s.palette.length + 1,
-      s.buildTargetSelected ? 'click a tower: builds on' : 'select a tile on the map,',
+      s.buildTargetSelected ? 'click a button: builds on' : 'select a tile on the map,',
       s.buildTargetSelected ? role('ui.accent') : role('ui.dim'),
     );
     term.write(
@@ -151,7 +187,9 @@ export class HudPanel {
     );
 
     // ---- selection ---------------------------------------------------------
-    let y = 18;
+    // Below the palette, wherever the (dynamic) palette ends - a fixed row
+    // here collided with the guidance text the moment a fourth tower shipped.
+    let y = 12 + s.palette.length + 3;
     term.write(0, y++, '-'.repeat(W), role('ui.grid'));
     if (s.gameOver) {
       term.write(0, y + 1, 'THE CORE HAS FALLEN', role('enemy.fast'));
@@ -187,45 +225,49 @@ export class HudPanel {
       // Priorities are meaningless on a tower that never targets.
       if (t.stats.prod === null) {
         term.write(0, y++, 'priority', role('ui.dim'));
-        let px = 0;
-        let prow = y;
-        for (const p of PRIORITIES) {
-          const label = PRIORITY_LABEL[p];
-          if (px + label.length > W) {
-            px = 0;
-            prow++;
-          }
-          term.write(px, prow, label, p === t.priority ? role('ui.accent') : role('ui.dim'));
-          this.regions.push({ row: prow, x0: px, x1: px + label.length, action: { kind: 'priority', value: p } });
-          px += label.length + 1;
-        }
-        y = prow + 2;
+        // Two button rows of two - full words fit, no cryptic initials.
+        PRIORITIES.forEach((p, i) => {
+          const colW = Math.floor(W / 2);
+          const x0 = (i % 2) * colW;
+          const row = y + Math.floor(i / 2);
+          const active = p === t.priority;
+          this.button(x0, row, colW - 1, PRIORITY_LABEL[p], active ? role('ui.bg') : role('ui.dim'), active ? role('ui.accent') : role('ui.grid'));
+          this.regions.push({ row, x0, x1: x0 + colW - 1, action: { kind: 'priority', value: p } });
+        });
+        y += 3;
       }
-      // ---- the tree: tiers as rows, choices as boxes ----------------------
+      // ---- the tree: tiers as rows, choices as two-line buttons -----------
       term.write(0, y++, 'UPGRADES', role('ui.dim'));
+      const colW = Math.floor(W / 2);
       t.tiers.forEach((tier, ti) => {
         term.write(0, y, `T${ti + 1}`, role('ui.dim'));
         y++;
-        // Side-by-side either/or boxes (Daniil): the fork reads as a fork.
-        const colW = Math.floor(W / 2);
+        // Side-by-side either/or buttons (Daniil): the fork reads as a fork,
+        // names wrap instead of clipping, cost gets its own line.
+        const boxH = 3;
         tier.choices.forEach((c, ci) => {
           const x0 = ci * colW;
-          const short = c.name.length > colW - 7 ? c.name.slice(0, colW - 8) : c.name;
-          const label = c.state === 'chosen' ? `[${short}]*` : `[${short} $${c.cost}]`;
-          const colour =
+          const bw = colW - 1;
+          const [fg, bg] =
             c.state === 'chosen'
-              ? role('ui.accent')
+              ? [role('ui.bg'), role('ui.accent')]
               : c.state === 'available'
-                ? c.affordable
-                  ? role('ui.text')
-                  : role('ui.dim')
-                : role('ui.grid');
-          term.write(x0, y, label, colour);
+                ? [c.affordable ? role('ui.text') : role('ui.dim'), role('ui.grid')]
+                : [role('ui.grid'), role('ui.bg')];
+          const nameLines = this.wrap(c.name, bw - 2, 2);
+          this.button(x0, y, bw, nameLines[0], fg, bg);
+          this.button(x0, y + 1, bw, nameLines[1] ?? '', fg, bg);
+          const tail = c.state === 'chosen' ? 'BUILT' : c.state === 'rejected' ? 'locked out' : c.state === 'locked' ? 'locked' : `$${c.cost}`;
+          this.button(x0, y + 2, bw, tail, fg, bg);
           if (c.state === 'available') {
-            this.regions.push({ row: y, x0, x1: x0 + colW, action: { kind: 'choose', tier: ti, option: ci } });
+            for (let r = 0; r < boxH; r++) {
+              this.regions.push({ row: y + r, x0, x1: x0 + bw, action: { kind: 'choose', tier: ti, option: ci } });
+            }
           }
         });
-        y += 2;
+        // No blank row between tiers: the T-label row and the plates'
+        // contrast already separate them, and panel height is a budget.
+        y += boxH;
       });
       term.write(0, y + 1, 'X sells (70% back)', role('ui.dim'));
     } else {
