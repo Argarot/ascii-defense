@@ -19,6 +19,7 @@ const LIB = new TileLibrary([
   { id: 'tee', cells: g('GGGGG', 'GGGGG', 'RRRRR', 'GGRGG', 'GGRGG') },
   { id: 'cross', cells: g('GGRGG', 'GGRGG', 'RRRRR', 'GGRGG', 'GGRGG') },
   { id: 'meadow', cells: g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG') },
+  { id: 'ore_patch', cells: g('GGGGG', 'GOOGG', 'GOOGG', 'GGGGG', 'GGGGG') },
 ]);
 
 const WALKER: EnemyDef = { id: 'walker', hp: 10, speed: 0.2, damage: 2 };
@@ -29,6 +30,26 @@ const BOLT: TowerDef = {
   fireEveryTicks: 10,
   projectile: { damage: 6, speed: 0.6, homing: true },
 };
+const REFINERY: TowerDef = {
+  id: 'refinery',
+  cost: 30,
+  range: 0.5,
+  fireEveryTicks: 1,
+  attack: 'none',
+  production: { ore: 1, everyTicks: 40 },
+  tiers: [
+    { choices: [{ name: 'Wide Bore', cost: 30, mods: { production: 1 } }, { name: 'Fast Cycle', cost: 30, mods: { productionEveryTicks: -15 } }] },
+    { choices: [{ name: 'Deep Drill', cost: 60, mods: { production: 1 } }, { name: 'Twin Shaft', cost: 60, mods: { productionEveryTicks: -15 } }] },
+    { choices: [{ name: 'Mother Lode', cost: 120, mods: { production: 2 } }, { name: 'Perpetual', cost: 120, mods: { productionEveryTicks: -10 } }] },
+  ],
+};
+
+/** First cell of the wanted type, or throw - fixtures anchor to the world. */
+function cellOfType(cells: readonly (string | null)[], W: number, H: number, type: string): { x: number; y: number } {
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) if (cells[y * W + x] === type) return { x, y };
+  throw new Error(`no ${type} cell on this board`);
+}
 
 function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
   const opts = { width: 10, height: 6, entries: 3, targetPathLength: 8 };
@@ -377,5 +398,66 @@ describe('towers and projectiles', () => {
     const sim = new Sim(31, simOpts);
     for (let t = 0; t < 2000; t++) sim.tick();
     expect(sim.aliveCount()).toBeLessThanOrEqual(1024);
+  });
+});
+
+describe('production - Refinery and Ore (1.4.6)', () => {
+  // Ore is mined only ON a vein (PRD sec 5.3); the timer holds off-vein so a
+  // future prospected vein resumes an idle Refinery instead of paying out a
+  // stalled cycle instantly.
+
+  it('on a vein: first yield after one full cycle, then every cycle', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
+    const sim = new Sim(11, simOpts);
+    const spot = cellOfType(cells, cellsW, cellsH, 'O');
+    expect(sim.buildTower(spot.x, spot.y, 'refinery')).toBe(true);
+    for (let t = 0; t < 39; t++) sim.tick();
+    expect(sim.ore[0]).toBe(0); // cycle not yet complete
+    sim.tick();
+    expect(sim.ore[0]).toBe(1);
+    for (let t = 0; t < 40; t++) sim.tick();
+    expect(sim.ore[0]).toBe(2);
+  });
+
+  it('off the vein it mines nothing', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
+    const sim = new Sim(11, simOpts);
+    const spot = buildSpotNear(cells, cellsW, cellsH); // a G cell
+    expect(sim.buildTower(spot.x, spot.y, 'refinery')).toBe(true);
+    for (let t = 0; t < 400; t++) sim.tick();
+    expect(sim.ore[0]).toBe(0);
+  });
+
+  it('tier choices fold into yield and cycle speed', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
+    const sim = new Sim(11, simOpts);
+    const spot = cellOfType(cells, cellsW, cellsH, 'O');
+    sim.buildTower(spot.x, spot.y, 'refinery');
+    expect(sim.chooseTier(spot.x, spot.y, 0, 0)).toBe(true); // Wide Bore: +1/cycle
+    for (let t = 0; t < 40; t++) sim.tick();
+    expect(sim.ore[0]).toBe(2);
+  });
+
+  it('startingOre carries a previous run in (the demo reroll bank)', () => {
+    const { simOpts } = makeWorld(11, { startingOre: 7 });
+    const sim = new Sim(11, simOpts);
+    expect(sim.ore[0]).toBe(7);
+  });
+
+  it('a producer never targets, fires, or holds a priority region', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, {
+      towerDefs: [REFINERY],
+      spawnEveryTicks: 2,
+      maxSpawns: 30,
+    });
+    const sim = new Sim(11, simOpts);
+    const spot = cellOfType(cells, cellsW, cellsH, 'O');
+    sim.buildTower(spot.x, spot.y, 'refinery');
+    for (let t = 0; t < 600; t++) sim.tick();
+    let anyProj = 0;
+    for (let i = 0; i < sim.projAlive.length; i++) anyProj += sim.projAlive[i];
+    expect(anyProj).toBe(0);
+    expect(sim.kills).toBe(0);
+    expect(sim.ore[0]).toBeGreaterThan(0); // it spent the whole time mining
   });
 });

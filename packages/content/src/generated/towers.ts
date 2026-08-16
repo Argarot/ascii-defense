@@ -16,7 +16,10 @@ export interface TowerRoster {
       cost: number;
       range: number;
       fireEveryTicks: number;
-      projectile: {
+      /**
+       * Required for attacking towers; absent on attack:none producers (Refinery).
+       */
+      projectile?: {
         damage: number;
         /**
          * Cells per tick. Must comfortably outrun enemies.
@@ -54,9 +57,20 @@ export interface TowerRoster {
         slowTicks?: number;
       };
       /**
-       * projectile fires shots; pulse hits everything in range on cooldown (no projectile).
+       * projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).
        */
-      attack?: 'projectile' | 'pulse';
+      attack?: 'projectile' | 'pulse' | 'none';
+      /**
+       * Resource yield per cycle (Refinery). Ore counts only while the tower stands on an ore cell - engine rule, PRD sec 5.3. scrap is reserved shape for the foundry relic (PRD sec 7.4); no shipped tower uses it.
+       */
+      production?: {
+        ore?: number;
+        scrap?: number;
+        /**
+         * Cycle length in ticks at 20 Hz.
+         */
+        everyTicks: number;
+      };
       /**
        * Tower Dominion-style tree: 3 tiers, each an either/or choice, mutually exclusive, unlocked in order. 2+4+8 = 14 tower variants.
        *
@@ -79,6 +93,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             },
             {
@@ -90,6 +112,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             }
           ];
@@ -109,6 +139,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             },
             {
@@ -120,6 +158,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             }
           ];
@@ -139,6 +185,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             },
             {
@@ -150,6 +204,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             }
           ];
@@ -162,7 +224,10 @@ export interface TowerRoster {
       cost: number;
       range: number;
       fireEveryTicks: number;
-      projectile: {
+      /**
+       * Required for attacking towers; absent on attack:none producers (Refinery).
+       */
+      projectile?: {
         damage: number;
         /**
          * Cells per tick. Must comfortably outrun enemies.
@@ -200,9 +265,20 @@ export interface TowerRoster {
         slowTicks?: number;
       };
       /**
-       * projectile fires shots; pulse hits everything in range on cooldown (no projectile).
+       * projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).
        */
-      attack?: 'projectile' | 'pulse';
+      attack?: 'projectile' | 'pulse' | 'none';
+      /**
+       * Resource yield per cycle (Refinery). Ore counts only while the tower stands on an ore cell - engine rule, PRD sec 5.3. scrap is reserved shape for the foundry relic (PRD sec 7.4); no shipped tower uses it.
+       */
+      production?: {
+        ore?: number;
+        scrap?: number;
+        /**
+         * Cycle length in ticks at 20 Hz.
+         */
+        everyTicks: number;
+      };
       /**
        * Tower Dominion-style tree: 3 tiers, each an either/or choice, mutually exclusive, unlocked in order. 2+4+8 = 14 tower variants.
        *
@@ -225,6 +301,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             },
             {
@@ -236,6 +320,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             }
           ];
@@ -255,6 +347,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             },
             {
@@ -266,6 +366,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             }
           ];
@@ -285,6 +393,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             },
             {
@@ -296,6 +412,14 @@ export interface TowerRoster {
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
+                /**
+                 * Additive yield per cycle.
+                 */
+                production?: number;
+                /**
+                 * Additive cycle-length delta (negative = faster).
+                 */
+                productionEveryTicks?: number;
               };
             }
           ];
@@ -329,8 +453,7 @@ export const towersSchema = {
           "id",
           "cost",
           "range",
-          "fireEveryTicks",
-          "projectile"
+          "fireEveryTicks"
         ],
         "additionalProperties": false,
         "properties": {
@@ -354,6 +477,7 @@ export const towersSchema = {
             "minimum": 1
           },
           "projectile": {
+            "description": "Required for attacking towers; absent on attack:none producers (Refinery).",
             "type": "object",
             "required": [
               "damage",
@@ -420,12 +544,36 @@ export const towersSchema = {
             }
           },
           "attack": {
-            "description": "projectile fires shots; pulse hits everything in range on cooldown (no projectile).",
+            "description": "projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).",
             "enum": [
               "projectile",
-              "pulse"
+              "pulse",
+              "none"
             ],
             "default": "projectile"
+          },
+          "production": {
+            "description": "Resource yield per cycle (Refinery). Ore counts only while the tower stands on an ore cell - engine rule, PRD sec 5.3. scrap is reserved shape for the foundry relic (PRD sec 7.4); no shipped tower uses it.",
+            "type": "object",
+            "required": [
+              "everyTicks"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "ore": {
+                "type": "number",
+                "minimum": 0
+              },
+              "scrap": {
+                "type": "number",
+                "minimum": 0
+              },
+              "everyTicks": {
+                "description": "Cycle length in ticks at 20 Hz.",
+                "type": "integer",
+                "minimum": 1
+              }
+            }
           },
           "tiers": {
             "description": "Tower Dominion-style tree: 3 tiers, each an either/or choice, mutually exclusive, unlocked in order. 2+4+8 = 14 tower variants.",
@@ -475,6 +623,14 @@ export const towersSchema = {
                             "type": "number"
                           },
                           "slowTicks": {
+                            "type": "number"
+                          },
+                          "production": {
+                            "description": "Additive yield per cycle.",
+                            "type": "number"
+                          },
+                          "productionEveryTicks": {
+                            "description": "Additive cycle-length delta (negative = faster).",
                             "type": "number"
                           }
                         }

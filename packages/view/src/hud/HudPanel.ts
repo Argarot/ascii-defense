@@ -29,6 +29,8 @@ export interface HudStats {
   dps: string;
   range: number;
   slow: number;
+  /** Producers: yield per second, e.g. "0.3/s"; null for fighters. */
+  prod: string | null;
 }
 
 export interface HudTowerInfo {
@@ -37,12 +39,15 @@ export interface HudTowerInfo {
   stats: HudStats;
   /** Post-purchase stats while hovering an available choice; else null. */
   preview: HudStats | null;
+  /** A producer standing off its ore vein - mining nothing (PRD sec 5.3). */
+  offVein: boolean;
   priority: Priority;
   tiers: readonly HudTierInfo[];
 }
 
 export interface HudState {
   scrap: number;
+  ore: number;
   kills: number;
   coreHp: number;
   coreHpMax: number;
@@ -110,6 +115,10 @@ export class HudPanel {
     term.write(0, 0, 'ASCII DEFENSE', role('ui.accent'));
     term.write(0, 1, `seed ${s.seed} \u00b7 ${s.speedLabel}`, role('ui.dim'));
     term.write(0, 3, `SCRAP ${s.scrap}`, role('ui.accent'));
+    // Ore on the same line, right-aligned: the two currencies never compete
+    // for the same pool (PRD sec 6), so they share a row, not a column.
+    const oreLabel = `ORE ${s.ore}`;
+    term.write(W - oreLabel.length, 3, oreLabel, role('terrain.ore.lit'));
     const hpFrac = s.coreHpMax > 0 ? s.coreHp / s.coreHpMax : 0;
     const barLen = Math.round(hpFrac * (W - 2));
     const coreCol = hpFrac <= 0.25 ? role('enemy.fast') : role('terrain.core.mid');
@@ -161,27 +170,37 @@ export class HudPanel {
         }
         y++;
       };
-      stat('dmg  ', t.stats.dmg, t.preview ? t.preview.dmg : null);
-      stat('dps  ', t.stats.dps, t.preview ? t.preview.dps : null);
-      stat('range', t.stats.range, t.preview ? t.preview.range : null);
-      if (t.stats.slow > 0 || (t.preview && t.preview.slow > 0)) {
-        stat('slow ', `${t.stats.slow}t`, t.preview ? `${t.preview.slow}t` : null);
+      if (t.stats.prod !== null) {
+        // Producers read as an economy card: yield, and the one thing that
+        // can be wrong with one (off the vein = mining nothing).
+        stat('ore  ', t.stats.prod, t.preview ? t.preview.prod : null);
+        if (t.offVein) term.write(0, y++, 'OFF VEIN - idle', role('enemy.fast'));
+      } else {
+        stat('dmg  ', t.stats.dmg, t.preview ? t.preview.dmg : null);
+        stat('dps  ', t.stats.dps, t.preview ? t.preview.dps : null);
+        stat('range', t.stats.range, t.preview ? t.preview.range : null);
+        if (t.stats.slow > 0 || (t.preview && t.preview.slow > 0)) {
+          stat('slow ', `${t.stats.slow}t`, t.preview ? `${t.preview.slow}t` : null);
+        }
       }
       y++;
-      term.write(0, y++, 'priority', role('ui.dim'));
-      let px = 0;
-      let prow = y;
-      for (const p of PRIORITIES) {
-        const label = PRIORITY_LABEL[p];
-        if (px + label.length > W) {
-          px = 0;
-          prow++;
+      // Priorities are meaningless on a tower that never targets.
+      if (t.stats.prod === null) {
+        term.write(0, y++, 'priority', role('ui.dim'));
+        let px = 0;
+        let prow = y;
+        for (const p of PRIORITIES) {
+          const label = PRIORITY_LABEL[p];
+          if (px + label.length > W) {
+            px = 0;
+            prow++;
+          }
+          term.write(px, prow, label, p === t.priority ? role('ui.accent') : role('ui.dim'));
+          this.regions.push({ row: prow, x0: px, x1: px + label.length, action: { kind: 'priority', value: p } });
+          px += label.length + 1;
         }
-        term.write(px, prow, label, p === t.priority ? role('ui.accent') : role('ui.dim'));
-        this.regions.push({ row: prow, x0: px, x1: px + label.length, action: { kind: 'priority', value: p } });
-        px += label.length + 1;
+        y = prow + 2;
       }
-      y = prow + 2;
       // ---- the tree: tiers as rows, choices as boxes ----------------------
       term.write(0, y++, 'UPGRADES', role('ui.dim'));
       t.tiers.forEach((tier, ti) => {

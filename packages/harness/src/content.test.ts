@@ -47,7 +47,20 @@ describe('shipped combat rosters - cross-content sanity', () => {
     // a livelock the schema cannot see because it spans two files.
     const maxEnemySpeed = Math.max(...enemies.enemies.map((e) => e.speed));
     for (const t of towers.towers) {
+      if (!t.projectile) continue; // producers (attack none) fire nothing
       expect(t.projectile.speed, t.id).toBeGreaterThan(maxEnemySpeed * 2);
+    }
+  });
+
+  it('every tower either attacks or produces - a tower that does neither is a scam', () => {
+    for (const t of towers.towers) {
+      const attacks = t.attack !== 'none' && t.projectile !== undefined;
+      // roster.json is imported as a literal type here; widen to the schema shape.
+      const prod = t.production as { ore?: number; scrap?: number } | undefined;
+      const produces = prod !== undefined && ((prod.ore ?? 0) + (prod.scrap ?? 0)) > 0;
+      expect(attacks || produces, t.id).toBe(true);
+      // And an attacker without a projectile spec would crash the tower phase.
+      if (t.attack !== 'none') expect(t.projectile, t.id).toBeDefined();
     }
   });
 

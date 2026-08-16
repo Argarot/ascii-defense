@@ -31,9 +31,10 @@ const TOWER_ART_BY_ID: Record<string, { art: string[]; coreRole: string }> = {
   bolt: { art: ['.-^-.', '|[O]|', "'---'"], coreRole: 'path.1' },
   mortar: { art: [',===.', '|(M)|', "'---'"], coreRole: 'path.2' },
   frost: { art: ['*~.~*', '<(F)>', '*~.~*'], coreRole: 'enemy.shell' },
+  refinery: { art: ['_/=\\_', '|[R]|', '|___|'], coreRole: 'terrain.ore.lit' },
 };
 const TOWER_ART_DEFAULT = { art: ['.-^-.', '|[?]|', "'---'"], coreRole: 'path.3' };
-const TOWER_CORE = /[OMF?]/;
+const TOWER_CORE = /[OMFR?]/;
 
 // Per-enemy-type look, so the roster is readable on the board. Placeholder
 // until sprites; unknown ids fall back to the classic '@'.

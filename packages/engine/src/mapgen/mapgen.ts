@@ -53,6 +53,13 @@ export const FILL_RADIUS = 2;
  * ore-or-void.
  */
 export const ORE_REACH = 3;
+/**
+ * Generation guarantee (PRD sec 4.3): at least this many ore tiles per map,
+ * chance permitting nothing. A map without ore has no Ore economy and so no
+ * relic purchases at the Core - not a hard run, a broken one. A floor, not an
+ * average; capped by how many fillable slots the board actually has.
+ */
+export const ORE_FLOOR = 2;
 
 const EDGE_DELTA: Record<Edge, [number, number]> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 const CENTER = (TILE_SIZE - 1) / 2;
@@ -279,6 +286,19 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     }
   }
 
+  // The ore floor is pre-committed, not checked after: a seeded shuffle of
+  // every fillable slot marks the first ORE_FLOOR as guaranteed ore, and the
+  // fill loop honours the marks. The guarantee therefore holds by
+  // construction - there is no repair pass, matching how connectivity works.
+  const guaranteedOre = new Set<number>();
+  if (index.filler.ore.length > 0) {
+    const fillable: number[] = [];
+    for (let k = 0; k < width * height; k++) {
+      if (!roadEdges.has(k) && dist[k] >= 1 && dist[k] <= ORE_REACH) fillable.push(k);
+    }
+    for (const k of rng.shuffle(fillable).slice(0, ORE_FLOOR)) guaranteedOre.add(k);
+  }
+
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
       const k = slotIdx(x, y);
@@ -287,7 +307,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       if (dist[k] > FILL_RADIUS) {
         // The outer ring exists only for resources: ore or nothing. This is
         // what keeps maps from carrying useless land (Daniil).
-        if (index.filler.ore.length > 0 && rng.chance(0.3)) {
+        if (guaranteedOre.has(k) || (index.filler.ore.length > 0 && rng.chance(0.3))) {
           board = place(board, rng.pick(index.filler.ore), rng.pick([0, 1, 2, 3] as const), x, y);
         }
         continue;
@@ -296,7 +316,9 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       // (but never common - nodes are a find, not a floor) farther out.
       const oreChance = 0.04 + 0.1 * (dist[k] - 1);
       const pool =
-        index.filler.ore.length > 0 && rng.chance(oreChance) ? index.filler.ore : index.filler.plain;
+        guaranteedOre.has(k) || (index.filler.ore.length > 0 && rng.chance(oreChance))
+          ? index.filler.ore
+          : index.filler.plain;
       board = place(board, rng.pick(pool), rng.pick([0, 1, 2, 3] as const), x, y);
     }
 

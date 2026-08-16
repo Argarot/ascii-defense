@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
 import { TILE_SIZE, deriveConnectors, validateTileCells } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt, type Board } from '../tiles/board';
-import { FILL_RADIUS, ORE_REACH, generateMap } from './mapgen';
+import { FILL_RADIUS, ORE_FLOOR, ORE_REACH, generateMap } from './mapgen';
 
 // The same tile shapes the shipped library provides, inline so engine tests
 // stay hermetic (engine may not import content).
@@ -204,6 +204,24 @@ describe('map generation v2 - trees, void, spread', () => {
             expect(dist[k], `void slot ${k} should have been filled`).toBeGreaterThan(FILL_RADIUS);
           }
         }
+      }
+    }
+  });
+
+  it('ore floor: every map guarantees buildable ore cells (PRD sec 4.3)', () => {
+    // The floor is what makes the Ore economy a certainty rather than a
+    // draw - a map without ore has no Refinery play and no Core purchases.
+    // Boards from CASES[2] up always have >= ORE_FLOOR fillable slots.
+    for (const opts of CASES.slice(2)) {
+      for (let seed = 1; seed <= 8; seed++) {
+        const map = generateMap(createRng(seed * 7 + 1).stream('map'), LIB, opts);
+        const cells = resolveCells(map.board, LIB);
+        const oreCells = cells.filter((c) => c === 'O').length;
+        // Each guaranteed slot carries a tile with >= 1 ore cell.
+        expect(
+          oreCells,
+          `seed ${seed * 7 + 1} on ${opts.width}x${opts.height}: no ore economy`,
+        ).toBeGreaterThanOrEqual(ORE_FLOOR);
       }
     }
   });
