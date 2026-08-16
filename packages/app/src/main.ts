@@ -222,7 +222,7 @@ async function main(): Promise<void> {
       effPreview = effectiveStats(sim.towerDef(infoTower), next);
     }
     const toStats = (e: NonNullable<typeof eff>) => ({
-      dmg: e.damage,
+      dmg: Math.round(e.damage * 10) / 10,
       dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
       range: Math.round(e.range * 10) / 10,
       slow: e.slowTicks,
@@ -273,6 +273,11 @@ async function main(): Promise<void> {
         sim.wave,
         animPhase,
       );
+      // BoardView.render flushed to the GPU before we painted; without this
+      // second flush the modal exists only in the CPU glyph buffer - text
+      // snapshots see it, the SCREEN does not. Found by Daniil clicking
+      // cards he could not see.
+      term.flush();
     }
 
     hud.render({
@@ -284,12 +289,13 @@ async function main(): Promise<void> {
       coreHpMax: sim.coreHpMax,
       wave: sim.wave,
       nextFronts: sim.nextWaveEntries.length,
+      nextWaveIn: Math.ceil(sim.ticksToNextWave() / TICK_HZ),
       gameOver: sim.status === 'lost',
       L: sim.flow.L,
       seed,
       speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
       inspector: view.describeCell(selected ?? hover),
-      palette: palette.map((d) => ({
+      palette: (buildTarget ? palette : []).map((d) => ({
         name: d.name ?? d.id,
         cost: d.cost,
         affordable: sim.canAfford(d.id),
