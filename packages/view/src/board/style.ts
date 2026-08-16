@@ -5,6 +5,7 @@
  */
 import type { CellType } from '@ascii-defense/engine';
 import type { GLTerm } from '@ascii-defense/render';
+import { ROAD_PORTS } from '@ascii-defense/engine';
 import { role } from '../palette';
 
 export const CELL_W = 5;
@@ -15,10 +16,12 @@ export const POOLS: Record<CellType, string> = {
   R: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   K: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
   r: ':;.,=⠉⠒⠤⠶⠛⠿-_~⠐⠠',
-  '^': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  'v': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  '<': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  '>': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  '-': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  '|': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  L: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  J: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  F: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  '7': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   O: '*+.o\u283f\u283e\u283d\u283bO0\u2837',
   C: '\u28ff\u28f7\u28ef@O0\u28f6',
 };
@@ -27,10 +30,12 @@ export const TERRAIN_KEY: Record<CellType, string> = {
   G: 'ground',
   R: 'road',
   r: 'road',
-  '^': 'road',
-  'v': 'road',
-  '<': 'road',
-  '>': 'road',
+  '-': 'road',
+  '|': 'road',
+  L: 'road',
+  J: 'road',
+  F: 'road',
+  '7': 'road',
   K: 'rock',
   O: 'ore',
   C: 'core',
@@ -83,8 +88,8 @@ export function drawTerrainCell(
   // (PRD sec 6 - "where is the money" is answered by looking).
   const rockMid = role('terrain.rock.mid');
   const richness = kind === 'O' ? (shade.richness ?? 1) : 1;
-  const dirGlyph: Partial<Record<CellType, string>> = { '^': '\u2191', 'v': '\u2193', '<': '\u2190', '>': '\u2192' };
-  const isDir = dirGlyph[kind] !== undefined;
+  const ports = ROAD_PORTS[kind];
+  const rimmed = ports !== undefined && ports !== 15;
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
       const g = pool[Math.floor(hash2(gx0 + x, gy0 + y, 6) * pool.length) % pool.length];
@@ -92,9 +97,16 @@ export function drawTerrainCell(
       if (kind === 'O' && hash2(gx0 + x, gy0 + y, 13) > richness) fg = rockMid;
       if (shade.litTop && y === 0) fg = lit;
       if (shade.shadowBottom && y === CELL_H - 1) fg = dark; // sinks into the bg
-      if (isDir && x === 2 && y === 1) {
-        term.put(gx0 + x, gy0 + y, dirGlyph[kind]!, lit, bg);
-        continue;
+      if (rimmed) {
+        // Closed sides get a dark rim; open (ported) sides stay road.
+        const rimN = (ports! & 1) === 0 && y === 0;
+        const rimE = (ports! & 2) === 0 && x === CELL_W - 1;
+        const rimS = (ports! & 4) === 0 && y === CELL_H - 1;
+        const rimW = (ports! & 8) === 0 && x === 0;
+        if (rimN || rimE || rimS || rimW) {
+          term.put(gx0 + x, gy0 + y, '\u2810', role('terrain.rock.mid'), mix(bg, '#000000', 0.35));
+          continue;
+        }
       }
       term.put(gx0 + x, gy0 + y, g, fg, bg);
     }

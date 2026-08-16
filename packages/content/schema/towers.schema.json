@@ -204,9 +204,10 @@
                         }
                       },
                       "unlocks": {
-                        "description": "Capability grant: 'prospect' opens rock prospecting (Survey path).",
+                        "description": "Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.",
                         "enum": [
-                          "prospect"
+                          "surveySpeed",
+                          "surveyAuto"
                         ]
                       }
                     }

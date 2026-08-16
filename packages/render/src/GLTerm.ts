@@ -64,6 +64,8 @@ export interface GLTermOptions {
    *  fonts such as spleen 5x8. */
   cellPxH?: number;
   background?: string;
+  /** Unwritten cells stay see-through - for overlay terminals (modals). */
+  transparent?: boolean;
 }
 
 function rgb(hex: string): [number, number, number] {
@@ -74,6 +76,7 @@ function rgb(hex: string): [number, number, number] {
 
 export class GLTerm {
   readonly canvas: HTMLCanvasElement;
+  private readonly transparent: boolean;
   readonly cols: number;
   readonly rows: number;
   readonly cellPx: number;
@@ -92,6 +95,7 @@ export class GLTerm {
     this.cols = opts.cols;
     this.rows = opts.rows;
     this.cellPx = opts.cellPx ?? 8;
+    this.transparent = opts.transparent ?? false;
     this.cellPxH = opts.cellPxH ?? this.cellPx;
     this.cellCount = this.cols * this.rows;
     this.bgDefault = rgb(opts.background ?? '#07090c');
@@ -102,7 +106,7 @@ export class GLTerm {
     this.canvas.style.width = `${this.cols * this.cellPx}px`;
     this.canvas.style.imageRendering = 'pixelated';
 
-    const gl = this.canvas.getContext('webgl2', { alpha: false, antialias: false });
+    const gl = this.canvas.getContext('webgl2', { alpha: this.transparent, antialias: false });
     if (!gl) throw new Error('GLTerm: WebGL2 unavailable');
     this.gl = gl;
 
@@ -200,9 +204,12 @@ export class GLTerm {
     const c = bg ? rgb(bg) : this.bgDefault;
     const space = this.index.get(32) ?? 0;
     const d = this.data;
+    // A transparent terminal parks unwritten cells off-screen: only what is
+    // put() after the clear gets drawn, and the page shows through the rest.
+    const park = this.transparent && bg === undefined;
     for (let i = 0; i < this.cellCount; i++) {
       const o = i * FLOATS_PER_CELL;
-      d[o] = i % this.cols;
+      d[o] = park ? -10 : i % this.cols;
       d[o + 1] = (i / this.cols) | 0;
       d[o + 2] = space;
       d[o + 3] = c[0]; d[o + 4] = c[1]; d[o + 5] = c[2];
@@ -245,6 +252,7 @@ export class GLTerm {
     const o = (y * this.cols + x) * FLOATS_PER_CELL;
     const f = rgb(fg);
     const d = this.data;
+    if (this.transparent) { d[o] = x; d[o + 1] = y; } // un-park (see clear)
     d[o + 2] = slot;
     d[o + 3] = f[0]; d[o + 4] = f[1]; d[o + 5] = f[2];
     if (bg !== undefined) {
@@ -279,6 +287,10 @@ export class GLTerm {
 
   flush(): void {
     const gl = this.gl;
+    if (this.transparent) {
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.cellCount);

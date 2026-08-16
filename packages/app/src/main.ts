@@ -10,6 +10,7 @@ import type { GlyphSet } from '@ascii-defense/render';
 import {
   CACHE_CLAIM_COST,
   DEPOSIT_MAX,
+  PROSPECT_TICKS,
   OFFER_REROLL_COST,
   PROSPECT_COST,
   RELIC_DRAW_COST,
@@ -96,7 +97,7 @@ async function main(): Promise<void> {
     rows: Math.floor((mapY * TILE_SIZE * CELL_H) / 2),
     cellPx: GLYPH_PX_W * 2,
     cellPxH: GLYPH_PX_H * 2,
-    background: '#00000000',
+    transparent: true,
   });
   modalTerm.canvas.style.position = 'absolute';
   modalTerm.canvas.style.left = '0';
@@ -370,7 +371,7 @@ async function main(): Promise<void> {
     const offer = sim.offerDefs();
     modalTerm.canvas.style.display = offer ? '' : 'none';
     if (offer) {
-      modalTerm.clear('#10151cd8');
+      modalTerm.clear(); // transparent: the board stays visible around the cards
       offerModal.render(
         modalTerm,
         offer.map((d) => ({ name: d.name, kind: d.kind, desc: d.desc })),
@@ -422,6 +423,7 @@ async function main(): Promise<void> {
           ? {
               cost: PROSPECT_COST,
               affordable: sim.scrap >= PROSPECT_COST,
+              seconds: Math.ceil(PROSPECT_TICKS / sim.prospectSpeed() / TICK_HZ),
               job: (() => {
                 const j = sim.prospectJobAt(selected.x, selected.y);
                 return j ? { pct: Math.round(((j.total - j.remaining) / j.total) * 100) } : null;

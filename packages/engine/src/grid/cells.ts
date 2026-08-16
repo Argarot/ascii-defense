@@ -7,16 +7,26 @@
  * edge is a spawn point (PRD sec 4.1) - the same philosophy as derived
  * connectors. C is the Core's own substance, the thing enemies march toward.
  */
-export type CellType = 'G' | 'R' | 'r' | 'K' | 'O' | 'C' | '^' | 'v' | '<' | '>';
+export type CellType = 'G' | 'R' | 'r' | 'K' | 'O' | 'C' | '-' | '|' | 'L' | 'J' | 'F' | '7';
 
-export const CELL_TYPES: readonly CellType[] = ['G', 'R', 'r', 'K', 'O', 'C', '^', 'v', '<', '>'];
+export const CELL_TYPES: readonly CellType[] = ['G', 'R', 'r', 'K', 'O', 'C', '-', '|', 'L', 'J', 'F', '7'];
 
-/** Direction a directional road cell flows along, as a (dx, dy) unit step. */
-export const ROAD_DIR: Partial<Record<CellType, readonly [number, number]>> = {
-  '^': [0, -1],
-  'v': [0, 1],
-  '<': [-1, 0],
-  '>': [1, 0],
+/**
+ * Which sides a road SEGMENT connects (Daniil, playtest 4: not four flow
+ * directions - horizontal, vertical, and four corners that say how they
+ * bend). Bits: N=1 E=2 S=4 W=8. The letters follow the vi/roguelike
+ * convention: L bends north-east, J north-west, F south-east, 7 south-west.
+ * 'R'/'r' are omni segments (all four ports).
+ */
+export const ROAD_PORTS: Partial<Record<CellType, number>> = {
+  '-': 2 | 8,
+  '|': 1 | 4,
+  L: 1 | 2,
+  J: 1 | 8,
+  F: 4 | 2,
+  '7': 4 | 8,
+  R: 15,
+  r: 15,
 };
 
 /**
@@ -27,29 +37,26 @@ export const ROAD_DIR: Partial<Record<CellType, readonly [number, number]>> = {
  * are tile-local; crossings join whatever lane owns each side's connector.
  */
 export function isRoad(c: CellType): boolean {
-  return c === 'R' || c === 'r' || c === '^' || c === 'v' || c === '<' || c === '>';
+  return ROAD_PORTS[c] !== undefined;
 }
 
 /**
  * Do two ADJACENT route cells connect? (dx, dy) is the step from a to b.
- * The directional model (Daniil, playtest 3): a directional cell points one
- * way; two neighbours connect when either points at the other. An S-fold
- * authored with directional cells therefore touches itself without merging -
- * the folded segments point along themselves, not at each other. Plain 'R'
- * points everywhere (omni); 'r' is a second omni lane kept for bridge work;
- * R and r never join each other; the Core welds anything.
+ * Segments connect when BOTH have a port facing each other - symmetric,
+ * unambiguous, and the segment's shape IS its connectivity, so what you see
+ * is what connects. An S-fold's back-to-back straights share no facing
+ * ports and touch without merging. R-r (the two omni lanes) never join
+ * each other; the Core welds any route cell.
  */
 export function roadsConnect(a: CellType, b: CellType, dx: number, dy: number): boolean {
   if (a === 'C' || b === 'C') return a !== b || a === 'C'; // C joins any route cell (C-C included)
-  if (!isRoad(a) || !isRoad(b)) return false;
-  const omni = (c: CellType): boolean => c === 'R' || c === 'r';
-  if (omni(a) && omni(b)) return a === b; // R-R yes, r-r yes, R-r never
-  const points = (c: CellType, ddx: number, ddy: number): boolean => {
-    if (omni(c)) return true;
-    const d = ROAD_DIR[c]!;
-    return d[0] === ddx && d[1] === ddy;
-  };
-  return points(a, dx, dy) || points(b, -dx, -dy);
+  const pa = ROAD_PORTS[a];
+  const pb = ROAD_PORTS[b];
+  if (pa === undefined || pb === undefined) return false;
+  if (pa === 15 && pb === 15 && a !== b) return false; // R-r stay separate lanes
+  const bit = dy === -1 ? 1 : dx === 1 ? 2 : dy === 1 ? 4 : 8;
+  const opp = dy === -1 ? 4 : dx === 1 ? 8 : dy === 1 ? 1 : 2;
+  return (pa & bit) !== 0 && (pb & opp) !== 0;
 }
 
 /** @deprecated session-14 lane join; roadsConnect is the rule now. */

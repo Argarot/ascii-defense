@@ -62,7 +62,7 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     // row 2, folds at the border and returns west along row 1, exits...
     // nowhere else - one crossing, one component, and the folded segments
     // TOUCH vertically without connecting (no shortcut across the fold).
-    const sFold = g('GGGGG', 'G<<<G', 'R>>^G', 'GGGGG', 'GGGGG');
+    const sFold = g('GGGGG', 'G-7GG', 'R-JGG', 'GGGGG', 'GGGGG');
     expect(validateTileCells(sFold)).toEqual([]);
     const conn = deriveConnectors(sFold);
     expect(conn).toEqual({ n: false, e: false, s: false, w: true });

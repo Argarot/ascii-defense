@@ -76,7 +76,7 @@ export interface HudState {
   /** The claim card, when an unclaimed cache cell is selected (PRD sec 4.6). */
   cache: { cost: number; affordable: boolean } | null;
   /** The prospect card, when a rock cell is selected. */
-  rock: { cost: number; affordable: boolean; job: { pct: number } | null } | null;
+  rock: { cost: number; affordable: boolean; seconds: number; job: { pct: number } | null } | null;
   /** Animation phase 0..1 - preview numbers pulse on it. */
   phase: number;
 }
@@ -270,7 +270,7 @@ export class HudPanel {
         term.write(0, y++, '='.repeat(Math.max(1, Math.round((s.rock.job.pct / 100) * (W - 2)))), role('ui.accent'));
       } else {
         const can = s.rock.affordable;
-        this.button(0, y, W - 6, `PROSPECT - $${s.rock.cost} + time`, can ? role('ui.bg') : role('ui.dim'), can ? role('ui.accent') : role('ui.grid'));
+        this.button(0, y, W - 6, `PROSPECT - $${s.rock.cost} \u00b7 ${s.rock.seconds}s`, can ? role('ui.bg') : role('ui.dim'), can ? role('ui.accent') : role('ui.grid'));
         if (can) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'prospect' } });
       }
     } else if (s.core) {

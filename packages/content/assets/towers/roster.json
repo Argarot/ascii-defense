@@ -179,16 +179,14 @@
         {
           "choices": [
             {
-              "name": "Deep Drill",
-              "cost": 60,
-              "mods": {
-                "production": 1
-              }
-            },
-            {
               "name": "Survey",
               "cost": 60,
-              "unlocks": "prospect"
+              "unlocks": "surveySpeed"
+            },
+            {
+              "name": "Automation",
+              "cost": 60,
+              "unlocks": "surveyAuto"
             }
           ]
         },

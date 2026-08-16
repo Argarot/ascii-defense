@@ -144,11 +144,11 @@ describe('replay (WBS 1.4.8)', () => {
     // you broke determinism or altered the sim's evolution - investigate
     // before touching the constant. If you did intend it, update the value
     // in the same commit and say why in its message.
-    // 2081553768 -> 465947152 on 2026-08-16 (session 13): composition now
-    // escalates in kind (weighted picks + elite waves) and hashState covers
-    // vein draw-down state - intended behaviour changes; the round-trip test
-    // above still proves bit-identical replay.
-    expect(sim.hashState()).toBe(465947152);
+    // 465947152 -> 3768274921 on 2026-08-16 (playtest-4 round): the map
+    // generator fills enclosed voids and allows plain ground in the outer
+    // ring, changing the golden seed's map - an intended generation change;
+    // the round-trip test above still proves bit-identical replay.
+    expect(sim.hashState()).toBe(3768274921);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

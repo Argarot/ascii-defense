@@ -103,9 +103,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             },
             {
               name: string;
@@ -126,9 +126,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             }
           ];
         },
@@ -157,9 +157,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             },
             {
               name: string;
@@ -180,9 +180,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             }
           ];
         },
@@ -211,9 +211,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             },
             {
               name: string;
@@ -234,9 +234,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             }
           ];
         }
@@ -335,9 +335,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             },
             {
               name: string;
@@ -358,9 +358,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             }
           ];
         },
@@ -389,9 +389,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             },
             {
               name: string;
@@ -412,9 +412,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             }
           ];
         },
@@ -443,9 +443,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             },
             {
               name: string;
@@ -466,9 +466,9 @@ export interface TowerRoster {
                 productionEveryTicks?: number;
               };
               /**
-               * Capability grant: 'prospect' opens rock prospecting (Survey path).
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
                */
-              unlocks?: 'prospect';
+              unlocks?: 'surveySpeed' | 'surveyAuto';
             }
           ];
         }
@@ -684,9 +684,10 @@ export const towersSchema = {
                         }
                       },
                       "unlocks": {
-                        "description": "Capability grant: 'prospect' opens rock prospecting (Survey path).",
+                        "description": "Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.",
                         "enum": [
-                          "prospect"
+                          "surveySpeed",
+                          "surveyAuto"
                         ]
                       }
                     }
