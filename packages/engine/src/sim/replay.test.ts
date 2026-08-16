@@ -144,11 +144,12 @@ describe('replay (WBS 1.4.8)', () => {
     // you broke determinism or altered the sim's evolution - investigate
     // before touching the constant. If you did intend it, update the value
     // in the same commit and say why in its message.
-    // 2829733585 -> 3000153804 on 2026-08-16: hashState grew to cover relic
-    // state (held/cooldowns/used/offer/freeze/boost) - a deliberate state-
-    // space extension, not a behaviour change; the replay round-trip test
-    // above proved bit-identical evolution before and after.
-    expect(sim.hashState()).toBe(3000153804);
+    // 3000153804 -> 2081553768 on 2026-08-16: DEFAULT_DIFFICULTY gained its
+    // geometric term (hpGeometric 1.06), chosen from the balance lab's sweep
+    // (harness/src/lab) - an INTENDED behaviour change ending the linear
+    // curve's stable state. Round-trip test above still proves bit-identical
+    // replay under the new curve.
+    expect(sim.hashState()).toBe(2081553768);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

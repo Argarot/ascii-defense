@@ -57,6 +57,52 @@ export interface SimOptions {
   interWaveTicks?: number;
   /** The unlocked relic pool (PRD sec 7). Absent = no relic layer (tests). */
   relicDefs?: readonly RelicDef[];
+  /** Wave scaling knobs; DEFAULT_DIFFICULTY when absent. */
+  difficulty?: DifficultySpec;
+}
+
+/**
+ * Wave scaling as DATA (WBS 1.7.3): the lab sweeps candidates, calibration
+ * commits the winner. hp(w) = base * (1 + hpLinear*(w-1)) * hpGeometric^(w-1);
+ * count(w) = round((countBase + countLinear*(w-1)) * countGeometric^(w-1)).
+ * Geometric terms computed by repeated multiplication, never Math.pow -
+ * pow's precision is implementation-defined and would split replay hashes
+ * across engines, the same reason hypot is banned.
+ */
+export interface DifficultySpec {
+  hpLinear: number;
+  hpGeometric: number;
+  countBase: number;
+  countLinear: number;
+  countGeometric: number;
+}
+
+/**
+ * Chosen by the balance lab 2026-08-16 (see harness/src/lab). The old curve
+ * was hpLinear 0.18 with NO geometric term - threat grew linearly while
+ * player power compounded, so a five-tower build coasted past wave 100
+ * (Daniil's screenshots). The geometric term guarantees every build's
+ * throughput is eventually outgrown: there is no stable state (PRD sec 9.1).
+ */
+export const DEFAULT_DIFFICULTY: DifficultySpec = {
+  hpLinear: 0.18,
+  hpGeometric: 1.06,
+  countBase: 6,
+  countLinear: 4,
+  countGeometric: 1,
+};
+
+/** wave >= 1. Deterministic: geometric term by repeated multiplication. */
+export function waveHpScale(d: DifficultySpec, wave: number): number {
+  let geo = 1;
+  for (let i = 1; i < wave; i++) geo *= d.hpGeometric;
+  return (1 + d.hpLinear * (wave - 1)) * geo;
+}
+
+export function waveCount(d: DifficultySpec, wave: number): number {
+  let geo = 1;
+  for (let i = 1; i < wave; i++) geo *= d.countGeometric;
+  return Math.max(1, Math.round((d.countBase + d.countLinear * (wave - 1)) * geo));
 }
 
 /** D4 (closed 2026-08-16): a pick-1-of-3 offer every this many waves. */
@@ -195,6 +241,7 @@ export class Sim {
   private readonly spawnEvery: number;
   private readonly maxSpawns: number;
   private readonly interWaveTicks: number;
+  private readonly difficulty: DifficultySpec;
   private spawnTimer = 0;
 
   constructor(
@@ -211,6 +258,7 @@ export class Sim {
     this.coreHpMax = opts.coreHp ?? 50;
     this.coreHp = this.coreHpMax;
     this.interWaveTicks = opts.interWaveTicks ?? 160;
+    this.difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
     this.betweenTimer = Math.min(this.interWaveTicks, 60); // first wave comes fast
     this.occupancy = new Uint16Array(opts.cellsW * opts.cellsH);
     this.cellsMut = opts.cells.slice();
@@ -766,7 +814,7 @@ export class Sim {
       this.betweenTimer = this.interWaveTicks;
       // Compose the wave: bigger and meaner as numbers grow.
       const waves = this.rng.stream('waves');
-      const count = 6 + 4 * (this.wave - 1);
+      const count = waveCount(this.difficulty, this.wave);
       const available: number[] = [];
       this.opts.enemyDefs.forEach((d, i) => {
         if ((d.minWave ?? 1) <= this.wave) available.push(i);
@@ -792,9 +840,8 @@ export class Sim {
     this.gen[i]++;
     this.spawned++;
     this.enemyDefIdx[i] = defIdx;
-    // Waves scale hp steeply: holding wave N with wave N-3's firepower must
-    // fail (Daniil). Trickle mode stays flat for tests.
-    const hpScale = this.mode === 'waves' ? 1 + 0.18 * Math.max(0, this.wave - 1) : 1;
+    // Waves scale hp by the difficulty data. Trickle mode stays flat for tests.
+    const hpScale = this.mode === 'waves' ? waveHpScale(this.difficulty, Math.max(1, this.wave)) : 1;
     this.hp[i] = def.hp * hpScale;
     this.shield[i] = def.shield ?? 0;
     this.slowTicks[i] = 0;
