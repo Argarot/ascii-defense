@@ -49,7 +49,7 @@ const POOL: RelicDef[] = [
   { id: 'tithe', name: 'Tithe', kind: 'passive', desc: '', effects: { killRefundScrap: 2 } },
   { id: 'vein_tap', name: 'Vein Tap', kind: 'passive', desc: '', effects: { buildOnRock: true } },
   { id: 'ballistics', name: 'Ballistics', kind: 'passive', desc: '', effects: { damageMul: 1.2 } },
-  { id: 'foundry', name: 'Foundry', kind: 'consumable', desc: '', effects: { offVeinScrap: true } },
+  { id: 'flashfreeze', name: 'Flash Freeze', kind: 'consumable', desc: '', effects: { freezeTicks: 30 } },
   { id: 'orbital', name: 'Orbital', kind: 'active', desc: '', cooldownTicks: 100, effects: { orbitalDamage: 400, orbitalRadius: 3 } },
   { id: 'stasis', name: 'Stasis', kind: 'active', desc: '', cooldownTicks: 100, effects: { freezeTicks: 50 } },
   { id: 'deep_vein', name: 'Deep Vein', kind: 'active', desc: '', cooldownTicks: 100, effects: { productionMul: 5, boostTicks: 200 } },
@@ -208,20 +208,23 @@ describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
     expect(sim.buildTower(rock.x, rock.y, 'bolt')).toBe(true);
   });
 
-  it('foundry (consumable): inert until USED, then refineries mine scrap anywhere', () => {
-    const { cells, cellsW, cellsH, simOpts } = makeWorld(11);
-    const sim = new Sim(11, simOpts);
-    const ground = cellOfType(cells, cellsW, cellsH, 'G');
-    grant(sim, 'foundry');
-    // Held but unspent: the rule is intact.
-    expect(sim.canBuildDefAt(ground.x, ground.y, 'refinery')).toBe(false);
-    expect(sim.useConsumable('foundry')).toBe(true);
-    expect(sim.useConsumable('foundry')).toBe(false); // one use
-    expect(sim.buildTower(ground.x, ground.y, 'refinery')).toBe(true);
-    const scrapBefore = sim.scrap;
-    for (let t = 0; t < 40; t++) sim.tick();
-    expect(sim.scrap).toBeGreaterThanOrEqual(scrapBefore + 1); // scrap, off-vein
-    expect(sim.ore[0]).toBe(0); // and NOT ore
+  it('a consumable acts once and FREES its slot (1.7.6)', () => {
+    const { simOpts } = makeWorld(41, { spawnEveryTicks: 2, maxSpawns: 8 });
+    const sim = new Sim(41, simOpts);
+    grant(sim, 'flashfreeze');
+    grant(sim, 'tithe');
+    for (let t = 0; t < 200; t++) sim.tick();
+    const posBefore = [sim.posX[0], sim.posY[0]];
+    expect(sim.useConsumable('flashfreeze')).toBe(true);
+    // The slot is VACATED, not tombstoned - only tithe remains.
+    expect(sim.heldRelicInfo().map((h) => h.def.id)).toEqual(['tithe']);
+    expect(sim.useConsumable('flashfreeze')).toBe(false); // gone
+    // And its effect landed: the board is frozen for the window.
+    for (let t = 0; t < 29; t++) sim.tick();
+    if (sim.alive[0]) {
+      expect(sim.posX[0]).toBe(posBefore[0]);
+      expect(sim.posY[0]).toBe(posBefore[1]);
+    }
   });
 
   it('orbital: targeted blast kills what it covers, then cools down', () => {

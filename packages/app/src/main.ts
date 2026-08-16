@@ -19,7 +19,6 @@ import {
   TileLibrary,
   contentHashOf,
   createRng,
-  effectiveStats,
   generateMap,
   resolveCells,
 } from '@ascii-defense/engine';
@@ -48,7 +47,7 @@ const load = <T>(p: string): Promise<T> =>
 const GLYPH_PX_W = 5;
 const GLYPH_PX_H = 8;
 const TICK_MS = 1000 / TICK_HZ;
-const SPEEDS = [0, 1, 2, 4] as const;
+const SPEEDS = [0, 1, 2, 4, 8] as const;
 
 async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
@@ -118,9 +117,7 @@ async function main(): Promise<void> {
             ? ('cooling' as const)
             : ('ready' as const)
           : h.def.kind === 'consumable'
-            ? h.used
-              ? ('used' as const)
-              : ('consumable' as const)
+            ? ('consumable' as const)
             : ('passive' as const);
       return { label: slotTag(h.def.name), name: h.def.name, state, cooldownSec: Math.ceil(h.cooldown / TICK_HZ) };
     });
@@ -289,7 +286,7 @@ async function main(): Promise<void> {
     if (infoTower && hudHover?.kind === 'choose' && sim.choiceCost(infoTower, hudHover.tier, hudHover.option) !== null) {
       const next = [...infoTower.choices] as [number, number, number];
       next[hudHover.tier] = hudHover.option;
-      effPreview = effectiveStats(sim.towerDef(infoTower), next);
+      effPreview = sim.statsWith(infoTower, next);
     }
     const toStats = (e: NonNullable<typeof eff>) => ({
       dmg: Math.round(e.damage * 10) / 10,
@@ -525,6 +522,7 @@ async function main(): Promise<void> {
     if (e.key === '1') { speedIdx = 1; dirty = true; }
     if (e.key === '2') { speedIdx = 2; dirty = true; }
     if (e.key === '3') { speedIdx = 3; dirty = true; }
+    if (e.key === '4') { speedIdx = 4; dirty = true; }
     if (e.key === 'g' || e.key === 'G') { showGrid = !showGrid; dirty = true; }
     if ((e.key === 'x' || e.key === 'X' || e.key === 'Delete') && selected) {
       if (sim.sellTower(selected.x, selected.y)) dirty = true;

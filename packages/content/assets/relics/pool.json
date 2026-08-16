@@ -65,15 +65,6 @@
       }
     },
     {
-      "id": "foundry",
-      "name": "Foundry",
-      "kind": "consumable",
-      "desc": "Use: refineries may stand anywhere, producing Scrap off the vein. Lasts the run.",
-      "effects": {
-        "offVeinScrap": true
-      }
-    },
-    {
       "id": "orbital",
       "name": "Orbital Lance",
       "kind": "active",

@@ -90,7 +90,7 @@ export interface HudRelicSlot {
   /** Two-letter tag, '' when empty. */
   label: string;
   name: string;
-  state: 'empty' | 'passive' | 'ready' | 'cooling' | 'consumable' | 'used';
+  state: 'empty' | 'passive' | 'ready' | 'cooling' | 'consumable';
   /** Seconds until an active is ready again; 0 otherwise. */
   cooldownSec: number;
 }
@@ -289,9 +289,7 @@ export class HudPanel {
                 ? [role('ui.dim'), role('ui.grid'), `[${String(Math.min(99, slot.cooldownSec)).padStart(2)}]`]
                 : slot.state === 'consumable'
                   ? [role('ui.bg'), role('terrain.ore.lit'), `[${slot.label}]`]
-                  : slot.state === 'used'
-                    ? [role('ui.grid'), role('ui.bg'), `[--]`]
-                    : [role('ui.text'), role('ui.grid'), `[${slot.label}]`]; // passive
+                  : [role('ui.text'), role('ui.grid'), `[${slot.label}]`]; // passive
         term.write(x0, row, text, fg, bg);
         if (slot.state !== 'empty') {
           this.regions.push({ row, x0, x1: x0 + 4, action: { kind: 'relic', index: i } });
@@ -317,10 +315,14 @@ export class HudPanel {
       y++;
       // Stats, with hover-preview deltas pulsing green (Daniil: see what
       // you are buying BEFORE you buy it).
+      // Every displayed stat is higher-is-better, so a lower preview is a
+      // DOWNGRADE and renders red - a green arrow pointing down is how a
+      // range-18 tower once previewed 8.5 without anyone flinching (1.7.1).
       const stat = (label: string, cur: number | string, pre: number | string | null): void => {
         term.write(0, y, `${label} ${cur}`, role('ui.text'));
         if (pre !== null && `${pre}` !== `${cur}`) {
-          term.write(`${label} ${cur}`.length + 1, y, `-> ${pre}`, previewCol);
+          const worse = parseFloat(`${pre}`) < parseFloat(`${cur}`);
+          term.write(`${label} ${cur}`.length + 1, y, `-> ${pre}`, worse ? role('enemy.fast') : previewCol);
         }
         y++;
       };
