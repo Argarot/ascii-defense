@@ -53,11 +53,9 @@ The headline findings, because they reshaped the plan:
 Sessions and gates live in [ROADMAP.md](docs/ROADMAP.md#session-ledger). Short
 form:
 
-1. **Session 12 — the balance lab** (WBS 1.5.3/1.5.4). Headless runner plus an
-   analytic model, then a difficulty curve *derived* from it rather than
-   guessed. Riding along: the preview fold bug, consumables freeing their slot,
-   cutting the `foundry` relic, 8× speed. Gate: the lab predicts a breach wave
-   and a headless run matches the prediction.
+1. **Session 12 — DONE** (PRs #51–#52): triage shipped, difficulty is data,
+   the lab explained the wave-48/100 run (linear curve = no forcing function)
+   and chose hpGeometric 1.06. Run the sweep any time: `node tools/lab.mjs`.
 2. Session 13 — finite ore, slower mining, the run ends (D6 finite).
 3. Session 14 — roads that touch without connecting (WBS 2.16).
 4. Sessions 15–24 — map variance, the effects engine, damage types, attack
