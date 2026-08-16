@@ -147,6 +147,75 @@
       ]
     },
     {
+      "id": "refinery",
+      "name": "Refinery",
+      "cost": 30,
+      "range": 0.5,
+      "fireEveryTicks": 1,
+      "attack": "none",
+      "production": {
+        "ore": 1,
+        "everyTicks": 60
+      },
+      "tiers": [
+        {
+          "choices": [
+            {
+              "name": "Wide Bore",
+              "cost": 30,
+              "mods": {
+                "production": 1
+              }
+            },
+            {
+              "name": "Fast Cycle",
+              "cost": 30,
+              "mods": {
+                "productionEveryTicks": -15
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Deep Drill",
+              "cost": 60,
+              "mods": {
+                "production": 1
+              }
+            },
+            {
+              "name": "Twin Shaft",
+              "cost": 60,
+              "mods": {
+                "productionEveryTicks": -15
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Mother Lode",
+              "cost": 120,
+              "mods": {
+                "production": 2
+              }
+            },
+            {
+              "name": "Perpetual",
+              "cost": 120,
+              "mods": {
+                "productionEveryTicks": -10,
+                "production": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "frost",
       "name": "Frost Emitter",
       "cost": 25,

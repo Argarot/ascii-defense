@@ -49,6 +49,18 @@ export interface ProjectileSpec {
   slowTicks?: number;
 }
 
+/**
+ * Resource yield per cycle (Refinery). Ore counts only while the tower stands
+ * on an ore cell - PRD sec 5.3. scrap is reserved shape for the foundry relic
+ * (PRD sec 7.4): the field exists so the relic is a data change, not a schema
+ * migration.
+ */
+export interface ProductionSpec {
+  ore?: number;
+  scrap?: number;
+  everyTicks: number;
+}
+
 /** Additive stat deltas an upgrade choice applies. */
 export interface StatMods {
   damage?: number;
@@ -56,6 +68,8 @@ export interface StatMods {
   fireEveryTicks?: number;
   explodeRadius?: number;
   slowTicks?: number;
+  production?: number;
+  productionEveryTicks?: number;
 }
 
 export interface ChoiceDef {
@@ -76,9 +90,11 @@ export interface TowerDef {
   /** Cells. */
   range: number;
   fireEveryTicks: number;
-  /** 'projectile' fires shots; 'pulse' hits everything in range on cooldown. */
-  attack?: 'projectile' | 'pulse';
-  projectile: ProjectileSpec;
+  /** 'projectile' fires shots; 'pulse' hits everything in range on cooldown; 'none' never attacks (producers). */
+  attack?: 'projectile' | 'pulse' | 'none';
+  /** Absent on attack:'none' producers (Refinery). */
+  projectile?: ProjectileSpec;
+  production?: ProductionSpec;
   /** 3 tiers x 2 exclusive choices = 14 tower variants (Daniil's redesign). */
   tiers?: readonly TowerTierDef[];
 }
@@ -90,6 +106,10 @@ export interface EffectiveStats {
   fireEveryTicks: number;
   explodeRadius: number;
   slowTicks: number;
+  /** Yield per production cycle; 0 for non-producers. */
+  production: number;
+  /** Production cycle length in ticks; 0 for non-producers. */
+  productionEveryTicks: number;
 }
 
 /**
@@ -106,11 +126,13 @@ export function canChoose(choices: readonly number[], tier: number): boolean {
 /** Fold a tower's base stats and its committed choices. */
 export function effectiveStats(def: TowerDef, choices: readonly number[]): EffectiveStats {
   const out: EffectiveStats = {
-    damage: def.projectile.damage,
+    damage: def.projectile?.damage ?? 0,
     range: def.range,
     fireEveryTicks: def.fireEveryTicks,
-    explodeRadius: def.projectile.explodeRadius ?? 0,
-    slowTicks: def.projectile.slowTicks ?? 0,
+    explodeRadius: def.projectile?.explodeRadius ?? 0,
+    slowTicks: def.projectile?.slowTicks ?? 0,
+    production: (def.production?.ore ?? 0) + (def.production?.scrap ?? 0),
+    productionEveryTicks: def.production?.everyTicks ?? 0,
   };
   def.tiers?.forEach((tierDef, ti) => {
     const pick = choices[ti];
@@ -122,7 +144,11 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     out.fireEveryTicks += m.fireEveryTicks ?? 0;
     out.explodeRadius += m.explodeRadius ?? 0;
     out.slowTicks += m.slowTicks ?? 0;
+    out.production += m.production ?? 0;
+    out.productionEveryTicks += m.productionEveryTicks ?? 0;
   });
   out.fireEveryTicks = Math.max(2, out.fireEveryTicks);
+  // A producer can be upgraded faster, never into a per-tick firehose.
+  if (def.production) out.productionEveryTicks = Math.max(10, out.productionEveryTicks);
   return out;
 }

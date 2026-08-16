@@ -88,6 +88,20 @@ async function main(): Promise<void> {
   let hudHover: import('@ascii-defense/view').HudAction | null = null;
   let dirty = true;
 
+  // Ore carries across rerolls in memory - the demo stand-in for M2's real
+  // banking (PRD sec 6). Three carries, then the fourth reroll wipes: enough
+  // to feel persistence without an actual store.
+  let carriedOre = 0;
+  let oreCarries = 0;
+  const bankForReroll = (): void => {
+    if (++oreCarries > 3) {
+      carriedOre = 0;
+      oreCarries = 0;
+    } else {
+      carriedOre = sim.ore[0];
+    }
+  };
+
   const setSeed = (s: number): void => {
     seed = s;
     // Difficulty knobs (PRD sec 4.4), randomized per seed for the demo so the
@@ -121,6 +135,7 @@ async function main(): Promise<void> {
       towerDefs: TOWER_DEFS,
       mode: 'waves',
       coreHp: 50,
+      startingOre: carriedOre,
     });
     selected = null;
     history.replaceState(null, '', `?seed=${seed}`);
@@ -170,6 +185,10 @@ async function main(): Promise<void> {
       dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
       range: Math.round(e.range * 10) / 10,
       slow: e.slowTicks,
+      prod:
+        e.productionEveryTicks > 0
+          ? `${((e.production / e.productionEveryTicks) * TICK_HZ).toFixed(2)}/s`
+          : null,
     });
     view.render({
       hover,
@@ -200,6 +219,7 @@ async function main(): Promise<void> {
 
     hud.render({
       scrap: sim.scrap,
+      ore: sim.ore[0],
       kills: sim.kills,
       coreHp: sim.coreHp,
       coreHpMax: sim.coreHpMax,
@@ -225,6 +245,10 @@ async function main(): Promise<void> {
               kills: infoTower.kills,
               stats: toStats(eff),
               preview: effPreview ? toStats(effPreview) : null,
+              offVein:
+                def.production !== undefined &&
+                (def.production.ore ?? 0) > 0 &&
+                sim.cellAt(infoTower.cellX, infoTower.cellY) !== 'O',
               priority: infoTower.priority,
               tiers: (def.tiers ?? []).map((tierDef, ti) => ({
                 choices: tierDef.choices.map((c, ci) => {
@@ -318,7 +342,10 @@ async function main(): Promise<void> {
     dirty = true;
   });
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'r' || e.key === 'R') setSeed((seed + 1 + (Date.now() % 997)) % 1_000_000);
+    if (e.key === 'r' || e.key === 'R') {
+      bankForReroll();
+      setSeed((seed + 1 + (Date.now() % 997)) % 1_000_000);
+    }
     if (e.key === ' ') {
       speedIdx = speedIdx === 0 ? 1 : 0;
       dirty = true;
@@ -375,17 +402,24 @@ async function main(): Promise<void> {
   // Debug handle for headless verification (the browser pane throttles rAF,
   // see CONTRIBUTING). Steps the sim and redraws on demand; harmless in prod.
   (globalThis as Record<string, unknown>).__ad = {
-    step: (n: number): { breaches: number; alive: number; kills: number; coreDamage: number } => {
+    step: (n: number): { breaches: number; alive: number; kills: number; coreDamage: number; ore: number } => {
       for (let i = 0; i < n; i++) sim.tick();
       draw();
-      return { breaches: sim.breaches, alive: sim.aliveCount(), kills: sim.kills, coreDamage: sim.coreDamage };
+      return { breaches: sim.breaches, alive: sim.aliveCount(), kills: sim.kills, coreDamage: sim.coreDamage, ore: sim.ore[0] };
     },
-    build: (x: number, y: number): boolean => {
-      const ok = sim.buildTower(x, y, TOWER_DEFS[0].id);
+    build: (x: number, y: number, id?: string): boolean => {
+      const ok = sim.buildTower(x, y, id ?? TOWER_DEFS[0].id);
       draw();
       return ok;
     },
     canBuild: (x: number, y: number): boolean => sim.canBuildAt(x, y),
+    cellAt: (x: number, y: number): string | null => sim.cellAt(x, y),
+    ore: (): number => sim.ore[0],
+    reroll: (): void => {
+      bankForReroll();
+      setSeed((seed + 1) % 1_000_000);
+      draw();
+    },
     enemies: collectEnemies,
   };
 }

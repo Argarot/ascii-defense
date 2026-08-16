@@ -39,6 +39,8 @@ export interface SimOptions {
   /** Trickle: stop after this many; 0 = endless. */
   maxSpawns?: number;
   startingScrap?: number;
+  /** Ore carried in from a previous run (tier-1; the demo's 3-reroll carry). */
+  startingOre?: number;
   coreHp?: number;
   /** Waves: pause between waves, in ticks. */
   interWaveTicks?: number;
@@ -49,6 +51,8 @@ export interface Tower {
   cellY: number;
   defIdx: number;
   cooldown: number;
+  /** Ticks until the next production cycle completes; producers only. */
+  prodCooldown: number;
   kills: number;
   priority: Priority;
   /** Committed choice per tier; -1 = not yet chosen (either/or tree). */
@@ -110,6 +114,11 @@ export class Sim {
   spawned = 0;
   kills = 0;
   scrap = 0;
+  /**
+   * Ore, stored per tier (invariant 9) with one tier live in M1. Index 0 is
+   * tier 1 - what Refineries mine and the Core will spend (PRD sec 6).
+   */
+  readonly ore: number[] = [0];
   coreHp: number;
   readonly coreHpMax: number;
   /** 'running' until the Core falls. */
@@ -141,6 +150,7 @@ export class Sim {
     this.spawnEvery = opts.spawnEveryTicks ?? TICK_HZ;
     this.maxSpawns = opts.maxSpawns ?? 0;
     this.scrap = opts.startingScrap ?? 100;
+    this.ore[0] = opts.startingOre ?? 0;
     this.coreHpMax = opts.coreHp ?? 50;
     this.coreHp = this.coreHpMax;
     this.interWaveTicks = opts.interWaveTicks ?? 160;
@@ -171,9 +181,17 @@ export class Sim {
     const def = this.opts.towerDefs[defIdx];
     if (this.scrap < def.cost) return false;
     this.scrap -= def.cost;
-    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, kills: 0, priority: 'first', choices: [-1, -1, -1] });
+    // Producers earn their first yield after one full cycle, not on placement.
+    const prodCooldown = def.production ? effectiveStats(def, [-1, -1, -1]).productionEveryTicks : 0;
+    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, priority: 'first', choices: [-1, -1, -1] });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
     return true;
+  }
+
+  /** The map's cell under (x, y), or null off-board/void. */
+  cellAt(x: number, y: number): CellType | null {
+    if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return null;
+    return this.opts.cells[y * this.opts.cellsW + x];
   }
 
   /** Cost of taking a tier's option, or null when locked/committed/absent. */
@@ -253,8 +271,40 @@ export class Sim {
     if (this.mode === 'waves') this.wavePhase();
     else this.tricklePhase();
     this.towerPhase();
+    this.productionPhase();
     this.projectilePhase();
     this.walkPhase();
+  }
+
+  // ---- production ----------------------------------------------------------
+
+  /**
+   * Refineries mine. Ore counts ONLY while the tower stands on an ore cell
+   * (PRD sec 5.3) - off the vein the cycle timer holds rather than ticking
+   * toward nothing, so when prospecting (1.6.6) turns rock to ore mid-run, an
+   * adjacent idle Refinery resumes instead of instantly paying out a stalled
+   * timer. scrap production is reserved shape (foundry relic) and pays
+   * unconditionally when content ever carries it.
+   */
+  private productionPhase(): void {
+    for (const tower of this.towers) {
+      if (!tower) continue;
+      const def = this.opts.towerDefs[tower.defIdx];
+      const prod = def.production;
+      if (!prod) continue;
+      const onVein = this.cellAt(tower.cellX, tower.cellY) === 'O';
+      const oreShare = prod.ore ?? 0;
+      const scrapShare = prod.scrap ?? 0;
+      if ((oreShare === 0 || !onVein) && scrapShare === 0) continue; // idle: timer holds
+      if (--tower.prodCooldown > 0) continue;
+      const eff = this.stats(tower);
+      tower.prodCooldown = eff.productionEveryTicks;
+      // A def mixing ore and scrap splits the folded yield by its base ratio;
+      // shipped content never does (ore-only), but the shape must not lie.
+      const total = oreShare + scrapShare;
+      if (onVein && oreShare > 0) this.ore[0] += Math.round((eff.production * oreShare) / total);
+      if (scrapShare > 0) this.scrap += Math.round((eff.production * scrapShare) / total);
+    }
   }
 
   // ---- spawning ------------------------------------------------------------
@@ -328,9 +378,10 @@ export class Sim {
     for (let ti = 0; ti < this.towers.length; ti++) {
       const tower = this.towers[ti];
       if (!tower) continue;
+      const def = this.opts.towerDefs[tower.defIdx];
+      if (def.attack === 'none') continue; // producers fight in productionPhase
       if (--tower.cooldown > 0) continue;
       const eff = this.stats(tower);
-      const def = this.opts.towerDefs[tower.defIdx];
       if (def.attack === 'pulse') {
         // No projectile: the tower IS the payload. Fires only when someone
         // is inside the field; hits everyone inside it at once.
@@ -369,6 +420,7 @@ export class Sim {
 
   private fire(towerIdx: number, tower: Tower, eff: EffectiveStats, target: number): void {
     const spec = this.opts.towerDefs[tower.defIdx].projectile;
+    if (!spec) return; // producers never reach here (attack 'none' skips)
     const p = this.freeProj.pop() ?? (this.projHigh < PROJ_CAP ? this.projHigh++ : -1);
     if (p === -1) return;
     const sx = tower.cellX + 0.5;
@@ -483,6 +535,7 @@ export class Sim {
 
   private emitPulse(towerIdx: number, tower: Tower, eff: EffectiveStats): void {
     const spec = this.opts.towerDefs[tower.defIdx].projectile;
+    if (!spec) return; // producers never reach here (attack 'none' skips)
     const cx = tower.cellX + 0.5;
     const cy = tower.cellY + 0.5;
     const r2 = eff.range * eff.range;
