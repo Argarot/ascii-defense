@@ -17,6 +17,7 @@ export {
   deriveConnectors,
   validateTileCells,
   tileRimMask,
+  segmentRimMask,
   tilePartition,
   partitionKey,
   crossingsInterconnect,

@@ -12,7 +12,7 @@ import {
   CELL_TYPES,
   TILE_SIZE,
   deriveConnectors,
-  tileRimMask,
+  segmentRimMask,
   validateTileCells,
   type CellType,
 } from '@ascii-defense/engine';
@@ -207,7 +207,7 @@ async function main(): Promise<void> {
     term.clear(role('ui.bg'));
     for (let cy = 0; cy < TILE_SIZE; cy++)
       for (let cx = 0; cx < TILE_SIZE; cx++)
-        drawTerrainCell(term, cells[cy][cx] as CellType, cx * CELL_W, cy * CELL_H, { rim: tileRimMask(cells, cx, cy) });
+        drawTerrainCell(term, cells[cy][cx] as CellType, cx * CELL_W, cy * CELL_H, { rim: segmentRimMask(cells[cy][cx], cx, cy) });
     term.flush();
 
     const conn = deriveConnectors(cells);
