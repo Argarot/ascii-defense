@@ -11,7 +11,7 @@
  * A declared connector cannot disagree with the drawn cells because there is
  * no declared connector.
  */
-import { isCellType, isRoad, isRouteCell, roadsConnect, type CellType } from '../grid/cells';
+import { ROAD_PORTS, isCellType, isRoad, isRouteCell, roadsConnect, type CellType } from '../grid/cells';
 
 export const TILE_SIZE = 5;
 const CENTER = 2; // (TILE_SIZE - 1) / 2
@@ -307,6 +307,36 @@ export function tileRimMask(cells: readonly string[], x: number, y: number): num
     const n = cellAt(cells, nx, ny);
     const joins = n === 'C' ? true : isRoad(n) && roadsConnect(here, n, dx, dy);
     if (!joins) closed |= bit;
+  }
+  return closed;
+}
+
+/**
+ * Closed sides from a cell's OWN declared ports - what the segment IS, not
+ * what it happens to touch. This is the authoring view (Tile Smith): a lone
+ * '-' must read as an east-west road the moment it is painted, whereas
+ * tileRimMask would box it on all four sides because nothing is adjacent
+ * yet, making all six shapes look identical (Daniil, playtest 7).
+ *
+ * Ports are symmetric by construction, so this still reads honestly about
+ * connection: place '|' beside '-' and the '|' shows a kerb facing it,
+ * because it has no port that way and the two genuinely do not join.
+ * A port pointing off-tile counts as open only at an edge centre, where a
+ * crossing can actually derive.
+ */
+export function segmentRimMask(cell: string, x: number, y: number): number {
+  const ports = ROAD_PORTS[cell as CellType];
+  if (ports === undefined) return 0;
+  let closed = 0;
+  const dirs: [number, number, number, boolean][] = [
+    [0, -1, 1, y === 0 && x === CENTER],
+    [1, 0, 2, x === TILE_SIZE - 1 && y === CENTER],
+    [0, 1, 4, y === TILE_SIZE - 1 && x === CENTER],
+    [-1, 0, 8, x === 0 && y === CENTER],
+  ];
+  for (const [dx, dy, bit, atCrossing] of dirs) {
+    const offTile = x + dx < 0 || y + dy < 0 || x + dx >= TILE_SIZE || y + dy >= TILE_SIZE;
+    if ((ports & bit) === 0 || (offTile && !atCrossing)) closed |= bit;
   }
   return closed;
 }
