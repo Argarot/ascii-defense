@@ -98,15 +98,23 @@ export function drawTerrainCell(
       if (shade.litTop && y === 0) fg = lit;
       if (shade.shadowBottom && y === CELL_H - 1) fg = dark; // sinks into the bg
       if (rimmed) {
-        // Closed sides read as a SHADE, not a wall (playtest 5: the glyph
-        // rim was bulky and asymmetric across the 5x3 cell). Same treatment
-        // both orientations: keep the road glyph, darken its plate.
+        // A closed side is an EDGE, not a wall. Two corrections from the
+        // first attempt (Daniil, playtest 5 + 6):
+        //  - it was a near-black plate, so roads read as dark bands;
+        //  - a cell is 5 glyphs wide but only 3 tall, so rimming a ROW
+        //    darkened 33% of the cell while rimming a COLUMN darkened 20%
+        //    - horizontal roads came out visibly heavier than vertical.
+        // Now: a gentle multiplicative darkening, strength tuned per axis so
+        // the two orientations carry the SAME perceived weight
+        // (0.33 x 0.18 ~= 0.20 x 0.30).
         const rimN = (ports! & 1) === 0 && y === 0;
         const rimE = (ports! & 2) === 0 && x === CELL_W - 1;
         const rimS = (ports! & 4) === 0 && y === CELL_H - 1;
         const rimW = (ports! & 8) === 0 && x === 0;
         if (rimN || rimE || rimS || rimW) {
-          term.put(gx0 + x, gy0 + y, g, dark, mix(bg, '#000000', 0.4));
+          const horizontalEdge = rimN || rimS;
+          term.put(gx0 + x, gy0 + y, g, mix(fg, bg, 0.45), bg);
+          term.shade(gx0 + x, gy0 + y, horizontalEdge ? 0.82 : 0.7, 0);
           continue;
         }
       }
