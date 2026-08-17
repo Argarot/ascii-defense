@@ -245,7 +245,7 @@ most exciting:
 | ~~13~~ | **DONE** *(PR #54)* — finite veins, 10× mining, tier shape, run ends at wave 20, elite waves, Juggernaut | | |
 | ~~14~~ | **DONE** *(PR #55)* — lanes (in-tile included), directional connectors, route graph, ADD TO POOL | | |
 | ~~15~~ | **DONE** *(PRs #59–#61)* — ports model, transparent modal, no enclosed voids, prospect stacking, carve v3 partitions, generated library, boons, threat bundles | | |
-| 16 | **Effects & animation engine** | WBS 4.1 — frame model, effect entities, sim-event pipeline, explosions, spread, tower cycles, terrain drift, void-as-water | The board is alive and nothing about it touches the simulation |
+| 16 | **Effects & animation engine** *(NEXT — handed to a fresh context; HANDOVER carries the seams)* | WBS 4.1: frame model in sprite schema, effect entities from sim events (`pulses` is the prototype), explosions, spread, tower idle cycles, terrain drift, void-as-water; reduced-motion flag from day one | The board is alive and none of it touches the simulation |
 | 17 | **Naming** *(mini)* | D8 — the printing-trade lexicon. Moved ahead of new content (Daniil): naming towers and enemies after they exist means renaming them | A lexicon Daniil likes, before the content that would inherit the old one |
 | 18 | **Enemies mean something** | Damage types + resistances/immunities, shield brackets, health and status marks, +2–3 enemies. Verified in the lab | **No single tower type clears a wave** — proven by a lab sweep, not by opinion |
 | 19 | **Towers & attack shapes** | Chain, beam over a run of road, arc/wedge AoE (needs 16); towers 5–7 | Each new tower answers a wave the others cannot |
