@@ -123,7 +123,14 @@ of whether to keep building is settled.
 
 ---
 
-## M2 — A complete run *(sessions 12–21)*
+> **Milestones are interleaved, and the session ledger is authoritative for
+> order.** As of 2026-08-17 the shell (M4) is split across sessions 16, 18 and
+> 21 while M2 finishes at session 20 — deliberately, because the shell is what
+> makes the game handable and the effects engine is what stops sprites being
+> authored twice. Read a milestone below for *what it contains and why*; read
+> the ledger for *when*.
+
+## M2 — A complete run *(sessions 12–20, interleaved)*
 
 Reshaped 2026-08-16 by the first playtest. The headline is not "more content"
 but **making the existing systems demand decisions**: an economy that runs dry,
@@ -133,26 +140,36 @@ one tower the wrong answer, and a difficulty curve that ends every run in death.
 **Gate:** a full run, start to victory or death, that demands decisions
 throughout.
 
-## M4 — The shell *(sessions 22–24)*
+## M4 — The shell *(sessions 16, 18, 21)*
 
 The game stops being a simulation with a URL parameter and becomes something a
 stranger can be handed: title, run setup, pause, run summary, settings,
 persistence with versioning and export, onboarding, accessibility (PRD §15).
+The effects engine (4.1) lives here too, because "what the player sees" is one
+milestone even when it ships across three sessions.
 
 Sequenced **before** calibration and the art pass, because it is what makes
 external playtesting possible — and strangers are the only feedback source we
-have not yet used.
+have not yet used. **Pulled further forward on 2026-08-17** (Daniil) to reach a
+semi-stable alpha before any new content: a worker retrofitted under a dozen
+live screens is surgery it is not under one HUD, and a save schema is cheap to
+version before content churn and expensive after.
 
 **Gate:** a stranger opens the link, plays a run, loses, reads why, starts
 another; progress survives a reload.
 
-## M5 — Content completeness *(sessions 25–27)*
+## M5 — Content completeness *(sessions 22–23)*
 
 8 towers, ~14 enemies, ~40 relics, ~100 tiles, threat levels as data.
 
 **Gate:** two runs do not resemble each other.
 
-## M3 — Trustworthy difficulty *(sessions 28–29)*
+## M3 — Trustworthy difficulty *(sessions 24 and 27)*
+
+Two passes, deliberately: calibration I (session 24) fixes the curves once
+content is complete; calibration II (session 27) re-baselines them after meta
+progression, because tech-tree multipliers and pool unlocks move player power
+underneath whatever calibration I measured *(Daniil, 2026-08-17)*.
 
 Bot policy, calibration across a seed corpus, curves committed as reviewable
 data, human offset from Daniil’s replays, `balance.yml` CI gate, trivial and
@@ -165,22 +182,24 @@ curves we would immediately throw away.
 **Gate:** the harness catches an injected regression; no unwinnable or trivial
 seed across ≥500 runs.
 
-## M6 — Presentation at scale *(sessions 30–32)*
+## M6 — Presentation at scale *(sessions 28–30)*
 
 Full art pass with per-upgrade tower identity, effects for every attack shape,
-biomes. The round-trip **proof** stays early and small (session 22); the
-authoring waits until there is final content to author for.
+biomes. Sequenced after meta progression *(Daniil, 2026-08-17)*: visuals come
+after **all** assets exist, and the meta layer adds tile pools, tree nodes and
+their art surface. The round-trip **proof** (6.1) opens this block — the
+pipeline's first real test, a stated and accepted risk until then.
 
 **Gate:** the board reads as a place, not a diagram.
 
-## M7 — Meta progression, full *(sessions 33–34)*
+## M7 — Meta progression, full *(sessions 25–26)*
 
 Tech tree stage 2, pool unlocks, run history, dailies, replay sharing, Tile
 Smith as an in-game feature.
 
 **Gate:** finishing a run visibly changes the next one.
 
-## M8 — Beta hardening and release *(sessions 35–36)*
+## M8 — Beta hardening and release *(sessions 31–32)*
 
 Performance and bundle budgets in CI, browser matrix, error-path audit, save
 migration testing, **external playtest with strangers**, release process.
@@ -191,12 +210,17 @@ migration testing, **external playtest with strangers**, release process.
 
 ## ◆ Decision points
 
-**After M2 (~session 21):** the systems are complete and demand decisions. If it
+**After the alpha marker (~session 18):** the game is a product shell around a
+working simulation. The check here is Daniil's own — does playing it with menus,
+saves and readable numbers still hold up, before a single new tower is added.
+
+**After M2 (~session 20):** the systems are complete and demand decisions. If it
 is not fun *here*, more content will not fix it.
 
-**After M4 (~session 24):** the first external playtest is possible. Strangers
-are the only evidence that has never been collected, and the answer changes what
-M5–M8 should contain.
+**After session 21:** the first external playtest is possible. Strangers are the
+only evidence that has never been collected, and the answer changes what
+sessions 22–32 should contain. This is the last decision point before the
+expensive half of the project.
 
 ---
 ## Session ledger
@@ -225,45 +249,79 @@ oneself in. A "session" is one focused working stretch.
 **M1 exit gate: PASSED 2026-08-16** — *"the game is fun now, it's just very
 unbalanced and with quite a few holes still."*
 
+| # | Session | Shipped | Gate |
+|---|---|---|---|
+| 12 | The balance lab *(PRs #51–#52)* | Headless runner + analytic model (1.5.3/1.5.4), difficulty derived from a lab sweep (`hpGeometric 1.06`), triage: preview fold bug, consumables free their slot, `foundry` cut, 8× speed | The lab predicted a breach wave and a headless run matched it |
+| 13 | Scarcity, and the run ends *(PR #54)* | Finite ore veins with visible richness, 10× slower mining, run ends at wave 20 with a victory, elite waves, Juggernaut | — |
+| 14 | Roads that touch *(PR #55)* | In-tile lanes, directional connectors, route-as-a-graph (enemies cannot lane-hop), Tile Smith ADD TO POOL | Multi-lane tiles proven not to collide with routing tiles |
+| 15 | Map variance (long) *(PRs #57–#63)* | Port segments, carve v3 edge partitions + turning tunnels, generated tile library (`tilegen.mjs`), boon ground tiers 1–4, threat bundles, transparent modal, timed/stacking prospecting, five playtest fix rounds | Twin bends proven dealt on real maps; every fix round verified live |
+
+*(Sessions 12–15 all shipped on 2026-08-16 — the evidence that the planned
+sessions below were chopped too finely.)*
+
 ### Planned
 
-**Re-planned 2026-08-16** after Daniil pushed back on the first ordering. The
-order below is derived from *what causes rework if done late*, not from what is
-most exciting:
+**Re-planned 2026-08-16** after Daniil pushed back on the first ordering, then
+**re-planned again 2026-08-17**: the shell and legibility work moves ahead of all
+new content, so the game reaches a **semi-stable alpha** early (Daniil), and the
+themed sessions that had been split into chunks are merged back into one session
+each. Sessions 12–15 all shipped in a single day, which is the evidence that the
+chunking was too cautious.
+
+Session numbers are **positional and get renumbered when the order changes** —
+unlike WBS IDs and milestone numbers, which are stable once assigned. A session
+number answers "how far away is this", so a stale one is worse than a moved one.
+Each row carries its previous identity so older commits and PRs stay findable.
+
+The order is derived from *what causes rework if done late*:
 
 | Do early because… | Item |
 |---|---|
-| every tuning number gets computed twice without it | the balance lab |
-| it changes path length (→ difficulty) and what a legal tile is (→ the library grows next) | roads that touch without connecting |
+| every tuning number gets computed twice without it | the balance lab *(done, 12)* |
+| it changes path length (→ difficulty) and what a legal tile is | roads that touch without connecting *(done, 14)* |
 | every sprite gets authored twice without it | the effects & animation engine |
+| retrofitting a worker under live screens is surgery; doing it under one HUD is not | the sim in a Web Worker |
+| save-schema migrations are cheap to prove before content churn, expensive after | persistence |
+| a screen built on unreadable stats gets built twice | legibility before screens |
 | art illustrates names | the naming pass |
+| a stranger's first session is only worth spending once | onboarding after the systems settle |
 | calibrating a moving target is waste | the bot comes *last*, not first |
 
 | # | Session | Contents | Gate |
 |---|---|---|---|
-| 12 | **The balance lab** | WBS 1.5.3 headless runner + 1.5.4 analytic model; then a difficulty curve **derived** from it. Plus quick triage (preview fold bug, consumables free slots, cut `foundry`, 8× speed) | The lab predicts the breach wave for a given build, and a headless run **matches the prediction**. The wave-48 screenshot is the first thing it explains |
-| ~~13~~ | **DONE** *(PR #54)* — finite veins, 10× mining, tier shape, run ends at wave 20, elite waves, Juggernaut | | |
-| ~~14~~ | **DONE** *(PR #55)* — lanes (in-tile included), directional connectors, route graph, ADD TO POOL | | |
-| ~~15~~ | **DONE** *(PRs #59–#61)* — ports model, transparent modal, no enclosed voids, prospect stacking, carve v3 partitions, generated library, boons, threat bundles | | |
-| 16 | **Effects & animation engine** *(NEXT — handed to a fresh context; HANDOVER carries the seams)* | WBS 4.1: frame model in sprite schema, effect entities from sim events (`pulses` is the prototype), explosions, spread, tower idle cycles, terrain drift, void-as-water; reduced-motion flag from day one | The board is alive and none of it touches the simulation |
-| 17 | **Naming** *(mini)* | D8 — the printing-trade lexicon. Moved ahead of new content (Daniil): naming towers and enemies after they exist means renaming them | A lexicon Daniil likes, before the content that would inherit the old one |
-| 18 | **Enemies mean something** | Damage types + resistances/immunities, shield brackets, health and status marks, +2–3 enemies. Verified in the lab | **No single tower type clears a wave** — proven by a lab sweep, not by opinion |
-| 19 | **Towers & attack shapes** | Chain, beam over a run of road, arc/wedge AoE (needs 16); towers 5–7 | Each new tower answers a wave the others cannot |
-| 20 | **Relic economy** | Bigger pool, rarity weighting (D5), fusion, salvage, more consumables, more slots | Full slots is a decision, not a wall; the lab bounds the relic-driven power spread |
-| 21 | **Legibility + worker** | Stat blocks, upgrade descriptions, scrollable panels, larger cards, sim in a Web Worker (D7) | Nothing on screen lies; a hidden tab keeps simulating |
-| 22 | **Shell I — screens** | Screen stack (generalising the offer modal), title menu, run setup, pause overlay, run summary. Plus the art round-trip **proof** (Phase 2 gate, small) | A run starts from a menu and ends on a summary screen |
-| 23 | **Shell II — persistence** | Meta save (Ore, unlocks, history, settings), run save as seed + input log, schema versioning, export/import, settings screen | Close the tab mid-run, come back, continue. A corrupt save says so |
-| 24 | **Shell III — first contact** | Onboarding prompts, how-to-play, colourblind palette, keyboard operation, reduced motion | **A stranger plays unaided** — then actually hand it to one |
-| 25–27 | **Content completeness** | Towers to 8 with distinct attack shapes; enemies to ~14 across the trait matrix; relics to ~40 with fusion recipes; tile pool to ~100 | Two runs do not resemble each other |
-| 28–29 | **Calibration** | WBS 1.5.1/1.5.2 — bot policy, `calibrate`/`check`, human offset from Daniil’s replays, `balance.yml` gate, seed-corpus sweeps | Injected regression caught; no trivial or unwinnable seed in ≥500 runs |
-| 30–32 | **Presentation at scale** | Full art pass with per-upgrade tower identity, effects for every attack shape, biomes | The board reads as a place |
-| 33–34 | **Meta progression, full** | Tech tree stage 2, pool unlocks, run history, dailies, replay sharing, in-game Tile Smith | Finishing a run changes the next one |
-| 35–36 | **Beta hardening + release** | Perf and bundle budgets in CI, browser matrix, error-path audit, save migration tests, external playtest, release process | PRD §17 stable beta |
-What remains genuinely M4-and-later: the full art pass at scale, bridges as tile
-content (cheap once 2.16 ships), towers 8–9, tech tree stages 2–3, dailies and
-replay sharing. The effects engine, offset connectors and the balance harness all
-moved earlier — each was mis-filed as "expansion" when it was really
+| 16 | **Effects & animation engine** *(NEXT)* | WBS 4.1: frame model in the sprite schema, effect entities from sim events (`Sim.pulses` is the prototype), explosions, projectile spread, tower idle cycles, terrain drift, void-as-water; reduced-motion flag from day one. Crude placeholder art is fine (Daniil): the deliverable is the engine working as intended, not prettiness | The board is alive, none of it touches the simulation, and the golden replay hash does not move |
+| 17 | **Legibility + the worker** *(was 21)* | WBS 2.10 tower stat blocks and written upgrade descriptions, 2.14 enemy readouts, 2.13 scrollable panels and larger cards, sim in a Web Worker (D7). Stat blocks built **data-driven over the stat set**, so damage types add data and not layout | Nothing on screen lies; a hidden tab keeps simulating |
+| 18 | **The shell — screens + persistence** *(was 22+23)* | WBS 4.15–4.22: screen stack (generalising the offer modal), title menu, run setup, pause overlay, run summary; meta save, run save as seed + input log, schema versioning, export/import, settings screen — which is where session 16's reduced-motion flag gets its switch | A run starts from a menu and ends on a summary screen; close the tab mid-run, come back, continue; a corrupt save says so |
+| ★ | **SEMI-STABLE ALPHA** | Not a session — the marker sessions 17–18 exist to reach. Menus, saves, settings, pause, readable stats. Handable to someone who already plays the genre; onboarding for everyone else is session 21 | |
+| 19 | **Naming, then combat identity** *(long; was 17+18+19)* | Opens with D8, the printing-trade lexicon — a conversation, not build work, and it comes first because the content built after it inherits the names. Then WBS 2.8 damage types with real resistances and immunities, 4.10 attack shapes (chain, beam along a run of road, arc/wedge), and towers/enemies to answer them | A lexicon Daniil likes **before** the content that would inherit the old one; then **no single tower type clears a wave**, and each new tower answers a wave the others cannot — proven by a lab sweep, not by opinion |
+| 20 | **Relic economy** | WBS 2.7 + 1.7.2: pool grown well past one run's drain, rarity weighting (D5), fusion, salvage, more consumables, more slots, and an honest "pool exhausted" state instead of silence | Full slots is a decision, not a wall; the lab bounds the relic-driven power spread |
+| 21 | **First contact** *(was 24)* | WBS 4.23 onboarding prompts and how-to-play, 4.24 colourblind palette, full keyboard operation, HUD text scale | **A stranger plays unaided** — then actually hand it to one, before the content push their feedback should shape |
+| 22–23 | **Content completeness** *(was 25–27)* | Towers to 8 with distinct attack shapes; enemies to ~14 across the trait matrix; relics to ~40 with fusion recipes; tile pool to ~100 | Two runs do not resemble each other — the count is whatever that takes, not a quota |
+| 24 | **Calibration I** *(was 28+29)* | WBS 1.5.1/1.5.2 + 3.1–3.4: bot policy, `calibrate`/`check`, human offset from Daniil's replays, `balance.yml` gate, seed-corpus sweeps | Injected regression caught; no trivial or unwinnable seed in ≥500 runs |
+| 25–26 | **Meta progression, full** *(was 33–34)* | Tech tree stages 1–2, relic and tile pool unlocks, run history, dailies, replay sharing, in-game Tile Smith | Finishing a run visibly changes the next one |
+| 27 | **Calibration II** *(new, Daniil 2026-08-17)* | WBS 3.6: recalibrate with the meta layer live — tech-tree multipliers and pool unlocks move player power underneath the curves calibration I fixed, so those curves are stale the day the tree ships. Re-baseline `balance.yml`, re-sweep the seed corpus at several tree states | No trivial or unwinnable seed at any tech-tree state the player can actually hold |
+| 28–30 | **Presentation at scale** *(was 30–32; moved after meta — Daniil: visuals come after **all** assets exist, and meta progression adds tile pools, tree nodes and their art surface)* | Full art pass with per-upgrade tower identity (4.11), effects for every attack shape (6.3), enemy trait markers, UI art (4.13), biomes, minimal SFX. The art round-trip proof (6.1) opens this block | The board reads as a place, not a diagram |
+| 31–32 | **Beta hardening + release** *(was 35–36)* | Perf and bundle budgets in CI, browser matrix, error-path audit, save migration tests, external playtest with strangers, release process | PRD §17 stable beta |
+
+**32 sessions to stable beta, down from 36** — five sessions removed by merging
+themes that had been split into steps, one added back for calibration II. No
+scope was cut: every item from the old table survives in the new one.
+
+**The art round-trip proof (WBS 6.1) stays late — decided 2026-08-17.** The
+proposal to open session 16 with it was declined: what session 16 needs is the
+engine and a crude implementation, not prettiness — "pretty shit now" is
+acceptable as long as the game is not confusing and works as intended. The
+standing risk is unchanged and recorded on 6.1: the REXPaint tools do not exist
+yet, so the art pipeline is unproven until session 28 opens with the proof. The
+frame model in 4.1 must therefore stay **format-agnostic** — frames as plain
+grids in the sprite JSON, nothing REXPaint-specific baked into the schema.
+
+What remains genuinely late: the full art pass at scale, bridges as tile content
+(WBS 4.9 — cheap now that 2.16 has shipped), towers 8–9, tech tree stage 3,
+dailies and replay sharing. The effects engine, the shell and the balance harness
+all moved earlier — each was mis-filed as "expansion" when it was really
 "foundation something later depends on".
+
 ---
 
 ## Risks

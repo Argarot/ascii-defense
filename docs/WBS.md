@@ -46,6 +46,14 @@ was a drift surface, not an aid.)*
 V6→2.14 · V7→4.11 · V8→4.12 · V9→4.12 · V10→4.1 · V11→4.11 · V12→4.14
 *(marked, not committed — visual size only)* · V13→2.14
 
+⚠ **This index pointed at IDs 4.1 and 4.9–4.14, which had no entries** until
+2026-08-17 — the numbers were assigned in PR #48 as FEEDBACK.md was deleted, and
+the entries were never written, so seven of Daniil's items were tracked by
+reference to nothing. Entries now exist under M4. **V8 and V9 (→4.12) could not
+be recovered** and need restating. The lesson, logged: an index is not a
+tracker — a mapping to an ID that does not exist is worse than no mapping,
+because it reads as tracked.
+
 **Round 5 (playtest 5, all PR #63):** 1 rim-as-shade · 2 library re-encoded to
 segments · 3 segment-only brushes · 4 auto tile ids · 5 paint-on-preview ·
 6 tile weights · 7 **partial: ore paintable; richness/boon authoring → 2.18** ·
@@ -210,6 +218,13 @@ but the question the milestone existed to answer is answered.
 
 ## M2 — A complete run *(decomposed 2026-08-16 when M1 exited)*
 
+**Remaining M2 work by session** *(2026-08-17 re-plan)*: 2.10, 2.13, 2.14 →
+session 17 (legibility + worker) · 2.12 (D8), 2.8 → session 19 (naming, then
+combat identity) · 2.7 → session 20 (relic economy) · 2.3, 2.4 are absorbed by
+4.19–4.21 in session 18 · 2.5 spills into sessions 19 and 22–23 · 2.1's
+remainder (board scale, front escalation, threat levels as data) rides with
+5.5 · 2.18 stays open, unscheduled.
+
 - [~] 2.1 *(PR #54, first shaped pass)* **The difficulty arc**: the run ENDS — finalWave 20 (lab-chosen), THE CORE STANDS victory, WAVE X/20; composition escalates in kind (weighted picks), every 5th wave carries an elite surge, Juggernaut anchors the late game. Remaining for M2: full board scale, front escalation, threat levels as data.
 - [ ] 2.2 ~~Draft flow between tiles~~ **CUT 2026-08-16** — a survivor of the pre-pivot design that should have died with player tile-laying on 2026-08-15. Replaced by relic pool expansion on the Phase 6 machinery.
 - [ ] 2.3 Save/resume (must serialise relic state + the input log); run summary screen listing the relics the run was built on.
@@ -237,13 +252,33 @@ content and the shell settle would produce curves we throw away)*
 - [ ] 3.3 Human offset measured from Daniil's recorded replays.
 - [ ] 3.4 Unwinnable/trivial seed detection across ≥500 runs, measured with the relic layer held fixed — trivial-by-relic is the feature, trivial-by-map is the defect (PRD §9).
 - [ ] 3.5 Tech tree stage 1 (~5 nodes); in-game autopilot.
+- [ ] 3.6 **Calibration II** *(Daniil, 2026-08-17; session 27)*: re-baseline after meta progression — tech-tree multipliers and pool unlocks move player power underneath the calibrated curves, so `balance.yml` is re-fixed and the seed corpus re-swept at several tree states. Gate: no trivial or unwinnable seed at any tree state the player can actually hold.
 
-## M4 — The shell *(it becomes a product)*
+## M4 — The shell, and what the player sees *(it becomes a product)*
 
 *(Was "M4+ Expansion", a bucket rather than a plan — Daniil, 2026-08-16. The
 shell is sequenced BEFORE calibration and art because it is what makes external
 playtesting possible at all: today a stranger handed the URL gets a debug
 harness with no context.)*
+
+**Split across sessions 16, 18 and 21** *(2026-08-17)*: 4.1 opens session 16,
+4.15–4.22 are session 18 (the semi-stable alpha marker), 4.23–4.24 are session
+21. 4.9–4.14 are presentation items that ride with the art pass, sessions 28–30.
+
+**IDs 4.1 and 4.9–4.14 were referenced by the request index above but never
+written as entries** — found 2026-08-17. The text below is recovered from the
+sources that cite each ID (PR bodies #44/#46, PRD §13/§14, WBS 6.2/6.3 and the
+roadmap's own "what remains late" paragraph) and is marked where recovery was
+partial. IDs 4.2–4.8 were never assigned; 4.8 was the offset-connector proposal,
+withdrawn before it got an entry (PRD §14). Do not reuse any of these numbers.
+
+- [ ] 4.1 **Effects & animation engine** *(session 16; requests 13, V4, V5, V10)*. The sim→view event pipeline generalised from `Sim.pulses` — a typed, capped event list the view drains each frame, never written back to. View-side effect entities with lifetimes. A **frame model in the sprite schema** (+ codegen rerun; CI fails on drift). First effects authored against it: explosions, projectile spread, tower idle cycles, terrain drift (phase the existing `hash2` with a frame counter — zero per-cell state), void-as-water. **Reduced motion respected from day one** (PRD §15.4) — retrofitting it is the named failure mode; the flag lands here, its settings toggle in 4.22. Invariant 2 and the golden replay hash are the enforcement that none of this reaches the simulation.
+- [ ] 4.9 **Bridges** — road crossing road without connecting *(request 9)*. Was filed with 2.16 and 4.8 as three features that were one change; 2.16 shipped the route-as-a-graph identity model, so this is now **tile content plus a draw rule**, not engine work. Cheap, and deliberately late.
+- [ ] 4.10 **Attack shapes** (PRD §5.5) *(session 19; request 11)*: chain, beam along a run of road, arc/wedge AoE. Needs the effects engine (4.1) to be legible, which is why 4.1 comes first.
+- [ ] 4.11 **Per-upgrade tower visual identity** *(sessions 28–30; requests V7, V11)*: the 14 defined tower forms read as distinct. Cited by 6.2. The open question D3 was closed as unanswerable in the abstract — it is answered here, with sprites in front of us, as "what compositional rule makes 14 variants legible".
+- [ ] 4.12 **Unrecovered** — requests V8 and V9 mapped here, and the item text was lost when FEEDBACK.md was deleted (PR #48) without the numbered items being copied into the WBS entries. Visual, from playtest round 1. **Ask Daniil to restate V8/V9 at the next playtest, then write this entry or retire the ID.** Recorded rather than silently dropped: an untracked request is how scope quietly shrinks.
+- [ ] 4.13 **UI art pass** *(sessions 28–30; requests V1, V2)*: illustrated relic and upgrade cards, panel chrome. The structural half (scrollable panels, larger card geometry) is 2.13 in session 17; this is the art that fills it. *Reconstructed from the V1→2.13+4.13 split — confirm against V1/V2 when they are restated.*
+- [ ] 4.14 **Enemies drawn wider than one cell** *(sessions 28–30; request V12)*: a boss drawn three glyphs wide keeps a one-cell footprint. Visual size yes, mechanical size no — the mechanical version is rejected in PRD §14, and this entry is the half that was accepted.
 
 - [ ] 4.15 **Screen stack** in the view — screens push/pop, board renders beneath where it should. Generalises the relic-offer modal rather than duplicating it. No screen owns game state.
 - [ ] 4.16 **Title / main menu**: new run · continue · workshop · settings · how to play.
@@ -274,7 +309,7 @@ and starts another — with progress surviving a reload.**
 *(Deliberately after M5: authoring art for four towers and then again for eight
 is the same mistake as authoring sprites before the animation engine.)*
 
-- [ ] 6.1 Art round-trip **proof** (Phase 2 gate) — kept early and small; the rest of M6 waits.
+- [ ] 6.1 Art round-trip **proof** (Phase 2 gate) — opens session 28. **Neither tool exists yet** (`tools/build-rexpaint-font.mjs`, `tools/rexpaint-import.mjs` — confirmed absent 2026-08-17), so the whole art pipeline is an unproven delivery path that 6.2–6.4 depend on. The proposal to prove it in session 16 was **declined 2026-08-17** (Daniil: session 16 needs the engine and a crude implementation, not prettiness). Accepted consequence: the pipeline stays unproven until this item runs, and 4.1's frame model must stay format-agnostic — frames as plain grids in sprite JSON, nothing REXPaint-specific in the schema.
 - [ ] 6.2 Full art pass: towers with per-upgrade visual identity (V11), enemies with trait markers, terrain, UI.
 - [ ] 6.3 Effects at scale: every attack shape, impact and death authored against the engine from 4.1.
 - [ ] 6.4 Biomes — palette and tile-pool variants per threat level.
