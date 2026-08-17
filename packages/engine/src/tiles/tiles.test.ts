@@ -25,69 +25,47 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     expect(validateTileCells(MEADOW)).toEqual([]);
   });
 
-  // -- session 14: the border rule is GONE; lanes and crossings replace it --
+  // -- entry-point rule (Daniil, 2026-08-17): every entry leads to another --
 
-  it('a road up a non-centre column is legal IF it exits through a centre crossing', () => {
-    // Column 1 road turning to the west centre: hugs the edge, then crosses.
-    const ok = g('GRGGG', 'GRGGG', 'RRGGG', 'GGGGG', 'GGGGG');
-    expect(validateTileCells(ok)).toEqual([]);
-    // ...but the crossing derives WEST only - the north border cell does not
-    // leak a connector (directional rule).
-    const conn = deriveConnectors(ok);
-    expect(conn).toEqual({ n: false, e: false, s: false, w: true });
+  it('a road that enters and passes THROUGH is legal; one that enters and stops is not', () => {
+    expect(validateTileCells(CORNER)).toEqual([]); // w->s: both entries served
+    // A road entering W and dead-ending inside is a stub the generator can
+    // never place - the exact shape Tile Smith minted live (playtest 8).
+    const stub = g('GGGGG', 'GGGGG', 'RRGGG', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(stub).join()).toMatch(/no other entry point/);
+    // Border-hugging after entering no longer rescues it - still one entry.
+    const hugStub = g('GRGGG', 'GRGGG', 'RRGGG', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(hugStub).join()).toMatch(/no other entry point/);
   });
 
-  it('a border-hugging road with NO crossing anywhere is an orphan lane', () => {
-    const bad = g('GRGGG', 'GRGGG', 'GRGGG', 'GGGGG', 'GGGGG'); // column 1, no exit
-    expect(validateTileCells(bad).join()).toMatch(/derives no crossing/);
+  it('a road reaching no entry point at all is decoration, not road', () => {
+    const orphan = g('GRGGG', 'GRGGG', 'GRGGG', 'GGGGG', 'GGGGG'); // column 1, no exit
+    expect(validateTileCells(orphan).join()).toMatch(/no entry point/);
+    const blob = g('GGGGG', 'GRRGG', 'GRRGG', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(blob).join()).toMatch(/no entry point/);
   });
 
-  it('split road stubs each need their own crossing - and then they are LEGAL', () => {
-    // n and s stubs, disconnected: under lane rules each is its own
-    // component, and each derives its own crossing - two roads in one tile.
-    const twoRoads = g('GGRGG', 'GGRGG', 'GGGGG', 'GGRGG', 'GGRGG');
-    expect(validateTileCells(twoRoads)).toEqual([]);
-    const conn = deriveConnectors(twoRoads);
-    expect(conn.n).toBe(true);
-    expect(conn.s).toBe(true);
+  it('two opposed dead-end stubs are NOT a road - the session-14 boot-breaker is unrepresentable', () => {
+    // n and s stubs, disconnected. Each derives an entry, neither leads
+    // anywhere: dealt onto a road slot as a straight, the route broke at
+    // boot (found live, session 14). Now invalid by construction.
+    const twoStubs = g('GGRGG', 'GGRGG', 'GGGGG', 'GGRGG', 'GGRGG');
+    expect(validateTileCells(twoStubs).join()).toMatch(/no other entry point/);
+    // Head-on different-lane stubs are the same lie in lane clothing.
+    const headOn = g('GGRGG', 'GGRGG', 'GGRGG', 'GGrGG', 'GGrGG');
+    expect(validateTileCells(headOn).join()).toMatch(/no other entry point/);
   });
 
-  it('rejects an interior road blob with no crossing', () => {
-    const bad = g('GGGGG', 'GRRGG', 'GRRGG', 'GGGGG', 'GGGGG');
-    expect(validateTileCells(bad).join()).toMatch(/derives no crossing/);
-  });
-
-  it('DIRECTIONAL: an S-fold touches itself without merging (playtest 3)', () => {
-    // A road folding back on itself: enters west centre, runs east along
-    // row 2, folds at the border and returns west along row 1, exits...
-    // nowhere else - one crossing, one component, and the folded segments
-    // TOUCH vertically without connecting (no shortcut across the fold).
-    const sFold = g('GGGGG', 'G-7GG', 'R-JGG', 'GGGGG', 'GGGGG');
-    expect(validateTileCells(sFold)).toEqual([]);
-    const conn = deriveConnectors(sFold);
-    expect(conn).toEqual({ n: false, e: false, s: false, w: true });
-    // The fold is airtight: (1,1)'<' above (1,2)'>' do not join - an enemy
-    // walking the road cannot cut the corner.
-    // (Proven at flow level in sim.test's route-graph spec.)
-  });
-
-  it('LANES: touching roads of different lanes are separate components', () => {
-    // Two vertical lanes side by side, TOUCHING, each with its own... only
-    // one centre per edge - so lane R crosses north, lane r crosses south.
-    const lanes = g('GGRGG', 'GGRGG', 'GGRrG', 'GGGrG', 'GGGrG');
-    // R path: (2,0)-(2,2) exits north... (2,2) centre? crossing south for r:
-    // r occupies (3,2)-(3,4): column 3 is not the south centre (2,4). Invalid!
-    expect(validateTileCells(lanes).join()).toMatch(/derives no crossing/);
-    // Give each lane its own centre crossing and it validates.
-    const good = g('GGRGG', 'GGRGG', 'GGRGG', 'GGrGG', 'GGrGG');
-    // R holds the north half through centre (2,2)... but R at (2,2) and r at
-    // (2,3) TOUCH without joining: R must cross north (yes, via (2,0)+(2,1))
-    // and r must cross south (via (2,4)+(2,3)). Both legal, one column, two
-    // lanes meeting head-on without merging.
-    expect(validateTileCells(good)).toEqual([]);
-    const conn = deriveConnectors(good);
-    expect(conn.n).toBe(true); // R's crossing
-    expect(conn.s).toBe(true); // r's crossing
+  it('LANES: twin_bend - two roads touching without merging, every entry served', () => {
+    // The shipped two-lane tile: each bend links W-N / E-S respectively,
+    // segments touch diagonally-adjacent without joining, four entries,
+    // every one of them leads to another. The shape the rule must keep.
+    const twinBend = g('GG|GG', 'GGL7G', '-7GL-', 'GL7GG', 'GG|GG');
+    expect(validateTileCells(twinBend)).toEqual([]);
+    expect(deriveConnectors(twinBend)).toEqual({ n: true, e: true, s: true, w: true });
+    // And a broken variant - snip one bend so its entry dead-ends - fails.
+    const snipped = g('GG|GG', 'GGL7G', '-7GGG', 'GL7GG', 'GG|GG');
+    expect(validateTileCells(snipped).length).toBeGreaterThan(0);
   });
 
   it('rejects a core cell on any edge, even the center', () => {
@@ -195,7 +173,6 @@ describe('grown boards hold the connectivity contract (seeded, edge-biased sizes
     { id: 'corner', cells: CORNER },
     { id: 'tee', cells: g('GGGGG', 'GGGGG', 'RRRRR', 'GGRGG', 'GGRGG') },
     { id: 'cross', cells: g('GGRGG', 'GGRGG', 'RRRRR', 'GGRGG', 'GGRGG') },
-    { id: 'spur', cells: g('GGGGG', 'GGGGG', 'RRRGG', 'GGGGG', 'GGGGG') },
     { id: 'meadow', cells: MEADOW },
   ];
   const lib = new TileLibrary(LIB_DEFS);

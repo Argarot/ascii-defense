@@ -129,55 +129,62 @@ export function validateTileCells(cells: readonly string[]): string[] {
   void onEdge;
   void isEdgeCenter;
 
-  // -- lane continuity -------------------------------------------------------
-  // Route cells form LANE components: 4-adjacent cells join when their lanes
-  // join ('R' with 'R', 'r' with 'r', Core with anything). EVERY component
-  // must derive at least one crossing, or it is a road to nowhere that can
-  // never join the network - unreachable decoration is a lie in road's
-  // clothing.
-  const route: [number, number][] = [];
-  for (let y = 0; y < TILE_SIZE; y++)
-    for (let x = 0; x < TILE_SIZE; x++)
-      if (isRouteCell(cellAt(cells, x, y))) route.push([x, y]);
+  // -- entry points (Daniil, 2026-08-17 - replaces the crossings framing) ----
+  // An ENTRY POINT is a derived connector: road on an edge centre with the
+  // appropriate inward orientation. The rule is stated in terms of entries,
+  // not lane components, so it survives bridges and new road kinds:
+  //   1. every road cell must have continuous road to some entry point
+  //      (no decoration roads), and
+  //   2. every entry point must have continuous road to at least ONE other
+  //      entry point - or to the Core, the route's licensed terminus.
+  // A one-entry dead-end stub is therefore unrepresentable, which is what
+  // makes an unplaceable mint impossible by design rather than by patch.
+  // (Valid entry counts fall out as 0, 2, 3 or 4 - never 1 without a Core.)
+  const key = (x: number, y: number): number => y * TILE_SIZE + x;
+  const conn = deriveConnectors(cells);
+  const entries: [number, number][] = [];
+  if (conn.n) entries.push([CENTER, 0]);
+  if (conn.s) entries.push([CENTER, TILE_SIZE - 1]);
+  if (conn.w) entries.push([0, CENTER]);
+  if (conn.e) entries.push([TILE_SIZE - 1, CENTER]);
+  const entryKeys = new Set(entries.map(([x, y]) => key(x, y)));
 
-  if (route.length > 0) {
-    const key = (x: number, y: number): number => y * TILE_SIZE + x;
-    const inRoute = new Set(route.map(([x, y]) => key(x, y)));
-    const seenAll = new Set<number>();
-    const conn = deriveConnectors(cells);
-    const crossingCells = new Set<number>();
-    if (conn.n) crossingCells.add(key(CENTER, 0));
-    if (conn.s) crossingCells.add(key(CENTER, TILE_SIZE - 1));
-    if (conn.w) crossingCells.add(key(0, CENTER));
-    if (conn.e) crossingCells.add(key(TILE_SIZE - 1, CENTER));
-
-    for (const [sx, sy] of route) {
-      if (seenAll.has(key(sx, sy))) continue;
-      // Flood one lane component.
-      const comp = new Set<number>([key(sx, sy)]);
-      const stack: [number, number][] = [[sx, sy]];
-      while (stack.length) {
-        const [x, y] = stack.pop()!;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-          const nx = x + dx;
-          const ny = y + dy;
-          const k = key(nx, ny);
-          if (!inRoute.has(k) || comp.has(k)) continue;
-          if (!roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) continue;
-          comp.add(k);
-          stack.push([nx, ny]);
-        }
-      }
-      let reaches = false;
-      for (const k of comp) {
-        seenAll.add(k);
-        if (crossingCells.has(k)) reaches = true;
-      }
-      if (!reaches) {
-        errors.push(`lane component at (${sx},${sy}) derives no crossing - a road that cannot join the network`);
+  /** Flood continuous road from (sx, sy); report entries and Core reached. */
+  const reach = (sx: number, sy: number): { comp: Set<number>; entries: number; core: boolean } => {
+    const comp = new Set<number>([key(sx, sy)]);
+    const stack: [number, number][] = [[sx, sy]];
+    let hit = 0;
+    let core = false;
+    while (stack.length) {
+      const [x, y] = stack.pop()!;
+      if (entryKeys.has(key(x, y))) hit++;
+      if (cellAt(cells, x, y) === 'C') core = true;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) continue;
+        const k = key(nx, ny);
+        if (comp.has(k) || !isRouteCell(cellAt(cells, nx, ny))) continue;
+        if (!roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) continue;
+        comp.add(k);
+        stack.push([nx, ny]);
       }
     }
-  }
+    return { comp, entries: hit, core };
+  };
+
+  const seen = new Set<number>();
+  for (let y = 0; y < TILE_SIZE; y++)
+    for (let x = 0; x < TILE_SIZE; x++) {
+      if (!isRouteCell(cellAt(cells, x, y)) || seen.has(key(x, y))) continue;
+      const r = reach(x, y);
+      for (const k of r.comp) seen.add(k);
+      if (r.entries === 0 && !r.core) {
+        errors.push(`road at (${x},${y}) reaches no entry point - decoration in road's clothing`);
+      } else if (r.entries === 1 && !r.core) {
+        errors.push(`entry point on the road at (${x},${y}) leads to no other entry point - a dead-end stub the generator can never place`);
+      }
+    }
 
   return errors;
 }
