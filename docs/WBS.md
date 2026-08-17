@@ -54,6 +54,19 @@ be recovered** and need restating. The lesson, logged: an index is not a
 tracker — a mapping to an ID that does not exist is worse than no mapping,
 because it reads as tracked.
 
+**Round 8 (playtest 8, 2026-08-17 — the effects engine landed; "animation looks
+great, game is indeed much more fun now"):** explosion radius must drive damage,
+visual and readout→2.19 · mortar should be ballistic, not homing→2.19 ·
+projectiles must not vanish when their target dies→2.19 · Tile Smith mints
+unplaceable tiles→**2.20 (fixed by construction, not patched)** · basic vs
+special tiles + pre-run loadout→2.21 (+7.5 for the slot economy) · relic sprites
+at board scale→6.7, square slots→2.13 · background animation ignores tick
+speed→4.25 *(diagnosed: session 16 put world motion on the wall clock while
+arguing the opposite for effects — both halves cannot be right)* · shoreline
+blending→6.6 *(already promised in PRD §13; had no WBS item — asked twice)* ·
+void chests→2.22/PRD §4.9 · loot tables→2.22/PRD §7.7 · smoother animation→6.8
+*(mechanism corrected: spatial phase, not partial redraw)*
+
 **Round 5 (playtest 5, all PR #63):** 1 rim-as-shade · 2 library re-encoded to
 segments · 3 segment-only brushes · 4 auto tile ids · 5 paint-on-preview ·
 6 tile weights · 7 **partial: ore paintable; richness/boon authoring → 2.18** ·
@@ -218,12 +231,14 @@ but the question the milestone existed to answer is answered.
 
 ## M2 — A complete run *(decomposed 2026-08-16 when M1 exited)*
 
-**Remaining M2 work by session** *(2026-08-17 re-plan)*: 2.10, 2.13, 2.14 →
-session 17 (legibility + worker) · 2.12 (D8), 2.8 → session 19 (naming, then
-combat identity) · 2.7 → session 20 (relic economy) · 2.3, 2.4 are absorbed by
-4.19–4.21 in session 18 · 2.5 spills into sessions 19 and 22–23 · 2.1's
-remainder (board scale, front escalation, threat levels as data) rides with
-5.5 · 2.18 stays open, unscheduled.
+**Remaining M2 work by session** *(2026-08-17, revised after playtest 8)*:
+2.10, 2.13, 2.14, **2.19, 2.20** → session 17 (legibility, truth, worker) ·
+2.3, 2.4 absorbed by 4.19–4.21 in session 18 · **2.21** → session 19 (map
+agency) · 2.12 (D8), 2.8 → session 20 (naming, then combat identity) ·
+2.7, **2.22** → session 21 (relic economy + loot tables) · 2.5 spills into
+sessions 20 and 23–24 · 2.1's remainder (board scale, front escalation, threat
+levels as data) rides with 5.5 · **2.18 (Tile Smith overlay authoring) is now
+scheduled** — it joins 2.21 in session 19, since both rework the tile format.
 
 - [~] 2.1 *(PR #54, first shaped pass)* **The difficulty arc**: the run ENDS — finalWave 20 (lab-chosen), THE CORE STANDS victory, WAVE X/20; composition escalates in kind (weighted picks), every 5th wave carries an elite surge, Juggernaut anchors the late game. Remaining for M2: full board scale, front escalation, threat levels as data.
 - [ ] 2.2 ~~Draft flow between tiles~~ **CUT 2026-08-16** — a survivor of the pre-pivot design that should have died with player tile-laying on 2026-08-15. Replaced by relic pool expansion on the Phase 6 machinery.
@@ -243,6 +258,14 @@ remainder (board scale, front escalation, threat levels as data) rides with
 - [x] 2.15 *(PR #60)* **Generated tile library**: `tools/tilegen.mjs` emits port-encoded wiggly paths + junction tiles through the shared validator; 15 authored + 24 generated, regenerable deterministically; `gen_*` replaced wholesale.
 - [x] 2.17 *(PR #60)* **Carve v3 — edge partitions + turning tunnels**: road pools keyed by partition; walks tunnel through occupied slots perpendicular (only when a partition tile exists — no tile, no move); shipped `twin_bend` proven dealt on real maps.
 - [x] 2.16 *(PR #55, 2026-08-16)* **Roads that touch without connecting** — the full in-tile lane model (Daniil's call): 'r' as a second lane in the cell alphabet; connectors derive **directionally** (centre + inward continuation); border roads legal, orphan lanes rejected; the route is a **graph** (per-cell allowed-direction mask shared by BFS and the walk phase — enemies never lane-hop); Tile Smith lane brush + **ADD TO POOL** (localStorage pool, engine-revalidated on load, joins the generator). Found live: multi-lane tiles share boolean signatures with routing tiles, so the library index now demands a road-slot tile's crossings interconnect — connectivity stays by construction.
+
+- [ ] 2.19 **Combat truth** *(playtest 8; session 17)*. Three related lies, all confirmed in the source 2026-08-17:
+  - **Explosion radius drives everything.** `explodeRadius` already folds correctly through `effectiveStats` (base + tier mods), and AoE damage already uses it — but it is printed **nowhere** in the inspector, and the blast *visual* does not match it: the ring expands from 0.4 to r, and the ground-zero flash is a hard-coded ±2×±1 glyph box regardless of radius. So a Mortar upgraded from 1.2 to 2.5 cells kills wider and looks identical. Fix: one folded number consumed by damage, drawing, and the stat block, with the visual's peak extent equal to the true radius (PRD §5.5).
+  - **Mortar is ballistic, not homing.** `roster.json` sets `homing: true` on the Mortar; it should commit an aim *point* at fire time and detonate there regardless of who is standing on it. Needs an "impact at a point" path — `impact()` currently requires an enemy — which is the same code the next item needs.
+  - **A fired shot always resolves.** `projectilePhase` despawns a homing projectile outright when its target dies (`sim.ts`, the `!alive[t] || gen mismatch` branch). Unguided shots land where aimed; homing shots re-acquire. Today the damage is silently deleted.
+- [ ] 2.20 **Tile Smith cannot mint an unplaceable tile — by construction** *(playtest 8; session 17)*. Daniil minted a tile the smith called valid that the generator can never deal. **Root cause, verified 2026-08-17:** there are *two* predicates. `validateTileCells` asks "is this a legal grid?" and accepts any lane component that derives **at least one** crossing; the generator separately applies `crossingsInterconnect` at index time. A **single-crossing stub** passes the first and is unusable by the second — a dead-end lane, placeable nowhere but a terminus. `validateTileCells`'s own docstring promises "validates anywhere validates everywhere", and that promise is what broke. **Fix:** one predicate — every lane component must present **≥2 crossings** (a lane passes *through*), with Core tiles licensed as the route's terminus — called by the smith's verdict, the mint button, the content linter and the library index alike. **Rule verified before proposing it:** all 39 shipped tiles pass, including `twin_bend`, whose two independent lanes carry 2 crossings each — the naive "≥2 interconnected crossings" rule would have banned it, which is why the per-*component* form is the correct one.
+- [ ] 2.21 **Basic and special tiles** (PRD §4.8) *(Daniil, 2026-08-17; session 19)*: basics infinite and unslotted; specials finite, slotted, and **guaranteed placement** at generation; Tile Smith mints into the special pool. Engine/mapgen model + the loadout picker in run setup, tiles rendered **visually** through the shared `drawTerrainCell` the board and smith already use (so visual costs nearly nothing — the name-only fallback Daniil offered is not needed). Generation must *fail loudly* rather than silently drop a special it cannot place. The slot **economy** (upgradable count, unlock set) is 7.5.
+- [ ] 2.22 **Loot tables + void chests** (PRD §7.7, §4.9) *(Daniil, 2026-08-17; session 21)*: weighted outcome lists as content, rolled on a named stream at claim time so they ride the input log; sources reference a table by id instead of carrying payout code. Void chests surface and sink on a timer as the first consumer. Built **with** the relic economy because rarity weighting is the same machinery.
 
 ## M3 — Trustworthy difficulty *(sequenced after M4/M5: calibrating before the
 content and the shell settle would produce curves we throw away)*
@@ -290,6 +313,7 @@ withdrawn before it got an entry (PRD §14). Do not reuse any of these numbers.
 - [ ] 4.22 **Settings screen**: reduced motion, colourblind palette, text scale, keybinds, wipe data.
 - [ ] 4.23 **Onboarding** (PRD §15.3): contextual first-encounter prompts, a How-to-play screen, gentle opening waves. No forced tutorial.
 - [ ] 4.24 **Accessibility** (PRD §15.4): colourblind palette values, full keyboard operation, reduced motion honoured by the effects engine, HUD text scale.
+- [ ] 4.25 **World motion rides sim time, UI motion rides the wall clock** *(Daniil, playtest 8; session 17)*. Session 16 put terrain drift, water and tower idles on raw wall-clock `performance.now()`, so the world keeps ambling at 8× and keeps moving while paused — while the effects layer, in the same session, was deliberately tick-anchored on the argument that "an honest pause shows a stopped world". Both halves cannot be right. Fix: world ambient advances on a speed-scaled accumulator (freezes at pause, 8× at 8×); telegraph breathing and preview pulses stay on the wall clock, because the interface is not part of the world (PRD §13).
 
 **M4 gate: a stranger opens the link, starts a run from a menu, loses, reads why,
 and starts another — with progress surviving a reload.**
@@ -314,6 +338,9 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 6.3 Effects at scale: every attack shape, impact and death authored against the engine from 4.1.
 - [ ] 6.4 Biomes — palette and tile-pool variants per threat level.
 - [ ] 6.5 **Minimal SFX** (Daniil, 2026-08-16 — PRD §16): impacts, builds, wave start, UI. Not music, not a mix. Includes sourcing and licence clearance, which is the part that is not free.
+- [ ] 6.6 **The shoreline** (PRD §13) *(Daniil, asked twice — 2026-08-16 and 2026-08-17; session 19)*: a procedural "beach" band where land meets water, so the coast reads as a coast rather than a cut. Water shipped in session 16; this is its outstanding half. Safe by construction — border cells can never carry road (PRD §4.2), so overwriting them is always legal. Scheduled with the map session rather than the art pass because it is procedural, not authored.
+- [ ] 6.7 **Relic art at board-glyph scale** (PRD §13) *(Daniil, 2026-08-17)*: relics drawn as sprites in the *board's* 5×8 font rather than the HUD's 2× font — the smaller cell buys the detail that makes a relic read as an object. Needs the HUD to host a board-scale sub-surface. *(The **square slots** half is cheap and rides 2.13 in session 17; only the art waits for the pass.)*
+- [ ] 6.8 **Smoothness via spatial phase** (PRD §13) *(Daniil, 2026-08-17)*: waves that travel across ground and water — each glyph's phase offset by its position — plus finer effect interpolation. **Explicitly not** "redraw less": the full board redraw is already well under a millisecond, so partial redraw optimises the wrong quantity. Recorded so a future session does not spend itself on the intuitive-but-wrong mechanism.
 
 **M6 gate: the board reads as a place, not a diagram.**
 
@@ -323,7 +350,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 7.2 Relic pool and tile pool unlocks wired to the tree.
 - [ ] 7.3 Run history and personal bests — the reason to open the game on day nine.
 - [ ] 7.4 Daily challenges (a fixed seed per day) and replay sharing — both nearly free given determinism.
-- [ ] 7.5 Tile Smith as an in-game meta feature (PRD §11) — the authorship endgame. **Features price the tile** (richer nodes cost more to mint), so the tool and the shop share one pricing function.
+- [ ] 7.5 Tile Smith as an in-game meta feature (PRD §11) — the authorship endgame. **Features price the tile** (richer nodes cost more to mint), so the tool and the shop share one pricing function. Now also owns the **loadout slot economy** *(Daniil, 2026-08-17)*: the number of special-tile slots a run may carry is a tree upgrade, locked slots render as locked rather than hidden, and the minted-tile collection persists. The slot *mechanic* ships in session 19 (2.21) with a fixed count and everything unlocked; this is the economy on top.
 - [ ] 7.7 **The tile shop** (PRD §11.1, resolves D9): special tiles bought with meta-currency; the pool becomes a **multiset of owned copies** rather than a set, so generation may place at most what you own; tier-N ore nodes purchased with tier-(N-1) ore. Appearance likelihood is a calibration knob, not a constant.
 - [ ] 7.6 Tech tree stage 3, Potency — **optional**, and the trigger for `seeds × meta tiers` in CI.
 
