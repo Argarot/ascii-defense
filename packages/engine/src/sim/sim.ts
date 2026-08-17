@@ -177,7 +177,14 @@ export class Sim {
   readonly shield = new Float32Array(ENEMY_CAP);
   readonly enemyDefIdx = new Uint8Array(ENEMY_CAP);
   readonly alive = new Uint8Array(ENEMY_CAP);
-  private readonly slowTicks = new Int16Array(ENEMY_CAP);
+  /**
+   * HP at spawn, for the view's health marks (2.14). Display bookkeeping,
+   * not evolution state: nothing in the sim reads it back, so it stays out
+   * of hashState the same way events do.
+   */
+  readonly spawnHp = new Float32Array(ENEMY_CAP);
+  /** Slow timer, public read-only so the view can mark chilled enemies. */
+  readonly slowTicks = new Int16Array(ENEMY_CAP);
   private readonly slowMul = new Float32Array(ENEMY_CAP);
   private readonly gen = new Uint16Array(ENEMY_CAP);
   private readonly tgtX = new Float32Array(ENEMY_CAP);
@@ -192,6 +199,12 @@ export class Sim {
   // it (WBS 4.1). Same one-way seam as posX/posY - the view reads, never writes.
   readonly projVX = new Float32Array(PROJ_CAP);
   readonly projVY = new Float32Array(PROJ_CAP);
+  // The AIM POINT, committed at fire time (WBS 2.19 - Daniil: a shell is
+  // thrown at a PLACE). Ballistic shots detonate here no matter what happens
+  // to the world in flight; homing shots keep it updated as a fallback so a
+  // shot whose every target died still resolves somewhere real.
+  private readonly projAimX = new Float32Array(PROJ_CAP);
+  private readonly projAimY = new Float32Array(PROJ_CAP);
   readonly projAlive = new Uint8Array(PROJ_CAP);
   private readonly projTarget = new Int32Array(PROJ_CAP);
   private readonly projTargetGen = new Uint16Array(PROJ_CAP);
@@ -863,6 +876,7 @@ export class Sim {
 
     const ph = this.projHigh;
     f32(this.projX, ph); f32(this.projY, ph); f32(this.projVX, ph); f32(this.projVY, ph);
+    f32(this.projAimX, ph); f32(this.projAimY, ph);
     f32(this.projDamage, ph); f32(this.projSpeed, ph); f32(this.projRadius, ph); f32(this.projSlowMul, ph);
     i16(this.projTtl, ph); i16(this.projTargetGen, ph); i16(this.projSlowTicks, ph); i16(this.projTowerIdx, ph);
     for (let i = 0; i < ph; i++) { u32(this.projAlive[i]); u32(this.projTarget[i]); u32(this.projHoming[i]); }
@@ -1051,6 +1065,7 @@ export class Sim {
     // Waves scale hp by the difficulty data. Trickle mode stays flat for tests.
     const hpScale = this.mode === 'waves' ? waveHpScale(this.difficulty, Math.max(1, this.wave)) : 1;
     this.hp[i] = def.hp * hpScale;
+    this.spawnHp[i] = this.hp[i];
     this.shield[i] = def.shield ?? 0;
     this.slowTicks[i] = 0;
     this.slowMul[i] = 1;
@@ -1125,6 +1140,8 @@ export class Sim {
     this.projRadius[p] = spec.explosive ? eff.explodeRadius : 0;
     this.projSlowMul[p] = spec.applyEffect === 'slow' ? (spec.slowMul ?? 0.6) : 0;
     this.projSlowTicks[p] = spec.applyEffect === 'slow' ? eff.slowTicks : 0;
+    this.projAimX[p] = this.posX[target];
+    this.projAimY[p] = this.posY[target];
     const dx = this.posX[target] - sx;
     const dy = this.posY[target] - sy;
     const d = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -1133,63 +1150,70 @@ export class Sim {
     this.projTtl[p] = Math.ceil((eff.range * 2) / spec.speed);
   }
 
+  /**
+   * A fired shot ALWAYS resolves (WBS 2.19, Daniil): ballistic shells fly to
+   * their committed aim point and detonate there whether or not anyone is
+   * still standing on it - missing is a real outcome. Homing shots whose
+   * target dies re-acquire the nearest living enemy; with nobody left they
+   * fall ballistic to their last aim. Nothing ever silently evaporates.
+   */
   private projectilePhase(): void {
     for (let p = 0; p < this.projHigh; p++) {
       if (!this.projAlive[p]) continue;
       if (--this.projTtl[p] <= 0) {
-        this.despawnProj(p);
+        // Backstop, not a rule: arrival logic below resolves shots exactly;
+        // if the TTL somehow wins, the shot still detonates where it is.
+        this.detonate(p, this.projX[p], this.projY[p]);
         continue;
       }
-      const t = this.projTarget[p];
       if (this.projHoming[p]) {
+        let t = this.projTarget[p];
         if (!this.alive[t] || this.gen[t] !== this.projTargetGen[p]) {
-          this.despawnProj(p);
-          continue;
-        }
-        const dx = this.posX[t] - this.projX[p];
-        const dy = this.posY[t] - this.projY[p];
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d <= HIT_RADIUS + this.projSpeed[p]) {
-          this.impact(p, t);
-          continue;
-        }
-        this.projVX[p] = (dx / d) * this.projSpeed[p];
-        this.projVY[p] = (dy / d) * this.projSpeed[p];
-        this.projX[p] += this.projVX[p];
-        this.projY[p] += this.projVY[p];
-      } else {
-        this.projX[p] += this.projVX[p];
-        this.projY[p] += this.projVY[p];
-        for (let i = 0; i < this.enemyHigh; i++) {
-          if (!this.alive[i]) continue;
-          const dx = this.posX[i] - this.projX[p];
-          const dy = this.posY[i] - this.projY[p];
-          if (Math.sqrt(dx * dx + dy * dy) <= HIT_RADIUS) {
-            this.impact(p, i);
-            break;
+          t = this.nearestAlive(this.projX[p], this.projY[p]);
+          if (t === -1) {
+            this.projHoming[p] = 0; // nobody left to chase: fall ballistic
+          } else {
+            this.projTarget[p] = t;
+            this.projTargetGen[p] = this.gen[t];
           }
         }
+        if (this.projHoming[p]) {
+          this.projAimX[p] = this.posX[t];
+          this.projAimY[p] = this.posY[t];
+        }
       }
+      const dx = this.projAimX[p] - this.projX[p];
+      const dy = this.projAimY[p] - this.projY[p];
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d <= this.projSpeed[p]) {
+        this.detonate(p, this.projAimX[p], this.projAimY[p]);
+        continue;
+      }
+      this.projVX[p] = (dx / d) * this.projSpeed[p];
+      this.projVY[p] = (dy / d) * this.projSpeed[p];
+      this.projX[p] += this.projVX[p];
+      this.projY[p] += this.projVY[p];
     }
   }
 
-  /** Resolve a projectile connecting: direct hit, then AoE if it carries any. */
-  private impact(p: number, enemy: number): void {
-    const radius = this.projRadius[p];
-    const ix = this.posX[enemy];
-    const iy = this.posY[enemy];
-    this.emit({ kind: 'impact', x: ix, y: iy, r: radius });
-    this.damageEnemy(enemy, p);
-    if (radius > 0) {
-      // Splinter (relic): the explosion resolves twice.
-      const blasts = this.fold.explodeTwice ? 2 : 1;
-      for (let rep = 0; rep < blasts; rep++) {
-        for (let i = 0; i < this.enemyHigh; i++) {
-          if (!this.alive[i] || i === enemy) continue;
-          const dx = this.posX[i] - ix;
-          const dy = this.posY[i] - iy;
-          if (Math.sqrt(dx * dx + dy * dy) <= radius) this.damageEnemy(i, p);
-        }
+  /**
+   * ONE detonation rule for every projectile (WBS 2.19): the shot resolves
+   * at a POINT, and everything within its radius is struck - the radius that
+   * deals the damage is the radius the effects layer draws and the inspector
+   * prints. Radius-0 shots strike within HIT_RADIUS, so a homing bolt
+   * arriving at its target still connects.
+   */
+  private detonate(p: number, ix: number, iy: number): void {
+    const radius = Math.max(this.projRadius[p], HIT_RADIUS);
+    this.emit({ kind: 'impact', x: ix, y: iy, r: this.projRadius[p] });
+    // Splinter (relic): the explosion resolves twice.
+    const blasts = this.projRadius[p] > 0 && this.fold.explodeTwice ? 2 : 1;
+    for (let rep = 0; rep < blasts; rep++) {
+      for (let i = 0; i < this.enemyHigh; i++) {
+        if (!this.alive[i]) continue;
+        const dx = this.posX[i] - ix;
+        const dy = this.posY[i] - iy;
+        if (Math.sqrt(dx * dx + dy * dy) <= radius) this.damageEnemy(i, p);
       }
     }
     this.despawnProj(p);

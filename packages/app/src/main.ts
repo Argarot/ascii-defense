@@ -296,10 +296,18 @@ async function main(): Promise<void> {
     return out;
   };
 
-  const collectEnemies = (): { x: number; y: number; id: string }[] => {
-    const out: { x: number; y: number; id: string }[] = [];
+  const collectEnemies = (): { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean }[] => {
+    const out: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean }[] = [];
     for (let i = 0; i < sim.posX.length; i++) {
-      if (sim.alive[i]) out.push({ x: sim.posX[i], y: sim.posY[i], id: sim.enemyDefOf(i).id });
+      if (!sim.alive[i]) continue;
+      out.push({
+        x: sim.posX[i],
+        y: sim.posY[i],
+        id: sim.enemyDefOf(i).id,
+        hp01: sim.spawnHp[i] > 0 ? sim.hp[i] / sim.spawnHp[i] : 1,
+        shielded: sim.shield[i] > 0,
+        slowed: sim.slowTicks[i] > 0,
+      });
     }
     return out;
   };
@@ -345,6 +353,7 @@ async function main(): Promise<void> {
       dmg: Math.round(e.damage * 10) / 10,
       dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
       range: Math.round(e.range * 10) / 10,
+      blast: Math.round(e.explodeRadius * 10) / 10,
       slow: e.slowTicks,
       prod:
         e.productionEveryTicks > 0
@@ -469,6 +478,10 @@ async function main(): Promise<void> {
                 (def.production.ore ?? 0) > 0 &&
                 sim.cellAt(infoTower.cellX, infoTower.cellY) !== 'O',
               priority: infoTower.priority,
+              choiceDesc:
+                hudHover?.kind === 'choose'
+                  ? (def.tiers?.[hudHover.tier]?.choices[hudHover.option]?.desc ?? null)
+                  : null,
               tiers: (def.tiers ?? []).map((tierDef, ti) => ({
                 choices: tierDef.choices.map((c, ci) => {
                   const chosen = infoTower.choices[ti] === ci;
@@ -540,6 +553,12 @@ async function main(): Promise<void> {
     hudHover = null;
     dirty = true;
   });
+  // The panel is a column that can outgrow its rows (2.13): wheel scrolls it.
+  hudTerm.canvas.addEventListener('wheel', (e) => {
+    hud.scrollBy(e.deltaY > 0 ? 2 : -2);
+    dirty = true;
+    e.preventDefault();
+  }, { passive: false });
   // Mouse-first: the HUD's labels ARE its buttons.
   hudTerm.canvas.addEventListener('click', (e) => {
     const action = hud.actionAt(e.offsetX, e.offsetY);
@@ -622,19 +641,24 @@ async function main(): Promise<void> {
   let last = performance.now();
   let acc = 0;
   let animPhase = 0;
-  // Ambient clocks (WBS 4.1): wall time for idle sprite frames, and a slow
-  // integer step for terrain drift and water. Under reduced motion both hold
-  // still - frame 0 forever, a static board - and breathing UI stops too.
+  // Two clocks, deliberately (WBS 4.25, playtest 8). WORLD motion - terrain
+  // drift, water, tower idles - advances on worldMs, a speed-scaled
+  // accumulator: it freezes at pause and runs 8x at 8x, because that is what
+  // fast-forwarding a world means. UI motion (telegraph breathing, preview
+  // pulses) keeps the wall clock: the interface talks to the player, it does
+  // not simulate anything. Reduced motion stills both.
   let animMs = 0;
   let drift = 0;
+  let worldMs = 0;
   const frame = (now: number): void => {
     const dt = Math.min(now - last, 250);
     last = now;
     acc += dt * SPEEDS[speedIdx];
+    worldMs += dt * SPEEDS[speedIdx];
     const still = isReducedMotion();
-    animPhase = still ? 0.25 : (now / 900) % 1; // breathing UI, independent of sim speed
-    animMs = still ? 0 : now;
-    drift = still ? 0 : Math.floor(now / 1400);
+    animPhase = still ? 0.25 : (now / 900) % 1; // breathing UI, wall-clock on purpose
+    animMs = still ? 0 : worldMs;
+    drift = still ? 0 : Math.floor(worldMs / 1400);
     let ran = 0;
     while (acc >= TICK_MS && ran < 32) {
       sim.tick();

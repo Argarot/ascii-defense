@@ -163,6 +163,8 @@ export interface StatMods {
 export interface ChoiceDef {
   name: string;
   cost: number;
+  /** One written sentence: what the choice DOES, in play terms (2.10). */
+  desc?: string;
   mods?: StatMods;
   /** Capability grants (PRD sec 5.3): surveySpeed towers each speed EVERY
    *  prospect job (global, stacking); surveyAuto towers start free jobs on

@@ -148,7 +148,12 @@ describe('replay (WBS 1.4.8)', () => {
     // generator fills enclosed voids and allows plain ground in the outer
     // ring, changing the golden seed's map - an intended generation change;
     // the round-trip test above still proves bit-identical replay.
-    expect(sim.hashState()).toBe(3768274921);
+    // 3768274921 -> 2003059284 on 2026-08-17 (WBS 2.19, playtest 8): a fired
+    // shot always resolves - projectiles carry a committed aim point (two new
+    // hashed lanes), homing shots re-acquire instead of evaporating when
+    // their target dies, and detonation is one point-based rule. An intended
+    // combat-behaviour change; round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(2003059284);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

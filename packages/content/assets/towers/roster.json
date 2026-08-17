@@ -19,6 +19,7 @@
             {
               "name": "Rifled",
               "cost": 25,
+              "desc": "Heavier rounds: +6 damage per shot.",
               "mods": {
                 "damage": 6
               }
@@ -26,6 +27,7 @@
             {
               "name": "Gas Seals",
               "cost": 25,
+              "desc": "Faster cycling: fires 4 ticks sooner.",
               "mods": {
                 "fireEveryTicks": -4
               }
@@ -37,6 +39,7 @@
             {
               "name": "Long Scope",
               "cost": 55,
+              "desc": "Sees further and hits harder: +2.5 range, +4 damage.",
               "mods": {
                 "range": 2.5,
                 "damage": 4
@@ -45,6 +48,7 @@
             {
               "name": "Autoloader",
               "cost": 55,
+              "desc": "Faster AND harder: -4 ticks between shots, +3 damage.",
               "mods": {
                 "fireEveryTicks": -4,
                 "damage": 3
@@ -57,6 +61,7 @@
             {
               "name": "Railbore",
               "cost": 120,
+              "desc": "One massive round: +22 damage per shot.",
               "mods": {
                 "damage": 22
               }
@@ -64,6 +69,7 @@
             {
               "name": "Hailstorm",
               "cost": 120,
+              "desc": "A stream of fire: -4 ticks between shots, +8 damage.",
               "mods": {
                 "fireEveryTicks": -4,
                 "damage": 8
@@ -83,7 +89,7 @@
       "projectile": {
         "damage": 10,
         "speed": 0.35,
-        "homing": true,
+        "homing": false,
         "explosive": true,
         "explodeRadius": 1.2
       },
@@ -93,6 +99,7 @@
             {
               "name": "Heavy Shells",
               "cost": 30,
+              "desc": "Bigger payload: +8 damage in the blast.",
               "mods": {
                 "damage": 8
               }
@@ -100,6 +107,7 @@
             {
               "name": "Wide Burst",
               "cost": 30,
+              "desc": "Wider blast: +0.5 cells of explosion radius.",
               "mods": {
                 "explodeRadius": 0.5
               }
@@ -111,6 +119,7 @@
             {
               "name": "Siege Load",
               "cost": 65,
+              "desc": "Heavier and wider: +12 damage, +0.3 blast radius.",
               "mods": {
                 "damage": 12,
                 "explodeRadius": 0.3
@@ -119,6 +128,7 @@
             {
               "name": "Drum Feed",
               "cost": 65,
+              "desc": "Much faster reload: fires 12 ticks sooner.",
               "mods": {
                 "fireEveryTicks": -12
               }
@@ -130,6 +140,7 @@
             {
               "name": "Bunker Buster",
               "cost": 140,
+              "desc": "Devastating payload: +30 damage in the blast.",
               "mods": {
                 "damage": 30
               }
@@ -137,6 +148,7 @@
             {
               "name": "Carpet Fire",
               "cost": 140,
+              "desc": "Saturation: +0.8 blast radius, -8 ticks between shells.",
               "mods": {
                 "explodeRadius": 0.8,
                 "fireEveryTicks": -8
@@ -163,6 +175,7 @@
             {
               "name": "Wide Bore",
               "cost": 30,
+              "desc": "Richer draw: +1 Ore per mining cycle.",
               "mods": {
                 "production": 1
               }
@@ -170,6 +183,7 @@
             {
               "name": "Fast Cycle",
               "cost": 30,
+              "desc": "Faster cycles: mines 150 ticks sooner.",
               "mods": {
                 "productionEveryTicks": -150
               }
@@ -181,11 +195,13 @@
             {
               "name": "Survey",
               "cost": 60,
+              "desc": "Unlocks prospecting speed-up: every Survey refinery accelerates ALL rock-breaking jobs.",
               "unlocks": "surveySpeed"
             },
             {
               "name": "Automation",
               "cost": 60,
+              "desc": "Prospects nearby rocks by itself, free, one job at a time.",
               "unlocks": "surveyAuto"
             }
           ]
@@ -195,6 +211,7 @@
             {
               "name": "Mother Lode",
               "cost": 120,
+              "desc": "Deep extraction: +2 Ore per cycle.",
               "mods": {
                 "production": 2
               }
@@ -202,6 +219,7 @@
             {
               "name": "Perpetual",
               "cost": 120,
+              "desc": "Never idles long: -100 ticks per cycle, +1 Ore.",
               "mods": {
                 "productionEveryTicks": -100,
                 "production": 1
@@ -231,6 +249,7 @@
             {
               "name": "Deep Chill",
               "cost": 25,
+              "desc": "Longer slow: chilled enemies stay slow 14 ticks more.",
               "mods": {
                 "slowTicks": 14
               }
@@ -238,6 +257,7 @@
             {
               "name": "Ice Shards",
               "cost": 25,
+              "desc": "The field cuts: +4 damage per pulse.",
               "mods": {
                 "damage": 4
               }
@@ -249,6 +269,7 @@
             {
               "name": "Wide Field",
               "cost": 55,
+              "desc": "Bigger field: +1.5 range to the chill.",
               "mods": {
                 "range": 1.5
               }
@@ -256,6 +277,7 @@
             {
               "name": "Rapid Cycle",
               "cost": 55,
+              "desc": "Pulses 8 ticks sooner.",
               "mods": {
                 "fireEveryTicks": -8
               }
@@ -267,6 +289,7 @@
             {
               "name": "Absolute Zero",
               "cost": 120,
+              "desc": "The deep freeze: +30 slow ticks, +6 damage.",
               "mods": {
                 "slowTicks": 30,
                 "damage": 6
@@ -275,6 +298,7 @@
             {
               "name": "Shatterfield",
               "cost": 120,
+              "desc": "Frozen enemies shatter: +16 damage per pulse.",
               "mods": {
                 "damage": 16
               }

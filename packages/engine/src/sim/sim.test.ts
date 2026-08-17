@@ -553,6 +553,70 @@ describe('the route is a graph - touching is not connecting (session 14)', () =>
   });
 });
 
+describe('a fired shot always resolves (WBS 2.19, playtest 8)', () => {
+  const kill = (sim: Sim, slot: number): void => {
+    // Reach in the way applyDamage does - tests may execute an enemy.
+    sim.hp[slot] = 0;
+    sim.alive[slot] = 0;
+  };
+
+  it('ballistic: the shell detonates at its committed aim point even if the target died', () => {
+    const SHELL: TowerDef = {
+      id: 'shell',
+      cost: 20,
+      range: 8,
+      fireEveryTicks: 1000,
+      projectile: { damage: 6, speed: 0.5, homing: false, explosive: true, explodeRadius: 1.5 },
+    };
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(23, { towerDefs: [SHELL], maxSpawns: 4, spawnEveryTicks: 2 });
+    const sim = new Sim(23, simOpts);
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    sim.buildTower(spot.x, spot.y, 'shell');
+    // March until the tower fires, then kill its target mid-flight.
+    let fired = -1;
+    for (let t = 0; t < 400 && fired === -1; t++) {
+      sim.tick();
+      for (let p = 0; p < sim.projAlive.length; p++) if (sim.projAlive[p]) fired = p;
+    }
+    expect(fired).not.toBe(-1);
+    const events0 = sim.events.filter((e) => e.kind === 'impact').length;
+    for (let i = 0; i < 8; i++) if (sim.alive[i]) kill(sim, i);
+    // With every enemy dead the shell must STILL land and detonate.
+    for (let t = 0; t < 100 && sim.projAlive[fired]; t++) sim.tick();
+    expect(sim.projAlive[fired]).toBe(0);
+    expect(sim.events.filter((e) => e.kind === 'impact').length).toBe(events0 + 1);
+  });
+
+  it('homing: a shot whose target dies re-acquires; with nobody left it falls ballistic - never evaporates', () => {
+    const SNIPER: TowerDef = {
+      id: 'sniper',
+      cost: 20,
+      range: 10,
+      fireEveryTicks: 1000, // one shot in flight, so every impact is ITS impact
+      projectile: { damage: 6, speed: 0.4, homing: true },
+    };
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(23, { towerDefs: [SNIPER], maxSpawns: 5, spawnEveryTicks: 2 });
+    const sim = new Sim(23, simOpts);
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    sim.buildTower(spot.x, spot.y, 'sniper');
+    let fired = -1;
+    for (let t = 0; t < 400 && fired === -1; t++) {
+      sim.tick();
+      for (let p = 0; p < sim.projAlive.length; p++) if (sim.projAlive[p]) fired = p;
+    }
+    expect(fired).not.toBe(-1);
+    // Kill only the tracked target; others live. Under the old rule the shot
+    // evaporated here; now it must retarget and land exactly one impact.
+    const target0 = (() => { for (let i = 0; i < 8; i++) if (sim.alive[i]) return i; return -1; })();
+    expect(target0).not.toBe(-1);
+    kill(sim, target0);
+    const impacts0 = sim.events.filter((e) => e.kind === 'impact').length;
+    for (let t = 0; t < 300 && sim.projAlive[fired]; t++) sim.tick();
+    expect(sim.projAlive[fired]).toBe(0);
+    expect(sim.events.filter((e) => e.kind === 'impact').length).toBe(impacts0 + 1);
+  });
+});
+
 describe('the event feed (WBS 4.1) - the sim narrates, the view decides', () => {
   it('combat and construction emit typed events with monotonic seq', () => {
     const { cells, cellsW, cellsH, simOpts } = makeWorld(23);

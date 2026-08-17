@@ -79,8 +79,10 @@ export interface RenderState {
   hover: CellRef | null;
   selected: CellRef | null;
   /** Walkers in continuous cell units (subcell resolution), with their def id
-   *  so each enemy type reads differently on the board. */
-  enemies?: readonly { x: number; y: number; id?: string }[];
+   *  so each enemy type reads differently on the board, plus the readout
+   *  state (WBS 2.14): shield bracket, health mark, slow tint. No tooltips -
+   *  the enemy itself is the readout (PRD sec 8). */
+  enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean }[];
   /** Live towers, in cell coordinates, with their def id for per-type art. */
   towers?: readonly { x: number; y: number; id?: string }[];
   /** Projectiles in flight, continuous cell units; per-tick velocity, when
@@ -300,12 +302,24 @@ export class BoardView {
 
     // Real walkers, drawn at subcell resolution: continuous cell coords map
     // to the 5x3 glyph grid, so motion has 5 horizontal steps per cell
-    // instead of snapping cell to cell. Each enemy type has its own look.
+    // instead of snapping cell to cell. Each enemy type has its own look,
+    // and the enemy IS its readout (2.14, PRD sec 8): a live shield is a
+    // bracket around the glyph (destroyed separately from the body), damage
+    // is a braille mark above, a slow is a cold tint underneath.
+    const HP_RAMP = ['⡀', '⡄', '⡆', '⡇']; // ⡀⡄⡆⡇ - quarters of a life
     for (const e of state.enemies ?? []) {
       const gx = Math.floor(e.x * CELL_W);
       const gy = offsetY + Math.floor(e.y * CELL_H);
       const look = (e.id && ENEMY_LOOK[e.id]) || ENEMY_LOOK.grunt;
-      term.put(gx, gy, look.glyph, role(look.roleName));
+      term.put(gx, gy, look.glyph, role(look.roleName), e.slowed ? '#16303c' : undefined);
+      if (e.shielded) {
+        term.put(gx - 1, gy, '(', role('enemy.shell'));
+        term.put(gx + 1, gy, ')', role('enemy.shell'));
+      }
+      if (e.hp01 !== undefined && e.hp01 < 0.995) {
+        const pip = HP_RAMP[Math.max(0, Math.min(3, Math.floor(e.hp01 * 4)))];
+        term.put(gx, gy - 1, pip, e.hp01 < 0.3 ? role('enemy.fast') : role('ui.dim'));
+      }
     }
 
     // Projectiles: a bright head streaking at subcell resolution, with a
