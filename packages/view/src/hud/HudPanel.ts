@@ -71,7 +71,7 @@ export interface HudState {
   seed: number;
   speedLabel: string;
   inspector: string;
-  palette: readonly { name: string; cost: number; affordable: boolean }[];
+  palette: readonly { name: string; cost: number; affordable: boolean; id?: string }[];
   selectedBuild: number;
   buildTargetSelected: boolean;
   selectedTower: HudTowerInfo | null;
@@ -102,6 +102,9 @@ export interface HudRelicSlot {
   state: 'empty' | 'passive' | 'ready' | 'cooling' | 'consumable';
   /** Seconds until an active is ready again; 0 otherwise. */
   cooldownSec: number;
+  /** Relic id + whether firing needs a board-click aim (main-thread arming). */
+  id?: string;
+  targeted?: boolean;
 }
 
 export interface HudCoreInfo {

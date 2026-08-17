@@ -8,5 +8,7 @@ export type { OfferCard } from './board/OfferModal';
 export type { HudState, HudTowerInfo, HudTierInfo, HudChoiceInfo, HudAction, HudCoreInfo, HudRelicSlot } from './hud/HudPanel';
 export { CELL_W, CELL_H, drawTerrainCell, drawVoidCell } from './board/style';
 export { EffectsLayer } from './board/effects';
+export { MenuScreen } from './screens/MenuScreen';
+export type { MenuItem, MenuSpec } from './screens/MenuScreen';
 export { isReducedMotion, setReducedMotion } from './motion';
 export { role } from './palette';
