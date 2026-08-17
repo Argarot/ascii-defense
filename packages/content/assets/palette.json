@@ -33,6 +33,12 @@
     "terrain.ore.dark": "#2a2415",
     "terrain.core.mid": "#2bbfae",
     "terrain.core.lit": "#a8fff2",
-    "terrain.core.dark": "#0d2b26"
+    "terrain.core.dark": "#0d2b26",
+    "terrain.water.mid": "#1d3550",
+    "terrain.water.lit": "#2e4d6e",
+    "terrain.water.dark": "#060d16",
+    "fx.flash": "#fff3c4",
+    "fx.ember": "#ff9e4a",
+    "fx.smoke": "#66788c"
   }
 }

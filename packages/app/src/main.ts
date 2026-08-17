@@ -24,13 +24,17 @@ import {
   generateMap,
   resolveCells,
 } from '@ascii-defense/engine';
-import { BoardView, HudPanel, OfferModal, CELL_W, CELL_H, role } from '@ascii-defense/view';
+import { BoardView, EffectsLayer, HudPanel, OfferModal, CELL_W, CELL_H, isReducedMotion, role, setReducedMotion } from '@ascii-defense/view';
 import type { CellRef } from '@ascii-defense/view';
-import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
+import { validateEnemies, validateRelics, validateSprite, validateTowers } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
+import boltSpriteJson from '@ascii-defense/content/assets/sprites/bolt.json';
+import mortarSpriteJson from '@ascii-defense/content/assets/sprites/mortar.json';
+import frostSpriteJson from '@ascii-defense/content/assets/sprites/frost.json';
+import refinerySpriteJson from '@ascii-defense/content/assets/sprites/refinery.json';
 import { loadMintedTiles } from './mintedTiles';
 
 // Content enters the app validated or not at all (ARCHITECTURE sec 8).
@@ -41,6 +45,9 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 const ENEMY_DEFS = must(validateEnemies.check(enemiesJson), 'enemies roster').enemies;
 const TOWER_DEFS = must(validateTowers.check(towersJson), 'towers roster').towers;
 const RELIC_DEFS = must(validateRelics.check(relicsJson), 'relic pool').relics;
+const SPRITES = [boltSpriteJson, mortarSpriteJson, frostSpriteJson, refinerySpriteJson].map((s) =>
+  must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`),
+);
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '5';
@@ -84,7 +91,11 @@ async function main(): Promise<void> {
     mapY,
     glyphPxW: GLYPH_PX_W,
     glyphPxH: GLYPH_PX_H,
+    sprites: SPRITES,
   });
+  // The effects layer consumes the sim's event feed (WBS 4.1). One-way:
+  // the sim narrates, this draws, and the golden hash cannot tell.
+  const effects = new EffectsLayer();
 
   // The HUD beside the board, full height at 2x glyph size (10x16 px -
   // integer multiple, the bitmap font stays crisp).
@@ -250,6 +261,7 @@ async function main(): Promise<void> {
       difficulty: { hpLinear: 0.18, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
     });
     selected = null;
+    effects.reset(); // a fresh sim restarts its event seq at 0
     history.replaceState(null, '', `?seed=${seed}`);
     dirty = true;
   };
@@ -296,9 +308,9 @@ async function main(): Promise<void> {
     const speed = SPEEDS[speedIdx];
     const towers: { x: number; y: number; id: string }[] = [];
     for (const t of sim.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: sim.towerDef(t).id });
-    const projectiles: { x: number; y: number }[] = [];
+    const projectiles: { x: number; y: number; vx: number; vy: number }[] = [];
     for (let i = 0; i < sim.projX.length; i++) {
-      if (sim.projAlive[i]) projectiles.push({ x: sim.projX[i], y: sim.projY[i] });
+      if (sim.projAlive[i]) projectiles.push({ x: sim.projX[i], y: sim.projY[i], vx: sim.projVX[i], vy: sim.projVY[i] });
     }
     // Selected tower shows its true reach - "range 6" as paint, not prose.
     const selTower = selected ? sim.towerAt(selected.x, selected.y) : null;
@@ -370,10 +382,12 @@ async function main(): Promise<void> {
       telegraph: sim.nextWaveEntries,
       activeEntries: sim.spawnRemaining() > 0 ? sim.waveEntries : [],
       gameOver: sim.status !== 'running',
-      pulses: sim.pulses
-        .map((pu) => ({ x: pu.x, y: pu.y, r: pu.r, age01: (sim.tickCount - pu.tick) / 10 }))
-        .filter((pu) => pu.age01 >= 0 && pu.age01 <= 1),
       phase: animPhase,
+      animMs,
+      drift,
+    }, (t) => {
+      effects.ingest(sim.events);
+      effects.draw(t, sim.tickCount);
     });
 
     // The offer pop-up paints OVER the finished board frame; closing it is
@@ -608,11 +622,19 @@ async function main(): Promise<void> {
   let last = performance.now();
   let acc = 0;
   let animPhase = 0;
+  // Ambient clocks (WBS 4.1): wall time for idle sprite frames, and a slow
+  // integer step for terrain drift and water. Under reduced motion both hold
+  // still - frame 0 forever, a static board - and breathing UI stops too.
+  let animMs = 0;
+  let drift = 0;
   const frame = (now: number): void => {
     const dt = Math.min(now - last, 250);
     last = now;
     acc += dt * SPEEDS[speedIdx];
-    animPhase = (now / 900) % 1; // breathing UI, independent of sim speed
+    const still = isReducedMotion();
+    animPhase = still ? 0.25 : (now / 900) % 1; // breathing UI, independent of sim speed
+    animMs = still ? 0 : now;
+    drift = still ? 0 : Math.floor(now / 1400);
     let ran = 0;
     while (acc >= TICK_MS && ran < 32) {
       sim.tick();
@@ -674,6 +696,13 @@ async function main(): Promise<void> {
         inputs: sim.inputs,
       }),
     hash: (): number => sim.hashState(),
+    events: (): unknown[] => [...sim.events],
+    // Flip reduced motion at runtime - the settings screen is M4; this is
+    // how the state is verified until then (PRD sec 15.4).
+    motion: (reduced: boolean): void => {
+      setReducedMotion(reduced);
+      draw();
+    },
     reroll: (): void => {
       bankForReroll();
       setSeed((seed + 1) % 1_000_000);

@@ -58,6 +58,14 @@ export interface TerrainShade {
   litTop?: boolean;
   /** Bottom edge of its mass: sink the bottom row toward the background. */
   shadowBottom?: boolean;
+  /**
+   * Terrain drift step (WBS 4.1): an integer that advances slowly on the
+   * WALL clock. A hash-fixed ~18% of glyphs re-roll their pick each step, so
+   * the ground breathes without flickering; 0 (or absent) is perfectly
+   * static - the reduced-motion path and every non-game surface (Tile Smith
+   * passes nothing and stays a still authoring tool).
+   */
+  drift?: number;
 }
 
 /**
@@ -96,9 +104,11 @@ export function drawTerrainCell(
   // junctions declare all four sides and so were drawn with no kerb at all.
   const rim = ROAD_PORTS[kind] === undefined ? 0 : (shade.rim ?? 0);
   const kerb = role('terrain.rock.lit');
+  const drift = shade.drift ?? 0;
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
-      const g = pool[Math.floor(hash2(gx0 + x, gy0 + y, 6) * pool.length) % pool.length];
+      const alive = drift !== 0 && hash2(gx0 + x, gy0 + y, 17) < 0.18;
+      const g = pool[Math.floor(hash2(gx0 + x, gy0 + y, alive ? 6 + drift : 6) * pool.length) % pool.length];
       let fg = hash2(gx0 + x, gy0 + y, 9) < 0.2 ? lit : mid;
       if (kind === 'O' && hash2(gx0 + x, gy0 + y, 13) > richness) fg = rockMid;
       if (shade.litTop && y === 0) fg = lit;
@@ -121,5 +131,32 @@ export function drawTerrainCell(
         }
       }
       term.put(gx0 + x, gy0 + y, g, fg, bg);
+    }
+}
+
+/**
+ * Void becomes water (PRD sec 13): sparse ripples on a near-black surface,
+ * unmistakably BENEATH the landmass - unclaimed, unreachable, and by
+ * construction never carrying road (sec 4.2), so painting here is always
+ * safe. The same drift step that stirs the ground moves the ripples; at
+ * drift 0 (reduced motion, still surfaces) it is a static texture.
+ */
+const WATER_POOL = '~⠒⠂.⠦';
+
+export function drawVoidCell(term: GLTerm, gx0: number, gy0: number, drift = 0, hoverBg?: string): void {
+  const dark = role('terrain.water.dark');
+  const mid = role('terrain.water.mid');
+  const lit = role('terrain.water.lit');
+  const bg = hoverBg ?? dark;
+  for (let y = 0; y < CELL_H; y++)
+    for (let x = 0; x < CELL_W; x++) {
+      // Ripples re-roll position each step - water moves rather than breathes.
+      const h = hash2(gx0 + x, gy0 + y, 27 + drift);
+      if (h < 0.1) {
+        const g = WATER_POOL[Math.floor(hash2(gx0 + x, gy0 + y, 29 + drift) * WATER_POOL.length) % WATER_POOL.length];
+        term.put(gx0 + x, gy0 + y, g, hash2(gx0 + x, gy0 + y, 33) < 0.25 ? lit : mid, bg);
+      } else {
+        term.put(gx0 + x, gy0 + y, ' ', mid, bg);
+      }
     }
 }
