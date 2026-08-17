@@ -317,8 +317,13 @@ export class BoardView {
         term.put(gx + 1, gy, ')', role('enemy.shell'));
       }
       if (e.hp01 !== undefined && e.hp01 < 0.995) {
+        // Glyph AND colour carry the bar (2.25, playtest 9): two braille
+        // dots alone are too coarse, so the ramp is 4 glyph steps x 3
+        // colour bands = 12 readable states. Colour presents, nothing
+        // branches on it (invariant 10).
         const pip = HP_RAMP[Math.max(0, Math.min(3, Math.floor(e.hp01 * 4)))];
-        term.put(gx, gy - 1, pip, e.hp01 < 0.3 ? role('enemy.fast') : role('ui.dim'));
+        const col = e.hp01 < 0.3 ? role('enemy.fast') : e.hp01 < 0.65 ? role('terrain.ore.mid') : role('ui.accent');
+        term.put(gx, gy - 1, pip, col);
       }
     }
 
