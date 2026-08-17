@@ -1,50 +1,42 @@
 /**
- * Bootstrap, input and the FRAME clock - nothing else. The sim owns ticks
- * (fixed 20 Hz, invariant 6); this file only decides how many ticks each
- * animation frame is worth (pause/1x/2x/4x) and hands the accumulator to
- * requestAnimationFrame. What things look like lives in view; what things
- * ARE lives in engine.
+ * The UI thread: terminals, input, ambient clocks, screens and persistence.
+ * The Sim lives in a Worker (D7, session 18) and is reached ONLY through the
+ * protocol - this file never touches sim state, it renders FrameSnapshots.
+ *
+ * Screens are modes over the same board render; none of them owns game state
+ * (PRD sec 15.1). Saves: meta in localStorage, the run as seed + input log -
+ * a save IS a replay (PRD sec 15.2). Corrupt saves say so; nothing wipes
+ * silently.
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
+import { TILE_SIZE, TileLibrary } from '@ascii-defense/engine';
+import type { GeneratedMap } from '@ascii-defense/engine';
 import {
-  CACHE_CLAIM_COST,
-  DEPOSIT_MAX,
-  PROSPECT_TICKS,
-  OFFER_REROLL_COST,
-  PROSPECT_COST,
-  RELIC_DRAW_COST,
-  REPLAY_VERSION,
-  Sim,
-  TICK_HZ,
-  TILE_SIZE,
-  TileLibrary,
-  contentHashOf,
-  createRng,
-  generateMap,
-  resolveCells,
-} from '@ascii-defense/engine';
-import { BoardView, EffectsLayer, HudPanel, OfferModal, CELL_W, CELL_H, isReducedMotion, role, setReducedMotion } from '@ascii-defense/view';
-import type { CellRef } from '@ascii-defense/view';
-import { validateEnemies, validateRelics, validateSprite, validateTowers } from '@ascii-defense/content';
+  BoardView,
+  EffectsLayer,
+  HudPanel,
+  MenuScreen,
+  OfferModal,
+  CELL_W,
+  CELL_H,
+  isReducedMotion,
+  role,
+  setReducedMotion,
+} from '@ascii-defense/view';
+import type { CellRef, HudAction, HudState, RenderState } from '@ascii-defense/view';
+import { validateSprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
-import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
-import towersJson from '@ascii-defense/content/assets/towers/roster.json';
-import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import boltSpriteJson from '@ascii-defense/content/assets/sprites/bolt.json';
 import mortarSpriteJson from '@ascii-defense/content/assets/sprites/mortar.json';
 import frostSpriteJson from '@ascii-defense/content/assets/sprites/frost.json';
 import refinerySpriteJson from '@ascii-defense/content/assets/sprites/refinery.json';
-import { loadMintedTiles } from './mintedTiles';
+import { SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
-// Content enters the app validated or not at all (ARCHITECTURE sec 8).
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
   if (!r.ok) throw new Error(`${what} failed validation: ` + r.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
   return r.value;
 }
-const ENEMY_DEFS = must(validateEnemies.check(enemiesJson), 'enemies roster').enemies;
-const TOWER_DEFS = must(validateTowers.check(towersJson), 'towers roster').towers;
-const RELIC_DEFS = must(validateRelics.check(relicsJson), 'relic pool').relics;
 const SPRITES = [boltSpriteJson, mortarSpriteJson, frostSpriteJson, refinerySpriteJson].map((s) =>
   must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`),
 );
@@ -56,457 +48,163 @@ const load = <T>(p: string): Promise<T> =>
 
 const GLYPH_PX_W = 5;
 const GLYPH_PX_H = 8;
-const TICK_MS = 1000 / TICK_HZ;
-const SPEEDS = [0, 1, 2, 4, 8] as const;
-// Threat levels as DATA (session 15): named bundles of generator knobs and
-// curve. ?threat=N picks one; the demo defaults to Standard.
-const THREAT_LEVELS = [
-  { name: 'Calm', entries: [2, 3] as const, pathBias: 12, finalWave: 15, hpGeometric: 1.05 },
-  { name: 'Standard', entries: [2, 5] as const, pathBias: 8, finalWave: 20, hpGeometric: 1.06 },
-  { name: 'Grim', entries: [3, 6] as const, pathBias: 5, finalWave: 25, hpGeometric: 1.08 },
-];
-const threatIdx = Math.min(THREAT_LEVELS.length - 1, Math.max(0, Number(new URLSearchParams(location.search).get('threat') ?? 1)));
-const THREAT = THREAT_LEVELS[threatIdx];
-const FINAL_WAVE = THREAT.finalWave;
+
+// ---- persistence (PRD sec 15.2) --------------------------------------------
+const META_KEY = 'ascii-defense.meta.v1';
+const RUN_KEY = 'ascii-defense.run.v1';
+
+interface MetaSave {
+  version: number;
+  bankedOre: number;
+  settings: { reducedMotion: boolean | null }; // null = follow the OS
+  history: { seed: number; threat: string; wave: number; status: string; kills: number }[];
+}
+
+const defaultMeta = (): MetaSave => ({ version: SAVE_VERSION, bankedOre: 0, settings: { reducedMotion: null }, history: [] });
+
+/** Load-or-explain: a corrupt blob is REPORTED and left in place, never wiped. */
+function loadMeta(): { meta: MetaSave; problem: string | null } {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    if (!raw) return { meta: defaultMeta(), problem: null };
+    const m = JSON.parse(raw) as MetaSave;
+    if (m.version !== SAVE_VERSION) return { meta: defaultMeta(), problem: `meta save is version ${m.version}, this build reads ${SAVE_VERSION} - using defaults, old data kept` };
+    return { meta: m, problem: null };
+  } catch {
+    return { meta: defaultMeta(), problem: 'meta save is corrupt - using defaults, the broken data is kept for export' };
+  }
+}
+function saveMeta(m: MetaSave): void {
+  try { localStorage.setItem(META_KEY, JSON.stringify(m)); } catch { /* storage full: the run continues */ }
+}
+function loadRun(): { run: RunSave | null; problem: string | null } {
+  try {
+    const raw = localStorage.getItem(RUN_KEY);
+    if (!raw) return { run: null, problem: null };
+    const r = JSON.parse(raw) as RunSave;
+    if (r.version !== SAVE_VERSION) return { run: null, problem: `run save is version ${r.version}, this build reads ${SAVE_VERSION} - it cannot continue` };
+    return { run: r, problem: null };
+  } catch {
+    return { run: null, problem: 'run save is corrupt and cannot continue - kept for export' };
+  }
+}
 
 async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
-  // Minted tiles (Tile Smith's ADD TO POOL) join the shipped library - the
-  // generator picks them by signature like any other tile.
-  const minted = loadMintedTiles();
-  const lib = new TileLibrary([...tileLibraryJson.tiles, ...minted]);
+  const lib = new TileLibrary(tileLibraryJson.tiles);
 
-  const mapX = 12, mapY = 7; // 2 tile columns ceded to the side panel (Daniil)
+  const mapX = 12, mapY = 7;
   const boardCols = mapX * TILE_SIZE * CELL_W;
-  const term = new GLTerm(glyphs, {
-    cols: boardCols,
-    rows: mapY * TILE_SIZE * CELL_H,
-    cellPx: GLYPH_PX_W,
-    cellPxH: GLYPH_PX_H,
-    background: role('ui.bg'),
-  });
-
-  const view = new BoardView(term, lib, {
-    mapX,
-    mapY,
-    glyphPxW: GLYPH_PX_W,
-    glyphPxH: GLYPH_PX_H,
-    sprites: SPRITES,
-  });
-  // The effects layer consumes the sim's event feed (WBS 4.1). One-way:
-  // the sim narrates, this draws, and the golden hash cannot tell.
+  const term = new GLTerm(glyphs, { cols: boardCols, rows: mapY * TILE_SIZE * CELL_H, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
+  const view = new BoardView(term, lib, { mapX, mapY, glyphPxW: GLYPH_PX_W, glyphPxH: GLYPH_PX_H, sprites: SPRITES });
   const effects = new EffectsLayer();
-
-  // The HUD beside the board, full height at 2x glyph size (10x16 px -
-  // integer multiple, the bitmap font stays crisp).
-  const hudTerm = new GLTerm(glyphs, {
-    cols: 30,
-    rows: Math.floor((mapY * TILE_SIZE * CELL_H * GLYPH_PX_H) / (GLYPH_PX_H * 2)),
-    cellPx: GLYPH_PX_W * 2,
-    cellPxH: GLYPH_PX_H * 2,
-    background: role('ui.bg'),
-  });
+  const hudTerm = new GLTerm(glyphs, { cols: 30, rows: Math.floor((mapY * TILE_SIZE * CELL_H) / 2), cellPx: GLYPH_PX_W * 2, cellPxH: GLYPH_PX_H * 2, background: role('ui.bg') });
   const hud = new HudPanel(hudTerm, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
-  // The offer modal draws on its OWN overlay terminal at 2x font (Daniil:
-  // the cards were unreadable at board size). Absolute-positioned over the
-  // board; shown only while an offer stands.
-  const modalTerm = new GLTerm(glyphs, {
-    cols: Math.floor(boardCols / 2),
-    rows: Math.floor((mapY * TILE_SIZE * CELL_H) / 2),
-    cellPx: GLYPH_PX_W * 2,
-    cellPxH: GLYPH_PX_H * 2,
-    transparent: true,
-  });
+  const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / 2), rows: Math.floor((mapY * TILE_SIZE * CELL_H) / 2), cellPx: GLYPH_PX_W * 2, cellPxH: GLYPH_PX_H * 2, transparent: true });
   modalTerm.canvas.style.position = 'absolute';
   modalTerm.canvas.style.left = '0';
   modalTerm.canvas.style.top = '0';
-  modalTerm.canvas.style.display = 'none';
   const offerModal = new OfferModal();
+  const menu = new MenuScreen();
 
-  // Seed from the URL if pinned, else from the clock (Math.random is banned
-  // everywhere, and the whole point is that the seed is the only entropy).
-  const fromUrl = Number(new URLSearchParams(location.search).get('seed'));
-  let seed = Number.isInteger(fromUrl) && fromUrl > 0 ? fromUrl : Date.now() % 1_000_000;
+  // ---- state ---------------------------------------------------------------
+  const { meta, problem: metaProblem } = loadMeta();
+  const runLoad = loadRun();
+  let saveProblem = metaProblem ?? runLoad.problem;
+  if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
+
+  type Mode = 'title' | 'setup' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary';
+  let mode: Mode = 'title';
+  let settingsFrom: Mode = 'title';
+  let wipeArmed = false;
+  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; seed: number } | null = null;
+  let summaryBanked = false;
 
   let hover: CellRef | null = null;
   let selected: CellRef | null = null;
-  let sim!: Sim;
-  let speedIdx = 1; // start at 1x
-  let showGrid = false;
-  let selectedBuildId = TOWER_DEFS[0].id; // def id of the active build choice
-  let hudHover: import('@ascii-defense/view').HudAction | null = null;
-  let dirty = true;
-  /** Relic id awaiting a board-click target (Orbital); Esc cancels. */
+  let hudHover: HudAction | null = null;
   let targeting: string | null = null;
+  let showGrid = false;
+  let selectedBuildId: string | null = null;
+  let seed = 1;
+  let threatIdx = Math.min(2, Math.max(0, Number(new URLSearchParams(location.search).get('threat') ?? 1)));
+  let finalWave: number = THREAT_LEVELS[threatIdx].finalWave;
+  let currentMap: GeneratedMap | null = null;
+  let snap: FrameSnapshot | null = null;
+  let mirroredSpeed = 1; // last speed the UI asked for (space toggle memory)
+  let renderedMenuMode: Mode | null = null; // which screen's regions are live
 
-  // Two-letter slot tags: initials of the name's words ("Orbital Lance"->OL).
-  const slotTag = (name: string): string => {
-    const words = name.split(' ').filter(Boolean);
-    return (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();
-  };
-
-  const MIN_SLOTS = 12;
-  const coreInfoFor = (): import('@ascii-defense/view').HudCoreInfo | null => {
-    if (!selected || sim.cellAt(selected.x, selected.y) !== 'C') return null;
-    const held = sim.heldRelicInfo();
-    const slots = Array.from({ length: Math.max(MIN_SLOTS, held.length) }, (_, i): import('@ascii-defense/view').HudRelicSlot => {
-      const h = held[i];
-      if (!h) return { label: '', name: '', state: 'empty', cooldownSec: 0 };
-      const state =
-        h.def.kind === 'active'
-          ? h.cooldown > 0
-            ? ('cooling' as const)
-            : ('ready' as const)
-          : h.def.kind === 'consumable'
-            ? ('consumable' as const)
-            : ('passive' as const);
-      return { label: slotTag(h.def.name), name: h.def.name, state, cooldownSec: Math.ceil(h.cooldown / TICK_HZ) };
+  // ---- the worker ----------------------------------------------------------
+  const worker = new Worker(new URL('./simWorker.ts', import.meta.url), { type: 'module' });
+  const send = (m: ToWorker): void => worker.postMessage(m);
+  const act = (a: WorkerAction): void => send({ t: 'action', a });
+  let debugSeq = 0;
+  const debugWaiters = new Map<number, (r: unknown) => void>();
+  const saveWaiters = new Map<number, (r: RunSave) => void>();
+  const debug = (op: string, ...args: unknown[]): Promise<unknown> =>
+    new Promise((res) => {
+      const id = ++debugSeq;
+      debugWaiters.set(id, res);
+      send({ t: 'debug', id, op, args });
     });
-    const hov = hudHover?.kind === 'relic' ? held[hudHover.index] : undefined;
-    return {
-      hp: sim.coreHp,
-      hpMax: sim.coreHpMax,
-      slots,
-      hoverDesc: hov ? `${hov.def.name} - ${hov.def.desc}` : targeting ? 'click the map to aim, Esc cancels' : null,
-      drawCost: RELIC_DRAW_COST,
-      canDraw: sim.ore[0] >= RELIC_DRAW_COST && sim.heldRelics.length < RELIC_DEFS.length,
-    };
-  };
-
-  /** Click a filled slot: actives fire (targeted ones arm), consumables use. */
-  const slotClicked = (index: number): void => {
-    const h = sim.heldRelicInfo()[index];
-    if (!h) return;
-    if (h.def.kind === 'consumable') {
-      sim.useConsumable(h.def.id);
-    } else if (h.def.kind === 'active' && h.cooldown === 0) {
-      if (h.def.effects?.orbitalDamage !== undefined) targeting = h.def.id;
-      else sim.fireActive(h.def.id);
-    }
-    dirty = true;
-  };
-
-  // An offer freezes time: auto-pause when it appears, restore the previous
-  // speed on pick. The pause is app-level - the sim never wall-clock waits,
-  // so replays and the bot are untouched (they pick between ticks).
-  let offerWasUp = false;
-  let speedBeforeOffer = 1;
-  const syncOfferPause = (): void => {
-    const up = sim.offer !== null;
-    if (up && !offerWasUp) {
-      speedBeforeOffer = speedIdx === 0 ? 1 : speedIdx;
-      speedIdx = 0;
-    }
-    if (!up && offerWasUp) speedIdx = speedBeforeOffer;
-    offerWasUp = up;
-  };
-  const pickOffer = (option: number): void => {
-    if (sim.pickRelic(option)) {
-      syncOfferPause();
-      dirty = true;
-    }
-  };
-
-  // Ore carries across rerolls in memory - the demo stand-in for M2's real
-  // banking (PRD sec 6). Three carries, then the fourth reroll wipes: enough
-  // to feel persistence without an actual store.
-  let carriedOre = 0;
-  let oreCarries = 0;
-  const bankForReroll = (): void => {
-    if (++oreCarries > 3) {
-      carriedOre = 0;
-      oreCarries = 0;
-    } else {
-      carriedOre = sim.ore[0];
-    }
-  };
-
-  const setSeed = (s: number): void => {
-    seed = s;
-    // Difficulty knobs (PRD sec 4.4), randomized per seed for the demo so the
-    // space of possible maps is visible. Road length is BIASED long (max of
-    // two draws) rather than pinned - shorter roads are the harder end of the
-    // dial, and threat levels will move this bias, not a constant.
-    //
-    // The engine already retries generation internally; if a seed still
-    // fails, quietly step to the next one - a player must never read a
-    // generator stack trace (Daniil).
-    let map;
-    for (;;) {
-      try {
-        const knobs = createRng(seed).stream('map');
-        const entries = knobs.int(THREAT.entries[0], THREAT.entries[1]);
-        const targetPathLength = THREAT.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18));
-        map = generateMap(knobs, lib, { width: mapX, height: mapY, entries, targetPathLength, relicPoolSize: RELIC_DEFS.length });
-        break;
-      } catch (err) {
-        console.warn(`seed ${seed} could not generate, stepping`, err);
-        seed = (seed + 1) % 1_000_000;
-      }
-    }
-    view.setMap(map);
-    currentMap = map;
-    sim = new Sim(seed, {
-      cells: resolveCells(map.board, lib),
-      cellsW: mapX * TILE_SIZE,
-      cellsH: mapY * TILE_SIZE,
-      map,
-      enemyDefs: ENEMY_DEFS,
-      towerDefs: TOWER_DEFS,
-      mode: 'waves',
-      coreHp: 50,
-      startingOre: carriedOre,
-      relicDefs: RELIC_DEFS,
-      finalWave: FINAL_WAVE,
-      difficulty: { hpLinear: 0.18, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
-    });
-    selected = null;
-    effects.reset(); // a fresh sim restarts its event seq at 0
-    history.replaceState(null, '', `?seed=${seed}`);
-    dirty = true;
-  };
-
-  // Dynamic palette (Daniil): with a buildable tile selected, offer ONLY the
-  // towers legal there - a vein offers the Refinery, ground offers fighters.
-  // With nothing selected, the full roster shows for browsing.
-  const paletteDefs = (): (typeof TOWER_DEFS)[number][] => {
-    if (selected && sim.canBuildAt(selected.x, selected.y)) {
-      return TOWER_DEFS.filter((d) => sim.canBuildDefAt(selected!.x, selected!.y, d.id));
-    }
-    return TOWER_DEFS;
-  };
-
-  // The app keeps the generated map (the sim's opts are private): caches are
-  // rendered from it, minus what the sim says is claimed.
-  let currentMap: import('@ascii-defense/engine').GeneratedMap | null = null;
-  const oreRichness = (): { x: number; y: number; frac: number }[] => {
-    const out: { x: number; y: number; frac: number }[] = [];
-    for (const d of currentMap?.deposits ?? []) {
-      const dep = sim.depositAt(d.x, d.y);
-      if (dep) out.push({ x: d.x, y: d.y, frac: dep.left / DEPOSIT_MAX });
-    }
-    return out;
-  };
-
-  const mapCaches = (): { x: number; y: number }[] => {
-    const out: { x: number; y: number }[] = [];
-    currentMap?.caches.forEach((c, i) => {
-      if (!sim.claimedCaches.includes(i)) out.push({ x: c.x, y: c.y });
-    });
-    return out;
-  };
-
-  const collectEnemies = (): { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean }[] => {
-    const out: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean }[] = [];
-    for (let i = 0; i < sim.posX.length; i++) {
-      if (!sim.alive[i]) continue;
-      out.push({
-        x: sim.posX[i],
-        y: sim.posY[i],
-        id: sim.enemyDefOf(i).id,
-        hp01: sim.spawnHp[i] > 0 ? sim.hp[i] / sim.spawnHp[i] : 1,
-        shielded: sim.shield[i] > 0,
-        slowed: sim.slowTicks[i] > 0,
-      });
-    }
-    return out;
-  };
-
-  const draw = (): void => {
-    const speed = SPEEDS[speedIdx];
-    const towers: { x: number; y: number; id: string }[] = [];
-    for (const t of sim.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: sim.towerDef(t).id });
-    const projectiles: { x: number; y: number; vx: number; vy: number }[] = [];
-    for (let i = 0; i < sim.projX.length; i++) {
-      if (sim.projAlive[i]) projectiles.push({ x: sim.projX[i], y: sim.projY[i], vx: sim.projVX[i], vy: sim.projVY[i] });
-    }
-    // Selected tower shows its true reach - "range 6" as paint, not prose.
-    const selTower = selected ? sim.towerAt(selected.x, selected.y) : null;
-    const buildTarget = selected !== null && sim.canBuildAt(selected.x, selected.y);
-    // Hovering a palette entry previews THAT tower's radius (the staged-tile
-    // ring follows the mouse, not just the last click - Daniil's fix).
-    const palette = paletteDefs();
-    const previewDef =
-      (hudHover?.kind === 'build' ? palette[hudHover.index] : undefined) ??
-      palette.find((d) => d.id === selectedBuildId) ??
-      palette[0];
-    const aimRelic = targeting !== null ? RELIC_DEFS.find((r) => r.id === targeting) : undefined;
-    const range = aimRelic && hover
-      ? { x: hover.x, y: hover.y, r: aimRelic.effects?.orbitalRadius ?? 1 }
-      : selTower
-        ? { x: selTower.cellX, y: selTower.cellY, r: sim.stats(selTower).range }
-        : buildTarget && selected && previewDef
-          ? { x: selected.x, y: selected.y, r: previewDef.range }
-          : null;
-    const hoverTower = hover ? sim.towerAt(hover.x, hover.y) : null;
-    const infoTower = selTower ?? hoverTower;
-    const def = infoTower ? sim.towerDef(infoTower) : null;
-    const eff = infoTower ? sim.stats(infoTower) : null;
-    // Choice hover: fold the would-be pick into a stat preview.
-    let effPreview: ReturnType<typeof sim.stats> | null = null;
-    if (infoTower && hudHover?.kind === 'choose' && sim.choiceCost(infoTower, hudHover.tier, hudHover.option) !== null) {
-      const next = [...infoTower.choices] as [number, number, number];
-      next[hudHover.tier] = hudHover.option;
-      effPreview = sim.statsWith(infoTower, next);
-    }
-    const toStats = (e: NonNullable<typeof eff>) => ({
-      dmg: Math.round(e.damage * 10) / 10,
-      dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
-      range: Math.round(e.range * 10) / 10,
-      blast: Math.round(e.explodeRadius * 10) / 10,
-      slow: e.slowTicks,
-      prod:
-        e.productionEveryTicks > 0
-          ? `${((e.production / e.productionEveryTicks) * TICK_HZ).toFixed(2)}/s`
-          : null,
-    });
-    view.applyCellChanges(sim.cellChanges);
-    view.render({
-      hover,
-      routeAllowed: sim.flow.allowed,
-      caches: mapCaches(),
-      boons: (currentMap?.boons ?? []).map((b) => ({ x: b.x, y: b.y, tier: b.tier })),
-      oreRichness: oreRichness(),
-      selected,
-      enemies: collectEnemies(),
-      towers,
-      projectiles,
-      // A hovered upgrade that grows range previews it on the map, pulsing.
-      range:
-        selTower && effPreview && effPreview.range !== eff?.range
-          ? { x: selTower.cellX, y: selTower.cellY, r: effPreview.range }
-          : range,
-      // Green only when the sim would actually accept the click: placeable
-      // for SOME tower and affordable for the staged one.
-      hoverBuildable:
-        hover !== null &&
-        sim.canBuildAt(hover.x, hover.y) &&
-        previewDef !== undefined &&
-        sim.canAfford(previewDef.id),
-      showGrid,
-      rangeIsPreview: targeting !== null || (!selTower && buildTarget) || (selTower !== null && effPreview !== null),
-      // Blink = the NEXT wave will enter here; steady = spawning RIGHT NOW.
-      // One marker for both read as a lie when a telegraphed entry sat quiet
-      // for a whole wave (Daniil's report).
-      telegraph: sim.nextWaveEntries,
-      activeEntries: sim.spawnRemaining() > 0 ? sim.waveEntries : [],
-      gameOver: sim.status !== 'running',
-      phase: animPhase,
-      animMs,
-      drift,
-    }, (t) => {
-      effects.ingest(sim.events);
-      effects.draw(t, sim.tickCount);
+  const requestSave = (): Promise<RunSave> =>
+    new Promise((res) => {
+      const id = ++debugSeq;
+      saveWaiters.set(id, res);
+      send({ t: 'save', id });
     });
 
-    // The offer pop-up paints OVER the finished board frame; closing it is
-    // simply not painting it - the board underneath was never disturbed.
-    const offer = sim.offerDefs();
-    modalTerm.canvas.style.display = offer ? '' : 'none';
-    if (offer) {
-      modalTerm.clear(); // transparent: the board stays visible around the cards
-      offerModal.render(
-        modalTerm,
-        offer.map((d) => ({ name: d.name, kind: d.kind, desc: d.desc })),
-        sim.wave,
-        animPhase,
-        { cost: OFFER_REROLL_COST, can: sim.ore[0] >= OFFER_REROLL_COST, ore: sim.ore[0] },
-      );
-      modalTerm.flush();
+  worker.onmessage = (ev: MessageEvent<FromWorker>) => {
+    const m = ev.data;
+    if (m.t === 'ready') {
+      seed = m.seed;
+      finalWave = m.finalWave;
+      currentMap = m.map;
+      view.setMap(m.map);
+      effects.reset();
+      selected = null;
+      targeting = null;
+      summary = null;
+      summaryBanked = false;
+      history.replaceState(null, '', `?seed=${seed}&threat=${threatIdx}`);
+    } else if (m.t === 'snapshot') {
+      snap = m.s;
+    } else if (m.t === 'saved') {
+      saveWaiters.get(m.id)?.(m.save);
+      saveWaiters.delete(m.id);
+    } else if (m.t === 'debugResult') {
+      debugWaiters.get(m.id)?.(m.result);
+      debugWaiters.delete(m.id);
     }
-
-    hud.render({
-      scrap: sim.scrap,
-      ore: sim.ore[0],
-      relicCount: sim.heldRelics.length,
-      kills: sim.kills,
-      coreHp: sim.coreHp,
-      coreHpMax: sim.coreHpMax,
-      wave: sim.wave,
-      nextFronts: sim.nextWaveEntries.length,
-      nextWaveIn: Math.ceil(sim.ticksToNextWave() / TICK_HZ),
-      gameOver: sim.status === 'lost',
-      victory: sim.status === 'won',
-      finalWave: FINAL_WAVE,
-      L: sim.flow.L,
-      seed,
-      speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
-      inspector:
-        view.describeCell(selected ?? hover) +
-        (() => {
-          const c = selected ?? hover;
-          const dep = c ? sim.depositAt(c.x, c.y) : null;
-          if (dep && sim.cellAt(c!.x, c!.y) === 'O') return ` \u00b7 ore left ${dep.left}/${dep.initial}`;
-          const boon = c ? sim.boonAt(c.x, c.y) : null;
-          return boon ? ` \u00b7 BOON t${boon.tier}: ${Sim.boonEffect(boon.boon, boon.tier).text} for whatever is built here` : '';
-        })(),
-      palette: (buildTarget && !(selected && sim.cacheAt(selected.x, selected.y)) ? palette : []).map((d) => ({
-        name: d.name ?? d.id,
-        cost: d.cost,
-        affordable: sim.canAfford(d.id),
-      })),
-      selectedBuild: palette.findIndex((d) => d.id === selectedBuildId),
-      buildTargetSelected: buildTarget,
-      phase: animPhase,
-      core: coreInfoFor(),
-      cache:
-        selected && sim.cacheAt(selected.x, selected.y)
-          ? { cost: CACHE_CLAIM_COST, affordable: sim.scrap >= CACHE_CLAIM_COST }
-          : null,
-      rock:
-        selected && sim.cellAt(selected.x, selected.y) === 'K'
-          ? {
-              cost: PROSPECT_COST,
-              affordable: sim.scrap >= PROSPECT_COST,
-              seconds: Math.ceil(PROSPECT_TICKS / sim.prospectSpeed() / TICK_HZ),
-              job: (() => {
-                const j = sim.prospectJobAt(selected.x, selected.y);
-                return j ? { pct: Math.round(((j.total - j.remaining) / j.total) * 100) } : null;
-              })(),
-            }
-          : null,
-      selectedTower:
-        infoTower && def && eff
-          ? {
-              name: def.name ?? def.id,
-              kills: infoTower.kills,
-              deposit: def.production ? (sim.depositAt(infoTower.cellX, infoTower.cellY) ?? { left: 0, initial: 1 }) : null,
-              stats: toStats(eff),
-              preview: effPreview ? toStats(effPreview) : null,
-              offVein:
-                def.production !== undefined &&
-                (def.production.ore ?? 0) > 0 &&
-                sim.cellAt(infoTower.cellX, infoTower.cellY) !== 'O',
-              priority: infoTower.priority,
-              choiceDesc:
-                hudHover?.kind === 'choose'
-                  ? (def.tiers?.[hudHover.tier]?.choices[hudHover.option]?.desc ?? null)
-                  : null,
-              tiers: (def.tiers ?? []).map((tierDef, ti) => ({
-                choices: tierDef.choices.map((c, ci) => {
-                  const chosen = infoTower.choices[ti] === ci;
-                  const rejected = infoTower.choices[ti] !== -1 && !chosen;
-                  const available = sim.choiceCost(infoTower, ti, ci) !== null;
-                  return {
-                    name: c.name,
-                    cost: c.cost,
-                    state: chosen ? ('chosen' as const) : rejected ? ('rejected' as const) : available ? ('available' as const) : ('locked' as const),
-                    affordable: sim.scrap >= c.cost,
-                  };
-                }),
-              })),
-            }
-          : null,
-    });
-    dirty = false;
   };
 
+  const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave): void => {
+    threatIdx = tIdx;
+    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume });
+    mode = 'playing';
+    mirroredSpeed = 1;
+  };
+
+  // Boot: an attract-mode run simmers behind the title (paused = board only).
+  const urlSeed = Number(new URLSearchParams(location.search).get('seed'));
+  send({ t: 'init', seed: Number.isInteger(urlSeed) && urlSeed > 0 ? urlSeed : Date.now() % 1_000_000, threatIdx });
+  send({ t: 'speed', idx: 0 });
+
+  // ---- autosave (PRD sec 15.2): every few seconds and on the way out -------
+  const persistRun = async (): Promise<void> => {
+    if (mode !== 'playing' && mode !== 'paused') return;
+    if (!snap || snap.status !== 'running') return;
+    const save = await requestSave();
+    try { localStorage.setItem(RUN_KEY, JSON.stringify(save)); } catch { /* full */ }
+  };
+  setInterval(() => { void persistRun(); }, 5000);
+  window.addEventListener('pagehide', () => { void persistRun(); });
+
+  // ---- DOM -----------------------------------------------------------------
   const app = document.getElementById('app')!;
   app.style.display = 'flex';
   app.style.alignItems = 'flex-start';
   app.style.gap = '6px';
-  // Board + its caption stack in a left column; the caption stays under the
-  // board (Daniil), leaving the panel the full height beside them.
   const leftCol = document.createElement('div');
   leftCol.style.position = 'relative';
   leftCol.appendChild(term.canvas);
@@ -515,224 +213,372 @@ async function main(): Promise<void> {
   app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
   cap.className = 'hud';
-  cap.textContent =
-    `spleen 5x8 \u00b7 engine: generated map, 20 Hz fixed tick, flow field to the Core, subcell walkers \u00b7 ` +
-    `space pauses, 1/2/3 set speed, R rerolls \u00b7 `;
+  cap.textContent = 'spleen 5x8 · sim in a worker · space pauses, 1/2/3/4 set speed, Esc menus · ';
   const smithLink = document.createElement('a');
   smithLink.href = 'tilesmith.html';
-  smithLink.textContent = 'tile smith \u2192';
+  smithLink.textContent = 'tile smith →';
   smithLink.style.color = '#4cc9f0';
   cap.appendChild(smithLink);
   leftCol.appendChild(cap);
 
-  const same = (a: CellRef | null, b: CellRef | null): boolean =>
-    a === b || (a !== null && b !== null && a.x === b.x && a.y === b.y);
+  // ---- screens -------------------------------------------------------------
+  const menuSpec = (): import('@ascii-defense/view').MenuSpec | null => {
+    const runSave = loadRun();
+    switch (mode) {
+      case 'title':
+        return {
+          title: 'ASCII DEFENSE',
+          body: [
+            'the board is a press; the waves want it stopped',
+            '',
+            ...(saveProblem ? [`! ${saveProblem}`] : []),
+            meta.bankedOre > 0 ? `banked ore ${meta.bankedOre}` : '',
+          ].filter((l, i, a) => l !== '' || a[i - 1] !== ''),
+          items: [
+            { id: 'new', label: 'NEW RUN' },
+            { id: 'continue', label: 'CONTINUE', disabled: runSave.run === null, note: runSave.run ? `wave-era tick ${runSave.run.tick}` : runSave.problem ? 'unreadable' : 'no save' },
+            { id: 'settings', label: 'SETTINGS' },
+            { id: 'howto', label: 'HOW TO PLAY' },
+          ],
+          footer: `runs played ${meta.history.length}`,
+        };
+      case 'setup':
+        return {
+          title: 'RUN SETUP',
+          body: ['threat sets waves, path length and the final wave'],
+          items: [
+            ...THREAT_LEVELS.map((t, i) => ({ id: `threat:${i}`, label: t.name.toUpperCase(), note: `to wave ${t.finalWave}` })),
+            { id: 'back', label: 'BACK' },
+          ],
+        };
+      case 'howto':
+        return {
+          title: 'HOW TO PLAY',
+          body: [
+            'enemies march the road toward the Core;',
+            'if it falls, the run ends.',
+            '',
+            'click ground, then a tower in the panel',
+            'to build. towers upgrade in either/or',
+            'tiers. refineries on gold veins mine Ore.',
+            'every 3rd wave offers a relic - rules,',
+            'not numbers. rock hides ore and caches;',
+            'prospecting opens it. hold to the final',
+            'wave and THE CORE STANDS.',
+          ],
+          items: [{ id: 'back', label: 'BACK' }],
+        };
+      case 'settings':
+        return {
+          title: 'SETTINGS',
+          body: ['saves live in this browser; export moves them'],
+          items: [
+            { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
+            { id: 'export', label: 'EXPORT SAVES' },
+            { id: 'import', label: 'IMPORT SAVES' },
+            { id: 'wipe', label: wipeArmed ? 'CLICK AGAIN TO WIPE' : 'WIPE DATA' },
+            { id: 'back', label: 'BACK' },
+          ],
+        };
+      case 'paused':
+        return {
+          title: 'PAUSED',
+          body: [`wave ${snap?.hud.wave ?? 0} of ${finalWave} · seed ${seed}`],
+          items: [
+            { id: 'resume', label: 'RESUME' },
+            { id: 'settings', label: 'SETTINGS' },
+            { id: 'abandon', label: 'SAVE & EXIT TO TITLE' },
+          ],
+        };
+      case 'summary':
+        return summary
+          ? {
+              title: summary.won ? 'THE CORE STANDS' : 'THE CORE HAS FALLEN',
+              body: [
+                `wave ${summary.wave} of ${finalWave} · seed ${summary.seed}`,
+                `kills ${summary.kills}`,
+                `ore banked +${summary.oreBanked} (total ${meta.bankedOre})`,
+                ...(snap ? [`relics held ${snap.hud.relicCount}`] : []),
+              ],
+              items: [
+                { id: 'again', label: summary.won ? 'GO AGAIN' : 'TRY AGAIN' },
+                { id: 'title', label: 'TITLE' },
+              ],
+              footer: 'the next run starts where this one taught you',
+            }
+          : null;
+      default:
+        return null;
+    }
+  };
+
+  const download = (name: string, text: string): void => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const menuAction = (id: string): void => {
+    if (id !== 'wipe') wipeArmed = false;
+    switch (id) {
+      case 'new': mode = 'setup'; break;
+      case 'continue': {
+        const r = loadRun();
+        if (r.run) startRun(r.run.threatIdx, r.run.seed, r.run);
+        break;
+      }
+      case 'settings': settingsFrom = mode; mode = 'settings'; break;
+      case 'howto': mode = 'howto'; break;
+      case 'back': mode = mode === 'settings' ? settingsFrom : 'title'; break;
+      case 'motion': {
+        const v = !isReducedMotion();
+        setReducedMotion(v);
+        meta.settings.reducedMotion = v;
+        saveMeta(meta);
+        break;
+      }
+      case 'export': {
+        download('ascii-defense-saves.json', JSON.stringify({ meta: localStorage.getItem(META_KEY), run: localStorage.getItem(RUN_KEY) }));
+        break;
+      }
+      case 'import': {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'application/json';
+        inp.onchange = async () => {
+          try {
+            const text = await inp.files![0].text();
+            const data = JSON.parse(text) as { meta?: string | null; run?: string | null };
+            if (data.meta) localStorage.setItem(META_KEY, data.meta);
+            if (data.run) localStorage.setItem(RUN_KEY, data.run);
+            location.reload();
+          } catch {
+            saveProblem = 'that file is not an ASCII Defense save';
+          }
+        };
+        inp.click();
+        break;
+      }
+      case 'wipe': {
+        if (!wipeArmed) { wipeArmed = true; break; }
+        localStorage.removeItem(META_KEY);
+        localStorage.removeItem(RUN_KEY);
+        location.reload();
+        break;
+      }
+      case 'resume': mode = 'playing'; send({ t: 'speed', idx: 0 }); send({ t: 'speed', idx: mirroredSpeed }); break;
+      case 'abandon': void persistRun().then(() => { mode = 'title'; send({ t: 'speed', idx: 0 }); }); break;
+      case 'again': startRun(threatIdx); break;
+      case 'title': mode = 'title'; send({ t: 'speed', idx: 0 }); break;
+      default:
+        if (id.startsWith('threat:')) startRun(Number(id.slice(7)));
+    }
+  };
+
+  // ---- input ---------------------------------------------------------------
+  const same = (a: CellRef | null, b: CellRef | null): boolean => a === b || (a !== null && b !== null && a.x === b.x && a.y === b.y);
+  const inGame = (): boolean => mode === 'playing';
 
   term.canvas.addEventListener('mousemove', (e) => {
     const next = view.cellFromPixel(e.offsetX, e.offsetY);
-    if (!same(next, hover)) {
-      hover = next;
-      dirty = true;
-    }
+    if (!same(next, hover)) hover = next;
   });
-  term.canvas.addEventListener('mouseleave', () => {
-    hover = null;
-    dirty = true;
-  });
-  // Hovering HUD labels previews them (radius for palette, stats for
-  // choices); the same regions answer clicks.
-  hudTerm.canvas.addEventListener('mousemove', (e) => {
-    const a = hud.actionAt(e.offsetX, e.offsetY);
-    const changed = JSON.stringify(a) !== JSON.stringify(hudHover);
-    if (changed) {
-      hudHover = a;
-      dirty = true;
-    }
-  });
-  hudTerm.canvas.addEventListener('mouseleave', () => {
-    hudHover = null;
-    dirty = true;
-  });
-  // The panel is a column that can outgrow its rows (2.13): wheel scrolls it.
-  hudTerm.canvas.addEventListener('wheel', (e) => {
-    hud.scrollBy(e.deltaY > 0 ? 2 : -2);
-    dirty = true;
-    e.preventDefault();
-  }, { passive: false });
-  // Mouse-first: the HUD's labels ARE its buttons.
-  hudTerm.canvas.addEventListener('click', (e) => {
-    const action = hud.actionAt(e.offsetX, e.offsetY);
-    if (!action) return;
-    if (action.kind === 'build') {
-      const def = paletteDefs()[action.index];
-      if (def) {
-        selectedBuildId = def.id;
-        // The palette IS the build button when a tile is staged.
-        if (selected) sim.buildTower(selected.x, selected.y, def.id);
-      }
-    }
-    if (action.kind === 'priority' && selected) sim.setPriority(selected.x, selected.y, action.value);
-    if (action.kind === 'choose' && selected) sim.chooseTier(selected.x, selected.y, action.tier, action.option);
-    if (action.kind === 'relic') slotClicked(action.index);
-    if (action.kind === 'coreDraw') sim.buyRelic();
-    if (action.kind === 'claimCache' && selected) sim.claimCache(selected.x, selected.y);
-    if (action.kind === 'prospect' && selected) sim.prospect(selected.x, selected.y);
-    dirty = true;
-  });
-  modalTerm.canvas.addEventListener('click', (e) => {
-    if (sim.offer === null) return;
-    const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
-    if (option === -1) sim.rerollOffer();
-    else if (option !== null) pickOffer(option);
-    dirty = true;
-  });
+  term.canvas.addEventListener('mouseleave', () => { hover = null; });
   term.canvas.addEventListener('click', (e) => {
+    if (!inGame()) return;
+    if (snap?.offer) return; // the offer modal owns clicks while it stands
     const cell = view.cellFromPixel(e.offsetX, e.offsetY);
     if (targeting !== null) {
-      if (cell) sim.fireActive(targeting, cell.x, cell.y);
+      if (cell) act({ k: 'fireActive', relicId: targeting, x: cell.x, y: cell.y });
       targeting = null;
-      dirty = true;
       return;
     }
-    // Select-first flow (Daniil): clicking never builds. Pick the tile,
-    // then pick the tower in the HUD; the preview ring breathes meanwhile.
     selected = same(cell, selected) ? null : cell;
-    dirty = true;
   });
-  window.addEventListener('keydown', (e) => {
-    // While an offer is up, 1/2/3 pick cards (speed keys are moot: paused).
-    if (sim.offer !== null && (e.key === '1' || e.key === '2' || e.key === '3')) {
-      pickOffer(Number(e.key) - 1);
+
+  hudTerm.canvas.addEventListener('mousemove', (e) => { hudHover = hud.actionAt(e.offsetX, e.offsetY); });
+  hudTerm.canvas.addEventListener('mouseleave', () => { hudHover = null; });
+  hudTerm.canvas.addEventListener('wheel', (e) => { hud.scrollBy(e.deltaY > 0 ? 2 : -2); e.preventDefault(); }, { passive: false });
+  hudTerm.canvas.addEventListener('click', (e) => {
+    if (!inGame()) return;
+    const action = hud.actionAt(e.offsetX, e.offsetY);
+    if (!action || !snap) return;
+    if (action.kind === 'build') {
+      const entry = snap.hud.palette[action.index];
+      if (entry?.id) {
+        selectedBuildId = entry.id;
+        if (selected) act({ k: 'build', x: selected.x, y: selected.y, defId: entry.id });
+      }
+    }
+    if (action.kind === 'priority' && selected) act({ k: 'priority', x: selected.x, y: selected.y, value: action.value });
+    if (action.kind === 'choose' && selected) act({ k: 'choose', x: selected.x, y: selected.y, tier: action.tier, option: action.option });
+    if (action.kind === 'relic') {
+      const slot = snap.hud.core?.slots[action.index];
+      if (slot?.state === 'ready' && slot.targeted && slot.id) targeting = slot.id;
+      else act({ k: 'slot', index: action.index });
+    }
+    if (action.kind === 'coreDraw') act({ k: 'buyRelic' });
+    if (action.kind === 'claimCache' && selected) act({ k: 'claimCache', x: selected.x, y: selected.y });
+    if (action.kind === 'prospect' && selected) act({ k: 'prospect', x: selected.x, y: selected.y });
+  });
+
+  modalTerm.canvas.addEventListener('click', (e) => {
+    const spec = menuSpec();
+    if (spec) {
+      // Hit-test against the regions of the screen actually ON SCREEN: a
+      // click that arrives before the next render would otherwise land on
+      // the previous menu's rows (found by synthetic-click verification).
+      if (mode !== renderedMenuMode) return;
+      const id = menu.itemAt(e.offsetX, e.offsetY, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
+      if (id) menuAction(id);
       return;
     }
-    if (e.key === 'r' || e.key === 'R') {
-      bankForReroll();
-      setSeed((seed + 1 + (Date.now() % 997)) % 1_000_000);
+    if (snap?.offer) {
+      const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
+      if (option === -1) act({ k: 'rerollOffer' });
+      else if (option !== null) act({ k: 'pickRelic', option });
+    }
+  });
+  // The overlay canvas sits over the board; forward hover/board clicks when
+  // no screen and no offer is up so it never becomes an invisible wall.
+  modalTerm.canvas.style.pointerEvents = 'auto';
+  const overlayInert = (): boolean => menuSpec() === null && !snap?.offer;
+  modalTerm.canvas.addEventListener('mousemove', (e) => {
+    if (overlayInert()) {
+      const next = view.cellFromPixel(e.offsetX, e.offsetY);
+      if (!same(next, hover)) hover = next;
+    }
+  });
+  modalTerm.canvas.addEventListener('click', (e) => {
+    if (overlayInert()) {
+      term.canvas.dispatchEvent(new MouseEvent('click', { clientX: e.clientX, clientY: e.clientY }));
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (mode !== 'playing') {
+      if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup')) {
+        const leavingPause = mode === 'paused';
+        mode = mode === 'settings' ? settingsFrom : leavingPause ? 'playing' : 'title';
+        if (leavingPause) send({ t: 'speed', idx: mirroredSpeed });
+      }
+      return;
+    }
+    if (snap?.offer && (e.key === '1' || e.key === '2' || e.key === '3')) {
+      act({ k: 'pickRelic', option: Number(e.key) - 1 });
+      return;
     }
     if (e.key === ' ') {
-      speedIdx = speedIdx === 0 ? 1 : 0;
-      dirty = true;
+      const paused = snap?.paused ?? false;
+      send({ t: 'speed', idx: paused ? mirroredSpeed : 0 });
       e.preventDefault();
+      return;
     }
-    if (e.key === '1') { speedIdx = 1; dirty = true; }
-    if (e.key === '2') { speedIdx = 2; dirty = true; }
-    if (e.key === '3') { speedIdx = 3; dirty = true; }
-    if (e.key === '4') { speedIdx = 4; dirty = true; }
-    if (e.key === 'g' || e.key === 'G') { showGrid = !showGrid; dirty = true; }
-    if ((e.key === 'x' || e.key === 'X' || e.key === 'Delete') && selected) {
-      if (sim.sellTower(selected.x, selected.y)) dirty = true;
+    if (e.key >= '1' && e.key <= '4') {
+      mirroredSpeed = Number(e.key);
+      send({ t: 'speed', idx: mirroredSpeed });
     }
+    if (e.key === 'g' || e.key === 'G') showGrid = !showGrid;
+    if ((e.key === 'x' || e.key === 'X' || e.key === 'Delete') && selected) act({ k: 'sell', x: selected.x, y: selected.y });
     if (selected) {
       const prio = { f: 'first', l: 'last', c: 'closest', w: 'weakest' } as const;
       const p = prio[e.key.toLowerCase() as keyof typeof prio];
-      if (p && sim.setPriority(selected.x, selected.y, p)) dirty = true;
+      if (p) act({ k: 'priority', x: selected.x, y: selected.y, value: p });
     }
     if (e.key === 'Escape') {
-      selected = null;
-      targeting = null;
-      dirty = true;
+      if (targeting) { targeting = null; return; }
+      if (selected) { selected = null; return; }
+      // The pause SCREEN pauses the WORLD - a menu over a running sim would
+      // be the hidden-tab lie in reverse.
+      mode = 'paused';
+      send({ t: 'speed', idx: 0 });
     }
   });
 
   // ---- the frame loop ------------------------------------------------------
-  // Accumulate scaled wall time; every full TICK_MS runs exactly one tick.
-  // Speed changes tick FREQUENCY, never tick size (invariant 6). dt is
-  // clamped so a backgrounded tab does not fast-forward on return.
   let last = performance.now();
-  let acc = 0;
-  let animPhase = 0;
-  // Two clocks, deliberately (WBS 4.25, playtest 8). WORLD motion - terrain
-  // drift, water, tower idles - advances on worldMs, a speed-scaled
-  // accumulator: it freezes at pause and runs 8x at 8x, because that is what
-  // fast-forwarding a world means. UI motion (telegraph breathing, preview
-  // pulses) keeps the wall clock: the interface talks to the player, it does
-  // not simulate anything. Reduced motion stills both.
-  let animMs = 0;
-  let drift = 0;
   let worldMs = 0;
   const frame = (now: number): void => {
     const dt = Math.min(now - last, 250);
     last = now;
-    acc += dt * SPEEDS[speedIdx];
-    worldMs += dt * SPEEDS[speedIdx];
     const still = isReducedMotion();
-    animPhase = still ? 0.25 : (now / 900) % 1; // breathing UI, wall-clock on purpose
-    animMs = still ? 0 : worldMs;
-    drift = still ? 0 : Math.floor(worldMs / 1400);
-    let ran = 0;
-    while (acc >= TICK_MS && ran < 32) {
-      sim.tick();
-      acc -= TICK_MS;
-      ran++;
+    const speed = snap?.speed ?? 0;
+    worldMs += dt * speed;
+    const animPhase = still ? 0.25 : (now / 900) % 1;
+    const animMs = still ? 0 : worldMs;
+    const drift = still ? 0 : Math.floor(worldMs / 1400);
+
+    send({ t: 'frame', ui: { hover, selected, hudHover, targeting, showGrid } as UiState });
+
+    if (snap && currentMap) {
+      // The run ended while playing: bank once, then the summary owns the eye.
+      if (snap.status !== 'running' && (mode === 'playing' || mode === 'paused') && !summaryBanked) {
+        summaryBanked = true;
+        summary = { won: snap.status === 'won', wave: snap.hud.wave, kills: snap.hud.kills, oreBanked: snap.hud.ore, seed };
+        meta.bankedOre += snap.hud.ore;
+        meta.history.push({ seed, threat: THREAT_LEVELS[threatIdx].name, wave: snap.hud.wave, status: snap.status, kills: snap.hud.kills });
+        if (meta.history.length > 50) meta.history.shift();
+        saveMeta(meta);
+        try { localStorage.removeItem(RUN_KEY); } catch { /* the run is over either way */ }
+        mode = 'summary';
+      }
+
+      view.applyCellChanges(snap.cellChanges);
+      const board: RenderState = { ...snap.board, phase: animPhase, animMs, drift };
+      view.render(board, (t) => {
+        effects.ingest(snap!.events);
+        effects.draw(t, snap!.tick);
+      });
+      const hudState: HudState = {
+        ...snap.hud,
+        phase: animPhase,
+        inspector: view.describeCell(selected ?? hover) + snap.hud.inspector,
+        selectedBuild: snap.hud.palette.findIndex((p) => p.id === selectedBuildId),
+      };
+      hud.render(hudState);
+
+      // Overlay: a screen, else the offer, else nothing.
+      const spec = menuSpec();
+      modalTerm.clear();
+      renderedMenuMode = spec ? mode : null;
+      if (spec) {
+        menu.render(modalTerm, { ...spec, phase: animPhase });
+        modalTerm.flush();
+        modalTerm.canvas.style.display = '';
+      } else if (snap.offer && inGame()) {
+        offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll);
+        modalTerm.flush();
+        modalTerm.canvas.style.display = '';
+      } else {
+        modalTerm.flush();
+        modalTerm.canvas.style.display = '';
+      }
     }
-    syncOfferPause(); // an offer born this frame pauses before the next
-    // Redraw every frame: telegraphs breathe and pulses expand even while
-    // the player thinks; the renderer costs well under a millisecond.
-    draw();
-    void ran;
-    void dirty;
     requestAnimationFrame(frame);
   };
-
-  setSeed(seed);
-  draw(); // first paint synchronously - rAF may be throttled in hidden tabs
   requestAnimationFrame(frame);
 
-  // Debug handle for headless verification (the browser pane throttles rAF,
-  // see CONTRIBUTING). Steps the sim and redraws on demand; harmless in prod.
+  // ---- debug handle (async now: the sim answers from its worker) -----------
   (globalThis as Record<string, unknown>).__ad = {
-    step: (n: number): { breaches: number; alive: number; kills: number; coreDamage: number; ore: number } => {
-      for (let i = 0; i < n; i++) sim.tick();
-      draw();
-      return { breaches: sim.breaches, alive: sim.aliveCount(), kills: sim.kills, coreDamage: sim.coreDamage, ore: sim.ore[0] };
-    },
-    build: (x: number, y: number, id?: string): boolean => {
-      const ok = sim.buildTower(x, y, id ?? TOWER_DEFS[0].id);
-      draw();
-      return ok;
-    },
-    canBuild: (x: number, y: number): boolean => sim.canBuildAt(x, y),
-    cellAt: (x: number, y: number): string | null => sim.cellAt(x, y),
-    ore: (): number => sim.ore[0],
-    // Text snapshots of both terminals - the reliable way to verify UI from
-    // a headless pane (rAF frozen, screenshots refused - session 10).
+    step: (n: number) => debug('step', n),
+    build: (x: number, y: number, id?: string) => debug('build', x, y, id),
+    canBuild: (x: number, y: number) => debug('canBuild', x, y),
+    cellAt: (x: number, y: number) => debug('cellAt', x, y),
+    ore: () => debug('ore'),
+    offer: () => debug('offer'),
+    pick: (option: number) => debug('pick', option),
+    relics: () => debug('relics'),
+    hash: () => debug('hash'),
+    events: () => debug('events'),
+    enemies: () => debug('enemies'),
+    replay: () => debug('replay'),
     hudText: (): string => hudTerm.toText(),
     boardText: (): string => term.toText(),
-    select: (x: number, y: number): void => {
-      selected = { x, y };
-      draw();
-    },
-    offer: (): string[] | null => sim.offerDefs()?.map((d) => d.id) ?? null,
-    pick: (option: number): boolean => {
-      const ok = sim.pickRelic(option);
-      syncOfferPause();
-      draw();
-      return ok;
-    },
-    relics: (): string[] => sim.heldRelicInfo().map((h) => h.def.id),
-    // The whole run as a file (PRD sec 12): paste this into a bug report and
-    // the run is reproducible to the tick.
-    replay: (): string =>
-      JSON.stringify({
-        version: REPLAY_VERSION,
-        seed,
-        contentHash: contentHashOf(ENEMY_DEFS, TOWER_DEFS),
-        inputs: sim.inputs,
-      }),
-    hash: (): number => sim.hashState(),
-    events: (): unknown[] => [...sim.events],
-    // Flip reduced motion at runtime - the settings screen is M4; this is
-    // how the state is verified until then (PRD sec 15.4).
-    motion: (reduced: boolean): void => {
-      setReducedMotion(reduced);
-      draw();
-    },
-    reroll: (): void => {
-      bankForReroll();
-      setSeed((seed + 1) % 1_000_000);
-      draw();
-    },
-    enemies: collectEnemies,
+    select: (x: number, y: number): void => { selected = { x, y }; },
+    mode: (m?: Mode): Mode => { if (m) mode = m; return mode; },
+    motion: (reduced: boolean): void => { setReducedMotion(reduced); },
   };
 }
 

@@ -56,6 +56,22 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     expect(validateTileCells(headOn).join()).toMatch(/no other entry point/);
   });
 
+  it('T-JUNCTIONS: first-class 3-port types route three ways and rotate as a cycle (2.23)', () => {
+    // A T with stem south: enters W, exits E and S. Three entries, all served.
+    const tee = g('GGGGG', 'GGGGG', '--T--', 'GG|GG', 'GG|GG');
+    expect(validateTileCells(tee)).toEqual([]);
+    expect(deriveConnectors(tee)).toEqual({ n: false, e: true, s: true, w: true });
+    // Rotating the grid rotates the junction: T -> 3 -> U -> E -> T.
+    const r1 = rotateCells(tee, 1);
+    expect(r1.join('')).toContain('3');
+    expect(deriveConnectors(r1)).toEqual({ n: true, e: false, s: true, w: true });
+    expect(rotateCells(rotateCells(tee, 3), 1)).toEqual(tee); // full turn is identity
+    // The reason Ts are NOT 'R' (Daniil): two adjacent omni cells merge;
+    // a T's closed side does not - touch-without-connecting survives.
+    const denseR = g('GGRGG', 'GGRGG', 'RRRRG', 'GGRGG', 'GGRGG');
+    void denseR; // (R junction tiles remain legal; Ts exist for dense maps)
+  });
+
   it('LANES: twin_bend - two roads touching without merging, every entry served', () => {
     // The shipped two-lane tile: each bend links W-N / E-S respectively,
     // segments touch diagonally-adjacent without joining, four entries,

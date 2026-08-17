@@ -7,9 +7,9 @@
  * edge is a spawn point (PRD sec 4.1) - the same philosophy as derived
  * connectors. C is the Core's own substance, the thing enemies march toward.
  */
-export type CellType = 'G' | 'R' | 'r' | 'K' | 'O' | 'C' | '-' | '|' | 'L' | 'J' | 'F' | '7';
+export type CellType = 'G' | 'R' | 'r' | 'K' | 'O' | 'C' | '-' | '|' | 'L' | 'J' | 'F' | '7' | 'T' | 'U' | 'E' | '3';
 
-export const CELL_TYPES: readonly CellType[] = ['G', 'R', 'r', 'K', 'O', 'C', '-', '|', 'L', 'J', 'F', '7'];
+export const CELL_TYPES: readonly CellType[] = ['G', 'R', 'r', 'K', 'O', 'C', '-', '|', 'L', 'J', 'F', '7', 'T', 'U', 'E', '3'];
 
 /**
  * Which sides a road SEGMENT connects (Daniil, playtest 4: not four flow
@@ -25,6 +25,18 @@ export const ROAD_PORTS: Partial<Record<CellType, number>> = {
   J: 1 | 8,
   F: 4 | 2,
   '7': 4 | 8,
+  // T-junctions: first-class 3-port segments (2.23, Daniil playtest 9).
+  // NOT 'R': an omni cell merges with an adjacent omni cell, which would
+  // roll back touch-without-connecting exactly where roads are dense. The
+  // glyph mnemonic is the box-drawing shape: T like a ┬ (stem south),
+  // U like ┴ (stem north), E like ├ (opens east), 3 like ┤ (opens west).
+  T: 2 | 4 | 8,
+  U: 1 | 2 | 8,
+  E: 1 | 2 | 4,
+  '3': 1 | 4 | 8,
+  // A true 4-way INTERSECTION - crossing and merging - genuinely has four
+  // ports: that is 'R'. Crossing WITHOUT merging is the bridge cell (4.9),
+  // a future type carrying two independent port pairs.
   R: 15,
   r: 15,
 };

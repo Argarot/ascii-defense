@@ -41,8 +41,9 @@ export function cellAt(cells: readonly string[], x: number, y: number): CellType
   return cells[y][x] as CellType;
 }
 
-/** Directional glyphs rotate WITH the grid: up becomes right, and so on. */
-const ROTATE_GLYPH: Record<string, string> = { '-': '|', '|': '-', L: 'F', F: '7', '7': 'J', J: 'L' };
+/** Directional glyphs rotate WITH the grid: up becomes right, and so on.
+ *  T-junction cycle, clockwise: ports N→E→S→W gives T(ESW)→3(NSW)→U(NEW)→E(NES)→T. */
+const ROTATE_GLYPH: Record<string, string> = { '-': '|', '|': '-', L: 'F', F: '7', '7': 'J', J: 'L', T: '3', '3': 'U', U: 'E', E: 'T' };
 
 /** Rotate the grid one quarter turn clockwise, k times. Pure. */
 export function rotateCells(cells: readonly string[], k: Rotation): string[] {

@@ -316,14 +316,14 @@ withdrawn before it got an entry (PRD §14). Do not reuse any of these numbers.
 - [ ] 4.13 **UI art pass** *(sessions 28–30; requests V1, V2)*: illustrated relic and upgrade cards, panel chrome. The structural half (scrollable panels, larger card geometry) is 2.13 in session 17; this is the art that fills it. *Reconstructed from the V1→2.13+4.13 split — confirm against V1/V2 when they are restated.*
 - [ ] 4.14 **Enemies drawn wider than one cell** *(sessions 28–30; request V12)*: a boss drawn three glyphs wide keeps a one-cell footprint. Visual size yes, mechanical size no — the mechanical version is rejected in PRD §14, and this entry is the half that was accepted.
 
-- [ ] 4.15 **Screen stack** in the view — screens push/pop, board renders beneath where it should. Generalises the relic-offer modal rather than duplicating it. No screen owns game state.
-- [ ] 4.16 **Title / main menu**: new run · continue · workshop · settings · how to play.
-- [ ] 4.17 **Run setup**: threat level, optional pinned seed, chosen starting loadout later.
-- [ ] 4.18 **Pause overlay** and an explicit paused state (pairs with the Worker, 2.13).
-- [ ] 4.19 **Run summary screen** — what killed you, which wave, what you built, relics taken, Ore banked. A designed screen: it is the moment that produces another run or ends the session.
-- [ ] 4.20 **Persistence** (PRD §15.2): meta state (Ore, unlocks, history, settings) in localStorage; run state as seed + input log (**a save IS a replay**). Schema versioned, migrate-or-say-so, never wipe silently.
-- [ ] 4.21 **Save export / import** — a file. Cheap, moves progress between machines, and gives us reproducible bug reports for free.
-- [ ] 4.22 **Settings screen**: reduced motion, colourblind palette, text scale, keybinds, wipe data.
+- [x] 4.15 *(session 18)* **Screen stack** in the view — screens push/pop, board renders beneath where it should. Generalises the relic-offer modal rather than duplicating it. No screen owns game state.
+- [x] 4.16 *(session 18)* **Title / main menu**: new run · continue · workshop · settings · how to play.
+- [x] 4.17 *(session 18; threat pick + seed pin via URL; loadout arrives with 2.21)* **Run setup**: threat level, optional pinned seed, chosen starting loadout later.
+- [x] 4.18 *(session 18)* **Pause overlay** and an explicit paused state (pairs with the Worker, 2.13).
+- [x] 4.19 *(session 18)* **Run summary screen** — what killed you, which wave, what you built, relics taken, Ore banked. A designed screen: it is the moment that produces another run or ends the session.
+- [x] 4.20 *(session 18)* **Persistence** (PRD §15.2): meta state (Ore, unlocks, history, settings) in localStorage; run state as seed + input log (**a save IS a replay**). Schema versioned, migrate-or-say-so, never wipe silently.
+- [x] 4.21 *(session 18)* **Save export / import** — a file. Cheap, moves progress between machines, and gives us reproducible bug reports for free.
+- [~] 4.22 *(session 18: reduced motion, export/import, two-click wipe)* **Settings screen**. Remaining for session 22: colourblind palette, text scale, keybinds.
 - [ ] 4.23 **Onboarding** (PRD §15.3): contextual first-encounter prompts, a How-to-play screen, gentle opening waves. No forced tutorial.
 - [ ] 4.24 **Accessibility** (PRD §15.4): colourblind palette values, full keyboard operation, reduced motion honoured by the effects engine, HUD text scale.
 - [x] 4.25 *(session 17)* **World motion rides sim time, UI motion rides the wall clock** *(Daniil, playtest 8; session 17)*. Session 16 put terrain drift, water and tower idles on raw wall-clock `performance.now()`, so the world keeps ambling at 8× and keeps moving while paused — while the effects layer, in the same session, was deliberately tick-anchored on the argument that "an honest pause shows a stopped world". Both halves cannot be right. Fix: world ambient advances on a speed-scaled accumulator (freezes at pause, 8× at 8×); telegraph breathing and preview pulses stay on the wall clock, because the interface is not part of the world (PRD §13).
