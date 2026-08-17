@@ -4,7 +4,7 @@ import { TILE_SIZE } from '../tiles/tile';
 import { TileLibrary, resolveCells } from '../tiles/board';
 import { generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { Sim, TICK_HZ, type SimOptions } from './sim';
+import { EVENT_CAP, Sim, TICK_HZ, type SimOptions } from './sim';
 import type { EnemyDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
@@ -381,7 +381,7 @@ describe('towers and projectiles', () => {
     let anyProj = 0;
     for (let i = 0; i < sim.projAlive.length; i++) anyProj += sim.projAlive[i];
     expect(anyProj).toBe(0);
-    expect(sim.pulses.length).toBeGreaterThan(0);
+    expect(sim.events.some((e) => e.kind === 'pulse')).toBe(true);
     let checked = false;
     for (let i = 0; i < 8; i++) {
       if (sim.alive[i]) {
@@ -550,6 +550,44 @@ describe('the route is a graph - touching is not connecting (session 14)', () =>
     // B's lane reaches the Core; A's lane - touching it the whole way - never does.
     expect(flow.dist[4 * W + 5]).toBeGreaterThan(0); // B's border road: on the route
     expect(flow.dist[4 * W + 4]).toBe(-1); // A's border road: a different road entirely
+  });
+});
+
+describe('the event feed (WBS 4.1) - the sim narrates, the view decides', () => {
+  it('combat and construction emit typed events with monotonic seq', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(23);
+    const sim = new Sim(23, simOpts);
+    for (let n = 0; n < 4; n++) {
+      const spot = buildSpotNear(cells, cellsW, cellsH, n);
+      sim.buildTower(spot.x, spot.y, 'bolt');
+    }
+    expect(sim.events.filter((e) => e.kind === 'build').length).toBe(4);
+    const budget = (sim.flow.L / WALKER.speed + 10 * 5 + 200) | 0;
+    for (let t = 0; t < budget; t++) sim.tick();
+    // The defended-road test proves kills happen on this seed; every kill
+    // and every hit must have narrated itself.
+    expect(sim.events.some((e) => e.kind === 'impact')).toBe(true);
+    expect(sim.events.filter((e) => e.kind === 'death').length).toBe(sim.kills);
+    for (let i = 1; i < sim.events.length; i++) {
+      expect(sim.events[i].seq).toBe(sim.events[i - 1].seq + 1);
+    }
+  });
+
+  it('the feed is capped and events never enter the state hash', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(23, { maxSpawns: 0, spawnEveryTicks: 2 });
+    const sim = new Sim(23, simOpts);
+    for (let n = 0; n < 4; n++) {
+      const spot = buildSpotNear(cells, cellsW, cellsH, n);
+      sim.buildTower(spot.x, spot.y, 'bolt');
+    }
+    for (let t = 0; t < 4000; t++) sim.tick();
+    expect(sim.events.length).toBeLessThanOrEqual(EVENT_CAP);
+    // Draining the feed (what a view effectively does) must not move the
+    // hash: two sims that evolved identically hash identically no matter
+    // what happened to their event lists.
+    const before = sim.hashState();
+    sim.events.length = 0;
+    expect(sim.hashState()).toBe(before);
   });
 });
 

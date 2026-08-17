@@ -1,0 +1,22 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "mortar",
+  "cell": [5, 3],
+  "frameMs": 900,
+  "tiers": {
+    "0": {
+      "art": [",===.", "|(M)|", "'---'"],
+      "ink": ["FFFFF", "FFCFF", "FFFFF"],
+      "frames": [
+        {
+          "art": [",===.", "|(m)|", "'---'"],
+          "ink": ["FFFFF", "FFCFF", "FFFFF"]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    "F": "tower.frame",
+    "C": "path.2"
+  }
+}

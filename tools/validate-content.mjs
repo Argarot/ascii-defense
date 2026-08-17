@@ -67,18 +67,25 @@ function validate(relPath, doc) {
 
 function lintSprite(relPath, sprite, palette) {
   const [w, h] = sprite.cell;
-  for (const [tier, { art, ink }] of Object.entries(sprite.tiers)) {
-    if (art.length !== h) findings.push(`${relPath}: tier ${tier} art has ${art.length} rows, cell declares ${h}`);
-    if (ink.length !== h) findings.push(`${relPath}: tier ${tier} ink has ${ink.length} rows, cell declares ${h}`);
+  // Every frame - the base pair and each entry of the idle cycle (WBS 4.1) -
+  // obeys the same dimension and ink rules; a frame model that let frame 2
+  // be a different size would push the failure to the renderer.
+  const lintFrame = (tier, label, art, ink) => {
+    if (art.length !== h) findings.push(`${relPath}: tier ${tier} ${label} art has ${art.length} rows, cell declares ${h}`);
+    if (ink.length !== h) findings.push(`${relPath}: tier ${tier} ${label} ink has ${ink.length} rows, cell declares ${h}`);
     art.forEach((row, i) => {
-      if ([...row].length !== w) findings.push(`${relPath}: tier ${tier} art row ${i} is ${[...row].length} glyphs, cell declares ${w}`);
+      if ([...row].length !== w) findings.push(`${relPath}: tier ${tier} ${label} art row ${i} is ${[...row].length} glyphs, cell declares ${w}`);
     });
     ink.forEach((row, i) => {
-      if ([...row].length !== w) findings.push(`${relPath}: tier ${tier} ink row ${i} is ${[...row].length} keys, cell declares ${w}`);
+      if ([...row].length !== w) findings.push(`${relPath}: tier ${tier} ${label} ink row ${i} is ${[...row].length} keys, cell declares ${w}`);
       for (const key of row) {
-        if (!(key in sprite.inkMap)) findings.push(`${relPath}: tier ${tier} ink key '${key}' missing from inkMap`);
+        if (!(key in sprite.inkMap)) findings.push(`${relPath}: tier ${tier} ${label} ink key '${key}' missing from inkMap`);
       }
     });
+  };
+  for (const [tier, { art, ink, frames }] of Object.entries(sprite.tiers)) {
+    lintFrame(tier, 'base', art, ink);
+    (frames ?? []).forEach((f, i) => lintFrame(tier, `frame ${i + 1}`, f.art, f.ink));
   }
   for (const [key, role] of Object.entries(sprite.inkMap)) {
     if (role !== null && role !== 'PATH' && palette && !(role in palette.roles)) {

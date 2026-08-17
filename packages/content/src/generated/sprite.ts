@@ -14,6 +14,10 @@ export interface Sprite {
    * @maxItems 2
    */
   cell: [number, number];
+  /**
+   * Idle-cycle cadence in wall-clock milliseconds (WBS 4.1). Ambient animation is presentation time, never sim time: the view cycles frames on its own clock, a reduced-motion player sees frame 0 forever, and the sim knows none of this. Format-agnostic on purpose - frames are plain grids, nothing importer-specific (decided 2026-08-17).
+   */
+  frameMs?: number;
   tiers: {
     /**
      * This interface was referenced by `undefined`'s JSON-Schema definition
@@ -28,6 +32,33 @@ export interface Sprite {
        * @minItems 1
        */
       ink: [string, ...string[]];
+      /**
+       * Additional idle frames beyond the base art (which is frame 0). The cycle is [base, ...frames], each the same cell size as the base - enforced by the content linter.
+       *
+       * @minItems 1
+       */
+      frames?: [
+        {
+          /**
+           * @minItems 1
+           */
+          art: [string, ...string[]];
+          /**
+           * @minItems 1
+           */
+          ink: [string, ...string[]];
+        },
+        ...{
+          /**
+           * @minItems 1
+           */
+          art: [string, ...string[]];
+          /**
+           * @minItems 1
+           */
+          ink: [string, ...string[]];
+        }[]
+      ];
     };
   };
   /**
@@ -74,6 +105,11 @@ export const spriteSchema = {
       "minItems": 2,
       "maxItems": 2
     },
+    "frameMs": {
+      "description": "Idle-cycle cadence in wall-clock milliseconds (WBS 4.1). Ambient animation is presentation time, never sim time: the view cycles frames on its own clock, a reduced-motion player sees frame 0 forever, and the sim knows none of this. Format-agnostic on purpose - frames are plain grids, nothing importer-specific (decided 2026-08-17).",
+      "type": "integer",
+      "minimum": 60
+    },
     "tiers": {
       "type": "object",
       "minProperties": 1,
@@ -100,6 +136,35 @@ export const spriteSchema = {
                 "type": "string"
               },
               "minItems": 1
+            },
+            "frames": {
+              "description": "Additional idle frames beyond the base art (which is frame 0). The cycle is [base, ...frames], each the same cell size as the base - enforced by the content linter.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "art",
+                  "ink"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "art": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  },
+                  "ink": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  }
+                }
+              }
             }
           }
         }

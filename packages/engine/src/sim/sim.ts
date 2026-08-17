@@ -107,6 +107,34 @@ export function waveCount(d: DifficultySpec, wave: number): number {
   return Math.max(1, Math.round((d.countBase + d.countLinear * (wave - 1)) * geo));
 }
 
+/**
+ * Sim -> view events (WBS 4.1). The sim narrates what HAPPENED as plain data;
+ * the view decides what any of it looks like. One-way by construction: the
+ * sim never reads this list, nothing here is hashed, and emission spends no
+ * randomness - so effects can never move the golden replay hash. `Sim.pulses`
+ * was the accidental prototype of this shape; it is now event kind 'pulse'.
+ *
+ * Coordinates are continuous cell units, same space as posX/posY.
+ */
+export type SimEvent =
+  | { kind: 'pulse'; x: number; y: number; r: number }
+  | { kind: 'impact'; x: number; y: number; r: number } // r 0 = plain hit, >0 = blast radius
+  | { kind: 'death'; x: number; y: number }
+  | { kind: 'breach'; x: number; y: number; dmg: number }
+  | { kind: 'build'; x: number; y: number }
+  | { kind: 'sell'; x: number; y: number }
+  | { kind: 'waveStart'; wave: number }
+  | { kind: 'reveal'; x: number; y: number; found: 'ore' | 'cache' | 'none' };
+
+export type StampedSimEvent = SimEvent & { seq: number; tick: number };
+
+/**
+ * Ring cap. `seq` stays monotonic across drops, so a consumer tracking the
+ * last seq it handled survives the shift; a view that falls 256 events
+ * behind loses eye candy, never correctness.
+ */
+export const EVENT_CAP = 256;
+
 /** D4 (closed 2026-08-16): a pick-1-of-3 offer every this many waves. */
 export const OFFER_EVERY_WAVES = 3;
 /** Ore price of a blind draw from the pool at the Core (PRD sec 7.3 C). */
@@ -160,8 +188,10 @@ export class Sim {
   // ---- projectiles (SoA), stats snapshotted at fire time ----
   readonly projX = new Float32Array(PROJ_CAP);
   readonly projY = new Float32Array(PROJ_CAP);
-  private readonly projVX = new Float32Array(PROJ_CAP);
-  private readonly projVY = new Float32Array(PROJ_CAP);
+  // Velocity is public read-only like position: the view draws trails from
+  // it (WBS 4.1). Same one-way seam as posX/posY - the view reads, never writes.
+  readonly projVX = new Float32Array(PROJ_CAP);
+  readonly projVY = new Float32Array(PROJ_CAP);
   readonly projAlive = new Uint8Array(PROJ_CAP);
   private readonly projTarget = new Int32Array(PROJ_CAP);
   private readonly projTargetGen = new Uint16Array(PROJ_CAP);
@@ -181,8 +211,9 @@ export class Sim {
   readonly occupancy: Uint16Array;
 
   tickCount = 0;
-  /** Recent pulse emissions for the view's expanding rings. */
-  pulses: { x: number; y: number; r: number; tick: number }[] = [];
+  /** Sim->view event feed (see SimEvent). Append-only, capped, never read back. */
+  readonly events: StampedSimEvent[] = [];
+  private eventSeq = 0;
   breaches = 0;
   coreDamage = 0;
   spawned = 0;
@@ -344,6 +375,7 @@ export class Sim {
     const prodCooldown = def.production ? effectiveStats(def, [-1, -1, -1]).productionEveryTicks : 0;
     this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, priority: 'first', choices: [-1, -1, -1] });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
+    this.emit({ kind: 'build', x, y });
     this.inputs.push({ tick: this.tickCount, a: { t: 'build', x, y, defId } });
     return true;
   }
@@ -477,7 +509,7 @@ export class Sim {
         const dy = this.posY[i] - cy;
         if (Math.sqrt(dx * dx + dy * dy) <= r) this.applyDamage(i, e.orbitalDamage, 0, 0, -1);
       }
-      this.pulses.push({ x: cx, y: cy, r, tick: this.tickCount });
+      this.emit({ kind: 'pulse', x: cx, y: cy, r });
     }
     if (e.freezeTicks !== undefined) this.freezeUntil = this.tickCount + e.freezeTicks;
     if (e.productionMul !== undefined) {
@@ -630,6 +662,7 @@ export class Sim {
       const t: CellType = yields === 'ore' ? 'O' : 'G';
       this.cellsMut[k] = t;
       this.cellChanges.push({ x, y, t });
+      this.emit({ kind: 'reveal', x, y, found: yields });
       if (yields === 'ore') {
         const amount = found?.depositAmount ?? 30;
         this.depositLeft.set(k, amount);
@@ -751,6 +784,7 @@ export class Sim {
     }
     this.towers[idx - 1] = null;
     this.occupancy[y * this.opts.cellsW + x] = 0;
+    this.emit({ kind: 'sell', x, y });
     this.inputs.push({ tick: this.tickCount, a: { t: 'sell', x, y } });
     return true;
   }
@@ -866,6 +900,11 @@ export class Sim {
     return n;
   }
 
+  private emit(e: SimEvent): void {
+    this.events.push({ ...e, seq: this.eventSeq++, tick: this.tickCount });
+    if (this.events.length > EVENT_CAP) this.events.shift();
+  }
+
   // ---- the tick ------------------------------------------------------------
 
   tick(): void {
@@ -957,6 +996,7 @@ export class Sim {
       this.maybeOffer();
       if (--this.betweenTimer > 0) return;
       this.wave++;
+      this.emit({ kind: 'waveStart', wave: this.wave });
       this.waveEntries = this.nextWaveEntries.length ? this.nextWaveEntries : this.pickWaveEntries(this.wave);
       this.nextWaveEntries = this.pickWaveEntries(this.wave + 1);
       this.betweenTimer = this.interWaveTicks;
@@ -1138,6 +1178,7 @@ export class Sim {
     const radius = this.projRadius[p];
     const ix = this.posX[enemy];
     const iy = this.posY[enemy];
+    this.emit({ kind: 'impact', x: ix, y: iy, r: radius });
     this.damageEnemy(enemy, p);
     if (radius > 0) {
       // Splinter (relic): the explosion resolves twice.
@@ -1182,6 +1223,7 @@ export class Sim {
       const overkill = -this.hp[enemy];
       this.alive[enemy] = 0;
       this.freeEnemies.push(enemy);
+      this.emit({ kind: 'death', x: this.posX[enemy], y: this.posY[enemy] });
       this.kills++;
       this.scrap += (def.bounty ?? 0) + this.fold.killRefundScrap; // Tithe
       const tower = this.towers[towerIdx];
@@ -1232,8 +1274,7 @@ export class Sim {
         towerIdx,
       );
     }
-    this.pulses.push({ x: cx, y: cy, r: eff.range, tick: this.tickCount });
-    if (this.pulses.length > 24) this.pulses.shift();
+    this.emit({ kind: 'pulse', x: cx, y: cy, r: eff.range });
   }
 
   private despawnProj(p: number): void {
@@ -1270,6 +1311,7 @@ export class Sim {
           this.freeEnemies.push(i);
           this.breaches++;
           const dealt = this.opts.enemyDefs[this.enemyDefIdx[i]].damage;
+          this.emit({ kind: 'breach', x: this.posX[i], y: this.posY[i], dmg: dealt });
           this.coreDamage += dealt;
           this.coreHp -= dealt;
           if (this.coreHp <= 0) {

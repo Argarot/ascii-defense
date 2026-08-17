@@ -98,6 +98,39 @@ Art is a grid of glyphs plus a parallel grid of **ink keys** naming colour roles
 - **`"PATH"` resolves to the instance's upgrade path colour**, so one drawing
   serves all three specialisations instead of needing three copies.
 
+### Frames (the idle cycle — WBS 4.1, session 16)
+
+A tier may carry additional **idle frames** beyond its base art, and the sprite
+a **`frameMs`** cadence; the cycle is `[base, ...frames]`:
+
+```jsonc
+{
+  "id": "bolt",
+  "cell": [5, 3],
+  "frameMs": 700,
+  "tiers": {
+    "0": {
+      "art": [".-^-.", "|[O]|", "'---'"],
+      "ink": ["FFFFF", "FFCFF", "FFFFF"],
+      "frames": [{ "art": [".-^-.", "|[o]|", "'---'"], "ink": ["FFFFF", "FFCFF", "FFFFF"] }]
+    }
+  },
+  "inkMap": { "F": "tower.frame", "C": "path.1" }
+}
+```
+
+Rules that keep this cheap and honest:
+
+- Every frame is the **same cell size** as the base — the linter enforces it.
+- The cycle runs on the **wall clock**, never sim time: idles are ambient, the
+  sim knows nothing, and pause does not stop a tower breathing. The view
+  offsets each instance's phase by its board position so a row of identical
+  towers churns out of step.
+- **Reduced motion pins frame 0 forever** (PRD §15.4).
+- The format is **plain grids, nothing importer-specific** (decided
+  2026-08-17): when the REXPaint round trip lands (6.1), `.xp` layers become
+  frames at import time and the schema does not change.
+
 Terrain is a **weighted glyph pool per cell type** plus three colours (lit, mid,
 dark), applied per row at the boundary of a terrain mass. That is where depth
 comes from — shading, never geometry.

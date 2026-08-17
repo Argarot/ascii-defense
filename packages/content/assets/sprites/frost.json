@@ -1,0 +1,22 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "frost",
+  "cell": [5, 3],
+  "frameMs": 600,
+  "tiers": {
+    "0": {
+      "art": ["*~.~*", "<(F)>", "*~.~*"],
+      "ink": ["CFFFC", "FFCFF", "CFFFC"],
+      "frames": [
+        {
+          "art": ["~*.*~", "<(F)>", "~*.*~"],
+          "ink": ["FCFCF", "FFCFF", "FCFCF"]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    "F": "tower.frame",
+    "C": "enemy.shell"
+  }
+}

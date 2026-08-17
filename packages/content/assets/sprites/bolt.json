@@ -1,0 +1,22 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "bolt",
+  "cell": [5, 3],
+  "frameMs": 700,
+  "tiers": {
+    "0": {
+      "art": [".-^-.", "|[O]|", "'---'"],
+      "ink": ["FFFFF", "FFCFF", "FFFFF"],
+      "frames": [
+        {
+          "art": [".-^-.", "|[o]|", "'---'"],
+          "ink": ["FFFFF", "FFCFF", "FFFFF"]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    "F": "tower.frame",
+    "C": "path.1"
+  }
+}

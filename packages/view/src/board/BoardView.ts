@@ -19,20 +19,16 @@ import {
   type GeneratedMap,
 } from '@ascii-defense/engine';
 import type { GLTerm } from '@ascii-defense/render';
+import type { Sprite } from '@ascii-defense/content';
 import { role } from '../palette';
-import { CELL_H, CELL_W, drawTerrainCell } from './style';
+import { isReducedMotion } from '../motion';
+import { CELL_H, CELL_W, drawTerrainCell, drawVoidCell } from './style';
 
 export { CELL_W, CELL_H } from './style';
 
-// Per-tower placeholder art; the real sprite pipeline (Phase 2) replaces
-// these with REXPaint-authored tiers. Distinct silhouettes so types read at
-// a glance (Daniil).
-const TOWER_ART_BY_ID: Record<string, { art: string[]; coreRole: string }> = {
-  bolt: { art: ['.-^-.', '|[O]|', "'---'"], coreRole: 'path.1' },
-  mortar: { art: [',===.', '|(M)|', "'---'"], coreRole: 'path.2' },
-  frost: { art: ['*~.~*', '<(F)>', '*~.~*'], coreRole: 'enemy.shell' },
-  refinery: { art: ['_/=\\_', '|[R]|', '|___|'], coreRole: 'terrain.ore.lit' },
-};
+// Fallback art for a tower with no sprite in content - distinct silhouette,
+// no animation. Every shipped tower has a sprite; this catches new content
+// authored ahead of its art.
 const TOWER_ART_DEFAULT = { art: ['.-^-.', '|[?]|', "'---'"], coreRole: 'path.3' };
 const TOWER_CORE = /[OMFR?]/;
 
@@ -74,6 +70,8 @@ export interface BoardViewOptions {
   /** Pixels per glyph (native font size). */
   glyphPxW: number;
   glyphPxH: number;
+  /** Validated sprites by content id; towers without one get fallback art. */
+  sprites?: readonly Sprite[];
 }
 
 
@@ -85,8 +83,9 @@ export interface RenderState {
   enemies?: readonly { x: number; y: number; id?: string }[];
   /** Live towers, in cell coordinates, with their def id for per-type art. */
   towers?: readonly { x: number; y: number; id?: string }[];
-  /** Projectiles in flight, continuous cell units. */
-  projectiles?: readonly { x: number; y: number }[];
+  /** Projectiles in flight, continuous cell units; per-tick velocity, when
+   *  given, draws a short trail behind the head (WBS 4.1). */
+  projectiles?: readonly { x: number; y: number; vx?: number; vy?: number }[];
   /** The hovered cell accepts a build right now (sim's verdict, not ours). */
   hoverBuildable?: boolean;
   /** Faint markers on tile corners - the map's seams, visible on demand. */
@@ -110,15 +109,22 @@ export interface RenderState {
   boons?: readonly { x: number; y: number; tier?: number }[];
   /** The Core has fallen; draw the end screen over everything. */
   gameOver?: boolean;
-  /** Expanding pulse rings: age01 runs 0 (just fired) to 1 (full range). */
-  pulses?: readonly { x: number; y: number; r: number; age01: number }[];
   /** Animation phase 0..1 for breathing UI (telegraphs). */
   phase?: number;
+  /**
+   * Ambient wall-clock milliseconds for idle sprite frames (WBS 4.1). The
+   * app freezes this at 0 under reduced motion, pinning every idle cycle to
+   * frame 0; the sim never sees it (ambient time is presentation time).
+   */
+  animMs?: number;
+  /** Terrain drift step - a slowly advancing integer; 0 = static ground. */
+  drift?: number;
 }
 
 export class BoardView {
   private board!: Board;
   private cells!: (CellType | null)[];
+  private readonly sprites: Map<string, Sprite>;
 
   readonly cellsW: number;
   readonly cellsH: number;
@@ -130,6 +136,7 @@ export class BoardView {
   ) {
     this.cellsW = opts.mapX * TILE_SIZE;
     this.cellsH = opts.mapY * TILE_SIZE;
+    this.sprites = new Map((opts.sprites ?? []).map((s) => [s.id, s]));
   }
 
   /** Adopt a generated map. Generation is the app's business (engine call). */
@@ -170,7 +177,7 @@ export class BoardView {
     return `cell ${ref.x},${ref.y} \u00b7 ${base}`;
   }
 
-  render(state: RenderState): void {
+  render(state: RenderState, overlay?: (term: GLTerm) => void): void {
     const term = this.term;
     const richnessAt = state.oreRichness
       ? new Map(state.oreRichness.map((r) => [r.y * this.cellsW + r.x, r.frac]))
@@ -187,11 +194,9 @@ export class BoardView {
         const gy0 = offsetY + cy * CELL_H;
 
         if (kind === null) {
-          // Void: near-black, but hover still answers so the board edge is
-          // discoverable by mouse.
-          if (hovered)
-            for (let y = 0; y < CELL_H; y++)
-              for (let x = 0; x < CELL_W; x++) term.put(gx0 + x, gy0 + y, ' ', role('ui.dim'), '#1a2330');
+          // Void is WATER (PRD sec 13): unclaimed land reads as a surface,
+          // not a hole. Hover still answers so the edge is discoverable.
+          drawVoidCell(term, gx0, gy0, state.drift ?? 0, hovered ? '#1a2330' : undefined);
           continue;
         }
 
@@ -209,41 +214,46 @@ export class BoardView {
           shadowBottom: shaded && south !== kind,
           richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx) : undefined,
           rim: state.routeAllowed ? ~state.routeAllowed[cy * this.cellsW + cx] & 15 : 0,
+          // Ground and the Core breathe; rock, roads and ore hold still -
+          // moving glyphs on a cell the player reads for data would lie.
+          drift: kind === 'G' || kind === 'C' ? state.drift : undefined,
         });
       }
 
-    // Real towers - the demo's fake scatter is gone; every tower drawn here
-    // exists in the sim, occupies its cell, and has a kill count.
+    // Real towers - every tower drawn here exists in the sim, occupies its
+    // cell, and has a kill count. Sprites come from content (WBS 4.1): the
+    // base art plus optional idle frames, cycled on the AMBIENT clock so a
+    // paused board still feels inhabited and reduced motion pins frame 0.
     for (const t of state.towers ?? []) {
-      const look = (t.id && TOWER_ART_BY_ID[t.id]) || TOWER_ART_DEFAULT;
+      const sp = t.id ? this.sprites.get(t.id) : undefined;
       const gx0 = t.x * CELL_W;
       const gy0 = offsetY + t.y * CELL_H;
-      for (let r = 0; r < CELL_H; r++)
-        for (let c = 0; c < CELL_W; c++) {
-          const chr = look.art[r][c];
-          if (chr === ' ' || !term.has(chr)) continue;
-          term.put(gx0 + c, gy0 + r, chr, TOWER_CORE.test(chr) ? role(look.coreRole) : role('tower.frame'), role('tower.ground'));
-        }
-    }
-
-    // Pulse rings: each recent emission expands from its tower to full range
-    // and fades - drawn with relative shading so it reads as light, not paint.
-    for (const pu of state.pulses ?? []) {
-      const rNow = pu.r * pu.age01;
-      const band = 0.24;
-      const minGx = Math.max(0, Math.floor((pu.x - rNow - 1) * CELL_W));
-      const maxGx = Math.min(this.cellsW * CELL_W - 1, Math.ceil((pu.x + rNow + 1) * CELL_W));
-      const minGy = Math.max(0, Math.floor((pu.y - rNow - 1) * CELL_H));
-      const maxGy = Math.min(this.cellsH * CELL_H - 1, Math.ceil((pu.y + rNow + 1) * CELL_H));
-      const strength = 1 + 1.4 * (1 - pu.age01);
-      for (let gy = minGy; gy <= maxGy; gy++)
-        for (let gx = minGx; gx <= maxGx; gx++) {
-          const ux = (gx + 0.5) / CELL_W - pu.x;
-          const uy = (gy + 0.5) / CELL_H - pu.y;
-          if (Math.abs(Math.sqrt(ux * ux + uy * uy) - rNow) <= band) {
-            term.shade(gx, offsetY + gy, strength, 0.08);
+      if (sp) {
+        const tier = sp.tiers['0']; // per-tier art arrives with the art pass (M6)
+        const cycle = [tier, ...(tier.frames ?? [])];
+        // Offset each tower's cycle by its position so a row of refineries
+        // churns out of step instead of marching in lockstep.
+        const fi =
+          cycle.length > 1
+            ? (Math.floor((state.animMs ?? 0) / (sp.frameMs ?? 600)) + t.x * 7 + t.y * 13) % cycle.length
+            : 0;
+        const frame = cycle[fi];
+        for (let r = 0; r < CELL_H; r++)
+          for (let c = 0; c < CELL_W; c++) {
+            const chr = frame.art[r][c];
+            const inkRole = sp.inkMap[frame.ink[r][c]];
+            if (chr === ' ' || inkRole === null || inkRole === undefined || !term.has(chr)) continue;
+            const rn = inkRole === 'PATH' ? 'tower.core' : inkRole;
+            term.put(gx0 + c, gy0 + r, chr, role(rn), role('tower.ground'));
           }
-        }
+      } else {
+        for (let r = 0; r < CELL_H; r++)
+          for (let c = 0; c < CELL_W; c++) {
+            const chr = TOWER_ART_DEFAULT.art[r][c];
+            if (chr === ' ' || !term.has(chr)) continue;
+            term.put(gx0 + c, gy0 + r, chr, TOWER_CORE.test(chr) ? role(TOWER_ART_DEFAULT.coreRole) : role('tower.frame'), role('tower.ground'));
+          }
+      }
     }
 
     // Range OUTLINE for the selected tower, at glyph (subcell) resolution:
@@ -298,10 +308,20 @@ export class BoardView {
       term.put(gx, gy, look.glyph, role(look.roleName));
     }
 
-    // Projectiles: single bright glyphs streaking at subcell resolution.
+    // Projectiles: a bright head streaking at subcell resolution, with a
+    // short cooling trail along its own velocity (WBS 4.1) - the spray that
+    // makes fire read as fire. Reduced motion keeps the head only.
+    const trails = !isReducedMotion();
     for (const p of state.projectiles ?? []) {
       const gx = Math.floor(p.x * CELL_W);
       const gy = offsetY + Math.floor(p.y * CELL_H);
+      if (trails && p.vx !== undefined && p.vy !== undefined) {
+        for (const [k, chr, rn] of [[1.4, '+', 'fx.ember'], [2.8, '.', 'fx.smoke']] as const) {
+          const tx = Math.floor((p.x - p.vx * k) * CELL_W);
+          const ty = offsetY + Math.floor((p.y - p.vy * k) * CELL_H);
+          if (tx !== gx || ty !== gy) term.put(tx, ty, chr, role(rn));
+        }
+      }
       term.put(gx, gy, '*', role('tower.core'));
     }
 
@@ -348,6 +368,10 @@ export class BoardView {
       term.put(gx + 1, gy + 1, '!', '#ffffff', '#8a2231');
       term.put(gx + 3, gy + 1, '!', '#ffffff', '#8a2231');
     }
+
+    // The effects layer paints here - above the world, below the selection
+    // brackets and any end screen (the UI always wins over eye candy).
+    overlay?.(term);
 
     // Selection brackets last, over everything. Selecting any Core cell
     // brackets the WHOLE Core block (Daniil) - the building is the unit,
