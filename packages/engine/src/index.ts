@@ -16,6 +16,7 @@ export {
   rotateCells,
   deriveConnectors,
   validateTileCells,
+  tileRimMask,
   tilePartition,
   partitionKey,
   crossingsInterconnect,

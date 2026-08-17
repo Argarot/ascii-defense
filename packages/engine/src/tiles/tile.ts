@@ -275,6 +275,42 @@ export function partitionKey(groups: readonly (readonly Edge[])[]): string {
   return groups.map((g) => [...g].sort().join('.')).sort().join('|');
 }
 
+/**
+ * Which sides of a road cell are CLOSED, as bits N=1 E=2 S=4 W=8 - the mask
+ * the view draws kerbs from. Derived from actual connectivity, never from a
+ * cell's declared ports: an omni 'R' junction claims all four sides but only
+ * connects where a neighbour answers, and drawing its declared ports left
+ * junctions with no boundary at all (Daniil, playtest 6).
+ *
+ * Tile-local: an edge-centre cell whose crossing derives is open outward.
+ * The board-scale equivalent is FlowField.allowed, which also knows about
+ * neighbouring tiles.
+ */
+export function tileRimMask(cells: readonly string[], x: number, y: number): number {
+  const here = cellAt(cells, x, y);
+  if (!isRoad(here)) return 0;
+  const conn = deriveConnectors(cells);
+  let closed = 0;
+  const dirs: [number, number, number, Edge | null][] = [
+    [0, -1, 1, y === 0 && x === CENTER ? 'n' : null],
+    [1, 0, 2, x === TILE_SIZE - 1 && y === CENTER ? 'e' : null],
+    [0, 1, 4, y === TILE_SIZE - 1 && x === CENTER ? 's' : null],
+    [-1, 0, 8, x === 0 && y === CENTER ? 'w' : null],
+  ];
+  for (const [dx, dy, bit, edge] of dirs) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) {
+      if (!(edge && conn[edge])) closed |= bit; // off-tile: open only at a crossing
+      continue;
+    }
+    const n = cellAt(cells, nx, ny);
+    const joins = n === 'C' ? true : isRoad(n) && roadsConnect(here, n, dx, dy);
+    if (!joins) closed |= bit;
+  }
+  return closed;
+}
+
 /** Convenience: validate a content TileDef (id + grid). */
 export function validateTile(def: TileDef): string[] {
   const errors = validateTileCells(def.cells);
