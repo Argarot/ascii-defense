@@ -87,6 +87,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -110,6 +114,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -141,6 +149,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -164,6 +176,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -195,6 +211,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -218,6 +238,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -319,6 +343,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -342,6 +370,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -373,6 +405,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -396,6 +432,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -427,6 +467,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -450,6 +494,10 @@ export interface TowerRoster {
             {
               name: string;
               cost: number;
+              /**
+               * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
+               */
+              desc?: string;
               mods?: {
                 damage?: number;
                 range?: number;
@@ -653,6 +701,11 @@ export const towersSchema = {
                       "cost": {
                         "type": "number",
                         "minimum": 0
+                      },
+                      "desc": {
+                        "description": "One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.",
+                        "type": "string",
+                        "minLength": 1
                       },
                       "mods": {
                         "type": "object",

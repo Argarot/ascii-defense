@@ -29,6 +29,8 @@ export interface HudStats {
   dps: string;
   range: number;
   slow: number;
+  /** Blast radius in cells; 0 for non-explosive shots (WBS 2.19). */
+  blast: number;
   /** Producers: yield per second, e.g. "0.3/s"; null for fighters. */
   prod: string | null;
 }
@@ -45,6 +47,8 @@ export interface HudTowerInfo {
   offVein: boolean;
   priority: Priority;
   tiers: readonly HudTierInfo[];
+  /** The hovered choice's written sentence (2.10); null when nothing hovers. */
+  choiceDesc?: string | null;
 }
 
 export interface HudState {
@@ -127,6 +131,11 @@ const PRIORITY_LABEL: Record<Priority, string> = {
 
 export class HudPanel {
   private regions: Region[] = [];
+  // Panel scroll (2.13): the whole panel is a column that may outgrow its
+  // rows; the wheel slides it. Regions are stored in CONTENT rows and
+  // translated at hit-test time, so scrolling can never desync a click.
+  private scroll = 0;
+  private contentH = 0;
 
   constructor(
     private term: GLTerm,
@@ -134,9 +143,15 @@ export class HudPanel {
     private glyphPxH: number,
   ) {}
 
+  /** Wheel input: positive = down. Clamped to the last render's overflow. */
+  scrollBy(lines: number): void {
+    const max = Math.max(0, this.contentH + 2 - this.term.rows);
+    this.scroll = Math.max(0, Math.min(max, this.scroll + lines));
+  }
+
   actionAt(px: number, py: number): HudAction | null {
     const gx = Math.floor(px / this.glyphPxW);
-    const gy = Math.floor(py / this.glyphPxH);
+    const gy = Math.floor(py / this.glyphPxH) + this.scroll;
     for (const r of this.regions) {
       if (r.row === gy && gx >= r.x0 && gx < r.x1) return r.action;
     }
@@ -151,7 +166,8 @@ export class HudPanel {
    */
   private button(x: number, row: number, w: number, label: string, fg: string, bg: string): void {
     const padded = (' ' + label).padEnd(w, ' ').slice(0, w);
-    this.term.write(x, row, padded, fg, bg);
+    this.contentH = Math.max(this.contentH, row);
+    this.term.write(x, row - this.scroll, padded, fg, bg);
   }
 
   /** Greedy word-wrap into at most `maxLines` lines of width `w`. */
@@ -177,9 +193,26 @@ export class HudPanel {
   }
 
   render(s: HudState): void {
-    const term = this.term;
+    // Every draw below goes through this offset shim: content speaks in its
+    // own rows, the shim slides them by the scroll, GLTerm clips the rest.
+    const raw = this.term;
     this.regions = [];
-    term.clear(role('ui.bg'));
+    this.contentH = 0;
+    raw.clear(role('ui.bg'));
+    const shim = {
+      cols: raw.cols,
+      rows: raw.rows,
+      write: (x: number, y2: number, s2: string, fg: string, bg?: string): void => {
+        this.contentH = Math.max(this.contentH, y2);
+        raw.write(x, y2 - this.scroll, s2, fg, bg);
+      },
+      put: (x: number, y2: number, ch: string, fg: string, bg?: string): void => {
+        this.contentH = Math.max(this.contentH, y2);
+        raw.put(x, y2 - this.scroll, ch, fg, bg);
+      },
+      flush: (): void => raw.flush(),
+    };
+    const term = shim;
     const W = term.cols;
     const blink = s.phase % 1 < 0.5;
     const previewCol = blink ? role('path.4') : role('ui.accent');
@@ -284,28 +317,44 @@ export class HudPanel {
       y++;
       term.write(0, y++, 'RELIC SLOTS', role('ui.dim'));
       // Stone Story-style grid: empty slots render as empty boxes - what you
-      // COULD hold is as visible as what you do (Daniil).
+      // COULD hold is as visible as what you do (Daniil). SQUARE slots
+      // (playtest 8): 5 glyphs x 3 rows is 50x48 px at panel scale - an
+      // inventory reads as an inventory only if the cells do. The middle row
+      // carries the tag, the bottom the state; board-scale relic ART fills
+      // these at the art pass (6.7).
       const perRow = 6;
       const slotW = 5;
+      const slotH = 3;
       c.slots.forEach((slot, i) => {
         const x0 = (i % perRow) * slotW;
-        const row = y + Math.floor(i / perRow);
-        const [fg, bg, text] =
+        const rowBase = y + Math.floor(i / perRow) * slotH;
+        const [fg, bg] =
           slot.state === 'empty'
-            ? [role('ui.grid'), role('ui.bg'), '[  ]']
+            ? [role('ui.grid'), role('ui.bg')]
             : slot.state === 'ready'
-              ? [role('ui.bg'), role('ui.accent'), `[${slot.label}]`]
+              ? [role('ui.bg'), role('ui.accent')]
               : slot.state === 'cooling'
-                ? [role('ui.dim'), role('ui.grid'), `[${String(Math.min(99, slot.cooldownSec)).padStart(2)}]`]
+                ? [role('ui.dim'), role('ui.grid')]
                 : slot.state === 'consumable'
-                  ? [role('ui.bg'), role('terrain.ore.lit'), `[${slot.label}]`]
-                  : [role('ui.text'), role('ui.grid'), `[${slot.label}]`]; // passive
-        term.write(x0, row, text, fg, bg);
-        if (slot.state !== 'empty') {
-          this.regions.push({ row, x0, x1: x0 + 4, action: { kind: 'relic', index: i } });
+                  ? [role('ui.bg'), role('terrain.ore.lit')]
+                  : [role('ui.text'), role('ui.grid')]; // passive
+        for (let r = 0; r < slotH; r++)
+          for (let cx = 0; cx < slotW - 1; cx++) term.put(x0 + cx, rowBase + r, ' ', fg, bg);
+        if (slot.state === 'empty') {
+          // An empty box is drawn as its outline, not painted absence.
+          term.put(x0, rowBase, '┌', fg); term.put(x0 + 3, rowBase, '┐', fg);
+          term.put(x0, rowBase + 2, '└', fg); term.put(x0 + 3, rowBase + 2, '┘', fg);
+        } else {
+          term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, bg);
+          if (slot.state === 'cooling') {
+            term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, bg);
+          }
+          for (let r = 0; r < slotH; r++) {
+            this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
+          }
         }
       });
-      y += Math.ceil(c.slots.length / perRow) + 1;
+      y += Math.ceil(c.slots.length / perRow) * slotH + 1;
       // Channel C (PRD sec 7.3): spend banked Ore on a blind draw.
       const drawLabel = `DRAW RELIC  ${c.drawCost} ore`;
       this.button(0, y, W - 6, drawLabel, c.canDraw ? role('ui.bg') : role('ui.dim'), c.canDraw ? role('terrain.ore.lit') : role('ui.grid'));
@@ -353,6 +402,11 @@ export class HudPanel {
         stat('dmg  ', t.stats.dmg, t.preview ? t.preview.dmg : null);
         stat('dps  ', t.stats.dps, t.preview ? t.preview.dps : null);
         stat('range', t.stats.range, t.preview ? t.preview.range : null);
+        // The blast radius that deals the damage is the one printed here and
+        // the one the effects layer draws - one number, three consumers (2.19).
+        if (t.stats.blast > 0 || (t.preview && t.preview.blast > 0)) {
+          stat('blast', t.stats.blast, t.preview ? t.preview.blast : null);
+        }
         if (t.stats.slow > 0 || (t.preview && t.preview.slow > 0)) {
           stat('slow ', `${t.stats.slow}t`, t.preview ? `${t.preview.slow}t` : null);
         }
@@ -405,6 +459,13 @@ export class HudPanel {
         // contrast already separate them, and panel height is a budget.
         y += boxH;
       });
+      // The hovered choice explains itself in WORDS before it is bought
+      // (2.10, same card mechanic as relics) - stats preview the numbers,
+      // this says what they mean.
+      if (t.choiceDesc) {
+        y++;
+        for (const line of this.wrap(t.choiceDesc, W, 3)) term.write(0, y++, line, role('ui.text'));
+      }
       term.write(0, y + 1, 'X sells (70% back)', role('ui.dim'));
     } else {
       // Cell inspector, wrapped to panel width.

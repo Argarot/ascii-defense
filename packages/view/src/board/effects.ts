@@ -159,11 +159,20 @@ export class EffectsLayer {
       if (h < 0.72) term.put(gx, gy, glyphs[phase === 0 ? (h < 0.3 ? 0 : 1) : phase], fg);
     });
     if (!still && age01 < 0.3) {
-      // Ground zero whites out for the first blink.
-      const cgx = Math.floor(e.x * CELL_W);
-      const cgy = Math.floor(e.y * CELL_H);
-      for (let dy = -1; dy <= 1; dy++)
-        for (let dx = -2; dx <= 2; dx++) term.shade(cgx + dx, cgy + dy, 3.2, 0.25);
+      // Ground zero whites out for the first blink - a DISC scaled by the
+      // true blast radius (WBS 2.19): the flash you see is the area that
+      // kills, so an upgraded radius visibly widens the explosion.
+      const flashR = Math.max(0.4, e.r * 0.6);
+      const minGx = Math.max(0, Math.floor((e.x - flashR) * CELL_W));
+      const maxGx = Math.min(term.cols - 1, Math.ceil((e.x + flashR) * CELL_W));
+      const minGy = Math.max(0, Math.floor((e.y - flashR) * CELL_H));
+      const maxGy = Math.min(term.rows - 1, Math.ceil((e.y + flashR) * CELL_H));
+      for (let gy = minGy; gy <= maxGy; gy++)
+        for (let gx = minGx; gx <= maxGx; gx++) {
+          const ux = (gx + 0.5) / CELL_W - e.x;
+          const uy = (gy + 0.5) / CELL_H - e.y;
+          if (Math.sqrt(ux * ux + uy * uy) <= flashR) term.shade(gx, gy, 3.2, 0.25);
+        }
     }
   }
 
