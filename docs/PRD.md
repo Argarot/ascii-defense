@@ -156,6 +156,8 @@ At run start, seeded from the run seed (stream `map`):
    carved topology, drawn from the unlocked tile pool.
 4. Remaining slots fill with roadless terrain from the pool; **ore likelihood
    rises with distance from the road**.
+4b. **The run's chosen special tiles are placed first and are guaranteed**
+   (§4.8); basics fill everything they do not claim.
 5. **Caches are scattered** as an overlay (§4.6) — a list of cells, not a cell
    type, so the tile library is untouched.
 6. **Every rock cell is dealt its hidden contents** — ore, a cache, or nothing
@@ -170,6 +172,41 @@ difficulty variation, it is a broken run.
 The generator only produces maps; it never checks them. Whether a map is
 *interesting* is a content question (which tiles are in the pool) and a knob
 question (§4.4), not a validity question.
+
+### 4.8 Basic and special tiles — agency over the map *(Daniil, 2026-08-17)*
+
+The pivot cut player tile-laying *during* a run (§14) because it converged on a
+different game. This restores the agency it removed, and puts it **before** the
+run instead of inside it, where it costs no in-run tension:
+
+- **Basic tiles are infinite.** They are the default pool, always available, and
+  they fill whatever the specials do not claim. A run always generates.
+- **Special tiles are finite and chosen.** Before the run, the player loads a
+  limited number of them into **slots**. Some are unlocked through meta
+  progression, some are **minted by the player in Tile Smith** — the authoring
+  tool stops being a dev surface and becomes the way you build your own pool.
+- **A loaded special is guaranteed to appear.** That is the whole point: the
+  player is not buying a lottery ticket, they are stating what this map will
+  contain. If a special cannot be placed legally, generation says so rather than
+  silently dropping it.
+- **Slot count is a meta upgrade** (§11.1), so "how much of the map do I get to
+  decide" is itself a progression axis.
+
+The player therefore shapes the map's *content* while the generator keeps
+absolute authority over its *topology* — connectivity stays a construction
+guarantee (§4.2), never a thing a loadout could break.
+
+The picker is a **visual** surface: tiles are shown drawn, in the same renderer
+the board and Tile Smith use, never as names or JSON. A pool you cannot see is
+a pool you cannot choose from.
+
+### 4.9 The void has business *(Daniil, 2026-08-17)*
+
+Unclaimed water is currently scenery. **Chests surface on it occasionally and
+sink again after a short window** — a small, seeded, optional prize that gives
+the void a reason to be watched. Claiming one pays out through the loot-table
+layer (§7.7). It stays strictly off-route and off-buildable, so it can never
+touch connectivity or placement.
 
 ### 4.4 Map parameters are the difficulty dial
 
@@ -363,6 +400,25 @@ before its stats are read.
 Projectiles carry **spread**, so a rapid or multi-shot tower visibly sprays
 instead of firing one glyph repeatedly down an identical line.
 
+**One radius, three consumers** *(Daniil, playtest 8)*. A blast's radius is a
+single folded stat: the damage it deals, the area it draws, and the number the
+inspector prints all read the *same* value, so an upgrade that widens the blast
+widens all three at once. A blast drawn smaller than it kills is the screen
+lying, and it corrupts the balance lab's evidence at the same time.
+
+**Ballistics: aim is committed at fire time.** A shell is thrown at a *place*,
+not attached to a creature. It flies to where it was aimed and detonates there
+whether or not anyone is still standing on the spot — missing is a real outcome,
+and leading a target is a real skill the enemy's speed can defeat. Homing is a
+per-projectile property for weapons that genuinely track (Bolt), never the
+default.
+
+**A fired shot always resolves** *(Daniil, playtest 8)*. A projectile whose
+target dies mid-flight must never evaporate: an unguided shell lands where it
+was aimed, and a homing shot re-acquires. Deleting a paid-for shot because the
+world moved is both a visual lie and a silent, invisible damage nerf that no
+stat block can explain.
+
 ## 6. Economy
 
 **Scrap** funds the run: towers, tiers, cache claims and prospecting. **Ore**
@@ -518,6 +574,22 @@ switched itself off in silence.)*
 arrived: a flat pool deals game-breaking relics as readily as filler, so a run's
 ceiling is set by draw order rather than by play.
 
+### 7.7 Loot tables — one answer to "what do I get" *(Daniil, 2026-08-17)*
+
+Rewards are currently hard-coded per source: a cache grants a relic, a vein
+grants Ore, a kill grants Scrap. As sources multiply — void chests (§4.9) first,
+and whatever follows — that becomes a scatter of bespoke payout code.
+
+A **loot table** is content: a named, weighted list of outcomes (Scrap, Ore of a
+tier, a relic drawn at a rarity, a special tile, nothing), rolled on a named RNG
+stream at claim time so it rides the input log like every other decision. Sources
+reference a table by id; they do not contain their own payout logic.
+
+This is deliberately built *with* the relic economy rather than before it:
+rarity weighting (§7.6) and a weighted outcome list are the same machinery, and
+building them twice is how two subtly different weighting rules end up in one
+codebase.
+
 ## 8. Enemies
 
 Start narrow: **two damage types** (Kinetic, Energy) and **four traits** —
@@ -638,7 +710,12 @@ carries it, so rarity is an economic fact rather than a placement heuristic:
   between runs; they are stock, not consumables).
 - **A tier-N ore node is bought with tier-(N-1) ore**, deliberately steeply. That
   is the sink that gives lower tiers a purpose beyond accumulating.
-- Basic ore tiles are already in the pool and stay free.
+- Basic ore tiles are already in the pool and stay free — **basics are infinite
+  and unslotted** (§4.8); only specials consume a slot.
+- **Loadout slots are themselves an upgrade** *(Daniil, 2026-08-17)*: the
+  number of special tiles a run may carry starts small and grows through the
+  tree, with locked slots shown as locked rather than hidden — a visible ladder
+  beats an invisible one.
 - Once Tile Smith opens in-game (below), **features price the tile**: richer
   nodes cost more to mint, so the authoring tool and the economy share one
   pricing function.
@@ -684,6 +761,31 @@ frame, so animation costs authoring time rather than engine work.
 another readable surface, and the border where terrain meets it should blend
 procedurally instead of cutting sharply. By construction those border cells can
 never carry road (§4.2), so a procedural overwrite there is always safe.
+*Water shipped in session 16; the **shoreline** — a procedural "beach" band
+where land meets water, so the edge reads as a coast rather than a cut — is the
+outstanding half, and Daniil has asked for it twice.*
+
+**Motion has two clocks, and they are not the same clock** *(clarified
+2026-08-17)*. Anything that belongs to the **world** — terrain drift, water,
+tower idle cycles, effects — runs on *sim* time: it freezes when the player
+pauses and speeds up when they press 4×, because that is what fast-forwarding a
+world means. Anything that belongs to the **interface** — telegraph breathing,
+preview pulses, cursors — runs on wall-clock time, because the UI is talking to
+the player, not simulating anything. Putting world motion on the wall clock was
+session 16's mistake, caught immediately in play.
+
+**Smoothness comes from spatial phase, not from redrawing less.** The board
+already redraws in full every frame in well under a millisecond, so partial
+redraw would buy nothing; what makes a surface *flow* is giving each glyph a
+phase offset derived from its position, so a wave travels across the water
+instead of the whole sheet blinking together. Recorded because the intuitive fix
+("redraw fewer things") optimises the wrong quantity and would cost a session to
+discover.
+
+**Relics deserve their own art**, drawn at **board-glyph scale** rather than the
+HUD's 2× font: the smaller cell buys the detail that makes a relic look like an
+object instead of a label. Their slots are **square**, not the current
+rectangles — a slot grid reads as an inventory only if the cells do.
 
 **Names come from the printing trade** *(Daniil, 2026-08-16)*. A game built out of
 glyphs should take its vocabulary from typesetting and the press — kerning,
