@@ -20,14 +20,19 @@ machine, verified to the tick against the live deployment.
 
 ## What a run looks like
 
+0. A **title screen**: new run (pick Calm / Standard / Grim), continue a saved
+   run, settings, how to play. `Esc` pauses mid-run; a run ends on a summary
+   screen. Progress lives in this browser and can be exported to a file.
 1. A generated map: the Core near the middle, winding roads to the edges, ore
    veins (finite — richness is visible as gold density), rock that may hide
    ore or relic caches, boon cells that buff whatever is built on them, and
-   `[?]` relic caches. Press `R` for a different world.
-2. Click ground, pick a tower: **Bolt** (homing shots), **Mortar** (explosive
-   AoE), **Frost** (slow pulse), **Refinery** (mines Ore — on veins only,
-   until the vein runs dry). Each has 3 either/or tiers: 14 variants per
-   tower, every choice final.
+   `[?]` relic caches.
+2. Click ground, pick a tower: **Bolt** (homing shots), **Mortar** (ballistic
+   shells — aimed at a place, they land there whether or not anyone is still
+   standing on it), **Frost** (slow pulse), **Refinery** (mines Ore — on
+   veins only, until the vein runs dry). Each has 3 either/or tiers: 14
+   variants per tower, every choice final, every choice explained in words
+   before you buy it.
 3. Every third cleared wave offers a **pick-1-of-3 relic** over the live
    board: passives that break rules (overkill chains, slowed enemies take
    more), actives fired from the Core (orbital strike, board freeze),
@@ -39,16 +44,20 @@ machine, verified to the tick against the live deployment.
 
 ## Where the project is
 
-**M1 passed its gate** ("is it fun?" — yes) and M2 is under way. Working today:
-everything above, plus a balance lab (`node tools/lab.mjs`) that predicts a
-build's death wave analytically and verifies it against the real headless sim,
-a generated tile library (`node tools/tilegen.mjs`), replays as
-seed + input log, and full cross-machine determinism.
+**M1 passed its gate** ("is it fun?" — yes); M2 and the product shell are under
+way. Working today: everything above, plus an **effects engine** (explosions
+with shockwaves, projectile trails, drifting terrain, void-as-water, tower idle
+frames — all of it respecting reduced motion, none of it able to touch the
+simulation), the **sim running in a Web Worker** so a hidden tab keeps playing,
+**saves that are replays** (seed + input log, so resuming is bit-identical), a
+balance lab (`node tools/lab.mjs`) that predicts a build's death wave and
+verifies it against the real headless sim, and full cross-machine determinism.
 
-**Not built yet**: the effects/animation engine (session 16, next), damage-type
-resistances, relic fusion, the product shell (menus, saves), art. The roadmap
-runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the checklist is
-[docs/WBS.md](docs/WBS.md).
+**Not built yet**: damage-type resistances, relic fusion, tile loadouts chosen
+before a run, onboarding, art. **Known broken**: the Tile Smith's road
+authoring is mid-rework — it can currently produce tiles the generator will
+never place. The roadmap runs to a stable beta at
+[docs/ROADMAP.md](docs/ROADMAP.md); the checklist is [docs/WBS.md](docs/WBS.md).
 
 ## Design ideas worth knowing
 

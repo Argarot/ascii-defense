@@ -191,46 +191,6 @@ export function validateTileCells(cells: readonly string[]): string[] {
 }
 
 /**
- * Do ALL of this tile's crossings belong to one lane component - i.e. does
- * the tile actually ROUTE between every edge it presents? Single-lane tiles
- * always did, so connector booleans used to imply this for free. Lane tiles
- * (session 14) can present two crossings on two different roads - legal as
- * a tile, but unusable on a carved ROAD SLOT, where the generator needs the
- * path to pass THROUGH. The library index calls this to keep connectivity
- * by construction; a multi-lane tile that fails it is simply never dealt
- * onto a road slot. (Found live: a minted twin-stub tile with signature n.s
- * was placed as a straight and the route broke at boot.)
- */
-export function crossingsInterconnect(cells: readonly string[]): boolean {
-  const conn = deriveConnectors(cells);
-  const crossings: [number, number][] = [];
-  if (conn.n) crossings.push([CENTER, 0]);
-  if (conn.s) crossings.push([CENTER, TILE_SIZE - 1]);
-  if (conn.w) crossings.push([0, CENTER]);
-  if (conn.e) crossings.push([TILE_SIZE - 1, CENTER]);
-  if (crossings.length <= 1) return true;
-  // Flood the lane component containing the first crossing.
-  const key = (x: number, y: number): number => y * TILE_SIZE + x;
-  const seen = new Set<number>([key(crossings[0][0], crossings[0][1])]);
-  const stack = [crossings[0]];
-  while (stack.length) {
-    const [x, y] = stack.pop()!;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-      const nx = x + dx;
-      const ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) continue;
-      const k = key(nx, ny);
-      if (seen.has(k)) continue;
-      if (!isRouteCell(cellAt(cells, nx, ny))) continue;
-      if (!roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) continue;
-      seen.add(k);
-      stack.push([nx, ny]);
-    }
-  }
-  return crossings.every(([x, y]) => seen.has(key(x, y)));
-}
-
-/**
  * The tile's edge PARTITION (session 15, carve v3): which crossings belong
  * to which internal road segment. A classic routing tile is one group
  * ("e.n.s"); a twin-bend is two ("e.n|s.w"). The generator indexes road
