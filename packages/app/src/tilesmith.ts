@@ -9,7 +9,6 @@
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import {
-  CELL_TYPES,
   TILE_SIZE,
   deriveConnectors,
   segmentRimMask,
@@ -25,37 +24,74 @@ const ASSET_V = '5';
 const load = <T>(p: string): Promise<T> =>
   fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
-const BRUSH_LABEL: Partial<Record<CellType, string>> = {
+type Brush = 'ROAD' | 'r' | 'G' | 'K' | 'O' | 'C';
+
+const BRUSH_LABEL: Record<Brush, string> = {
+  ROAD: '┼ road (auto-shapes)',
+  r: '║ road · lane B',
   G: 'G ground',
-  '-': '\u2500 road E-W',
-  '|': '\u2502 road N-S',
-  L: '\u2514 bend N+E',
-  J: '\u2518 bend N+W',
-  F: '\u250c bend S+E',
-  '7': '\u2510 bend S+W',
   K: 'K rock',
   O: 'O ore',
   C: 'C core',
 };
-const BRUSH_BG: Partial<Record<CellType, string>> = {
+const BRUSH_BG: Record<Brush, string> = {
+  ROAD: '#86a0bc',
+  r: '#6f89a5',
   G: '#3d4f61',
-  '-': '#86a0bc',
-  '|': '#86a0bc',
-  L: '#86a0bc',
-  J: '#86a0bc',
-  F: '#86a0bc',
-  '7': '#86a0bc',
   K: '#5a6a7c',
   O: '#ffd15c',
   C: '#2bbfae',
 };
+const BRUSHES: Brush[] = ['ROAD', 'r', 'G', 'K', 'O', 'C'];
 
 let cells: string[] = ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
-let brush: CellType = 'R';
+let brush: Brush = 'ROAD';
 
-function setCell(x: number, y: number, t: CellType): void {
+/** Lane-A road cells - everything the inference owns. */
+const LANE_A = new Set(['R', '-', '|', 'L', 'J', 'F', '7', 'T', 'U', 'E', '3']);
+
+function setCell(x: number, y: number, t: string): void {
   const row = cells[y];
   cells = cells.map((r, i) => (i === y ? row.slice(0, x) + t + row.slice(x + 1) : r));
+}
+
+/**
+ * The smith paints ROADS, the engine infers the SEGMENTS (2.23, Daniil):
+ * every lane-A road cell re-derives its type from which neighbours are road
+ * - straights, bends, Ts, and the 4-way 'R' fall out of adjacency, so a
+ * junction is mintable by drawing one. Order-independent and idempotent:
+ * erase a cell and the survivors re-shape correctly. An edge-CENTRE road
+ * gets a virtual outward neighbour, so painting to an edge centre creates
+ * an entry - exactly the deriveConnectors rule, applied in reverse.
+ */
+const SHAPE_BY_MASK: Record<number, string> = {
+  0: '-', 1: '|', 2: '-', 4: '|', 8: '-',
+  5: '|', 10: '-', 3: 'L', 9: 'J', 6: 'F', 12: '7',
+  14: 'T', 11: 'U', 7: 'E', 13: '3', 15: 'R',
+};
+
+function inferRoads(): void {
+  const CENTER = Math.floor(TILE_SIZE / 2);
+  const next = cells.map((r) => r.split(''));
+  for (let y = 0; y < TILE_SIZE; y++)
+    for (let x = 0; x < TILE_SIZE; x++) {
+      if (!LANE_A.has(cells[y][x])) continue;
+      let mask = 0;
+      const dirs: [number, number, number, boolean][] = [
+        [0, -1, 1, y === 0 && x === CENTER],
+        [1, 0, 2, x === TILE_SIZE - 1 && y === CENTER],
+        [0, 1, 4, y === TILE_SIZE - 1 && x === CENTER],
+        [-1, 0, 8, x === 0 && y === CENTER],
+      ];
+      for (const [dx, dy, bit, virtualOut] of dirs) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const off = nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE;
+        if (off ? virtualOut : LANE_A.has(cells[ny][nx]) || cells[ny][nx] === 'C') mask |= bit;
+      }
+      next[y][x] = SHAPE_BY_MASK[mask];
+    }
+  cells = next.map((r) => r.join(''));
 }
 
 async function main(): Promise<void> {
@@ -73,9 +109,8 @@ async function main(): Promise<void> {
 
   const brushes = document.createElement('div');
   brushes.className = 'brushes';
-  const brushBtns = new Map<CellType, HTMLButtonElement>();
-  for (const t of CELL_TYPES) {
-    if (!BRUSH_LABEL[t]) continue; // playtest 5: only segment road brushes
+  const brushBtns = new Map<Brush, HTMLButtonElement>();
+  for (const t of BRUSHES) {
     const b = document.createElement('button');
     b.textContent = BRUSH_LABEL[t];
     b.style.borderLeft = `10px solid ${BRUSH_BG[t]}`;
@@ -131,7 +166,10 @@ async function main(): Promise<void> {
     const x = Math.floor(e.offsetX / (10 * CELL_W));
     const y = Math.floor(e.offsetY / (16 * CELL_H));
     if (x < 0 || y < 0 || x >= TILE_SIZE || y >= TILE_SIZE) return;
-    setCell(x, y, brush);
+    // ROAD paints intent; the shape is inferred. Painting terrain over a
+    // road erases it from the network and the survivors re-shape.
+    setCell(x, y, brush === 'ROAD' ? '-' : brush);
+    inferRoads();
     idDirty = idInput.value !== '' && idDirty; // keep manual ids
     update();
   });

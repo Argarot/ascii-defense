@@ -327,7 +327,9 @@ export class BoardView {
         // branches on it (invariant 10).
         const pip = HP_RAMP[Math.max(0, Math.min(3, Math.floor(e.hp01 * 4)))];
         const col = e.hp01 < 0.3 ? role('enemy.fast') : e.hp01 < 0.65 ? role('terrain.ore.mid') : role('ui.accent');
-        term.put(gx, gy - 1, pip, col);
+        // Top-row enemies flip the pip below the glyph - off-board clipping
+        // was why "not all enemies show health bars" (playtest 10).
+        term.put(gx, gy > 0 ? gy - 1 : gy + 1, pip, col);
       }
     }
 
