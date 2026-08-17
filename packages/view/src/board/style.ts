@@ -98,13 +98,15 @@ export function drawTerrainCell(
       if (shade.litTop && y === 0) fg = lit;
       if (shade.shadowBottom && y === CELL_H - 1) fg = dark; // sinks into the bg
       if (rimmed) {
-        // Closed sides get a dark rim; open (ported) sides stay road.
+        // Closed sides read as a SHADE, not a wall (playtest 5: the glyph
+        // rim was bulky and asymmetric across the 5x3 cell). Same treatment
+        // both orientations: keep the road glyph, darken its plate.
         const rimN = (ports! & 1) === 0 && y === 0;
         const rimE = (ports! & 2) === 0 && x === CELL_W - 1;
         const rimS = (ports! & 4) === 0 && y === CELL_H - 1;
         const rimW = (ports! & 8) === 0 && x === 0;
         if (rimN || rimE || rimS || rimW) {
-          term.put(gx0 + x, gy0 + y, '\u2810', role('terrain.rock.mid'), mix(bg, '#000000', 0.35));
+          term.put(gx0 + x, gy0 + y, g, dark, mix(bg, '#000000', 0.4));
           continue;
         }
       }

@@ -18,6 +18,10 @@ export interface TileLibrary {
        * @maxItems 5
        */
       cells: [string, string, string, string, string];
+      /**
+       * Relative pick weight in generation pools (default 1). Rare specials go low, staples high.
+       */
+      weight?: number;
     },
     ...{
       id: string;
@@ -27,6 +31,10 @@ export interface TileLibrary {
        * @maxItems 5
        */
       cells: [string, string, string, string, string];
+      /**
+       * Relative pick weight in generation pools (default 1). Rare specials go low, staples high.
+       */
+      weight?: number;
     }[]
   ];
 }
@@ -72,6 +80,11 @@ export const tilesSchema = {
               "type": "string",
               "pattern": "^[GRrKOC\\-|LJF7]{5}$"
             }
+          },
+          "weight": {
+            "description": "Relative pick weight in generation pools (default 1). Rare specials go low, staples high.",
+            "type": "number",
+            "exclusiveMinimum": 0
           }
         }
       }

@@ -4,25 +4,45 @@
   "title": "TileLibrary",
   "description": "Terrain tile library. A tile is a 5x5 grid of cell codes (G ground, R road, K rock, O ore, C core). Edge connectors are DERIVED from the grid - roads may cross an edge only at its center cell - so there is no conn field to disagree with the drawing. Semantic rules (center-or-nothing, route continuity, interior spawns) are enforced by engine validateTile, run over this file in CI.",
   "type": "object",
-  "required": ["tiles"],
+  "required": [
+    "tiles"
+  ],
   "additionalProperties": false,
   "properties": {
-    "$schema": { "type": "string" },
+    "$schema": {
+      "type": "string"
+    },
     "tiles": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "cells"],
+        "required": [
+          "id",
+          "cells"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-          "name": { "type": "string" },
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "name": {
+            "type": "string"
+          },
           "cells": {
             "type": "array",
             "minItems": 5,
             "maxItems": 5,
-            "items": { "type": "string", "pattern": "^[GRrKOC\\-|LJF7]{5}$" }
+            "items": {
+              "type": "string",
+              "pattern": "^[GRrKOC\\-|LJF7]{5}$"
+            }
+          },
+          "weight": {
+            "description": "Relative pick weight in generation pools (default 1). Rare specials go low, staples high.",
+            "type": "number",
+            "exclusiveMinimum": 0
           }
         }
       }

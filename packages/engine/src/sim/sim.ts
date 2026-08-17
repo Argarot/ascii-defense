@@ -384,9 +384,20 @@ export class Sim {
   }
 
   /** The boon under (x, y), or null (PRD sec 4.7). */
-  boonAt(x: number, y: number): 'range' | 'damage' | 'rate' | null {
-    for (const b of this.opts.map.boons ?? []) if (b.x === x && b.y === y) return b.boon;
+  boonAt(x: number, y: number): { boon: 'range' | 'damage' | 'rate'; tier: number } | null {
+    for (const b of this.opts.map.boons ?? []) if (b.x === x && b.y === y) return { boon: b.boon, tier: b.tier ?? 1 };
     return null;
+  }
+
+  /** What a boon does, exactly - one source for HUD text and the fold. */
+  static boonEffect(boon: 'range' | 'damage' | 'rate', tier: number): { text: string; rangeAdd: number; damageMul: number; rateMul: number } {
+    if (boon === 'range') return { text: `+${tier} range`, rangeAdd: tier, damageMul: 1, rateMul: 1 };
+    if (boon === 'damage') {
+      const mul = [1.1, 1.2, 1.35, 1.5][tier - 1] ?? 1.1;
+      return { text: `+${Math.round((mul - 1) * 100)}% damage`, rangeAdd: 0, damageMul: mul, rateMul: 1 };
+    }
+    const mul = [1.1, 1.2, 1.35, 1.5][tier - 1] ?? 1.1;
+    return { text: `+${Math.round((mul - 1) * 100)}% fire rate`, rangeAdd: 0, damageMul: 1, rateMul: mul };
   }
 
   /** Tier fold, then the relic fold on top - the ONE place relics touch stats. */
@@ -408,9 +419,12 @@ export class Sim {
     // Boon ground (PRD sec 4.7): the CELL buffs whoever stands on it, after
     // every other fold - the map's own contribution to a build.
     const boon = this.boonAt(t.cellX, t.cellY);
-    if (boon === 'range') out.range += 2;
-    else if (boon === 'damage') out.damage *= 1.25;
-    else if (boon === 'rate') out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / 1.25));
+    if (boon) {
+      const e = Sim.boonEffect(boon.boon, boon.tier);
+      out.range += e.rangeAdd;
+      out.damage *= e.damageMul;
+      out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / e.rateMul));
+    }
     return out;
   }
 
@@ -475,12 +489,15 @@ export class Sim {
     return true;
   }
 
-  /** Unheld pool indices - what draws and offers may still deal. */
+  /**
+   * The whole pool - duplicates are EQUIPPABLE (Daniil, playtest 5): the
+   * fold already stacks multiplicatively, and rebalancing offenders is a
+   * separate session's job. Offers stay duplicate-free WITHIN one deal.
+   */
   private unheldPool(): number[] {
     const defs = this.opts.relicDefs ?? [];
-    const held = new Set(this.heldRelics);
     const pool: number[] = [];
-    for (let i = 0; i < defs.length; i++) if (!held.has(i)) pool.push(i);
+    for (let i = 0; i < defs.length; i++) pool.push(i);
     return pool;
   }
 
