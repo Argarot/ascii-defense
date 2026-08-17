@@ -342,6 +342,7 @@ async function main(): Promise<void> {
     view.applyCellChanges(sim.cellChanges);
     view.render({
       hover,
+      routeAllowed: sim.flow.allowed,
       caches: mapCaches(),
       boons: (currentMap?.boons ?? []).map((b) => ({ x: b.x, y: b.y, tier: b.tier })),
       oreRichness: oreRichness(),

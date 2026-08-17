@@ -103,6 +103,9 @@ export interface RenderState {
   caches?: readonly CellRef[];
   /** Ore cells' remaining richness 0..1 - scales the gold-speck density. */
   oreRichness?: readonly { x: number; y: number; frac: number }[];
+  /** The sim's route graph (FlowField.allowed): legal steps per cell. Kerbs
+   *  are drawn from ITS verdict, so what looks connected IS connected. */
+  routeAllowed?: Uint8Array;
   /** Boon cells (PRD sec 4.7) - corner marks = tier, visible under towers. */
   boons?: readonly { x: number; y: number; tier?: number }[];
   /** The Core has fallen; draw the end screen over everything. */
@@ -205,6 +208,7 @@ export class BoardView {
           litTop: shaded && north !== kind,
           shadowBottom: shaded && south !== kind,
           richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx) : undefined,
+          rim: state.routeAllowed ? ~state.routeAllowed[cy * this.cellsW + cx] & 15 : 0,
         });
       }
 

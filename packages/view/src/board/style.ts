@@ -51,6 +51,8 @@ export function hash2(x: number, y: number, s: number): number {
 export interface TerrainShade {
   /** Ore only: remaining richness 0..1; scales the gold-speck density. */
   richness?: number;
+  /** Road only: CLOSED sides as bits N=1 E=2 S=4 W=8 (kerbs).  */
+  rim?: number;
   bg?: string;
   /** This cell is the top edge of its terrain mass: light the top glyph row. */
   litTop?: boolean;
@@ -88,8 +90,12 @@ export function drawTerrainCell(
   // (PRD sec 6 - "where is the money" is answered by looking).
   const rockMid = role('terrain.rock.mid');
   const richness = kind === 'O' ? (shade.richness ?? 1) : 1;
-  const ports = ROAD_PORTS[kind];
-  const rimmed = ports !== undefined && ports !== 15;
+  // Closed-side mask (N=1 E=2 S=4 W=8) comes from the CALLER, which knows the
+  // neighbours - the board reads it off the route graph, Tile Smith off the
+  // tile. Deriving it here from ROAD_PORTS was the playtest-6 bug: omni 'R'
+  // junctions declare all four sides and so were drawn with no kerb at all.
+  const rim = ROAD_PORTS[kind] === undefined ? 0 : (shade.rim ?? 0);
+  const kerb = role('terrain.rock.lit');
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
       const g = pool[Math.floor(hash2(gx0 + x, gy0 + y, 6) * pool.length) % pool.length];
@@ -97,24 +103,20 @@ export function drawTerrainCell(
       if (kind === 'O' && hash2(gx0 + x, gy0 + y, 13) > richness) fg = rockMid;
       if (shade.litTop && y === 0) fg = lit;
       if (shade.shadowBottom && y === CELL_H - 1) fg = dark; // sinks into the bg
-      if (rimmed) {
-        // A closed side is an EDGE, not a wall. Two corrections from the
-        // first attempt (Daniil, playtest 5 + 6):
-        //  - it was a near-black plate, so roads read as dark bands;
-        //  - a cell is 5 glyphs wide but only 3 tall, so rimming a ROW
-        //    darkened 33% of the cell while rimming a COLUMN darkened 20%
-        //    - horizontal roads came out visibly heavier than vertical.
-        // Now: a gentle multiplicative darkening, strength tuned per axis so
-        // the two orientations carry the SAME perceived weight
-        // (0.33 x 0.18 ~= 0.20 x 0.30).
-        const rimN = (ports! & 1) === 0 && y === 0;
-        const rimE = (ports! & 2) === 0 && x === CELL_W - 1;
-        const rimS = (ports! & 4) === 0 && y === CELL_H - 1;
-        const rimW = (ports! & 8) === 0 && x === 0;
-        if (rimN || rimE || rimS || rimW) {
-          const horizontalEdge = rimN || rimS;
-          term.put(gx0 + x, gy0 + y, g, mix(fg, bg, 0.45), bg);
-          term.shade(gx0 + x, gy0 + y, horizontalEdge ? 0.82 : 0.7, 0);
+      if (rim !== 0) {
+        // A kerb, drawn as INK ON THE BOUNDARY rather than as shading
+        // (Daniil, playtest 6). Braille packs a 2x4 dot matrix into one
+        // 5x8 glyph, so a closed side becomes a hairline against the very
+        // edge of the cell: the road keeps its full width and geometry,
+        // and the boundary is still unmistakable. Corners simply OR their
+        // two edges together, so an L-bend gets an L-shaped kerb.
+        let dots = 0;
+        if ((rim & 1) !== 0 && y === 0) dots |= 0x09; // top row of dots
+        if ((rim & 4) !== 0 && y === CELL_H - 1) dots |= 0xc0; // bottom row
+        if ((rim & 8) !== 0 && x === 0) dots |= 0x47; // left column
+        if ((rim & 2) !== 0 && x === CELL_W - 1) dots |= 0xb8; // right column
+        if (dots !== 0) {
+          term.put(gx0 + x, gy0 + y, String.fromCodePoint(0x2800 | dots), kerb, bg);
           continue;
         }
       }
