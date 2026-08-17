@@ -7,7 +7,7 @@
       "cells": [
         "GGGGG",
         "GCCCG",
-        "GCCCR",
+        "GCCC-",
         "GCCCG",
         "GGGGG"
       ]
@@ -18,9 +18,9 @@
       "cells": [
         "GGGGG",
         "GCCCG",
-        "GCCCR",
+        "GCCC-",
         "GCCCG",
-        "GGRGG"
+        "GG|GG"
       ]
     },
     {
@@ -29,7 +29,7 @@
       "cells": [
         "GGGGG",
         "GCCCG",
-        "RCCCR",
+        "-CCC-",
         "GCCCG",
         "GGGGG"
       ]
@@ -38,9 +38,9 @@
       "id": "core_t",
       "name": "the Core (tri)",
       "cells": [
-        "GGRGG",
+        "GG|GG",
         "GCCCG",
-        "RCCCR",
+        "-CCC-",
         "GCCCG",
         "GGGGG"
       ]
@@ -49,11 +49,11 @@
       "id": "core_x",
       "name": "the Core (nexus)",
       "cells": [
-        "GGRGG",
+        "GG|GG",
         "GCCCG",
-        "RCCCR",
+        "-CCC-",
         "GCCCG",
-        "GGRGG"
+        "GG|GG"
       ]
     },
     {
@@ -62,7 +62,7 @@
       "cells": [
         "GGGGG",
         "GGGGG",
-        "RRRRR",
+        "-----",
         "GGGGG",
         "GGGGG"
       ]
@@ -73,9 +73,9 @@
       "cells": [
         "GGGGG",
         "GGGGG",
-        "RRRGG",
-        "GGRGG",
-        "GGRGG"
+        "--7GG",
+        "GG|GG",
+        "GG|GG"
       ]
     },
     {
@@ -84,20 +84,20 @@
       "cells": [
         "GGGGG",
         "GGGGG",
-        "RRRRR",
-        "GGRGG",
-        "GGRGG"
+        "--R--",
+        "GG|GG",
+        "GG|GG"
       ]
     },
     {
       "id": "cross",
       "name": "crossroads",
       "cells": [
-        "GGRGG",
-        "GGRGG",
-        "RRRRR",
-        "GGRGG",
-        "GGRGG"
+        "GG|GG",
+        "GG|GG",
+        "--R--",
+        "GG|GG",
+        "GG|GG"
       ]
     },
     {
@@ -105,8 +105,8 @@
       "name": "switchback",
       "cells": [
         "GGGGG",
-        "GRRRG",
-        "RRGRR",
+        "GF-7G",
+        "-JGL-",
         "GGGGG",
         "GGGGG"
       ]
@@ -117,9 +117,9 @@
       "cells": [
         "GKKGG",
         "GKGGG",
-        "RRRGG",
-        "GGRGG",
-        "GKRGG"
+        "--7GG",
+        "GG|GG",
+        "GK|GG"
       ]
     },
     {

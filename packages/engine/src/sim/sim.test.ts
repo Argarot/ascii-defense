@@ -558,11 +558,11 @@ describe('boon ground (session 15, PRD sec 4.7)', () => {
     const { map, cells, cellsW, cellsH, simOpts } = makeWorld(11);
     // Plant a damage boon under a known ground cell (overlay: map data).
     const spot = buildSpotNear(cells, cellsW, cellsH);
-    map.boons = [{ x: spot.x, y: spot.y, boon: 'damage' }];
+    map.boons = [{ x: spot.x, y: spot.y, boon: 'damage', tier: 2 }];
     const sim = new Sim(11, simOpts);
     sim.buildTower(spot.x, spot.y, 'bolt');
     const t = sim.towerAt(spot.x, spot.y)!;
-    expect(sim.stats(t).damage).toBeCloseTo(6 * 1.25);
-    expect(sim.boonAt(spot.x, spot.y)).toBe('damage');
+    expect(sim.stats(t).damage).toBeCloseTo(6 * 1.2); // tier 2 = +20%
+    expect(sim.boonAt(spot.x, spot.y)).toEqual({ boon: 'damage', tier: 2 });
   });
 });

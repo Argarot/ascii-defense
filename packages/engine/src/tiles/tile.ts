@@ -21,6 +21,8 @@ export interface TileDef {
   id: string;
   name?: string;
   cells: string[];
+  /** Relative generation pick weight; default 1 (playtest 5, item 6). */
+  weight?: number;
 }
 
 export type Edge = 'n' | 'e' | 's' | 'w';

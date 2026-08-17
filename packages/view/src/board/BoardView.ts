@@ -103,8 +103,8 @@ export interface RenderState {
   caches?: readonly CellRef[];
   /** Ore cells' remaining richness 0..1 - scales the gold-speck density. */
   oreRichness?: readonly { x: number; y: number; frac: number }[];
-  /** Boon cells (PRD sec 4.7) - tinted, and STILL tinted under a tower. */
-  boons?: readonly { x: number; y: number }[];
+  /** Boon cells (PRD sec 4.7) - corner marks = tier, visible under towers. */
+  boons?: readonly { x: number; y: number; tier?: number }[];
   /** The Core has fallen; draw the end screen over everything. */
   gameOver?: boolean;
   /** Expanding pulse rings: age01 runs 0 (just fired) to 1 (full range). */
@@ -307,8 +307,10 @@ export class BoardView {
     for (const b of state.boons ?? []) {
       const gx = b.x * CELL_W;
       const gy = offsetY + b.y * CELL_H;
-      for (const [cx, cy] of [[0, 0], [CELL_W - 1, 0], [0, CELL_H - 1], [CELL_W - 1, CELL_H - 1]] as const) {
-        term.tint(gx + cx, gy + cy, '#1f5f52');
+      const corners = [[0, 0], [CELL_W - 1, 0], [0, CELL_H - 1], [CELL_W - 1, CELL_H - 1]] as const;
+      // One corner per tier (playtest 5, item 8): glanceable rarity.
+      for (let i = 0; i < Math.min(4, b.tier ?? 1); i++) {
+        term.tint(gx + corners[i][0], gy + corners[i][1], '#2b8a75');
       }
     }
 

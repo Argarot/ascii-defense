@@ -24,10 +24,8 @@ const ASSET_V = '5';
 const load = <T>(p: string): Promise<T> =>
   fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
-const BRUSH_LABEL: Record<CellType, string> = {
+const BRUSH_LABEL: Partial<Record<CellType, string>> = {
   G: 'G ground',
-  R: 'R road',
-  r: 'r road (lane B)',
   '-': '\u2500 road E-W',
   '|': '\u2502 road N-S',
   L: '\u2514 bend N+E',
@@ -38,10 +36,8 @@ const BRUSH_LABEL: Record<CellType, string> = {
   O: 'O ore',
   C: 'C core',
 };
-const BRUSH_BG: Record<CellType, string> = {
+const BRUSH_BG: Partial<Record<CellType, string>> = {
   G: '#3d4f61',
-  R: '#93abc4',
-  r: '#7a94b0',
   '-': '#86a0bc',
   '|': '#86a0bc',
   L: '#86a0bc',
@@ -78,6 +74,7 @@ async function main(): Promise<void> {
   brushes.className = 'brushes';
   const brushBtns = new Map<CellType, HTMLButtonElement>();
   for (const t of CELL_TYPES) {
+    if (!BRUSH_LABEL[t]) continue; // playtest 5: only segment road brushes
     const b = document.createElement('button');
     b.textContent = BRUSH_LABEL[t];
     b.style.borderLeft = `10px solid ${BRUSH_BG[t]}`;
@@ -90,22 +87,10 @@ async function main(): Promise<void> {
   }
   left.appendChild(brushes);
 
-  const grid = document.createElement('div');
-  grid.className = 'grid';
-  const cellBtns: HTMLButtonElement[][] = [];
-  for (let y = 0; y < TILE_SIZE; y++) {
-    cellBtns.push([]);
-    for (let x = 0; x < TILE_SIZE; x++) {
-      const b = document.createElement('button');
-      b.addEventListener('click', () => {
-        setCell(x, y, brush);
-        update();
-      });
-      cellBtns[y].push(b);
-      grid.appendChild(b);
-    }
-  }
-  left.appendChild(grid);
+  const paintHint = document.createElement('div');
+  paintHint.className = 'sub';
+  paintHint.textContent = 'click the preview to paint with the selected brush (playtest 5: the tile IS the canvas)';
+  left.appendChild(paintHint);
 
   const loadRow = document.createElement('div');
   const loadLabel = document.createElement('label');
@@ -117,6 +102,7 @@ async function main(): Promise<void> {
   select.addEventListener('change', () => {
     const found = tileLibraryJson.tiles.find((t) => t.id === select.value);
     cells = found ? found.cells.slice() : ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
+    idDirty = Boolean(found);
     if (found) idInput.value = found.id + '_v2';
     update();
   });
@@ -139,6 +125,15 @@ async function main(): Promise<void> {
     background: role('ui.bg'),
   });
   right.appendChild(term.canvas);
+  term.canvas.style.cursor = 'crosshair';
+  term.canvas.addEventListener('click', (e) => {
+    const x = Math.floor(e.offsetX / (10 * CELL_W));
+    const y = Math.floor(e.offsetY / (16 * CELL_H));
+    if (x < 0 || y < 0 || x >= TILE_SIZE || y >= TILE_SIZE) return;
+    setCell(x, y, brush);
+    idDirty = idInput.value !== '' && idDirty; // keep manual ids
+    update();
+  });
 
   const connLine = document.createElement('div');
   connLine.className = 'conn';
@@ -150,8 +145,11 @@ async function main(): Promise<void> {
   const idLabel = document.createElement('label');
   idLabel.textContent = 'tile id (lowercase, digits, _)';
   const idInput = document.createElement('input');
-  idInput.value = 'my_tile';
-  idInput.addEventListener('input', () => update());
+  let idDirty = false;
+  idInput.addEventListener('input', () => {
+    idDirty = true;
+    update();
+  });
   const nameLabel = document.createElement('label');
   nameLabel.textContent = 'display name (optional)';
   const nameInput = document.createElement('input');
@@ -204,14 +202,6 @@ async function main(): Promise<void> {
   function update(): void {
     for (const [t, b] of brushBtns) b.className = t === brush ? 'active' : '';
 
-    for (let y = 0; y < TILE_SIZE; y++)
-      for (let x = 0; x < TILE_SIZE; x++) {
-        const t = cells[y][x] as CellType;
-        const b = cellBtns[y][x];
-        b.textContent = t;
-        b.style.background = BRUSH_BG[t];
-        b.style.color = t === 'O' || t === 'R' ? '#1b232c' : '#e8eef6';
-      }
 
     term.clear(role('ui.bg'));
     for (let cy = 0; cy < TILE_SIZE; cy++)
@@ -226,6 +216,17 @@ async function main(): Promise<void> {
         .map((e) => `<b>${e.toUpperCase()}</b> ${conn[e] ? 'road' : '\u2014'}`)
         .join(' \u00b7 ');
 
+    // Automatic naming (playtest 5, item 4): a stable id straight from the
+    // grid bytes; renaming is optional, never required.
+    if (!idDirty) {
+      let h = 0x811c9dc5;
+      const text = cells.join('');
+      for (let i = 0; i < text.length; i++) {
+        h ^= text.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      idInput.value = 'tile_' + (h >>> 0).toString(36);
+    }
     const errors = validateTileCells(cells);
     const id = idInput.value.trim();
     const idOk = /^[a-z][a-z0-9_]*$/.test(id);

@@ -343,7 +343,7 @@ async function main(): Promise<void> {
     view.render({
       hover,
       caches: mapCaches(),
-      boons: currentMap?.boons ?? [],
+      boons: (currentMap?.boons ?? []).map((b) => ({ x: b.x, y: b.y, tier: b.tier })),
       oreRichness: oreRichness(),
       selected,
       enemies: collectEnemies(),
@@ -414,7 +414,7 @@ async function main(): Promise<void> {
           const dep = c ? sim.depositAt(c.x, c.y) : null;
           if (dep && sim.cellAt(c!.x, c!.y) === 'O') return ` \u00b7 ore left ${dep.left}/${dep.initial}`;
           const boon = c ? sim.boonAt(c.x, c.y) : null;
-          return boon ? ` \u00b7 BOON: +${boon} for whatever is built here` : '';
+          return boon ? ` \u00b7 BOON t${boon.tier}: ${Sim.boonEffect(boon.boon, boon.tier).text} for whatever is built here` : '';
         })(),
       palette: (buildTarget && !(selected && sim.cacheAt(selected.x, selected.y)) ? palette : []).map((d) => ({
         name: d.name ?? d.id,

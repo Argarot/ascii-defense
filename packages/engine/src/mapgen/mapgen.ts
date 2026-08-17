@@ -77,6 +77,8 @@ export interface BoonRef {
   x: number;
   y: number;
   boon: 'range' | 'damage' | 'rate';
+  /** 1-4; higher is rarer and stronger. Corner marks on the board = tier. */
+  tier: 1 | 2 | 3 | 4;
 }
 
 export interface OreDeposit {
@@ -127,6 +129,18 @@ export const ROCK_CACHE_CHANCE = 0.12;
 export const DEPOSIT_MIN = 30;
 export const DEPOSIT_MAX = 90;
 
+/** Weighted deterministic pick (tile weights, playtest 5 item 6). */
+function pickWeighted<T extends { weight: number }>(rng: RngStream, pool: readonly T[]): T {
+  let total = 0;
+  for (const p of pool) total += p.weight;
+  let roll = rng.int(0, Math.max(0, Math.ceil(total * 100) - 1)) / 100;
+  for (const p of pool) {
+    if (roll < p.weight) return p;
+    roll -= p.weight;
+  }
+  return pool[pool.length - 1];
+}
+
 const EDGE_DELTA: Record<Edge, [number, number]> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 const CENTER = (TILE_SIZE - 1) / 2;
 
@@ -141,15 +155,16 @@ function sigKey(edges: ReadonlySet<Edge>): string {
  * needs one authored orientation per shape.
  */
 function indexLibrary(lib: TileLibrary): {
-  road: Map<string, { tileId: string; rotation: Rotation }[]>;
-  core: Map<string, { tileId: string; rotation: Rotation }[]>;
-  filler: { plain: string[]; ore: string[] };
+  road: Map<string, { tileId: string; rotation: Rotation; weight: number }[]>;
+  core: Map<string, { tileId: string; rotation: Rotation; weight: number }[]>;
+  filler: { plain: { tileId: string; weight: number }[]; ore: { tileId: string; weight: number }[] };
 } {
-  const road = new Map<string, { tileId: string; rotation: Rotation }[]>();
-  const core = new Map<string, { tileId: string; rotation: Rotation }[]>();
-  const filler = { plain: [] as string[], ore: [] as string[] };
+  const road = new Map<string, { tileId: string; rotation: Rotation; weight: number }[]>();
+  const core = new Map<string, { tileId: string; rotation: Rotation; weight: number }[]>();
+  const filler = { plain: [] as { tileId: string; weight: number }[], ore: [] as { tileId: string; weight: number }[] };
 
   for (const id of lib.ids()) {
+    const weight = lib.weightOf(id);
     for (const rotation of [0, 1, 2, 3] as const) {
       const { cells, connectors } = lib.resolved(id, rotation);
       const edges = new Set<Edge>(EDGES.filter((e) => connectors[e]));
@@ -164,15 +179,15 @@ function indexLibrary(lib: TileLibrary): {
         // The Core's crossings must interconnect (all roads reach it).
         if (tilePartition(cells).length > 1) continue;
         const list = core.get(sigKey(edges)) ?? [];
-        list.push({ tileId: id, rotation });
+        list.push({ tileId: id, rotation, weight });
         core.set(sigKey(edges), list);
       } else if (hasRoad) {
         const list = road.get(key) ?? [];
-        list.push({ tileId: id, rotation });
+        list.push({ tileId: id, rotation, weight });
         road.set(key, list);
       } else if (rotation === 0) {
         const hasOre = cells.some((row) => row.includes('O'));
-        (hasOre ? filler.ore : filler.plain).push(id);
+        (hasOre ? filler.ore : filler.plain).push({ tileId: id, weight });
       }
     }
   }
@@ -394,7 +409,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
           'the generator needs every routed shape (see content/assets/tiles/library.json)',
       );
     }
-    const pick = rng.pick(pool);
+    const pick = pickWeighted(rng, pool);
     board = place(board, pick.tileId, pick.rotation, x, y);
   }
 
@@ -457,6 +472,21 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     }
   }
 
+  // Void share cap (playtest 5, item 12): the enclosure rule killed holes,
+  // not EXCESS - a map that is one-third void is a broken coastline. Convert
+  // the void slots nearest to terrain into fillable land until the share is
+  // sane; rare large bays survive, oceans do not.
+  {
+    const total = width * height;
+    const voidSlots: number[] = [];
+    for (let k = 0; k < total; k++) if (!roadEdges.has(k) && dist[k] > ORE_REACH) voidSlots.push(k);
+    const maxVoid = Math.floor(total * 0.22);
+    if (voidSlots.length > maxVoid) {
+      voidSlots.sort((a, b) => dist[a] - dist[b]); // nearest to land first
+      for (const k of voidSlots.slice(0, voidSlots.length - maxVoid)) dist[k] = ORE_REACH;
+    }
+  }
+
   // The ore floor is pre-committed, not checked after: a seeded shuffle of
   // every fillable slot marks the first ORE_FLOOR as guaranteed ore, and the
   // fill loop honours the marks. The guarantee therefore holds by
@@ -479,9 +509,9 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         // The outer ring exists for resources - ore, or plain ground when
         // the slot is enclosed (holes read as bugs, not as coastline).
         if (guaranteedOre.has(k) || (index.filler.ore.length > 0 && rng.chance(0.3))) {
-          board = place(board, rng.pick(index.filler.ore), rng.pick([0, 1, 2, 3] as const), x, y);
+          board = place(board, pickWeighted(rng, index.filler.ore).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
         } else if (index.filler.plain.length > 0 && rng.chance(0.55)) {
-          board = place(board, rng.pick(index.filler.plain), rng.pick([0, 1, 2, 3] as const), x, y);
+          board = place(board, pickWeighted(rng, index.filler.plain).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
         }
         continue;
       }
@@ -492,7 +522,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         guaranteedOre.has(k) || (index.filler.ore.length > 0 && rng.chance(oreChance))
           ? index.filler.ore
           : index.filler.plain;
-      board = place(board, rng.pick(pool), rng.pick([0, 1, 2, 3] as const), x, y);
+      board = place(board, pickWeighted(rng, pool).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
     }
 
   // ---- 5+6. deal the relic layer's map half (PRD sec 4.6) -----------------
@@ -533,9 +563,19 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     for (const spot of shuffled.slice(0, CACHE_COUNT)) {
       caches.push({ x: spot.x, y: spot.y, poolIdx: rng.int(0, poolSize - 1) });
     }
+    // Boons live NEAR the road (playtest 5, item 10) - a buff nobody can
+    // reach with a useful tower is decoration. Tier: 1 common .. 4 rare.
     const BOONS: BoonRef['boon'][] = ['range', 'damage', 'rate'];
-    for (const spot of shuffled.slice(CACHE_COUNT, CACHE_COUNT + BOON_COUNT)) {
-      boons.push({ x: spot.x, y: spot.y, boon: BOONS[rng.int(0, BOONS.length - 1)] });
+    const nearGround: CellRef[] = [];
+    for (let cy = 0; cy < height * TILE_SIZE; cy++)
+      for (let cx = 0; cx < cellsW; cx++) {
+        if (cellsNow[cy * cellsW + cx] !== 'G') continue;
+        if (dist[slotIdx(Math.floor(cx / TILE_SIZE), Math.floor(cy / TILE_SIZE))] <= 1) nearGround.push({ x: cx, y: cy });
+      }
+    for (const spot of rng.shuffle(nearGround).slice(0, BOON_COUNT)) {
+      const roll = rng.int(0, 99);
+      const tier = (roll < 50 ? 1 : roll < 80 ? 2 : roll < 95 ? 3 : 4) as BoonRef['tier'];
+      boons.push({ x: spot.x, y: spot.y, boon: BOONS[rng.int(0, BOONS.length - 1)], tier });
     }
   }
 

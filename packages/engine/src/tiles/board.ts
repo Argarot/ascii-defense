@@ -64,6 +64,10 @@ export class TileLibrary {
     }
   }
 
+  weightOf(id: string): number {
+    return this.byId.get(id)?.weight ?? 1;
+  }
+
   ids(): string[] {
     return [...this.byId.keys()];
   }
