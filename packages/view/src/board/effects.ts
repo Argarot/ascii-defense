@@ -146,32 +146,41 @@ export class EffectsLayer {
     this.ring(term, e.x, e.y, rNow, 0.24, (gx, gy) => term.shade(gx, gy, strength, 0.08));
   }
 
-  /** Mortar blast: white flash, expanding debris, lingering smoke. */
+  /**
+   * Mortar blast (4.26, playtest 9): the FLASH is exactly the kill radius -
+   * nothing inside it survives the lie test, nothing outside it dies - and
+   * the SHOCKWAVE travels visibly past it, fading to smoke, because a blast
+   * that stops dead at its own edge reads as a stamp, not an explosion.
+   */
   private drawBlast(term: GLTerm, e: Effect, age01: number, still: boolean): void {
-    const rNow = still ? e.r : Math.max(0.4, e.r * age01);
+    // Shockwave ring: expands to 1.5x the kill radius over the lifetime,
+    // debris inside the kill radius, smoke-only beyond it.
+    const rNow = still ? e.r : Math.max(0.4, e.r * 1.5 * age01);
     const phase = still ? 1 : age01 < 0.35 ? 0 : age01 < 0.7 ? 1 : 2;
     const glyphs = ['*', 'x', '.'];
-    const fg = [role('fx.flash'), role('fx.ember'), role('fx.smoke')][phase];
+    const beyond = rNow > e.r;
+    const fg = beyond ? role('fx.smoke') : [role('fx.flash'), role('fx.ember'), role('fx.smoke')][phase];
     this.ring(term, e.x, e.y, rNow, 0.3, (gx, gy) => {
       // Debris is grainy, not a solid wall: the hash thins the ring and
       // varies the glyph so two blasts never look stamped.
       const h = hash2(gx, gy, 31 + phase);
-      if (h < 0.72) term.put(gx, gy, glyphs[phase === 0 ? (h < 0.3 ? 0 : 1) : phase], fg);
+      if (h < (beyond ? 0.5 : 0.72)) {
+        term.put(gx, gy, beyond ? '.' : glyphs[phase === 0 ? (h < 0.3 ? 0 : 1) : phase], fg);
+      }
     });
-    if (!still && age01 < 0.3) {
-      // Ground zero whites out for the first blink - a DISC scaled by the
-      // true blast radius (WBS 2.19): the flash you see is the area that
-      // kills, so an upgraded radius visibly widens the explosion.
-      const flashR = Math.max(0.4, e.r * 0.6);
-      const minGx = Math.max(0, Math.floor((e.x - flashR) * CELL_W));
-      const maxGx = Math.min(term.cols - 1, Math.ceil((e.x + flashR) * CELL_W));
-      const minGy = Math.max(0, Math.floor((e.y - flashR) * CELL_H));
-      const maxGy = Math.min(term.rows - 1, Math.ceil((e.y + flashR) * CELL_H));
+    if (!still && age01 < 0.4) {
+      // Ground zero whites out - a disc of the FULL kill radius (playtest 9:
+      // the 0.6r disc undersold the blast), decaying as the shockwave leaves.
+      const minGx = Math.max(0, Math.floor((e.x - e.r) * CELL_W));
+      const maxGx = Math.min(term.cols - 1, Math.ceil((e.x + e.r) * CELL_W));
+      const minGy = Math.max(0, Math.floor((e.y - e.r) * CELL_H));
+      const maxGy = Math.min(term.rows - 1, Math.ceil((e.y + e.r) * CELL_H));
+      const strength = 3.2 - 4 * age01; // 3.2 at birth, gone by 0.4
       for (let gy = minGy; gy <= maxGy; gy++)
         for (let gx = minGx; gx <= maxGx; gx++) {
           const ux = (gx + 0.5) / CELL_W - e.x;
           const uy = (gy + 0.5) / CELL_H - e.y;
-          if (Math.sqrt(ux * ux + uy * uy) <= flashR) term.shade(gx, gy, 3.2, 0.25);
+          if (Math.sqrt(ux * ux + uy * uy) <= e.r) term.shade(gx, gy, strength, 0.25);
         }
     }
   }
