@@ -46,6 +46,15 @@ was a drift surface, not an aid.)*
 V6→2.14 · V7→4.11 · V8→4.12 · V9→4.12 · V10→4.1 · V11→4.11 · V12→4.14
 *(marked, not committed — visual size only)* · V13→2.14
 
+**Round 5 (playtest 5, all PR #63):** 1 rim-as-shade · 2 library re-encoded to
+segments · 3 segment-only brushes · 4 auto tile ids · 5 paint-on-preview ·
+6 tile weights · 7 **partial: ore paintable; richness/boon authoring → 2.18** ·
+8 boon tiers 1–4 (corner marks) · 9 exact boon text · 10 boons near road ·
+11 duplicate relics equippable (rebalance later, agreed) · 12 void share cap
+
+**Round 4 (playtest 4, PRs #59–#61):** ports model · transparent modal ·
+enclosed-void fill · prospect stacking/parallel-auto
+
 **Round 3 (playtest 3):** difficulty ✓ · reroll visibility→#57 · 2× cards→#57 ·
 richness density+bg→#57 · timed/auto prospecting→#57 (2.11) · ore readout on
 select→#57 · directional roads replacing lane letters→#57 · Tile Smith add
@@ -214,6 +223,7 @@ but the question the milestone existed to answer is answered.
 - [x] 2.11 *(PR #57)* **Prospecting rework**: unlock dropped, 25 scrap + 600 ticks for everyone, PROSPECTING n% bar; Survey refineries accelerate nearby jobs (to 4×) and start free jobs autonomously.
 - [ ] 2.12 **The naming pass** (PRD §13, D8): printing-trade vocabulary across towers, enemies, upgrades, currencies. Before any art.
 - [ ] 2.13 **UI infrastructure**: scrollable panels, larger illustrated relic cards, hidden-tab behaviour (D7). The modal layer from 1.6.2 is the foundation.
+- [ ] 2.18 **Tile Smith overlay authoring** (playtest 5, item 7): per-tile ore richness and boon placement need an overlay format beside `cells` (deposits/boons arrays in TileDef) + schema + smith UI + mapgen honoring them. The one piece of playtest 5 NOT shipped, stated openly.
 - [ ] 2.14 **Enemy readouts** (PRD §8): shields as a bracket around the glyph, destroyed separately from the body so any enemy may carry one; health and status effects as marks beside the glyph (braille is a candidate). No tooltips.
 - [x] 2.15 *(PR #60)* **Generated tile library**: `tools/tilegen.mjs` emits port-encoded wiggly paths + junction tiles through the shared validator; 15 authored + 24 generated, regenerable deterministically; `gen_*` replaced wholesale.
 - [x] 2.17 *(PR #60)* **Carve v3 — edge partitions + turning tunnels**: road pools keyed by partition; walks tunnel through occupied slots perpendicular (only when a partition tile exists — no tile, no move); shipped `twin_bend` proven dealt on real maps.
