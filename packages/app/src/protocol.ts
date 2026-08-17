@@ -52,8 +52,6 @@ export interface FrameSnapshot {
   paused: boolean;
   /** Current speed multiplier, for the main thread's world-ambient clock (4.25). */
   speed: number;
-  /** Set when the aim mode should end (targeted active fired or cancelled). */
-  targetingConsumed?: boolean;
 }
 
 export type ToWorker =
