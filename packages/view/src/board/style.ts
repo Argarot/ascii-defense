@@ -15,7 +15,7 @@ export const POOLS: Record<CellType, string> = {
   G: "          .'`,\u2800\u2801\u2802\u2804\u2808\u2810\u2820\u2840\u2880\u2803\u2809",
   X: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   R: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
-  B: ':;.,=⠉⠒⠤⠶⠛⠿-_~⠐⠠',
+  B: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   '-': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   '|': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   L: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
@@ -168,15 +168,51 @@ export function drawTerrainCell(
  * safe. The same drift step that stirs the ground moves the ripples; at
  * drift 0 (reduced motion, still surfaces) it is a static texture.
  */
-const WATER_POOL = '~⠒⠂.⠦';
+const WATER_POOL = '~\u2812\u2802.\u2826';
 
-export function drawVoidCell(term: GLTerm, gx0: number, gy0: number, drift = 0, hoverBg?: string): void {
+/**
+ * @param shore bitmask of sides facing LAND (N=1 E=2 S=4 W=8): the coast
+ * band (6.6, asked twice). The land-facing edge of a water cell gets a
+ * sand fringe - dense grains at the waterline thinning seaward, with an
+ * occasional foam ripple in lit water - so the coast reads as a beach
+ * rather than a cut. Procedural and safe by construction: border cells
+ * never carry road (PRD sec 4.2).
+ */
+export function drawVoidCell(term: GLTerm, gx0: number, gy0: number, drift = 0, hoverBg?: string, shore = 0): void {
   const dark = role('terrain.water.dark');
   const mid = role('terrain.water.mid');
   const lit = role('terrain.water.lit');
+  const sandLit = role('terrain.shore.lit');
+  const sandMid = role('terrain.shore.mid');
+  const sandBg = role('terrain.shore.dark');
+  const SAND_POOL = '.:\u2802\u2804\u2810\u00b7,';
   const bg = hoverBg ?? dark;
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
+      // Distance from the nearest land-facing edge, in glyphs; Infinity when
+      // no side faces land. Row 0 is the waterline of a north-facing shore.
+      let edge = Infinity;
+      if ((shore & 1) !== 0) edge = Math.min(edge, y);
+      if ((shore & 4) !== 0) edge = Math.min(edge, CELL_H - 1 - y);
+      if ((shore & 8) !== 0) edge = Math.min(edge, x); // one glyph column reads as one step
+      if ((shore & 2) !== 0) edge = Math.min(edge, CELL_W - 1 - x);
+      if (edge <= 1) {
+        // The beach: grains dense at the waterline, thinning into the water.
+        const density = edge === 0 ? 0.8 : 0.25;
+        const h = hash2(gx0 + x, gy0 + y, 51);
+        if (h < density) {
+          const g = SAND_POOL[Math.floor(hash2(gx0 + x, gy0 + y, 53) * SAND_POOL.length) % SAND_POOL.length];
+          term.put(gx0 + x, gy0 + y, g, h < density * 0.4 ? sandLit : sandMid, hoverBg ?? sandBg);
+          continue;
+        }
+        // Surf: a rare bright ripple right at the waterline, riding the drift.
+        if (edge === 0 && hash2(gx0 + x, gy0 + y, 55 + drift) < 0.12) {
+          term.put(gx0 + x, gy0 + y, '~', lit, hoverBg ?? sandBg);
+          continue;
+        }
+        term.put(gx0 + x, gy0 + y, ' ', mid, hoverBg ?? sandBg);
+        continue;
+      }
       // Ripples re-roll position each step - water moves rather than breathes.
       const h = hash2(gx0 + x, gy0 + y, 27 + drift);
       if (h < 0.1) {
