@@ -17,7 +17,7 @@
  * and plain objects for towers (dozens, rich state) - ARCHITECTURE sec 7.
  */
 import { createRng, type Rng } from '../rng/rng';
-import { isBuildable, type CellType } from '../grid/cells';
+import { isBuildable, strandEntered, strandPorts, type CellType } from '../grid/cells';
 import type { GeneratedMap, CellRef } from '../mapgen/mapgen';
 import { computeFlowField, type FlowField } from './flow';
 import { PRIORITIES, pickTarget, type Priority, type TargetCandidate } from './targeting';
@@ -183,6 +183,14 @@ export class Sim {
    * of hashState the same way events do.
    */
   readonly spawnHp = new Float32Array(ENEMY_CAP);
+  /**
+   * Direction of travel (0=N 1=E 2=S 3=W), set at spawn and on every
+   * retarget. On a bridge cell it names the strand the enemy is riding -
+   * both strands are straight, so direction IS strand. Derived state
+   * (fully determined by hashed positions/targets), deliberately not
+   * hashed so bridge-free replays keep their hash.
+   */
+  private readonly walkDir = new Uint8Array(ENEMY_CAP);
   /** Slow timer, public read-only so the view can mark chilled enemies. */
   readonly slowTicks = new Int16Array(ENEMY_CAP);
   private readonly slowMul = new Float32Array(ENEMY_CAP);
@@ -372,8 +380,8 @@ export class Sim {
     const minesOre = (def.production?.ore ?? 0) > 0;
     if (minesOre) return cell === 'O'; // refineries live on veins, full stop
     if (cell === 'G') return true;
-    if (cell === 'K') return this.fold.buildOnRock; // Vein Tap
-    return false; // O is Refinery ground; R and C are never buildable
+    if (cell === 'R') return this.fold.buildOnRock; // Vein Tap
+    return false; // O is Refinery ground; road and C are never buildable
   }
 
   buildTower(x: number, y: number, defId: string): boolean {
@@ -647,7 +655,7 @@ export class Sim {
    */
   prospect(x: number, y: number): boolean {
     if (this.status !== 'running') return false;
-    if (this.cellAt(x, y) !== 'K') return false;
+    if (this.cellAt(x, y) !== 'R') return false;
     const k = y * this.opts.cellsW + x;
     if (this.prospectJobs.has(k)) return false;
     if (this.scrap < PROSPECT_COST) return false;
@@ -712,7 +720,7 @@ export class Sim {
         for (let dx = -2; dx <= 2; dx++) {
           const rx = t.cellX + dx;
           const ry = t.cellY + dy;
-          if (this.cellAt(rx, ry) !== 'K') continue;
+          if (this.cellAt(rx, ry) !== 'R') continue;
           const rk = ry * this.opts.cellsW + rx;
           if (this.prospectJobs.has(rk)) continue;
           this.prospectJobs.set(rk, PROSPECT_TICKS);
@@ -1073,6 +1081,9 @@ export class Sim {
     this.posY[i] = entry.y + 0.5;
     this.tgtX[i] = entry.x + 0.5;
     this.tgtY[i] = entry.y + 0.5;
+    // Facing inward from the board edge - so if the entry cell itself is a
+    // bridge, the walker already knows which strand it arrived on.
+    this.walkDir[i] = entry.y === 0 ? 2 : entry.x === 0 ? 1 : entry.x === this.opts.cellsW - 1 ? 3 : 0;
   }
 
   // ---- combat --------------------------------------------------------------
@@ -1312,7 +1323,7 @@ export class Sim {
     // Stasis (relic active): the board freezes - nothing moves, slow timers
     // hold, towers keep firing. The get-out-of-jail card.
     if (this.tickCount < this.freezeUntil) return;
-    const { dist, width } = this.flow;
+    const { nodeDist, width } = this.flow;
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;
       let speed = this.opts.enemyDefs[this.enemyDefIdx[i]].speed;
@@ -1328,7 +1339,11 @@ export class Sim {
         this.posY[i] = this.tgtY[i];
         const cx = Math.floor(this.posX[i]);
         const cy = Math.floor(this.posY[i]);
-        const here = dist[cy * width + cx];
+        // Strand identity (4.9): on a bridge, direction of travel names the
+        // strand - N/S rides the underpass, E/W the deck.
+        const cell = this.cellAt(cx, cy)!;
+        const s = cell === 'B' && (this.walkDir[i] === 0 || this.walkDir[i] === 2) ? 1 : 0;
+        const here = nodeDist[(cy * width + cx) * 2 + s];
         if (here === 0) {
           // Breach: the Core takes this enemy's damage, and can fall.
           this.alive[i] = 0;
@@ -1349,13 +1364,17 @@ export class Sim {
         for (let d = 0; d < 4; d++) {
           // The allowed mask is the route GRAPH (session 14): a numerically
           // downhill neighbour on a different lane is not a legal step -
-          // enemies never change lanes.
+          // enemies never change lanes. On a bridge the walker also keeps
+          // to its own strand's ports: it crosses straight, never turns.
           if ((mask & (1 << d)) === 0) continue;
+          if (cell === 'B' && (strandPorts(cell)[s] & (1 << d)) === 0) continue;
           const qx = cx + [0, 1, 0, -1][d];
           const qy = cy + [-1, 0, 1, 0][d];
-          if (dist[qy * width + qx] === here - 1) {
+          const qs = strandEntered(this.cellAt(qx, qy)!, 1 << d);
+          if (nodeDist[(qy * width + qx) * 2 + qs] === here - 1) {
             this.tgtX[i] = qx + 0.5;
             this.tgtY[i] = qy + 0.5;
+            this.walkDir[i] = d;
             found = true;
             break;
           }

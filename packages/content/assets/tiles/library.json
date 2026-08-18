@@ -84,7 +84,7 @@
       "cells": [
         "GGGGG",
         "GGGGG",
-        "--R--",
+        "--X--",
         "GG|GG",
         "GG|GG"
       ]
@@ -95,7 +95,7 @@
       "cells": [
         "GG|GG",
         "GG|GG",
-        "--R--",
+        "--X--",
         "GG|GG",
         "GG|GG"
       ]
@@ -115,11 +115,11 @@
       "id": "rock_corner",
       "name": "cliff bend",
       "cells": [
-        "GKKGG",
-        "GKGGG",
+        "GRRGG",
+        "GRGGG",
         "--7GG",
         "GG|GG",
-        "GK|GG"
+        "GR|GG"
       ]
     },
     {
@@ -138,9 +138,9 @@
       "name": "scree",
       "cells": [
         "GGGGG",
-        "GKKGG",
-        "GKKKG",
-        "GGKKG",
+        "GRRGG",
+        "GRRRG",
+        "GGRRG",
         "GGGGG"
       ]
     },
@@ -149,9 +149,9 @@
       "name": "ore vein",
       "cells": [
         "GGGGG",
-        "GKKGG",
-        "GKOOG",
-        "GGKGG",
+        "GRRGG",
+        "GROOG",
+        "GGRGG",
         "GGGGG"
       ]
     },
@@ -169,45 +169,35 @@
     {
       "id": "gen_ns_1",
       "cells": [
-        "GG|GG",
-        "GG|GG",
-        "GG|GG",
-        "GG|GG",
-        "GG|GG"
+        "GGGGG",
+        "GGGGG",
+        "-----",
+        "GGGGG",
+        "GGGGG"
       ]
     },
     {
       "id": "gen_ns_2",
       "cells": [
-        "GG|F7",
-        "GG|||",
-        "GGLJ|",
-        "GGF-J",
-        "GG|GG"
+        "F--7G",
+        "L-7|G",
+        "--JL-",
+        "GGGGG",
+        "GGGGG"
       ]
     },
     {
       "id": "gen_ns_3",
       "cells": [
-        "GG|GG",
-        "GFJGG",
-        "GL7GG",
-        "GG|GG",
-        "GG|GG"
+        "GGGGG",
+        "GGF7G",
+        "--JL-",
+        "GGGGG",
+        "GGGGG"
       ]
     },
     {
       "id": "gen_ns_4",
-      "cells": [
-        "GG|GG",
-        "GG|GG",
-        "GFJGG",
-        "GL7GG",
-        "GG|GG"
-      ]
-    },
-    {
-      "id": "gen_ew_1",
       "cells": [
         "GGGGG",
         "GF7GG",
@@ -217,167 +207,17 @@
       ]
     },
     {
-      "id": "gen_ew_2",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "-----",
-        "GGGGG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "gen_ew_3",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "--7F-",
-        "GGLJG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "gen_ew_4",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "-7F--",
-        "GLJGG",
-        "GGGGG"
-      ]
-    },
-    {
       "id": "gen_ne_1",
       "cells": [
-        "GG|GG",
-        "GG|GG",
-        "GGL--",
         "GGGGG",
-        "GGGGG"
+        "GGF7G",
+        "GG|L-",
+        "GG|GG",
+        "GG|GG"
       ]
     },
     {
       "id": "gen_ne_2",
-      "cells": [
-        "GG|GG",
-        "GGL7G",
-        "GGGL-",
-        "GGGGG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "gen_ne_3",
-      "cells": [
-        "GG|GG",
-        "GFJGG",
-        "GL---",
-        "GGGGG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "gen_ne_4",
-      "cells": [
-        "GG|GG",
-        "GG|GG",
-        "GFJF-",
-        "G|GL7",
-        "GL--J"
-      ]
-    },
-    {
-      "id": "gen_nw_1",
-      "cells": [
-        "GG|GG",
-        "GG|GG",
-        "--JGG",
-        "GGGGG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "gen_nw_2",
-      "cells": [
-        "GG|GG",
-        "GG|GG",
-        "-7|GG",
-        "GLJGG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "gen_nw_3",
-      "cells": [
-        "GG|GG",
-        "GFJGG",
-        "-JGGG",
-        "GGGGG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "gen_nw_4",
-      "cells": [
-        "GG|GG",
-        "GG|GG",
-        "-7L7G",
-        "GL-JG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "gen_se_1",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "GGGF-",
-        "GGFJG",
-        "GG|GG"
-      ]
-    },
-    {
-      "id": "gen_se_2",
-      "cells": [
-        "GGGGG",
-        "F--7G",
-        "|F7L-",
-        "|||GG",
-        "LJ|GG"
-      ]
-    },
-    {
-      "id": "gen_se_3",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "GF---",
-        "GL7GG",
-        "GG|GG"
-      ]
-    },
-    {
-      "id": "gen_se_4",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "GGF--",
-        "GG|GG",
-        "GG|GG"
-      ]
-    },
-    {
-      "id": "gen_sw_1",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "-7GGG",
-        "GL7GG",
-        "GG|GG"
-      ]
-    },
-    {
-      "id": "gen_sw_2",
       "cells": [
         "GGGGG",
         "GGGGG",
@@ -387,23 +227,23 @@
       ]
     },
     {
-      "id": "gen_sw_3",
+      "id": "gen_ne_3",
       "cells": [
         "GGGGG",
         "GGGGG",
-        "---7G",
-        "GGFJG",
+        "-7GGG",
+        "GL7GG",
         "GG|GG"
       ]
     },
     {
-      "id": "gen_sw_4",
+      "id": "gen_ne_4",
       "cells": [
-        "GGGF7",
-        "GF-J|",
-        "-JF7|",
-        "GG|||",
-        "GG|LJ"
+        "F--7G",
+        "L7G|G",
+        "-JFJG",
+        "GG|GG",
+        "GG|GG"
       ]
     }
   ]

@@ -5,6 +5,14 @@
  * the same function the game and the content CI run - so a tile this tool
  * exports cannot be invalid, and a rule change in the engine changes this
  * tool on the next build with zero effort.
+ *
+ * Brushes are EXPLICIT segment types in a 4x4 matrix (2.23, Daniil's layout):
+ * what you click is what you place, no inference anywhere. Inference was
+ * tried and reversed - it derives ports from adjacency, so two touching
+ * same-lane cells always merge, which destroys the one property (touch
+ * without merge) the port model exists for. The matrix mirrors the shapes:
+ * the road block composes into a box (F T 7 / E X 3 / L U J) with the
+ * straights and the bridge in the fourth column, terrain beneath.
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
@@ -24,74 +32,60 @@ const ASSET_V = '5';
 const load = <T>(p: string): Promise<T> =>
   fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
-type Brush = 'ROAD' | 'r' | 'G' | 'K' | 'O' | 'C';
+/** Daniil's matrix: the road block reads as a box, terrain under it. */
+const BRUSH_GRID: CellType[][] = [
+  ['F', 'T', '7', '|'],
+  ['E', 'X', '3', '-'],
+  ['L', 'U', 'J', 'B'],
+  ['G', 'R', 'O', 'C'],
+];
 
-const BRUSH_LABEL: Record<Brush, string> = {
-  ROAD: '┼ road (auto-shapes)',
-  r: '║ road · lane B',
-  G: 'G ground',
-  K: 'K rock',
-  O: 'O ore',
-  C: 'C core',
+const ZOOM_W = 10; // px per glyph at the smith's 2x zoom
+const ZOOM_H = 16;
+const CELL_PX_W = ZOOM_W * CELL_W;
+const CELL_PX_H = ZOOM_H * CELL_H;
+
+// Buttons stay BUTTONS (Daniil, mock review round 2): a schematic glyph per
+// brush - the box-drawing shape it places - while the tile preview is where
+// the actual sprites live. The first sprite-palette attempt inverted that.
+const BRUSH_GLYPH: Record<string, string> = {
+  F: '\u250c', T: '\u252c', '7': '\u2510', '|': '\u2502',
+  E: '\u251c', X: '\u253c', '3': '\u2524', '-': '\u2500',
+  L: '\u2514', U: '\u2534', J: '\u2518', B: '\u256b',
+  G: 'G', R: 'R', O: 'O', C: 'C',
 };
-const BRUSH_BG: Record<Brush, string> = {
-  ROAD: '#86a0bc',
-  r: '#6f89a5',
-  G: '#3d4f61',
-  K: '#5a6a7c',
-  O: '#ffd15c',
-  C: '#2bbfae',
+const BRUSH_ACCENT: Record<string, string> = {
+  B: '#6f89a5', G: '#3d4f61', R: '#5a6a7c', O: '#ffd15c', C: '#2bbfae',
 };
-const BRUSHES: Brush[] = ['ROAD', 'r', 'G', 'K', 'O', 'C'];
+const ROAD_ACCENT = '#86a0bc';
+
+/** Hover names; the \u256b button needs words the glyph alone cannot carry. */
+const BRUSH_NAME: Record<string, string> = {
+  '-': 'road \u00b7 east-west',
+  '|': 'road \u00b7 north-south',
+  L: 'road \u00b7 bends north-east',
+  J: 'road \u00b7 bends north-west',
+  F: 'road \u00b7 bends south-east',
+  '7': 'road \u00b7 bends south-west',
+  T: 'T-junction \u00b7 stem south',
+  U: 'T-junction \u00b7 stem north',
+  E: 'T-junction \u00b7 opens east',
+  '3': 'T-junction \u00b7 opens west',
+  X: 'crossroads \u00b7 joins all sides',
+  B: 'bridge \u00b7 two roads cross here and never merge \u00b7 deck runs east-west, the other road passes under',
+  G: 'ground',
+  R: 'rock',
+  O: 'ore',
+  C: 'core',
+};
 
 let cells: string[] = ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
-let brush: Brush = 'ROAD';
-
-/** Lane-A road cells - everything the inference owns. */
-const LANE_A = new Set(['R', '-', '|', 'L', 'J', 'F', '7', 'T', 'U', 'E', '3']);
+let brush: CellType = 'G'; // ground default: nothing paints by surprise (playtest 10)
+const undoStack: string[][] = [];
 
 function setCell(x: number, y: number, t: string): void {
   const row = cells[y];
   cells = cells.map((r, i) => (i === y ? row.slice(0, x) + t + row.slice(x + 1) : r));
-}
-
-/**
- * The smith paints ROADS, the engine infers the SEGMENTS (2.23, Daniil):
- * every lane-A road cell re-derives its type from which neighbours are road
- * - straights, bends, Ts, and the 4-way 'R' fall out of adjacency, so a
- * junction is mintable by drawing one. Order-independent and idempotent:
- * erase a cell and the survivors re-shape correctly. An edge-CENTRE road
- * gets a virtual outward neighbour, so painting to an edge centre creates
- * an entry - exactly the deriveConnectors rule, applied in reverse.
- */
-const SHAPE_BY_MASK: Record<number, string> = {
-  0: '-', 1: '|', 2: '-', 4: '|', 8: '-',
-  5: '|', 10: '-', 3: 'L', 9: 'J', 6: 'F', 12: '7',
-  14: 'T', 11: 'U', 7: 'E', 13: '3', 15: 'R',
-};
-
-function inferRoads(): void {
-  const CENTER = Math.floor(TILE_SIZE / 2);
-  const next = cells.map((r) => r.split(''));
-  for (let y = 0; y < TILE_SIZE; y++)
-    for (let x = 0; x < TILE_SIZE; x++) {
-      if (!LANE_A.has(cells[y][x])) continue;
-      let mask = 0;
-      const dirs: [number, number, number, boolean][] = [
-        [0, -1, 1, y === 0 && x === CENTER],
-        [1, 0, 2, x === TILE_SIZE - 1 && y === CENTER],
-        [0, 1, 4, y === TILE_SIZE - 1 && x === CENTER],
-        [-1, 0, 8, x === 0 && y === CENTER],
-      ];
-      for (const [dx, dy, bit, virtualOut] of dirs) {
-        const nx = x + dx;
-        const ny = y + dy;
-        const off = nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE;
-        if (off ? virtualOut : LANE_A.has(cells[ny][nx]) || cells[ny][nx] === 'C') mask |= bit;
-      }
-      next[y][x] = SHAPE_BY_MASK[mask];
-    }
-  cells = next.map((r) => r.join(''));
 }
 
 async function main(): Promise<void> {
@@ -104,28 +98,63 @@ async function main(): Promise<void> {
   left.innerHTML = `
     <div>
       <h1>TILE SMITH</h1>
-      <div class="sub">paint a 5x5 tile \u00b7 the export button obeys the same rules the game does \u00b7 <a href="./">back to the board</a></div>
+      <div class="sub">what you click is what you place \u00b7 the export button obeys the same rules the game does \u00b7 <a href="./">back to the board</a></div>
     </div>`;
 
-  const brushes = document.createElement('div');
-  brushes.className = 'brushes';
-  const brushBtns = new Map<Brush, HTMLButtonElement>();
-  for (const t of BRUSHES) {
-    const b = document.createElement('button');
-    b.textContent = BRUSH_LABEL[t];
-    b.style.borderLeft = `10px solid ${BRUSH_BG[t]}`;
-    b.addEventListener('click', () => {
-      brush = t;
+  // The brush matrix: plain buttons in Daniil's 4x4 layout, one schematic
+  // box-drawing glyph each. Rows 1-3 are the road block (it composes into a
+  // box figure), row 4 is terrain; the two gutter labels are the only text.
+  const palWrap = document.createElement('div');
+  palWrap.className = 'palette';
+  const palLabels = document.createElement('div');
+  palLabels.className = 'pal-labels';
+  palLabels.innerHTML =
+    '<div style="flex: 3">roads</div>' +
+    '<div style="flex: 1">terrain</div>';
+  const palGrid = document.createElement('div');
+  palGrid.className = 'pal-grid';
+  const brushBtns = new Map<CellType, HTMLButtonElement>();
+  for (const row of BRUSH_GRID)
+    for (const t of row) {
+      const b = document.createElement('button');
+      b.className = 'brush';
+      b.innerHTML = `<span class="glyph">${BRUSH_GLYPH[t]}</span>`;
+      b.title = BRUSH_NAME[t];
+      b.style.borderTop = `3px solid ${BRUSH_ACCENT[t] ?? ROAD_ACCENT}`;
+      b.addEventListener('click', () => {
+        brush = t;
+        update();
+      });
+      brushBtns.set(t, b);
+      palGrid.appendChild(b);
+    }
+  palWrap.appendChild(palLabels);
+  palWrap.appendChild(palGrid);
+  left.appendChild(palWrap);
+
+  const undoRow = document.createElement('div');
+  undoRow.className = 'actions';
+  const undoBtn = document.createElement('button');
+  undoBtn.textContent = '\u27f2 UNDO';
+  undoBtn.addEventListener('click', () => {
+    const prev = undoStack.pop();
+    if (prev) {
+      cells = prev.slice();
       update();
-    });
-    brushBtns.set(t, b);
-    brushes.appendChild(b);
-  }
-  left.appendChild(brushes);
+    }
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      undoBtn.click();
+    }
+  });
+  undoRow.appendChild(undoBtn);
+  left.appendChild(undoRow);
 
   const paintHint = document.createElement('div');
   paintHint.className = 'sub';
-  paintHint.textContent = 'click the preview to paint with the selected brush (playtest 5: the tile IS the canvas)';
+  paintHint.textContent = 'click or drag on the tile to paint with the held brush \u00b7 paint terrain to erase road \u00b7 Ctrl+Z undoes one change';
   left.appendChild(paintHint);
 
   const loadRow = document.createElement('div');
@@ -138,6 +167,7 @@ async function main(): Promise<void> {
   select.addEventListener('change', () => {
     const found = tileLibraryJson.tiles.find((t) => t.id === select.value);
     cells = found ? found.cells.slice() : ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
+    undoStack.length = 0;
     idDirty = Boolean(found);
     if (found) idInput.value = found.id + '_v2';
     update();
@@ -156,23 +186,31 @@ async function main(): Promise<void> {
   const term = new GLTerm(glyphs, {
     cols: TILE_SIZE * CELL_W,
     rows: TILE_SIZE * CELL_H,
-    cellPx: 10,
-    cellPxH: 16,
+    cellPx: ZOOM_W,
+    cellPxH: ZOOM_H,
     background: role('ui.bg'),
   });
   right.appendChild(term.canvas);
   term.canvas.style.cursor = 'crosshair';
-  term.canvas.addEventListener('click', (e) => {
-    const x = Math.floor(e.offsetX / (10 * CELL_W));
-    const y = Math.floor(e.offsetY / (16 * CELL_H));
+  let painting = false;
+  const paintAt = (e: MouseEvent): void => {
+    const x = Math.floor(e.offsetX / CELL_PX_W);
+    const y = Math.floor(e.offsetY / CELL_PX_H);
     if (x < 0 || y < 0 || x >= TILE_SIZE || y >= TILE_SIZE) return;
-    // ROAD paints intent; the shape is inferred. Painting terrain over a
-    // road erases it from the network and the survivors re-shape.
-    setCell(x, y, brush === 'ROAD' ? '-' : brush);
-    inferRoads();
+    if (cells[y][x] === brush) return; // no-op paints do not eat undo steps
+    undoStack.push(cells.slice());
+    setCell(x, y, brush);
     idDirty = idInput.value !== '' && idDirty; // keep manual ids
     update();
+  };
+  term.canvas.addEventListener('mousedown', (e) => {
+    painting = true;
+    paintAt(e);
   });
+  term.canvas.addEventListener('mousemove', (e) => {
+    if (painting) paintAt(e);
+  });
+  window.addEventListener('mouseup', () => (painting = false));
 
   const connLine = document.createElement('div');
   connLine.className = 'conn';
@@ -239,8 +277,9 @@ async function main(): Promise<void> {
 
   // ---- one update path: state -> engine verdict -> every widget ------------
   function update(): void {
-    for (const [t, b] of brushBtns) b.className = t === brush ? 'active' : '';
+    for (const [t, b] of brushBtns) b.classList.toggle('active', t === brush);
 
+    undoBtn.disabled = undoStack.length === 0;
 
     term.clear(role('ui.bg'));
     for (let cy = 0; cy < TILE_SIZE; cy++)

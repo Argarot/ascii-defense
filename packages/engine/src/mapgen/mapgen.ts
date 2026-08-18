@@ -165,8 +165,14 @@ function indexLibrary(lib: TileLibrary): {
 
   for (const id of lib.ids()) {
     const weight = lib.weightOf(id);
+    // Symmetric shapes repeat under rotation (a straight at 0 and 2 is the
+    // same tile); indexing every repeat would weight one shape twice (2.24).
+    const seenForms = new Set<string>();
     for (const rotation of [0, 1, 2, 3] as const) {
       const { cells, connectors } = lib.resolved(id, rotation);
+      const form = cells.join('/');
+      if (seenForms.has(form)) continue;
+      seenForms.add(form);
       const edges = new Set<Edge>(EDGES.filter((e) => connectors[e]));
       const hasCore = cells.some((row) => row.includes('C'));
       const hasRoad = edges.size > 0;
@@ -291,19 +297,20 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
             }
             const nk = slotIdx(nx, ny);
             if (roadSlots.has(nk) || newSlots.includes(nk)) {
-              // Carve v3: a TURNING TUNNEL through an occupied slot. The
-              // walk enters via e and leaves perpendicular, as a second
-              // segment - two roads in one slot, never merging. Only over
-              // single-segment non-core slots, and only when the landing
-              // slot is free; representable partitions are the two
-              // twin-bend forms, guaranteed by the perpendicular turn.
+              // Carve v3: a TUNNEL through an occupied slot. The walk
+              // enters via e and leaves as a second segment - two roads in
+              // one slot, never merging. Perpendicular exits produce the
+              // twin-bend partitions; a STRAIGHT exit produces a crossing
+              // partition, which only a bridge tile can express (4.9) - the
+              // availability gate below makes that self-limiting: no bridge
+              // tile in the pool, no straight tunnel, exactly as before.
               if (nk === coreK || secondSegment.has(nk) || newTunnels.some(([tk]) => tk === nk)) continue;
               const existing = roadEdges.get(nk);
               if (!existing) continue;
               const enter = OPPOSITE[e];
               if (existing.has(enter)) continue;
               for (const out of EDGES) {
-                if (out === enter || out === OPPOSITE[enter]) continue; // must TURN
+                if (out === enter) continue;
                 if (existing.has(out)) continue;
                 const [ox, oy] = EDGE_DELTA[out];
                 const lx = nx + ox;
@@ -544,7 +551,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         if (t === 'O') {
           // Every vein is finite, dealt here so replays stay exact (sec 6).
           deposits.push({ x: cx, y: cy, amount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX), tier: 1 });
-        } else if (t === 'K' && poolSize > 0) {
+        } else if (t === 'R' && poolSize > 0) {
           const roll = rng.int(0, 99);
           const yields: RockContent['yields'] =
             roll < ROCK_ORE_CHANCE * 100 ? 'ore' : roll < (ROCK_ORE_CHANCE + ROCK_CACHE_CHANCE) * 100 ? 'cache' : 'none';

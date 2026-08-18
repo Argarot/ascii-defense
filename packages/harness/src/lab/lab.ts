@@ -18,6 +18,7 @@ import {
   computeFlowField,
   createRng,
   generateMap,
+  isRoad,
   resolveCells,
   waveCount,
   waveHpScale,
@@ -92,13 +93,16 @@ function makeWorld(spec: LabSpec, content: LabContent) {
   return { map, cellsW: spec.map.width * TILE_SIZE, cellsH: spec.map.height * TILE_SIZE, cells: resolveCells(map.board, content.lib) };
 }
 
-/** Road cells within `range` of cell (x, y), measured centre to centre. */
+/** Road cells within `range` of cell (x, y), measured centre to centre.
+ *  isRoad, not a letter: the '=== omni' version predated the segment
+ *  re-encode and left greedy placement nearly road-blind (found session 19). */
 function coverage(cells: readonly (CellType | null)[], W: number, H: number, x: number, y: number, range: number): number {
   let n = 0;
   const r2 = range * range;
   for (let cy = 0; cy < H; cy++)
     for (let cx = 0; cx < W; cx++) {
-      if (cells[cy * W + cx] !== 'R') continue;
+      const c = cells[cy * W + cx];
+      if (c === null || !isRoad(c)) continue;
       const dx = cx - x;
       const dy = cy - y;
       if (dx * dx + dy * dy <= r2) n++;

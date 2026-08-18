@@ -11,7 +11,7 @@
  * A declared connector cannot disagree with the drawn cells because there is
  * no declared connector.
  */
-import { ROAD_PORTS, isCellType, isRoad, isRouteCell, roadsConnect, type CellType } from '../grid/cells';
+import { ROAD_PORTS, isCellType, isRoad, isRouteCell, roadsConnect, strandEntered, strandPorts, type CellType } from '../grid/cells';
 
 export const TILE_SIZE = 5;
 const CENTER = 2; // (TILE_SIZE - 1) / 2
@@ -62,6 +62,28 @@ export function rotateCells(cells: readonly string[], k: Rotation): string[] {
     }
   }
   return out;
+}
+
+/**
+ * A tile and its 90-degree rotations are ONE tile (2.24, Daniil playtest 9):
+ * the canonical form is the lexicographically smallest of the four
+ * rotations, so any two orientations of one shape reduce to the same
+ * asset. The generator already deals all four rotations of everything, so
+ * canonicalising costs nothing at play time - it only stops one shape
+ * being stored, and therefore weighted, four times.
+ */
+export function canonicalCells(cells: readonly string[]): string[] {
+  let best = cells.slice();
+  let bestKey = best.join('/');
+  for (const k of [1, 2, 3] as const) {
+    const rot = rotateCells(cells, k);
+    const rotKey = rot.join('/');
+    if (rotKey < bestKey) {
+      best = rot;
+      bestKey = rotKey;
+    }
+  }
+  return best;
 }
 
 /**
@@ -134,41 +156,39 @@ export function validateTileCells(cells: readonly string[]): string[] {
   // An ENTRY POINT is a derived connector: road on an edge centre with the
   // appropriate inward orientation. The rule is stated in terms of entries,
   // not lane components, so it survives bridges and new road kinds:
-  //   1. every road cell must have continuous road to some entry point
+  //   1. every road STRAND must have continuous road to some entry point
   //      (no decoration roads), and
   //   2. every entry point must have continuous road to at least ONE other
   //      entry point - or to the Core, the route's licensed terminus.
   // A one-entry dead-end stub is therefore unrepresentable, which is what
   // makes an unplaceable mint impossible by design rather than by patch.
-  // (Valid entry counts fall out as 0, 2, 3 or 4 - never 1 without a Core.)
-  const key = (x: number, y: number): number => y * TILE_SIZE + x;
+  // Floods run over STRAND NODES (4.9): a bridge cell holds two independent
+  // nodes - the east-west deck and the north-south underpass - which cross
+  // without joining, so each of a bridge's two roads is judged separately.
   const conn = deriveConnectors(cells);
-  const entries: [number, number][] = [];
-  if (conn.n) entries.push([CENTER, 0]);
-  if (conn.s) entries.push([CENTER, TILE_SIZE - 1]);
-  if (conn.w) entries.push([0, CENTER]);
-  if (conn.e) entries.push([TILE_SIZE - 1, CENTER]);
-  const entryKeys = new Set(entries.map(([x, y]) => key(x, y)));
+  const entryNodes = new Set<number>();
+  if (conn.n) entryNodes.add(nodeKey(CENTER, 0, strandEntered(cellAt(cells, CENTER, 0), 4)));
+  if (conn.s) entryNodes.add(nodeKey(CENTER, TILE_SIZE - 1, strandEntered(cellAt(cells, CENTER, TILE_SIZE - 1), 1)));
+  if (conn.w) entryNodes.add(nodeKey(0, CENTER, strandEntered(cellAt(cells, 0, CENTER), 2)));
+  if (conn.e) entryNodes.add(nodeKey(TILE_SIZE - 1, CENTER, strandEntered(cellAt(cells, TILE_SIZE - 1, CENTER), 8)));
 
-  /** Flood continuous road from (sx, sy); report entries and Core reached. */
-  const reach = (sx: number, sy: number): { comp: Set<number>; entries: number; core: boolean } => {
-    const comp = new Set<number>([key(sx, sy)]);
-    const stack: [number, number][] = [[sx, sy]];
+  /** Flood continuous road from a strand node; report entries and Core reached. */
+  const reach = (sx: number, sy: number, ss: number): { comp: Set<number>; entries: number; core: boolean } => {
+    const comp = new Set<number>([nodeKey(sx, sy, ss)]);
+    const stack: [number, number, number][] = [[sx, sy, ss]];
     let hit = 0;
     let core = false;
     while (stack.length) {
-      const [x, y] = stack.pop()!;
-      if (entryKeys.has(key(x, y))) hit++;
+      const [x, y, s] = stack.pop()!;
+      if (entryNodes.has(nodeKey(x, y, s))) hit++;
       if (cellAt(cells, x, y) === 'C') core = true;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) continue;
-        const k = key(nx, ny);
-        if (comp.has(k) || !isRouteCell(cellAt(cells, nx, ny))) continue;
-        if (!roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) continue;
+      for (let d = 0; d < 4; d++) {
+        const step = nodeStep(cells, x, y, s, d);
+        if (step === null) continue;
+        const k = nodeKey(step[0], step[1], step[2]);
+        if (comp.has(k)) continue;
         comp.add(k);
-        stack.push([nx, ny]);
+        stack.push(step);
       }
     }
     return { comp, entries: hit, core };
@@ -177,17 +197,112 @@ export function validateTileCells(cells: readonly string[]): string[] {
   const seen = new Set<number>();
   for (let y = 0; y < TILE_SIZE; y++)
     for (let x = 0; x < TILE_SIZE; x++) {
-      if (!isRouteCell(cellAt(cells, x, y)) || seen.has(key(x, y))) continue;
-      const r = reach(x, y);
-      for (const k of r.comp) seen.add(k);
-      if (r.entries === 0 && !r.core) {
-        errors.push(`road at (${x},${y}) reaches no entry point - decoration in road's clothing`);
-      } else if (r.entries === 1 && !r.core) {
-        errors.push(`entry point on the road at (${x},${y}) leads to no other entry point - a dead-end stub the generator can never place`);
+      const c = cellAt(cells, x, y);
+      if (!isRouteCell(c)) continue;
+      for (let s = 0; s < (c === 'C' ? 1 : strandPorts(c).length); s++) {
+        if (seen.has(nodeKey(x, y, s))) continue;
+        const r = reach(x, y, s);
+        for (const k of r.comp) seen.add(k);
+        if (r.entries === 0 && !r.core) {
+          errors.push(`road at (${x},${y}) reaches no entry point - decoration in road's clothing`);
+        } else if (r.entries === 1 && !r.core) {
+          errors.push(`entry point on the road at (${x},${y}) leads to no other entry point - a dead-end stub the generator can never place`);
+        }
       }
     }
 
+  // -- no dead ends (2.26, Daniil playtest 11) -------------------------------
+  // The entry-point rule admits a SPUR: a stub hanging off a through-road
+  // reaches entries via that road, so it passes while visibly leading
+  // nowhere. Tighten: every road strand must lie on a route between two
+  // terminals - entries, or the Core, the route's licensed terminus.
+  // Mechanically: iteratively strip strand nodes that are neither terminal
+  // nor linked to 2+ surviving nodes. Cycles survive (a loop is drivable);
+  // stubs cannot. Gated on the component checks passing so a broken
+  // component reports once, not once per cell.
+  if (errors.length === 0) {
+    const alive = new Set<number>();
+    const roadNodes: [number, number, number][] = [];
+    for (let y = 0; y < TILE_SIZE; y++)
+      for (let x = 0; x < TILE_SIZE; x++) {
+        const c = cellAt(cells, x, y);
+        if (!isRoad(c)) continue;
+        for (let s = 0; s < strandPorts(c).length; s++) {
+          roadNodes.push([x, y, s]);
+          alive.add(nodeKey(x, y, s));
+        }
+      }
+    const isTerminal = (x: number, y: number, s: number): boolean => {
+      if (entryNodes.has(nodeKey(x, y, s))) return true;
+      for (let d = 0; d < 4; d++) {
+        const step = nodeStep(cells, x, y, s, d);
+        if (step !== null && cellAt(cells, step[0], step[1]) === 'C') return true; // road ends AT the Core
+      }
+      return false;
+    };
+    let pruned = true;
+    while (pruned) {
+      pruned = false;
+      for (const [x, y, s] of roadNodes) {
+        if (!alive.has(nodeKey(x, y, s)) || isTerminal(x, y, s)) continue;
+        let links = 0;
+        for (let d = 0; d < 4; d++) {
+          const step = nodeStep(cells, x, y, s, d);
+          if (step !== null && alive.has(nodeKey(step[0], step[1], step[2]))) links++;
+        }
+        if (links <= 1) {
+          alive.delete(nodeKey(x, y, s));
+          pruned = true;
+        }
+      }
+    }
+    for (const [x, y, s] of roadNodes) {
+      if (!alive.has(nodeKey(x, y, s))) {
+        errors.push(`road at (${x},${y}) dead-ends - it lies on no route between two entries`);
+      }
+    }
+  }
+
   return errors;
+}
+
+// ---- the strand-node route graph (4.9) -------------------------------------
+// Routing inside a tile traverses (cell, strand) nodes. Every road cell is
+// one node except the bridge, which is two: the facing bit of any step
+// identifies the target strand uniquely, and the Core welds (steps to and
+// from C skip the port check, exactly as roadsConnect always has).
+
+const NODE_DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]] as const;
+const NODE_BIT = [1, 2, 4, 8] as const;
+const NODE_OPP = [4, 8, 1, 2] as const;
+
+/** Node key for (x, y, strand); strand is 0 except a bridge's underpass (1). */
+export function nodeKey(x: number, y: number, s: number): number {
+  return ((y * TILE_SIZE + x) << 1) | s;
+}
+
+/** Step from strand node (x, y, s) in direction d; null when the graph has no edge. */
+export function nodeStep(
+  cells: readonly string[],
+  x: number,
+  y: number,
+  s: number,
+  d: number,
+): [number, number, number] | null {
+  const nx = x + NODE_DIRS[d][0];
+  const ny = y + NODE_DIRS[d][1];
+  if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) return null;
+  const a = cellAt(cells, x, y);
+  const b = cellAt(cells, nx, ny);
+  if (!isRouteCell(a) || !isRouteCell(b)) return null;
+  if (a === 'C') return [nx, ny, b === 'C' ? 0 : strandEntered(b, NODE_BIT[d])];
+  // The Core welds ports-blind - except a bridge, whose strands connect
+  // strictly through their own ports (a walker cannot turn off the deck).
+  if ((strandPorts(a)[s] & NODE_BIT[d]) === 0 && !(b === 'C' && a !== 'B')) return null;
+  if (b === 'C') return [nx, ny, 0];
+  const sb = strandEntered(b, NODE_BIT[d]);
+  if ((strandPorts(b)[sb] & NODE_OPP[d]) === 0) return null;
+  return [nx, ny, sb];
 }
 
 /**
@@ -199,36 +314,35 @@ export function validateTileCells(cells: readonly string[]): string[] {
  */
 export function tilePartition(cells: readonly string[]): Edge[][] {
   const conn = deriveConnectors(cells);
-  const crossingOf: [Edge, number, number][] = [
-    ['n', CENTER, 0],
-    ['s', CENTER, TILE_SIZE - 1],
-    ['w', 0, CENTER],
-    ['e', TILE_SIZE - 1, CENTER],
+  // Crossing NODES: edge, centre cell, and the strand a walker entering from
+  // that edge lands on - so a bridge at a centre belongs to two partitions.
+  const crossingOf: [Edge, number, number, number][] = [
+    ['n', CENTER, 0, strandEntered(cellAt(cells, CENTER, 0), 4)],
+    ['s', CENTER, TILE_SIZE - 1, strandEntered(cellAt(cells, CENTER, TILE_SIZE - 1), 1)],
+    ['w', 0, CENTER, strandEntered(cellAt(cells, 0, CENTER), 2)],
+    ['e', TILE_SIZE - 1, CENTER, strandEntered(cellAt(cells, TILE_SIZE - 1, CENTER), 8)],
   ];
   const groups: Edge[][] = [];
   const claimed = new Set<Edge>();
-  for (const [edge, sx, sy] of crossingOf) {
+  for (const [edge, sx, sy, ss] of crossingOf) {
     if (!conn[edge] || claimed.has(edge)) continue;
-    // Flood this crossing's component; collect every crossing it contains.
-    const key = (x: number, y: number): number => y * TILE_SIZE + x;
-    const seen = new Set<number>([key(sx, sy)]);
-    const stack: [number, number][] = [[sx, sy]];
+    // Flood this crossing's strand component; collect every crossing in it.
+    const seen = new Set<number>([nodeKey(sx, sy, ss)]);
+    const stack: [number, number, number][] = [[sx, sy, ss]];
     while (stack.length) {
-      const [x, y] = stack.pop()!;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) continue;
-        const k = key(nx, ny);
-        if (seen.has(k) || !isRouteCell(cellAt(cells, nx, ny))) continue;
-        if (!roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) continue;
+      const [x, y, s] = stack.pop()!;
+      for (let d = 0; d < 4; d++) {
+        const step = nodeStep(cells, x, y, s, d);
+        if (step === null) continue;
+        const k = nodeKey(step[0], step[1], step[2]);
+        if (seen.has(k)) continue;
         seen.add(k);
-        stack.push([nx, ny]);
+        stack.push(step);
       }
     }
     const group: Edge[] = [];
-    for (const [e2, x2, y2] of crossingOf) {
-      if (conn[e2] && seen.has(key(x2, y2))) {
+    for (const [e2, x2, y2, s2] of crossingOf) {
+      if (conn[e2] && seen.has(nodeKey(x2, y2, s2))) {
         group.push(e2);
         claimed.add(e2);
       }
@@ -246,7 +360,7 @@ export function partitionKey(groups: readonly (readonly Edge[])[]): string {
 /**
  * Which sides of a road cell are CLOSED, as bits N=1 E=2 S=4 W=8 - the mask
  * the view draws kerbs from. Derived from actual connectivity, never from a
- * cell's declared ports: an omni 'R' junction claims all four sides but only
+ * cell's declared ports: an omni 'X' junction claims all four sides but only
  * connects where a neighbour answers, and drawing its declared ports left
  * junctions with no boundary at all (Daniil, playtest 6).
  *

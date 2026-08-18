@@ -4,7 +4,7 @@
 export { createRng, streamFromState } from './rng/rng';
 export type { Rng, RngStream, RngStreamName } from './rng/rng';
 
-export { CELL_TYPES, isCellType, isRouteCell, isBuildable, isRoad, lanesJoin, roadsConnect, ROAD_PORTS } from './grid/cells';
+export { CELL_TYPES, isCellType, isRouteCell, isBuildable, isRoad, lanesJoin, roadsConnect, ROAD_PORTS, LEGACY_CELL_MAP, migrateLegacyCells, strandPorts, strandEntered } from './grid/cells';
 export type { CellType } from './grid/cells';
 
 export {
@@ -14,6 +14,7 @@ export {
   ROTATIONS,
   cellAt,
   rotateCells,
+  canonicalCells,
   deriveConnectors,
   validateTileCells,
   tileRimMask,

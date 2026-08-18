@@ -13,9 +13,9 @@ export const CELL_H = 3;
 
 export const POOLS: Record<CellType, string> = {
   G: "          .'`,\u2800\u2801\u2802\u2804\u2808\u2810\u2820\u2840\u2880\u2803\u2809",
-  R: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  K: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
-  r: ':;.,=⠉⠒⠤⠶⠛⠿-_~⠐⠠',
+  X: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  R: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
+  B: ':;.,=⠉⠒⠤⠶⠛⠿-_~⠐⠠',
   '-': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   '|': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   L: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
@@ -32,8 +32,8 @@ export const POOLS: Record<CellType, string> = {
 
 export const TERRAIN_KEY: Record<CellType, string> = {
   G: 'ground',
-  R: 'road',
-  r: 'road',
+  X: 'road',
+  B: 'road',
   '-': 'road',
   '|': 'road',
   L: 'road',
@@ -44,7 +44,7 @@ export const TERRAIN_KEY: Record<CellType, string> = {
   U: 'road',
   E: 'road',
   '3': 'road',
-  K: 'rock',
+  R: 'rock',
   O: 'ore',
   C: 'core',
 };
@@ -108,11 +108,30 @@ export function drawTerrainCell(
   const richness = kind === 'O' ? (shade.richness ?? 1) : 1;
   // Closed-side mask (N=1 E=2 S=4 W=8) comes from the CALLER, which knows the
   // neighbours - the board reads it off the route graph, Tile Smith off the
-  // tile. Deriving it here from ROAD_PORTS was the playtest-6 bug: omni 'R'
+  // tile. Deriving it here from ROAD_PORTS was the playtest-6 bug: omni 'X'
   // junctions declare all four sides and so were drawn with no kerb at all.
   const rim = ROAD_PORTS[kind] === undefined ? 0 : (shade.rim ?? 0);
   const kerb = role('terrain.rock.lit');
   const drift = shade.drift ?? 0;
+  // The bridge (4.9) must read as one road CARRIED OVER another, so it gets
+  // its own drawing instead of the generic road texture: the east-west deck
+  // as a solid band across the middle row with lit edge rails above and
+  // below, and the north-south underpass showing through in the corners.
+  if (kind === 'B') {
+    for (let y = 0; y < CELL_H; y++)
+      for (let x = 0; x < CELL_W; x++) {
+        if (y === 1) {
+          // Deck planking: an unbroken band, unmistakably built rather than
+          // trodden. '=' reads as planks laid across the direction of travel.
+          term.put(gx0 + x, gy0 + y, '=', lit, bg);
+        } else {
+          // Rails on the deck's edges: full-width braille hairlines hugging
+          // the deck, the underpass passing beneath them.
+          term.put(gx0 + x, gy0 + y, String.fromCodePoint(0x2800 | (y === 0 ? 0xc0 : 0x09)), kerb, bg);
+        }
+      }
+    return;
+  }
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
       const alive = drift !== 0 && hash2(gx0 + x, gy0 + y, 17) < 0.18;
