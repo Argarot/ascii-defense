@@ -313,11 +313,16 @@ which is the test of whether a plan has slack or is just optimistic.
 **The art round-trip proof (WBS 6.1) stays late — decided 2026-08-17.** The
 proposal to open session 16 with it was declined: what session 16 needs is the
 engine and a crude implementation, not prettiness — "pretty shit now" is
-acceptable as long as the game is not confusing and works as intended. The
-standing risk is unchanged and recorded on 6.1: the REXPaint tools do not exist
-yet, so the art pipeline is unproven until session 29 opens with the proof. The
-frame model in 4.1 must therefore stay **format-agnostic** — frames as plain
-grids in the sprite JSON, nothing REXPaint-specific baked into the schema.
+acceptable as long as the game is not confusing and works as intended.
+
+**Risk accepted by Daniil, same day, and re-framed by him:** *"REXPaint is just
+a way to improve graphics. If this tool doesn't work, we'll find another one —
+it will not make or break the project."* The project depends on **an** authoring
+path, not on REXPaint; because 4.1's frame model is deliberately
+**format-agnostic** (plain grids in sprite JSON, nothing importer-specific),
+swapping tools costs one importer and touches no schema, content or engine
+code. So this is a tool choice with alternatives, not an unverified foundation
+— and art quality gets its own dedicated polish block either way.
 
 What remains genuinely late: the full art pass at scale, bridges as tile content
 (WBS 4.9 — cheap now that 2.16 has shipped), towers 8–9, tech tree stage 3,
