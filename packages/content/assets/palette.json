@@ -37,6 +37,9 @@
     "terrain.water.mid": "#1d3550",
     "terrain.water.lit": "#2e4d6e",
     "terrain.water.dark": "#060d16",
+    "terrain.shore.lit": "#cfc196",
+    "terrain.shore.mid": "#8f8264",
+    "terrain.shore.dark": "#1c1a12",
     "fx.flash": "#fff3c4",
     "fx.ember": "#ff9e4a",
     "fx.smoke": "#66788c"

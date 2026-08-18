@@ -281,7 +281,8 @@ async function main(): Promise<void> {
             ...THREAT_LEVELS.map((t, i) => ({
               id: `threat:${i}`,
               label: t.name.toUpperCase(),
-              note: i === setupThreat ? `\u00bb to wave ${t.finalWave}` : `to wave ${t.finalWave}`,
+              note: `to wave ${t.finalWave}`,
+              selected: i === setupThreat,
             })),
             { id: 'loadout', label: 'LOADOUT', note: `${setupLoadout.length}/${LOADOUT_SLOTS} special(s) \u00bb` },
             { id: 'start', label: 'START RUN' },

@@ -17,6 +17,9 @@ export interface MenuItem {
   disabled?: boolean;
   /** Right-aligned annotation on the same row (e.g. a value or state). */
   note?: string;
+  /** Radio-style state (playtest 13): the row reads as CHOSEN - accent
+   *  label between markers - not merely hoverable. */
+  selected?: boolean;
 }
 
 /** A pickable tile preview (2.21): the pool is seen, never read as names. */
@@ -112,12 +115,17 @@ export class MenuScreen {
       y += stripH;
     }
     for (const it of spec.items) {
-      const fg = it.disabled ? role('ui.grid') : role('ui.text');
+      const fg = it.disabled ? role('ui.grid') : it.selected ? role('ui.accent') : role('ui.text');
       const bg = it.disabled ? '#0a0f16' : role('ui.grid');
       const bw = plateW - 4;
-      // Centred label; the note keeps the right edge (playtest 10).
-      const pad = Math.max(0, Math.floor((bw - it.label.length) / 2));
-      const rowText = (' '.repeat(pad) + it.label).padEnd(bw, ' ').slice(0, bw);
+      // Centred label; the note keeps the right edge (playtest 10). A
+      // selected row wears markers around an accent label (playtest 13).
+      // ASCII markers on purpose: the first attempt used U+00BB, which
+      // spleen does not have - GLTerm silently drew nothing, which is
+      // exactly the "no visible effect" Daniil reported.
+      const label = it.selected ? `[ ${it.label} ]` : it.label;
+      const pad = Math.max(0, Math.floor((bw - label.length) / 2));
+      const rowText = (' '.repeat(pad) + label).padEnd(bw, ' ').slice(0, bw);
       term.write(x0 + 2, y, rowText, fg, bg);
       if (it.note) term.write(x0 + 2 + bw - it.note.length - 1, y, it.note, it.disabled ? role('ui.grid') : role('ui.accent'), bg);
       if (!it.disabled) this.regions.push({ row: y, x0: x0 + 2, x1: x0 + plateW - 2, id: it.id });

@@ -60,6 +60,11 @@ his layout (`FT7|`/`EX3-`/`LUJB`/`GKOC`), block labels only→2.23 · nomenclatu
 brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the validity
 checker works properly"→2.26
 
+**Round 15 (playtest 13, 2026-08-18):** threat click has no visible effect→
+MenuItem gains a real selected state (`[ GRIM ]` in accent) — the original
+marker was `»`, which spleen does not have, so GLTerm silently drew nothing:
+the state was always updating, its only indicator was an unrenderable glyph.
+
 **Round 14 (playtest 12, 2026-08-18):** loadout picker as its own screen, not
 a strip→2.21 fixed · tile previews clipped→MenuScreen rows, never clipped ·
 rotation-twins offered→pool canonical-dedup on load + tilegen drops hand-twins
@@ -395,7 +400,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 6.3 Effects at scale: every attack shape, impact and death authored against the engine from 4.1.
 - [ ] 6.4 Biomes — palette and tile-pool variants per threat level.
 - [ ] 6.5 **Minimal SFX** (Daniil, 2026-08-16 — PRD §16): impacts, builds, wave start, UI. Not music, not a mix. Includes sourcing and licence clearance, which is the part that is not free.
-- [ ] 6.6 **The shoreline** (PRD §13) *(Daniil, asked twice — 2026-08-16 and 2026-08-17; session 19)*: a procedural "beach" band where land meets water, so the coast reads as a coast rather than a cut. Water shipped in session 16; this is its outstanding half. Safe by construction — border cells can never carry road (PRD §4.2), so overwriting them is always legal. Scheduled with the map session rather than the art pass because it is procedural, not authored.
+- [x] 6.6 *(session 19)* **The shoreline** (PRD §13) *(Daniil, asked twice — 2026-08-16 and 2026-08-17)*: a procedural beach band on every water cell's land-facing edges — sand grains dense at the waterline thinning seaward, an occasional surf ripple riding the drift, on a warm sand-dark band (`terrain.shore.*` palette roles, so a biome re-tint stays a palette swap). The mask comes from live neighbours per frame (land never becomes water mid-run). Safe by construction — border cells can never carry road. First-pass look; tuning is a taste call at the next playtest.
 - [ ] 6.7 **Relic art at board-glyph scale** (PRD §13) *(Daniil, 2026-08-17)*: relics drawn as sprites in the *board's* 5×8 font rather than the HUD's 2× font — the smaller cell buys the detail that makes a relic read as an object. Needs the HUD to host a board-scale sub-surface. *(The **square slots** half is cheap and rides 2.13 in session 17; only the art waits for the pass.)*
 - [ ] 6.8 **Smoothness via spatial phase** (PRD §13) *(Daniil, 2026-08-17)*: waves that travel across ground and water — each glyph's phase offset by its position — plus finer effect interpolation. **Explicitly not** "redraw less": the full board redraw is already well under a millisecond, so partial redraw optimises the wrong quantity. Recorded so a future session does not spend itself on the intuitive-but-wrong mechanism.
 

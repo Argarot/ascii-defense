@@ -202,7 +202,15 @@ export class BoardView {
         if (kind === null) {
           // Void is WATER (PRD sec 13): unclaimed land reads as a surface,
           // not a hole. Hover still answers so the edge is discoverable.
-          drawVoidCell(term, gx0, gy0, state.drift ?? 0, hovered ? '#1a2330' : undefined);
+          // The shore mask names which sides face land (6.6): those edges
+          // grow the beach band. Land never becomes water mid-run, so
+          // reading neighbours per frame is cheap and always current.
+          let shore = 0;
+          if (cy > 0 && this.cells[(cy - 1) * this.cellsW + cx] !== null) shore |= 1;
+          if (cx + 1 < this.cellsW && this.cells[cy * this.cellsW + cx + 1] !== null) shore |= 2;
+          if (cy + 1 < this.cellsH && this.cells[(cy + 1) * this.cellsW + cx] !== null) shore |= 4;
+          if (cx > 0 && this.cells[cy * this.cellsW + cx - 1] !== null) shore |= 8;
+          drawVoidCell(term, gx0, gy0, state.drift ?? 0, hovered ? '#1a2330' : undefined, shore);
           continue;
         }
 
