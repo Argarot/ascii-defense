@@ -602,11 +602,15 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       }
       if (dist[k] > ORE_REACH) continue; // unclaimed land stays void
       if (dist[k] > FILL_RADIUS) {
-        // The outer ring exists for resources - ore, or plain ground when
-        // the slot is enclosed (holes read as bugs, not as coastline).
+        // The outer ring ALWAYS fills (playtest 12): every slot within
+        // ORE_REACH of the road is land - ore by luck, plain otherwise.
+        // The earlier stay-void roll here was the source of two bugs at
+        // once: enclosed holes and cap-converted slots are re-marked as
+        // outer ring, so a ~31% stay-void chance put voids INSIDE the
+        // landmass and closer to the road than the void rule permits.
         if (guaranteedOre.has(k) || (index.filler.ore.length > 0 && rng.chance(0.3))) {
           board = place(board, pickWeighted(rng, index.filler.ore).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
-        } else if (index.filler.plain.length > 0 && rng.chance(0.55)) {
+        } else if (index.filler.plain.length > 0) {
           board = place(board, pickWeighted(rng, index.filler.plain).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
         }
         continue;

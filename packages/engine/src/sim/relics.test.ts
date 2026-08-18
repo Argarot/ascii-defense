@@ -244,6 +244,21 @@ describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
     expect(sim.fireActive('orbital', ex, ey)).toBe(true); // recharged
   });
 
+  it('duplicate actives cool down independently (playtest 12)', () => {
+    const { simOpts } = makeWorld(43);
+    const sim = new Sim(43, simOpts);
+    grant(sim, 'stasis');
+    grant(sim, 'stasis');
+    expect(sim.fireActive('stasis')).toBe(true); // first copy fires
+    expect(sim.relicCooldowns[0]).toBeGreaterThan(0);
+    // The bug: the lookup always found the FIRST copy, so its cooldown
+    // blocked the ready second copy. The first READY copy must fire.
+    expect(sim.fireActive('stasis')).toBe(true);
+    expect(sim.relicCooldowns[1]).toBeGreaterThan(0);
+    // Both cooling: now it genuinely refuses.
+    expect(sim.fireActive('stasis')).toBe(false);
+  });
+
   it('stasis: enemies freeze, towers keep firing', () => {
     const { simOpts } = makeWorld(41, { spawnEveryTicks: 2, maxSpawns: 8 });
     const sim = new Sim(41, simOpts);

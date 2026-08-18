@@ -127,7 +127,7 @@ async function main(): Promise<void> {
   let saveProblem = metaProblem ?? runLoad.problem;
   if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
 
-  type Mode = 'title' | 'setup' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary';
+  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary';
   let mode: Mode = 'title';
   let settingsFrom: Mode = 'title';
   let wipeArmed = false;
@@ -204,8 +204,10 @@ async function main(): Promise<void> {
     }
   };
 
+  let lastLoadout: TileDef[] = [];
   const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave, loadout?: TileDef[]): void => {
     threatIdx = tIdx;
+    lastLoadout = resume?.loadout ?? loadout ?? [];
     send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout });
     mode = 'playing';
     mirroredSpeed = 1;
@@ -239,10 +241,10 @@ async function main(): Promise<void> {
   app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
   cap.className = 'hud';
-  cap.textContent = 'spleen 5x8 · sim in a worker · space pauses, 1/2/3/4 set speed, Esc menus · ';
+  cap.textContent = 'spleen 5x8 \u00b7 sim in a worker \u00b7 space pauses, 1/2/3/4 set speed, Esc menus \u00b7 ';
   const smithLink = document.createElement('a');
   smithLink.href = 'tilesmith.html';
-  smithLink.textContent = 'tile smith →';
+  smithLink.textContent = 'tile smith \u2192';
   smithLink.style.color = '#4cc9f0';
   cap.appendChild(smithLink);
   leftCol.appendChild(cap);
@@ -268,28 +270,38 @@ async function main(): Promise<void> {
           ],
           footer: `runs played ${meta.history.length}`,
         };
-      case 'setup': {
-        const minted = loadMintedTiles();
+      case 'setup':
         return {
           title: 'RUN SETUP',
           body: [
             'threat sets waves, path length and the final wave',
-            '',
-            ...(genError ? [`! ${genError}`, ''] : []),
-            minted.length > 0
-              ? `load special tiles - up to ${LOADOUT_SLOTS} · a loaded tile is GUARANTEED on the map`
-              : 'no special tiles yet - the tile smith mints them',
+            ...(genError ? ['', `! ${genError}`] : []),
           ],
-          tiles: minted.slice(0, 6).map((t) => ({ id: t.id, cells: t.cells, selected: setupLoadout.includes(t.id) })),
           items: [
             ...THREAT_LEVELS.map((t, i) => ({
               id: `threat:${i}`,
               label: t.name.toUpperCase(),
-              note: i === setupThreat ? `» to wave ${t.finalWave}` : `to wave ${t.finalWave}`,
+              note: i === setupThreat ? `\u00bb to wave ${t.finalWave}` : `to wave ${t.finalWave}`,
             })),
-            { id: 'start', label: 'START RUN', note: setupLoadout.length > 0 ? `${setupLoadout.length} special(s)` : undefined },
+            { id: 'loadout', label: 'LOADOUT', note: `${setupLoadout.length}/${LOADOUT_SLOTS} special(s) \u00bb` },
+            { id: 'start', label: 'START RUN' },
             { id: 'back', label: 'BACK' },
           ],
+        };
+      case 'loadout': {
+        // Its own screen (playtest 12, item 1): the pool will not fit a
+        // strip, and picking tiles deserves the whole surface.
+        const minted = loadMintedTiles();
+        return {
+          title: 'LOADOUT',
+          body: [
+            minted.length > 0
+              ? `load up to ${LOADOUT_SLOTS} special tiles - a loaded tile is GUARANTEED on the map`
+              : 'no special tiles yet - the tile smith mints them',
+          ],
+          tiles: minted.map((t) => ({ id: t.id, cells: t.cells, selected: setupLoadout.includes(t.id) })),
+          items: [{ id: 'back', label: 'DONE' }],
+          footer: `${setupLoadout.length}/${LOADOUT_SLOTS} loaded`,
         };
       }
       case 'howto':
@@ -324,7 +336,7 @@ async function main(): Promise<void> {
       case 'paused':
         return {
           title: 'PAUSED',
-          body: [`wave ${snap?.hud.wave ?? 0} of ${finalWave} · seed ${seed}`],
+          body: [`wave ${snap?.hud.wave ?? 0} of ${finalWave} \u00b7 seed ${seed}`],
           items: [
             { id: 'resume', label: 'RESUME' },
             { id: 'settings', label: 'SETTINGS' },
@@ -336,7 +348,7 @@ async function main(): Promise<void> {
           ? {
               title: summary.won ? 'THE CORE STANDS' : 'THE CORE HAS FALLEN',
               body: [
-                `wave ${summary.wave} of ${finalWave} · seed ${summary.seed}`,
+                `wave ${summary.wave} of ${finalWave} \u00b7 seed ${summary.seed}`,
                 `kills ${summary.kills}`,
                 `ore banked +${summary.oreBanked} (total ${meta.bankedOre})`,
                 ...(snap ? [`relics held ${snap.hud.relicCount}`] : []),
@@ -379,6 +391,9 @@ async function main(): Promise<void> {
         genError = null;
         mode = 'setup';
         break;
+      case 'loadout':
+        mode = 'loadout';
+        break;
       case 'start': {
         const minted = loadMintedTiles();
         const defs = setupLoadout
@@ -395,7 +410,7 @@ async function main(): Promise<void> {
       }
       case 'settings': settingsFrom = mode; mode = 'settings'; break;
       case 'howto': mode = 'howto'; break;
-      case 'back': mode = mode === 'settings' ? settingsFrom : 'title'; break;
+      case 'back': mode = mode === 'settings' ? settingsFrom : mode === 'loadout' ? 'setup' : 'title'; break;
       case 'motion': {
         const v = !isReducedMotion();
         setReducedMotion(v);
@@ -434,7 +449,9 @@ async function main(): Promise<void> {
       }
       case 'resume': mode = 'playing'; send({ t: 'speed', idx: 0 }); send({ t: 'speed', idx: mirroredSpeed }); break;
       case 'abandon': void persistRun().then(() => { mode = 'title'; send({ t: 'speed', idx: 0 }); }); break;
-      case 'again': startRun(threatIdx); break;
+      // GO AGAIN keeps the loadout: "the same run again" includes the tiles
+      // it was set up with, not just the threat (playtest 12).
+      case 'again': startRun(threatIdx, undefined, undefined, lastLoadout); break;
       case 'title': mode = 'title'; send({ t: 'speed', idx: 0 }); break;
     }
   };
@@ -521,9 +538,9 @@ async function main(): Promise<void> {
 
   window.addEventListener('keydown', (e) => {
     if (mode !== 'playing') {
-      if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup')) {
+      if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup' || mode === 'loadout')) {
         const leavingPause = mode === 'paused';
-        mode = mode === 'settings' ? settingsFrom : leavingPause ? 'playing' : 'title';
+        mode = mode === 'settings' ? settingsFrom : mode === 'loadout' ? 'setup' : leavingPause ? 'playing' : 'title';
         if (leavingPause) send({ t: 'speed', idx: mirroredSpeed });
       }
       return;
@@ -601,8 +618,11 @@ async function main(): Promise<void> {
       };
       hud.render(hudState);
 
-      // Overlay: a screen, else the offer, else nothing.
+      // Overlay: a screen, else the offer, else nothing. The HUD hides
+      // behind fullscreen menus (playtest 12, item 4) - a menu is not a
+      // moment to read tower stats, and the panel pulled the eye.
       const spec = menuSpec();
+      hudTerm.canvas.style.visibility = spec && mode !== 'paused' ? 'hidden' : 'visible';
       modalTerm.clear();
       renderedMenuMode = spec ? mode : null;
       if (spec) {

@@ -515,8 +515,19 @@ export class Sim {
   fireActive(relicId: string, x?: number, y?: number): boolean {
     if (this.status !== 'running') return false;
     const defs = this.opts.relicDefs ?? [];
-    const hi = this.heldRelics.findIndex((di) => defs[di].id === relicId && defs[di].kind === 'active');
-    if (hi === -1 || this.relicCooldowns[hi] > 0) return false;
+    // Duplicates are equippable, so fire the first READY copy (playtest 12):
+    // always taking the first copy locked every duplicate behind one
+    // cooldown. Deterministic - acquisition order - and replay-compatible,
+    // since any previously-recorded success had its first copy ready.
+    let hi = -1;
+    for (let i = 0; i < this.heldRelics.length; i++) {
+      const d = defs[this.heldRelics[i]];
+      if (d.id === relicId && d.kind === 'active' && this.relicCooldowns[i] === 0) {
+        hi = i;
+        break;
+      }
+    }
+    if (hi === -1) return false;
     const def = defs[this.heldRelics[hi]];
     const e = def.effects ?? {};
     if (e.orbitalDamage !== undefined) {

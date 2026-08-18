@@ -167,16 +167,6 @@
       ]
     },
     {
-      "id": "gen_ns_1",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "-----",
-        "GGGGG",
-        "GGGGG"
-      ]
-    },
-    {
       "id": "gen_ns_2",
       "cells": [
         "F--7G",
@@ -212,16 +202,6 @@
         "GGGGG",
         "GGF7G",
         "GG|L-",
-        "GG|GG",
-        "GG|GG"
-      ]
-    },
-    {
-      "id": "gen_ne_2",
-      "cells": [
-        "GGGGG",
-        "GGGGG",
-        "--7GG",
         "GG|GG",
         "GG|GG"
       ]
