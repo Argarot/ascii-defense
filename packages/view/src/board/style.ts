@@ -2,33 +2,35 @@
  * Terrain styling shared by every surface that draws cells - the game board
  * (BoardView) and the Tile Smith preview. One module so the authoring tool
  * can never drift from what the game draws.
+ *
+ * The GLYPHS come from content (terrain/appearance.json, playtest 14): the
+ * art surface for cells is a file a graphics pack replaces, never code.
+ * This module keeps only the drawing RULES - shading, rims, richness, drift.
  */
-import type { CellType } from '@ascii-defense/engine';
+import { CELL_TYPES, ROAD_PORTS, type CellType } from '@ascii-defense/engine';
 import type { GLTerm } from '@ascii-defense/render';
-import { ROAD_PORTS } from '@ascii-defense/engine';
+import { validateTerrain } from '@ascii-defense/content';
+import terrainJson from '@ascii-defense/content/assets/terrain/appearance.json';
 import { role } from '../palette';
 
 export const CELL_W = 5;
 export const CELL_H = 3;
 
-export const POOLS: Record<CellType, string> = {
-  G: "          .'`,\u2800\u2801\u2802\u2804\u2808\u2810\u2820\u2840\u2880\u2803\u2809",
-  X: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  R: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
-  B: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  '-': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  '|': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  L: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  J: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  F: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  '7': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  T: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  U: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  E: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  '3': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  O: '*+.o\u283f\u283e\u283d\u283bO0\u2837',
-  C: '\u28ff\u28f7\u28ef@O0\u28f6',
-};
+const terrainResult = validateTerrain.check(terrainJson);
+if (!terrainResult.ok) {
+  throw new Error(
+    'terrain/appearance.json failed validation: ' +
+      terrainResult.errors.map((e) => `${e.path}: ${e.message}`).join('; '),
+  );
+}
+const APPEARANCE = terrainResult.value;
+// Every cell letter must have a pool - a pack with missing cells is refused
+// at load, the same load-or-explain contract the palette has.
+for (const c of CELL_TYPES) {
+  if (!APPEARANCE.pools[c]) throw new Error(`terrain appearance missing a glyph pool for cell '${c}'`);
+}
+
+export const POOLS = APPEARANCE.pools as Record<CellType, string>;
 
 export const TERRAIN_KEY: Record<CellType, string> = {
   G: 'ground',
@@ -168,7 +170,7 @@ export function drawTerrainCell(
  * safe. The same drift step that stirs the ground moves the ripples; at
  * drift 0 (reduced motion, still surfaces) it is a static texture.
  */
-const WATER_POOL = '~\u2812\u2802.\u2826';
+const WATER_POOL = APPEARANCE.waterPool;
 
 /**
  * @param shore bitmask of sides facing LAND (N=1 E=2 S=4 W=8): the coast
@@ -185,7 +187,7 @@ export function drawVoidCell(term: GLTerm, gx0: number, gy0: number, drift = 0, 
   const sandLit = role('terrain.shore.lit');
   const sandMid = role('terrain.shore.mid');
   const sandBg = role('terrain.shore.dark');
-  const SAND_POOL = '.:\u2802\u2804\u2810\u00b7,';
+  const SAND_POOL = APPEARANCE.sandPool;
   const bg = hoverBg ?? dark;
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
