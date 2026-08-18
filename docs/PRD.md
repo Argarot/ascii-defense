@@ -164,14 +164,16 @@ At run start, seeded from the run seed (stream `map`):
    rises with distance from the road**.
 4b. **The run's chosen special tiles are placed first and are guaranteed**
    (§4.8); basics fill everything they do not claim. *(Amended 2026-08-18,
-   Daniil's call at playtest 14: road-carrying specials are ANCHORS — placed
-   before filling, each connector arm then walks and joins the road network,
-   the joint becoming a junction. These joins are the map's only loops: the
-   organic carve remains a tree, but a map with road specials is a MESH, and
-   "unique route per entry" holds only on special-free maps. The tree cap on
-   junction arms — entries−2, by the handshake lemma — is what made this
-   unavoidable: no carve order fits three junction tiles on a low-entry map
-   without loops.)*
+   playtests 14–15, Daniil's rules: road-carrying specials are ANCHORS —
+   placed before filling. One arm per road segment walks and joins the
+   network, attaching the special to the tree; every other arm walks outward
+   and exits the board as a NEW ENTRY. The road is therefore a TREE on every
+   map — exactly one way from each entry to the Core, never a loop, because
+   loops are bloat the enemies ignore — and the entry count grows when a
+   loadout demands it, which is an accepted difficulty consequence of loading
+   demanding tiles. The tree cap on junction arms — entries−2, by the
+   handshake lemma — is why entry growth is the only loop-free way to host
+   heavy loadouts.)*
 5. **Caches are scattered** as an overlay (§4.6) — a list of cells, not a cell
    type, so the tile library is untouched.
 6. **Every rock cell is dealt its hidden contents** — ore, a cache, or nothing
