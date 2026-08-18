@@ -6,7 +6,7 @@
  * what an id means.
  */
 import type { GLTerm } from '@ascii-defense/render';
-import { TILE_SIZE, segmentRimMask, type CellType } from '@ascii-defense/engine';
+import { TILE_SIZE, tileRimMask, type CellType } from '@ascii-defense/engine';
 import { CELL_H, CELL_W, drawTerrainCell } from '../board/style';
 import { role } from '../palette';
 
@@ -108,7 +108,12 @@ export class MenuScreen {
         for (let cy = 0; cy < TILE_SIZE; cy++)
           for (let cx = 0; cx < TILE_SIZE; cx++)
             drawTerrainCell(term, tile.cells[cy][cx] as CellType, tx + cx * CELL_W, ty + cy * CELL_H, {
-              rim: segmentRimMask(tile.cells[cy][cx], cx, cy),
+              // A COMPLETE tile derives its edges from actual connectivity,
+              // exactly as the board does (playtest 15): per-cell declared
+              // ports drew omni-built tiles - every pre-segment mint - with
+              // no edges at all, while the board showed them correctly.
+              // segmentRimMask stays an authoring-only view (lone cells).
+              rim: tileRimMask(tile.cells, cx, cy),
             });
         this.regions.push({ row: ty - 1, rowEnd: ty + TILE_GH, x0: tx - 1, x1: tx + TILE_GW + 1, id: `tile:${tile.id}` });
       }

@@ -251,10 +251,10 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   // specials become ANCHORS (playtest 14) - placed first, connected after -
   // so they list their distinct rotations with each rotation's connector
   // edges; roadless specials just need a fill slot.
-  const roadSpecials: { id: string; rotations: { rotation: Rotation; edges: Edge[] }[] }[] = [];
+  const roadSpecials: { id: string; rotations: { rotation: Rotation; edges: Edge[]; groups: Edge[][] }[] }[] = [];
   const roadlessSpecials: string[] = [];
   for (const id of specialIds) {
-    const rotations: { rotation: Rotation; edges: Edge[] }[] = [];
+    const rotations: { rotation: Rotation; edges: Edge[]; groups: Edge[][] }[] = [];
     const forms = new Set<string>();
     let hasRoad = false;
     for (const rotation of [0, 1, 2, 3] as const) {
@@ -266,7 +266,9 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       const edges = EDGES.filter((e) => connectors[e]);
       if (edges.length > 0) {
         hasRoad = true;
-        rotations.push({ rotation, edges });
+        // Partition groups matter to the arms: a bridge's deck and underpass
+        // are SEPARATE roads, and each needs its own connection to the tree.
+        rotations.push({ rotation, edges, groups: tilePartition(cells).map((grp) => [...grp]) });
       }
     }
     if (hasRoad) roadSpecials.push({ id, rotations });
@@ -438,19 +440,25 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     }
   }
 
-  // ---- 2b. anchor the road specials (playtest 14, Daniil's call) -----------
+  // ---- 2b. anchor the road specials (playtests 14-15, Daniil's rules) ------
   // Road specials are placed FIRST as anchors - an interior slot plus a
-  // rotation, connectors fixed by the drawing - then every connector arm
-  // walks a short path and JOINS the network. Joints grow into T/X shapes
-  // through the same partition machinery that tiles everything else, and
-  // these joins are the map's only loops: the organic carve above stays a
-  // tree, so special-free generation is bit-identical to before. Entries
-  // stay exactly the threat's roll - arms always join, never exit the board.
+  // rotation, connectors fixed by the drawing. ONE arm walks and joins the
+  // network, attaching the anchor's subtree to the tree; every OTHER arm
+  // walks outward and exits the board as a NEW ENTRY. The road therefore
+  // stays a TREE on every map - exactly one way from each entry to the
+  // Core, no loops (playtest 15: loops are bloat the enemies ignore) - and
+  // entry count is allowed to grow for demanding loadouts, which Daniil
+  // named as fine. Special-free generation is bit-identical to before.
   // Any road special anchors this way, bridges and twin-bends included.
   const forced = new Map<number, { tileId: string; rotation: Rotation }>();
-  for (const sp of roadSpecials) {
+  // Heaviest anchors first: a 4-way needs three edge corridors, and boards
+  // crowd - the demanding tiles pick their ground while it is still open.
+  const anchorOrder = [...roadSpecials].sort(
+    (a, b) => Math.max(...b.rotations.map((r) => r.edges.length)) - Math.max(...a.rotations.map((r) => r.edges.length)),
+  );
+  for (const sp of anchorOrder) {
     let placed = false;
-    for (let attempt = 0; attempt < 60 && !placed; attempt++) {
+    for (let attempt = 0; attempt < 140 && !placed; attempt++) {
       const pick = sp.rotations[sp.rotations.length === 1 ? 0 : rng.int(0, sp.rotations.length - 1)];
       const ax = rng.int(1, width - 2);
       const ay = rng.int(1, height - 2);
@@ -484,7 +492,8 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         }
         return best;
       };
-      const carveArm = (edge: Edge): boolean => {
+      /** The joining arm: attaches the anchor's subtree to the tree, once. */
+      const carveJoinArm = (edge: Edge): boolean => {
         let x = ax + EDGE_DELTA[edge][0];
         let y = ay + EDGE_DELTA[edge][1];
         let cameFrom: Edge = OPPOSITE[edge];
@@ -527,17 +536,72 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         }
         return false;
       };
+      /** Every other arm: heads for the board edge and becomes a NEW entry.
+       *  It never joins anything - joining twice is what a loop is. */
+      const newEntries: CellRef[] = [];
+      const carveEntryArm = (edge: Edge): boolean => {
+        let x = ax + EDGE_DELTA[edge][0];
+        let y = ay + EDGE_DELTA[edge][1];
+        let cameFrom: Edge = OPPOSITE[edge];
+        const local: number[] = [];
+        for (let steps = 0; steps < 14; steps++) {
+          const k = slotIdx(x, y);
+          if (roadSlots.has(k) || forced.has(k) || armEdges.has(k) || local.includes(k)) return false;
+          local.push(k);
+          armAdd(k, cameFrom);
+          const exits: Edge[] = [];
+          const moves: { e: Edge; d: number }[] = [];
+          for (const e of EDGES) {
+            if (e === cameFrom) continue;
+            const nx = x + EDGE_DELTA[e][0];
+            const ny = y + EDGE_DELTA[e][1];
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
+              exits.push(e);
+              continue;
+            }
+            const nk = slotIdx(nx, ny);
+            if (local.includes(nk) || nk === ak || roadSlots.has(nk) || forced.has(nk) || armEdges.has(nk)) continue;
+            moves.push({ e, d: Math.min(nx, ny, width - 1 - nx, height - 1 - ny) });
+          }
+          if (exits.length > 0) {
+            const e = exits.length === 1 ? exits[0] : exits[rng.int(0, exits.length - 1)];
+            armAdd(k, e);
+            newEntries.push(edgeCell(x, y, e));
+            return true;
+          }
+          if (moves.length === 0) return false;
+          const best = Math.min(...moves.map((m) => m.d));
+          const good = moves.filter((m) => m.d === best);
+          const step = good.length === 1 ? good[0].e : good[rng.int(0, good.length - 1)].e;
+          armAdd(k, step);
+          x += EDGE_DELTA[step][0];
+          y += EDGE_DELTA[step][1];
+          cameFrom = OPPOSITE[step];
+        }
+        return false;
+      };
 
+      // Each partition GROUP is its own road and gets its own joining arm -
+      // a bridge's deck and underpass both connect, separately. The other
+      // arms of every group become entries.
       let ok = true;
-      for (const e of pick.edges) {
-        if (!carveArm(e)) {
+      for (const grp of pick.groups) {
+        if (!carveJoinArm(grp[0])) {
           ok = false;
           break;
         }
+        for (const e of grp.slice(1)) {
+          if (!carveEntryArm(e)) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) break;
       }
       if (!ok) continue;
 
-      // Commit: the anchor's connectors, every arm slot and every joint.
+      // Commit: the anchor's connectors, every arm slot, the joint, and the
+      // arm-grown entries.
       forced.set(ak, { tileId: sp.id, rotation: pick.rotation });
       roadSlots.add(ak);
       roadEdges.set(ak, new Set(pick.edges));
@@ -545,6 +609,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         roadSlots.add(k);
         for (const e of edges) addEdge(k, e);
       }
+      entryCells.push(...newEntries);
       placed = true;
     }
     if (!placed) throw new Error(`special tile '${sp.id}' found no anchorage on this map - retrying`);

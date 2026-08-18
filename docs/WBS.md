@@ -60,6 +60,19 @@ his layout (`FT7|`/`EX3-`/`LUJB`/`GKOC`), block labels only→2.23 · nomenclatu
 brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the validity
 checker works properly"→2.26
 
+**Round 17 (playtest 15, 2026-08-18):** old minted tiles render with no road
+edges in previews (while correct on the board)→the REAL #2, found by
+reproducing with the reporter's artifact class: pre-segment mints are built
+of omni `X` cells and `segmentRimMask(X)`=0 — previews of complete tiles now
+derive edges from actual connectivity (`tileRimMask`), the board's own rule;
+`segmentRimMask` stays authoring-only · anchor-mesh loops violate the
+standing no-loops rule→arms reworked to Daniil's stated rule set: one arm
+per road segment joins the tree, every other arm exits the board as a NEW
+entry (entry count may grow — his explicit allowance), so the road is a
+tree on every map, property-tested with anchors woven in; a bridge's two
+segments each get their own joining arm (caught by the bridge test) ·
+golden shore reads as ore (same gold palette)→art-pass note on 6.6/6.2
+
 **Round 16 (playtest 14, 2026-08-18):** run setup shoves back in after
 start→two fixes, the second on Daniil's design call. First pass (host
 seeding) made the failure honest and fast — and honesty was not the ask:
@@ -424,7 +437,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 6.3 Effects at scale: every attack shape, impact and death authored against the engine from 4.1.
 - [ ] 6.4 Biomes — palette and tile-pool variants per threat level.
 - [ ] 6.5 **Minimal SFX** (Daniil, 2026-08-16 — PRD §16): impacts, builds, wave start, UI. Not music, not a mix. Includes sourcing and licence clearance, which is the part that is not free.
-- [x] 6.6 *(session 19)* **The shoreline** (PRD §13) *(Daniil, asked twice — 2026-08-16 and 2026-08-17)*: a procedural beach band on every water cell's land-facing edges — sand grains dense at the waterline thinning seaward, an occasional surf ripple riding the drift, on a warm sand-dark band (`terrain.shore.*` palette roles, so a biome re-tint stays a palette swap). The mask comes from live neighbours per frame (land never becomes water mid-run). Safe by construction — border cells can never carry road. First-pass look; tuning is a taste call at the next playtest.
+- [x] 6.6 *(session 19)* **The shoreline** (PRD §13) *(Daniil, asked twice — 2026-08-16 and 2026-08-17)*: a procedural beach band on every water cell's land-facing edges — sand grains dense at the waterline thinning seaward, an occasional surf ripple riding the drift, on a warm sand-dark band (`terrain.shore.*` palette roles, so a biome re-tint stays a palette swap). The mask comes from live neighbours per frame (land never becomes water mid-run). Safe by construction — border cells can never carry road. First-pass look; tuning is a taste call at the next playtest. **Art-pass follow-up (playtest 15)**: the gold sand palette reads as ORE — recolour the shore away from vein gold when the art pass tunes palettes (rides 6.2/6.4).
 - [ ] 6.7 **Relic art at board-glyph scale** (PRD §13) *(Daniil, 2026-08-17)*: relics drawn as sprites in the *board's* 5×8 font rather than the HUD's 2× font — the smaller cell buys the detail that makes a relic read as an object. Needs the HUD to host a board-scale sub-surface. *(The **square slots** half is cheap and rides 2.13 in session 17; only the art waits for the pass.)*
 - [ ] 6.8 **Smoothness via spatial phase** (PRD §13) *(Daniil, 2026-08-17)*: waves that travel across ground and water — each glyph's phase offset by its position — plus finer effect interpolation. **Explicitly not** "redraw less": the full board redraw is already well under a millisecond, so partial redraw optimises the wrong quantity. Recorded so a future session does not spend itself on the intuitive-but-wrong mechanism.
 

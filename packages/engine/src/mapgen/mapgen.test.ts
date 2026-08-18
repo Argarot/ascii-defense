@@ -402,11 +402,10 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
     expect(a).toEqual(b);
   });
 
-  it('junction specials ANCHOR and the network meshes to them (playtest 14, the rework)', () => {
-    // Daniil's exact failing case: three heavy junctions on a LOW-entry
-    // threat. Under the tree model this was mathematically impossible
-    // (junction arms consume entries); anchors + mesh place the specials
-    // first and join their arms to the network as loops.
+  it('junction specials ANCHOR; extra arms become entries; the road stays a TREE (playtests 14-15)', () => {
+    // Daniil's rules, playtest 15: specials guaranteed, exactly one way
+    // from each entry to the Core - NO loops, they are bloat the enemies
+    // ignore - and the generator may add entry points to make that true.
     const JUNCTIONS = new TileLibrary([
       ...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })),
       { id: 'sp_x', cells: g('GG|GG', 'GG|GG', '--X--', 'GG|GG', 'GG|GG') },
@@ -418,9 +417,14 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
       const map = generateMap(createRng(seed * 3).stream('map'), JUNCTIONS, opts);
       const placed = map.board.slots.filter(Boolean).map((p) => p!.tileId);
       for (const id of opts.specials) expect(placed.filter((p) => p === id).length, `${id} seed ${seed * 3}`).toBe(1);
-      // The threat's entry count is untouched: arms join, they never exit.
-      expect(map.entries.length).toBe(opts.entries);
-      // Every entry still routes to the Core across the meshed network.
+      // One arm per anchor joins the tree; every other arm is a new entry:
+      // 4-way + 3-way + 4-way contribute exactly 3 + 2 + 3 fronts.
+      expect(map.entries.length).toBe(opts.entries + 8);
+      expect(new Set(map.entries.map((e) => `${e.x},${e.y}`)).size).toBe(map.entries.length);
+      // NO LOOPS: the slot graph is a tree even with anchors woven in.
+      const { nodes, edges } = roadGraph(map.board, JUNCTIONS, opts.width, opts.height);
+      expect(edges.length, `seed ${seed * 3}`).toBe(nodes.size - 1);
+      // Every entry routes to the Core.
       const flow = computeFlowField(resolveCells(map.board, JUNCTIONS), 8 * TILE_SIZE, 5 * TILE_SIZE, map.entries);
       expect(flow.L).toBeGreaterThan(0);
     }
