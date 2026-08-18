@@ -77,8 +77,10 @@ into DISPLAY: the heal pass stored the canonical rotation, silently rotating
 tiles away from how they were authored. Canonical form is IDENTITY only —
 pools store and show the authored orientation, keys alone are canonical.
 Daniil's standing principle recorded: visuals derive live from data like
-clothing on the backend; the one code-vs-architecture gap (terrain glyph
-pools hardcoded in style.ts vs the planned content/assets/terrain/) is next ·
+clothing on the backend; the one code-vs-architecture gap is CLOSED — terrain
+glyph pools now live in `content/assets/terrain/appearance.json` (schema,
+codegen, validation, load-or-explain like the palette), so a graphics pack is
+that file plus the palette, zero code ·
 threat markers→confirmed working (was the unrenderable-glyph fix + a stale
 Pages bundle)
 

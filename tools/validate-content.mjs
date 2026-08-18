@@ -33,6 +33,7 @@ const SCHEMA_FOR = {
   'enemies/': 'enemies.schema.json',
   'towers/': 'towers.schema.json',
   'relics/': 'relics.schema.json',
+  'terrain/': 'terrain.schema.json',
 };
 
 const ajv = new Ajv({ allErrors: true, strictTypes: false });
