@@ -12,11 +12,14 @@ death.
 
 ▶ **[Play the current build](https://argarot.github.io/ascii-defense/)** ·
 ▶ **[Tile Smith](https://argarot.github.io/ascii-defense/tilesmith.html)**
-(author your own terrain tiles — they join the generator)
+(author your own terrain tiles — mint them as **specials**, then load up to
+three in run setup: a loaded tile is guaranteed on the map)
 
 Add `?seed=12345` to pin a world, `?threat=0|1|2` for Calm / Standard / Grim.
-**A seed is the whole world** — same map, same waves, same relic offers on any
-machine, verified to the tick against the live deployment.
+A seed determines the whole run **for a given loadout** — the full run
+identity (seed + loadout + inputs) lives in the save file, which doubles as
+an exact replay; a shareable "map code" format is a designed-not-yet-built
+item, since URL seeds cannot carry a roguelite's modifiers.
 
 ## What a run looks like
 
@@ -53,18 +56,22 @@ simulation), the **sim running in a Web Worker** so a hidden tab keeps playing,
 balance lab (`node tools/lab.mjs`) that predicts a build's death wave and
 verifies it against the real headless sim, and full cross-machine determinism.
 
-**Not built yet**: damage-type resistances, relic fusion, tile loadouts chosen
-before a run, onboarding, art. **Known broken**: the Tile Smith's road
-authoring is mid-rework — it can currently produce tiles the generator will
-never place. The roadmap runs to a stable beta at
-[docs/ROADMAP.md](docs/ROADMAP.md); the checklist is [docs/WBS.md](docs/WBS.md).
+**Not built yet**: damage-type resistances, relic fusion, onboarding, art.
+**Known broken** (under a scheduled backbone reassessment of the map
+generator and worker lifecycle): boon cells can land on void; one loadout
+case can drop bridge specials from the generated map; starting a new game
+right after quitting mid-run can return the paused game instead. The roadmap
+runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the checklist is
+[docs/WBS.md](docs/WBS.md).
 
 ## Design ideas worth knowing
 
 - **Roads are port segments.** A road cell declares which sides connect
-  (`- | L J F 7`); two cells join only when both face each other. Roads can
-  touch — run side by side, fold into S-bends — without merging, and the
-  route is a graph the enemies can never lane-hop across.
+  (`- | L J F 7`, T-junctions `T U E 3`, the omni crossroads `X`); two cells
+  join only when both face each other. Roads can touch — run side by side,
+  fold into S-bends — without merging, and the **bridge** cell `B` carries
+  two independent roads through one cell. The route is a graph of strands
+  the enemies can never lane-hop across.
 - **Connectors are derived, never declared.** A tile edge carries a crossing
   only when its centre cell continues inward. Tiles are indexed by their edge
   *partition*, so a tile carrying two separate roads is placed exactly where

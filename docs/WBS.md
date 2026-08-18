@@ -60,6 +60,16 @@ his layout (`FT7|`/`EX3-`/`LUJB`/`GKOC`), block labels only→2.23 · nomenclatu
 brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the validity
 checker works properly"→2.26
 
+**Round 18 (playtest 16, 2026-08-18 — end of day, the reassessment call):**
+boon ground on VOID→2.27 regression fixture · map generated WITHOUT selected
+bridge specials, no error→2.27 regression fixture (suspected worker-lifecycle
+crash masking as mapgen; unproven) · quit mid-game then NEW RUN returns the
+paused game→2.27 (worker init/resume lifecycle) · URL seeds are not viable
+run identity for a roguelite (modifiers always exist)→2.27 design item:
+deterministic map/run identity · **Daniil's verdict: "we seem to be drifting
+into pile-of-patches territory" — patching STOPPED by agreement**; session 20
+is the backbone reassessment, chosen over same-day triage, on a fresh context
+
 **Round 17 (playtest 15, 2026-08-18):** old minted tiles render with no road
 edges in previews (while correct on the board)→the REAL #2, found by
 reproducing with the reporter's artifact class: pre-segment mints are built
@@ -365,6 +375,7 @@ scheduled** — it joins 2.21 in session 19, since both rework the tile format.
 - [x] 2.25 *(fixed same day)* **Health pips carry colour** *(Daniil, playtest 9)*: 4 glyph steps × 3 colour bands (green/amber/red) = 12 readable states; colour presents, nothing branches on it (invariant 10).
 - [x] 2.21 *(session 19)* **Basic and special tiles** (PRD §4.8) *(Daniil, 2026-08-17)*: basics (the shipped library) stay infinite; **minted tiles are the special pool** — finite, chosen, and **guaranteed**: road specials claim a carved slot whose partition they express, roadless specials claim a fill slot, and specials are excluded from the random pools (they appear because chosen, exactly once). Run setup gained the **visual loadout picker** — minted tiles drawn through the shared `drawTerrainCell`, framed in accent when loaded, 3 slots (the economy is 7.5) — plus threat selection and START as separate acts. **Failing loudly**: generation rerolls seeds for a fresh carve (bounded), then surfaces the tile by name on the setup screen; a special is never silently dropped, and a special carrying the Core is refused outright. **The loadout is generation input, so it rides the save** (defs, not ids — the pool can change between save and resume): `RunSave` v2 with v1 migration for both run and meta saves; proven live — save, reload, continue, and the special is at the same cells. The worker builds each run's library as basics + loadout; the main thread's view library mirrors it.
 - [ ] 2.22 **Loot tables + void chests** (PRD §7.7, §4.9) *(Daniil, 2026-08-17; session 21)*: weighted outcome lists as content, rolled on a named stream at claim time so they ride the input log; sources reference a table by id instead of carrying payout code. Void chests surface and sink on a timer as the first consumer. Built **with** the relic economy because rarity weighting is the same machinery.
+- [ ] 2.27 **The backbone reassessment** *(Daniil, playtest 16 — "pile of patches" verdict; session 20, agreed as a fresh-context session)*. The map generator is ~nine sequential passes, each a playtest response, none written against a shared specification — playtest 16's bugs are all pass-interaction failures. Scope, in order: **(a)** a written generator SPECIFICATION — Daniil's six rules (one core near center; specials guaranteed; all roads entry→core; exactly one route per entry, no loops; entries may move/appear/disappear during generation; void only >3 from road) plus the deal-phase guarantees (authored overlays, boons on ground only, ore floor, caches) — with every invariant **checked in one place at the end**, not implied by pass order; rebuild constraint-first where the pipeline cannot satisfy the spec cleanly. **(b)** the worker lifecycle (init/resume/save/genError) as an explicit state machine — "new run" provably yields a fresh sim or a surfaced error, never a silent fallback to the old one. **(c)** deterministic run/map identity designed (seed+loadout+modifiers → a shareable code; URL seeds rejected by Daniil as non-viable for a roguelite). **(d)** playtest 16's three bugs (boon-on-void, dropped bridge specials, phantom resume) written as named regression tests against the spec BEFORE the rebuild, so the redesign provably kills them. Gate: spec committed as a doc; all invariant checks and the three regression tests green; Daniil generates and plays loadout-heavy runs without a defect list.
 
 ## M3 — Trustworthy difficulty *(sequenced after M4/M5: calibrating before the
 content and the shell settle would produce curves we throw away)*
