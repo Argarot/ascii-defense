@@ -61,18 +61,26 @@ brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the vali
 checker works properly"→2.26
 
 **Round 16 (playtest 14, 2026-08-18):** run setup shoves back in after
-start→the specials "guarantee" was retry-until-lucky: three junction tiles
-froze generation ~14s and often failed into a genError loop. **Host seeding**:
-each junction special is assigned an interior trunk slot and branch walks grow
-it to exactly the edges the tile expresses — fits in ~0.5s now; a loadout
-heavier than the threat's carve budget is refused instantly with a plain
-sentence · pool previews show wrong sprites→canonicalisation leaked into
-DISPLAY: the heal pass stored the canonical rotation, silently rotating tiles
-away from how they were authored (and making distinct tiles look like
-near-duplicates). Canonical form is IDENTITY only — pools store and show the
-authored orientation, keys alone are canonical · threat markers "still"
-missing→verified live post-#82 cache-busted; suspected stale Pages cache
-(CONTRIBUTING's standing trap — verify with ?cb=)
+start→two fixes, the second on Daniil's design call. First pass (host
+seeding) made the failure honest and fast — and honesty was not the ask:
+*any* loadout must generate. The tree model caps junction arms at
+(entries−2) by the handshake lemma, no carve order escapes it, so Daniil
+chose the **anchor-mesh rework**: road specials are placed FIRST as anchors
+(slot + rotation), every connector arm walks a short path and JOINS the
+network, joints growing into T/X through the partition machinery. The joins
+are the map's only loops — special-free carving stays a tree bit-for-bit
+(golden hash untouched), entries stay exactly the threat's roll, and
+bridges/twin-bends anchor uniformly. Proven: 3 heavy junctions on a
+2-entry map across 10 seeds, and live in 533ms where the tree model spun
+14s and refused · pool previews show wrong sprites→canonicalisation leaked
+into DISPLAY: the heal pass stored the canonical rotation, silently rotating
+tiles away from how they were authored. Canonical form is IDENTITY only —
+pools store and show the authored orientation, keys alone are canonical.
+Daniil's standing principle recorded: visuals derive live from data like
+clothing on the backend; the one code-vs-architecture gap (terrain glyph
+pools hardcoded in style.ts vs the planned content/assets/terrain/) is next ·
+threat markers→confirmed working (was the unrenderable-glyph fix + a stale
+Pages bundle)
 
 **Round 15 (playtest 13, 2026-08-18):** threat click has no visible effect→
 MenuItem gains a real selected state (`[ GRIM ]` in accent) — the original

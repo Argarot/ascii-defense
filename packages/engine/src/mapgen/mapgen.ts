@@ -248,12 +248,13 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   const index = indexLibrary(lib, specialIds.length > 0 ? new Set(specialIds) : undefined);
 
   // Specials (2.21): resolve each loaded special's shape once. Road-carrying
-  // specials list the partition keys their rotations express (deduped, like
-  // the index); roadless specials just need a fill slot.
-  const roadSpecials: { id: string; keys: Map<string, Rotation> }[] = [];
+  // specials become ANCHORS (playtest 14) - placed first, connected after -
+  // so they list their distinct rotations with each rotation's connector
+  // edges; roadless specials just need a fill slot.
+  const roadSpecials: { id: string; rotations: { rotation: Rotation; edges: Edge[] }[] }[] = [];
   const roadlessSpecials: string[] = [];
   for (const id of specialIds) {
-    const keys = new Map<string, Rotation>();
+    const rotations: { rotation: Rotation; edges: Edge[] }[] = [];
     const forms = new Set<string>();
     let hasRoad = false;
     for (const rotation of [0, 1, 2, 3] as const) {
@@ -262,13 +263,13 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       if (forms.has(form)) continue;
       forms.add(form);
       if (cells.some((row) => row.includes('C'))) throw new Error(`special tile '${id}' carries the Core - specials cannot`);
-      if (connectors.n || connectors.e || connectors.s || connectors.w) {
+      const edges = EDGES.filter((e) => connectors[e]);
+      if (edges.length > 0) {
         hasRoad = true;
-        const key = partitionKey(tilePartition(cells));
-        if (!keys.has(key)) keys.set(key, rotation);
+        rotations.push({ rotation, edges });
       }
     }
-    if (hasRoad) roadSpecials.push({ id, keys });
+    if (hasRoad) roadSpecials.push({ id, rotations });
     else roadlessSpecials.push(id);
   }
 
@@ -301,36 +302,6 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   // in seeded-shuffled order so no side is systematically favoured.
   const sectors = rng.shuffle(EDGES);
 
-  // Host seeding (playtest 14): a loaded junction special needs a carved
-  // slot with 3-4 road edges, and those occur by luck - three loaded
-  // junctions froze generation for seconds and often failed outright. A
-  // GUARANTEE must not gamble: each single-group road special with more
-  // than two edges is assigned a HOST slot, and branch walks are routed
-  // FROM that host until it carries exactly the edges the tile expresses.
-  // Hosts are excluded from random branch starts and from tunnels, so the
-  // count stays exact. Multi-group specials (bridges, twin bends) still
-  // ride organic tunnels.
-  const hostPlans: { edgesNeeded: number; k: number }[] = [];
-  {
-    let branchesNeeded = 0;
-    for (const sp of roadSpecials) {
-      const firstKey = [...sp.keys.keys()][0];
-      if (firstKey.includes('|')) continue; // multi-segment: organic
-      const edgesNeeded = firstKey.split('.').length;
-      if (edgesNeeded <= 2) continue; // straights and bends fit everywhere
-      hostPlans.push({ edgesNeeded, k: -1 });
-      branchesNeeded += edgesNeeded - 2;
-    }
-    if (branchesNeeded > entries - 1) {
-      throw new Error(
-        `the loadout needs ${branchesNeeded} road branches for its junction tiles ` +
-          `but this map carves only ${entries - 1} - lighten the loadout or raise the threat`,
-      );
-    }
-  }
-  const hostSlots = new Set<number>();
-  const hostBranchQueue: number[] = []; // host k, repeated once per branch it still needs
-
   for (let n = 0; n < entries; n++) {
     const sector = sectors[n % sectors.length];
     let done = false;
@@ -340,13 +311,8 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     for (let attempt = 0; attempt < 24 && !done; attempt++) {
       // Later attempts accept shorter paths rather than failing the map.
       const target = attempt < 8 ? targetPathLength : Math.max(1, targetPathLength >> (attempt < 16 ? 1 : 2));
-      const freeStarts = walkOrder.filter((k) => !hostSlots.has(k));
       const startK =
-        n === 0
-          ? coreK
-          : hostBranchQueue.length > 0
-            ? hostBranchQueue[0]
-            : freeStarts[rng.int(0, freeStarts.length - 1)];
+        n === 0 ? coreK : walkOrder[rng.int(0, walkOrder.length - 1)];
       let x = startK % width;
       let y = Math.floor(startK / width);
       let steps = 0;
@@ -361,9 +327,6 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
           const legal: { e: Edge; exits: boolean; tunnel?: Edge }[] = [];
           for (const e of EDGES) {
             if (cameFrom === e) continue;
-            // A branch leaving a HOST must claim a NEW edge - exiting via an
-            // existing one (a tunnel that way) would not grow the junction.
-            if (steps === 0 && hostSlots.has(slotIdx(x, y)) && roadEdges.get(slotIdx(x, y))?.has(e)) continue;
             const [dx, dy] = EDGE_DELTA[e];
             const nx = x + dx;
             const ny = y + dy;
@@ -382,7 +345,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
               // partition, which only a bridge tile can express (4.9) - the
               // availability gate below makes that self-limiting: no bridge
               // tile in the pool, no straight tunnel, exactly as before.
-              if (nk === coreK || hostSlots.has(nk) || secondSegment.has(nk) || newTunnels.some(([tk]) => tk === nk)) continue;
+              if (nk === coreK || secondSegment.has(nk) || newTunnels.some(([tk]) => tk === nk)) continue;
               const existing = roadEdges.get(nk);
               if (!existing) continue;
               const enter = OPPOSITE[e];
@@ -467,58 +430,124 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         }
         for (const [k, e] of newEdges) addEdge(k, e);
         for (const [k, seg] of newTunnels) secondSegment.set(k, seg);
-        if (hostBranchQueue[0] === startK) hostBranchQueue.shift(); // one branch delivered
         done = true;
       }
     }
     if (!done) {
       throw new Error(`mapgen: could not carve entry ${n + 1}/${entries} on a ${width}x${height} board`);
     }
-
-    // After the trunk walk: assign each junction special its host - an
-    // interior slot on the trunk - and queue the branches that grow it.
-    if (n === 0 && hostPlans.length > 0) {
-      const candidates = walkOrder.filter((k) => {
-        if (k === coreK || hostSlots.has(k)) return false;
-        const x = k % width;
-        const y = Math.floor(k / width);
-        return x > 0 && y > 0 && x < width - 1 && y < height - 1;
-      });
-      for (const plan of hostPlans) {
-        if (candidates.length === 0) throw new Error('mapgen: no interior trunk slot to host a junction special');
-        const i = rng.int(0, candidates.length - 1);
-        plan.k = candidates[i];
-        candidates.splice(i, 1);
-        hostSlots.add(plan.k);
-        for (let b = 0; b < plan.edgesNeeded - 2; b++) hostBranchQueue.push(plan.k);
-      }
-    }
-  }
-  if (hostBranchQueue.length > 0) {
-    throw new Error('mapgen: a junction special did not receive all its branches');
   }
 
-  // ---- 3. tile the carved slots -------------------------------------------
-  // Road specials first (2.21): each claims a carved slot whose partition it
-  // expresses - guaranteed presence, or a loud throw (generateMap's retries
-  // give it several carves before the player hears about it). Slots are
-  // scanned in carve order, so the claim is deterministic.
+  // ---- 2b. anchor the road specials (playtest 14, Daniil's call) -----------
+  // Road specials are placed FIRST as anchors - an interior slot plus a
+  // rotation, connectors fixed by the drawing - then every connector arm
+  // walks a short path and JOINS the network. Joints grow into T/X shapes
+  // through the same partition machinery that tiles everything else, and
+  // these joins are the map's only loops: the organic carve above stays a
+  // tree, so special-free generation is bit-identical to before. Entries
+  // stay exactly the threat's roll - arms always join, never exit the board.
+  // Any road special anchors this way, bridges and twin-bends included.
   const forced = new Map<number, { tileId: string; rotation: Rotation }>();
   for (const sp of roadSpecials) {
-    let placedAt = -1;
-    for (const [k, edges] of roadEdges) {
-      if (k === coreK || forced.has(k)) continue;
-      const second = secondSegment.get(k);
-      const key = second
-        ? partitionKey([[...edges] as Edge[], [...second] as Edge[]])
-        : partitionKey([[...edges] as Edge[]]);
-      const rotation = sp.keys.get(key);
-      if (rotation === undefined) continue;
-      forced.set(k, { tileId: sp.id, rotation });
-      placedAt = k;
-      break;
+    let placed = false;
+    for (let attempt = 0; attempt < 60 && !placed; attempt++) {
+      const pick = sp.rotations[sp.rotations.length === 1 ? 0 : rng.int(0, sp.rotations.length - 1)];
+      const ax = rng.int(1, width - 2);
+      const ay = rng.int(1, height - 2);
+      const ak = slotIdx(ax, ay);
+      if (roadSlots.has(ak) || forced.has(ak)) continue;
+
+      // This anchor's tentative arms: nothing touches the real network
+      // until every connector has landed (partial anchors never leak).
+      const armEdges = new Map<number, Set<Edge>>(); // pending arm slots -> edges
+      const armAdd = (k: number, e: Edge): void => {
+        const set = armEdges.get(k) ?? new Set<Edge>();
+        set.add(e);
+        armEdges.set(k, set);
+      };
+      /** Slots an arm may JOIN: network or this anchor's earlier arms - not
+       *  tunnels, not other anchors, not slots already at four edges. */
+      const joinable = (k: number): boolean => {
+        if (forced.has(k) || k === ak) return false;
+        if (secondSegment.has(k)) return false;
+        const onNet = roadSlots.has(k);
+        const onArm = armEdges.has(k);
+        if (!onNet && !onArm) return false;
+        const count = (roadEdges.get(k)?.size ?? 0) + (armEdges.get(k)?.size ?? 0);
+        return count < 4;
+      };
+      const nearestNet = (x: number, y: number): number => {
+        let best = Infinity;
+        for (const k of roadSlots) {
+          const d = Math.abs((k % width) - x) + Math.abs(Math.floor(k / width) - y);
+          if (d < best) best = d;
+        }
+        return best;
+      };
+      const carveArm = (edge: Edge): boolean => {
+        let x = ax + EDGE_DELTA[edge][0];
+        let y = ay + EDGE_DELTA[edge][1];
+        let cameFrom: Edge = OPPOSITE[edge];
+        const local: number[] = [];
+        for (let steps = 0; steps < 14; steps++) {
+          const k = slotIdx(x, y);
+          if (joinable(k)) {
+            armAdd(k, cameFrom); // the joint gains the arm's entry edge
+            return true;
+          }
+          if (roadSlots.has(k) || forced.has(k) || armEdges.has(k) || local.includes(k)) return false;
+          local.push(k);
+          armAdd(k, cameFrom);
+          // Step toward the network: joins first, else the move that closes
+          // the distance (ties broken by the stream, so seeds differ).
+          const joins: Edge[] = [];
+          const moves: { e: Edge; d: number }[] = [];
+          for (const e of EDGES) {
+            if (e === cameFrom) continue;
+            const nx = x + EDGE_DELTA[e][0];
+            const ny = y + EDGE_DELTA[e][1];
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+            const nk = slotIdx(nx, ny);
+            if (local.includes(nk) || nk === ak) continue;
+            if (joinable(nk)) joins.push(e);
+            else if (!roadSlots.has(nk) && !forced.has(nk) && !armEdges.has(nk)) moves.push({ e, d: nearestNet(nx, ny) });
+          }
+          let step: Edge;
+          if (joins.length > 0) step = joins.length === 1 ? joins[0] : joins[rng.int(0, joins.length - 1)];
+          else {
+            if (moves.length === 0) return false;
+            const best = Math.min(...moves.map((m) => m.d));
+            const good = moves.filter((m) => m.d === best);
+            step = good.length === 1 ? good[0].e : good[rng.int(0, good.length - 1)].e;
+          }
+          armAdd(k, step);
+          x += EDGE_DELTA[step][0];
+          y += EDGE_DELTA[step][1];
+          cameFrom = OPPOSITE[step];
+        }
+        return false;
+      };
+
+      let ok = true;
+      for (const e of pick.edges) {
+        if (!carveArm(e)) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+
+      // Commit: the anchor's connectors, every arm slot and every joint.
+      forced.set(ak, { tileId: sp.id, rotation: pick.rotation });
+      roadSlots.add(ak);
+      roadEdges.set(ak, new Set(pick.edges));
+      for (const [k, edges] of armEdges) {
+        roadSlots.add(k);
+        for (const e of edges) addEdge(k, e);
+      }
+      placed = true;
     }
-    if (placedAt === -1) throw new Error(`special tile '${sp.id}' cannot fit this map - no carved slot matches its road shape`);
+    if (!placed) throw new Error(`special tile '${sp.id}' found no anchorage on this map - retrying`);
   }
 
   let board = createBoard(width, height);

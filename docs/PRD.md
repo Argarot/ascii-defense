@@ -163,7 +163,15 @@ At run start, seeded from the run seed (stream `map`):
 4. Remaining slots fill with roadless terrain from the pool; **ore likelihood
    rises with distance from the road**.
 4b. **The run's chosen special tiles are placed first and are guaranteed**
-   (§4.8); basics fill everything they do not claim.
+   (§4.8); basics fill everything they do not claim. *(Amended 2026-08-18,
+   Daniil's call at playtest 14: road-carrying specials are ANCHORS — placed
+   before filling, each connector arm then walks and joins the road network,
+   the joint becoming a junction. These joins are the map's only loops: the
+   organic carve remains a tree, but a map with road specials is a MESH, and
+   "unique route per entry" holds only on special-free maps. The tree cap on
+   junction arms — entries−2, by the handshake lemma — is what made this
+   unavoidable: no carve order fits three junction tiles on a low-entry map
+   without loops.)*
 5. **Caches are scattered** as an overlay (§4.6) — a list of cells, not a cell
    type, so the tile library is untouched.
 6. **Every rock cell is dealt its hidden contents** — ore, a cache, or nothing
