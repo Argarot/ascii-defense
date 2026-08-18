@@ -51,21 +51,39 @@ export const ROAD_PORTS: Partial<Record<CellType, number>> = {
   E: 1 | 2 | 4,
   '3': 1 | 4 | 8,
   // A true 4-way INTERSECTION - crossing and merging - genuinely has four
-  // ports: that is 'X'. 'B' is the bridge cell (4.9): today it behaves as a
-  // second omni that never joins 'X', letting a separate road run beside or
-  // through dense road; the true crossing-without-merging semantics (two
-  // independent port pairs in one cell) land with 4.9 on this same letter.
+  // ports: that is 'X'. 'B' is the BRIDGE (4.9, pulled forward by Daniil,
+  // session 19): the same four ports, but split into two INDEPENDENT
+  // strands - an east-west deck and a north-south underpass - that cross
+  // in one cell and never join. The union mask stays 15 so port-union code
+  // (adjacency, rims) is unchanged; everything that ROUTES must think in
+  // strands (strandPorts / strandEntered below).
   X: 15,
   B: 15,
 };
 
+/** The bridge's two independent strands: [0] east-west deck, [1] north-south underpass. */
+const BRIDGE_STRANDS: readonly number[] = [2 | 8, 1 | 4];
+const NO_STRANDS: readonly number[] = [];
+
 /**
- * 'X' and 'B' are BOTH road - same look, same rules, same unbuildability -
- * but they never join each other, which is what lets a bridge road run
- * through dense road without merging into it. (The session-14 "lane"
- * framing is otherwise obsolete: under segments, separation comes from
- * ports, not lane identity.)
+ * Port masks per independent STRAND. Every road cell is one strand - its
+ * ports - except the bridge, which is two. Routing code (validity floods,
+ * the flow field, the walk) traverses (cell, strand) nodes so the two
+ * roads crossing a bridge stay separate; cell-level adjacency code may
+ * keep using ROAD_PORTS, because the facing bit always identifies the
+ * strand uniquely (the strands partition the mask).
  */
+export function strandPorts(c: CellType): readonly number[] {
+  if (c === 'B') return BRIDGE_STRANDS;
+  const p = ROAD_PORTS[c];
+  return p === undefined ? NO_STRANDS : [p];
+}
+
+/** Which strand of `c` a walker moving in direction `dirBit` (N=1 E=2 S=4 W=8) enters. */
+export function strandEntered(c: CellType, dirBit: number): number {
+  return c === 'B' && (dirBit === 1 || dirBit === 4) ? 1 : 0;
+}
+
 export function isRoad(c: CellType): boolean {
   return ROAD_PORTS[c] !== undefined;
 }
@@ -75,15 +93,16 @@ export function isRoad(c: CellType): boolean {
  * Segments connect when BOTH have a port facing each other - symmetric,
  * unambiguous, and the segment's shape IS its connectivity, so what you see
  * is what connects. An S-fold's back-to-back straights share no facing
- * ports and touch without merging. X-B (the two omnis) never join each
- * other; the Core welds any route cell.
+ * ports and touch without merging. The bridge joins by whichever STRAND
+ * faces the neighbour - its separation lives inside the cell (the two
+ * strands never join each other), not in adjacency. The Core welds any
+ * route cell.
  */
 export function roadsConnect(a: CellType, b: CellType, dx: number, dy: number): boolean {
   if (a === 'C' || b === 'C') return a !== b || a === 'C'; // C joins any route cell (C-C included)
   const pa = ROAD_PORTS[a];
   const pb = ROAD_PORTS[b];
   if (pa === undefined || pb === undefined) return false;
-  if (pa === 15 && pb === 15 && a !== b) return false; // X-B stay separate roads
   const bit = dy === -1 ? 1 : dx === 1 ? 2 : dy === 1 ? 4 : 8;
   const opp = dy === -1 ? 4 : dx === 1 ? 8 : dy === 1 ? 1 : 2;
   return (pa & bit) !== 0 && (pb & opp) !== 0;

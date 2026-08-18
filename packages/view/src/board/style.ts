@@ -113,6 +113,25 @@ export function drawTerrainCell(
   const rim = ROAD_PORTS[kind] === undefined ? 0 : (shade.rim ?? 0);
   const kerb = role('terrain.rock.lit');
   const drift = shade.drift ?? 0;
+  // The bridge (4.9) must read as one road CARRIED OVER another, so it gets
+  // its own drawing instead of the generic road texture: the east-west deck
+  // as a solid band across the middle row with lit edge rails above and
+  // below, and the north-south underpass showing through in the corners.
+  if (kind === 'B') {
+    for (let y = 0; y < CELL_H; y++)
+      for (let x = 0; x < CELL_W; x++) {
+        if (y === 1) {
+          // Deck planking: an unbroken band, unmistakably built rather than
+          // trodden. '=' reads as planks laid across the direction of travel.
+          term.put(gx0 + x, gy0 + y, '=', lit, bg);
+        } else {
+          // Rails on the deck's edges: full-width braille hairlines hugging
+          // the deck, the underpass passing beneath them.
+          term.put(gx0 + x, gy0 + y, String.fromCodePoint(0x2800 | (y === 0 ? 0xc0 : 0x09)), kerb, bg);
+        }
+      }
+    return;
+  }
   for (let y = 0; y < CELL_H; y++)
     for (let x = 0; x < CELL_W; x++) {
       const alive = drift !== 0 && hash2(gx0 + x, gy0 + y, 17) < 0.18;

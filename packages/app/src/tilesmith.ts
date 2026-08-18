@@ -17,7 +17,6 @@
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import {
-  ROAD_PORTS,
   TILE_SIZE,
   deriveConnectors,
   segmentRimMask,
@@ -45,16 +44,22 @@ const ZOOM_W = 10; // px per glyph at the smith's 2x zoom
 const ZOOM_H = 16;
 const CELL_PX_W = ZOOM_W * CELL_W;
 const CELL_PX_H = ZOOM_H * CELL_H;
-// Two glyphs of gutter between palette cells: without separation adjacent
-// sprites fuse into one texture, and the gutter is also where each road
-// brush draws PORT STUBS - the shape is shown as where the piece connects,
-// which reads at a glance where the kerb hairlines alone do not.
-const PAL_STEP_GLYPHS_W = CELL_W + 2;
-const PAL_STEP_GLYPHS_H = CELL_H + 2;
-const PAL_STEP_PX_W = PAL_STEP_GLYPHS_W * ZOOM_W;
-const PAL_STEP_PX_H = PAL_STEP_GLYPHS_H * ZOOM_H;
 
-/** Hover names; X and B share a sprite by design, so the tooltip must split them. */
+// Buttons stay BUTTONS (Daniil, mock review round 2): a schematic glyph per
+// brush - the box-drawing shape it places - while the tile preview is where
+// the actual sprites live. The first sprite-palette attempt inverted that.
+const BRUSH_GLYPH: Record<string, string> = {
+  F: '\u250c', T: '\u252c', '7': '\u2510', '|': '\u2502',
+  E: '\u251c', X: '\u253c', '3': '\u2524', '-': '\u2500',
+  L: '\u2514', U: '\u2534', J: '\u2518', B: '\u256b',
+  G: 'G', R: 'R', O: 'O', C: 'C',
+};
+const BRUSH_ACCENT: Record<string, string> = {
+  B: '#6f89a5', G: '#3d4f61', R: '#5a6a7c', O: '#ffd15c', C: '#2bbfae',
+};
+const ROAD_ACCENT = '#86a0bc';
+
+/** Hover names; the \u256b button needs words the glyph alone cannot carry. */
 const BRUSH_NAME: Record<string, string> = {
   '-': 'road \u00b7 east-west',
   '|': 'road \u00b7 north-south',
@@ -67,7 +72,7 @@ const BRUSH_NAME: Record<string, string> = {
   E: 'T-junction \u00b7 opens east',
   '3': 'T-junction \u00b7 opens west',
   X: 'crossroads \u00b7 joins all sides',
-  B: 'bridge \u00b7 a separate road \u00b7 never joins the crossroads',
+  B: 'bridge \u00b7 two roads cross here and never merge \u00b7 deck runs east-west, the other road passes under',
   G: 'ground',
   R: 'rock',
   O: 'ore',
@@ -96,49 +101,35 @@ async function main(): Promise<void> {
       <div class="sub">what you click is what you place \u00b7 the export button obeys the same rules the game does \u00b7 <a href="./">back to the board</a></div>
     </div>`;
 
-  // The brush palette IS a terrain render: a 4x4 grid of cells drawn by the
-  // same drawTerrainCell the board uses, so every brush shows the actual
-  // sprite it places. A CSS overlay ring marks the held brush.
+  // The brush matrix: plain buttons in Daniil's 4x4 layout, one schematic
+  // box-drawing glyph each. Rows 1-3 are the road block (it composes into a
+  // box figure), row 4 is terrain; the two gutter labels are the only text.
   const palWrap = document.createElement('div');
   palWrap.className = 'palette';
   const palLabels = document.createElement('div');
   palLabels.className = 'pal-labels';
-  palLabels.style.paddingTop = `${ZOOM_H}px`; // match the palette's pad row
   palLabels.innerHTML =
-    `<div style="height:${2 * PAL_STEP_PX_H + CELL_PX_H}px">roads</div>` +
-    `<div style="height:${PAL_STEP_PX_H}px; align-items: flex-end">terrain</div>`;
-  const palCanvasWrap = document.createElement('div');
-  palCanvasWrap.className = 'pal-canvas';
-  // One extra glyph of pad on every side so edge-facing port stubs render
-  // instead of clipping - a clipped stub reads as a dead end.
-  const pal = new GLTerm(glyphs, {
-    cols: 4 * PAL_STEP_GLYPHS_W + 1,
-    rows: 4 * PAL_STEP_GLYPHS_H + 1,
-    cellPx: ZOOM_W,
-    cellPxH: ZOOM_H,
-    background: role('ui.bg'),
-  });
-  palCanvasWrap.appendChild(pal.canvas);
-  const palRing = document.createElement('div');
-  palRing.className = 'pal-ring';
-  palCanvasWrap.appendChild(palRing);
-  pal.canvas.style.cursor = 'pointer';
-  const palCellAt = (e: MouseEvent): [number, number] => [
-    Math.floor((e.offsetX - ZOOM_W) / PAL_STEP_PX_W),
-    Math.floor((e.offsetY - ZOOM_H) / PAL_STEP_PX_H),
-  ];
-  pal.canvas.addEventListener('click', (e) => {
-    const [x, y] = palCellAt(e);
-    if (x < 0 || y < 0 || x >= 4 || y >= 4) return;
-    brush = BRUSH_GRID[y][x];
-    update();
-  });
-  pal.canvas.addEventListener('mousemove', (e) => {
-    const [x, y] = palCellAt(e);
-    pal.canvas.title = x >= 0 && y >= 0 && x < 4 && y < 4 ? BRUSH_NAME[BRUSH_GRID[y][x]] : '';
-  });
+    '<div style="flex: 3">roads</div>' +
+    '<div style="flex: 1">terrain</div>';
+  const palGrid = document.createElement('div');
+  palGrid.className = 'pal-grid';
+  const brushBtns = new Map<CellType, HTMLButtonElement>();
+  for (const row of BRUSH_GRID)
+    for (const t of row) {
+      const b = document.createElement('button');
+      b.className = 'brush';
+      b.innerHTML = `<span class="glyph">${BRUSH_GLYPH[t]}</span>`;
+      b.title = BRUSH_NAME[t];
+      b.style.borderTop = `3px solid ${BRUSH_ACCENT[t] ?? ROAD_ACCENT}`;
+      b.addEventListener('click', () => {
+        brush = t;
+        update();
+      });
+      brushBtns.set(t, b);
+      palGrid.appendChild(b);
+    }
   palWrap.appendChild(palLabels);
-  palWrap.appendChild(palCanvasWrap);
+  palWrap.appendChild(palGrid);
   left.appendChild(palWrap);
 
   const undoRow = document.createElement('div');
@@ -286,40 +277,7 @@ async function main(): Promise<void> {
 
   // ---- one update path: state -> engine verdict -> every widget ------------
   function update(): void {
-    // Palette: real sprites for every brush; ring on the held one. Road
-    // brushes rim from their own declared ports (segmentRimMask at an
-    // interior coordinate), so a lone F reads as a bend the moment you see it.
-    pal.clear(role('ui.bg'));
-    const roadBg = role('terrain.road.dark');
-    for (let by = 0; by < 4; by++)
-      for (let bx = 0; bx < 4; bx++) {
-        const t = BRUSH_GRID[by][bx];
-        const gx0 = bx * PAL_STEP_GLYPHS_W + 1;
-        const gy0 = by * PAL_STEP_GLYPHS_H + 1;
-        drawTerrainCell(pal, t, gx0, gy0, { rim: segmentRimMask(t, 1, 1) });
-        // Port stubs: the road continues one glyph into the gutter on every
-        // open side, so the segment's shape reads as its connections.
-        const ports = ROAD_PORTS[t];
-        if (ports !== undefined) {
-          const stub = (x: number, y: number): void => {
-            if (x < 0 || y < 0) return;
-            pal.put(x, y, ' ', roadBg, roadBg);
-          };
-          if ((ports & 1) !== 0) for (let x = 1; x <= 3; x++) stub(gx0 + x, gy0 - 1);
-          if ((ports & 4) !== 0) for (let x = 1; x <= 3; x++) stub(gx0 + x, gy0 + CELL_H);
-          if ((ports & 8) !== 0) for (let y = 0; y < CELL_H; y++) stub(gx0 - 1, gy0 + y);
-          if ((ports & 2) !== 0) for (let y = 0; y < CELL_H; y++) stub(gx0 + CELL_W, gy0 + y);
-        }
-      }
-    pal.flush();
-    for (let by = 0; by < 4; by++)
-      for (let bx = 0; bx < 4; bx++)
-        if (BRUSH_GRID[by][bx] === brush) {
-          palRing.style.left = `${bx * PAL_STEP_PX_W + ZOOM_W - 2}px`;
-          palRing.style.top = `${by * PAL_STEP_PX_H + ZOOM_H - 2}px`;
-          palRing.style.width = `${CELL_PX_W + 2}px`;
-          palRing.style.height = `${CELL_PX_H + 2}px`;
-        }
+    for (const [t, b] of brushBtns) b.classList.toggle('active', t === brush);
 
     undoBtn.disabled = undoStack.length === 0;
 

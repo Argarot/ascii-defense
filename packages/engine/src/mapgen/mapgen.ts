@@ -297,19 +297,20 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
             }
             const nk = slotIdx(nx, ny);
             if (roadSlots.has(nk) || newSlots.includes(nk)) {
-              // Carve v3: a TURNING TUNNEL through an occupied slot. The
-              // walk enters via e and leaves perpendicular, as a second
-              // segment - two roads in one slot, never merging. Only over
-              // single-segment non-core slots, and only when the landing
-              // slot is free; representable partitions are the two
-              // twin-bend forms, guaranteed by the perpendicular turn.
+              // Carve v3: a TUNNEL through an occupied slot. The walk
+              // enters via e and leaves as a second segment - two roads in
+              // one slot, never merging. Perpendicular exits produce the
+              // twin-bend partitions; a STRAIGHT exit produces a crossing
+              // partition, which only a bridge tile can express (4.9) - the
+              // availability gate below makes that self-limiting: no bridge
+              // tile in the pool, no straight tunnel, exactly as before.
               if (nk === coreK || secondSegment.has(nk) || newTunnels.some(([tk]) => tk === nk)) continue;
               const existing = roadEdges.get(nk);
               if (!existing) continue;
               const enter = OPPOSITE[e];
               if (existing.has(enter)) continue;
               for (const out of EDGES) {
-                if (out === enter || out === OPPOSITE[enter]) continue; // must TURN
+                if (out === enter) continue;
                 if (existing.has(out)) continue;
                 const [ox, oy] = EDGE_DELTA[out];
                 const lx = nx + ox;

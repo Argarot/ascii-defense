@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
-import { deriveConnectors, rotateCells, validateTileCells } from './tile';
+import { deriveConnectors, partitionKey, rotateCells, tilePartition, validateTileCells } from './tile';
 import {
   TileLibrary,
   canPlace,
@@ -51,9 +51,14 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     // boot (found live, session 14). Now invalid by construction.
     const twoStubs = g('GGXGG', 'GGXGG', 'GGGGG', 'GGXGG', 'GGXGG');
     expect(validateTileCells(twoStubs).join()).toMatch(/no other entry point/);
-    // Head-on different-lane stubs are the same lie in lane clothing.
-    const headOn = g('GGXGG', 'GGXGG', 'GGXGG', 'GGBGG', 'GGBGG');
+    // Head-on stubs that share no facing ports touch without joining - the
+    // X faces south but the '-' below has no north port, so the pair stays
+    // two broken pieces, not one road. (The old form of this fixture used
+    // lane-B; under 4.9 an X genuinely joins a bridge's underpass, because
+    // the bridge is a crossing now, not a separate lane.)
+    const headOn = g('GGXGG', 'GGXGG', 'GGXGG', 'GG-GG', 'GGGGG');
     expect(validateTileCells(headOn).join()).toMatch(/no other entry point/);
+    expect(validateTileCells(headOn).join()).toMatch(/no entry point/);
   });
 
   it('T-JUNCTIONS: first-class 3-port types route three ways and rotate as a cycle (2.23)', () => {
@@ -109,6 +114,30 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     // two bent roads, each entry-to-entry, touching at back-to-back bends.
     const interlock = g('GG|GG', 'GG|GG', '--JF-', 'GGFJG', 'GG|GG');
     expect(validateTileCells(interlock)).toEqual([]);
+  });
+
+  it('the bridge carries two independent roads through one cell (4.9)', () => {
+    // N-S road crossing an E-W road over 'B': valid, all four connectors,
+    // and the partition is TWO groups - the roads cross without merging.
+    const bridge = g('GG|GG', 'GG|GG', '--B--', 'GG|GG', 'GG|GG');
+    expect(validateTileCells(bridge)).toEqual([]);
+    expect(deriveConnectors(bridge)).toEqual({ n: true, e: true, s: true, w: true });
+    expect(partitionKey(tilePartition(bridge))).toBe('e.w|n.s');
+    // The same shape with an omni crossroads is ONE group - the junction.
+    const cross = g('GG|GG', 'GG|GG', '--X--', 'GG|GG', 'GG|GG');
+    expect(partitionKey(tilePartition(cross))).toBe('e.n.s.w');
+  });
+
+  it('a bridge strand that dangles is judged on its own (4.9 + 2.26)', () => {
+    // Deck routes W-E; the underpass connects only south - a dead-end road
+    // in bridge clothing. The strand flood must catch it even though the
+    // CELL is shared with a perfectly valid road.
+    const dangling = g('GGGGG', 'GGGGG', '--B--', 'GG|GG', 'GG|GG');
+    expect(validateTileCells(dangling).join()).toMatch(/no other entry point|dead-ends/);
+    // With no underpass road at all the deck alone is NOT valid either: the
+    // bridge advertises two roads; one of them reaches nothing.
+    const deckOnly = g('GGGGG', 'GGGGG', '--B--', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(deckOnly).join()).toMatch(/no entry point/);
   });
 
   it('rejects unknown cell codes and malformed shapes', () => {

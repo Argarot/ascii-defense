@@ -27,17 +27,22 @@
         font: inherit; font-size: 16px; color: #cfd6e4;
       }
       .grid button:hover { outline: 2px solid #2ee6a0; }
-      .palette { display: flex; gap: 8px; align-items: flex-start; }
+      .palette { display: flex; gap: 8px; align-items: stretch; }
+      .pal-labels { display: flex; flex-direction: column; }
       .pal-labels div {
         display: flex; align-items: center; justify-content: flex-end;
         width: 58px; padding-right: 4px; color: #5c6b7f; font-size: 12px;
         letter-spacing: 0.5px;
       }
-      .pal-canvas { position: relative; width: max-content; }
-      .pal-ring {
-        position: absolute; pointer-events: none;
-        outline: 2px solid #2ee6a0; outline-offset: -1px;
+      .pal-grid { display: grid; grid-template-columns: repeat(4, 46px); gap: 4px; }
+      .pal-grid .brush {
+        width: 46px; height: 46px; cursor: pointer; padding: 0;
+        border: 1px solid #1c2530; background: #0c1017; color: #cfd6e4;
+        font: inherit; display: flex; align-items: center; justify-content: center;
       }
+      .pal-grid .brush .glyph { font-size: 22px; line-height: 22px; }
+      .pal-grid .brush:hover { outline: 2px solid #1f6f43; }
+      .pal-grid .brush.active { outline: 2px solid #2ee6a0; }
       .verdict-ok { color: #2ee6a0; }
       .verdict-bad { color: #ff9090; }
       ul { margin: 4px 0; padding-left: 18px; color: #ff9090; font-size: 12px; }

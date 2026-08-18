@@ -4,18 +4,24 @@
  * queue would be ceremony. Recomputed on map changes only, never per tick.
  *
  * Since session 14 the route is a GRAPH, not raw cell adjacency (PRD sec
- * 4.2.1): within a tile, road cells join only when their PORTS face (and
- * the two omnis 'X'/'B' never join each other); across a tile boundary, the
- * only legal step is between the two edge-centre cells of tiles whose
- * connectors both derive - i.e. an actual crossing. Two roads touching any
- * other way are TOUCHING, not connected. The `allowed` mask carries the
- * verdict per cell and direction so the walk phase can never step where the
- * BFS would not - enemies do not change lanes.
+ * 4.2.1): within a tile, road cells join only when their PORTS face; across
+ * a tile boundary, the only legal step is between the two edge-centre cells
+ * of tiles whose connectors both derive - i.e. an actual crossing. Two
+ * roads touching any other way are TOUCHING, not connected.
+ *
+ * Since session 19 the graph is over STRAND NODES (4.9, the bridge): a
+ * bridge cell 'B' holds two independent nodes - an east-west deck and a
+ * north-south underpass - so two roads cross in one cell without joining.
+ * Distances are therefore per NODE (`nodeDist`); the per-cell `dist` is the
+ * min over strands and exists for consumers that only need "how far is
+ * this cell" (targeting, L, tests). The `allowed` mask stays per cell (the
+ * union) for the view's rims; the walk phase resolves its strand from its
+ * direction of travel, because both strands are straight.
  *
  * Yields `L`, the effective road length feeding the difficulty model
  * (PRD sec 9): the longest entry-to-Core walk in cells.
  */
-import { isRoad, isRouteCell, roadsConnect, type CellType } from '../grid/cells';
+import { isRoad, isRouteCell, roadsConnect, strandEntered, strandPorts, type CellType } from '../grid/cells';
 import { TILE_SIZE } from '../tiles/tile';
 import type { CellRef } from '../mapgen/mapgen';
 
@@ -24,11 +30,13 @@ export const DIR_BITS = [1, 2, 4, 8] as const; // N, E, S, W
 export const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]] as const;
 
 export interface FlowField {
-  /** Distance in cells to the nearest Core cell; -1 off the route. */
+  /** Distance in cells to the nearest Core cell; -1 off the route. Per cell: min over strands. */
   readonly dist: Int32Array;
+  /** Distance per STRAND NODE: index = (y*width+x)*2 + strand. Strand 0 for everything except a bridge's north-south underpass (1). */
+  readonly nodeDist: Int32Array;
   readonly width: number;
   readonly height: number;
-  /** Bitmask of legal route steps per cell (N=1 E=2 S=4 W=8). */
+  /** Bitmask of legal route steps per cell (N=1 E=2 S=4 W=8) - the union over strands. */
   readonly allowed: Uint8Array;
   /** Longest entry distance - the L of PRD sec 9. */
   readonly L: number;
@@ -37,11 +45,11 @@ export interface FlowField {
 const CENTER = (TILE_SIZE - 1) / 2;
 
 /**
- * May an enemy step from (x,y) to (nx,ny)? The route-graph edge predicate:
- * same tile - lanes must join; across tiles - both cells must be the shared
- * edge's centres AND both sides must continue inward (their connectors
- * derive), which is precisely deriveConnectors' directional rule applied at
- * board scale.
+ * May an enemy step from (x,y) to (nx,ny), at CELL level? The route-graph
+ * edge predicate: same tile - ports must face; across tiles - both cells
+ * must be the shared edge's centres AND both sides must continue inward
+ * (their connectors derive), which is precisely deriveConnectors'
+ * directional rule applied at board scale.
  */
 function stepAllowed(
   cells: readonly (CellType | null)[],
@@ -88,6 +96,20 @@ function stepAllowed(
   return inwardOk(x, y, x - nx, y - ny) && inwardOk(nx, ny, nx - x, ny - y);
 }
 
+/**
+ * Strand-level edge on top of stepAllowed: leaving (a, sa) in direction d
+ * needs that strand's port (the Core welds ports-blind, except off a
+ * bridge - a walker cannot turn off the deck); the target strand is the
+ * one the motion enters. Returns the target strand, or -1 for no edge.
+ */
+function strandStep(a: CellType, sa: number, b: CellType, d: number): number {
+  if (a === 'C') return b === 'C' ? 0 : strandEntered(b, DIR_BITS[d]);
+  if ((strandPorts(a)[sa] & DIR_BITS[d]) === 0 && !(b === 'C' && a !== 'B')) return -1;
+  if (b === 'C') return 0;
+  const sb = strandEntered(b, DIR_BITS[d]);
+  return (strandPorts(b)[sb] & DIR_BITS[(d + 2) % 4]) === 0 ? -1 : sb;
+}
+
 export function computeFlowField(
   cells: readonly (CellType | null)[],
   width: number,
@@ -109,28 +131,43 @@ export function computeFlowField(
       allowed[i] = mask;
     }
 
-  const dist = new Int32Array(width * height).fill(-1);
-  const queue: number[] = [];
+  const nodeDist = new Int32Array(width * height * 2).fill(-1);
+  const queue: number[] = []; // node indices
 
   for (let i = 0; i < cells.length; i++) {
     if (cells[i] === 'C') {
-      dist[i] = 0;
-      queue.push(i);
+      nodeDist[i * 2] = 0;
+      queue.push(i * 2);
     }
   }
   if (queue.length === 0) throw new Error('flow field: no Core cells on the board');
 
   for (let qi = 0; qi < queue.length; qi++) {
-    const i = queue[qi];
+    const node = queue[qi];
+    const i = node >> 1;
+    const s = node & 1;
     const x = i % width;
     const y = (i / width) | 0;
     for (let d = 0; d < 4; d++) {
       if ((allowed[i] & DIR_BITS[d]) === 0) continue;
-      const ni = (y + DIRS[d][1]) * width + (x + DIRS[d][0]);
-      if (dist[ni] !== -1) continue;
-      dist[ni] = dist[i] + 1;
-      queue.push(ni);
+      const nx = x + DIRS[d][0];
+      const ny = y + DIRS[d][1];
+      const ni = ny * width + nx;
+      const sb = strandStep(cells[i]!, s, cells[ni]!, d);
+      if (sb < 0) continue;
+      const nn = ni * 2 + sb;
+      if (nodeDist[nn] !== -1) continue;
+      nodeDist[nn] = nodeDist[node] + 1;
+      queue.push(nn);
     }
+  }
+
+  // Per-cell distance: the nearer strand. -1 when neither routes.
+  const dist = new Int32Array(width * height).fill(-1);
+  for (let i = 0; i < width * height; i++) {
+    const a = nodeDist[i * 2];
+    const b = nodeDist[i * 2 + 1];
+    dist[i] = a === -1 ? b : b === -1 ? a : Math.min(a, b);
   }
 
   let L = 0;
@@ -140,5 +177,5 @@ export function computeFlowField(
     if (d > L) L = d;
   }
 
-  return { dist, width, height, allowed, L };
+  return { dist, nodeDist, width, height, allowed, L };
 }

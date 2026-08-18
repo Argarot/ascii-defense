@@ -306,3 +306,38 @@ describe('lane tiles vs the generator (session 14)', () => {
     }
   });
 });
+
+describe('the bridge in the flow field (4.9)', () => {
+  it('two roads cross a bridge cell without merging - distances stay per strand', () => {
+    // One tile-column, two tiles tall. The deck road runs west-to-Core in
+    // row 2; the underpass road runs down column 2 to its own Core in the
+    // south tile. They cross at the bridge (2,2).
+    const rows = [
+      'GG|GG',
+      'GG|GG',
+      '--B-C',
+      'GG|GG',
+      'GG|GG',
+      'GG|GG',
+      'GG|GG',
+      'GGCGG',
+      'GGGGG',
+      'GGGGG',
+    ];
+    const W = 5;
+    const H = 10;
+    const cells = rows.join('').split('') as ('G' | '|' | '-' | 'B' | 'C')[];
+    const flow = computeFlowField(cells, W, H, [{ x: 0, y: 2 }, { x: 2, y: 0 }]);
+
+    const node = (x: number, y: number, s: number): number => (y * W + x) * 2 + s;
+    // Deck strand: two steps from the east Core. Underpass strand: five
+    // steps from the south Core. One cell, two truths.
+    expect(flow.nodeDist[node(2, 2, 0)]).toBe(2);
+    expect(flow.nodeDist[node(2, 2, 1)]).toBe(5);
+    // The cell just north of the bridge is SIX steps out - were the bridge
+    // a merging junction, it could cut through the deck and be four.
+    expect(flow.nodeDist[node(2, 1, 0)]).toBe(6);
+    // L is the underpass entry's walk: 7 cells down to the south Core.
+    expect(flow.L).toBe(7);
+  });
+});

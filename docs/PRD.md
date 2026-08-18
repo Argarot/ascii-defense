@@ -133,16 +133,22 @@ Part 3 is the work, and it is the same mechanism bridges need (§4.2.2).
 Connectivity still holds by construction: the generator carves the topology and
 tiles to match, so the route graph is connected because it was built connected —
 never because it was checked.
-### 4.2.2 Bridges
+### 4.2.2 Bridges — SHIPPED 2026-08-18 (session 19)
 
 With the route as a graph (§4.2.1), two roads can cross a tile without merging — a
 bridge.
-Mechanically this is the larger change: the route stops being a grid where every
-road cell has one downhill neighbour, and becomes a **graph** in which a bridge
-cell holds two independent nodes. Movement, targeting distance and `L` all read
-that graph instead of the cell grid.
+Mechanically this was the larger change, and it landed as specified: the route
+is a **graph of strand nodes** in which a bridge cell (`B`) holds two
+independent nodes — an east-west deck and a north-south underpass. Validity,
+tile partition, the flow field's distances and enemy movement all read strand
+nodes; a walker crosses the bridge straight and can never turn off the deck.
+The generator deals bridge tiles through straight carve tunnels, gated on a
+bridge tile existing in the pool — no tile, no move, connectivity by
+construction, as always.
 
-Sequenced after difficulty and balance: it buys variety, not a working game.
+*(Originally sequenced after difficulty and balance; pulled forward by Daniil
+at the session-19 smith review — the authoring tool made bridges mintable, and
+a mintable cell whose mechanics don't exist is a lie in the palette.)*
 
 ### 4.3 Map generation
 
