@@ -98,6 +98,9 @@ function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?:
       map = generateMap(knobs, lib, { width: MAP_X, height: MAP_Y, entries, targetPathLength, relicPoolSize: RELIC_DEFS.length, specials });
       break;
     } catch (e) {
+      // Structural refusals (loadout exceeds the threat's carve budget, a
+      // special carrying the Core) throw before any carving, so even 60
+      // rerolls cost microseconds; luck-based failures get fresh carves.
       if (attempt >= 60 && specials.length > 0) {
         post({ t: 'genError', message: e instanceof Error ? e.message : 'the loadout cannot fit any map' });
         return false;

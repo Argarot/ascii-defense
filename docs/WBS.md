@@ -60,6 +60,20 @@ his layout (`FT7|`/`EX3-`/`LUJB`/`GKOC`), block labels only→2.23 · nomenclatu
 brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the validity
 checker works properly"→2.26
 
+**Round 16 (playtest 14, 2026-08-18):** run setup shoves back in after
+start→the specials "guarantee" was retry-until-lucky: three junction tiles
+froze generation ~14s and often failed into a genError loop. **Host seeding**:
+each junction special is assigned an interior trunk slot and branch walks grow
+it to exactly the edges the tile expresses — fits in ~0.5s now; a loadout
+heavier than the threat's carve budget is refused instantly with a plain
+sentence · pool previews show wrong sprites→canonicalisation leaked into
+DISPLAY: the heal pass stored the canonical rotation, silently rotating tiles
+away from how they were authored (and making distinct tiles look like
+near-duplicates). Canonical form is IDENTITY only — pools store and show the
+authored orientation, keys alone are canonical · threat markers "still"
+missing→verified live post-#82 cache-busted; suspected stale Pages cache
+(CONTRIBUTING's standing trap — verify with ?cb=)
+
 **Round 15 (playtest 13, 2026-08-18):** threat click has no visible effect→
 MenuItem gains a real selected state (`[ GRIM ]` in accent) — the original
 marker was `»`, which spleen does not have, so GLTerm silently drew nothing:
