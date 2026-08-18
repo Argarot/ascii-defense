@@ -301,6 +301,36 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   // in seeded-shuffled order so no side is systematically favoured.
   const sectors = rng.shuffle(EDGES);
 
+  // Host seeding (playtest 14): a loaded junction special needs a carved
+  // slot with 3-4 road edges, and those occur by luck - three loaded
+  // junctions froze generation for seconds and often failed outright. A
+  // GUARANTEE must not gamble: each single-group road special with more
+  // than two edges is assigned a HOST slot, and branch walks are routed
+  // FROM that host until it carries exactly the edges the tile expresses.
+  // Hosts are excluded from random branch starts and from tunnels, so the
+  // count stays exact. Multi-group specials (bridges, twin bends) still
+  // ride organic tunnels.
+  const hostPlans: { edgesNeeded: number; k: number }[] = [];
+  {
+    let branchesNeeded = 0;
+    for (const sp of roadSpecials) {
+      const firstKey = [...sp.keys.keys()][0];
+      if (firstKey.includes('|')) continue; // multi-segment: organic
+      const edgesNeeded = firstKey.split('.').length;
+      if (edgesNeeded <= 2) continue; // straights and bends fit everywhere
+      hostPlans.push({ edgesNeeded, k: -1 });
+      branchesNeeded += edgesNeeded - 2;
+    }
+    if (branchesNeeded > entries - 1) {
+      throw new Error(
+        `the loadout needs ${branchesNeeded} road branches for its junction tiles ` +
+          `but this map carves only ${entries - 1} - lighten the loadout or raise the threat`,
+      );
+    }
+  }
+  const hostSlots = new Set<number>();
+  const hostBranchQueue: number[] = []; // host k, repeated once per branch it still needs
+
   for (let n = 0; n < entries; n++) {
     const sector = sectors[n % sectors.length];
     let done = false;
@@ -310,8 +340,13 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     for (let attempt = 0; attempt < 24 && !done; attempt++) {
       // Later attempts accept shorter paths rather than failing the map.
       const target = attempt < 8 ? targetPathLength : Math.max(1, targetPathLength >> (attempt < 16 ? 1 : 2));
+      const freeStarts = walkOrder.filter((k) => !hostSlots.has(k));
       const startK =
-        n === 0 ? coreK : walkOrder[rng.int(0, walkOrder.length - 1)];
+        n === 0
+          ? coreK
+          : hostBranchQueue.length > 0
+            ? hostBranchQueue[0]
+            : freeStarts[rng.int(0, freeStarts.length - 1)];
       let x = startK % width;
       let y = Math.floor(startK / width);
       let steps = 0;
@@ -326,6 +361,9 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
           const legal: { e: Edge; exits: boolean; tunnel?: Edge }[] = [];
           for (const e of EDGES) {
             if (cameFrom === e) continue;
+            // A branch leaving a HOST must claim a NEW edge - exiting via an
+            // existing one (a tunnel that way) would not grow the junction.
+            if (steps === 0 && hostSlots.has(slotIdx(x, y)) && roadEdges.get(slotIdx(x, y))?.has(e)) continue;
             const [dx, dy] = EDGE_DELTA[e];
             const nx = x + dx;
             const ny = y + dy;
@@ -344,7 +382,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
               // partition, which only a bridge tile can express (4.9) - the
               // availability gate below makes that self-limiting: no bridge
               // tile in the pool, no straight tunnel, exactly as before.
-              if (nk === coreK || secondSegment.has(nk) || newTunnels.some(([tk]) => tk === nk)) continue;
+              if (nk === coreK || hostSlots.has(nk) || secondSegment.has(nk) || newTunnels.some(([tk]) => tk === nk)) continue;
               const existing = roadEdges.get(nk);
               if (!existing) continue;
               const enter = OPPOSITE[e];
@@ -429,12 +467,35 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         }
         for (const [k, e] of newEdges) addEdge(k, e);
         for (const [k, seg] of newTunnels) secondSegment.set(k, seg);
+        if (hostBranchQueue[0] === startK) hostBranchQueue.shift(); // one branch delivered
         done = true;
       }
     }
     if (!done) {
       throw new Error(`mapgen: could not carve entry ${n + 1}/${entries} on a ${width}x${height} board`);
     }
+
+    // After the trunk walk: assign each junction special its host - an
+    // interior slot on the trunk - and queue the branches that grow it.
+    if (n === 0 && hostPlans.length > 0) {
+      const candidates = walkOrder.filter((k) => {
+        if (k === coreK || hostSlots.has(k)) return false;
+        const x = k % width;
+        const y = Math.floor(k / width);
+        return x > 0 && y > 0 && x < width - 1 && y < height - 1;
+      });
+      for (const plan of hostPlans) {
+        if (candidates.length === 0) throw new Error('mapgen: no interior trunk slot to host a junction special');
+        const i = rng.int(0, candidates.length - 1);
+        plan.k = candidates[i];
+        candidates.splice(i, 1);
+        hostSlots.add(plan.k);
+        for (let b = 0; b < plan.edgesNeeded - 2; b++) hostBranchQueue.push(plan.k);
+      }
+    }
+  }
+  if (hostBranchQueue.length > 0) {
+    throw new Error('mapgen: a junction special did not receive all its branches');
   }
 
   // ---- 3. tile the carved slots -------------------------------------------

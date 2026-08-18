@@ -402,6 +402,33 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
     expect(a).toEqual(b);
   });
 
+  it('junction specials are HOSTED, not hoped for (playtest 14)', () => {
+    // A 4-way and a T loaded together need three deliberate branches; before
+    // host seeding this froze generation for seconds and usually failed.
+    const JUNCTIONS = new TileLibrary([
+      ...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })),
+      { id: 'sp_x', cells: g('GG|GG', 'GG|GG', '--X--', 'GG|GG', 'GG|GG') },
+      { id: 'sp_t', cells: g('GG|GG', 'GG|GG', 'GGE--', 'GG|GG', 'GG|GG') },
+    ]);
+    for (let seed = 1; seed <= 10; seed++) {
+      const map = generateMap(createRng(seed * 3).stream('map'), JUNCTIONS, {
+        width: 8, height: 5, entries: 5, targetPathLength: 6, specials: ['sp_x', 'sp_t'],
+      });
+      const placed = map.board.slots.filter(Boolean).map((p) => p!.tileId);
+      expect(placed.filter((id) => id === 'sp_x').length, `seed ${seed * 3}`).toBe(1);
+      expect(placed.filter((id) => id === 'sp_t').length, `seed ${seed * 3}`).toBe(1);
+      const flow = computeFlowField(resolveCells(map.board, JUNCTIONS), 8 * TILE_SIZE, 5 * TILE_SIZE, map.entries);
+      expect(flow.L).toBeGreaterThan(0);
+    }
+    // A loadout heavier than the carve budget is refused with a plain
+    // sentence, instantly - never a spin.
+    expect(() =>
+      generateMap(createRng(9).stream('map'), JUNCTIONS, {
+        width: 8, height: 5, entries: 2, targetPathLength: 6, specials: ['sp_x', 'sp_t'],
+      }),
+    ).toThrow(/lighten the loadout/);
+  });
+
   it('a special carrying the Core is refused loudly', () => {
     const withCore = new TileLibrary([
       ...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })),

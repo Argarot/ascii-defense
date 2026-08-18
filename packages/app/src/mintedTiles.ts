@@ -12,18 +12,22 @@
  * dropped, because a "special" identical to a basic both appears unchosen
  * (as the basic, rolled normally) and clutters the picker with lookalikes.
  */
-import { canonicalizeTile, migrateLegacyCells, validateTile, type TileDef } from '@ascii-defense/engine';
+import { canonicalCells, migrateLegacyCells, validateTile, type TileDef } from '@ascii-defense/engine';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 
 const KEY = 'ascii-defense.mintedTiles.v2';
 const LEGACY_KEY = 'ascii-defense.mintedTiles.v1';
 
-const canonKey = (t: TileDef): string => canonicalizeTile(t).cells.join('/');
-const LIBRARY_FORMS = new Map<string, string>(tileLibraryJson.tiles.map((t) => [canonKey(t), t.id]));
+// Canonical form is IDENTITY, never display (playtest 14): tiles are stored
+// and shown exactly as their author drew them - a preview that silently
+// rotates someone's tile reads as the wrong sprite. The canonical KEY is
+// only ever compared.
+const canonKey = (cells: readonly string[]): string => canonicalCells(cells).join('/');
+const LIBRARY_FORMS = new Map<string, string>(tileLibraryJson.tiles.map((t) => [canonKey(t.cells), t.id]));
 
 /** The basic-library tile this shape duplicates, if any (playtest 12, item 5). */
 export function libraryTwinOf(cells: readonly string[]): string | null {
-  return LIBRARY_FORMS.get(canonicalizeTile({ id: 'probe', cells: [...cells] }).cells.join('/')) ?? null;
+  return LIBRARY_FORMS.get(canonKey(cells)) ?? null;
 }
 
 /**
@@ -59,15 +63,16 @@ export function loadMintedTiles(): TileDef[] {
     if (!Array.isArray(parsed)) return [];
     const valid = (parsed as TileDef[]).filter((t) => validateTile(t).length === 0);
     // Canonical hygiene on every read, so pre-2.24 pools heal themselves:
-    // one entry per shape, and no shape the basic library already has.
+    // one entry per shape, and no shape the basic library already has. The
+    // surviving def keeps its AUTHORED orientation - only the key is
+    // canonical.
     const seen = new Set<string>();
     const out: TileDef[] = [];
     for (const t of valid) {
-      const canon = canonicalizeTile(t);
-      const key = canon.cells.join('/');
+      const key = canonKey(t.cells);
       if (seen.has(key) || LIBRARY_FORMS.has(key)) continue;
       seen.add(key);
-      out.push(canon);
+      out.push(t);
     }
     return out;
   } catch {
@@ -76,13 +81,13 @@ export function loadMintedTiles(): TileDef[] {
 }
 
 export function addMintedTile(tile: TileDef): void {
-  // Canonical form (2.24): the same shape drawn sideways is the same tile,
-  // so it replaces its rotation-twin instead of joining it as a second
-  // asset. Overlays rotate with the cells (2.18).
-  const canon = canonicalizeTile(tile);
-  const key = canon.cells.join('/');
-  const pool = loadMintedTiles().filter((t) => t.id !== canon.id && canonicalizeTile(t).cells.join('/') !== key);
-  pool.push(canon);
+  // Canonical IDENTITY (2.24): the same shape drawn sideways is the same
+  // tile, so it replaces its rotation-twin instead of joining it as a
+  // second asset - but it is STORED as authored (playtest 14): the pool
+  // shows what the author drew, never a silently rotated version.
+  const key = canonKey(tile.cells);
+  const pool = loadMintedTiles().filter((t) => t.id !== tile.id && canonKey(t.cells) !== key);
+  pool.push(tile);
   localStorage.setItem(KEY, JSON.stringify(pool));
 }
 
