@@ -45,8 +45,8 @@ const ENEMY_LOOK: Record<string, { glyph: string; roleName: string }> = {
 
 const DESCRIBE: Record<CellType, string> = {
   G: 'ground \u00b7 buildable',
-  R: 'road \u00b7 NEVER buildable',
-  r: 'road \u00b7 NEVER buildable \u00b7 lane B',
+  X: 'road crossroads \u00b7 NEVER buildable',
+  B: 'road \u00b7 NEVER buildable \u00b7 bridge',
   '-': 'road segment \u00b7 east-west',
   '|': 'road segment \u00b7 north-south',
   L: 'road segment \u00b7 bends north-east',
@@ -57,7 +57,7 @@ const DESCRIBE: Record<CellType, string> = {
   U: 'road junction \u00b7 T \u00b7 stem north',
   E: 'road junction \u00b7 T \u00b7 opens east',
   '3': 'road junction \u00b7 T \u00b7 opens west',
-  K: 'rock \u00b7 blocked',
+  R: 'rock \u00b7 blocked',
   O: 'ore \u00b7 buildable \u00b7 a refinery here mines Ore',
   C: 'the CORE \u00b7 protect this \u00b7 every road leads here',
 };
@@ -211,7 +211,7 @@ export class BoardView {
         const hoverBg = hovered ? (state.hoverBuildable ? '#17402f' : '#2a3a4d') : undefined;
         // Boundary shading only for landmass types: roads read as routes and
         // the Core has its own look; ground/rock/ore get mass edges.
-        const shaded = kind === 'G' || kind === 'K' || kind === 'O';
+        const shaded = kind === 'G' || kind === 'R' || kind === 'O';
         const north = cy > 0 ? this.cells[(cy - 1) * this.cellsW + cx] : null;
         const south = cy + 1 < this.cellsH ? this.cells[(cy + 1) * this.cellsW + cx] : null;
         drawTerrainCell(term, kind, gx0, gy0, {

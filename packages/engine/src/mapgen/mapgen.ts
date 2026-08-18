@@ -165,8 +165,14 @@ function indexLibrary(lib: TileLibrary): {
 
   for (const id of lib.ids()) {
     const weight = lib.weightOf(id);
+    // Symmetric shapes repeat under rotation (a straight at 0 and 2 is the
+    // same tile); indexing every repeat would weight one shape twice (2.24).
+    const seenForms = new Set<string>();
     for (const rotation of [0, 1, 2, 3] as const) {
       const { cells, connectors } = lib.resolved(id, rotation);
+      const form = cells.join('/');
+      if (seenForms.has(form)) continue;
+      seenForms.add(form);
       const edges = new Set<Edge>(EDGES.filter((e) => connectors[e]));
       const hasCore = cells.some((row) => row.includes('C'));
       const hasRoad = edges.size > 0;
@@ -544,7 +550,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         if (t === 'O') {
           // Every vein is finite, dealt here so replays stay exact (sec 6).
           deposits.push({ x: cx, y: cy, amount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX), tier: 1 });
-        } else if (t === 'K' && poolSize > 0) {
+        } else if (t === 'R' && poolSize > 0) {
           const roll = rng.int(0, 99);
           const yields: RockContent['yields'] =
             roll < ROCK_ORE_CHANCE * 100 ? 'ore' : roll < (ROCK_ORE_CHANCE + ROCK_CACHE_CHANCE) * 100 ? 'cache' : 'none';

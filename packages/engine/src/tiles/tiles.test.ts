@@ -14,8 +14,8 @@ import {
 // A compact way to write grids in tests.
 const g = (...rows: string[]): string[] => rows;
 
-const CORNER = g('GGGGG', 'GGGGG', 'RRRGG', 'GGRGG', 'GGRGG'); // w + s
-const STRAIGHT = g('GGGGG', 'GGGGG', 'RRRRR', 'GGGGG', 'GGGGG'); // w + e
+const CORNER = g('GGGGG', 'GGGGG', 'XXXGG', 'GGXGG', 'GGXGG'); // w + s
+const STRAIGHT = g('GGGGG', 'GGGGG', 'XXXXX', 'GGGGG', 'GGGGG'); // w + e
 const MEADOW = g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG');
 
 describe('tile validity - the rules that make bad tiles unrepresentable', () => {
@@ -31,17 +31,17 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     expect(validateTileCells(CORNER)).toEqual([]); // w->s: both entries served
     // A road entering W and dead-ending inside is a stub the generator can
     // never place - the exact shape Tile Smith minted live (playtest 8).
-    const stub = g('GGGGG', 'GGGGG', 'RRGGG', 'GGGGG', 'GGGGG');
+    const stub = g('GGGGG', 'GGGGG', 'XXGGG', 'GGGGG', 'GGGGG');
     expect(validateTileCells(stub).join()).toMatch(/no other entry point/);
     // Border-hugging after entering no longer rescues it - still one entry.
-    const hugStub = g('GRGGG', 'GRGGG', 'RRGGG', 'GGGGG', 'GGGGG');
+    const hugStub = g('GXGGG', 'GXGGG', 'XXGGG', 'GGGGG', 'GGGGG');
     expect(validateTileCells(hugStub).join()).toMatch(/no other entry point/);
   });
 
   it('a road reaching no entry point at all is decoration, not road', () => {
-    const orphan = g('GRGGG', 'GRGGG', 'GRGGG', 'GGGGG', 'GGGGG'); // column 1, no exit
+    const orphan = g('GXGGG', 'GXGGG', 'GXGGG', 'GGGGG', 'GGGGG'); // column 1, no exit
     expect(validateTileCells(orphan).join()).toMatch(/no entry point/);
-    const blob = g('GGGGG', 'GRRGG', 'GRRGG', 'GGGGG', 'GGGGG');
+    const blob = g('GGGGG', 'GXXGG', 'GXXGG', 'GGGGG', 'GGGGG');
     expect(validateTileCells(blob).join()).toMatch(/no entry point/);
   });
 
@@ -49,10 +49,10 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     // n and s stubs, disconnected. Each derives an entry, neither leads
     // anywhere: dealt onto a road slot as a straight, the route broke at
     // boot (found live, session 14). Now invalid by construction.
-    const twoStubs = g('GGRGG', 'GGRGG', 'GGGGG', 'GGRGG', 'GGRGG');
+    const twoStubs = g('GGXGG', 'GGXGG', 'GGGGG', 'GGXGG', 'GGXGG');
     expect(validateTileCells(twoStubs).join()).toMatch(/no other entry point/);
     // Head-on different-lane stubs are the same lie in lane clothing.
-    const headOn = g('GGRGG', 'GGRGG', 'GGRGG', 'GGrGG', 'GGrGG');
+    const headOn = g('GGXGG', 'GGXGG', 'GGXGG', 'GGBGG', 'GGBGG');
     expect(validateTileCells(headOn).join()).toMatch(/no other entry point/);
   });
 
@@ -66,9 +66,9 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     expect(r1.join('')).toContain('3');
     expect(deriveConnectors(r1)).toEqual({ n: true, e: false, s: true, w: true });
     expect(rotateCells(rotateCells(tee, 3), 1)).toEqual(tee); // full turn is identity
-    // The reason Ts are NOT 'R' (Daniil): two adjacent omni cells merge;
+    // The reason Ts are NOT 'X' (Daniil): two adjacent omni cells merge;
     // a T's closed side does not - touch-without-connecting survives.
-    const denseR = g('GGRGG', 'GGRGG', 'RRRRG', 'GGRGG', 'GGRGG');
+    const denseR = g('GGXGG', 'GGXGG', 'XXXXG', 'GGXGG', 'GGXGG');
     void denseR; // (R junction tiles remain legal; Ts exist for dense maps)
   });
 
@@ -85,19 +85,35 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
   });
 
   it('rejects a core cell on any edge, even the center', () => {
-    const bad = g('GGGGG', 'GGGGG', 'CRRRR', 'GGGGG', 'GGGGG');
+    const bad = g('GGGGG', 'GGGGG', 'CXXXX', 'GGGGG', 'GGGGG');
     expect(validateTileCells(bad).join()).toMatch(/core.*edge/);
   });
 
   it('accepts an interior core block joined to the road', () => {
-    const good = g('GGGGG', 'GCCCG', 'GCCCR', 'GCCCG', 'GGGGG');
+    const good = g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG');
     expect(validateTileCells(good)).toEqual([]);
     // Core cells derive no connector: only the east road cell does.
     expect(deriveConnectors(good)).toEqual({ n: false, e: true, s: false, w: false });
   });
 
+  it('a spur off a through-road dead-ends and is rejected (2.26, playtest 11)', () => {
+    // The 2.20 entry-point rule ALONE passes this: the spur reaches both
+    // entries via the through-road. Daniil's screenshot tile, distilled.
+    const spur = g('GGGGG', 'GG|GG', '--U--', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(spur).join()).toMatch(/dead-ends/);
+    // The same shape carried to the edge centre is a T-junction: three
+    // entries, no dead end, valid.
+    const tee3 = g('GG|GG', 'GG|GG', '--U--', 'GGGGG', 'GGGGG');
+    expect(validateTileCells(tee3)).toEqual([]);
+    // Touch-without-merge interlock (the 2.23 motivating fixture) stays legal:
+    // two bent roads, each entry-to-entry, touching at back-to-back bends.
+    const interlock = g('GG|GG', 'GG|GG', '--JF-', 'GGFJG', 'GG|GG');
+    expect(validateTileCells(interlock)).toEqual([]);
+  });
+
   it('rejects unknown cell codes and malformed shapes', () => {
-    expect(validateTileCells(g('GGGGG', 'GGGGG', 'GGXGG', 'GGGGG', 'GGGGG')).join()).toMatch(/unknown type/);
+    // 'Z' is outside the alphabet ('X' used to be, until it became the crossroads).
+    expect(validateTileCells(g('GGGGG', 'GGGGG', 'GGZGG', 'GGGGG', 'GGGGG')).join()).toMatch(/unknown type/);
     expect(validateTileCells(g('GGGGG', 'GGGGG')).join()).toMatch(/5 rows/);
     expect(validateTileCells(g('GGGGG', 'GGGGG', 'GGGG', 'GGGGG', 'GGGGG')).join()).toMatch(/5 cells/);
   });
@@ -184,11 +200,11 @@ describe('placement legality', () => {
 
 describe('grown boards hold the connectivity contract (seeded, edge-biased sizes)', () => {
   const LIB_DEFS = [
-    { id: 'core', cells: g('GGGGG', 'GCCCG', 'GCCCR', 'GCCCG', 'GGGGG') },
+    { id: 'core', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
     { id: 'straight', cells: STRAIGHT },
     { id: 'corner', cells: CORNER },
-    { id: 'tee', cells: g('GGGGG', 'GGGGG', 'RRRRR', 'GGRGG', 'GGRGG') },
-    { id: 'cross', cells: g('GGRGG', 'GGRGG', 'RRRRR', 'GGRGG', 'GGRGG') },
+    { id: 'tee', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGXGG', 'GGXGG') },
+    { id: 'cross', cells: g('GGXGG', 'GGXGG', 'XXXXX', 'GGXGG', 'GGXGG') },
     { id: 'meadow', cells: MEADOW },
   ];
   const lib = new TileLibrary(LIB_DEFS);
@@ -226,8 +242,8 @@ describe('grown boards hold the connectivity contract (seeded, edge-biased sizes
             if (tx + 1 < w && slotAt(board, tx + 1, ty)) {
               for (let cy = 0; cy < 5; cy++) {
                 const yy = ty * 5 + cy;
-                const east = at(tx * 5 + 4, yy) === 'R';
-                const west = at((tx + 1) * 5, yy) === 'R';
+                const east = at(tx * 5 + 4, yy) === 'X';
+                const west = at((tx + 1) * 5, yy) === 'X';
                 expect(east).toBe(west); // both center (matched) or both non-road
               }
             }
@@ -235,16 +251,16 @@ describe('grown boards hold the connectivity contract (seeded, edge-biased sizes
             if (ty + 1 < h && slotAt(board, tx, ty + 1)) {
               for (let cx = 0; cx < 5; cx++) {
                 const xx = tx * 5 + cx;
-                const south = at(xx, ty * 5 + 4) === 'R';
-                const north = at(xx, (ty + 1) * 5) === 'R';
+                const south = at(xx, ty * 5 + 4) === 'X';
+                const north = at(xx, (ty + 1) * 5) === 'X';
                 expect(south).toBe(north);
               }
             }
             // No road on a world-facing border.
-            if (tx === 0) for (let cy = 0; cy < 5; cy++) expect(at(0, ty * 5 + cy)).not.toBe('R');
-            if (tx === w - 1) for (let cy = 0; cy < 5; cy++) expect(at(W - 1, ty * 5 + cy)).not.toBe('R');
-            if (ty === 0) for (let cx = 0; cx < 5; cx++) expect(at(tx * 5 + cx, 0)).not.toBe('R');
-            if (ty === h - 1) for (let cx = 0; cx < 5; cx++) expect(at(tx * 5 + cx, h * 5 - 1)).not.toBe('R');
+            if (tx === 0) for (let cy = 0; cy < 5; cy++) expect(at(0, ty * 5 + cy)).not.toBe('X');
+            if (tx === w - 1) for (let cy = 0; cy < 5; cy++) expect(at(W - 1, ty * 5 + cy)).not.toBe('X');
+            if (ty === 0) for (let cx = 0; cx < 5; cx++) expect(at(tx * 5 + cx, 0)).not.toBe('X');
+            if (ty === h - 1) for (let cx = 0; cx < 5; cx++) expect(at(tx * 5 + cx, h * 5 - 1)).not.toBe('X');
           }
       }
     }
@@ -266,7 +282,7 @@ describe('grown boards hold the connectivity contract (seeded, edge-biased sizes
       const route = new Set<number>();
       let start = -1;
       for (let i = 0; i < cells.length; i++) {
-        if (cells[i] === 'R' || cells[i] === 'C') route.add(i);
+        if (cells[i] === 'X' || cells[i] === 'C') route.add(i);
         if (cells[i] === 'C') start = i;
       }
       expect(start).toBeGreaterThanOrEqual(0);

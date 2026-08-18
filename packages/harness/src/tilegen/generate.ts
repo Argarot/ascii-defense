@@ -5,11 +5,11 @@
  * goes from hand-authored to hundreds for the cost of a script - and every
  * survivor is legal by the exact function the game loads with.
  *
- * Junctions (3-4 edges) use 'R' (omni) at the joint; path bodies use
+ * Junctions (3-4 edges) use 'X' (omni) at the joint; path bodies use
  * '-|LJF7', computed from each cell's neighbours in the path, so a wiggly
  * road that runs beside itself touches without merging.
  */
-import { TILE_SIZE, validateTileCells, tilePartition, deriveConnectors, type Edge } from '@ascii-defense/engine';
+import { TILE_SIZE, canonicalCells, validateTileCells, tilePartition, deriveConnectors, type Edge } from '@ascii-defense/engine';
 import { createRng, type RngStream } from '@ascii-defense/engine';
 
 const CENTER = (TILE_SIZE - 1) / 2;
@@ -85,15 +85,22 @@ export interface GeneratedTile {
   cells: string[];
 }
 
-/** Generate up to `perSig` valid variants for every 2-4 edge signature. */
+/**
+ * Generate up to `perSig` valid variants per SHAPE CLASS. A tile and its
+ * rotations are one tile (2.24), so the old eleven per-signature families
+ * collapse to four canonical classes - the generator's index re-derives
+ * every orientation at deal time, so nothing is lost, and no shape enters
+ * the pool four times just for being drawn sideways.
+ */
 export function generateVariants(seed: number, perSig: number): GeneratedTile[] {
   const rng = createRng(seed).stream('map');
   const out: GeneratedTile[] = [];
   const seen = new Set<string>();
 
   const SIGS: Edge[][] = [
-    ['n', 's'], ['e', 'w'], ['n', 'e'], ['n', 'w'], ['s', 'e'], ['s', 'w'],
-    ['n', 'e', 's'], ['n', 'e', 'w'], ['n', 's', 'w'], ['e', 's', 'w'],
+    ['n', 's'],
+    ['n', 'e'],
+    ['n', 'e', 's'],
     ['n', 'e', 's', 'w'],
   ];
 
@@ -106,10 +113,10 @@ export function generateVariants(seed: number, perSig: number): GeneratedTile[] 
         const path = wanderPath(rng, EDGE_CELL[sig[0]], EDGE_CELL[sig[1]]);
         ok = path !== null && encode(grid, path);
       } else {
-        // Junction tiles: an omni 'R' joint near the middle, one path per edge.
+        // Junction tiles: an omni 'X' joint near the middle, one path per edge.
         const jx = CENTER + rng.int(-1, 1);
         const jy = CENTER + rng.int(-1, 1);
-        grid[jy][jx] = 'R';
+        grid[jy][jx] = 'X';
         for (const e of sig) {
           const path = wanderPath(rng, EDGE_CELL[e], [jx, jy]);
           if (path === null || !encode(grid, path.slice(0, -1))) {
@@ -117,21 +124,24 @@ export function generateVariants(seed: number, perSig: number): GeneratedTile[] 
             break;
           }
           // The cell beside the joint must port INTO the joint; wanderPath's
-          // last body cell already faces it, and R accepts from any side.
+          // last body cell already faces it, and X accepts from any side.
         }
       }
       if (!ok) continue;
       const cells = grid.map((r) => r.join(''));
-      const key = cells.join('/');
-      if (seen.has(key)) continue;
       if (validateTileCells(cells).length !== 0) continue;
       if (tilePartition(cells).length !== 1) continue; // routing tiles route
       const conn = deriveConnectors(cells);
       const gotSig = (['n', 'e', 's', 'w'] as Edge[]).filter((e) => conn[e]).sort().join('');
       if (gotSig !== [...sig].sort().join('')) continue; // exactly the asked edges
+      // Dedup and store by CANONICAL form: the same shape found sideways in
+      // a later attempt is the same tile, not a second asset.
+      const canon = canonicalCells(cells);
+      const key = canon.join('/');
+      if (seen.has(key)) continue;
       seen.add(key);
       made++;
-      out.push({ id: `gen_${sig.join('')}_${made}`, cells });
+      out.push({ id: `gen_${sig.join('')}_${made}`, cells: canon });
     }
   }
   return out;

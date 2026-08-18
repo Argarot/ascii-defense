@@ -301,7 +301,7 @@ function assemble(ui: UiState): FrameSnapshot {
       buildTargetSelected: buildTarget,
       core: coreInfo,
       cache: selected && sim.cacheAt(selected.x, selected.y) ? { cost: CACHE_CLAIM_COST, affordable: sim.scrap >= CACHE_CLAIM_COST } : null,
-      rock: selected && sim.cellAt(selected.x, selected.y) === 'K'
+      rock: selected && sim.cellAt(selected.x, selected.y) === 'R'
         ? {
             cost: PROSPECT_COST,
             affordable: sim.scrap >= PROSPECT_COST,

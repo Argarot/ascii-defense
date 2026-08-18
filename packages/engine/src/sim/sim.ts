@@ -372,8 +372,8 @@ export class Sim {
     const minesOre = (def.production?.ore ?? 0) > 0;
     if (minesOre) return cell === 'O'; // refineries live on veins, full stop
     if (cell === 'G') return true;
-    if (cell === 'K') return this.fold.buildOnRock; // Vein Tap
-    return false; // O is Refinery ground; R and C are never buildable
+    if (cell === 'R') return this.fold.buildOnRock; // Vein Tap
+    return false; // O is Refinery ground; road and C are never buildable
   }
 
   buildTower(x: number, y: number, defId: string): boolean {
@@ -647,7 +647,7 @@ export class Sim {
    */
   prospect(x: number, y: number): boolean {
     if (this.status !== 'running') return false;
-    if (this.cellAt(x, y) !== 'K') return false;
+    if (this.cellAt(x, y) !== 'R') return false;
     const k = y * this.opts.cellsW + x;
     if (this.prospectJobs.has(k)) return false;
     if (this.scrap < PROSPECT_COST) return false;
@@ -712,7 +712,7 @@ export class Sim {
         for (let dx = -2; dx <= 2; dx++) {
           const rx = t.cellX + dx;
           const ry = t.cellY + dy;
-          if (this.cellAt(rx, ry) !== 'K') continue;
+          if (this.cellAt(rx, ry) !== 'R') continue;
           const rk = ry * this.opts.cellsW + rx;
           if (this.prospectJobs.has(rk)) continue;
           this.prospectJobs.set(rk, PROSPECT_TICKS);

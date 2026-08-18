@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "ascii-defense/tiles.schema.json",
   "title": "TileLibrary",
-  "description": "Terrain tile library. A tile is a 5x5 grid of cell codes (G ground, R road, K rock, O ore, C core). Edge connectors are DERIVED from the grid - roads may cross an edge only at its center cell - so there is no conn field to disagree with the drawing. Semantic rules (center-or-nothing, route continuity, interior spawns) are enforced by engine validateTile, run over this file in CI.",
+  "description": "Terrain tile library. A tile is a 5x5 grid of cell codes (G ground, R rock, O ore, C core; roads as port segments - | L J F 7 T U E 3, X omni crossroads, B bridge). Edge connectors are DERIVED from the grid - roads may cross an edge only at its center cell - so there is no conn field to disagree with the drawing. Semantic rules (center-or-nothing, route continuity, interior spawns) are enforced by engine validateTile, run over this file in CI.",
   "type": "object",
   "required": [
     "tiles"
@@ -36,7 +36,7 @@
             "maxItems": 5,
             "items": {
               "type": "string",
-              "pattern": "^[GRrKOCTUE3\\-|LJF7]{5}$"
+              "pattern": "^[GXBROCTUE3\\-|LJF7]{5}$"
             }
           },
           "weight": {

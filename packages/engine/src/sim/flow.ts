@@ -4,8 +4,8 @@
  * queue would be ceremony. Recomputed on map changes only, never per tick.
  *
  * Since session 14 the route is a GRAPH, not raw cell adjacency (PRD sec
- * 4.2.1): within a tile, road cells join only when their LANES join ('R'
- * with 'R', 'r' with 'r', Core with anything); across a tile boundary, the
+ * 4.2.1): within a tile, road cells join only when their PORTS face (and
+ * the two omnis 'X'/'B' never join each other); across a tile boundary, the
  * only legal step is between the two edge-centre cells of tiles whose
  * connectors both derive - i.e. an actual crossing. Two roads touching any
  * other way are TOUCHING, not connected. The `allowed` mask carries the

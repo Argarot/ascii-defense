@@ -65,6 +65,28 @@ export function rotateCells(cells: readonly string[], k: Rotation): string[] {
 }
 
 /**
+ * A tile and its 90-degree rotations are ONE tile (2.24, Daniil playtest 9):
+ * the canonical form is the lexicographically smallest of the four
+ * rotations, so any two orientations of one shape reduce to the same
+ * asset. The generator already deals all four rotations of everything, so
+ * canonicalising costs nothing at play time - it only stops one shape
+ * being stored, and therefore weighted, four times.
+ */
+export function canonicalCells(cells: readonly string[]): string[] {
+  let best = cells.slice();
+  let bestKey = best.join('/');
+  for (const k of [1, 2, 3] as const) {
+    const rot = rotateCells(cells, k);
+    const rotKey = rot.join('/');
+    if (rotKey < bestKey) {
+      best = rot;
+      bestKey = rotKey;
+    }
+  }
+  return best;
+}
+
+/**
  * Derive connectors from a grid - DIRECTIONALLY (PRD sec 4.2.1, Daniil's
  * insight): an edge carries a crossing only when its centre cell is road AND
  * the cell just inside continues that road inward (same lane, or Core). A
@@ -187,6 +209,61 @@ export function validateTileCells(cells: readonly string[]): string[] {
       }
     }
 
+  // -- no dead ends (2.26, Daniil playtest 11) -------------------------------
+  // The entry-point rule admits a SPUR: a stub hanging off a through-road
+  // reaches entries via that road, so it passes while visibly leading
+  // nowhere. Tighten: every road cell must lie on a route between two
+  // terminals - entries, or the Core, the route's licensed terminus.
+  // Mechanically: iteratively strip road cells that are neither terminal
+  // nor linked to 2+ surviving road cells. Cycles survive (a loop is
+  // drivable); stubs cannot. Gated on the component checks passing so a
+  // broken component reports once, not once per cell.
+  if (errors.length === 0) {
+    const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
+    const alive = new Set<number>();
+    const roadCells: [number, number][] = [];
+    for (let y = 0; y < TILE_SIZE; y++)
+      for (let x = 0; x < TILE_SIZE; x++)
+        if (isRoad(cellAt(cells, x, y))) {
+          roadCells.push([x, y]);
+          alive.add(key(x, y));
+        }
+    const isTerminal = (x: number, y: number): boolean => {
+      if (entryKeys.has(key(x, y))) return true;
+      for (const [dx, dy] of DIRS4) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) continue;
+        if (cellAt(cells, nx, ny) === 'C') return true; // road ends AT the Core
+      }
+      return false;
+    };
+    let pruned = true;
+    while (pruned) {
+      pruned = false;
+      for (const [x, y] of roadCells) {
+        if (!alive.has(key(x, y)) || isTerminal(x, y)) continue;
+        let links = 0;
+        for (const [dx, dy] of DIRS4) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= TILE_SIZE || ny >= TILE_SIZE) continue;
+          if (!alive.has(key(nx, ny))) continue;
+          if (roadsConnect(cellAt(cells, x, y), cellAt(cells, nx, ny), dx, dy)) links++;
+        }
+        if (links <= 1) {
+          alive.delete(key(x, y));
+          pruned = true;
+        }
+      }
+    }
+    for (const [x, y] of roadCells) {
+      if (!alive.has(key(x, y))) {
+        errors.push(`road at (${x},${y}) dead-ends - it lies on no route between two entries`);
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -246,7 +323,7 @@ export function partitionKey(groups: readonly (readonly Edge[])[]): string {
 /**
  * Which sides of a road cell are CLOSED, as bits N=1 E=2 S=4 W=8 - the mask
  * the view draws kerbs from. Derived from actual connectivity, never from a
- * cell's declared ports: an omni 'R' junction claims all four sides but only
+ * cell's declared ports: an omni 'X' junction claims all four sides but only
  * connects where a neighbour answers, and drawing its declared ports left
  * junctions with no boundary at all (Daniil, playtest 6).
  *

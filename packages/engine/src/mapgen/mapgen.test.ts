@@ -9,17 +9,17 @@ import { computeFlowField } from '../sim/flow';
 // stay hermetic (engine may not import content).
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
-  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCR', 'GCCCG', 'GGGGG') },
-  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCR', 'GCCCG', 'GGRGG') },
-  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'RCCCR', 'GCCCG', 'GGGGG') },
-  { id: 'core_t', cells: g('GGRGG', 'GCCCG', 'RCCCR', 'GCCCG', 'GGGGG') },
-  { id: 'core_x', cells: g('GGRGG', 'GCCCG', 'RCCCR', 'GCCCG', 'GGRGG') },
-  { id: 'straight', cells: g('GGGGG', 'GGGGG', 'RRRRR', 'GGGGG', 'GGGGG') },
-  { id: 'corner', cells: g('GGGGG', 'GGGGG', 'RRRGG', 'GGRGG', 'GGRGG') },
-  { id: 'tee', cells: g('GGGGG', 'GGGGG', 'RRRRR', 'GGRGG', 'GGRGG') },
-  { id: 'cross', cells: g('GGRGG', 'GGRGG', 'RRRRR', 'GGRGG', 'GGRGG') },
+  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
+  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGXGG') },
+  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
+  { id: 'core_t', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
+  { id: 'core_x', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGXGG') },
+  { id: 'straight', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGGGG', 'GGGGG') },
+  { id: 'corner', cells: g('GGGGG', 'GGGGG', 'XXXGG', 'GGXGG', 'GGXGG') },
+  { id: 'tee', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGXGG', 'GGXGG') },
+  { id: 'cross', cells: g('GGXGG', 'GGXGG', 'XXXXX', 'GGXGG', 'GGXGG') },
   { id: 'meadow', cells: g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG') },
-  { id: 'ore_pocket', cells: g('GGGGG', 'GOOGG', 'GOOOG', 'KGOGG', 'GGGGG') },
+  { id: 'ore_pocket', cells: g('GGGGG', 'GOOGG', 'GOOOG', 'RGOGG', 'GGGGG') },
 ]);
 
 // Edge-biased: tiny boards where the walker gets cornered, up to demo scale
@@ -79,7 +79,7 @@ describe('map generation v2 - trees, void, spread', () => {
         expect(map.entries.length, JSON.stringify(opts)).toBe(opts.entries);
         for (const e of map.entries) {
           expect(e.x === 0 || e.y === 0 || e.x === W - 1 || e.y === H - 1).toBe(true);
-          expect(cells[e.y * W + e.x]).toBe('R');
+          expect(cells[e.y * W + e.x]).toBe('X');
         }
         expect(new Set(map.entries.map((e) => `${e.x},${e.y}`)).size).toBe(opts.entries);
       }
@@ -128,7 +128,7 @@ describe('map generation v2 - trees, void, spread', () => {
 
         expect(cells[map.core.y * W + map.core.x]).toBe('C');
         const route = new Set<number>();
-        for (let i = 0; i < cells.length; i++) if (cells[i] === 'R' || cells[i] === 'C') route.add(i);
+        for (let i = 0; i < cells.length; i++) if (cells[i] === 'X' || cells[i] === 'C') route.add(i);
         const start = map.core.y * W + map.core.x;
         const seen = new Set<number>([start]);
         const stack = [start];
@@ -259,8 +259,8 @@ describe('map generation v2 - trees, void, spread', () => {
         if (tx + 1 < opts.width && east)
           for (let cy = 0; cy < TILE_SIZE; cy++) {
             const yy = ty * TILE_SIZE + cy;
-            expect(cells[yy * W + tx * TILE_SIZE + TILE_SIZE - 1] === 'R').toBe(
-              cells[yy * W + (tx + 1) * TILE_SIZE] === 'R',
+            expect(cells[yy * W + tx * TILE_SIZE + TILE_SIZE - 1] === 'X').toBe(
+              cells[yy * W + (tx + 1) * TILE_SIZE] === 'X',
             );
           }
       }
@@ -295,7 +295,7 @@ describe('lane tiles vs the generator (session 14)', () => {
     // live - the boot crashed). The index must refuse it road duty.
     const withLanes = new TileLibrary([
       ...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })),
-      { id: 'twin_stub', cells: ['GGRGG', 'GGRGG', 'GGGGG', 'GGrGG', 'GGrGG'] },
+      { id: 'twin_stub', cells: ['GGXGG', 'GGXGG', 'GGGGG', 'GGBGG', 'GGBGG'] },
     ]);
     for (let seed = 1; seed <= 20; seed++) {
       const map = generateMap(createRng(seed * 11).stream('map'), withLanes, { width: 8, height: 5, entries: 3, targetPathLength: 8 });

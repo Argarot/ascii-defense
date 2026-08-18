@@ -13,9 +13,9 @@ export const CELL_H = 3;
 
 export const POOLS: Record<CellType, string> = {
   G: "          .'`,\u2800\u2801\u2802\u2804\u2808\u2810\u2820\u2840\u2880\u2803\u2809",
-  R: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
-  K: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
-  r: ':;.,=⠉⠒⠤⠶⠛⠿-_~⠐⠠',
+  X: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
+  R: '#%@&\u28ff\u287f\u28bf\u28fb\u28fd\u28fe\u28f7$WMB\u28f6\u28ef',
+  B: ':;.,=⠉⠒⠤⠶⠛⠿-_~⠐⠠',
   '-': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   '|': ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
   L: ':;.,=\u2809\u2812\u2824\u2836\u281b\u283f-_~\u2810\u2820',
@@ -32,8 +32,8 @@ export const POOLS: Record<CellType, string> = {
 
 export const TERRAIN_KEY: Record<CellType, string> = {
   G: 'ground',
-  R: 'road',
-  r: 'road',
+  X: 'road',
+  B: 'road',
   '-': 'road',
   '|': 'road',
   L: 'road',
@@ -44,7 +44,7 @@ export const TERRAIN_KEY: Record<CellType, string> = {
   U: 'road',
   E: 'road',
   '3': 'road',
-  K: 'rock',
+  R: 'rock',
   O: 'ore',
   C: 'core',
 };
@@ -108,7 +108,7 @@ export function drawTerrainCell(
   const richness = kind === 'O' ? (shade.richness ?? 1) : 1;
   // Closed-side mask (N=1 E=2 S=4 W=8) comes from the CALLER, which knows the
   // neighbours - the board reads it off the route graph, Tile Smith off the
-  // tile. Deriving it here from ROAD_PORTS was the playtest-6 bug: omni 'R'
+  // tile. Deriving it here from ROAD_PORTS was the playtest-6 bug: omni 'X'
   // junctions declare all four sides and so were drawn with no kerb at all.
   const rim = ROAD_PORTS[kind] === undefined ? 0 : (shade.rim ?? 0);
   const kerb = role('terrain.rock.lit');

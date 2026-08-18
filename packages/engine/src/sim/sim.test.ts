@@ -9,15 +9,15 @@ import type { EnemyDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
-  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCR', 'GCCCG', 'GGGGG') },
-  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCR', 'GCCCG', 'GGRGG') },
-  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'RCCCR', 'GCCCG', 'GGGGG') },
-  { id: 'core_t', cells: g('GGRGG', 'GCCCG', 'RCCCR', 'GCCCG', 'GGGGG') },
-  { id: 'core_x', cells: g('GGRGG', 'GCCCG', 'RCCCR', 'GCCCG', 'GGRGG') },
-  { id: 'straight', cells: g('GGGGG', 'GGGGG', 'RRRRR', 'GGGGG', 'GGGGG') },
-  { id: 'corner', cells: g('GGGGG', 'GGGGG', 'RRRGG', 'GGRGG', 'GGRGG') },
-  { id: 'tee', cells: g('GGGGG', 'GGGGG', 'RRRRR', 'GGRGG', 'GGRGG') },
-  { id: 'cross', cells: g('GGRGG', 'GGRGG', 'RRRRR', 'GGRGG', 'GGRGG') },
+  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
+  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGXGG') },
+  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
+  { id: 'core_t', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
+  { id: 'core_x', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGXGG') },
+  { id: 'straight', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGGGG', 'GGGGG') },
+  { id: 'corner', cells: g('GGGGG', 'GGGGG', 'XXXGG', 'GGXGG', 'GGXGG') },
+  { id: 'tee', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGXGG', 'GGXGG') },
+  { id: 'cross', cells: g('GGXGG', 'GGXGG', 'XXXXX', 'GGXGG', 'GGXGG') },
   { id: 'meadow', cells: g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG') },
   { id: 'ore_patch', cells: g('GGGGG', 'GOOGG', 'GOOGG', 'GGGGG', 'GGGGG') },
 ]);
@@ -80,7 +80,7 @@ function buildSpotNear(cells: readonly (string | null)[], W: number, H: number, 
       const nearRoad = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
         const nx = x + dx;
         const ny = y + dy;
-        return nx >= 0 && ny >= 0 && nx < W && ny < H && cells[ny * W + nx] === 'R';
+        return nx >= 0 && ny >= 0 && nx < W && ny < H && cells[ny * W + nx] === 'X';
       });
       if (nearRoad && seen++ === nth) return { x, y };
     }
@@ -129,7 +129,7 @@ describe('walkers', () => {
       for (let i = 0; i < 64; i++) {
         if (!sim.alive[i]) continue;
         const cell = cells[Math.floor(sim.posY[i]) * cellsW + Math.floor(sim.posX[i])];
-        expect(cell === 'R' || cell === 'C').toBe(true);
+        expect(cell === 'X' || cell === 'C').toBe(true);
       }
     }
   });
@@ -532,8 +532,8 @@ describe('the route is a graph - touching is not connecting (session 14)', () =>
     // Their road columns are physically adjacent across the tile boundary.
     const W = 10, H = 5;
     const cells: (import('../grid/cells').CellType | null)[] = [];
-    const A = ['GGRRR', 'GGRGR', 'GGGGR', 'GGGGR', 'GGGGR'];
-    const B = ['RRRGG', 'RGRGG', 'RGGGG', 'RGGGG', 'RGGGG'];
+    const A = ['GGXXX', 'GGXGX', 'GGGGX', 'GGGGX', 'GGGGX'];
+    const B = ['XXXGG', 'XGXGG', 'XGGGG', 'XGGGG', 'XGGGG'];
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < 5; x++) cells.push(A[y][x] as import('../grid/cells').CellType);
       for (let x = 0; x < 5; x++) cells.push(B[y][x] as import('../grid/cells').CellType);
