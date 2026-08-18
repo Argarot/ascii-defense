@@ -1,4 +1,4 @@
-# Handover — state as of 2026-08-17 (end of day; sessions 1–18 + session 19 opened)
+# Handover — state as of 2026-08-18 (end of day; session 19 + four playtest rounds)
 
 > **Updated once per working day** (Daniil). State and seams only; sequencing
 > lives in the roadmap ledger, the checklist in the WBS, requests in the WBS
@@ -15,88 +15,109 @@ Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always).
 
 ## Where the project is
 
-Sessions 16–18 shipped in one day (PRs #69–#76): the **effects & animation
-engine** (typed `Sim.events` feed, view-side `EffectsLayer`, sprite frame
-model, terrain drift, void-as-water, reduced motion from day one), **combat
-truth** (ballistic Mortar, shots that always resolve, one blast radius driving
-damage + visual + readout), **legibility** (stat blocks, written upgrade
-descriptions, enemy-as-readout, square relic slots, scrollable panel), and
-**the shell** (sim in a Web Worker, screen stack, title / setup / pause /
-summary, saves that are replays, export/import, settings).
+Session 19 shipped in one day across PRs #79–#86: the **Tile Smith done
+properly** (explicit brush matrix in Daniil's 4×4 layout — his verdict given:
+"this is good"), 2.26 validity (no roads to nowhere), 2.24 rotation-canonical
+pools, the **cell nomenclature migration** (`X` crossroads, `R` rock, `B`
+bridge), the **bridge as a real mechanic** (strand nodes end to end — 4.9
+pulled forward), **2.21 + 2.18 map agency** (minted tiles are the special
+pool; visual loadout picker; guaranteed placement; overlay authoring), the
+**shoreline**, **terrain-as-content** (glyph pools live in
+`content/assets/terrain/appearance.json` — a graphics pack is content files
+only), and four playtest fix rounds that ended in the **anchor rework**: road
+specials place first as anchors, ONE arm per road segment joins the tree,
+every other arm exits the board as a NEW entry. **No loops, ever** — the road
+is a tree on every map, property-tested with anchors woven in.
 
-**The semi-stable alpha marker is NOT crossed.** The machinery exists; the
-judgement is Daniil's and he has not given it. The dev announced it on merging
-session 18 and was corrected — a milestone is not a checklist of merged PRs.
+**The day ended on Daniil's structural verdict (playtest 16):** *"we seem to
+be drifting into 'pile of patches that becomes pile of garbage' territory."*
+Three fix rounds on mapgen in one day is the tell from CLAUDE.md — the fix
+was never the problem. **Patching is STOPPED by agreement.** Three fresh bugs
+are deliberately UNFIXED and reserved as regression fixtures (WBS 2.27):
+boon ground on void; a loadout case generating without its bridge specials
+(no error surfaced); quit-mid-game → NEW RUN returns the paused game.
 
-**Daniil's verdict on the day's back half**, which matters more than the
-feature list: *"quite disappointingly underwhelming with the ratio of what's
-actually done to bugs surfaced."* Every session closed its gate and also
-handed him a defect list; he became QA for work he was meant to be judging.
-The remedy under consideration — **smaller slices, each with a playable check,
-and no new feature while a reported defect is open** — is a proposal to agree
-with him, not a decision already taken.
-
-**NEXT: session 19 — the Tile Smith, done properly.** Nothing else in that row
-starts until Daniil says the smith works.
+**NEXT: session 20 — the backbone reassessment (WBS 2.27).** It OPENS WITH A
+CONVERSATION, not code: the generator specification first. Daniil chose a
+fresh-context session over same-day triage. The gate is his: he generates and
+plays loadout-heavy runs without producing a defect list.
 
 ## Fresh-context warnings (beyond CONTRIBUTING)
 
-- **A pushback is a claim, and claims get verified.** Twice in one day the dev
-  pushed back on Daniil's design with something structurally worse ("a T is
-  just `R`" — refuted by a 30-second ports check; then neighbourhood
-  inference — which *cannot* express touch-without-merge). Before sending a
-  pushback: name the requirement it must satisfy, and test it in code.
-- **Verify the experience, not the mechanism.** Hashes, event counts and
-  synthetic clicks all passed while shipping a Tile Smith nobody can use and
-  menus with clipped text. For a tool or a screen, operate it as the user
-  would and *look at it* — the screenshot Daniil sends is the check that
-  should have run first.
-- **When the cell alphabet or any model grows, the authoring surface grows
-  with it in the same commit.** This rule was written into POSTMORTEM and
-  violated hours later (T-types shipped with no smith brushes).
-- **Verify UI on GPU pixels** (`gl.readPixels` after a synchronous draw) or
-  `toText()`, never screenshots in the hidden pane.
-- **Scripted regex edits of source keep misfiring.** Edit tool for code;
-  scripts for JSON/content. (Cost a stray brace deletion again today.)
-- The golden replay hash moves ONLY with a stated reason in the same commit.
-  It moved once today: `3768274921 → 2003059284`, WBS 2.19, reason in the test.
-- `__ad` is now **async** (the sim answers from its worker): `await
-  __ad.step(n)`, `hash()`, `events()`, `enemies()`, `build()`, `canBuild()`,
-  `cellAt()`, `offer()`, `pick()`, `relics()`, `replay()`, `ore()`; sync:
-  `hudText()`, `boardText()`, `select()`, `mode()`, `motion()`.
+- **Do not fix the three reserved bugs piecemeal.** They are the
+  reassessment's acceptance material; a quick patch destroys the evidence
+  and repeats the exact failure mode that forced the pause.
+- **The phantom-resume bug may explain the missing-bridges bug.** Suspicion
+  (UNPROVEN, recorded as such): a worker crash mid-`init` leaves the main
+  thread rendering the old sim with no error — "new game" then shows an old
+  map, which reads as "my specials are missing". One candidate: `new
+  TileLibrary()` throws on duplicate ids outside `newRun`'s try. Verify
+  before believing; triage first, in the spec's terms.
+- **Daniil's generator rules are the spec's core, verbatim from playtest 15:**
+  one core near center; selected specials placed; all roads form paths
+  entry→core; exactly one way per entry (no loops — "bloat the enemies
+  ignore"); entries may move/appear/disappear during generation; basics,
+  specials and the core may all be rearranged to satisfy the rules; void
+  only >3 slots from road. He wrote these unprompted — ask him for missing
+  constraints rather than guessing; he has them.
+- **Run identity is a design question, not a URL.** Daniil rejected `?seed=`
+  as the deterministic-map mechanism (a roguelite always has modifiers).
+  The honest object is the run record (seed + loadout + threat + inputs),
+  already in `RunSave` v2. Design the shareable form in the spec session.
+- **A pushback and a chosen design are both claims — verify against the
+  requirement before building.** Today's win: the handshake-lemma check
+  between Daniil's option pick and the build reversed an insufficient
+  design (anchor-first alone cannot host junctions on a tree). Today's
+  loss, twice: fixing a bug other than the reported one because the
+  reproduction used my artifacts, not the reporter's class (segment-built
+  vs omni-built tiles). Reproduce with the REPORTER's artifact class.
+- **Glyphs in UI strings are content against the font.** `»` does not exist
+  in spleen and GLTerm silently draws nothing — that was an entire
+  "selection has no visible effect" bug. CONTRIBUTING lists the missing
+  Latin-1 set; check it before shipping any new UI marker.
+- **readPixels without a synchronous draw reads a cleared buffer** — zero
+  pixels, no error, and it nearly diagnosed a working feature as missing.
+  `toText()` first, always.
+- The golden replay hash moved once today with its reason recorded
+  (`2003059284 → 185380119`, outer fill ring always places terrain —
+  playtest 12). It is currently stable; it moves only with a stated reason
+  in the same commit.
 
-## Key seams for session 19
+## Key seams for session 20 (the reassessment)
 
-- **`packages/app/src/tilesmith.ts`** — the file to rework. It currently holds
-  the abandoned inference (`inferRoads`, `SHAPE_BY_MASK`, the single ROAD
-  brush): **delete that, do not extend it.** Brushes become one button per
-  cell type in a grouped matrix. `BRUSH_LABEL`/`BRUSH_BG` are the tables to
-  widen; the paint path is the canvas click handler; `update()` is the single
-  render path and stays that way.
-- **Why explicit types are non-negotiable**: a segment type *is* its port mask
-  (`ROAD_PORTS` in `packages/engine/src/grid/cells.ts`). `|` beside `|` touch
-  and stay separate because neither has an E/W port. Any rule that derives
-  ports from adjacency destroys exactly that.
-- **`validateTileCells`** (`packages/engine/src/tiles/tile.ts`) — the entry-
-  point rule lives here and is where 2.26 tightens (every road cell on a route
-  between two distinct entries). `twin_bend` is the fixture that punishes a
-  careless formulation — verify against the whole shipped library before
-  adopting a rule, as was done for 2.20.
-- **Rotation (2.24)**: the generator's index already resolves and deals all
-  four rotations (`indexLibrary` in `mapgen.ts` loops `[0,1,2,3]`). The
-  missing half is pool-level dedup — canonical form, tilegen collapsing its
-  four orientation families, minted pool canonicalising.
-- The smith renders through the same `drawTerrainCell` the board uses, so the
-  visual tile picker (2.21) is nearly free.
+- **`packages/engine/src/mapgen/mapgen.ts`** — the whole file is the
+  subject. Current shape: ~nine sequential passes (core jitter → tree carve
+  with tunnels/availability gates → anchor placement with join/entry arms →
+  slot-dist BFS → enclosed-void fill → void cap → ore floor → filler rolls →
+  overlay/cache/boon deals). Each pass is a playtest response; pass ORDER
+  carries unstated invariants — that coupling is what Daniil called the
+  pile. The spec goes in front of it; a final single `verifyMap()` checking
+  every invariant is the likely first artifact, run in tests AND at the end
+  of generation.
+- **`packages/app/src/simWorker.ts`** — `newRun` + the `onmessage` switch is
+  the lifecycle to respecify: what may throw, where, and what the main
+  thread hears in every case. Note `lib`/`loadout` are module-`let`s
+  mutated per init — state that survives a failed init is exactly the
+  phantom-resume shape.
+- **`packages/app/src/main.ts`** — mode transitions live in `menuAction` +
+  `worker.onmessage`; `'start'`/`'again'`/`'continue'`/genError are the
+  paths the state machine must cover. `__ad.menu()/modalText()/setupState()`
+  drive screens headlessly for verification.
+- **Property tests to build on**: `mapgen.test.ts` already asserts the tree
+  (`roadGraph` helper, |E|=|V|−1) with anchors, entry-count growth, void
+  rules (far/outside/bounded), specials exactly-once, bridge anchoring.
+  The three reserved bugs become new named tests beside these.
+- **`packages/engine/src/tiles/tile.ts`** — `nodeStep`/strand graph, the
+  validity floods and `canonicalCells/canonicalizeTile`; stable, tested,
+  and NOT the reassessment's subject. Same for the view.
 
 ## Standing open items
 
-- 2.18 Tile Smith overlay authoring (per-tile ore richness, boons) — rides
-  session 19 since both rework the tile format.
-- 4.12 — two of Daniil's playtest-1 visual items (V8, V9) are **lost**; ask
-  him to restate them at the next playtest, then write or retire the ID.
+- 4.12 — Daniil's playtest-1 visual items V8, V9 are **lost**; ask him to
+  restate at a playtest, then write or retire the ID.
+- Shore palette reads as ore (gold on gold) — art-pass note on 6.6.
 - Relic rebalance for duplicate stacking (accepted as a later session).
-- D8 naming mini-session (printing-trade lexicon) opens session 20.
-- ASSETS.md not audited since D3 closed — audit it in the art session.
-- The REXPaint art pipeline is still **unproven**; both tools are unwritten
-  and 6.1 opens session 29. Accepted risk, recorded on the item.
+- D8 naming mini-session (printing-trade lexicon) — now session 21.
+- ASSETS.md not audited since D3 closed — audit in the art session.
+- The REXPaint art pipeline is still **unproven**; both tools unwritten;
+  6.1 opens the presentation block. Accepted risk, recorded on the item.
