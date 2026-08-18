@@ -16,6 +16,23 @@ import { ROAD_PORTS, isCellType, isRoad, isRouteCell, roadsConnect, strandEntere
 export const TILE_SIZE = 5;
 const CENTER = 2; // (TILE_SIZE - 1) / 2
 
+/** An authored ore vein (2.18): richness placed by the tile's author. */
+export interface TileDeposit {
+  x: number;
+  y: number;
+  amount: number;
+  /** Ore tier; defaults to 1 (the D9 shape - richer tiers are M7 content). */
+  tier?: number;
+}
+
+/** An authored boon cell (2.18): the tile, not the dice, places the power. */
+export interface TileBoon {
+  x: number;
+  y: number;
+  boon: 'range' | 'damage' | 'rate';
+  tier: 1 | 2 | 3 | 4;
+}
+
 /** Content-format tile: id plus 5 strings of 5 cell codes. */
 export interface TileDef {
   id: string;
@@ -23,6 +40,9 @@ export interface TileDef {
   cells: string[];
   /** Relative generation pick weight; default 1 (playtest 5, item 6). */
   weight?: number;
+  /** Authored overlays (2.18): deposits sit on ore cells, boons on ground. */
+  deposits?: TileDeposit[];
+  boons?: TileBoon[];
 }
 
 export type Edge = 'n' | 'e' | 's' | 'w';
@@ -73,17 +93,50 @@ export function rotateCells(cells: readonly string[], k: Rotation): string[] {
  * being stored, and therefore weighted, four times.
  */
 export function canonicalCells(cells: readonly string[]): string[] {
-  let best = cells.slice();
-  let bestKey = best.join('/');
+  return rotateCells(cells, canonicalRotation(cells));
+}
+
+/** The rotation that produces the canonical form. */
+export function canonicalRotation(cells: readonly string[]): Rotation {
+  let best: Rotation = 0;
+  let bestKey = cells.join('/');
   for (const k of [1, 2, 3] as const) {
-    const rot = rotateCells(cells, k);
-    const rotKey = rot.join('/');
+    const rotKey = rotateCells(cells, k).join('/');
     if (rotKey < bestKey) {
-      best = rot;
+      best = k;
       bestKey = rotKey;
     }
   }
   return best;
+}
+
+/** Rotate a cell coordinate with the grid: clockwise, k quarter turns. */
+export function rotatePoint(x: number, y: number, k: Rotation): { x: number; y: number } {
+  let px = x;
+  let py = y;
+  for (let t = 0; t < k; t++) {
+    // Clockwise: new (x, y) reads old (y, SIZE-1-x), so old (px, py) lands
+    // at new (SIZE-1-py, px).
+    const nx = TILE_SIZE - 1 - py;
+    const ny = px;
+    px = nx;
+    py = ny;
+  }
+  return { x: px, y: py };
+}
+
+/**
+ * Canonicalise a whole TileDef: the cells rotate to canonical form and the
+ * authored overlays (2.18) rotate WITH them - an overlay that stayed behind
+ * while its grid turned would sit on the wrong cell, silently.
+ */
+export function canonicalizeTile(def: TileDef): TileDef {
+  const k = canonicalRotation(def.cells);
+  if (k === 0) return def;
+  const out: TileDef = { ...def, cells: rotateCells(def.cells, k) };
+  if (def.deposits) out.deposits = def.deposits.map((d) => ({ ...d, ...rotatePoint(d.x, d.y, k) }));
+  if (def.boons) out.boons = def.boons.map((b) => ({ ...b, ...rotatePoint(b.x, b.y, k) }));
+  return out;
 }
 
 /**
@@ -423,9 +476,19 @@ export function segmentRimMask(cell: string, x: number, y: number): number {
   return closed;
 }
 
-/** Convenience: validate a content TileDef (id + grid). */
+/** Convenience: validate a content TileDef (id + grid + overlays). */
 export function validateTile(def: TileDef): string[] {
   const errors = validateTileCells(def.cells);
   if (!/^[a-z][a-z0-9_]*$/.test(def.id)) errors.unshift(`bad tile id '${def.id}'`);
+  const inRange = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < TILE_SIZE && y < TILE_SIZE;
+  for (const d of def.deposits ?? []) {
+    if (!inRange(d.x, d.y)) errors.push(`deposit at (${d.x},${d.y}) is off the tile`);
+    else if (cellAt(def.cells, d.x, d.y) !== 'O') errors.push(`deposit at (${d.x},${d.y}) must sit on an ore cell`);
+    if (!(d.amount > 0)) errors.push(`deposit at (${d.x},${d.y}) has no ore in it`);
+  }
+  for (const b of def.boons ?? []) {
+    if (!inRange(b.x, b.y)) errors.push(`boon at (${b.x},${b.y}) is off the tile`);
+    else if (cellAt(def.cells, b.x, b.y) !== 'G') errors.push(`boon at (${b.x},${b.y}) must sit on a ground cell`);
+  }
   return errors;
 }

@@ -14,7 +14,10 @@ export {
   ROTATIONS,
   cellAt,
   rotateCells,
+  rotatePoint,
   canonicalCells,
+  canonicalRotation,
+  canonicalizeTile,
   deriveConnectors,
   validateTileCells,
   tileRimMask,
@@ -23,7 +26,7 @@ export {
   partitionKey,
   validateTile,
 } from './tiles/tile';
-export type { TileDef, Edge, Connectors, Rotation } from './tiles/tile';
+export type { TileDef, TileDeposit, TileBoon, Edge, Connectors, Rotation } from './tiles/tile';
 
 export {
   TileLibrary,

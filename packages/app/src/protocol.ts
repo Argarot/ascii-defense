@@ -7,7 +7,7 @@
  * no live objects - so the view can never reach into sim memory again. The
  * failure mode this shape prevents: a screen caching sim state (PRD sec 15.1).
  */
-import type { CellRef, GeneratedMap, ReplayInput, StampedSimEvent } from '@ascii-defense/engine';
+import type { CellRef, GeneratedMap, ReplayInput, StampedSimEvent, TileDef } from '@ascii-defense/engine';
 import type { HudState, RenderState } from '@ascii-defense/view';
 
 /** Threat levels as data (session 15); shared so both threads agree. */
@@ -17,7 +17,10 @@ export const THREAT_LEVELS = [
   { name: 'Grim', entries: [3, 6] as const, pathBias: 5, finalWave: 25, hpGeometric: 1.08 },
 ] as const;
 
-/** What the run IS, for saving: determinism makes this the whole state. */
+/** What the run IS, for saving: determinism makes this the whole state.
+ *  The loadout is generation input (2.21), so it must ride the save - a
+ *  resume without it would replay onto a different map. The tile DEFS ride
+ *  too, not just ids: the minted pool can change between save and resume. */
 export interface RunSave {
   version: number;
   seed: number;
@@ -25,6 +28,8 @@ export interface RunSave {
   tick: number;
   inputs: ReplayInput[];
   contentHash: number;
+  /** Special tiles loaded for this run (v2+); [] on migrated v1 saves. */
+  loadout: TileDef[];
 }
 
 export interface UiState {
@@ -55,7 +60,7 @@ export interface FrameSnapshot {
 }
 
 export type ToWorker =
-  | { t: 'init'; seed: number; threatIdx: number; resume?: RunSave }
+  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave }
   | { t: 'frame'; ui: UiState }
   | { t: 'speed'; idx: number }
   | { t: 'action'; a: WorkerAction }
@@ -79,6 +84,8 @@ export type FromWorker =
   | { t: 'ready'; seed: number; map: GeneratedMap; finalWave: number }
   | { t: 'snapshot'; s: FrameSnapshot }
   | { t: 'saved'; id: number; save: RunSave }
+  | { t: 'genError'; message: string }
   | { t: 'debugResult'; id: number; result: unknown };
 
-export const SAVE_VERSION = 1;
+/** v2 (session 19): RunSave gains the loadout. v1 saves migrate with []. */
+export const SAVE_VERSION = 2;

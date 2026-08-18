@@ -11,7 +11,8 @@
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import { TILE_SIZE, TileLibrary } from '@ascii-defense/engine';
-import type { GeneratedMap } from '@ascii-defense/engine';
+import type { GeneratedMap, TileDef } from '@ascii-defense/engine';
+import { loadMintedTiles } from './mintedTiles';
 import {
   BoardView,
   EffectsLayer,
@@ -68,6 +69,8 @@ function loadMeta(): { meta: MetaSave; problem: string | null } {
     const raw = localStorage.getItem(META_KEY);
     if (!raw) return { meta: defaultMeta(), problem: null };
     const m = JSON.parse(raw) as MetaSave;
+    // v1 -> v2 changed only the RUN save (loadout); meta migrates in place.
+    if (m.version === 1) return { meta: { ...m, version: SAVE_VERSION }, problem: null };
     if (m.version !== SAVE_VERSION) return { meta: defaultMeta(), problem: `meta save is version ${m.version}, this build reads ${SAVE_VERSION} - using defaults, old data kept` };
     return { meta: m, problem: null };
   } catch {
@@ -82,6 +85,8 @@ function loadRun(): { run: RunSave | null; problem: string | null } {
     const raw = localStorage.getItem(RUN_KEY);
     if (!raw) return { run: null, problem: null };
     const r = JSON.parse(raw) as RunSave;
+    // v1 runs carried no loadout; an empty one replays them exactly.
+    if (r.version === 1) return { run: { ...r, version: SAVE_VERSION, loadout: [] }, problem: null };
     if (r.version !== SAVE_VERSION) return { run: null, problem: `run save is version ${r.version}, this build reads ${SAVE_VERSION} - it cannot continue` };
     return { run: r, problem: null };
   } catch {
@@ -91,7 +96,16 @@ function loadRun(): { run: RunSave | null; problem: string | null } {
 
 async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
-  const lib = new TileLibrary(tileLibraryJson.tiles);
+  // The view's library mirrors the worker's world (2.21): shipped basics,
+  // the minted pool, and any saved run's loadout (whose defs ride the save,
+  // so a special deleted from the pool still resolves on continue).
+  const savedLoadout = loadRun().run?.loadout ?? [];
+  const mintedNow = loadMintedTiles();
+  const lib = new TileLibrary([
+    ...tileLibraryJson.tiles,
+    ...mintedNow,
+    ...savedLoadout.filter((t) => !mintedNow.some((m) => m.id === t.id) && !tileLibraryJson.tiles.some((s) => s.id === t.id)),
+  ]);
 
   const mapX = 12, mapY = 7;
   const boardCols = mapX * TILE_SIZE * CELL_W;
@@ -117,6 +131,13 @@ async function main(): Promise<void> {
   let mode: Mode = 'title';
   let settingsFrom: Mode = 'title';
   let wipeArmed = false;
+  // Run setup state (2.21): the threat is picked, the loadout assembled, and
+  // START commits both. Loadout entries are minted-tile ids; 3 slots for now
+  // (the slot economy is 7.5).
+  const LOADOUT_SLOTS = 3;
+  let setupThreat = 1; // synced to the live threat when the screen opens
+  let setupLoadout: string[] = [];
+  let genError: string | null = null;
   let summary: { won: boolean; wave: number; kills: number; oreBanked: number; seed: number } | null = null;
   let summaryBanked = false;
 
@@ -172,15 +193,20 @@ async function main(): Promise<void> {
     } else if (m.t === 'saved') {
       saveWaiters.get(m.id)?.(m.save);
       saveWaiters.delete(m.id);
+    } else if (m.t === 'genError') {
+      // The loadout could not be honoured (2.21): say so ON the setup screen
+      // and stay there - a special is never silently dropped.
+      genError = m.message;
+      mode = 'setup';
     } else if (m.t === 'debugResult') {
       debugWaiters.get(m.id)?.(m.result);
       debugWaiters.delete(m.id);
     }
   };
 
-  const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave): void => {
+  const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave, loadout?: TileDef[]): void => {
     threatIdx = tIdx;
-    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume });
+    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout });
     mode = 'playing';
     mirroredSpeed = 1;
   };
@@ -242,15 +268,30 @@ async function main(): Promise<void> {
           ],
           footer: `runs played ${meta.history.length}`,
         };
-      case 'setup':
+      case 'setup': {
+        const minted = loadMintedTiles();
         return {
           title: 'RUN SETUP',
-          body: ['threat sets waves, path length and the final wave'],
+          body: [
+            'threat sets waves, path length and the final wave',
+            '',
+            ...(genError ? [`! ${genError}`, ''] : []),
+            minted.length > 0
+              ? `load special tiles - up to ${LOADOUT_SLOTS} · a loaded tile is GUARANTEED on the map`
+              : 'no special tiles yet - the tile smith mints them',
+          ],
+          tiles: minted.slice(0, 6).map((t) => ({ id: t.id, cells: t.cells, selected: setupLoadout.includes(t.id) })),
           items: [
-            ...THREAT_LEVELS.map((t, i) => ({ id: `threat:${i}`, label: t.name.toUpperCase(), note: `to wave ${t.finalWave}` })),
+            ...THREAT_LEVELS.map((t, i) => ({
+              id: `threat:${i}`,
+              label: t.name.toUpperCase(),
+              note: i === setupThreat ? `» to wave ${t.finalWave}` : `to wave ${t.finalWave}`,
+            })),
+            { id: 'start', label: 'START RUN', note: setupLoadout.length > 0 ? `${setupLoadout.length} special(s)` : undefined },
             { id: 'back', label: 'BACK' },
           ],
         };
+      }
       case 'howto':
         return {
           title: 'HOW TO PLAY',
@@ -322,8 +363,31 @@ async function main(): Promise<void> {
 
   const menuAction = (id: string): void => {
     if (id !== 'wipe') wipeArmed = false;
+    if (id.startsWith('threat:')) {
+      setupThreat = Number(id.slice('threat:'.length));
+      return;
+    }
+    if (id.startsWith('tile:')) {
+      const tid = id.slice('tile:'.length);
+      if (setupLoadout.includes(tid)) setupLoadout = setupLoadout.filter((t) => t !== tid);
+      else if (setupLoadout.length < LOADOUT_SLOTS) setupLoadout = [...setupLoadout, tid];
+      return;
+    }
     switch (id) {
-      case 'new': mode = 'setup'; break;
+      case 'new':
+        setupThreat = threatIdx;
+        genError = null;
+        mode = 'setup';
+        break;
+      case 'start': {
+        const minted = loadMintedTiles();
+        const defs = setupLoadout
+          .map((tid) => minted.find((t) => t.id === tid))
+          .filter((t): t is NonNullable<typeof t> => t !== undefined);
+        genError = null;
+        startRun(setupThreat, undefined, undefined, defs);
+        break;
+      }
       case 'continue': {
         const r = loadRun();
         if (r.run) startRun(r.run.threatIdx, r.run.seed, r.run);
@@ -372,8 +436,6 @@ async function main(): Promise<void> {
       case 'abandon': void persistRun().then(() => { mode = 'title'; send({ t: 'speed', idx: 0 }); }); break;
       case 'again': startRun(threatIdx); break;
       case 'title': mode = 'title'; send({ t: 'speed', idx: 0 }); break;
-      default:
-        if (id.startsWith('threat:')) startRun(Number(id.slice(7)));
     }
   };
 
@@ -579,6 +641,12 @@ async function main(): Promise<void> {
     select: (x: number, y: number): void => { selected = { x, y }; },
     mode: (m?: Mode): Mode => { if (m) mode = m; return mode; },
     motion: (reduced: boolean): void => { setReducedMotion(reduced); },
+    // Menu verification (2.21): drive the same menuAction the click path
+    // calls, one level below the pixel hit-test. modalText shows what the
+    // player would see (CONTRIBUTING: toText over screenshots).
+    menu: (id: string): void => { menuAction(id); },
+    modalText: (): string => modalTerm.toText(),
+    setupState: (): { threat: number; loadout: string[]; genError: string | null } => ({ threat: setupThreat, loadout: [...setupLoadout], genError }),
   };
 }
 

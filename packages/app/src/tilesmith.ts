@@ -81,11 +81,29 @@ const BRUSH_NAME: Record<string, string> = {
 
 let cells: string[] = ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
 let brush: CellType = 'G'; // ground default: nothing paints by surprise (playtest 10)
-const undoStack: string[][] = [];
+
+// Authored overlays (2.18): vein richness on ore cells, boons on ground.
+// Edited in OVERLAY mode by clicking the cell - each click cycles the value,
+// so the whole surface stays two verbs: pick, click.
+type Deposit = { x: number; y: number; amount: number };
+type Boon = { x: number; y: number; boon: 'range' | 'damage' | 'rate'; tier: 1 | 2 | 3 | 4 };
+let deposits: Deposit[] = [];
+let boons: Boon[] = [];
+let editMode: 'cells' | 'overlay' = 'cells';
+const DEPOSIT_STEPS = [30, 60, 90];
+const BOON_CYCLE: Boon['boon'][] = ['range', 'damage', 'rate'];
+
+type Snapshot = { cells: string[]; deposits: Deposit[]; boons: Boon[] };
+const undoStack: Snapshot[] = [];
+const snapshot = (): Snapshot => ({ cells: cells.slice(), deposits: deposits.map((d) => ({ ...d })), boons: boons.map((b) => ({ ...b })) });
 
 function setCell(x: number, y: number, t: string): void {
   const row = cells[y];
   cells = cells.map((r, i) => (i === y ? row.slice(0, x) + t + row.slice(x + 1) : r));
+  // Overlays live ON cells: repainting the cell under one removes it, so an
+  // overlay can never sit on the wrong terrain (validity by construction).
+  deposits = deposits.filter((d) => cells[d.y][d.x] === 'O');
+  boons = boons.filter((b) => cells[b.y][b.x] === 'G');
 }
 
 async function main(): Promise<void> {
@@ -132,6 +150,23 @@ async function main(): Promise<void> {
   palWrap.appendChild(palGrid);
   left.appendChild(palWrap);
 
+  // Mode toggle (2.18): CELLS paints terrain, OVERLAYS clicks values onto
+  // it - vein richness on ore, boons on ground.
+  const modeRow = document.createElement('div');
+  modeRow.className = 'actions';
+  const modeBtns = new Map<'cells' | 'overlay', HTMLButtonElement>();
+  for (const m of ['cells', 'overlay'] as const) {
+    const b = document.createElement('button');
+    b.textContent = m === 'cells' ? 'CELLS' : 'OVERLAYS';
+    b.addEventListener('click', () => {
+      editMode = m;
+      update();
+    });
+    modeBtns.set(m, b);
+    modeRow.appendChild(b);
+  }
+  left.appendChild(modeRow);
+
   const undoRow = document.createElement('div');
   undoRow.className = 'actions';
   const undoBtn = document.createElement('button');
@@ -139,7 +174,9 @@ async function main(): Promise<void> {
   undoBtn.addEventListener('click', () => {
     const prev = undoStack.pop();
     if (prev) {
-      cells = prev.slice();
+      cells = prev.cells.slice();
+      deposits = prev.deposits;
+      boons = prev.boons;
       update();
     }
   });
@@ -167,6 +204,8 @@ async function main(): Promise<void> {
   select.addEventListener('change', () => {
     const found = tileLibraryJson.tiles.find((t) => t.id === select.value);
     cells = found ? found.cells.slice() : ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
+    deposits = (found as { deposits?: Deposit[] } | undefined)?.deposits?.map((d) => ({ ...d })) ?? [];
+    boons = (found as { boons?: Boon[] } | undefined)?.boons?.map((b) => ({ ...b })) ?? [];
     undoStack.length = 0;
     idDirty = Boolean(found);
     if (found) idInput.value = found.id + '_v2';
@@ -198,17 +237,47 @@ async function main(): Promise<void> {
     const y = Math.floor(e.offsetY / CELL_PX_H);
     if (x < 0 || y < 0 || x >= TILE_SIZE || y >= TILE_SIZE) return;
     if (cells[y][x] === brush) return; // no-op paints do not eat undo steps
-    undoStack.push(cells.slice());
+    undoStack.push(snapshot());
     setCell(x, y, brush);
     idDirty = idInput.value !== '' && idDirty; // keep manual ids
     update();
   };
+  // Overlay mode: a click CYCLES the cell's value - vein none/30/60/90 on
+  // ore, boon none/range/damage/rate on ground. No drag: values, not paint.
+  const overlayAt = (e: MouseEvent): void => {
+    const x = Math.floor(e.offsetX / CELL_PX_W);
+    const y = Math.floor(e.offsetY / CELL_PX_H);
+    if (x < 0 || y < 0 || x >= TILE_SIZE || y >= TILE_SIZE) return;
+    const cell = cells[y][x];
+    if (cell === 'O') {
+      undoStack.push(snapshot());
+      const cur = deposits.find((d) => d.x === x && d.y === y);
+      if (!cur) deposits = [...deposits, { x, y, amount: DEPOSIT_STEPS[0] }];
+      else {
+        const next = DEPOSIT_STEPS[DEPOSIT_STEPS.indexOf(cur.amount) + 1];
+        deposits = next === undefined ? deposits.filter((d) => d !== cur) : deposits.map((d) => (d === cur ? { ...d, amount: next } : d));
+      }
+    } else if (cell === 'G') {
+      undoStack.push(snapshot());
+      const cur = boons.find((b) => b.x === x && b.y === y);
+      if (!cur) boons = [...boons, { x, y, boon: BOON_CYCLE[0], tier: 1 }];
+      else {
+        const next = BOON_CYCLE[BOON_CYCLE.indexOf(cur.boon) + 1];
+        boons = next === undefined ? boons.filter((b) => b !== cur) : boons.map((b) => (b === cur ? { ...b, boon: next } : b));
+      }
+    } else return;
+    update();
+  };
   term.canvas.addEventListener('mousedown', (e) => {
+    if (editMode === 'overlay') {
+      overlayAt(e);
+      return;
+    }
     painting = true;
     paintAt(e);
   });
   term.canvas.addEventListener('mousemove', (e) => {
-    if (painting) paintAt(e);
+    if (painting && editMode === 'cells') paintAt(e);
   });
   window.addEventListener('mouseup', () => (painting = false));
 
@@ -249,11 +318,19 @@ async function main(): Promise<void> {
     copyBtn.textContent = 'copied \u2713';
     setTimeout(() => (copyBtn.textContent = 'copy JSON'), 1200);
   });
-  let justAdded = '';
-  addBtn.addEventListener('click', () => {
-    const tile: { id: string; name?: string; cells: string[] } = { id: idInput.value.trim(), cells: [...cells] };
+  // The exported/minted def carries the overlays (2.18) - the tool that
+  // authors the format produces the whole format.
+  const buildTile = (id: string): { id: string; name?: string; cells: string[]; deposits?: Deposit[]; boons?: Boon[] } => {
+    const tile: { id: string; name?: string; cells: string[]; deposits?: Deposit[]; boons?: Boon[] } = { id, cells: [...cells] };
     const name = nameInput.value.trim();
     if (name) tile.name = name;
+    if (deposits.length > 0) tile.deposits = deposits.map((d) => ({ ...d }));
+    if (boons.length > 0) tile.boons = boons.map((b) => ({ ...b }));
+    return tile;
+  };
+  let justAdded = '';
+  addBtn.addEventListener('click', () => {
+    const tile = buildTile(idInput.value.trim());
     addMintedTile(tile);
     justAdded = tile.id;
     // Confirmation POPUP, then the button greys until the tile changes -
@@ -277,14 +354,31 @@ async function main(): Promise<void> {
 
   // ---- one update path: state -> engine verdict -> every widget ------------
   function update(): void {
-    for (const [t, b] of brushBtns) b.classList.toggle('active', t === brush);
+    for (const [t, b] of brushBtns) b.classList.toggle('active', t === brush && editMode === 'cells');
+    for (const [m, b] of modeBtns) b.classList.toggle('active', m === editMode);
+    paintHint.textContent =
+      editMode === 'cells'
+        ? 'click or drag on the tile to paint with the held brush \u00b7 paint terrain to erase road \u00b7 Ctrl+Z undoes one change'
+        : 'click an ORE cell to cycle its vein (30/60/90) \u00b7 click GROUND to cycle its boon (range/damage/rate) \u00b7 another click clears';
 
     undoBtn.disabled = undoStack.length === 0;
 
     term.clear(role('ui.bg'));
     for (let cy = 0; cy < TILE_SIZE; cy++)
-      for (let cx = 0; cx < TILE_SIZE; cx++)
-        drawTerrainCell(term, cells[cy][cx] as CellType, cx * CELL_W, cy * CELL_H, { rim: segmentRimMask(cells[cy][cx], cx, cy) });
+      for (let cx = 0; cx < TILE_SIZE; cx++) {
+        const authored = deposits.find((d) => d.x === cx && d.y === cy);
+        drawTerrainCell(term, cells[cy][cx] as CellType, cx * CELL_W, cy * CELL_H, {
+          rim: segmentRimMask(cells[cy][cx], cx, cy),
+          richness: authored ? authored.amount / 90 : undefined,
+        });
+      }
+    // Boons telegraph exactly as the board does: corner tints, one per tier.
+    for (const b of boons) {
+      const gx = b.x * CELL_W;
+      const gy = b.y * CELL_H;
+      const corners = [[0, 0], [CELL_W - 1, 0], [0, CELL_H - 1], [CELL_W - 1, CELL_H - 1]] as const;
+      for (let i = 0; i < Math.min(4, b.tier); i++) term.tint(gx + corners[i][0], gy + corners[i][1], '#2b8a75');
+    }
     term.flush();
 
     const conn = deriveConnectors(cells);
@@ -310,17 +404,21 @@ async function main(): Promise<void> {
     const idOk = /^[a-z][a-z0-9_]*$/.test(id);
     const minted = loadMintedTiles();
     if (id !== justAdded) justAdded = '';
-    addNote.textContent = minted.length > 0 ? `minted pool: ${minted.length} tile(s) \u00b7 they join the generator on the next map` : 'minted tiles join the generator on the next map (this browser only)';
+    const overlayNote =
+      deposits.length + boons.length > 0
+        ? ` \u00b7 overlays: ${deposits.map((d) => `vein ${d.amount} @(${d.x},${d.y})`).concat(boons.map((b) => `+${b.boon} @(${b.x},${b.y})`)).join(', ')}`
+        : '';
+    addNote.textContent =
+      (minted.length > 0
+        ? `minted pool: ${minted.length} special(s) \u00b7 load them in run setup`
+        : 'minted tiles become SPECIALS - load them in run setup, guaranteed on the map') + overlayNote;
     const dupe = id !== justAdded && (tileLibraryJson.tiles.some((t) => t.id === id) || minted.some((t) => t.id === id));
     if (!idOk) errors.push(`id '${id}' must be lowercase letters, digits, underscores`);
     if (dupe) errors.push(`id '${id}' already exists in the library`);
 
     if (errors.length === 0) {
       verdict.innerHTML = '<span class="verdict-ok">\u2713 valid tile \u2014 the game would accept this</span>';
-      const tile: { id: string; name?: string; cells: string[] } = { id, cells };
-      const name = nameInput.value.trim();
-      if (name) tile.name = name;
-      out.textContent = JSON.stringify(tile, null, 2);
+      out.textContent = JSON.stringify(buildTile(id), null, 2);
       copyBtn.disabled = false;
       addBtn.disabled = id === justAdded; // just added: grey, not an error
       if (id === justAdded) verdict.innerHTML = '<span class="verdict-ok">\u2713 in the pool \u2014 change the tile or id to mint another</span>';
