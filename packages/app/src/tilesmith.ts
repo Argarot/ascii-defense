@@ -25,10 +25,15 @@ import {
 } from '@ascii-defense/engine';
 import { CELL_W, CELL_H, drawTerrainCell, role } from '@ascii-defense/view';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
-import { addMintedTile, loadMintedTiles } from './mintedTiles';
+import { addMintedTile, libraryTwinOf, loadMintedTiles } from './mintedTiles';
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '5';
+
+// The Core is not authorable content (playtest 12, item 11): a map has ONE
+// Core of a specific shape, and specials may never carry it. The C brush
+// and the core_* starting tiles exist only behind ?dev, for library work.
+const DEV = new URLSearchParams(location.search).has('dev');
 const load = <T>(p: string): Promise<T> =>
   fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
@@ -134,6 +139,10 @@ async function main(): Promise<void> {
   const brushBtns = new Map<CellType, HTMLButtonElement>();
   for (const row of BRUSH_GRID)
     for (const t of row) {
+      if (t === 'C' && !DEV) {
+        palGrid.appendChild(document.createElement('div')); // keep the grid square
+        continue;
+      }
       const b = document.createElement('button');
       b.className = 'brush';
       b.innerHTML = `<span class="glyph">${BRUSH_GLYPH[t]}</span>`;
@@ -198,9 +207,10 @@ async function main(): Promise<void> {
   const loadLabel = document.createElement('label');
   loadLabel.textContent = 'load an existing tile as a starting point';
   const select = document.createElement('select');
+  const loadable = tileLibraryJson.tiles.filter((t) => DEV || !t.cells.some((row) => row.includes('C')));
   select.innerHTML =
     '<option value="">- blank -</option>' +
-    tileLibraryJson.tiles.map((t) => `<option value="${t.id}">${t.id}${t.name ? ` (${t.name})` : ''}</option>`).join('');
+    loadable.map((t) => `<option value="${t.id}">${t.id}${t.name ? ` (${t.name})` : ''}</option>`).join('');
   select.addEventListener('change', () => {
     const found = tileLibraryJson.tiles.find((t) => t.id === select.value);
     cells = found ? found.cells.slice() : ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
@@ -415,6 +425,11 @@ async function main(): Promise<void> {
     const dupe = id !== justAdded && (tileLibraryJson.tiles.some((t) => t.id === id) || minted.some((t) => t.id === id));
     if (!idOk) errors.push(`id '${id}' must be lowercase letters, digits, underscores`);
     if (dupe) errors.push(`id '${id}' already exists in the library`);
+    // A shape the basic library already has is not a special (playtest 12,
+    // item 5): the basic gets rolled normally, which reads as "my special
+    // appeared without being chosen" - refused here, at authoring time.
+    const twin = libraryTwinOf(cells);
+    if (twin && errors.length === 0) errors.push(`this shape already exists in the basic library as '${twin}' - basics are infinite, no need to mint one`);
 
     if (errors.length === 0) {
       verdict.innerHTML = '<span class="verdict-ok">\u2713 valid tile \u2014 the game would accept this</span>';

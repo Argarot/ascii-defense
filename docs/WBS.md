@@ -60,6 +60,20 @@ his layout (`FT7|`/`EX3-`/`LUJB`/`GKOC`), block labels only→2.23 · nomenclatu
 brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the validity
 checker works properly"→2.26
 
+**Round 14 (playtest 12, 2026-08-18):** loadout picker as its own screen, not
+a strip→2.21 fixed · tile previews clipped→MenuScreen rows, never clipped ·
+rotation-twins offered→pool canonical-dedup on load + tilegen drops hand-twins
+(the library itself had `straight`≡`gen_ns_1`) · "specials appear unchosen"→a
+minted shape equal to a basic IS the basic, rolled normally; minting library
+twins now refused by name, existing ones dropped on load · huge voids + void
+near road + enclosed holes→one bug: the outer fill ring's stay-void roll;
+ring now always fills, property test locks it, golden hash moved with reason
+(2003059284→185380119) · smith layout shift→fixed two-column grid · menus
+hide the HUD · blast visual extent = kill radius exactly, shockwave dies AT r
+· duplicate actives fire the first READY copy (was: first copy always, its
+cooldown blocking the rest) · Core brush and core tiles dev-only (`?dev`) ·
+GO AGAIN keeps the loadout
+
 **Round 13 (smith playtest, 2026-08-18):** buttons are buttons — schematic
 glyphs, not sprite renders (the dev misread round 12's "sprites on the
 preview" as the palette)→2.23 · **the bridge is a MECHANIC, not a rename** —

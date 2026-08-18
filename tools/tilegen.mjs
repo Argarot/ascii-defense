@@ -17,7 +17,7 @@ buildSync({
   outfile: 'dist/lab/tilegen.mjs',
   logLevel: 'warning',
 });
-const { generateVariants } = await import('../dist/lab/tilegen.mjs');
+const { generateVariants, canonicalKeyOf } = await import('../dist/lab/tilegen.mjs');
 
 const perSig = Number(process.argv[2] ?? 4);
 const tiles = generateVariants(20260816, perSig);
@@ -25,6 +25,10 @@ const tiles = generateVariants(20260816, perSig);
 const f = 'packages/content/assets/tiles/library.json';
 const lib = JSON.parse(readFileSync(f, 'utf8'));
 const hand = lib.tiles.filter((t) => !t.id.startsWith('gen_'));
-lib.tiles = [...hand, ...tiles];
+// A generated tile that duplicates a hand-authored shape (canonically, so
+// rotations count) would weight that shape twice in the pools - drop it.
+const handForms = new Set(hand.map((t) => canonicalKeyOf(t.cells)));
+const fresh = tiles.filter((t) => !handForms.has(canonicalKeyOf(t.cells)));
+lib.tiles = [...hand, ...fresh];
 writeFileSync(f, JSON.stringify(lib, null, 2) + '\n');
-console.log(`library: ${hand.length} authored + ${tiles.length} generated`);
+console.log(`library: ${hand.length} authored + ${fresh.length} generated (${tiles.length - fresh.length} hand-twin(s) dropped)`);

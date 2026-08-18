@@ -16,8 +16,11 @@
         font-size: 14px;
       }
       body { display: flex; justify-content: center; padding: 18px 8px; }
-      #app { display: flex; gap: 28px; flex-wrap: wrap; max-width: 980px; }
-      #app > .col:first-child { max-width: 440px; }
+      /* Two FIXED columns (playtest 12, item 10): a long verdict line or a
+         widening widget must never reflow the other half of the screen. */
+      #app { display: grid; grid-template-columns: 440px 460px; gap: 28px; align-items: start; }
+      #app .col { min-width: 0; }
+      #app .col * { overflow-wrap: break-word; }
       h1 { font-size: 16px; color: #2ee6a0; margin: 0 0 4px; }
       .sub { color: #5c6b7f; font-size: 12px; margin-bottom: 14px; }
       .col { display: flex; flex-direction: column; gap: 12px; }

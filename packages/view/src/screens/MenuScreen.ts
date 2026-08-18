@@ -55,8 +55,13 @@ export class MenuScreen {
     // Plate width comes from the CONTENT (playtest 10: clipped text): the
     // longest of title, body lines, items with notes, footer - plus padding.
     const noteW = (it: MenuItem): number => it.label.length + (it.note ? it.note.length + 3 : 0);
+    // Tiles wrap into rows sized by the terminal, never clipped (playtest
+    // 12, item 2): the plate grows to fit whole tiles, rows grow to fit all.
     const tiles = spec.tiles ?? [];
-    const stripW = tiles.length > 0 ? tiles.length * (TILE_GW + 3) - 3 : 0;
+    const maxPerRow = Math.max(1, Math.floor((W - 10) / (TILE_GW + 3)));
+    const perRow = Math.min(tiles.length, maxPerRow);
+    const tileRows = perRow > 0 ? Math.ceil(tiles.length / perRow) : 0;
+    const stripW = perRow > 0 ? perRow * (TILE_GW + 3) - 3 : 0;
     const widest = Math.max(
       spec.title.length,
       ...(spec.body ?? []).map((l) => l.length),
@@ -65,7 +70,7 @@ export class MenuScreen {
       stripW,
     );
     const plateW = Math.min(W - 2, widest + 8);
-    const stripH = tiles.length > 0 ? TILE_GH + 3 : 0;
+    const stripH = tileRows * (TILE_GH + 3);
     const contentH = 4 + (spec.body?.length ?? 0) + stripH + spec.items.length * 2 + (spec.footer ? 2 : 0);
     const y0 = Math.max(1, Math.floor((term.rows - contentH) / 2));
     const x0 = Math.floor((W - plateW) / 2);
@@ -82,22 +87,27 @@ export class MenuScreen {
     if (tiles.length > 0) {
       // The pool is a VISUAL surface (PRD sec 4.8): each special drawn by the
       // same renderer the board uses, framed in accent when loaded.
-      let tx = x0 + Math.max(1, Math.floor((plateW - stripW) / 2));
-      for (const tile of tiles) {
+      for (let i = 0; i < tiles.length; i++) {
+        const col = i % perRow;
+        const rowN = Math.floor(i / perRow);
+        const rowCount = Math.min(perRow, tiles.length - rowN * perRow);
+        const rowW = rowCount * (TILE_GW + 3) - 3;
+        const tx = x0 + Math.max(1, Math.floor((plateW - rowW) / 2)) + col * (TILE_GW + 3);
+        const ty = y + 1 + rowN * (TILE_GH + 3);
+        const tile = tiles[i];
         const frame = tile.selected ? role('ui.accent') : role('ui.grid');
         for (let fy = -1; fy <= TILE_GH; fy++) {
           for (let fx = -1; fx <= TILE_GW; fx++) {
             if (fy !== -1 && fy !== TILE_GH && fx !== -1 && fx !== TILE_GW) continue;
-            term.put(tx + fx, y + 1 + fy, ' ', frame, frame);
+            term.put(tx + fx, ty + fy, ' ', frame, frame);
           }
         }
         for (let cy = 0; cy < TILE_SIZE; cy++)
           for (let cx = 0; cx < TILE_SIZE; cx++)
-            drawTerrainCell(term, tile.cells[cy][cx] as CellType, tx + cx * CELL_W, y + 1 + cy * CELL_H, {
+            drawTerrainCell(term, tile.cells[cy][cx] as CellType, tx + cx * CELL_W, ty + cy * CELL_H, {
               rim: segmentRimMask(tile.cells[cy][cx], cx, cy),
             });
-        this.regions.push({ row: y, rowEnd: y + 1 + TILE_GH, x0: tx - 1, x1: tx + TILE_GW + 1, id: `tile:${tile.id}` });
-        tx += TILE_GW + 3;
+        this.regions.push({ row: ty - 1, rowEnd: ty + TILE_GH, x0: tx - 1, x1: tx + TILE_GW + 1, id: `tile:${tile.id}` });
       }
       y += stripH;
     }

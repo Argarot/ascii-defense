@@ -85,6 +85,11 @@ export interface GeneratedTile {
   cells: string[];
 }
 
+/** Canonical identity key, for deduping generated tiles against hand-authored ones. */
+export function canonicalKeyOf(cells: readonly string[]): string {
+  return canonicalCells(cells).join('/');
+}
+
 /**
  * Generate up to `perSig` valid variants per SHAPE CLASS. A tile and its
  * rotations are one tile (2.24), so the old eleven per-signature families

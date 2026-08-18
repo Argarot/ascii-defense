@@ -307,6 +307,63 @@ describe('lane tiles vs the generator (session 14)', () => {
   });
 });
 
+describe('void placement rules (playtest 12)', () => {
+  it('void stays far, outside, and bounded - never a hole, never near the road', () => {
+    for (const opts of [CASES[3], CASES[4], CASES[5]]) {
+      for (let seed = 1; seed <= 6; seed++) {
+        const map = generateMap(createRng(seed * 17).stream('map'), LIB, opts);
+        const { width, height } = opts;
+        // Slot distance from the road network, exactly as generation sees it.
+        const isRoadSlot = map.board.slots.map((p) => {
+          if (!p) return false;
+          const r = LIB.resolved(p.tileId, p.rotation);
+          const c = deriveConnectors(r.cells);
+          return c.n || c.e || c.s || c.w || r.cells.some((row) => row.includes('C'));
+        });
+        const dist = new Array<number>(width * height).fill(-1);
+        const q: number[] = [];
+        isRoadSlot.forEach((v, k) => { if (v) { dist[k] = 0; q.push(k); } });
+        for (let qi = 0; qi < q.length; qi++) {
+          const k = q[qi];
+          const x = k % width;
+          const y = Math.floor(k / width);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+            if (x + dx < 0 || y + dy < 0 || x + dx >= width || y + dy >= height) continue;
+            const nk = (y + dy) * width + x + dx;
+            if (dist[nk] === -1) { dist[nk] = dist[k] + 1; q.push(nk); }
+          }
+        }
+        const voidK: number[] = [];
+        for (let k = 0; k < width * height; k++) if (map.board.slots[k] === null) voidK.push(k);
+        // (7) never near the road: everything within ORE_REACH is land.
+        for (const k of voidK) expect(dist[k], `seed ${seed * 17} slot ${k}`).toBeGreaterThan(ORE_REACH);
+        // (6) bounded share: the cap plus nothing sneaking around it.
+        expect(voidK.length).toBeLessThanOrEqual(Math.floor(width * height * 0.22));
+        // no holes: every void slot reaches the border through void.
+        const reach = new Set<number>();
+        const vq: number[] = [];
+        for (const k of voidK) {
+          const x = k % width;
+          const y = Math.floor(k / width);
+          if (x === 0 || y === 0 || x === width - 1 || y === height - 1) { reach.add(k); vq.push(k); }
+        }
+        const voidSet = new Set(voidK);
+        for (let qi = 0; qi < vq.length; qi++) {
+          const k = vq[qi];
+          const x = k % width;
+          const y = Math.floor(k / width);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+            if (x + dx < 0 || y + dy < 0 || x + dx >= width || y + dy >= height) continue;
+            const nk = (y + dy) * width + x + dx;
+            if (voidSet.has(nk) && !reach.has(nk)) { reach.add(nk); vq.push(nk); }
+          }
+        }
+        for (const k of voidK) expect(reach.has(k), `enclosed void at slot ${k}, seed ${seed * 17}`).toBe(true);
+      }
+    }
+  });
+});
+
 describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
   const SPECIAL_ORE = {
     id: 'sp_vein',

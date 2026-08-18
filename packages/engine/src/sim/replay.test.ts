@@ -153,7 +153,13 @@ describe('replay (WBS 1.4.8)', () => {
     // hashed lanes), homing shots re-acquire instead of evaporating when
     // their target dies, and detonation is one point-based rule. An intended
     // combat-behaviour change; round-trip replay still proves bit-identical.
-    expect(sim.hashState()).toBe(2003059284);
+    // 2003059284 -> 185380119 on 2026-08-18 (playtest 12): the outer fill
+    // ring ALWAYS places terrain - the old stay-void roll put voids inside
+    // the landmass and nearer the road than the void rule permits (enclosed
+    // holes and cap-converted slots re-rolled as ring). One fewer rng draw
+    // per ring slot changes the golden seed's map - an intended generation
+    // change; round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(185380119);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {
