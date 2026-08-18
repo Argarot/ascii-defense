@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
-import { deriveConnectors, partitionKey, rotateCells, tilePartition, validateTileCells } from './tile';
+import { canonicalizeTile, deriveConnectors, partitionKey, rotateCells, tilePartition, validateTile, validateTileCells } from './tile';
 import {
   TileLibrary,
   canPlace,
@@ -138,6 +138,35 @@ describe('tile validity - the rules that make bad tiles unrepresentable', () => 
     // bridge advertises two roads; one of them reaches nothing.
     const deckOnly = g('GGGGG', 'GGGGG', '--B--', 'GGGGG', 'GGGGG');
     expect(validateTileCells(deckOnly).join()).toMatch(/no entry point/);
+  });
+
+  it('overlays rotate with the tile and sit only on their terrain (2.18)', () => {
+    // A W-to-S bend with an authored vein and an authored boon.
+    const cellsOk = g('GGGGG', 'GOGGG', '--7GG', 'GG|GG', 'GG|GG');
+    expect(
+      validateTile({
+        id: 'ov',
+        cells: cellsOk,
+        deposits: [{ x: 1, y: 1, amount: 60 }],
+        boons: [{ x: 3, y: 3, boon: 'range', tier: 2 }],
+      }),
+    ).toEqual([]);
+    // A deposit off ore, a boon off ground: both named.
+    const bad = validateTile({
+      id: 'ov2',
+      cells: cellsOk,
+      deposits: [{ x: 0, y: 0, amount: 60 }],
+      boons: [{ x: 2, y: 3, boon: 'rate', tier: 1 }],
+    });
+    expect(bad.join()).toMatch(/must sit on an ore cell/);
+    expect(bad.join()).toMatch(/must sit on a ground cell/);
+    // canonicalizeTile turns the grid AND the overlays together.
+    const canon = canonicalizeTile({ id: 'ov3', cells: cellsOk, deposits: [{ x: 1, y: 1, amount: 60 }] });
+    if (canon.deposits) {
+      const { x, y } = canon.deposits[0];
+      expect(canon.cells[y][x]).toBe('O'); // still on its ore cell, wherever it turned to
+    }
+    expect(validateTile(canon)).toEqual([]);
   });
 
   it('rejects unknown cell codes and malformed shapes', () => {

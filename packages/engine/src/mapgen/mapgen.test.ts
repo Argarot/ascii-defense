@@ -307,6 +307,53 @@ describe('lane tiles vs the generator (session 14)', () => {
   });
 });
 
+describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
+  const SPECIAL_ORE = {
+    id: 'sp_vein',
+    cells: g('GGGGG', 'GOOGG', 'GOOGG', 'GGGGG', 'GGGGG'),
+    // The authored overlay (2.18): a distinctive amount no dice can roll.
+    deposits: [{ x: 1, y: 1, amount: 777 }],
+  };
+  const SPECIAL_ROAD = { id: 'sp_road', cells: g('GG|GG', 'GG|GG', 'GG|GG', 'GG|GG', 'GG|GG') };
+  const OPTS = { width: 8, height: 5, entries: 3, targetPathLength: 8 };
+  const libWith = (): TileLibrary =>
+    new TileLibrary([...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })), SPECIAL_ORE, SPECIAL_ROAD]);
+
+  it('a loaded special is on the map, its authored overlay honoured', () => {
+    for (let seed = 1; seed <= 8; seed++) {
+      const map = generateMap(createRng(seed * 5).stream('map'), libWith(), { ...OPTS, specials: ['sp_vein', 'sp_road'] });
+      const placed = map.board.slots.filter(Boolean).map((p) => p!.tileId);
+      expect(placed.filter((id) => id === 'sp_vein').length).toBe(1);
+      expect(placed.filter((id) => id === 'sp_road').length).toBe(1);
+      // The authored vein keeps its author's numbers - 777 is unrollable.
+      expect(map.deposits.some((d) => d.amount === 777)).toBe(true);
+      // And the map still routes.
+      const flow = computeFlowField(resolveCells(map.board, libWith()), OPTS.width * TILE_SIZE, OPTS.height * TILE_SIZE, map.entries);
+      expect(flow.L).toBeGreaterThan(0);
+    }
+  });
+
+  // "An unloaded special never appears" is the CALLER's half of the deal:
+  // the worker builds each run's library as basics + the loadout, so a
+  // special that was not loaded is not in the library at all. The
+  // generator's half - a loaded special is never ALSO rolled from the
+  // pools - is the exactly-once assertion above.
+
+  it('an empty loadout changes nothing - same seed, same map', () => {
+    const a = generateMap(createRng(4242).stream('map'), libWith(), OPTS);
+    const b = generateMap(createRng(4242).stream('map'), libWith(), { ...OPTS, specials: [] });
+    expect(a).toEqual(b);
+  });
+
+  it('a special carrying the Core is refused loudly', () => {
+    const withCore = new TileLibrary([
+      ...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })),
+      { id: 'sp_core', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
+    ]);
+    expect(() => generateMap(createRng(7).stream('map'), withCore, { ...OPTS, specials: ['sp_core'] })).toThrow(/carries the Core/);
+  });
+});
+
 describe('the bridge in the flow field (4.9)', () => {
   it('two roads cross a bridge cell without merging - distances stay per strand', () => {
     // One tile-column, two tiles tall. The deck road runs west-to-Core in

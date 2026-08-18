@@ -19,8 +19,8 @@
  * easier. Both are data, decided by threat level, not by this module.
  */
 import type { RngStream } from '../rng/rng';
-import { EDGES, OPPOSITE, TILE_SIZE, partitionKey, tilePartition, type Edge, type Rotation } from './../tiles/tile';
-import { TileLibrary, createBoard, place, resolveCells, type Board } from '../tiles/board';
+import { EDGES, OPPOSITE, TILE_SIZE, partitionKey, rotatePoint, tilePartition, type Edge, type Rotation } from './../tiles/tile';
+import { TileLibrary, createBoard, place, resolveCells, slotAt, type Board } from '../tiles/board';
 
 export interface MapGenOptions {
   /** Board size in tile slots. */
@@ -36,6 +36,16 @@ export interface MapGenOptions {
    * a specific pool index, decided HERE so nothing rolls dice mid-run.
    */
   relicPoolSize?: number;
+  /**
+   * The run's loaded SPECIAL tiles (2.21, PRD sec 4.8), by id - the defs must
+   * be in the library. Guaranteed to appear: road specials claim a carved
+   * slot whose partition they express, roadless specials claim a fill slot.
+   * A special that cannot be placed legally throws (after generateMap's
+   * whole-map retries give it fresh carves) - it never silently drops.
+   * Specials are excluded from the random pools: they appear because they
+   * were CHOSEN, exactly once each.
+   */
+  specials?: readonly string[];
 }
 
 export interface CellRef {
@@ -154,7 +164,10 @@ function sigKey(edges: ReadonlySet<Edge>): string {
  * roles generation needs. Rotations are enumerated here so the pool only
  * needs one authored orientation per shape.
  */
-function indexLibrary(lib: TileLibrary): {
+function indexLibrary(
+  lib: TileLibrary,
+  exclude?: ReadonlySet<string>,
+): {
   road: Map<string, { tileId: string; rotation: Rotation; weight: number }[]>;
   core: Map<string, { tileId: string; rotation: Rotation; weight: number }[]>;
   filler: { plain: { tileId: string; weight: number }[]; ore: { tileId: string; weight: number }[] };
@@ -164,6 +177,7 @@ function indexLibrary(lib: TileLibrary): {
   const filler = { plain: [] as { tileId: string; weight: number }[], ore: [] as { tileId: string; weight: number }[] };
 
   for (const id of lib.ids()) {
+    if (exclude?.has(id)) continue; // specials are chosen, never rolled
     const weight = lib.weightOf(id);
     // Symmetric shapes repeat under rotation (a straight at 0 and 2 is the
     // same tile); indexing every repeat would weight one shape twice (2.24).
@@ -230,7 +244,33 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     opts.targetPathLength,
     Math.max(1, Math.floor((width * height * 0.55) / entries)),
   );
-  const index = indexLibrary(lib);
+  const specialIds = opts.specials ?? [];
+  const index = indexLibrary(lib, specialIds.length > 0 ? new Set(specialIds) : undefined);
+
+  // Specials (2.21): resolve each loaded special's shape once. Road-carrying
+  // specials list the partition keys their rotations express (deduped, like
+  // the index); roadless specials just need a fill slot.
+  const roadSpecials: { id: string; keys: Map<string, Rotation> }[] = [];
+  const roadlessSpecials: string[] = [];
+  for (const id of specialIds) {
+    const keys = new Map<string, Rotation>();
+    const forms = new Set<string>();
+    let hasRoad = false;
+    for (const rotation of [0, 1, 2, 3] as const) {
+      const { cells, connectors } = lib.resolved(id, rotation);
+      const form = cells.join('/');
+      if (forms.has(form)) continue;
+      forms.add(form);
+      if (cells.some((row) => row.includes('C'))) throw new Error(`special tile '${id}' carries the Core - specials cannot`);
+      if (connectors.n || connectors.e || connectors.s || connectors.w) {
+        hasRoad = true;
+        const key = partitionKey(tilePartition(cells));
+        if (!keys.has(key)) keys.set(key, rotation);
+      }
+    }
+    if (hasRoad) roadSpecials.push({ id, keys });
+    else roadlessSpecials.push(id);
+  }
 
   const slotIdx = (x: number, y: number): number => y * width + x;
 
@@ -398,10 +438,37 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   }
 
   // ---- 3. tile the carved slots -------------------------------------------
+  // Road specials first (2.21): each claims a carved slot whose partition it
+  // expresses - guaranteed presence, or a loud throw (generateMap's retries
+  // give it several carves before the player hears about it). Slots are
+  // scanned in carve order, so the claim is deterministic.
+  const forced = new Map<number, { tileId: string; rotation: Rotation }>();
+  for (const sp of roadSpecials) {
+    let placedAt = -1;
+    for (const [k, edges] of roadEdges) {
+      if (k === coreK || forced.has(k)) continue;
+      const second = secondSegment.get(k);
+      const key = second
+        ? partitionKey([[...edges] as Edge[], [...second] as Edge[]])
+        : partitionKey([[...edges] as Edge[]]);
+      const rotation = sp.keys.get(key);
+      if (rotation === undefined) continue;
+      forced.set(k, { tileId: sp.id, rotation });
+      placedAt = k;
+      break;
+    }
+    if (placedAt === -1) throw new Error(`special tile '${sp.id}' cannot fit this map - no carved slot matches its road shape`);
+  }
+
   let board = createBoard(width, height);
   for (const [k, edges] of roadEdges) {
     const x = k % width;
     const y = Math.floor(k / width);
+    const claim = forced.get(k);
+    if (claim) {
+      board = place(board, claim.tileId, claim.rotation, x, y);
+      continue;
+    }
     const second = secondSegment.get(k);
     const key =
       k === coreK
@@ -507,10 +574,32 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     for (const k of rng.shuffle(fillable).slice(0, ORE_FLOOR)) guaranteedOre.add(k);
   }
 
+  // Roadless specials (2.21) claim fill slots before the dice see them.
+  // Only rolls when a loadout exists, so special-free generation spends the
+  // stream exactly as before.
+  const specialClaims = new Map<number, { tileId: string; rotation: Rotation }>();
+  if (roadlessSpecials.length > 0) {
+    const eligible: number[] = [];
+    for (let k = 0; k < width * height; k++) {
+      if (!roadEdges.has(k) && dist[k] >= 1 && dist[k] <= ORE_REACH) eligible.push(k);
+    }
+    const spots = rng.shuffle(eligible);
+    for (let i = 0; i < roadlessSpecials.length; i++) {
+      const k = spots[i];
+      if (k === undefined) throw new Error(`special tile '${roadlessSpecials[i]}' cannot fit this map - no open land near the road`);
+      specialClaims.set(k, { tileId: roadlessSpecials[i], rotation: rng.pick([0, 1, 2, 3] as const) });
+    }
+  }
+
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
       const k = slotIdx(x, y);
       if (roadEdges.has(k)) continue;
+      const claim = specialClaims.get(k);
+      if (claim) {
+        board = place(board, claim.tileId, claim.rotation, x, y);
+        continue;
+      }
       if (dist[k] > ORE_REACH) continue; // unclaimed land stays void
       if (dist[k] > FILL_RADIUS) {
         // The outer ring exists for resources - ore, or plain ground when
@@ -544,13 +633,40 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   {
     const cellsNow = resolveCells(board, lib);
     const cellsW = width * TILE_SIZE;
+
+    // Authored overlays (2.18): any placed tile may carry deposits and boons
+    // of its author's choosing; they rotate with the tile and OVERRIDE the
+    // dice for their cells. The tile's word is law on the tile's land.
+    const authoredDeposits = new Map<number, { amount: number; tier: number }>();
+    for (let ty = 0; ty < height; ty++)
+      for (let tx = 0; tx < width; tx++) {
+        const p = slotAt(board, tx, ty);
+        if (!p) continue;
+        const def = lib.def(p.tileId);
+        if (!def.deposits && !def.boons) continue;
+        for (const d of def.deposits ?? []) {
+          const pt = rotatePoint(d.x, d.y, p.rotation);
+          authoredDeposits.set((ty * TILE_SIZE + pt.y) * cellsW + tx * TILE_SIZE + pt.x, { amount: d.amount, tier: d.tier ?? 1 });
+        }
+        for (const b of def.boons ?? []) {
+          const pt = rotatePoint(b.x, b.y, p.rotation);
+          boons.push({ x: tx * TILE_SIZE + pt.x, y: ty * TILE_SIZE + pt.y, boon: b.boon, tier: b.tier });
+        }
+      }
+
     const farGround: CellRef[] = [];
     for (let cy = 0; cy < height * TILE_SIZE; cy++)
       for (let cx = 0; cx < cellsW; cx++) {
         const t = cellsNow[cy * cellsW + cx];
         if (t === 'O') {
           // Every vein is finite, dealt here so replays stay exact (sec 6).
-          deposits.push({ x: cx, y: cy, amount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX), tier: 1 });
+          // An authored vein keeps its author's numbers and spends no dice.
+          const authored = authoredDeposits.get(cy * cellsW + cx);
+          deposits.push(
+            authored
+              ? { x: cx, y: cy, amount: authored.amount, tier: authored.tier }
+              : { x: cx, y: cy, amount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX), tier: 1 },
+          );
         } else if (t === 'R' && poolSize > 0) {
           const roll = rng.int(0, 99);
           const yields: RockContent['yields'] =

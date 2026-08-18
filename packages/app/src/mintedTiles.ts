@@ -8,7 +8,7 @@
  * Every read re-validates through the same engine function that gated the
  * export - a corrupted or stale entry is dropped, never half-loaded.
  */
-import { canonicalCells, migrateLegacyCells, validateTile, type TileDef } from '@ascii-defense/engine';
+import { canonicalizeTile, migrateLegacyCells, validateTile, type TileDef } from '@ascii-defense/engine';
 
 const KEY = 'ascii-defense.mintedTiles.v2';
 const LEGACY_KEY = 'ascii-defense.mintedTiles.v1';
@@ -52,10 +52,11 @@ export function loadMintedTiles(): TileDef[] {
 
 export function addMintedTile(tile: TileDef): void {
   // Canonical form (2.24): the same shape drawn sideways is the same tile,
-  // so it replaces its rotation-twin instead of joining it as a second asset.
-  const canon = { ...tile, cells: canonicalCells(tile.cells) };
+  // so it replaces its rotation-twin instead of joining it as a second
+  // asset. Overlays rotate with the cells (2.18).
+  const canon = canonicalizeTile(tile);
   const key = canon.cells.join('/');
-  const pool = loadMintedTiles().filter((t) => t.id !== canon.id && canonicalCells(t.cells).join('/') !== key);
+  const pool = loadMintedTiles().filter((t) => t.id !== canon.id && canonicalizeTile(t).cells.join('/') !== key);
   pool.push(canon);
   localStorage.setItem(KEY, JSON.stringify(pool));
 }

@@ -24,8 +24,10 @@ import {
   createRng,
   generateMap,
   resolveCells,
+  validateTile,
   type GeneratedMap,
   type ReplayAction,
+  type TileDef,
 } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -43,9 +45,11 @@ const TOWER_DEFS = must(validateTowers.check(towersJson), 'towers').towers;
 const RELIC_DEFS = must(validateRelics.check(relicsJson), 'relics').relics;
 
 // Minted tiles live in localStorage, which workers cannot read - the main
-// thread will pass them in with init once the smith's pool matters mid-run
-// (session 19); until then the shipped library is the worker's world.
-const lib = new TileLibrary(tileLibraryJson.tiles);
+// thread passes the run's LOADOUT with init (2.21). The library is rebuilt
+// per run: shipped basics plus the loaded specials; specials are excluded
+// from the random pools by the generator (they appear because chosen).
+let lib = new TileLibrary(tileLibraryJson.tiles);
+let loadout: TileDef[] = [];
 
 const MAP_X = 12;
 const MAP_Y = 7;
@@ -68,18 +72,36 @@ const post = (m: FromWorker): void => {
   (globalThis as unknown as { postMessage(m: FromWorker): void }).postMessage(m);
 };
 
-function newRun(wantSeed: number, tIdx: number, resume?: RunSave): void {
+function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave): boolean {
   threatIdx = Math.min(THREAT_LEVELS.length - 1, Math.max(0, tIdx));
   const THREAT = THREAT_LEVELS[threatIdx];
   seed = wantSeed;
-  for (;;) {
+  // The run's library: shipped basics plus the loaded specials (2.21). A
+  // stale or invalid special is refused loudly, never half-loaded.
+  loadout = wantLoadout.filter((t) => !tileLibraryJson.tiles.some((s) => s.id === t.id));
+  for (const t of loadout) {
+    if (validateTile(t).length > 0) {
+      post({ t: 'genError', message: `special tile '${t.id}' is no longer valid - remove it from the loadout` });
+      return false;
+    }
+  }
+  lib = new TileLibrary([...tileLibraryJson.tiles, ...loadout]);
+  const specials = loadout.map((t) => t.id);
+  // Generation failures reroll the seed - the map the player asked for is
+  // "one containing my specials", and a fresh carve usually obliges. Bounded:
+  // a loadout no carve can host must SAY so, not spin (PRD sec 4.8).
+  for (let attempt = 0; ; attempt++) {
     try {
       const knobs = createRng(seed).stream('map');
       const entries = knobs.int(THREAT.entries[0], THREAT.entries[1]);
       const targetPathLength = THREAT.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18));
-      map = generateMap(knobs, lib, { width: MAP_X, height: MAP_Y, entries, targetPathLength, relicPoolSize: RELIC_DEFS.length });
+      map = generateMap(knobs, lib, { width: MAP_X, height: MAP_Y, entries, targetPathLength, relicPoolSize: RELIC_DEFS.length, specials });
       break;
-    } catch {
+    } catch (e) {
+      if (attempt >= 60 && specials.length > 0) {
+        post({ t: 'genError', message: e instanceof Error ? e.message : 'the loadout cannot fit any map' });
+        return false;
+      }
       seed = (seed + 1) % 1_000_000; // a player never reads a generator trace
     }
   }
@@ -118,6 +140,7 @@ function newRun(wantSeed: number, tIdx: number, resume?: RunSave): void {
     speedIdx = 1;
   }
   post({ t: 'ready', seed, map, finalWave: THREAT.finalWave });
+  return true;
 }
 
 function syncOfferPause(): void {
@@ -384,7 +407,7 @@ onmessage = (ev: MessageEvent<ToWorker>) => {
   const m = ev.data;
   switch (m.t) {
     case 'init':
-      newRun(m.seed, m.threatIdx, m.resume);
+      newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume);
       break;
     case 'frame': {
       targeting = m.ui.targeting; // main owns arming/cancel; worker mirrors
@@ -408,6 +431,7 @@ onmessage = (ev: MessageEvent<ToWorker>) => {
           tick: sim.tickCount,
           inputs: [...sim.inputs],
           contentHash: contentHashOf(ENEMY_DEFS, TOWER_DEFS),
+          loadout,
         },
       });
       break;

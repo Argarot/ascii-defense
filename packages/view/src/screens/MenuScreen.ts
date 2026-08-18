@@ -6,6 +6,8 @@
  * what an id means.
  */
 import type { GLTerm } from '@ascii-defense/render';
+import { TILE_SIZE, segmentRimMask, type CellType } from '@ascii-defense/engine';
+import { CELL_H, CELL_W, drawTerrainCell } from '../board/style';
 import { role } from '../palette';
 
 export interface MenuItem {
@@ -17,18 +19,30 @@ export interface MenuItem {
   note?: string;
 }
 
+/** A pickable tile preview (2.21): the pool is seen, never read as names. */
+export interface MenuTile {
+  id: string;
+  cells: readonly string[];
+  selected: boolean;
+}
+
 export interface MenuSpec {
   title: string;
   /** Lines under the title - flavour, stats, warnings. '' makes a gap. */
   body?: readonly string[];
+  /** Tile previews rendered between body and items; clicking reports 'tile:<id>'. */
+  tiles?: readonly MenuTile[];
   items: readonly MenuItem[];
   footer?: string;
   /** 0..1 breathing phase for the selected-item shimmer. */
   phase?: number;
 }
 
+const TILE_GW = TILE_SIZE * CELL_W; // tile preview width in glyphs
+const TILE_GH = TILE_SIZE * CELL_H;
+
 export class MenuScreen {
-  private regions: { row: number; x0: number; x1: number; id: string }[] = [];
+  private regions: { row: number; rowEnd?: number; x0: number; x1: number; id: string }[] = [];
 
   render(term: GLTerm, spec: MenuSpec): void {
     this.regions = [];
@@ -41,14 +55,18 @@ export class MenuScreen {
     // Plate width comes from the CONTENT (playtest 10: clipped text): the
     // longest of title, body lines, items with notes, footer - plus padding.
     const noteW = (it: MenuItem): number => it.label.length + (it.note ? it.note.length + 3 : 0);
+    const tiles = spec.tiles ?? [];
+    const stripW = tiles.length > 0 ? tiles.length * (TILE_GW + 3) - 3 : 0;
     const widest = Math.max(
       spec.title.length,
       ...(spec.body ?? []).map((l) => l.length),
       ...spec.items.map(noteW),
       (spec.footer ?? '').length,
+      stripW,
     );
     const plateW = Math.min(W - 2, widest + 8);
-    const contentH = 4 + (spec.body?.length ?? 0) + spec.items.length * 2 + (spec.footer ? 2 : 0);
+    const stripH = tiles.length > 0 ? TILE_GH + 3 : 0;
+    const contentH = 4 + (spec.body?.length ?? 0) + stripH + spec.items.length * 2 + (spec.footer ? 2 : 0);
     const y0 = Math.max(1, Math.floor((term.rows - contentH) / 2));
     const x0 = Math.floor((W - plateW) / 2);
     for (let y = y0 - 1; y < y0 + contentH + 1 && y < term.rows; y++)
@@ -61,6 +79,28 @@ export class MenuScreen {
       term.write(x0 + Math.floor((plateW - l.length) / 2), y++, l, role('ui.dim'));
     }
     if (spec.body?.length) y++;
+    if (tiles.length > 0) {
+      // The pool is a VISUAL surface (PRD sec 4.8): each special drawn by the
+      // same renderer the board uses, framed in accent when loaded.
+      let tx = x0 + Math.max(1, Math.floor((plateW - stripW) / 2));
+      for (const tile of tiles) {
+        const frame = tile.selected ? role('ui.accent') : role('ui.grid');
+        for (let fy = -1; fy <= TILE_GH; fy++) {
+          for (let fx = -1; fx <= TILE_GW; fx++) {
+            if (fy !== -1 && fy !== TILE_GH && fx !== -1 && fx !== TILE_GW) continue;
+            term.put(tx + fx, y + 1 + fy, ' ', frame, frame);
+          }
+        }
+        for (let cy = 0; cy < TILE_SIZE; cy++)
+          for (let cx = 0; cx < TILE_SIZE; cx++)
+            drawTerrainCell(term, tile.cells[cy][cx] as CellType, tx + cx * CELL_W, y + 1 + cy * CELL_H, {
+              rim: segmentRimMask(tile.cells[cy][cx], cx, cy),
+            });
+        this.regions.push({ row: y, rowEnd: y + 1 + TILE_GH, x0: tx - 1, x1: tx + TILE_GW + 1, id: `tile:${tile.id}` });
+        tx += TILE_GW + 3;
+      }
+      y += stripH;
+    }
     for (const it of spec.items) {
       const fg = it.disabled ? role('ui.grid') : role('ui.text');
       const bg = it.disabled ? '#0a0f16' : role('ui.grid');
@@ -82,7 +122,10 @@ export class MenuScreen {
   itemAt(px: number, py: number, glyphPxW: number, glyphPxH: number): string | null {
     const gx = Math.floor(px / glyphPxW);
     const gy = Math.floor(py / glyphPxH);
-    for (const r of this.regions) if (r.row === gy && gx >= r.x0 && gx < r.x1) return r.id;
+    for (const r of this.regions) {
+      const rowOk = r.rowEnd === undefined ? r.row === gy : gy >= r.row && gy <= r.rowEnd;
+      if (rowOk && gx >= r.x0 && gx < r.x1) return r.id;
+    }
     return null;
   }
 }

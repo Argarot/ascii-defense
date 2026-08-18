@@ -22,6 +22,24 @@ export interface TileLibrary {
        * Relative pick weight in generation pools (default 1). Rare specials go low, staples high.
        */
       weight?: number;
+      /**
+       * Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.
+       */
+      deposits?: {
+        x: number;
+        y: number;
+        amount: number;
+        tier?: number;
+      }[];
+      /**
+       * Authored boon cells (2.18): the tile, not the dice, places the power. Must sit on G cells.
+       */
+      boons?: {
+        x: number;
+        y: number;
+        boon: 'range' | 'damage' | 'rate';
+        tier: number;
+      }[];
     },
     ...{
       id: string;
@@ -35,6 +53,24 @@ export interface TileLibrary {
        * Relative pick weight in generation pools (default 1). Rare specials go low, staples high.
        */
       weight?: number;
+      /**
+       * Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.
+       */
+      deposits?: {
+        x: number;
+        y: number;
+        amount: number;
+        tier?: number;
+      }[];
+      /**
+       * Authored boon cells (2.18): the tile, not the dice, places the power. Must sit on G cells.
+       */
+      boons?: {
+        x: number;
+        y: number;
+        boon: 'range' | 'damage' | 'rate';
+        tier: number;
+      }[];
     }[]
   ];
 }
@@ -85,6 +121,77 @@ export const tilesSchema = {
             "description": "Relative pick weight in generation pools (default 1). Rare specials go low, staples high.",
             "type": "number",
             "exclusiveMinimum": 0
+          },
+          "deposits": {
+            "description": "Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "x",
+                "y",
+                "amount"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "y": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "amount": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "tier": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "boons": {
+            "description": "Authored boon cells (2.18): the tile, not the dice, places the power. Must sit on G cells.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "x",
+                "y",
+                "boon",
+                "tier"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "y": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "boon": {
+                  "enum": [
+                    "range",
+                    "damage",
+                    "rate"
+                  ]
+                },
+                "tier": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 4
+                }
+              }
+            }
           }
         }
       }
