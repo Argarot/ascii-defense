@@ -166,7 +166,12 @@ describe('replay (WBS 1.4.8)', () => {
     // pattern on the map stream = different golden map, intended and
     // stable across repeated runs; round-trip replay still proves
     // bit-identical.
-    expect(sim.hashState()).toBe(3560523584);
+    // 3560523584 -> 1729252059 on 2026-08-19 (2.27 rebuild, PR 3): the
+    // terrain half - void share drawn from the D14 curve (one new roll),
+    // enclosed-void repair pass deleted (D11), ore floor deleted (D12,
+    // two fewer shuffle spends), caches uniform over all ground (D16).
+    // Same rebuild arc, same reasons; round-trip replay bit-identical.
+    expect(sim.hashState()).toBe(1729252059);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

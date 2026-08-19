@@ -53,6 +53,12 @@ export interface RoadPlan {
   forced: Map<number, { tileId: string; rotation: Rotation }>;
   /** Road cells on the board edge where enemies enter (cell coords). */
   entries: CellRef[];
+  /**
+   * The per-entry cell floor this carve guarantees (D13): the requested
+   * target when unclamped, 0 when the board clamp bound it (the floor is
+   * then best-effort and not checkable).
+   */
+  floorCells: number;
 }
 
 export const EDGE_DELTA: Record<Edge, [number, number]> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
@@ -471,5 +477,12 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
     if (!placed) throw new Error(`special tile '${sp.id}' found no anchorage on this map - retrying`);
   }
 
-  return { coreK, roadEdges, secondSegment, forced, entries: entryCells };
+  return {
+    coreK,
+    roadEdges,
+    secondSegment,
+    forced,
+    entries: entryCells,
+    floorCells: slotTarget === wantSlots ? Math.max(TILE_SIZE, opts.targetPathCells) : 0,
+  };
 }
