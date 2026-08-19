@@ -10,7 +10,7 @@
  * every map.
  */
 import { describe, expect, it } from 'vitest';
-import { TILE_SIZE, TileLibrary, canonicalCells, createRng, generateMap, tileIsSpecialShape, verifyMap, type TileDef } from '@ascii-defense/engine';
+import { TILE_SIZE, TileLibrary, createRng, generateMap, mirrorCanonicalKey, tileIsSpecialShape, verifyMap, type TileDef } from '@ascii-defense/engine';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 
 const g = (...rows: string[]): string[] => rows;
@@ -65,10 +65,13 @@ describe('the label law: shipped flags match the special-shape predicate', () =>
     }
   });
 
-  it('no two shipped tiles share a canonical form (no duplicates, no rotation twins)', () => {
+  it('no two shipped tiles share a mirror-canonical form (no duplicates, rotations, or mirror twins)', () => {
+    // Rotation identity found nothing in playtest 17's sweep - and playtest
+    // 18's screenshot showed gen_ns_3/gen_ns_4 side by side: exact mirrors,
+    // reading as one asset shipped twice. Reflection joins the law.
     const seen = new Map<string, string>();
     for (const t of libraryJson.tiles) {
-      const k = canonicalCells(t.cells).join('/');
+      const k = mirrorCanonicalKey(t.cells);
       expect(seen.has(k), `${t.id} duplicates ${seen.get(k)}`).toBe(false);
       seen.set(k, t.id);
     }

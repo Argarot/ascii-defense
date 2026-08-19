@@ -26,6 +26,8 @@ export {
   partitionKey,
   tileHasTouchingSegments,
   tileIsSpecialShape,
+  mirrorCells,
+  mirrorCanonicalKey,
   validateTile,
 } from './tiles/tile';
 export type { TileDef, TileDeposit, TileBoon, Edge, Connectors, Rotation } from './tiles/tile';

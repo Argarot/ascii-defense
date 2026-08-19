@@ -9,7 +9,7 @@
  * '-|LJF7', computed from each cell's neighbours in the path, so a wiggly
  * road that runs beside itself touches without merging.
  */
-import { TILE_SIZE, canonicalCells, tileIsSpecialShape, validateTileCells, tilePartition, deriveConnectors, type Edge } from '@ascii-defense/engine';
+import { TILE_SIZE, canonicalCells, mirrorCanonicalKey, tileIsSpecialShape, validateTileCells, tilePartition, deriveConnectors, type Edge } from '@ascii-defense/engine';
 import { createRng, type RngStream } from '@ascii-defense/engine';
 
 const CENTER = (TILE_SIZE - 1) / 2;
@@ -86,9 +86,11 @@ export interface GeneratedTile {
   special?: boolean;
 }
 
-/** Canonical identity key, for deduping generated tiles against hand-authored ones. */
+/** ASSET identity key: rotation AND reflection (playtest 18 - gen_ns_4 was
+ *  gen_ns_3's mirror and read as a duplicate). Used to dedup generated tiles
+ *  against each other and against hand-authored shapes. */
 export function canonicalKeyOf(cells: readonly string[]): string {
-  return canonicalCells(cells).join('/');
+  return mirrorCanonicalKey(cells);
 }
 
 /**
@@ -140,10 +142,10 @@ export function generateVariants(seed: number, perSig: number): GeneratedTile[] 
       const conn = deriveConnectors(cells);
       const gotSig = (['n', 'e', 's', 'w'] as Edge[]).filter((e) => conn[e]).sort().join('');
       if (gotSig !== [...sig].sort().join('')) continue; // exactly the asked edges
-      // Dedup and store by CANONICAL form: the same shape found sideways in
-      // a later attempt is the same tile, not a second asset.
+      // Dedup by MIRROR-canonical form (store as rotation-canonical): the
+      // same shape found sideways OR flipped is the same asset.
       const canon = canonicalCells(cells);
-      const key = canon.join('/');
+      const key = mirrorCanonicalKey(cells);
       if (seen.has(key)) continue;
       seen.add(key);
       made++;

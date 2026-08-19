@@ -66,6 +66,18 @@ his layout (`FT7|`/`EX3-`/`LUJB`/`GKOC`), block labels only→2.23 · nomenclatu
 brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the validity
 checker works properly"→2.26
 
+**Round 21 (playtest 18 screenshot round, 2026-08-20):** "still duplicates
+and borked tiles in the pool; tile_yn7vhz still there"→two separate facts:
+(a) gen_ns_4 was gen_ns_3's exact MIRROR — rotation-canonical identity is
+blind to reflection; gen_ns_4 removed, tilegen and the dedup law now key on
+mirror-canonical form · (b) tile_yn7vhz is MINTED (his browser's pool, by
+design per-browser) and passes validity, so auto-healing rightly keeps it —
+the honest fix is authorship: the loadout screen gained DELETE MODE (armed
+toggle; click a minted tile to remove it permanently; shipped tiles
+untouchable), verified live end-to-end. If a tile the rules accept still
+LOOKS like a loop to him, that is spec input — his export would show the
+shape class.
+
 **Round 20 (playtest 18, 2026-08-19):** "special assets used more than once
 and unselected — double bends everywhere"→CONFIRMED with numbers: twin_bend,
 the one tile round 19 left basic, dealt unchosen on 45/60 plain threat-0

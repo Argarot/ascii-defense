@@ -12,7 +12,7 @@ import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import { GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef } from '@ascii-defense/engine';
-import { loadMintedTiles } from './mintedTiles';
+import { loadMintedTiles, removeMintedTile } from './mintedTiles';
 import {
   BoardView,
   EffectsLayer,
@@ -148,6 +148,10 @@ async function main(): Promise<void> {
   // and anything beyond clipped off-screen with no way to reach it).
   const TILES_PER_PAGE = 10;
   let loadoutPage = 0;
+  // Delete mode (playtest 18): armed, clicking a MINTED tile removes it
+  // permanently - the pool is the player's content, so pruning it is a
+  // button in their hands, not a heuristic. Shipped tiles are untouchable.
+  let loadoutDeleteArmed = false;
   let genError: string | null = null;
   // The lifecycle contract (spec sec 12): 'playing' begins on the worker's
   // 'ready', never on send - a failed init can no longer strand the player
@@ -314,16 +318,19 @@ async function main(): Promise<void> {
         // Its own screen (playtest 12, item 1): the pool will not fit a
         // strip, and picking tiles deserves the whole surface. The pool is
         // minted tiles plus the shipped specials, PAGED (playtest 18).
-        const pool = [...loadMintedTiles(), ...shippedSpecials];
+        const minted = loadMintedTiles();
+        const pool = [...minted, ...shippedSpecials];
         const pages = Math.max(1, Math.ceil(pool.length / TILES_PER_PAGE));
         const page = Math.min(loadoutPage, pages - 1);
         const shown = pool.slice(page * TILES_PER_PAGE, (page + 1) * TILES_PER_PAGE);
         return {
-          title: 'LOADOUT',
+          title: loadoutDeleteArmed ? 'LOADOUT - DELETE MODE' : 'LOADOUT',
           body: [
-            pool.length > 0
-              ? `load up to ${LOADOUT_SLOTS} special tiles - a loaded tile is GUARANTEED on the map`
-              : 'no special tiles yet - the tile smith mints them',
+            loadoutDeleteArmed
+              ? 'click a MINTED tile to remove it permanently (shipped tiles stay)'
+              : pool.length > 0
+                ? `load up to ${LOADOUT_SLOTS} special tiles - a loaded tile is GUARANTEED on the map`
+                : 'no special tiles yet - the tile smith mints them',
           ],
           tiles: shown.map((t) => ({ id: t.id, cells: t.cells, selected: setupLoadout.includes(t.id) })),
           items: [
@@ -332,6 +339,9 @@ async function main(): Promise<void> {
                   { id: 'page:prev', label: '< PREV PAGE', disabled: page === 0 },
                   { id: 'page:next', label: 'NEXT PAGE >', disabled: page === pages - 1 },
                 ]
+              : []),
+            ...(minted.length > 0
+              ? [{ id: 'delmode', label: loadoutDeleteArmed ? 'DONE DELETING' : 'DELETE MINTED TILES' }]
               : []),
             { id: 'back', label: 'DONE' },
           ],
@@ -433,6 +443,14 @@ async function main(): Promise<void> {
     }
     if (id.startsWith('tile:')) {
       const tid = id.slice('tile:'.length);
+      if (loadoutDeleteArmed) {
+        // Minted tiles only - shipped specials are assets, not his pool.
+        if (!shippedSpecials.some((s) => s.id === tid)) {
+          removeMintedTile(tid);
+          setupLoadout = setupLoadout.filter((t) => t !== tid);
+        }
+        return;
+      }
       if (setupLoadout.includes(tid)) setupLoadout = setupLoadout.filter((t) => t !== tid);
       else if (setupLoadout.length < LOADOUT_SLOTS) setupLoadout = [...setupLoadout, tid];
       return;
@@ -445,7 +463,11 @@ async function main(): Promise<void> {
         break;
       case 'loadout':
         loadoutPage = 0;
+        loadoutDeleteArmed = false;
         mode = 'loadout';
+        break;
+      case 'delmode':
+        loadoutDeleteArmed = !loadoutDeleteArmed;
         break;
       case 'page:prev':
         loadoutPage = Math.max(0, loadoutPage - 1);

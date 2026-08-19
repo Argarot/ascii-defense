@@ -91,6 +91,14 @@ export function addMintedTile(tile: TileDef): void {
   localStorage.setItem(KEY, JSON.stringify(pool));
 }
 
+/** Remove one minted tile permanently (playtest 18: a tile the rules still
+ *  accept but its author no longer wants - the pool is HIS content, so the
+ *  delete lives in his hands, not in a heuristic). */
+export function removeMintedTile(id: string): void {
+  const pool = loadMintedTiles().filter((t) => t.id !== id);
+  localStorage.setItem(KEY, JSON.stringify(pool));
+}
+
 export function clearMintedTiles(): void {
   localStorage.removeItem(KEY);
   localStorage.removeItem(LEGACY_KEY);
