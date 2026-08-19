@@ -66,6 +66,19 @@ his layout (`FT7|`/`EX3-`/`LUJB`/`GKOC`), block labels only→2.23 · nomenclatu
 brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the validity
 checker works properly"→2.26
 
+**Round 19 (playtest 17, 2026-08-19 — first playtest of the rebuilt backbone):**
+mapgen doesn't place bridge specials + quit-then-NEW-RUN resumes old game +
+boon on road cell→ALL THREE were the old build (PRs 2–5 were unmerged; the
+boon-on-road is the phantom composite seen live, confirming the PR 4
+diagnosis); merged as #93, deployed, re-verified→closed · his own minted
+loop tile broke generation→validity now refuses in-tile road cycles at the
+authoring surface, naming the cells · generated map still shows loops (seed
+633440)→strand-level exactly-one-route check added to verifyMap, runs inside
+every generation; 480+ swept maps clean; exact-map confirmation needs his
+save export (requested) · touch-not-merge basics→flagged `special` (5 gen_*
+tiles): chosen, never rolled; loadout slots 3→5; twin_bend stays basic (it
+does not touch — flagging it would kill 2.17's tunnels, caught by the test)
+
 **Round 18 (playtest 16, 2026-08-18 — end of day, the reassessment call):**
 boon ground on VOID→2.27 regression fixture · map generated WITHOUT selected
 bridge specials, no error→2.27 regression fixture (suspected worker-lifecycle

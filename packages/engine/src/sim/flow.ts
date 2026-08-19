@@ -51,7 +51,7 @@ const CENTER = (TILE_SIZE - 1) / 2;
  * (their connectors derive), which is precisely deriveConnectors'
  * directional rule applied at board scale.
  */
-function stepAllowed(
+export function stepAllowed(
   cells: readonly (CellType | null)[],
   width: number,
   height: number,
@@ -102,7 +102,7 @@ function stepAllowed(
  * bridge - a walker cannot turn off the deck); the target strand is the
  * one the motion enters. Returns the target strand, or -1 for no edge.
  */
-function strandStep(a: CellType, sa: number, b: CellType, d: number): number {
+export function strandStep(a: CellType, sa: number, b: CellType, d: number): number {
   if (a === 'C') return b === 'C' ? 0 : strandEntered(b, DIR_BITS[d]);
   if ((strandPorts(a)[sa] & DIR_BITS[d]) === 0 && !(b === 'C' && a !== 'B')) return -1;
   if (b === 'C') return 0;

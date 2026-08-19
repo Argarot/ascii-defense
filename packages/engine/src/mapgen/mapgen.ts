@@ -195,7 +195,10 @@ function indexLibrary(
   const filler = { plain: [] as { tileId: string; weight: number }[], ore: [] as { tileId: string; weight: number }[] };
 
   for (const id of lib.ids()) {
-    if (exclude?.has(id)) continue; // specials are chosen, never rolled
+    // Specials are chosen, never rolled - both the run's loadout and the
+    // library's own special-flagged tiles (touch-without-merge and
+    // twin-segment shapes; Daniil, 2026-08-19).
+    if (exclude?.has(id) || lib.def(id).special === true) continue;
     const weight = lib.weightOf(id);
     // Symmetric shapes repeat under rotation (a straight at 0 and 2 is the
     // same tile); indexing every repeat would weight one shape twice (2.24).

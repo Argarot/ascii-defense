@@ -23,6 +23,10 @@ export interface TileLibrary {
        */
       weight?: number;
       /**
+       * A SPECIAL tile (2.21, extended 2026-08-19): selectable in the loadout, guaranteed on the map when chosen, never rolled from the random pools. Shipped tiles whose roads touch without merging, or carry two disconnected road segments, carry this flag.
+       */
+      special?: boolean;
+      /**
        * Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.
        */
       deposits?: {
@@ -53,6 +57,10 @@ export interface TileLibrary {
        * Relative pick weight in generation pools (default 1). Rare specials go low, staples high.
        */
       weight?: number;
+      /**
+       * A SPECIAL tile (2.21, extended 2026-08-19): selectable in the loadout, guaranteed on the map when chosen, never rolled from the random pools. Shipped tiles whose roads touch without merging, or carry two disconnected road segments, carry this flag.
+       */
+      special?: boolean;
       /**
        * Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.
        */
@@ -121,6 +129,10 @@ export const tilesSchema = {
             "description": "Relative pick weight in generation pools (default 1). Rare specials go low, staples high.",
             "type": "number",
             "exclusiveMinimum": 0
+          },
+          "special": {
+            "description": "A SPECIAL tile (2.21, extended 2026-08-19): selectable in the loadout, guaranteed on the map when chosen, never rolled from the random pools. Shipped tiles whose roads touch without merging, or carry two disconnected road segments, carry this flag.",
+            "type": "boolean"
           },
           "deposits": {
             "description": "Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.",
