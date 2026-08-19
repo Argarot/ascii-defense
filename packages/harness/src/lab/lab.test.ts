@@ -1,4 +1,4 @@
-/**
+﻿/**
  * The balance lab's own tests (WBS 1.5.3/1.5.4) - and the session-12 gate:
  * the analytic model's prediction and the real headless run must agree.
  *
@@ -26,7 +26,7 @@ const content: LabContent = {
   relicDefs: must(validateRelics.check(relicsJson)).relics,
 };
 
-const SMALL = { width: 8, height: 5, entries: 2, targetPathLength: 8 };
+const SMALL = { width: 8, height: 5, entries: 2, targetPathCells: 40 };
 
 describe('the balance lab (session 12 gate)', () => {
   it('under the geometric default, even a competent build DIES', () => {

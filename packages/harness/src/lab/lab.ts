@@ -44,7 +44,7 @@ export interface TowerPlacement {
 export interface LabSpec {
   seed: number;
   /** 'demo' derives the map exactly as the live app does for this seed. */
-  map: 'demo' | { width: number; height: number; entries: number; targetPathLength: number };
+  map: 'demo' | { width: number; height: number; entries: number; targetPathCells: number };
   towers: TowerPlacement[];
   /** Granted before the first tick, in order (offer flow bypassed). */
   relicIds: string[];
@@ -82,8 +82,8 @@ export interface LabContent {
 export function demoMap(seed: number, lib: TileLibrary, poolSize: number): { map: GeneratedMap; cellsW: number; cellsH: number; cells: readonly (CellType | null)[] } {
   const knobs = createRng(seed).stream('map');
   const entries = knobs.int(2, 5);
-  const targetPathLength = 8 + Math.max(knobs.int(0, 18), knobs.int(0, 18));
-  const map = generateMap(knobs, lib, { width: 12, height: 7, entries, targetPathLength, relicPoolSize: poolSize });
+  const targetPathCells = (8 + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+  const map = generateMap(knobs, lib, { width: 12, height: 7, entries, targetPathCells, relicPoolSize: poolSize });
   return { map, cellsW: 12 * TILE_SIZE, cellsH: 7 * TILE_SIZE, cells: resolveCells(map.board, lib) };
 }
 

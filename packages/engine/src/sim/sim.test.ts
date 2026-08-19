@@ -52,7 +52,7 @@ function cellOfType(cells: readonly (string | null)[], W: number, H: number, typ
 }
 
 function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
-  const opts = { width: 10, height: 6, entries: 3, targetPathLength: 8 };
+  const opts = { width: 10, height: 6, entries: 3, targetPathCells: 40 };
   const map = generateMap(createRng(seed).stream('map'), LIB, opts);
   const cellsW = opts.width * TILE_SIZE;
   const cellsH = opts.height * TILE_SIZE;

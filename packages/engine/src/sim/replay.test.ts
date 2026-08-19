@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Replay + golden state hash (WBS 1.4.8). Three guarantees:
  *
  *  1. A recorded run replayed into a FRESH sim reproduces bit-identical
@@ -60,7 +60,7 @@ const GOLDEN_SEED = 424242;
 function makeGoldenSim(): { sim: Sim; enemyDefs: EnemyDef[]; towerDefs: TowerDef[] } {
   const enemyDefs = [WALKER, RUNNER];
   const towerDefs = [BOLT, REFINERY];
-  const opts = { width: 10, height: 6, entries: 3, targetPathLength: 8 };
+  const opts = { width: 10, height: 6, entries: 3, targetPathCells: 40 };
   const map = generateMap(createRng(GOLDEN_SEED).stream('map'), LIB, opts);
   const cells = resolveCells(map.board, LIB);
   const simOpts: SimOptions = {
@@ -159,7 +159,14 @@ describe('replay (WBS 1.4.8)', () => {
     // holes and cap-converted slots re-rolled as ring). One fewer rng draw
     // per ring slot changes the golden seed's map - an intended generation
     // change; round-trip replay still proves bit-identical.
-    expect(sim.hashState()).toBe(185380119);
+    // 185380119 -> 3560523584 on 2026-08-19 (2.27 rebuild, PR 2): the road
+    // carve was rebuilt constraint-first against spec sec 12 - the path
+    // target is cell-denominated per entry and never relaxed, and branch
+    // starts and anchor joints gate on tile availability. Different draw
+    // pattern on the map stream = different golden map, intended and
+    // stable across repeated runs; round-trip replay still proves
+    // bit-identical.
+    expect(sim.hashState()).toBe(3560523584);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

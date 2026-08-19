@@ -1,8 +1,8 @@
-/**
+﻿/**
  * verifyMap against the CURRENT generator (WBS 2.27, PR 1): the measured
  * baseline the rebuild is judged against. Sweeps assert which spec rules the
  * old pipeline already satisfies; `it.fails` tests pin the rules it is KNOWN
- * to break — they are the reserved regression fixtures, and they flip to
+ * to break вЂ” they are the reserved regression fixtures, and they flip to
  * plain `it` when the rebuild kills the bug (vitest fails the run the moment
  * a `.fails` test starts passing, so the flip cannot be forgotten).
  */
@@ -33,10 +33,10 @@ const libWith = (...extra: { id: string; cells: string[]; deposits?: { x: number
   new TileLibrary([...BASE_TILES, ...extra]);
 
 const CASES = [
-  { width: 5, height: 4, entries: 2, targetPathLength: 6 },
-  { width: 8, height: 5, entries: 3, targetPathLength: 8 },
-  { width: 12, height: 7, entries: 4, targetPathLength: 14 },
-  { width: 14, height: 7, entries: 6, targetPathLength: 6 },
+  { width: 5, height: 4, entries: 2, targetPathCells: 30 },
+  { width: 8, height: 5, entries: 3, targetPathCells: 40 },
+  { width: 12, height: 7, entries: 4, targetPathCells: 70 },
+  { width: 14, height: 7, entries: 6, targetPathCells: 30 },
 ];
 
 describe('verifyMap: the current generator against the spec (the baseline)', () => {
@@ -60,7 +60,7 @@ describe('verifyMap: the current generator against the spec (the baseline)', () 
     const specials = ['sp_road', 'sp_x', 'sp_bridge', 'sp_vein'];
     for (let seed = 1; seed <= 15; seed++) {
       const map = generateMap(createRng(seed * 7).stream('map'), lib, {
-        width: 12, height: 7, entries: 3, targetPathLength: 10, relicPoolSize: 11, specials,
+        width: 12, height: 7, entries: 3, targetPathCells: 50, relicPoolSize: 11, specials,
       });
       const issues = verifyMap(map, lib, { relicPoolSize: 11, specials });
       expect(issues, `seed ${seed * 7}: ${JSON.stringify(issues)}`).toEqual([]);
@@ -78,7 +78,7 @@ describe('verifyMap: the current generator against the spec (the baseline)', () 
     let multiSegmentMaps = 0;
     for (let seed = 1; seed <= 30; seed++) {
       const map = generateMap(createRng(seed * 17).stream('map'), lib, {
-        width: 12, height: 7, entries: 6, targetPathLength: 12, relicPoolSize: 11,
+        width: 12, height: 7, entries: 6, targetPathCells: 60, relicPoolSize: 11,
       });
       const issues = verifyMap(map, lib, { relicPoolSize: 11 });
       expect(issues, `seed ${seed * 17}: ${JSON.stringify(issues)}`).toEqual([]);
@@ -137,7 +137,7 @@ describe('reserved regression fixtures (playtest 16) - flip to plain `it` when t
     });
     for (let seed = 1; seed <= 5; seed++) {
       const map = generateMap(createRng(seed * 13).stream('map'), lib, {
-        width: 8, height: 5, entries: 2, targetPathLength: 6, relicPoolSize: 11, specials: ['sp_boonrock'],
+        width: 8, height: 5, entries: 2, targetPathCells: 30, relicPoolSize: 11, specials: ['sp_boonrock'],
       });
       const issues = verifyMap(map, lib, { relicPoolSize: 11, specials: ['sp_boonrock'] });
       expect(issues.filter((i) => i.rule === 'tier3/boons-on-ground'), `seed ${seed * 13}`).toEqual([]);
