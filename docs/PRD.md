@@ -197,10 +197,24 @@ run instead of inside it, where it costs no in-run tension:
 
 - **Basic tiles are infinite.** They are the default pool, always available, and
   they fill whatever the specials do not claim. A run always generates.
+- **What counts as special is a SHAPE law** *(Daniil, playtests 17–18,
+  2026-08-19)*: any tile whose roads **touch without merging** or carry **two
+  disconnected segments** is special — chosen, guaranteed, never rolled from
+  the random pools. Plain maps therefore contain no touch-without-merge
+  moments and no two-roads-in-one-slot crossings; those exist only where the
+  player put them. One predicate (`tileIsSpecialShape`) enforces this in the
+  generator, in tilegen, and as a CI label audit.
 - **Special tiles are finite and chosen.** Before the run, the player loads a
-  limited number of them into **slots**. Some are unlocked through meta
-  progression, some are **minted by the player in Tile Smith** — the authoring
-  tool stops being a dev surface and becomes the way you build your own pool.
+  limited number of them into **slots** (5 as of playtest 17; the count is a
+  meta upgrade). Some ship with the game (the flagged shipped shapes), some
+  are **minted by the player in Tile Smith** — the authoring tool stops being
+  a dev surface and becomes the way you build your own pool. Minted tiles are
+  the player's content: the picker pages when the pool outgrows the screen and
+  carries a **delete mode** for pruning it.
+- **Asset identity is mirror-blind** *(playtest 18)*: the shipped pool never
+  contains two tiles that are rotations OR reflections of one shape — a
+  CI law, because a mirrored tile reads as a duplicate asset even though it
+  plays differently.
 - **A loaded special is guaranteed to appear.** That is the whole point: the
   player is not buying a lottery ticket, they are stating what this map will
   contain. If a special cannot be placed legally, generation says so rather than
@@ -932,7 +946,7 @@ Two kinds of state, deliberately kept apart:
 
 | | Contents | Notes |
 |---|---|---|
-| **Run state** | seed + input log + tick | Determinism means **a save IS a replay**. Resuming is replaying at speed. Kilobytes, exact, and it doubles as the bug-report format (§12) |
+| **Run state** | seed + input log + tick + **the generated map itself** *(D15, 2026-08-19)* | Determinism means **a save IS a replay**. Resuming replays the log **onto the stored map** — generation never re-runs on resume, so a save survives generator rebuilds; content drift is refused by hash, loudly. Still kilobytes, exact, and it doubles as the bug-report format (§12). The displayed **run code** (generator version + seed + threat + loadout hash) is the run's compact identity; a code from another generator version is refused, never silently regenerated |
 | **Meta state** | banked Ore, unlocks, run history, settings | Survives runs. The only thing that makes a second run different from the first |
 
 Stored in the browser. The consequence must be stated rather than discovered:

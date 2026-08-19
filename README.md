@@ -13,13 +13,15 @@ death.
 ▶ **[Play the current build](https://argarot.github.io/ascii-defense/)** ·
 ▶ **[Tile Smith](https://argarot.github.io/ascii-defense/tilesmith.html)**
 (author your own terrain tiles — mint them as **specials**, then load up to
-three in run setup: a loaded tile is guaranteed on the map)
+**five** in run setup: a loaded tile is guaranteed on the map. Tiles whose
+roads touch without merging, or carry two separate roads, are specials by
+law — they appear only when you chose them)
 
 Add `?seed=12345` to pin a world, `?threat=0|1|2` for Calm / Standard / Grim.
-A seed determines the whole run **for a given loadout** — the full run
-identity (seed + loadout + inputs) lives in the save file, which doubles as
-an exact replay; a shareable "map code" format is a designed-not-yet-built
-item, since URL seeds cannot carry a roguelite's modifiers.
+A seed determines the whole run **for a given loadout**; the pause and
+summary screens show a copyable **run code** (generator version + seed +
+threat + loadout). The save file carries the generated map itself, so
+resuming never re-rolls the world — a save doubles as an exact replay.
 
 ## What a run looks like
 
@@ -52,17 +54,21 @@ way. Working today: everything above, plus an **effects engine** (explosions
 with shockwaves, projectile trails, drifting terrain, void-as-water, tower idle
 frames — all of it respecting reduced motion, none of it able to touch the
 simulation), the **sim running in a Web Worker** so a hidden tab keeps playing,
-**saves that are replays** (seed + input log, so resuming is bit-identical), a
-balance lab (`node tools/lab.mjs`) that predicts a build's death wave and
-verifies it against the real headless sim, and full cross-machine determinism.
+**saves that are replays** (seed + input log + the generated map, so resuming
+is bit-identical and survives generator changes), a balance lab
+(`node tools/lab.mjs`) that predicts a build's death wave and verifies it
+against the real headless sim, and full cross-machine determinism.
+
+The map generator and worker lifecycle were **rebuilt against a written
+specification** (2026-08-19): every generated map is checked against the whole
+rule set — exactly one route per entry at the resolution enemies walk, so
+loops are impossible; a chosen special appears exactly once; a run start
+yields a fresh game or a stated error, never a silent fallback. The three
+bugs that forced the rebuild are named regression tests now.
 
 **Not built yet**: damage-type resistances, relic fusion, onboarding, art.
-**Known broken** (under a scheduled backbone reassessment of the map
-generator and worker lifecycle): boon cells can land on void; one loadout
-case can drop bridge specials from the generated map; starting a new game
-right after quitting mid-run can return the paused game instead. The roadmap
-runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the checklist is
-[docs/WBS.md](docs/WBS.md).
+The roadmap runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the
+checklist is [docs/WBS.md](docs/WBS.md).
 
 ## Design ideas worth knowing
 
@@ -71,7 +77,8 @@ runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the checklist is
   join only when both face each other. Roads can touch — run side by side,
   fold into S-bends — without merging, and the **bridge** cell `B` carries
   two independent roads through one cell. The route is a graph of strands
-  the enemies can never lane-hop across.
+  the enemies can never lane-hop across. Tiles that use these tricks are
+  **specials**: they reach a map only through the player's loadout.
 - **Connectors are derived, never declared.** A tile edge carries a crossing
   only when its centre cell continues inward. Tiles are indexed by their edge
   *partition*, so a tile carrying two separate roads is placed exactly where
