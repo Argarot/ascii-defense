@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
 import { TileLibrary, createBoard, place } from '../tiles/board';
-import { deriveConnectors, tilePartition } from '../tiles/tile';
+import { deriveConnectors, tilePartition, validateTile } from '../tiles/tile';
 import { generateMap } from './mapgen';
 import { verifyMap } from './verify';
 
@@ -118,29 +118,36 @@ describe('verifyMap: the current generator against the spec (the baseline)', () 
     }
     const loopMap = {
       board, entries: [], core: { x: 0, y: 0 }, caches: [], rockContents: [], deposits: [], boons: [],
+      voidShareTarget: 1, pathFloorCells: 0,
     };
     const issues = verifyMap(loopMap, LIB, {});
     expect(issues.some((i) => i.rule === 'tier1/road-tree')).toBe(true);
   });
 });
 
-describe('reserved regression fixtures (playtest 16) - flip to plain `it` when the rebuild lands', () => {
-  // Boon-on-void, the engine half: the authored-overlay path accepts a boon
-  // on ANY cell of the tile - rock included - with no validator, smith or
-  // generator check. Spec tier3/boons-on-ground says boons sit on buildable
-  // ground only, dealt AND authored.
-  it.fails('an authored boon on a non-ground cell is refused', () => {
-    const lib = libWith({
-      id: 'sp_boonrock',
-      cells: g('GGGGG', 'GRGGG', 'GGGGG', 'GGGGG', 'GGGGG'),
-      boons: [{ x: 1, y: 1, boon: 'damage', tier: 2 }],
-    });
-    for (let seed = 1; seed <= 5; seed++) {
-      const map = generateMap(createRng(seed * 13).stream('map'), lib, {
+describe('regression: boon-on-ground, both halves (playtest 16, engine side)', () => {
+  // PR 1 pinned this red: a library built WITHOUT the validator accepted an
+  // authored boon on a rock cell and dealt it silently. Closed in PR 3:
+  // the generator refuses the overlay loudly, and validateTile (the
+  // authoring surface: the Smith and the worker's loadout gate) names the
+  // cell. The lifecycle half of the reported bug - a new map's boons
+  // composited over an old sim's board - is PR 4's fixture.
+  const BOONROCK = {
+    id: 'sp_boonrock',
+    cells: g('GGGGG', 'GRGGG', 'GGGGG', 'GGGGG', 'GGGGG'),
+    boons: [{ x: 1, y: 1, boon: 'damage' as const, tier: 2 as const }],
+  };
+
+  it('the generator refuses an authored boon on a non-ground cell, loudly', () => {
+    const lib = libWith(BOONROCK);
+    expect(() =>
+      generateMap(createRng(13).stream('map'), lib, {
         width: 8, height: 5, entries: 2, targetPathCells: 30, relicPoolSize: 11, specials: ['sp_boonrock'],
-      });
-      const issues = verifyMap(map, lib, { relicPoolSize: 11, specials: ['sp_boonrock'] });
-      expect(issues.filter((i) => i.rule === 'tier3/boons-on-ground'), `seed ${seed * 13}`).toEqual([]);
-    }
+      }),
+    ).toThrow(/authors a boon on a non-ground cell/);
+  });
+
+  it('the authoring surface refuses it too (validateTile)', () => {
+    expect(validateTile(BOONROCK).some((e) => /boon at \(1,1\)/.test(e))).toBe(true);
   });
 });

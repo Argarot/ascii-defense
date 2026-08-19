@@ -76,6 +76,14 @@ function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
   return { map, cells, cellsW, cellsH, simOpts };
 }
 
+/** Ore is a bias, not a guarantee (D12): scan forward to a seed with a vein. */
+function makeOreWorld(start: number, extra: Partial<SimOptions> = {}) {
+  for (let s = start; ; s++) {
+    const w = makeWorld(s, extra);
+    if (w.cells.some((c) => c === 'O')) return { ...w, seed: s };
+  }
+}
+
 function cellOfType(cells: readonly (string | null)[], W: number, H: number, type: string): { x: number; y: number } {
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) if (cells[y * W + x] === type) return { x, y };
@@ -278,8 +286,8 @@ describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
   });
 
   it('deep vein: production quintuples for the boost window', () => {
-    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, { maxSpawns: 0, spawnEveryTicks: 100000 });
-    const sim = new Sim(11, simOpts);
+    const { cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(11, { maxSpawns: 0, spawnEveryTicks: 100000 });
+    const sim = new Sim(seed, simOpts);
     const vein = cellOfType(cells, cellsW, cellsH, 'O');
     sim.buildTower(vein.x, vein.y, 'refinery');
     grant(sim, 'deep_vein');
@@ -401,8 +409,8 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
   });
 
   it('Automation refineries prospect on their own (parallel to Survey speed)', () => {
-    const { cells, cellsW, cellsH, simOpts } = makeWorld(83, { startingScrap: 5000, maxSpawns: 1 });
-    const sim = new Sim(83, simOpts);
+    const { cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(83, { startingScrap: 5000, maxSpawns: 1 });
+    const sim = new Sim(seed, simOpts);
     // A Survey refinery on a vein; find a rock within its chebyshev-2 reach.
     const vein = cellOfType(cells, cellsW, cellsH, 'O');
     sim.buildTower(vein.x, vein.y, 'refinery');
@@ -425,8 +433,8 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
   });
 
   it('a run with claims and prospects replays bit-identically', () => {
-    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(83, { startingScrap: 5000 });
-    const sim = new Sim(83, simOpts);
+    const { map, cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(83, { startingScrap: 5000 });
+    const sim = new Sim(seed, simOpts);
     const vein = cellOfType(cells, cellsW, cellsH, 'O');
     sim.buildTower(vein.x, vein.y, 'refinery');
     sim.chooseTier(vein.x, vein.y, 0, 0);
@@ -436,7 +444,7 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
     sim.prospect(map.rockContents[0].x, map.rockContents[0].y);
     for (let t = 0; t < 700; t++) sim.tick(); // the job completes mid-run
 
-    const fresh = new Sim(83, simOpts);
+    const fresh = new Sim(seed, simOpts);
     let i = 0;
     while (fresh.tickCount < sim.tickCount) {
       while (i < sim.inputs.length && sim.inputs[i].tick === fresh.tickCount) fresh.applyAction(sim.inputs[i++].a);

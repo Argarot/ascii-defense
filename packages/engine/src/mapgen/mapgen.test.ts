@@ -2,7 +2,7 @@
 import { createRng } from '../rng/rng';
 import { TILE_SIZE, deriveConnectors, validateTileCells } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt, type Board } from '../tiles/board';
-import { FILL_RADIUS, ORE_FLOOR, ORE_REACH, generateMap } from './mapgen';
+import { FILL_RADIUS, ORE_REACH, VOID_SHARE_CAP, generateMap } from './mapgen';
 import { computeFlowField } from '../sim/flow';
 
 // The same tile shapes the shipped library provides, inline so engine tests
@@ -194,11 +194,11 @@ describe('map generation v2 - trees, void, spread', () => {
         for (let k = 0; k < width * height; k++) {
           const p = map.board.slots[k];
           if (isRoadSlot[k]) continue;
-          if (p) {
-            expect(dist[k], `filled slot ${k} too far from road`).toBeLessThanOrEqual(ORE_REACH);
-            // Since playtest 4 the outer ring may also carry plain ground
-            // (enclosed voids read as bugs); the void-beyond rule remains.
-          } else {
+          // Filled slots may sit beyond ORE_REACH: the void-share trim
+          // (D14) converts far void into land, growing the coastline
+          // outward from the near ring. The LAW is one-directional: void
+          // never sits near the road.
+          if (!p) {
             expect(dist[k], `void slot ${k} should have been filled`).toBeGreaterThan(FILL_RADIUS);
           }
         }
@@ -206,22 +206,25 @@ describe('map generation v2 - trees, void, spread', () => {
     }
   });
 
-  it('ore floor: every map guarantees buildable ore cells (PRD sec 4.3)', () => {
-    // The floor is what makes the Ore economy a certainty rather than a
-    // draw - a map without ore has no Refinery play and no Core purchases.
-    // Boards from CASES[2] up always have >= ORE_FLOOR fillable slots.
-    for (const opts of CASES.slice(2)) {
-      for (let seed = 1; seed <= 8; seed++) {
+  it('ore is a heavy bias, not a guarantee (D12)', () => {
+    // The floor was removed 2026-08-19 (Daniil): a rare ore-less map is
+    // legal; on REAL-sized boards the fill odds still make ore
+    // near-certain (tiny test boards have too few land slots to promise
+    // that). Fixed seeds, so this is deterministic, not statistical.
+    let withOre = 0;
+    let total = 0;
+    for (const opts of [
+      { width: 12, height: 7, entries: 3, targetPathCells: 40 },
+      { width: 12, height: 7, entries: 2, targetPathCells: 60 },
+    ]) {
+      for (let seed = 1; seed <= 15; seed++) {
         const map = generateMap(createRng(seed * 7 + 1).stream('map'), LIB, opts);
         const cells = resolveCells(map.board, LIB);
-        const oreCells = cells.filter((c) => c === 'O').length;
-        // Each guaranteed slot carries a tile with >= 1 ore cell.
-        expect(
-          oreCells,
-          `seed ${seed * 7 + 1} on ${opts.width}x${opts.height}: no ore economy`,
-        ).toBeGreaterThanOrEqual(ORE_FLOOR);
+        total++;
+        if (cells.some((c) => c === 'O')) withOre++;
       }
     }
+    expect(withOre / total).toBeGreaterThan(0.9);
   });
 
   it('sector spreading: with 4+ entries the road reaches all four board halves', () => {
@@ -335,30 +338,13 @@ describe('void placement rules (playtest 12)', () => {
         }
         const voidK: number[] = [];
         for (let k = 0; k < width * height; k++) if (map.board.slots[k] === null) voidK.push(k);
-        // (7) never near the road: everything within ORE_REACH is land.
+        // never near the road: everything within ORE_REACH is land.
         for (const k of voidK) expect(dist[k], `seed ${seed * 17} slot ${k}`).toBeGreaterThan(ORE_REACH);
-        // (6) bounded share: the cap plus nothing sneaking around it.
-        expect(voidK.length).toBeLessThanOrEqual(Math.floor(width * height * 0.22));
-        // no holes: every void slot reaches the border through void.
-        const reach = new Set<number>();
-        const vq: number[] = [];
-        for (const k of voidK) {
-          const x = k % width;
-          const y = Math.floor(k / width);
-          if (x === 0 || y === 0 || x === width - 1 || y === height - 1) { reach.add(k); vq.push(k); }
-        }
-        const voidSet = new Set(voidK);
-        for (let qi = 0; qi < vq.length; qi++) {
-          const k = vq[qi];
-          const x = k % width;
-          const y = Math.floor(k / width);
-          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-            if (x + dx < 0 || y + dy < 0 || x + dx >= width || y + dy >= height) continue;
-            const nk = (y + dy) * width + x + dx;
-            if (voidSet.has(nk) && !reach.has(nk)) { reach.add(nk); vq.push(nk); }
-          }
-        }
-        for (const k of voidK) expect(reach.has(k), `enclosed void at slot ${k}, seed ${seed * 17}`).toBe(true);
+        // D14: the share honours the map's own DRAWN ceiling, whose curve
+        // support is capped at VOID_SHARE_CAP.
+        expect(map.voidShareTarget).toBeLessThanOrEqual(VOID_SHARE_CAP);
+        expect(voidK.length).toBeLessThanOrEqual(Math.floor(width * height * map.voidShareTarget));
+        // Enclosed void is LEGAL (D11) - no hole check, by decision.
       }
     }
   });
