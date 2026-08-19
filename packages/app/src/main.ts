@@ -32,7 +32,7 @@ import boltSpriteJson from '@ascii-defense/content/assets/sprites/bolt.json';
 import mortarSpriteJson from '@ascii-defense/content/assets/sprites/mortar.json';
 import frostSpriteJson from '@ascii-defense/content/assets/sprites/frost.json';
 import refinerySpriteJson from '@ascii-defense/content/assets/sprites/refinery.json';
-import { SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
+import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
   if (!r.ok) throw new Error(`${what} failed validation: ` + r.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
@@ -85,8 +85,10 @@ function loadRun(): { run: RunSave | null; problem: string | null } {
     const raw = localStorage.getItem(RUN_KEY);
     if (!raw) return { run: null, problem: null };
     const r = JSON.parse(raw) as RunSave;
-    // v1 runs carried no loadout; an empty one replays them exactly.
-    if (r.version === 1) return { run: { ...r, version: SAVE_VERSION, loadout: [] }, problem: null };
+    // v1/v2 saves carry no map; across the generator rebuild their seed
+    // would regenerate a DIFFERENT map and the input log would replay onto
+    // the wrong cells - refused with a sentence, never silently corrupted.
+    if (r.version < SAVE_VERSION) return { run: null, problem: 'run save predates the generator rebuild - it cannot continue' };
     if (r.version !== SAVE_VERSION) return { run: null, problem: `run save is version ${r.version}, this build reads ${SAVE_VERSION} - it cannot continue` };
     return { run: r, problem: null };
   } catch {
@@ -107,7 +109,7 @@ async function main(): Promise<void> {
     ...savedLoadout.filter((t) => !mintedNow.some((m) => m.id === t.id) && !tileLibraryJson.tiles.some((s) => s.id === t.id)),
   ]);
 
-  const mapX = 12, mapY = 7;
+  const mapX = BOARD_SLOTS.w, mapY = BOARD_SLOTS.h; // one truth, shared with the worker
   const boardCols = mapX * TILE_SIZE * CELL_W;
   const term = new GLTerm(glyphs, { cols: boardCols, rows: mapY * TILE_SIZE * CELL_H, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
   const view = new BoardView(term, lib, { mapX, mapY, glyphPxW: GLYPH_PX_W, glyphPxH: GLYPH_PX_H, sprites: SPRITES });
@@ -138,6 +140,10 @@ async function main(): Promise<void> {
   let setupThreat = 1; // synced to the live threat when the screen opens
   let setupLoadout: string[] = [];
   let genError: string | null = null;
+  // The lifecycle contract (spec sec 12): 'playing' begins on the worker's
+  // 'ready', never on send - a failed init can no longer strand the player
+  // in a phantom of the previous run.
+  let pendingStart = false;
   let summary: { won: boolean; wave: number; kills: number; oreBanked: number; seed: number } | null = null;
   let summaryBanked = false;
 
@@ -187,6 +193,10 @@ async function main(): Promise<void> {
       targeting = null;
       summary = null;
       summaryBanked = false;
+      if (pendingStart) {
+        pendingStart = false;
+        mode = 'playing';
+      }
       history.replaceState(null, '', `?seed=${seed}&threat=${threatIdx}`);
     } else if (m.t === 'snapshot') {
       snap = m.s;
@@ -194,8 +204,10 @@ async function main(): Promise<void> {
       saveWaiters.get(m.id)?.(m.save);
       saveWaiters.delete(m.id);
     } else if (m.t === 'genError') {
-      // The loadout could not be honoured (2.21): say so ON the setup screen
-      // and stay there - a special is never silently dropped.
+      // The run could not start (2.21/2.27): say so ON the setup screen and
+      // stay there - a special is never silently dropped, and the previous
+      // run (still intact in the worker) is never mistaken for a new one.
+      pendingStart = false;
       genError = m.message;
       mode = 'setup';
     } else if (m.t === 'debugResult') {
@@ -209,7 +221,7 @@ async function main(): Promise<void> {
     threatIdx = tIdx;
     lastLoadout = resume?.loadout ?? loadout ?? [];
     send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout });
-    mode = 'playing';
+    pendingStart = true; // 'playing' begins on 'ready', not on send
     mirroredSpeed = 1;
   };
 

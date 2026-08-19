@@ -10,6 +10,13 @@
 import type { CellRef, GeneratedMap, ReplayInput, StampedSimEvent, TileDef } from '@ascii-defense/engine';
 import type { HudState, RenderState } from '@ascii-defense/view';
 
+/**
+ * Board dimensions in tile slots - ONE source of truth for both threads
+ * (spec sec 12 parameterization; previously duplicated in main.ts and the
+ * worker, a drift surface). Derivable from resolution in a later session.
+ */
+export const BOARD_SLOTS = { w: 12, h: 7 } as const;
+
 /** Threat levels as data (session 15); shared so both threads agree. */
 export const THREAT_LEVELS = [
   { name: 'Calm', entries: [2, 3] as const, pathBias: 12, finalWave: 15, hpGeometric: 1.05 },
@@ -30,6 +37,12 @@ export interface RunSave {
   contentHash: number;
   /** Special tiles loaded for this run (v2+); [] on migrated v1 saves. */
   loadout: TileDef[];
+  /**
+   * The generated map itself (v3, D15): resume LOADS it and never
+   * re-generates, so a saved run survives generator changes. The map is
+   * plain data - it already crosses postMessage every init.
+   */
+  map: GeneratedMap;
 }
 
 export interface UiState {
@@ -87,5 +100,11 @@ export type FromWorker =
   | { t: 'genError'; message: string }
   | { t: 'debugResult'; id: number; result: unknown };
 
-/** v2 (session 19): RunSave gains the loadout. v1 saves migrate with []. */
-export const SAVE_VERSION = 2;
+/**
+ * v2 (session 19): RunSave gains the loadout; v1 migrated with [].
+ * v3 (2.27 PR 4, D15): RunSave carries the generated map. v1/v2 saves
+ * cannot honestly resume across the generator rebuild (their seed would
+ * regenerate a DIFFERENT map and the input log would replay onto wrong
+ * cells) - they are refused with a sentence, never silently corrupted.
+ */
+export const SAVE_VERSION = 3;
