@@ -6,7 +6,7 @@
  * `node tools/lab.mjs`, not in CI.
  */
 import { describe, expect, it } from 'vitest';
-import { TileLibrary, DEFAULT_DIFFICULTY, effectiveStats } from '@ascii-defense/engine';
+import { TileLibrary, DEFAULT_DIFFICULTY, effectiveStats, tilePartition } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
@@ -93,18 +93,21 @@ describe('the balance lab (session 12 gate)', () => {
   });
 });
 
-describe('carve v3 - two roads through one slot (WBS 2.17)', () => {
-  it('the shipped library places twin_bend tiles on real maps', () => {
-    // Turning tunnels only fire when walks collide AND the partition tile
-    // exists; across a seed sweep the shipped twin_bend must actually get
-    // dealt - Daniil's two-touching-turns request, on the board.
-    let found = 0;
-    for (let seed = 1; seed <= 120 && found === 0; seed++) {
+describe('special shapes never appear unchosen (playtest 18 - inverts the old 2.17 sweep)', () => {
+  it('plain maps contain NO special-flagged tiles and NO multi-segment slots', () => {
+    // The 2.17 request ("two-turn tiles used") is served by the LOADOUT
+    // now: twin_bend and every touching/twin-segment shape is chosen,
+    // guaranteed, exactly-once - after playtest 17's map dealt unchosen
+    // double bends on 45/60 plain maps. Tunnels self-limit to zero when no
+    // two-group tile is in the rolled pool (the availability gate).
+    const specialIds = new Set(content.lib.ids().filter((id) => content.lib.def(id).special === true));
+    for (let seed = 1; seed <= 40; seed++) {
       const { map } = demoMap(seed * 101, content.lib, content.relicDefs.length);
       for (const p of map.board.slots) {
-        if (p && p.tileId === 'twin_bend') found++;
+        if (!p) continue;
+        expect(specialIds.has(p.tileId), `seed ${seed * 101}: '${p.tileId}' dealt unchosen`).toBe(false);
+        expect(tilePartition(content.lib.resolved(p.tileId, p.rotation).cells).length, `seed ${seed * 101}: multi-segment '${p.tileId}' dealt`).toBeLessThanOrEqual(1);
       }
     }
-    expect(found).toBeGreaterThan(0);
   });
 });

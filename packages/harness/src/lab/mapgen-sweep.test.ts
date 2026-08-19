@@ -10,7 +10,7 @@
  * every map.
  */
 import { describe, expect, it } from 'vitest';
-import { TILE_SIZE, TileLibrary, createRng, generateMap, verifyMap, type TileDef } from '@ascii-defense/engine';
+import { TILE_SIZE, TileLibrary, canonicalCells, createRng, generateMap, tileIsSpecialShape, verifyMap, type TileDef } from '@ascii-defense/engine';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 
 const g = (...rows: string[]): string[] => rows;
@@ -52,6 +52,28 @@ function appMap(seed0: number, lib: TileLibrary, specials?: string[], threatIdx 
     }
   }
 }
+
+describe('the label law: shipped flags match the special-shape predicate', () => {
+  it('every tile is flagged special IFF its shape is special (touching or twin-segment)', () => {
+    // One predicate, audited forever - playtest 18 found the confusion that
+    // one unlabeled shape causes. tilegen emits the flag; this test keeps
+    // hand-authored tiles honest too.
+    for (const t of libraryJson.tiles) {
+      const should = tileIsSpecialShape(t.cells);
+      const flagged = (t as { special?: boolean }).special === true;
+      expect(flagged, `${t.id}: shape says special=${should}, library says ${flagged}`).toBe(should);
+    }
+  });
+
+  it('no two shipped tiles share a canonical form (no duplicates, no rotation twins)', () => {
+    const seen = new Map<string, string>();
+    for (const t of libraryJson.tiles) {
+      const k = canonicalCells(t.cells).join('/');
+      expect(seen.has(k), `${t.id} duplicates ${seen.get(k)}`).toBe(false);
+      seen.set(k, t.id);
+    }
+  });
+});
 
 describe('the shipped library satisfies the spec (verifyMap on real content)', () => {
   it('plain runs, all threats, 40 seeds each', () => {
