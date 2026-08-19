@@ -9,8 +9,8 @@
  */
 import { TILE_SIZE, tilePartition, type Edge } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt } from '../tiles/board';
-import { isRoad, isRouteCell, roadsConnect, type CellType } from '../grid/cells';
-import { computeFlowField } from '../sim/flow';
+import { isRoad, isRouteCell, roadsConnect, strandPorts, type CellType } from '../grid/cells';
+import { DIRS, computeFlowField, stepAllowed, strandStep, type FlowField } from '../sim/flow';
 import { ORE_REACH, VOID_SHARE_CAP, type GeneratedMap } from './mapgen';
 
 export interface VerifyIssue {
@@ -92,8 +92,9 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
   // The flow field is the game's own truth about routing (strand-aware, so
   // bridges keep their two roads separate). It throws on an unreachable
   // entry; a road cell no strand of which reaches the Core is an orphan.
+  let flow: FlowField | null = null;
   try {
-    const flow = computeFlowField(cells, W, H, map.entries);
+    flow = computeFlowField(cells, W, H, map.entries);
     for (let i = 0; i < cells.length; i++) {
       const c = cells[i];
       if (c === null || !isRouteCell(c)) continue;
@@ -109,6 +110,59 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
     }
   } catch (err) {
     bad('tier1/routes', err instanceof Error ? err.message : String(err));
+  }
+
+  // ---- Tier 1: EXACTLY ONE route per entry, at strand resolution ---------
+  // The literal law, checked on the literal graph the enemies walk: strand
+  // nodes and the game's own step predicates (stepAllowed + strandStep).
+  // All Core cells contract to one supernode (the Core welds internally -
+  // its interior adjacencies are not routes). On the reachable component a
+  // unique-route network is a tree: |E| = |V| - 1; every extra edge is a
+  // second way somewhere. This sees what the slot-level check cannot:
+  // cycles INSIDE tiles and cycles threaded through touching segments.
+  if (flow) {
+    const SUPER = -2;
+    const reachable = (i: number, s: number): boolean => flow!.nodeDist[i * 2 + s] >= 0;
+    const edgeKeys = new Set<string>();
+    const addEdge = (a: number, b: number): void => {
+      edgeKeys.add(a <= b ? `${a}|${b}` : `${b}|${a}`);
+    };
+    let nodeCount = 1; // the Core supernode
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        const a = cells[i];
+        if (a === null || !isRouteCell(a)) continue;
+        if (a !== 'C') {
+          for (let s = 0; s < strandPorts(a).length; s++) if (reachable(i, s)) nodeCount++;
+        }
+        for (const d of [1, 2]) {
+          // East and south only - each undirected adjacency counted once.
+          const nx = x + DIRS[d][0];
+          const ny = y + DIRS[d][1];
+          if (nx >= W || ny >= H) continue;
+          const ni = ny * W + nx;
+          const b = cells[ni];
+          if (b === null || !isRouteCell(b)) continue;
+          if (!stepAllowed(cells, W, H, x, y, nx, ny)) continue;
+          if (a === 'C' && b === 'C') continue; // interior of the supernode
+          if (a === 'C') {
+            const sb = strandStep(a, 0, b, d);
+            if (sb >= 0 && reachable(ni, sb)) addEdge(SUPER, ni * 2 + sb);
+          } else {
+            for (let sa = 0; sa < strandPorts(a).length; sa++) {
+              const sb = strandStep(a, sa, b, d);
+              if (sb < 0 || !reachable(i, sa)) continue;
+              if (b === 'C') addEdge(i * 2 + sa, SUPER);
+              else if (reachable(ni, sb)) addEdge(i * 2 + sa, ni * 2 + sb);
+            }
+          }
+        }
+      }
+    const extra = edgeKeys.size - (nodeCount - 1);
+    if (extra > 0) {
+      bad('tier1/route-unique', `${extra} extra route connection(s): somewhere the road offers more than one way`);
+    }
   }
 
   // ---- Tier 1: the road is a TREE at the segment level -------------------

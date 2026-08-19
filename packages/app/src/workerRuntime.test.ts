@@ -33,6 +33,9 @@ const BASICS: TileDef[] = [
   { id: 'cross', cells: g('GGXGG', 'GGXGG', 'XXXXX', 'GGXGG', 'GGXGG') },
   { id: 'meadow', cells: g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG') },
   { id: 'ore_patch', cells: g('GGGGG', 'GOOGG', 'GOOGG', 'GGGGG', 'GGGGG') },
+  // A shipped SPECIAL (playtest 2026-08-19): lives in the basics file,
+  // flagged so it is chosen, never rolled.
+  { id: 'ship_twin', cells: g('GG|GG', 'GGL7G', '-7GL-', 'GL7GG', 'GG|GG'), special: true },
 ];
 const WALKER: EnemyDef = { id: 'walker', hp: 10, speed: 0.2, damage: 2 };
 const BOLT: TowerDef = { id: 'bolt', cost: 20, range: 6, fireEveryTicks: 10, projectile: { damage: 6, speed: 0.6, homing: true } };
@@ -110,6 +113,27 @@ describe('the lifecycle contract: init yields ready or genError, never silence',
     expect(err).toBeDefined();
     expect(err!.message).toMatch(/carries the Core/);
     expect(last('ready')).toBeUndefined();
+  });
+});
+
+describe('shipped specials (playtest 2026-08-19): chosen, never rolled', () => {
+  it('unchosen, the flagged tile never appears', () => {
+    const { rt, last } = makeRt();
+    for (const seed of [3, 14, 26, 47, 88]) {
+      rt.handle({ t: 'init', seed, threatIdx: 1, loadout: [] });
+      const placed = last('ready')!.map.board.slots.filter(Boolean).map((p) => p!.tileId);
+      expect(placed.includes('ship_twin'), `seed ${seed}`).toBe(false);
+    }
+  });
+
+  it('chosen by its shipped def, it is guaranteed exactly once', () => {
+    const { rt, last } = makeRt();
+    const def = BASICS.find((t) => t.id === 'ship_twin')!;
+    rt.handle({ t: 'init', seed: 21, threatIdx: 1, loadout: [def] });
+    const ready = last('ready');
+    expect(ready).toBeDefined();
+    const placed = ready!.map.board.slots.filter(Boolean).map((p) => p!.tileId);
+    expect(placed.filter((id) => id === 'ship_twin').length).toBe(1);
   });
 });
 

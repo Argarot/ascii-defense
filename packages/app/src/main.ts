@@ -136,7 +136,11 @@ async function main(): Promise<void> {
   // Run setup state (2.21): the threat is picked, the loadout assembled, and
   // START commits both. Loadout entries are minted-tile ids; 3 slots for now
   // (the slot economy is 7.5).
-  const LOADOUT_SLOTS = 3;
+  const LOADOUT_SLOTS = 5;
+  // Shipped SPECIALS (playtest 2026-08-19): library tiles whose roads touch
+  // without merging or split into two segments - selectable like minted
+  // tiles, never rolled from the random pools.
+  const shippedSpecials: TileDef[] = tileLibraryJson.tiles.filter((t) => t.special === true);
   let setupThreat = 1; // synced to the live threat when the screen opens
   let setupLoadout: string[] = [];
   let genError: string | null = null;
@@ -303,16 +307,17 @@ async function main(): Promise<void> {
         };
       case 'loadout': {
         // Its own screen (playtest 12, item 1): the pool will not fit a
-        // strip, and picking tiles deserves the whole surface.
-        const minted = loadMintedTiles();
+        // strip, and picking tiles deserves the whole surface. The pool is
+        // minted tiles plus the shipped specials.
+        const pool = [...loadMintedTiles(), ...shippedSpecials];
         return {
           title: 'LOADOUT',
           body: [
-            minted.length > 0
+            pool.length > 0
               ? `load up to ${LOADOUT_SLOTS} special tiles - a loaded tile is GUARANTEED on the map`
               : 'no special tiles yet - the tile smith mints them',
           ],
-          tiles: minted.map((t) => ({ id: t.id, cells: t.cells, selected: setupLoadout.includes(t.id) })),
+          tiles: pool.map((t) => ({ id: t.id, cells: t.cells, selected: setupLoadout.includes(t.id) })),
           items: [{ id: 'back', label: 'DONE' }],
           footer: `${setupLoadout.length}/${LOADOUT_SLOTS} loaded`,
         };
@@ -426,9 +431,9 @@ async function main(): Promise<void> {
         mode = 'loadout';
         break;
       case 'start': {
-        const minted = loadMintedTiles();
+        const pool = [...loadMintedTiles(), ...shippedSpecials];
         const defs = setupLoadout
-          .map((tid) => minted.find((t) => t.id === tid))
+          .map((tid) => pool.find((t) => t.id === tid))
           .filter((t): t is NonNullable<typeof t> => t !== undefined);
         genError = null;
         startRun(setupThreat, undefined, undefined, defs);

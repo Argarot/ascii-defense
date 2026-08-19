@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
 import { TileLibrary, createBoard, place } from '../tiles/board';
-import { deriveConnectors, tilePartition, validateTile } from '../tiles/tile';
+import { deriveConnectors, tilePartition, validateTile, validateTileCells } from '../tiles/tile';
 import { generateMap } from './mapgen';
 import { verifyMap } from './verify';
 
@@ -122,6 +122,47 @@ describe('verifyMap: the current generator against the spec (the baseline)', () 
     };
     const issues = verifyMap(loopMap, LIB, {});
     expect(issues.some((i) => i.rule === 'tier1/road-tree')).toBe(true);
+  });
+});
+
+describe('regression: loops on generated maps (playtest 2026-08-19, seed 633440)', () => {
+  it('a REACHABLE board cycle is caught by the strand-level exactly-one-route check', () => {
+    // A ring through the Core: core_x's east exit circles via three corners
+    // back into its north exit - every cell routes, the flow field is happy,
+    // and there are two ways from the ring to the Core. The literal law
+    // (exactly one route) must say no.
+    const wanted: { tile: string; x: number; y: number; conn: Record<string, boolean> }[] = [
+      { tile: 'core_x', x: 1, y: 1, conn: { n: true, e: true, s: true, w: true } },
+      { tile: 'corner', x: 2, y: 1, conn: { n: true, e: false, s: false, w: true } },
+      { tile: 'corner', x: 2, y: 0, conn: { n: false, e: false, s: true, w: true } },
+      { tile: 'corner', x: 1, y: 0, conn: { n: false, e: true, s: true, w: false } },
+    ];
+    let board = createBoard(3, 3);
+    for (const w of wanted) {
+      const rot = ([0, 1, 2, 3] as const).find((r) => {
+        const c = deriveConnectors(LIB.resolved(w.tile, r).cells);
+        return c.n === w.conn.n && c.e === w.conn.e && c.s === w.conn.s && c.w === w.conn.w;
+      });
+      expect(rot, `no ${w.tile} rotation gives ${JSON.stringify(w.conn)}`).toBeDefined();
+      board = place(board, w.tile, rot!, w.x, w.y);
+    }
+    const core = { x: 1 * 5 + 2, y: 1 * 5 + 2 };
+    const ringMap = {
+      board, entries: [], core, caches: [], rockContents: [], deposits: [], boons: [],
+      voidShareTarget: 1, pathFloorCells: 0,
+    };
+    const issues = verifyMap(ringMap, LIB, {});
+    expect(issues.some((i) => i.rule === 'tier1/route-unique'), JSON.stringify(issues)).toBe(true);
+  });
+
+  it('a tile whose road loops is refused by validity (the authoring surface)', () => {
+    // The class Daniil minted by hand: an omni blob closes a cell cycle.
+    const loopTile = ['GGGGG', 'GXXGG', 'GXXGG', 'GG|GG', 'GG|GG'];
+    // Make it edge-legal first: route the blob to the s edge... the blob
+    // itself is the offence regardless of connectors.
+    expect(validateTileCells(loopTile).some((e) => /loops at/.test(e))).toBe(true);
+    // And a plain path does not trip the rule.
+    expect(validateTileCells(g('GGGGG', 'GGGGG', '-----', 'GGGGG', 'GGGGG'))).toEqual([]);
   });
 });
 

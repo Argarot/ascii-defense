@@ -81,7 +81,10 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     try {
       const nextThreatIdx = Math.min(THREAT_LEVELS.length - 1, Math.max(0, tIdx));
       const THREAT = THREAT_LEVELS[nextThreatIdx];
-      // A stale or invalid special is refused loudly, never half-loaded.
+      // The loadout may mix MINTED defs and SHIPPED specials (already in
+      // the basics file): extra defs join the library; every chosen id is
+      // guaranteed. A stale or invalid special is refused loudly, never
+      // half-loaded.
       const nextLoadout = wantLoadout.filter((t) => !basics.some((s) => s.id === t.id));
       for (const t of nextLoadout) {
         const errors = validateTile(t);
@@ -108,7 +111,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         }
         nextMap = resume.map;
       } else {
-        const specials = nextLoadout.map((t) => t.id);
+        // EVERY chosen id is a special to guarantee - minted or shipped.
+        const specials = [...new Set(wantLoadout.map((t) => t.id))];
         // Generation failures reroll the seed - the map the player asked
         // for is "one containing my specials", and a fresh carve usually
         // obliges. Bounded: a loadout no carve can host must SAY so.

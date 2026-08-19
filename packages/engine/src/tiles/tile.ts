@@ -38,6 +38,13 @@ export interface TileBoon {
 
 /** Content-format tile: id plus 5 strings of 5 cell codes. */
 export interface TileDef {
+  /**
+   * A SPECIAL tile (2.21 + playtest 2026-08-19): selectable in the loadout,
+   * guaranteed on the map when chosen, and never rolled from the random
+   * pools. Shipped tiles whose roads touch without merging carry this flag;
+   * minted tiles are special by construction (they live in the minted pool).
+   */
+  special?: boolean;
   id: string;
   name?: string;
   cells: string[];
@@ -319,6 +326,90 @@ export function validateTileCells(cells: readonly string[]): string[] {
     }
   }
 
+  errors.push(...tileCycleErrors(cells));
+  return errors;
+}
+
+/**
+ * Does the tile contain two road cells that TOUCH without connecting - the
+ * S-fold / twin-segment class? On the board these read as almost-loops, so
+ * by decision (Daniil, 2026-08-19) such tiles are SPECIALS: selectable and
+ * guaranteed, never rolled from the random pools. The generator and the
+ * tilegen both consult this single predicate.
+ */
+export function tileHasTouchingSegments(cells: readonly string[]): boolean {
+  for (let y = 0; y < TILE_SIZE; y++)
+    for (let x = 0; x < TILE_SIZE; x++) {
+      const a = cellAt(cells, x, y);
+      if (!isRoad(a)) continue;
+      for (const d of [1, 2]) {
+        // East and south: each adjacency once.
+        const nx = x + NODE_DIRS[d][0];
+        const ny = y + NODE_DIRS[d][1];
+        if (nx >= TILE_SIZE || ny >= TILE_SIZE) continue;
+        const b = cellAt(cells, nx, ny);
+        if (!isRoad(b)) continue;
+        let connected = false;
+        for (let s = 0; s < strandPorts(a).length && !connected; s++) {
+          if (nodeStep(cells, x, y, s, d) !== null) connected = true;
+        }
+        if (!connected) return true;
+      }
+    }
+  return false;
+}
+
+/**
+ * In-tile route CYCLES are illegal (spec sec 12: the road is a tree, and a
+ * cycle inside one tile is a loop on every map that hosts it - playtest
+ * round 2026-08-19, Daniil's own minted loop tile broke generation until he
+ * removed it by hand; the authoring surface refuses the class now). All C
+ * cells contract to one node: the Core welds internally, and its interior
+ * adjacencies are not routes. Detection is per connected component:
+ * |E| > |V| - components means some component closes a loop.
+ */
+function tileCycleErrors(cells: readonly string[]): string[] {
+  const SUPER = -1;
+  const parent = new Map<number, number>();
+  const find = (k: number): number => {
+    let r = k;
+    while (parent.get(r) !== r) r = parent.get(r)!;
+    parent.set(k, r);
+    return r;
+  };
+  const ensure = (k: number): void => {
+    if (!parent.has(k)) parent.set(k, k);
+  };
+  const errors: string[] = [];
+  for (let y = 0; y < TILE_SIZE; y++)
+    for (let x = 0; x < TILE_SIZE; x++) {
+      const a = cellAt(cells, x, y);
+      if (!isRouteCell(a)) continue;
+      const keysOf = (cx: number, cy: number, s: number): number =>
+        cellAt(cells, cx, cy) === 'C' ? SUPER : nodeKey(cx, cy, s);
+      if (a === 'C') ensure(SUPER);
+      else for (let s = 0; s < strandPorts(a).length; s++) ensure(nodeKey(x, y, s));
+      for (const d of [1, 2]) {
+        // East and south only: each adjacency once.
+        const strands = a === 'C' ? [0] : strandPorts(a).map((_, i) => i);
+        for (const s of strands) {
+          const step = nodeStep(cells, x, y, s, d);
+          if (step === null) continue;
+          const ka = keysOf(x, y, s);
+          const kb = keysOf(step[0], step[1], step[2]);
+          if (ka === SUPER && kb === SUPER) continue; // interior of the Core
+          ensure(ka);
+          ensure(kb);
+          const ra = find(ka);
+          const rb = find(kb);
+          if (ra === rb) {
+            errors.push(`the road loops at (${x},${y})-(${step[0]},${step[1]}) - roads must be trees, loops are unreachable bloat`);
+          } else {
+            parent.set(ra, rb);
+          }
+        }
+      }
+    }
   return errors;
 }
 

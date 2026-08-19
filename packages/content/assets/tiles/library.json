@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "../../schema/tiles.schema.json",
   "tiles": [
     {
@@ -168,6 +168,7 @@
     },
     {
       "id": "gen_ns_2",
+      "special": true,
       "cells": [
         "F--7G",
         "L-7|G",
@@ -178,6 +179,7 @@
     },
     {
       "id": "gen_ns_3",
+      "special": true,
       "cells": [
         "GGGGG",
         "GGF7G",
@@ -188,6 +190,7 @@
     },
     {
       "id": "gen_ns_4",
+      "special": true,
       "cells": [
         "GGGGG",
         "GF7GG",
@@ -198,6 +201,7 @@
     },
     {
       "id": "gen_ne_1",
+      "special": true,
       "cells": [
         "GGGGG",
         "GGF7G",
@@ -218,6 +222,7 @@
     },
     {
       "id": "gen_ne_4",
+      "special": true,
       "cells": [
         "F--7G",
         "L7G|G",

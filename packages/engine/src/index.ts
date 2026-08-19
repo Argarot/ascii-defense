@@ -24,6 +24,7 @@ export {
   segmentRimMask,
   tilePartition,
   partitionKey,
+  tileHasTouchingSegments,
   validateTile,
 } from './tiles/tile';
 export type { TileDef, TileDeposit, TileBoon, Edge, Connectors, Rotation } from './tiles/tile';
