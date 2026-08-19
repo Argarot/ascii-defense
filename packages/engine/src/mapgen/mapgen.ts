@@ -128,6 +128,12 @@ export const ORE_REACH = 3;
  * average; capped by how many fillable slots the board actually has.
  */
 export const ORE_FLOOR = 2;
+/**
+ * Ceiling on the board's void share. Spec sec 12 (Tier 2) replaces this hard
+ * cap with a drawn-target curve in the 2.27 rebuild; until then it is the
+ * live rule and verifyMap checks against it.
+ */
+export const VOID_SHARE_CAP = 0.22;
 /** Caches per map when the relic layer is on (channel A of PRD sec 7.3). */
 export const CACHE_COUNT = 2;
 /** Boon cells per map (PRD sec 4.7). */
@@ -709,7 +715,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     const total = width * height;
     const voidSlots: number[] = [];
     for (let k = 0; k < total; k++) if (!roadEdges.has(k) && dist[k] > ORE_REACH) voidSlots.push(k);
-    const maxVoid = Math.floor(total * 0.22);
+    const maxVoid = Math.floor(total * VOID_SHARE_CAP);
     if (voidSlots.length > maxVoid) {
       voidSlots.sort((a, b) => dist[a] - dist[b]); // nearest to land first
       for (const k of voidSlots.slice(0, voidSlots.length - maxVoid)) dist[k] = ORE_REACH;
