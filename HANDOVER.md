@@ -1,123 +1,121 @@
-# Handover — state as of 2026-08-18 (end of day; session 19 + four playtest rounds)
+# Handover — state as of 2026-08-20 (end of day; session 20 + three playtest rounds)
 
 > **Updated once per working day** (Daniil). State and seams only; sequencing
 > lives in the roadmap ledger, the checklist in the WBS, requests in the WBS
 > request index. Anything restated here is a drift surface.
 
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
-[docs/PRD.md](docs/PRD.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) →
+[docs/PRD.md](docs/PRD.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) —
+**§12 is the generation spec, the day's central artifact** →
 [docs/WBS.md](docs/WBS.md) → this file → the roadmap ledger's next open row.
 The gitignored `POSTMORTEM.md` holds collaboration findings — **read its last
-two entries before writing any code today.** End every working day with the
+three sections before writing any code today.** End every working day with the
 `wrap-session` skill (.claude/skills/wrap-session).
 
-Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always).
+Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always;
+the run code `AD1-…` on the pause screen is the build marker).
 
 ## Where the project is
 
-Session 19 shipped in one day across PRs #79–#86: the **Tile Smith done
-properly** (explicit brush matrix in Daniil's 4×4 layout — his verdict given:
-"this is good"), 2.26 validity (no roads to nowhere), 2.24 rotation-canonical
-pools, the **cell nomenclature migration** (`X` crossroads, `R` rock, `B`
-bridge), the **bridge as a real mechanic** (strand nodes end to end — 4.9
-pulled forward), **2.21 + 2.18 map agency** (minted tiles are the special
-pool; visual loadout picker; guaranteed placement; overlay authoring), the
-**shoreline**, **terrain-as-content** (glyph pools live in
-`content/assets/terrain/appearance.json` — a graphics pack is content files
-only), and four playtest fix rounds that ended in the **anchor rework**: road
-specials place first as anchors, ONE arm per road segment joins the tree,
-every other arm exits the board as a NEW entry. **No loops, ever** — the road
-is a tree on every map, property-tested with anchors woven in.
+**Session 20 delivered WBS 2.27, the backbone reassessment** (PRs #88, #89,
+#93 [3-in-1 after a stacked-squash orphaning], #94, #95, #96): the generator
+specification is **ARCHITECTURE §12** — a rule HIERARCHY (definitional →
+topology → terrain → dressing; lower tiers win, higher tiers satisfied by
+rearrangement, never by knob relaxation) — with `verifyMap()` checking every
+invariant inside every `generateMap` call. The carve was rebuilt
+constraint-first in `engine/mapgen/carve.ts` (cell-denominated per-entry path
+floor that binds anchor arms too; availability gated at tunnels, branch
+starts, and joints; relaxation ladders deleted). The worker lifecycle is a
+transactional state machine (`app/workerRuntime.ts`, testable in Node): init
+yields exactly `ready | genError`, `playing` begins on `ready`, and **RunSave
+v3 carries the generated map** — resume never re-generates. Decisions
+**D11–D16** minted; the run code (`AD<genver>-<seed>-<threat>-<loadout>`)
+shows on pause/summary.
 
-**The day ended on Daniil's structural verdict (playtest 16):** *"we seem to
-be drifting into 'pile of patches that becomes pile of garbage' territory."*
-Three fix rounds on mapgen in one day is the tell from CLAUDE.md — the fix
-was never the problem. **Patching is STOPPED by agreement.** Three fresh bugs
-are deliberately UNFIXED and reserved as regression fixtures (WBS 2.27):
-boon ground on void; a loadout case generating without its bridge specials
-(no error surfaced); quit-mid-game → NEW RUN returns the paused game.
+**Three same-day playtest rounds hardened it** (his numbered reports, all
+closed): the **strand-level exactly-one-route law** (loops now cannot leave
+the generator — the slot-level tree check was provably not the law); in-tile
+road cycles refused at the authoring surface; the **special-shape law**
+(`tileIsSpecialShape`: touching OR twin-segment ⇒ chosen, never rolled — so
+plain maps have zero touch/crossing moments and tunnels self-limit to zero);
+loadout slots 3→5 with a **paged picker** and **minted-tile DELETE MODE**;
+**mirror-canonical asset identity** (gen_ns_4 was gen_ns_3's exact mirror —
+removed; tilegen and a CI law now dedup under rotation AND reflection).
 
-**NEXT: session 20 — the backbone reassessment (WBS 2.27).** It OPENS WITH A
-CONVERSATION, not code: the generator specification first. Daniil chose a
-fresh-context session over same-day triage. The gate is his: he generates and
-plays loadout-heavy runs without producing a defect list.
+**THE 2.27 GATE IS STILL OPEN AND IT IS DANIIL'S**: he generates and plays
+loadout-heavy runs without producing a defect list. Three rounds each
+produced one; each was fixed and deployed same-day. Do not declare it.
 
 ## Fresh-context warnings (beyond CONTRIBUTING)
 
-- **Do not fix the three reserved bugs piecemeal.** They are the
-  reassessment's acceptance material; a quick patch destroys the evidence
-  and repeats the exact failure mode that forced the pause.
-- **The phantom-resume bug may explain the missing-bridges bug.** Suspicion
-  (UNPROVEN, recorded as such): a worker crash mid-`init` leaves the main
-  thread rendering the old sim with no error — "new game" then shows an old
-  map, which reads as "my specials are missing". One candidate: `new
-  TileLibrary()` throws on duplicate ids outside `newRun`'s try. Verify
-  before believing; triage first, in the spec's terms.
-- **Daniil's generator rules are the spec's core, verbatim from playtest 15:**
-  one core near center; selected specials placed; all roads form paths
-  entry→core; exactly one way per entry (no loops — "bloat the enemies
-  ignore"); entries may move/appear/disappear during generation; basics,
-  specials and the core may all be rearranged to satisfy the rules; void
-  only >3 slots from road. He wrote these unprompted — ask him for missing
-  constraints rather than guessing; he has them.
-- **Run identity is a design question, not a URL.** Daniil rejected `?seed=`
-  as the deterministic-map mechanism (a roguelite always has modifiers).
-  The honest object is the run record (seed + loadout + threat + inputs),
-  already in `RunSave` v2. Design the shareable form in the spec session.
-- **A pushback and a chosen design are both claims — verify against the
-  requirement before building.** Today's win: the handshake-lemma check
-  between Daniil's option pick and the build reversed an insufficient
-  design (anchor-first alone cannot host junctions on a tree). Today's
-  loss, twice: fixing a bug other than the reported one because the
-  reproduction used my artifacts, not the reporter's class (segment-built
-  vs omni-built tiles). Reproduce with the REPORTER's artifact class.
-- **Glyphs in UI strings are content against the font.** `»` does not exist
-  in spleen and GLTerm silently draws nothing — that was an entire
-  "selection has no visible effect" bug. CONTRIBUTING lists the missing
-  Latin-1 set; check it before shipping any new UI marker.
-- **readPixels without a synchronous draw reads a cleared buffer** — zero
-  pixels, no error, and it nearly diagnosed a working feature as missing.
-  `toText()` first, always.
-- The golden replay hash moved once today with its reason recorded
-  (`2003059284 → 185380119`, outer fill ring always places terrain —
-  playtest 12). It is currently stable; it moves only with a stated reason
-  in the same commit.
+- **A rule that cannot cite its decision is a suspect, not a law.** The
+  no-enclosed-void pass carried "(Daniil, playtest 4)" in a comment for
+  three sessions; he never made that rule. Settled design arguments get
+  D-numbers at birth (D1–D16 in the WBS); spec rules cite provenance.
+- **Identity is a chosen equivalence relation.** Gameplay identity is
+  rotation-canonical (2.24); ASSET identity is rotation+reflection
+  (`mirrorCanonicalKey`); a "no duplicates" claim is only as strong as its
+  relation, and a perceptual report needs a perceptual relation.
+- **The minted pool is Daniil's browser's content** (localStorage,
+  per-browser by design). The repo cannot reach it; validity heals what the
+  rules refuse, DELETE MODE handles what they accept. Never promise behavior
+  about a minted tile you have not seen — `tile_yn7vhz` passed validity
+  despite "having a loop" to his eye; if he reports one again, get the
+  EXPORT SAVES file before claiming anything.
+- **Engine tests are hermetic by invariant, so real-content behavior needs
+  `harness/lab/mapgen-sweep.test.ts`** — the shipped library swept through
+  the app's exact knob derivation. The playtest found what hermetic shapes
+  never could; keep that suite growing.
+- **Windows PowerShell writes UTF-8 BOMs** (`-Encoding utf8`); the content
+  validator parses raw and CI fails on the BOM. Write JSON via node or
+  `[IO.File]::WriteAllText` with `UTF8Encoding($false)`; keep library.json
+  in tilegen's `JSON.stringify(…, null, 2)` format.
+- **Never squash-merge the bottom of a stacked PR chain** — GitHub closes
+  the stack unrecoverably (closed PRs cannot retarget). Merge top-down or
+  rebase per merge (`rebase --onto main <merged-sha>`).
+- **Multiline `git commit -m` breaks under PowerShell quoting** — always
+  `git commit -F <file>` from the scratchpad, and never chain branch
+  commands with the work they isolate (bit again this session).
+- **`gh pr merge` needs the permission rule** now present in
+  `.claude/settings.local.json`; the auto-mode classifier also refuses
+  letting the agent edit that file itself (correct boundary).
+- **A summary that invites a playtest must state, first and in bold, which
+  build he will hit and what proves he is on it.** He playtested unmerged
+  work once this session and re-found every reserved bug; two of three
+  reports that day were the old build.
 
-## Key seams for session 20 (the reassessment)
+## Key seams for the next session
 
-- **`packages/engine/src/mapgen/mapgen.ts`** — the whole file is the
-  subject. Current shape: ~nine sequential passes (core jitter → tree carve
-  with tunnels/availability gates → anchor placement with join/entry arms →
-  slot-dist BFS → enclosed-void fill → void cap → ore floor → filler rolls →
-  overlay/cache/boon deals). Each pass is a playtest response; pass ORDER
-  carries unstated invariants — that coupling is what Daniil called the
-  pile. The spec goes in front of it; a final single `verifyMap()` checking
-  every invariant is the likely first artifact, run in tests AND at the end
-  of generation.
-- **`packages/app/src/simWorker.ts`** — `newRun` + the `onmessage` switch is
-  the lifecycle to respecify: what may throw, where, and what the main
-  thread hears in every case. Note `lib`/`loadout` are module-`let`s
-  mutated per init — state that survives a failed init is exactly the
-  phantom-resume shape.
-- **`packages/app/src/main.ts`** — mode transitions live in `menuAction` +
-  `worker.onmessage`; `'start'`/`'again'`/`'continue'`/genError are the
-  paths the state machine must cover. `__ad.menu()/modalText()/setupState()`
-  drive screens headlessly for verification.
-- **Property tests to build on**: `mapgen.test.ts` already asserts the tree
-  (`roadGraph` helper, |E|=|V|−1) with anchors, entry-count growth, void
-  rules (far/outside/bounded), specials exactly-once, bridge anchoring.
-  The three reserved bugs become new named tests beside these.
-- **`packages/engine/src/tiles/tile.ts`** — `nodeStep`/strand graph, the
-  validity floods and `canonicalCells/canonicalizeTile`; stable, tested,
-  and NOT the reassessment's subject. Same for the view.
+- **The 2.27 gate playtest is the only open thread of session 20.** If it
+  produces a defect list, the fix pattern that worked three times: confirm
+  the mechanism with a numbered evidence sweep BEFORE code (dist/lab scratch
+  scripts via esbuild), pin it as a law-level test, fix, deploy, live-verify
+  through `__ad`.
+- **`engine/mapgen/verify.ts`** — the law. Strand-level route-uniqueness
+  (`tier1/route-unique`) mirrors the flow field's own `stepAllowed`/
+  `strandStep` (exported from `sim/flow.ts`); if routing semantics ever
+  change, both move together or the law lies.
+- **`engine/mapgen/carve.ts`** — the road plan. Tunnel machinery is live
+  code but dormant content-wise (no two-group tile in any rolled pool since
+  twin_bend went special); it fires only in hermetic tests. Deliberate, not
+  dead — a future "tunnel basics" content decision re-arms it.
+- **`app/workerRuntime.ts`** — the lifecycle. All state commits atomically
+  in `newRun`; every code path posts `ready` or `genError`. simWorker.ts is
+  a shell; tests inject hermetic content.
+- **Session 21 (ledger): D8 naming mini-session first** — a conversation,
+  not build work (printing-trade lexicon; dev's position recorded at D8) —
+  then damage types (2.8) and attack shapes (4.10).
 
 ## Standing open items
 
-- 4.12 — Daniil's playtest-1 visual items V8, V9 are **lost**; ask him to
-  restate at a playtest, then write or retire the ID.
+- **2.27 gate** — Daniil's loadout-heavy playtest verdict (see above).
+- `tile_yn7vhz` — a minted tile that LOOKS looped but passes validity. He
+  can delete it now; if he wants the shape class understood (possible spec
+  input for what validity should refuse), his save export is required.
+- 4.12 — playtest-1 visual items V8, V9 remain **lost**; re-ask at a
+  playtest, then write or retire the ID.
 - Shore palette reads as ore (gold on gold) — art-pass note on 6.6.
 - Relic rebalance for duplicate stacking (accepted as a later session).
-- D8 naming mini-session (printing-trade lexicon) — now session 21.
 - ASSETS.md not audited since D3 closed — audit in the art session.
 - The REXPaint art pipeline is still **unproven**; both tools unwritten;
   6.1 opens the presentation block. Accepted risk, recorded on the item.
