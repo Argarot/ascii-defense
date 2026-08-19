@@ -359,6 +359,30 @@ export function tileHasTouchingSegments(cells: readonly string[]): boolean {
   return false;
 }
 
+/** Horizontal-mirror char map: bends and side-junctions swap hands; everything
+ *  symmetric about the vertical axis keeps its letter. */
+const MIRROR_CHAR: Readonly<Record<string, string>> = { L: 'J', J: 'L', F: '7', '7': 'F', E: '3', '3': 'E' };
+
+/** The tile reflected left-right - ports re-handed so the drawing stays legal. */
+export function mirrorCells(cells: readonly string[]): string[] {
+  return cells.map((row) =>
+    [...row].reverse().map((c) => MIRROR_CHAR[c] ?? c).join(''),
+  );
+}
+
+/**
+ * Identity key under rotation AND reflection (playtest 18: gen_ns_4 was the
+ * exact mirror of gen_ns_3 and read as a duplicate asset - a player sees
+ * "the same tile flipped"). Canonical-rotation identity (2.24) stays the
+ * GAMEPLAY identity - a mirrored tile plays differently on a board - but
+ * the ASSET pool should not ship both hands of one shape.
+ */
+export function mirrorCanonicalKey(cells: readonly string[]): string {
+  const a = canonicalCells(cells).join('/');
+  const b = canonicalCells(mirrorCells(cells)).join('/');
+  return a < b ? a : b;
+}
+
 /**
  * The single law for which shapes are SPECIAL (Daniil, playtests 17-18):
  * roads that touch without merging, OR two disconnected road segments in
