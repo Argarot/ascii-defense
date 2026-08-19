@@ -157,6 +157,7 @@
     },
     {
       "id": "twin_bend",
+      "special": true,
       "name": "Twin Bend",
       "cells": [
         "GG|GG",

@@ -66,6 +66,22 @@ his layout (`FT7|`/`EX3-`/`LUJB`/`GKOC`), block labels only→2.23 · nomenclatu
 brush→2.23 · actual sprites on the tile preview→2.23 · "make sure the validity
 checker works properly"→2.26
 
+**Round 20 (playtest 18, 2026-08-19):** "special assets used more than once
+and unselected — double bends everywhere"→CONFIRMED with numbers: twin_bend,
+the one tile round 19 left basic, dealt unchosen on 45/60 plain threat-0
+maps in all four rotations (his "two versions 90° apart"); the special law
+is now touching OR twin-segment (`tileIsSpecialShape`, one predicate for
+tilegen + labels + pools), twin_bend flipped special, tunnels therefore
+self-limit to zero on plain maps — the old 2.17 sweep is INVERTED (plain
+maps must contain no special shapes) · "remove the borked tile from the
+pool"→the minted pool re-validates on every read, so the round-19 cycle
+rule drops his loop tile from the picker automatically; pinned by test ·
+dedup/label sweep of shipped assets→no canonical twins, no invalid tiles,
+one label mismatch (twin_bend) — the label law and the dedup law are now
+permanent tests · "picker shows only two rows"→correct: the modal fits
+exactly 2×5 tiles; the pool now PAGES at 10 with PREV/NEXT, geometry pinned
+by a MenuScreen fit test (12 unpaged overflow, 10+pager fit)
+
 **Round 19 (playtest 17, 2026-08-19 — first playtest of the rebuilt backbone):**
 mapgen doesn't place bridge specials + quit-then-NEW-RUN resumes old game +
 boon on road cell→ALL THREE were the old build (PRs 2–5 were unmerged; the

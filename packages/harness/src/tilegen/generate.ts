@@ -9,7 +9,7 @@
  * '-|LJF7', computed from each cell's neighbours in the path, so a wiggly
  * road that runs beside itself touches without merging.
  */
-import { TILE_SIZE, canonicalCells, tileHasTouchingSegments, validateTileCells, tilePartition, deriveConnectors, type Edge } from '@ascii-defense/engine';
+import { TILE_SIZE, canonicalCells, tileIsSpecialShape, validateTileCells, tilePartition, deriveConnectors, type Edge } from '@ascii-defense/engine';
 import { createRng, type RngStream } from '@ascii-defense/engine';
 
 const CENTER = (TILE_SIZE - 1) / 2;
@@ -147,9 +147,9 @@ export function generateVariants(seed: number, perSig: number): GeneratedTile[] 
       if (seen.has(key)) continue;
       seen.add(key);
       made++;
-      // Touch-without-merge tiles are SPECIALS (Daniil, 2026-08-19): chosen
-      // in the loadout, never rolled from the random pools.
-      out.push({ id: `gen_${sig.join('')}_${made}`, cells: canon, ...(tileHasTouchingSegments(canon) ? { special: true } : {}) });
+      // Special-shape tiles (touching or twin-segment) are SPECIALS
+      // (Daniil, playtests 17-18): chosen in the loadout, never rolled.
+      out.push({ id: `gen_${sig.join('')}_${made}`, cells: canon, ...(tileIsSpecialShape(canon) ? { special: true } : {}) });
     }
   }
   return out;

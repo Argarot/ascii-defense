@@ -360,6 +360,18 @@ export function tileHasTouchingSegments(cells: readonly string[]): boolean {
 }
 
 /**
+ * The single law for which shapes are SPECIAL (Daniil, playtests 17-18):
+ * roads that touch without merging, OR two disconnected road segments in
+ * one tile. Both read as almost-loops when dealt by chance; both exist to
+ * be CHOSEN. Every surface consults this one predicate: the library's
+ * labels are audited against it, tilegen emits it, and the generator never
+ * rolls a tile it flags.
+ */
+export function tileIsSpecialShape(cells: readonly string[]): boolean {
+  return tileHasTouchingSegments(cells) || tilePartition(cells).length > 1;
+}
+
+/**
  * In-tile route CYCLES are illegal (spec sec 12: the road is a tree, and a
  * cycle inside one tile is a loop on every map that hosts it - playtest
  * round 2026-08-19, Daniil's own minted loop tile broke generation until he
