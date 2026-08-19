@@ -94,8 +94,10 @@ function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?:
     try {
       const knobs = createRng(seed).stream('map');
       const entries = knobs.int(THREAT.entries[0], THREAT.entries[1]);
-      const targetPathLength = THREAT.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18));
-      map = generateMap(knobs, lib, { width: MAP_X, height: MAP_Y, entries, targetPathLength, relicPoolSize: RELIC_DEFS.length, specials });
+      // The threat knob is denominated in CELLS (D13) - the unit enemies
+      // walk; pathBias stays in slot units as data, converted here.
+      const targetPathCells = (THREAT.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+      map = generateMap(knobs, lib, { width: MAP_X, height: MAP_Y, entries, targetPathCells, relicPoolSize: RELIC_DEFS.length, specials });
       break;
     } catch (e) {
       // Structural refusals (loadout exceeds the threat's carve budget, a

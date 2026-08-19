@@ -1,4 +1,4 @@
-/**
+﻿/**
  * The relic layer (WBS 1.6.1-1.6.3, PRD sec 7): hooks, offers, and every
  * shipped effect knob. Each test builds the smallest world that can prove
  * one rule is actually broken by its relic - the point of the layer.
@@ -56,7 +56,7 @@ const POOL: RelicDef[] = [
 ];
 
 function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
-  const opts = { width: 10, height: 6, entries: 3, targetPathLength: 8 };
+  const opts = { width: 10, height: 6, entries: 3, targetPathCells: 40 };
   const map = generateMap(createRng(seed).stream('map'), LIB, { ...opts, relicPoolSize: POOL.length });
   const cellsW = opts.width * TILE_SIZE;
   const cellsH = opts.height * TILE_SIZE;

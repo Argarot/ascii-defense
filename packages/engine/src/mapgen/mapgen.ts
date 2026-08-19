@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Map generation (PRD sec 4.3). Carve first, tile second:
  *
  *   1. place the Core slot near the board center
@@ -19,8 +19,9 @@
  * easier. Both are data, decided by threat level, not by this module.
  */
 import type { RngStream } from '../rng/rng';
-import { EDGES, OPPOSITE, TILE_SIZE, partitionKey, rotatePoint, tilePartition, type Edge, type Rotation } from './../tiles/tile';
+import { EDGES, TILE_SIZE, partitionKey, rotatePoint, tilePartition, type Edge, type Rotation } from './../tiles/tile';
 import { TileLibrary, createBoard, place, resolveCells, slotAt, type Board } from '../tiles/board';
+import { EDGE_DELTA, carveRoads, sigKey, type RoadSpecialSpec } from './carve';
 
 export interface MapGenOptions {
   /** Board size in tile slots. */
@@ -28,8 +29,13 @@ export interface MapGenOptions {
   height: number;
   /** Open road ends = spawn points. More is harder. */
   entries: number;
-  /** Slots a path must wander before it may exit the board. Longer is easier. */
-  targetPathLength: number;
+  /**
+   * Per-entry MINIMUM route length to the Core, in CELLS вЂ” the unit enemies
+   * actually walk (D13). Longer is easier. Clamped to what the board can
+   * hold and never relaxed by retries; the floor binds every entry,
+   * anchor-grown ones included.
+   */
+  targetPathCells: number;
   /**
    * Size of the unlocked relic pool. When > 0, caches are scattered and rock
    * cells are dealt hidden contents (PRD sec 4.6) - each cache/find carries
@@ -157,13 +163,7 @@ function pickWeighted<T extends { weight: number }>(rng: RngStream, pool: readon
   return pool[pool.length - 1];
 }
 
-const EDGE_DELTA: Record<Edge, [number, number]> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 const CENTER = (TILE_SIZE - 1) / 2;
-
-/** Signature key for a set of road-carrying edges, e.g. "n.e" or "e.s.w". */
-function sigKey(edges: ReadonlySet<Edge>): string {
-  return EDGES.filter((e) => edges.has(e)).join('.') || 'none';
-}
 
 /**
  * Index the library by derived connector signature, split into the three
@@ -223,17 +223,13 @@ function indexLibrary(
 export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOptions): GeneratedMap {
   // A cornered carve is rare but real; the whole generation retries on the
   // SAME stream (state simply advances), so a seed still means one exact map
-  // and no failure ever reaches a player. Ten strikes before we admit defeat.
+  // and no failure ever reaches a player. Retries re-attempt at FULL
+  // strength вЂ” the path target is never relaxed (D13); a board that cannot
+  // hold the demand says so by throwing.
   let lastError: unknown;
   for (let attempt = 0; attempt < 25; attempt++) {
     try {
-      // Later whole-map attempts progressively relax the demands: fewer
-      // required slots per walk corners fewer walkers.
-      const relaxed =
-        attempt < 10
-          ? opts
-          : { ...opts, targetPathLength: Math.max(1, opts.targetPathLength >> (attempt < 18 ? 1 : 2)) };
-      return generateMapOnce(rng, lib, relaxed);
+      return generateMapOnce(rng, lib, opts);
     } catch (e) {
       lastError = e;
     }
@@ -242,14 +238,7 @@ export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOption
 }
 
 function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions): GeneratedMap {
-  const { width, height, entries } = opts;
-  if (entries < 1) throw new Error('a map needs at least one entry');
-  // A target no board could honour would guarantee cornered walks; clamp to
-  // a share of the board per walk and let 'longer' mean 'as long as fits'.
-  const targetPathLength = Math.min(
-    opts.targetPathLength,
-    Math.max(1, Math.floor((width * height * 0.55) / entries)),
-  );
+  const { width, height } = opts;
   const specialIds = opts.specials ?? [];
   const index = indexLibrary(lib, specialIds.length > 0 ? new Set(specialIds) : undefined);
 
@@ -257,7 +246,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   // specials become ANCHORS (playtest 14) - placed first, connected after -
   // so they list their distinct rotations with each rotation's connector
   // edges; roadless specials just need a fill slot.
-  const roadSpecials: { id: string; rotations: { rotation: Rotation; edges: Edge[]; groups: Edge[][] }[] }[] = [];
+  const roadSpecials: RoadSpecialSpec[] = [];
   const roadlessSpecials: string[] = [];
   for (const id of specialIds) {
     const rotations: { rotation: Rotation; edges: Edge[]; groups: Edge[][] }[] = [];
@@ -283,343 +272,16 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
 
   const slotIdx = (x: number, y: number): number => y * width + x;
 
-  // ---- 1. the Core slot, near the center with a little seeded jitter -------
-  const coreX = Math.floor(width / 2) + (width > 4 ? rng.int(-1, 1) : 0);
-  const coreY = Math.floor(height / 2) + (height > 4 ? rng.int(-1, 1) : 0);
-  const coreK = slotIdx(coreX, coreY);
-
-  // ---- 2. carve the road tree ---------------------------------------------
-  // roadEdges[slot] = edges of that slot carrying road. roadSlots is the set
-  // of carved slots (incl. the Core); walkOrder remembers insertion order so
-  // branch-start picks are deterministic.
-  // Per slot: one or two SEGMENTS, each a set of edges (carve v3). Two
-  // segments in one slot = two roads passing without merging.
-  const roadEdges = new Map<number, Set<Edge>>();
-  const secondSegment = new Map<number, Set<Edge>>();
-  const roadSlots = new Set<number>([coreK]);
-  const walkOrder: number[] = [coreK];
-  const entryCells: CellRef[] = [];
-
-  const addEdge = (k: number, e: Edge): void => {
-    const set = roadEdges.get(k) ?? new Set<Edge>();
-    set.add(e);
-    roadEdges.set(k, set);
-  };
-
-  // Sectors spread the tree: each walk is nudged toward its own board edge,
-  // in seeded-shuffled order so no side is systematically favoured.
-  const sectors = rng.shuffle(EDGES);
-
-  for (let n = 0; n < entries; n++) {
-    const sector = sectors[n % sectors.length];
-    let done = false;
-
-    // A walk that corners itself rolls back completely and retries from a
-    // different branch point - partial roads never leak into the map.
-    for (let attempt = 0; attempt < 24 && !done; attempt++) {
-      // Later attempts accept shorter paths rather than failing the map.
-      const target = attempt < 8 ? targetPathLength : Math.max(1, targetPathLength >> (attempt < 16 ? 1 : 2));
-      const startK =
-        n === 0 ? coreK : walkOrder[rng.int(0, walkOrder.length - 1)];
-      let x = startK % width;
-      let y = Math.floor(startK / width);
-      let steps = 0;
-      let cameFrom: Edge | null = null;
-      const newSlots: number[] = [];
-      const newEdges: [number, Edge][] = [];
-      const newTunnels: [number, Set<Edge>][] = [];
-
-      const tryWalk = (): boolean => {
-        for (;;) {
-          const wandering = steps < target;
-          const legal: { e: Edge; exits: boolean; tunnel?: Edge }[] = [];
-          for (const e of EDGES) {
-            if (cameFrom === e) continue;
-            const [dx, dy] = EDGE_DELTA[e];
-            const nx = x + dx;
-            const ny = y + dy;
-            const exits = nx < 0 || ny < 0 || nx >= width || ny >= height;
-            if (exits) {
-              if (wandering) continue;
-              legal.push({ e, exits });
-              continue;
-            }
-            const nk = slotIdx(nx, ny);
-            if (roadSlots.has(nk) || newSlots.includes(nk)) {
-              // Carve v3: a TUNNEL through an occupied slot. The walk
-              // enters via e and leaves as a second segment - two roads in
-              // one slot, never merging. Perpendicular exits produce the
-              // twin-bend partitions; a STRAIGHT exit produces a crossing
-              // partition, which only a bridge tile can express (4.9) - the
-              // availability gate below makes that self-limiting: no bridge
-              // tile in the pool, no straight tunnel, exactly as before.
-              if (nk === coreK || secondSegment.has(nk) || newTunnels.some(([tk]) => tk === nk)) continue;
-              const existing = roadEdges.get(nk);
-              if (!existing) continue;
-              const enter = OPPOSITE[e];
-              if (existing.has(enter)) continue;
-              for (const out of EDGES) {
-                if (out === enter) continue;
-                if (existing.has(out)) continue;
-                const [ox, oy] = EDGE_DELTA[out];
-                const lx = nx + ox;
-                const ly = ny + oy;
-                const landExit = lx < 0 || ly < 0 || lx >= width || ly >= height;
-                if (!landExit) {
-                  const lk = slotIdx(lx, ly);
-                  if (roadSlots.has(lk) || newSlots.includes(lk)) continue;
-                }
-                if (wandering && landExit) continue;
-                // Only tunnel where a tile EXISTS for the resulting
-                // partition - no tile, no move, connectivity by construction.
-                const pk = partitionKey([[...existing] as Edge[], [enter, out] as Edge[]]);
-                if (!index.road.has(pk)) continue;
-                legal.push({ e, exits: false, tunnel: out });
-                break;
-              }
-              continue;
-            }
-            legal.push({ e, exits });
-          }
-          if (legal.length === 0) return false;
-
-          // Once the walk has earned its length it takes the first exit
-          // available (sector-preferred) - wandering past the target would
-          // hog slots and starve later walks on small boards. While
-          // wandering, a gentle sector bias spreads the tree across the map.
-          let choice: { e: Edge; exits: boolean; tunnel?: Edge };
-          const exitMoves = legal.filter((o) => o.exits);
-          if (!wandering && exitMoves.length > 0) {
-            choice = exitMoves.find((o) => o.e === sector) ?? rng.pick(exitMoves);
-          } else {
-            const sectorMove = legal.find((o) => o.e === sector);
-            choice = sectorMove && rng.chance(0.35) ? sectorMove : rng.pick(legal);
-          }
-
-          newEdges.push([slotIdx(x, y), choice.e]);
-          if (choice.exits) {
-            entryCells.push(edgeCell(x, y, choice.e));
-            return true;
-          }
-          const [dx, dy] = EDGE_DELTA[choice.e];
-          if (choice.tunnel) {
-            // Pass through the occupied slot as a second segment and land
-            // beyond its far side (or exit the board there).
-            const tk = slotIdx(x + dx, y + dy);
-            newTunnels.push([tk, new Set<Edge>([OPPOSITE[choice.e], choice.tunnel])]);
-            const [ox, oy] = EDGE_DELTA[choice.tunnel];
-            const lx = x + dx + ox;
-            const ly = y + dy + oy;
-            if (lx < 0 || ly < 0 || lx >= width || ly >= height) {
-              entryCells.push(edgeCell(x + dx, y + dy, choice.tunnel));
-              return true;
-            }
-            x = lx;
-            y = ly;
-            newSlots.push(slotIdx(x, y));
-            newEdges.push([slotIdx(x, y), OPPOSITE[choice.tunnel]]);
-            cameFrom = OPPOSITE[choice.tunnel];
-            steps += 2;
-            continue;
-          }
-          x += dx;
-          y += dy;
-          newSlots.push(slotIdx(x, y));
-          newEdges.push([slotIdx(x, y), OPPOSITE[choice.e]]);
-          cameFrom = OPPOSITE[choice.e];
-          steps++;
-        }
-      };
-
-      if (tryWalk()) {
-        for (const k of newSlots) {
-          roadSlots.add(k);
-          walkOrder.push(k);
-        }
-        for (const [k, e] of newEdges) addEdge(k, e);
-        for (const [k, seg] of newTunnels) secondSegment.set(k, seg);
-        done = true;
-      }
-    }
-    if (!done) {
-      throw new Error(`mapgen: could not carve entry ${n + 1}/${entries} on a ${width}x${height} board`);
-    }
-  }
-
-  // ---- 2b. anchor the road specials (playtests 14-15, Daniil's rules) ------
-  // Road specials are placed FIRST as anchors - an interior slot plus a
-  // rotation, connectors fixed by the drawing. ONE arm walks and joins the
-  // network, attaching the anchor's subtree to the tree; every OTHER arm
-  // walks outward and exits the board as a NEW ENTRY. The road therefore
-  // stays a TREE on every map - exactly one way from each entry to the
-  // Core, no loops (playtest 15: loops are bloat the enemies ignore) - and
-  // entry count is allowed to grow for demanding loadouts, which Daniil
-  // named as fine. Special-free generation is bit-identical to before.
-  // Any road special anchors this way, bridges and twin-bends included.
-  const forced = new Map<number, { tileId: string; rotation: Rotation }>();
-  // Heaviest anchors first: a 4-way needs three edge corridors, and boards
-  // crowd - the demanding tiles pick their ground while it is still open.
-  const anchorOrder = [...roadSpecials].sort(
-    (a, b) => Math.max(...b.rotations.map((r) => r.edges.length)) - Math.max(...a.rotations.map((r) => r.edges.length)),
+  // ---- the road plan (carve.ts owns every road-topology rule) -------------
+  const plan = carveRoads(
+    rng,
+    { hasRoad: (k) => index.road.has(k), hasCore: (k) => index.core.has(k) },
+    { width, height, entries: opts.entries, targetPathCells: opts.targetPathCells, roadSpecials },
   );
-  for (const sp of anchorOrder) {
-    let placed = false;
-    for (let attempt = 0; attempt < 140 && !placed; attempt++) {
-      const pick = sp.rotations[sp.rotations.length === 1 ? 0 : rng.int(0, sp.rotations.length - 1)];
-      const ax = rng.int(1, width - 2);
-      const ay = rng.int(1, height - 2);
-      const ak = slotIdx(ax, ay);
-      if (roadSlots.has(ak) || forced.has(ak)) continue;
-
-      // This anchor's tentative arms: nothing touches the real network
-      // until every connector has landed (partial anchors never leak).
-      const armEdges = new Map<number, Set<Edge>>(); // pending arm slots -> edges
-      const armAdd = (k: number, e: Edge): void => {
-        const set = armEdges.get(k) ?? new Set<Edge>();
-        set.add(e);
-        armEdges.set(k, set);
-      };
-      /** Slots an arm may JOIN: network or this anchor's earlier arms - not
-       *  tunnels, not other anchors, not slots already at four edges. */
-      const joinable = (k: number): boolean => {
-        if (forced.has(k) || k === ak) return false;
-        if (secondSegment.has(k)) return false;
-        const onNet = roadSlots.has(k);
-        const onArm = armEdges.has(k);
-        if (!onNet && !onArm) return false;
-        const count = (roadEdges.get(k)?.size ?? 0) + (armEdges.get(k)?.size ?? 0);
-        return count < 4;
-      };
-      const nearestNet = (x: number, y: number): number => {
-        let best = Infinity;
-        for (const k of roadSlots) {
-          const d = Math.abs((k % width) - x) + Math.abs(Math.floor(k / width) - y);
-          if (d < best) best = d;
-        }
-        return best;
-      };
-      /** The joining arm: attaches the anchor's subtree to the tree, once. */
-      const carveJoinArm = (edge: Edge): boolean => {
-        let x = ax + EDGE_DELTA[edge][0];
-        let y = ay + EDGE_DELTA[edge][1];
-        let cameFrom: Edge = OPPOSITE[edge];
-        const local: number[] = [];
-        for (let steps = 0; steps < 14; steps++) {
-          const k = slotIdx(x, y);
-          if (joinable(k)) {
-            armAdd(k, cameFrom); // the joint gains the arm's entry edge
-            return true;
-          }
-          if (roadSlots.has(k) || forced.has(k) || armEdges.has(k) || local.includes(k)) return false;
-          local.push(k);
-          armAdd(k, cameFrom);
-          // Step toward the network: joins first, else the move that closes
-          // the distance (ties broken by the stream, so seeds differ).
-          const joins: Edge[] = [];
-          const moves: { e: Edge; d: number }[] = [];
-          for (const e of EDGES) {
-            if (e === cameFrom) continue;
-            const nx = x + EDGE_DELTA[e][0];
-            const ny = y + EDGE_DELTA[e][1];
-            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-            const nk = slotIdx(nx, ny);
-            if (local.includes(nk) || nk === ak) continue;
-            if (joinable(nk)) joins.push(e);
-            else if (!roadSlots.has(nk) && !forced.has(nk) && !armEdges.has(nk)) moves.push({ e, d: nearestNet(nx, ny) });
-          }
-          let step: Edge;
-          if (joins.length > 0) step = joins.length === 1 ? joins[0] : joins[rng.int(0, joins.length - 1)];
-          else {
-            if (moves.length === 0) return false;
-            const best = Math.min(...moves.map((m) => m.d));
-            const good = moves.filter((m) => m.d === best);
-            step = good.length === 1 ? good[0].e : good[rng.int(0, good.length - 1)].e;
-          }
-          armAdd(k, step);
-          x += EDGE_DELTA[step][0];
-          y += EDGE_DELTA[step][1];
-          cameFrom = OPPOSITE[step];
-        }
-        return false;
-      };
-      /** Every other arm: heads for the board edge and becomes a NEW entry.
-       *  It never joins anything - joining twice is what a loop is. */
-      const newEntries: CellRef[] = [];
-      const carveEntryArm = (edge: Edge): boolean => {
-        let x = ax + EDGE_DELTA[edge][0];
-        let y = ay + EDGE_DELTA[edge][1];
-        let cameFrom: Edge = OPPOSITE[edge];
-        const local: number[] = [];
-        for (let steps = 0; steps < 14; steps++) {
-          const k = slotIdx(x, y);
-          if (roadSlots.has(k) || forced.has(k) || armEdges.has(k) || local.includes(k)) return false;
-          local.push(k);
-          armAdd(k, cameFrom);
-          const exits: Edge[] = [];
-          const moves: { e: Edge; d: number }[] = [];
-          for (const e of EDGES) {
-            if (e === cameFrom) continue;
-            const nx = x + EDGE_DELTA[e][0];
-            const ny = y + EDGE_DELTA[e][1];
-            if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
-              exits.push(e);
-              continue;
-            }
-            const nk = slotIdx(nx, ny);
-            if (local.includes(nk) || nk === ak || roadSlots.has(nk) || forced.has(nk) || armEdges.has(nk)) continue;
-            moves.push({ e, d: Math.min(nx, ny, width - 1 - nx, height - 1 - ny) });
-          }
-          if (exits.length > 0) {
-            const e = exits.length === 1 ? exits[0] : exits[rng.int(0, exits.length - 1)];
-            armAdd(k, e);
-            newEntries.push(edgeCell(x, y, e));
-            return true;
-          }
-          if (moves.length === 0) return false;
-          const best = Math.min(...moves.map((m) => m.d));
-          const good = moves.filter((m) => m.d === best);
-          const step = good.length === 1 ? good[0].e : good[rng.int(0, good.length - 1)].e;
-          armAdd(k, step);
-          x += EDGE_DELTA[step][0];
-          y += EDGE_DELTA[step][1];
-          cameFrom = OPPOSITE[step];
-        }
-        return false;
-      };
-
-      // Each partition GROUP is its own road and gets its own joining arm -
-      // a bridge's deck and underpass both connect, separately. The other
-      // arms of every group become entries.
-      let ok = true;
-      for (const grp of pick.groups) {
-        if (!carveJoinArm(grp[0])) {
-          ok = false;
-          break;
-        }
-        for (const e of grp.slice(1)) {
-          if (!carveEntryArm(e)) {
-            ok = false;
-            break;
-          }
-        }
-        if (!ok) break;
-      }
-      if (!ok) continue;
-
-      // Commit: the anchor's connectors, every arm slot, the joint, and the
-      // arm-grown entries.
-      forced.set(ak, { tileId: sp.id, rotation: pick.rotation });
-      roadSlots.add(ak);
-      roadEdges.set(ak, new Set(pick.edges));
-      for (const [k, edges] of armEdges) {
-        roadSlots.add(k);
-        for (const e of edges) addEdge(k, e);
-      }
-      entryCells.push(...newEntries);
-      placed = true;
-    }
-    if (!placed) throw new Error(`special tile '${sp.id}' found no anchorage on this map - retrying`);
-  }
+  const { coreK, roadEdges, secondSegment, forced } = plan;
+  const entryCells = plan.entries;
+  const coreX = coreK % width;
+  const coreY = Math.floor(coreK / width);
 
   let board = createBoard(width, height);
   for (const [k, edges] of roadEdges) {
@@ -876,16 +538,4 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     deposits,
     boons,
   };
-
-  function edgeCell(sx: number, sy: number, e: Edge): CellRef {
-    // The road cell at the center of slot (sx, sy)'s edge e, in cell coords.
-    const baseX = sx * TILE_SIZE;
-    const baseY = sy * TILE_SIZE;
-    switch (e) {
-      case 'n': return { x: baseX + CENTER, y: baseY };
-      case 's': return { x: baseX + CENTER, y: baseY + TILE_SIZE - 1 };
-      case 'w': return { x: baseX, y: baseY + CENTER };
-      case 'e': return { x: baseX + TILE_SIZE - 1, y: baseY + CENTER };
-    }
-  }
 }

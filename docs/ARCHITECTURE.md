@@ -303,7 +303,10 @@ actually walk.
   target, clamped to what the board can hold. Conversion at carve time uses
   the *minimum* cells any pool tile expresses for the shape, so the floor
   holds by construction; overshoot is legal (longer = easier). The target is
-  never relaxed by retries.
+  never relaxed by retries. **The floor binds ALL entries, anchor-grown
+  included** (Daniil, 2026-08-19): an entry arm measures its route's deficit
+  against the existing tree and wanders until it has earned it — a loaded
+  special never hands the player a lane shorter than the threat promises.
 - Entry count may grow beyond the threat's roll to host anchors; entries are
   distinct road cells on the board border.
 

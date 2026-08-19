@@ -14,7 +14,10 @@
 import { ROAD_PORTS, isCellType, isRoad, isRouteCell, roadsConnect, strandEntered, strandPorts, type CellType } from '../grid/cells';
 
 export const TILE_SIZE = 5;
-const CENTER = 2; // (TILE_SIZE - 1) / 2
+// TILE_SIZE must be ODD: roads cross tile borders at edge centers (the
+// center-or-nothing connector rule), and an even tile has no center cell.
+// A property of the design, not an implementation choice (spec sec 12).
+const CENTER = (TILE_SIZE - 1) / 2;
 
 /** An authored ore vein (2.18): richness placed by the tile's author. */
 export interface TileDeposit {

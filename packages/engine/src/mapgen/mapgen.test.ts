@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
 import { TILE_SIZE, deriveConnectors, validateTileCells } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt, type Board } from '../tiles/board';
@@ -25,12 +25,12 @@ const LIB = new TileLibrary([
 // Edge-biased: tiny boards where the walker gets cornered, up to demo scale
 // with long winding paths.
 const CASES = [
-  { width: 3, height: 3, entries: 1, targetPathLength: 1 },
-  { width: 3, height: 3, entries: 4, targetPathLength: 1 },
-  { width: 5, height: 4, entries: 2, targetPathLength: 6 },
-  { width: 8, height: 5, entries: 3, targetPathLength: 8 },
-  { width: 14, height: 7, entries: 3, targetPathLength: 20 },
-  { width: 14, height: 7, entries: 6, targetPathLength: 6 },
+  { width: 3, height: 3, entries: 1, targetPathCells: 5 },
+  { width: 3, height: 3, entries: 4, targetPathCells: 5 },
+  { width: 5, height: 4, entries: 2, targetPathCells: 30 },
+  { width: 8, height: 5, entries: 3, targetPathCells: 40 },
+  { width: 14, height: 7, entries: 3, targetPathCells: 100 },
+  { width: 14, height: 7, entries: 6, targetPathCells: 30 },
 ];
 
 /** Slot-level road graph: which slots carry road, and which seams join them. */
@@ -225,7 +225,7 @@ describe('map generation v2 - trees, void, spread', () => {
   });
 
   it('sector spreading: with 4+ entries the road reaches all four board halves', () => {
-    const opts = { width: 14, height: 7, entries: 4, targetPathLength: 10 };
+    const opts = { width: 14, height: 7, entries: 4, targetPathCells: 50 };
     for (let seed = 1; seed <= 6; seed++) {
       const map = generateMap(createRng(seed).stream('map'), LIB, opts);
       const halves = { left: false, right: false, top: false, bottom: false };
@@ -275,7 +275,7 @@ describe('map generation v2 - trees, void, spread', () => {
         width: 14,
         height: 7,
         entries: 5,
-        targetPathLength: 26,
+        targetPathCells: 130,
       });
       expect(map.entries.length).toBe(5);
     }
@@ -283,7 +283,7 @@ describe('map generation v2 - trees, void, spread', () => {
 
   it('rejects zero entries', () => {
     expect(() =>
-      generateMap(createRng(1).stream('map'), LIB, { width: 5, height: 5, entries: 0, targetPathLength: 3 }),
+      generateMap(createRng(1).stream('map'), LIB, { width: 5, height: 5, entries: 0, targetPathCells: 15 }),
     ).toThrow(/at least one entry/);
   });
 });
@@ -298,7 +298,7 @@ describe('lane tiles vs the generator (session 14)', () => {
       { id: 'twin_stub', cells: ['GGXGG', 'GGXGG', 'GGGGG', 'GGBGG', 'GGBGG'] },
     ]);
     for (let seed = 1; seed <= 20; seed++) {
-      const map = generateMap(createRng(seed * 11).stream('map'), withLanes, { width: 8, height: 5, entries: 3, targetPathLength: 8 });
+      const map = generateMap(createRng(seed * 11).stream('map'), withLanes, { width: 8, height: 5, entries: 3, targetPathCells: 40 });
       const cells = resolveCells(map.board, withLanes);
       // The real assertion: every entry reaches the Core through the graph.
       const flow = computeFlowField(cells, 8 * TILE_SIZE, 5 * TILE_SIZE, map.entries);
@@ -372,7 +372,7 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
     deposits: [{ x: 1, y: 1, amount: 777 }],
   };
   const SPECIAL_ROAD = { id: 'sp_road', cells: g('GG|GG', 'GG|GG', 'GG|GG', 'GG|GG', 'GG|GG') };
-  const OPTS = { width: 8, height: 5, entries: 3, targetPathLength: 8 };
+  const OPTS = { width: 8, height: 5, entries: 3, targetPathCells: 40 };
   const libWith = (): TileLibrary =>
     new TileLibrary([...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })), SPECIAL_ORE, SPECIAL_ROAD]);
 
@@ -413,7 +413,10 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
       { id: 'sp_x2', cells: g('GG|GG', 'GO|OG', '--X--', 'GG|GG', 'GG|GG') },
     ]);
     for (let seed = 1; seed <= 10; seed++) {
-      const opts = { width: 8, height: 5, entries: 2, targetPathLength: 6, specials: ['sp_x', 'sp_t', 'sp_x2'] };
+      // Three junction anchors on a 40-slot board: the interesting property
+      // is anchoring and tree-ness, so the path floor is kept low - the
+      // floor's own guarantee has a dedicated test below.
+      const opts = { width: 8, height: 5, entries: 2, targetPathCells: 10, specials: ['sp_x', 'sp_t', 'sp_x2'] };
       const map = generateMap(createRng(seed * 3).stream('map'), JUNCTIONS, opts);
       const placed = map.board.slots.filter(Boolean).map((p) => p!.tileId);
       for (const id of opts.specials) expect(placed.filter((p) => p === id).length, `${id} seed ${seed * 3}`).toBe(1);
@@ -437,12 +440,40 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
     ]);
     for (let seed = 1; seed <= 6; seed++) {
       const map = generateMap(createRng(seed * 7).stream('map'), WITH_BRIDGE, {
-        width: 8, height: 5, entries: 3, targetPathLength: 6, specials: ['sp_bridge'],
+        width: 8, height: 5, entries: 3, targetPathCells: 30, specials: ['sp_bridge'],
       });
       const placed = map.board.slots.filter(Boolean).map((p) => p!.tileId);
       expect(placed.filter((p) => p === 'sp_bridge').length).toBe(1);
       const flow = computeFlowField(resolveCells(map.board, WITH_BRIDGE), 8 * TILE_SIZE, 5 * TILE_SIZE, map.entries);
       expect(flow.L).toBeGreaterThan(0);
+    }
+  });
+
+  it('D13: every entry route is at least the cell target - anchor-grown entries included', () => {
+    // The floor binds ALL entries (Daniil, 2026-08-19): an anchored special
+    // must not hand the player a lane shorter than the threat promises.
+    // Cases chosen so the board clamp does not bind.
+    const JUNCTION = new TileLibrary([
+      ...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })),
+      { id: 'sp_x', cells: g('GG|GG', 'GG|GG', '--X--', 'GG|GG', 'GG|GG') },
+    ]);
+    const cases = [
+      { width: 12, height: 7, entries: 2, targetPathCells: 40 },
+      { width: 14, height: 7, entries: 3, targetPathCells: 50 },
+      { width: 12, height: 7, entries: 2, targetPathCells: 40, specials: ['sp_x'] },
+    ];
+    for (const opts of cases) {
+      for (let seed = 1; seed <= 8; seed++) {
+        const map = generateMap(createRng(seed * 19).stream('map'), JUNCTION, opts);
+        const W = opts.width * TILE_SIZE;
+        const flow = computeFlowField(resolveCells(map.board, JUNCTION), W, opts.height * TILE_SIZE, map.entries);
+        for (const e of map.entries) {
+          expect(
+            flow.dist[e.y * W + e.x],
+            `entry ${e.x},${e.y} seed ${seed * 19} ${JSON.stringify(opts)}`,
+          ).toBeGreaterThanOrEqual(opts.targetPathCells);
+        }
+      }
     }
   });
 
