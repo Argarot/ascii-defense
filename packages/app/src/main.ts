@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { TILE_SIZE, TileLibrary } from '@ascii-defense/engine';
+import { GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef } from '@ascii-defense/engine';
 import { loadMintedTiles } from './mintedTiles';
 import {
@@ -349,9 +349,13 @@ async function main(): Promise<void> {
       case 'paused':
         return {
           title: 'PAUSED',
-          body: [`wave ${snap?.hud.wave ?? 0} of ${finalWave} \u00b7 seed ${seed}`],
+          body: [
+            `wave ${snap?.hud.wave ?? 0} of ${finalWave} \u00b7 seed ${seed}`,
+            `run code ${runCode(seed)}`,
+          ],
           items: [
             { id: 'resume', label: 'RESUME' },
+            { id: 'copycode', label: 'COPY RUN CODE' },
             { id: 'settings', label: 'SETTINGS' },
             { id: 'abandon', label: 'SAVE & EXIT TO TITLE' },
           ],
@@ -362,12 +366,14 @@ async function main(): Promise<void> {
               title: summary.won ? 'THE CORE STANDS' : 'THE CORE HAS FALLEN',
               body: [
                 `wave ${summary.wave} of ${finalWave} \u00b7 seed ${summary.seed}`,
+                `run code ${runCode(summary.seed)}`,
                 `kills ${summary.kills}`,
                 `ore banked +${summary.oreBanked} (total ${meta.bankedOre})`,
                 ...(snap ? [`relics held ${snap.hud.relicCount}`] : []),
               ],
               items: [
                 { id: 'again', label: summary.won ? 'GO AGAIN' : 'TRY AGAIN' },
+                { id: 'copycode', label: 'COPY RUN CODE' },
                 { id: 'title', label: 'TITLE' },
               ],
               footer: 'the next run starts where this one taught you',
@@ -376,6 +382,18 @@ async function main(): Promise<void> {
       default:
         return null;
     }
+  };
+
+  // The run code (D15): a compact displayed identity - generator version,
+  // seed, threat, and a loadout fingerprint (ids + cells, since the pool
+  // can change). Display-only for now; when paste-to-replay ships, a code
+  // from another generator version is refused loudly, never silently
+  // regenerated into a different map.
+  const runCode = (forSeed: number): string => {
+    const l = lastLoadout.length > 0
+      ? fnv1a(lastLoadout.map((t) => `${t.id}:${t.cells.join('/')}`).join('|')).toString(36)
+      : '0';
+    return `AD${GENERATOR_VERSION}-${forSeed.toString(36)}-${threatIdx}-${l}`.toUpperCase();
   };
 
   const download = (name: string, text: string): void => {
@@ -458,6 +476,12 @@ async function main(): Promise<void> {
         localStorage.removeItem(META_KEY);
         localStorage.removeItem(RUN_KEY);
         location.reload();
+        break;
+      }
+      case 'copycode': {
+        // Fire-and-forget: display is the contract, the clipboard a courtesy.
+        const code = mode === 'summary' && summary ? runCode(summary.seed) : runCode(seed);
+        void navigator.clipboard?.writeText(code).catch(() => { /* display remains */ });
         break;
       }
       case 'resume': mode = 'playing'; send({ t: 'speed', idx: 0 }); send({ t: 'speed', idx: mirroredSpeed }); break;
