@@ -250,6 +250,121 @@ Both land in M1 Phase 1, before any game code.
 Environment traps are in [CONTRIBUTING.md](../CONTRIBUTING.md) — read them
 before debugging anything.
 
+## 12. Map generation — the specification (WBS 2.27, agreed 2026-08-19)
+
+The generator is built against THIS section, not against playtest patches.
+Every rule below is checked in one place — `engine/src/mapgen/verify.ts`
+(`verifyMap`) — in tests today, and at the end of generation once the
+constraint-first rebuild (2.27 PRs 2–3) lands. A rule that is not in this
+section and not in `verifyMap` is not a rule.
+
+### Hierarchy
+
+Rules live in tiers. **A lower tier always wins a conflict**, and a higher
+tier is satisfied by **rearrangement** — entries may move, appear and
+disappear during generation; basics, specials and the Core may all be
+rearranged — never by silently changing a knob, and never by
+retry-until-lucky ladders that relax the target (removed 2026-08-19; they
+were an implementation invention, not a rule).
+
+Units are stated per rule: **slots** are tile positions on the board;
+**cells** are the `TILE_SIZE`-per-side grid inside them — the thing enemies
+actually walk.
+
+### Tier 0 — definitional
+
+- **Determinism.** Same seed + threat + loadout → the same map, bit-exact.
+  All map randomness is spent on the map stream at generation; nothing about
+  the map rolls dice mid-run. Whole-map retries advance the same stream, so
+  a seed still names exactly one map.
+- **One Core**, within 1 slot of the board center on each axis.
+- **The pool is basics plus the chosen loadout, nothing else.** Two owners:
+  the caller builds each run's library as shipped basics + the selected
+  specials (an unloaded special is not in the library at all); the generator
+  excludes loaded specials from every random pool (they appear because
+  chosen). A special appears **exactly once**, in its authored shape
+  (rotation allowed, cells never redrawn); its authored overlays (deposits,
+  boons) are law on its cells — **authored ore is the only guaranteed ore**.
+  An impossible loadout fails with a sentence, never silently.
+- **Every carved shape has a tile.** No carve move — tunnels *and* anchor
+  joints — may produce a slot shape the pool cannot express.
+
+### Tier 1 — topology
+
+- **All roads lead somewhere.** Every road cell lies on a route between an
+  entry and the Core (no dead-end spurs; validity rule 2.26 at tile level,
+  the same property at board level).
+- **The road is a tree.** Exactly one route from each entry to the Core, no
+  loops — loops are bloat the enemies ignore (Daniil, playtest 15). Road
+  specials anchor: one arm per separate road on the tile joins the tree,
+  every other arm exits the board as a new entry.
+- **Path length is denominated in road CELLS, per entry, as a minimum.**
+  Every entry's realized route to the Core is at least the threat's cell
+  target, clamped to what the board can hold. Conversion at carve time uses
+  the *minimum* cells any pool tile expresses for the shape, so the floor
+  holds by construction; overshoot is legal (longer = easier). The target is
+  never relaxed by retries.
+- Entry count may grow beyond the threat's roll to host anchors; entries are
+  distinct road cells on the board border.
+
+### Tier 2 — terrain
+
+- **Void only farther than `ORE_REACH` (3) slots from the road.** Enclosed
+  void is legal when it satisfies this and the share rule (the former
+  no-enclosed-void repair pass was removed by Daniil's call, 2026-08-19 —
+  it was never his rule).
+- **Void share follows a probability curve, not a hard cap**: a target share
+  is drawn from a heavily-low-biased curve on the map stream; the emergent
+  void is trimmed (nearest-to-land first) down to the target. Shares beyond
+  ~22% are vanishingly rare by the curve's shape. The drawn target rides the
+  map so `verifyMap` can check against it.
+- **All land within `ORE_REACH` of the road fills** — a slot at road
+  distance 1..3 always carries a tile.
+- **Ore is a bias, not a guarantee** (Daniil, 2026-08-19: floor removed).
+  Fill odds lean heavily toward some ore per map; a rare ore-less map is
+  legal. The only guaranteed ore is authored ore on a chosen special
+  (Tier 0).
+
+### Tier 3 — dressing
+
+- **Boons only on buildable ground cells** — dealt *and authored*: the
+  content validator and the Tile Smith refuse an authored boon on a
+  non-ground cell (regression fixture: playtest 16's boon-on-void).
+- **Caches on any ground cell, uniformly** — no distance shaping (Daniil,
+  2026-08-19).
+- Every ore cell carries a finite vein dealt at generation; when the relic
+  layer is on, every rock cell's hidden contents are dealt at generation.
+- Placement *preferences* (sector spread, walk eagerness, boon-near-road)
+  are free implementation space, not rules.
+
+### Identity
+
+- Within one generator version, **the seed is law** (Tier 0 determinism).
+- **The run save stores the generated map itself**, not just the seed —
+  resume loads the map and never re-generates, so saves survive generator
+  changes (guarded by content hash).
+- The shareable **run code** is compact — seed + threat + loadout + a
+  generator-version stamp — and a stale code is refused with a sentence,
+  never silently regenerated into a different map.
+
+### Parameterization
+
+- Generation takes board dimensions in slots and `TILE_SIZE` as parameters;
+  no constant in generation assumes 12×7 boards or 5×5 tiles. The app owns
+  one shared board-dimension constant (derivable from resolution later).
+- **`TILE_SIZE` must be odd** — roads cross tile borders at edge centers
+  (the center-or-nothing connector rule), and an even tile has no center
+  cell. This is a property of the design; document it, never work around it.
+
+### Lifecycle (the worker half of 2.27)
+
+- `init` yields exactly one of `ready` or `genError` — never silence. Every
+  throw inside `newRun` is caught; no state from a failed init may serve a
+  later frame.
+- The main thread enters `playing` only on `ready`, not on send
+  (regression fixtures: playtest 16's phantom resume and dropped bridge
+  specials).
+
 ---
 
 ## Sources
