@@ -22,6 +22,7 @@ import type { RngStream } from '../rng/rng';
 import { EDGES, TILE_SIZE, partitionKey, rotatePoint, tilePartition, type Edge, type Rotation } from './../tiles/tile';
 import { TileLibrary, createBoard, place, resolveCells, slotAt, type Board } from '../tiles/board';
 import { EDGE_DELTA, carveRoads, sigKey, type RoadSpecialSpec } from './carve';
+import { verifyMap } from './verify';
 
 export interface MapGenOptions {
   /** Board size in tile slots. */
@@ -117,6 +118,16 @@ export interface GeneratedMap {
   deposits: OreDeposit[];
   /** Boon cells (PRD sec 4.7); empty when relicPoolSize is absent. */
   boons: BoonRef[];
+  /**
+   * The void-share ceiling DRAWN for this map (D14) - verifyMap checks the
+   * actual share against it, not against a constant.
+   */
+  voidShareTarget: number;
+  /**
+   * The per-entry cell floor this map actually guarantees (D13); 0 when the
+   * board clamp bound the target (the floor is then best-effort).
+   */
+  pathFloorCells: number;
 }
 
 /** Roadless slots farther than this (in slots) from the road stay void. */
@@ -128,16 +139,9 @@ export const FILL_RADIUS = 2;
  */
 export const ORE_REACH = 3;
 /**
- * Generation guarantee (PRD sec 4.3): at least this many ore tiles per map,
- * chance permitting nothing. A map without ore has no Ore economy and so no
- * relic purchases at the Core - not a hard run, a broken one. A floor, not an
- * average; capped by how many fillable slots the board actually has.
- */
-export const ORE_FLOOR = 2;
-/**
- * Ceiling on the board's void share. Spec sec 12 (Tier 2) replaces this hard
- * cap with a drawn-target curve in the 2.27 rebuild; until then it is the
- * live rule and verifyMap checks against it.
+ * Support ceiling of the void-share curve (D14): the target share is drawn
+ * as VOID_SHARE_CAP * roll^2 - heavily biased low, impossible beyond the
+ * cap. The drawn target rides the map as `voidShareTarget`.
  */
 export const VOID_SHARE_CAP = 0.22;
 /** Caches per map when the relic layer is on (channel A of PRD sec 7.3). */
@@ -331,70 +335,25 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     }
   }
 
-  // No enclosed voids (Daniil, playtest 4): void is COASTLINE, not holes.
-  // Any empty slot that cannot reach the board border through other empty
-  // slots is inside the map's hull and gets terrain like its neighbours.
-  {
-    const reach = new Array<boolean>(width * height).fill(false);
-    const q: number[] = [];
-    for (let x = 0; x < width; x++) {
-      for (const y of [0, height - 1]) {
-        const k = slotIdx(x, y);
-        if (!roadEdges.has(k) && dist[k] > ORE_REACH && !reach[k]) { reach[k] = true; q.push(k); }
-      }
-    }
-    for (let y = 0; y < height; y++) {
-      for (const x of [0, width - 1]) {
-        const k = slotIdx(x, y);
-        if (!roadEdges.has(k) && dist[k] > ORE_REACH && !reach[k]) { reach[k] = true; q.push(k); }
-      }
-    }
-    for (let qi = 0; qi < q.length; qi++) {
-      const k = q[qi];
-      const x = k % width;
-      const y = Math.floor(k / width);
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-        const nk = slotIdx(nx, ny);
-        if (reach[nk] || roadEdges.has(nk) || dist[nk] <= ORE_REACH) continue;
-        reach[nk] = true;
-        q.push(nk);
-      }
-    }
-    // Enclosed void slots become fillable: mark them as if within reach.
-    for (let k = 0; k < width * height; k++) {
-      if (!roadEdges.has(k) && dist[k] > ORE_REACH && !reach[k]) dist[k] = ORE_REACH; // outer-ring rules apply
-    }
-  }
-
-  // Void share cap (playtest 5, item 12): the enclosure rule killed holes,
-  // not EXCESS - a map that is one-third void is a broken coastline. Convert
-  // the void slots nearest to terrain into fillable land until the share is
-  // sane; rare large bays survive, oceans do not.
+  // Void share (D14): a TARGET share is drawn from a heavily-low-biased
+  // curve on the map stream - quadratic over [0, VOID_SHARE_CAP], so a
+  // beach is common, an ocean rare, and beyond the cap impossible by the
+  // curve's support. Emergent void is trimmed to the target, nearest to
+  // land first. Enclosed void is LEGAL (D11: the old no-enclosed-void
+  // repair pass was never a rule - its only provenance was a comment) so
+  // long as it keeps the distance rule. The draw always spends exactly one
+  // roll so the stream stays aligned whether or not trimming happens.
+  const voidRoll = rng.int(0, 999) / 999;
+  const voidShareTarget = VOID_SHARE_CAP * voidRoll * voidRoll;
   {
     const total = width * height;
     const voidSlots: number[] = [];
     for (let k = 0; k < total; k++) if (!roadEdges.has(k) && dist[k] > ORE_REACH) voidSlots.push(k);
-    const maxVoid = Math.floor(total * VOID_SHARE_CAP);
+    const maxVoid = Math.floor(total * voidShareTarget);
     if (voidSlots.length > maxVoid) {
       voidSlots.sort((a, b) => dist[a] - dist[b]); // nearest to land first
       for (const k of voidSlots.slice(0, voidSlots.length - maxVoid)) dist[k] = ORE_REACH;
     }
-  }
-
-  // The ore floor is pre-committed, not checked after: a seeded shuffle of
-  // every fillable slot marks the first ORE_FLOOR as guaranteed ore, and the
-  // fill loop honours the marks. The guarantee therefore holds by
-  // construction - there is no repair pass, matching how connectivity works.
-  const guaranteedOre = new Set<number>();
-  if (index.filler.ore.length > 0) {
-    const fillable: number[] = [];
-    for (let k = 0; k < width * height; k++) {
-      if (!roadEdges.has(k) && dist[k] >= 1 && dist[k] <= ORE_REACH) fillable.push(k);
-    }
-    for (const k of rng.shuffle(fillable).slice(0, ORE_FLOOR)) guaranteedOre.add(k);
   }
 
   // Roadless specials (2.21) claim fill slots before the dice see them.
@@ -427,11 +386,10 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       if (dist[k] > FILL_RADIUS) {
         // The outer ring ALWAYS fills (playtest 12): every slot within
         // ORE_REACH of the road is land - ore by luck, plain otherwise.
-        // The earlier stay-void roll here was the source of two bugs at
-        // once: enclosed holes and cap-converted slots are re-marked as
-        // outer ring, so a ~31% stay-void chance put voids INSIDE the
-        // landmass and closer to the road than the void rule permits.
-        if (guaranteedOre.has(k) || (index.filler.ore.length > 0 && rng.chance(0.3))) {
+        // Ore is a BIAS, not a guarantee (D12): these odds make an
+        // ore-less map possible but rare (~1 in thousands on real boards);
+        // the only guaranteed ore is authored ore on a chosen special.
+        if (index.filler.ore.length > 0 && rng.chance(0.3)) {
           board = place(board, pickWeighted(rng, index.filler.ore).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
         } else if (index.filler.plain.length > 0) {
           board = place(board, pickWeighted(rng, index.filler.plain).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
@@ -442,7 +400,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       // (but never common - nodes are a find, not a floor) farther out.
       const oreChance = 0.04 + 0.1 * (dist[k] - 1);
       const pool =
-        guaranteedOre.has(k) || (index.filler.ore.length > 0 && rng.chance(oreChance))
+        index.filler.ore.length > 0 && rng.chance(oreChance)
           ? index.filler.ore
           : index.filler.plain;
       board = place(board, pickWeighted(rng, pool).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
@@ -463,7 +421,10 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
 
     // Authored overlays (2.18): any placed tile may carry deposits and boons
     // of its author's choosing; they rotate with the tile and OVERRIDE the
-    // dice for their cells. The tile's word is law on the tile's land.
+    // dice for their cells. The tile's word is law on the tile's land - but
+    // only on the RIGHT land: validateTile is the authoring surface's gate
+    // (boons on ground, deposits on ore), and this is the engine's own
+    // defense for a library built without it (spec tier 3).
     const authoredDeposits = new Map<number, { amount: number; tier: number }>();
     for (let ty = 0; ty < height; ty++)
       for (let tx = 0; tx < width; tx++) {
@@ -473,15 +434,20 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         if (!def.deposits && !def.boons) continue;
         for (const d of def.deposits ?? []) {
           const pt = rotatePoint(d.x, d.y, p.rotation);
-          authoredDeposits.set((ty * TILE_SIZE + pt.y) * cellsW + tx * TILE_SIZE + pt.x, { amount: d.amount, tier: d.tier ?? 1 });
+          const at = (ty * TILE_SIZE + pt.y) * cellsW + tx * TILE_SIZE + pt.x;
+          if (cellsNow[at] !== 'O') throw new Error(`tile '${p.tileId}' authors a deposit on a non-ore cell (${d.x},${d.y})`);
+          authoredDeposits.set(at, { amount: d.amount, tier: d.tier ?? 1 });
         }
         for (const b of def.boons ?? []) {
           const pt = rotatePoint(b.x, b.y, p.rotation);
-          boons.push({ x: tx * TILE_SIZE + pt.x, y: ty * TILE_SIZE + pt.y, boon: b.boon, tier: b.tier });
+          const bx = tx * TILE_SIZE + pt.x;
+          const by = ty * TILE_SIZE + pt.y;
+          if (cellsNow[by * cellsW + bx] !== 'G') throw new Error(`tile '${p.tileId}' authors a boon on a non-ground cell (${b.x},${b.y})`);
+          boons.push({ x: bx, y: by, boon: b.boon, tier: b.tier });
         }
       }
 
-    const farGround: CellRef[] = [];
+    const anyGround: CellRef[] = [];
     for (let cy = 0; cy < height * TILE_SIZE; cy++)
       for (let cx = 0; cx < cellsW; cx++) {
         const t = cellsNow[cy * cellsW + cx];
@@ -505,11 +471,13 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
                 ? { x: cx, y: cy, yields, depositAmount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX) }
                 : { x: cx, y: cy, yields },
           );
-        } else if (t === 'G' && poolSize > 0 && dist[slotIdx(Math.floor(cx / TILE_SIZE), Math.floor(cy / TILE_SIZE))] >= 2) {
-          farGround.push({ x: cx, y: cy });
+        } else if (t === 'G' && poolSize > 0) {
+          // Caches land on ANY ground cell, uniformly - no distance
+          // shaping (Daniil, 2026-08-19; spec tier 3).
+          anyGround.push({ x: cx, y: cy });
         }
       }
-    const shuffled = rng.shuffle(farGround);
+    const shuffled = rng.shuffle(anyGround);
     for (const spot of shuffled.slice(0, CACHE_COUNT)) {
       caches.push({ x: spot.x, y: spot.y, poolIdx: rng.int(0, poolSize - 1) });
     }
@@ -529,7 +497,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     }
   }
 
-  return {
+  const map: GeneratedMap = {
     board,
     entries: entryCells,
     core: { x: coreX * TILE_SIZE + CENTER, y: coreY * TILE_SIZE + CENTER },
@@ -537,5 +505,21 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     rockContents,
     deposits,
     boons,
+    voidShareTarget,
+    pathFloorCells: plan.floorCells,
   };
+
+  // The spec's one-place check (ARCHITECTURE sec 12): every invariant,
+  // verified on every generated map before it leaves this function. A
+  // violation throws into the retry loop and, if systematic, surfaces -
+  // never a silently broken map.
+  const issues = verifyMap(map, lib, {
+    specials: specialIds,
+    relicPoolSize: opts.relicPoolSize,
+    minPathCells: plan.floorCells > 0 ? plan.floorCells : undefined,
+  });
+  if (issues.length > 0) {
+    throw new Error(`mapgen: spec violation - ${issues.map((i) => `${i.rule}: ${i.detail}`).join('; ')}`);
+  }
+  return map;
 }

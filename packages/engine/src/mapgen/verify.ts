@@ -241,10 +241,11 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
         }
       }
     }
-    // Until the rebuild records the drawn target on the map, the live rule
-    // is the hard cap.
-    if (voidCount > Math.floor(width * height * VOID_SHARE_CAP)) {
-      bad('tier2/void-share', `${voidCount}/${width * height} void slots exceed the share ceiling`);
+    // D14: the ceiling is the target DRAWN for this map (curve support
+    // capped at VOID_SHARE_CAP), carried on the map itself.
+    const ceiling = Math.min(map.voidShareTarget, VOID_SHARE_CAP);
+    if (voidCount > Math.floor(width * height * ceiling)) {
+      bad('tier2/void-share', `${voidCount}/${width * height} void slots exceed the drawn ceiling ${ceiling.toFixed(3)}`);
     }
   }
 

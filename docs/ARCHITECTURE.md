@@ -317,10 +317,13 @@ actually walk.
   no-enclosed-void repair pass was removed by Daniil's call, 2026-08-19 —
   it was never his rule).
 - **Void share follows a probability curve, not a hard cap**: a target share
-  is drawn from a heavily-low-biased curve on the map stream; the emergent
-  void is trimmed (nearest-to-land first) down to the target. Shares beyond
-  ~22% are vanishingly rare by the curve's shape. The drawn target rides the
-  map so `verifyMap` can check against it.
+  is drawn as `VOID_SHARE_CAP × roll²` on the map stream — heavily biased
+  low, impossible beyond ~22% by the curve's support — and the emergent
+  void is trimmed (nearest-to-land first) down to it. The drawn target
+  rides the map (`voidShareTarget`) so `verifyMap` checks the map against
+  its own ceiling. A side effect made law-compatible: trim-converted slots
+  may leave land *beyond* `ORE_REACH` — the distance rule is
+  one-directional (void never near the road), not a ban on far land.
 - **All land within `ORE_REACH` of the road fills** — a slot at road
   distance 1..3 always carries a tile.
 - **Ore is a bias, not a guarantee** (Daniil, 2026-08-19: floor removed).

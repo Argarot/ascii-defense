@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
 import { TILE_SIZE } from '../tiles/tile';
 import { TileLibrary, resolveCells } from '../tiles/board';
@@ -69,6 +69,16 @@ function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
     ...extra,
   };
   return { map, cells, cellsW, cellsH, simOpts };
+}
+
+/** Like makeWorld, but scans forward to the first seed whose map carries a
+ *  vein - ore is a bias, not a guarantee (D12), and these fixtures need one.
+ *  Deterministic: a fixed start seed always finds the same world. */
+function makeOreWorld(start: number, extra: Partial<SimOptions> = {}) {
+  for (let s = start; ; s++) {
+    const w = makeWorld(s, extra);
+    if (w.cells.some((c) => c === 'O')) return { ...w, seed: s };
+  }
 }
 
 /** First buildable cell adjacent to a route cell - a spot a player would pick. */
@@ -407,8 +417,8 @@ describe('production - Refinery and Ore (1.4.6)', () => {
   // stalled cycle instantly.
 
   it('on a vein: first yield after one full cycle, then every cycle', () => {
-    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
-    const sim = new Sim(11, simOpts);
+    const { cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(11, { towerDefs: [BOLT, REFINERY] });
+    const sim = new Sim(seed, simOpts);
     const spot = cellOfType(cells, cellsW, cellsH, 'O');
     expect(sim.buildTower(spot.x, spot.y, 'refinery')).toBe(true);
     for (let t = 0; t < 39; t++) sim.tick();
@@ -420,8 +430,8 @@ describe('production - Refinery and Ore (1.4.6)', () => {
   });
 
   it('placement is exclusive both ways: refinery only ON ore, fighters only OFF it', () => {
-    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
-    const sim = new Sim(11, simOpts);
+    const { cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(11, { towerDefs: [BOLT, REFINERY] });
+    const sim = new Sim(seed, simOpts);
     const ground = buildSpotNear(cells, cellsW, cellsH); // a G cell
     const vein = cellOfType(cells, cellsW, cellsH, 'O');
     // Refinery refuses ground; bolt refuses the vein (ore is Refinery ground).
@@ -437,8 +447,8 @@ describe('production - Refinery and Ore (1.4.6)', () => {
   });
 
   it('tier choices fold into yield and cycle speed', () => {
-    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
-    const sim = new Sim(11, simOpts);
+    const { cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(11, { towerDefs: [BOLT, REFINERY] });
+    const sim = new Sim(seed, simOpts);
     const spot = cellOfType(cells, cellsW, cellsH, 'O');
     sim.buildTower(spot.x, spot.y, 'refinery');
     expect(sim.chooseTier(spot.x, spot.y, 0, 0)).toBe(true); // Wide Bore: +1/cycle
@@ -453,12 +463,12 @@ describe('production - Refinery and Ore (1.4.6)', () => {
   });
 
   it('a producer never targets, fires, or holds a priority region', () => {
-    const { cells, cellsW, cellsH, simOpts } = makeWorld(11, {
+    const { cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(11, {
       towerDefs: [REFINERY],
       spawnEveryTicks: 2,
       maxSpawns: 30,
     });
-    const sim = new Sim(11, simOpts);
+    const sim = new Sim(seed, simOpts);
     const spot = cellOfType(cells, cellsW, cellsH, 'O');
     sim.buildTower(spot.x, spot.y, 'refinery');
     for (let t = 0; t < 600; t++) sim.tick();
@@ -472,8 +482,8 @@ describe('production - Refinery and Ore (1.4.6)', () => {
 
 describe('finite ore + the run ends (session 13)', () => {
   it('a vein depletes, the cell reverts to ground, the refinery goes idle', () => {
-    const { map, cells, cellsW, cellsH, simOpts } = makeWorld(11, { towerDefs: [BOLT, REFINERY] });
-    const sim = new Sim(11, simOpts);
+    const { map, cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(11, { towerDefs: [BOLT, REFINERY] });
+    const sim = new Sim(seed, simOpts);
     const spot = cellOfType(cells, cellsW, cellsH, 'O');
     const dep = map.deposits.find((d) => d.x === spot.x && d.y === spot.y)!;
     expect(dep).toBeDefined();
