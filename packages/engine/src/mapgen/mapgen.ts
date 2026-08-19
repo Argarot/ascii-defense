@@ -139,6 +139,14 @@ export const FILL_RADIUS = 2;
  */
 export const ORE_REACH = 3;
 /**
+ * Generator version (D15): stamps run codes and shareable identities. Bump
+ * when a change makes the same (seed, threat, loadout) produce a different
+ * map - the golden-hash reasons list in replay.test.ts is the changelog.
+ * A code from another version is refused loudly, never silently
+ * regenerated into a different map.
+ */
+export const GENERATOR_VERSION = 1;
+/**
  * Support ceiling of the void-share curve (D14): the target share is drawn
  * as VOID_SHARE_CAP * roll^2 - heavily biased low, impossible beyond the
  * cap. The drawn target rides the map as `voidShareTarget`.
