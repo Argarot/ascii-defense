@@ -42,15 +42,25 @@ function readBdf(path) {
 function emit(file, cell, codepoints, source, lookup) {
   const cps = [], bytes = [];
   let missing = 0;
+  // A glyph the font DECLARES but draws nothing in (spleen: all of Latin-1)
+  // must not ship: GLTerm.has() would say yes and the screen would show a
+  // space where the author expected a mark - every HUD separator was
+  // invisible for three sessions this way. Blank-by-design stays: space,
+  // no-break space and the empty braille cell, which terrain pools use as
+  // 'no mark here' (an ABSENT glyph leaves the cell untouched; a BLANK one
+  // still paints the background).
+  const BLANK_OK = new Set([0x20, 0xa0, 0x2800]);
+  let blank = 0;
   for (const cp of codepoints) {
     const hex = lookup.get(cp);
     if (!hex) { missing++; continue; }
+    if (!BLANK_OK.has(cp) && /^0+$/.test(hex)) { blank++; continue; }
     cps.push(cp);
     for (let i = 0; i < cell[1]; i++) bytes.push(parseInt(hex.slice(i * 2, i * 2 + 2), 16));
   }
   const out = { source, cell, count: cps.length, codepoints: cps, bits: Buffer.from(bytes).toString('base64') };
   writeFileSync(file, JSON.stringify(out));
-  console.log(`${file.padEnd(34)} ${String(cps.length).padStart(4)} glyphs  (${missing} absent)  ${(JSON.stringify(out).length / 1024).toFixed(1)} kB`);
+  console.log(`${file.padEnd(34)} ${String(cps.length).padStart(4)} glyphs  (${missing} absent, ${blank} blank dropped)  ${(JSON.stringify(out).length / 1024).toFixed(1)} kB`);
   return cps.length;
 }
 

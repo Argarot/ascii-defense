@@ -226,7 +226,7 @@ export class HudPanel {
       const cd = `next wave ${s.nextWaveIn}s`;
       term.write(W - cd.length, 0, cd, role('enemy.fast'));
     }
-    term.write(0, 1, `seed ${s.seed} \u00b7 ${s.speedLabel}`, role('ui.dim'));
+    term.write(0, 1, `seed ${s.seed} \u2802 ${s.speedLabel}`, role('ui.dim'));
     term.write(0, 3, `SCRAP ${s.scrap}`, role('ui.accent'));
     // Ore on the same line, right-aligned: the two currencies never compete
     // for the same pool (PRD sec 6), so they share a row, not a column.
@@ -242,7 +242,7 @@ export class HudPanel {
       const rl = `RELICS ${s.relicCount}`;
       term.write(W - rl.length, 7, rl, role('ui.accent'));
     }
-    term.write(0, 8, `next: ${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'} \u00b7 kills ${s.kills}`, role('ui.dim'));
+    term.write(0, 8, `next: ${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'} \u2802 kills ${s.kills}`, role('ui.dim'));
     term.write(0, 9, `road L=${s.L}`, role('ui.dim'));
 
     // ---- build palette (vertical, hover previews radius on the board) ------
@@ -274,10 +274,10 @@ export class HudPanel {
     if (s.victory) {
       term.write(0, y + 1, 'THE CORE STANDS', role('terrain.core.lit'));
       term.write(0, y + 2, `wave ${s.finalWave} held`, role('ui.accent'));
-      term.write(0, y + 4, 'press R for a new run', role('ui.text'));
+      term.write(0, y + 4, 'the summary has the rest', role('ui.text'));
     } else if (s.gameOver) {
       term.write(0, y + 1, 'THE CORE HAS FALLEN', role('enemy.fast'));
-      term.write(0, y + 3, 'press R for a new run', role('ui.text'));
+      term.write(0, y + 3, 'the summary has the rest', role('ui.text'));
     } else if (s.cache) {
       // ---- the claim card: replaces the build palette on a cache ----------
       term.write(0, y++, 'RELIC CACHE', role('terrain.ore.lit'));
@@ -302,11 +302,11 @@ export class HudPanel {
       }
       y++;
       if (s.rock.job) {
-        term.write(0, y++, `PROSPECTING\u2026 ${s.rock.job.pct}%`, role('ui.accent'));
+        term.write(0, y++, `PROSPECTING.. ${s.rock.job.pct}%`, role('ui.accent'));
         term.write(0, y++, '='.repeat(Math.max(1, Math.round((s.rock.job.pct / 100) * (W - 2)))), role('ui.accent'));
       } else {
         const can = s.rock.affordable;
-        this.button(0, y, W - 6, `PROSPECT - $${s.rock.cost} \u00b7 ${s.rock.seconds}s`, can ? role('ui.bg') : role('ui.dim'), can ? role('ui.accent') : role('ui.grid'));
+        this.button(0, y, W - 6, `PROSPECT - $${s.rock.cost} \u2802 ${s.rock.seconds}s`, can ? role('ui.bg') : role('ui.dim'), can ? role('ui.accent') : role('ui.grid'));
         if (can) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'prospect' } });
       }
     } else if (s.core) {
@@ -486,7 +486,7 @@ export class HudPanel {
     }
 
     // ---- help footer -------------------------------------------------------
-    const help = ['space pause \u00b7 1/2/3 speed', 'F/L/C/W priority \u00b7 X sell', 'G seams \u00b7 R new map', 'Esc deselect'];
+    const help = ['space pause \u2802 1-4 speed', 'F/L/C/W priority \u2802 X sell', 'G seams \u2802 Esc menu'];
     help.forEach((h, i) => term.write(0, term.rows - help.length + i, h, role('ui.dim')));
 
     term.flush();

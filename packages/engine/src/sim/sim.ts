@@ -312,6 +312,12 @@ export class Sim {
     private readonly opts: SimOptions,
   ) {
     if (opts.enemyDefs.length === 0) throw new Error('sim needs at least one enemy def');
+    // Wave composition draws from the defs unlocked by wave 1; a roster whose
+    // every minWave is later would crash on the first wave, so refuse it
+    // here with a sentence instead of a TypeError mid-run.
+    if ((opts.mode ?? 'trickle') === 'waves' && !opts.enemyDefs.some((d) => (d.minWave ?? 1) <= 1)) {
+      throw new Error('sim needs at least one enemy def with minWave 1 (or none) - nothing could spawn on wave 1');
+    }
     this.rng = createRng(seed);
     this.mode = opts.mode ?? 'trickle';
     this.spawnEvery = opts.spawnEveryTicks ?? TICK_HZ;
@@ -782,6 +788,7 @@ export class Sim {
   }
 
   setPriority(x: number, y: number, priority: Priority): boolean {
+    if (this.status !== 'running') return false;
     const t = this.towerAt(x, y);
     if (!t) return false;
     t.priority = priority;
@@ -800,6 +807,10 @@ export class Sim {
   }
 
   sellTower(x: number, y: number): boolean {
+    if (this.status !== 'running') return false;
+    // Bounds first: an unchecked index here aliased (-1, 1) onto (w-1, 0),
+    // sold THAT tower and logged the bogus coordinate as a replay input.
+    if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return false;
     const idx = this.occupancy[y * this.opts.cellsW + x];
     if (idx === 0) return false;
     const tower = this.towers[idx - 1];
@@ -1046,6 +1057,9 @@ export class Sim {
       });
       const totalW = available.reduce((a, b) => a + b.w, 0);
       this.spawnQueue = [];
+      // Unreachable given the constructor's minWave check (minWave never
+      // rises mid-run), kept as the invariant's local witness.
+      if (available.length === 0 || totalW <= 0) throw new Error(`wave ${this.wave}: no enemy def is unlocked`);
       for (let n = 0; n < count; n++) {
         let roll = waves.int(0, totalW - 1);
         let pick = available[0].idx;

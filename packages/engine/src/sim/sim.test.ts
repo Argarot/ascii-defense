@@ -678,3 +678,42 @@ describe('boon ground (session 15, PRD sec 4.7)', () => {
     expect(sim.boonAt(spot.x, spot.y)).toEqual({ boon: 'damage', tier: 2 });
   });
 });
+
+describe('mutator guards (hygiene round, 2026-09-03)', () => {
+  it('sellTower refuses off-board coordinates instead of aliasing a neighbour', () => {
+    const { simOpts, cells, cellsW, cellsH } = makeWorld(11, { startingScrap: 500 });
+    const sim = new Sim(11, simOpts);
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    expect(sim.buildTower(spot.x, spot.y, 'bolt')).toBe(true);
+    const before = sim.inputs.length;
+    // (-1, 1) used to index (cellsW - 1, 0); (cellsW, cellsH) used to write towers[NaN].
+    expect(sim.sellTower(-1, 1)).toBe(false);
+    expect(sim.sellTower(cellsW, cellsH)).toBe(false);
+    expect(sim.sellTower(spot.x, cellsH)).toBe(false);
+    expect(sim.inputs.length).toBe(before);
+    expect(sim.towerAt(spot.x, spot.y)).not.toBeNull();
+    expect(sim.sellTower(spot.x, spot.y)).toBe(true);
+  });
+
+  it('sell and priority are refused once the run has ended', () => {
+    const { simOpts, cells, cellsW, cellsH } = makeWorld(11, { startingScrap: 500 });
+    const sim = new Sim(11, simOpts);
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    sim.buildTower(spot.x, spot.y, 'bolt');
+    sim.status = 'lost';
+    const before = sim.inputs.length;
+    expect(sim.sellTower(spot.x, spot.y)).toBe(false);
+    expect(sim.setPriority(spot.x, spot.y, 'last')).toBe(false);
+    expect(sim.inputs.length).toBe(before);
+  });
+
+  it('a wave-mode roster with nothing unlocked at wave 1 is refused at construction', () => {
+    const { simOpts } = makeWorld(11, { mode: 'waves', enemyDefs: [{ ...WALKER, minWave: 2 }] });
+    expect(() => new Sim(11, simOpts)).toThrow(/minWave/);
+  });
+
+  it('trickle mode keeps ignoring minWave (tests and the lab rely on it)', () => {
+    const { simOpts } = makeWorld(11, { enemyDefs: [{ ...WALKER, minWave: 2 }] });
+    expect(() => new Sim(11, simOpts)).not.toThrow();
+  });
+});

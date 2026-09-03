@@ -89,8 +89,8 @@ export class OfferModal {
       // whisper (Daniil could not find it). Two rows tall, always visible;
       // grey only when Ore cannot cover it.
       const label = reroll.can
-        ? `REROLL OFFER \u2014 ${reroll.cost} ore (you have ${reroll.ore})`
-        : `reroll costs ${reroll.cost} ore \u2014 you have ${reroll.ore}`;
+        ? `REROLL OFFER - ${reroll.cost} ore (you have ${reroll.ore})`
+        : `reroll costs ${reroll.cost} ore - you have ${reroll.ore}`;
       const bw = Math.max(label.length + 6, 44);
       const rx = Math.floor((term.cols - bw) / 2);
       const ry = y0 + CARD_H + 2;

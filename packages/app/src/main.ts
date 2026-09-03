@@ -32,7 +32,8 @@ import boltSpriteJson from '@ascii-defense/content/assets/sprites/bolt.json';
 import mortarSpriteJson from '@ascii-defense/content/assets/sprites/mortar.json';
 import frostSpriteJson from '@ascii-defense/content/assets/sprites/frost.json';
 import refinerySpriteJson from '@ascii-defense/content/assets/sprites/refinery.json';
-import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
+import { BOARD_SLOTS, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
+import { META_KEY, RUN_KEY, loadMetaFrom, loadRunFrom, saveMetaTo, type MetaSave } from './persistence';
 
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
   if (!r.ok) throw new Error(`${what} failed validation: ` + r.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
@@ -43,58 +44,17 @@ const SPRITES = [boltSpriteJson, mortarSpriteJson, frostSpriteJson, refinerySpri
 );
 
 const BASE = import.meta.env.BASE_URL;
-const ASSET_V = '5';
+const ASSET_V = '6';
 const load = <T>(p: string): Promise<T> =>
   fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
 const GLYPH_PX_W = 5;
 const GLYPH_PX_H = 8;
 
-// ---- persistence (PRD sec 15.2) --------------------------------------------
-const META_KEY = 'ascii-defense.meta.v1';
-const RUN_KEY = 'ascii-defense.run.v1';
-
-interface MetaSave {
-  version: number;
-  bankedOre: number;
-  settings: { reducedMotion: boolean | null }; // null = follow the OS
-  history: { seed: number; threat: string; wave: number; status: string; kills: number }[];
-}
-
-const defaultMeta = (): MetaSave => ({ version: SAVE_VERSION, bankedOre: 0, settings: { reducedMotion: null }, history: [] });
-
-/** Load-or-explain: a corrupt blob is REPORTED and left in place, never wiped. */
-function loadMeta(): { meta: MetaSave; problem: string | null } {
-  try {
-    const raw = localStorage.getItem(META_KEY);
-    if (!raw) return { meta: defaultMeta(), problem: null };
-    const m = JSON.parse(raw) as MetaSave;
-    // v1 -> v2 changed only the RUN save (loadout); meta migrates in place.
-    if (m.version === 1) return { meta: { ...m, version: SAVE_VERSION }, problem: null };
-    if (m.version !== SAVE_VERSION) return { meta: defaultMeta(), problem: `meta save is version ${m.version}, this build reads ${SAVE_VERSION} - using defaults, old data kept` };
-    return { meta: m, problem: null };
-  } catch {
-    return { meta: defaultMeta(), problem: 'meta save is corrupt - using defaults, the broken data is kept for export' };
-  }
-}
-function saveMeta(m: MetaSave): void {
-  try { localStorage.setItem(META_KEY, JSON.stringify(m)); } catch { /* storage full: the run continues */ }
-}
-function loadRun(): { run: RunSave | null; problem: string | null } {
-  try {
-    const raw = localStorage.getItem(RUN_KEY);
-    if (!raw) return { run: null, problem: null };
-    const r = JSON.parse(raw) as RunSave;
-    // v1/v2 saves carry no map; across the generator rebuild their seed
-    // would regenerate a DIFFERENT map and the input log would replay onto
-    // the wrong cells - refused with a sentence, never silently corrupted.
-    if (r.version < SAVE_VERSION) return { run: null, problem: 'run save predates the generator rebuild - it cannot continue' };
-    if (r.version !== SAVE_VERSION) return { run: null, problem: `run save is version ${r.version}, this build reads ${SAVE_VERSION} - it cannot continue` };
-    return { run: r, problem: null };
-  } catch {
-    return { run: null, problem: 'run save is corrupt and cannot continue - kept for export' };
-  }
-}
+// ---- persistence (PRD sec 15.2) lives in persistence.ts (Node-testable) ----
+const loadMeta = (): ReturnType<typeof loadMetaFrom> => loadMetaFrom(localStorage);
+const saveMeta = (m: MetaSave): void => saveMetaTo(localStorage, m);
+const loadRun = (): ReturnType<typeof loadRunFrom> => loadRunFrom(localStorage);
 
 async function main(): Promise<void> {
   const glyphs = await load<GlyphSet>('glyphset-spleen.json');
@@ -167,7 +127,10 @@ async function main(): Promise<void> {
   let showGrid = false;
   let selectedBuildId: string | null = null;
   let seed = 1;
-  let threatIdx = Math.min(2, Math.max(0, Number(new URLSearchParams(location.search).get('threat') ?? 1)));
+  // `?threat=abc` is NaN, and NaN indexes THREAT_LEVELS to undefined - a
+  // crash before the title screen. Anything unparseable means Standard.
+  const threatParam = Number(new URLSearchParams(location.search).get('threat') ?? 1);
+  let threatIdx = Number.isInteger(threatParam) ? Math.min(2, Math.max(0, threatParam)) : 1;
   let finalWave: number = THREAT_LEVELS[threatIdx].finalWave;
   let currentMap: GeneratedMap | null = null;
   let snap: FrameSnapshot | null = null;
@@ -211,6 +174,11 @@ async function main(): Promise<void> {
         mode = 'playing';
       }
       history.replaceState(null, '', `?seed=${seed}&threat=${threatIdx}`);
+      // The previous run's last snapshot must not render over the new map:
+      // a frame between 'ready' and the first new snapshot would bank a
+      // finished run's ore a second time and apply its prospected rocks to
+      // the wrong board.
+      snap = null;
     } else if (m.t === 'snapshot') {
       snap = m.s;
     } else if (m.t === 'saved') {
@@ -266,10 +234,10 @@ async function main(): Promise<void> {
   app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
   cap.className = 'hud';
-  cap.textContent = 'spleen 5x8 \u00b7 sim in a worker \u00b7 space pauses, 1/2/3/4 set speed, Esc menus \u00b7 ';
+  cap.textContent = 'spleen 5x8 \u2802 sim in a worker \u2802 space pauses, 1/2/3/4 set speed, Esc menus \u2802 ';
   const smithLink = document.createElement('a');
   smithLink.href = 'tilesmith.html';
-  smithLink.textContent = 'tile smith \u2192';
+  smithLink.textContent = 'tile smith ->';
   smithLink.style.color = '#4cc9f0';
   cap.appendChild(smithLink);
   leftCol.appendChild(cap);
@@ -309,7 +277,7 @@ async function main(): Promise<void> {
               note: `to wave ${t.finalWave}`,
               selected: i === setupThreat,
             })),
-            { id: 'loadout', label: 'LOADOUT', note: `${setupLoadout.length}/${LOADOUT_SLOTS} special(s) \u00bb` },
+            { id: 'loadout', label: 'LOADOUT', note: `${setupLoadout.length}/${LOADOUT_SLOTS} special(s) >` },
             { id: 'start', label: 'START RUN' },
             { id: 'back', label: 'BACK' },
           ],
@@ -381,7 +349,7 @@ async function main(): Promise<void> {
         return {
           title: 'PAUSED',
           body: [
-            `wave ${snap?.hud.wave ?? 0} of ${finalWave} \u00b7 seed ${seed}`,
+            `wave ${snap?.hud.wave ?? 0} of ${finalWave} \u2802 seed ${seed}`,
             `run code ${runCode(seed)}`,
           ],
           items: [
@@ -396,7 +364,7 @@ async function main(): Promise<void> {
           ? {
               title: summary.won ? 'THE CORE STANDS' : 'THE CORE HAS FALLEN',
               body: [
-                `wave ${summary.wave} of ${finalWave} \u00b7 seed ${summary.seed}`,
+                `wave ${summary.wave} of ${finalWave} \u2802 seed ${summary.seed}`,
                 `run code ${runCode(summary.seed)}`,
                 `kills ${summary.kills}`,
                 `ore banked +${summary.oreBanked} (total ${meta.bankedOre})`,
