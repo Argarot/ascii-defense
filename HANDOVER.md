@@ -1,121 +1,132 @@
-# Handover — state as of 2026-08-20 (end of day; session 20 + three playtest rounds)
+# Handover — state as of 2026-09-03 (end of day; session 21: the audit, the hygiene round, design round 1)
 
 > **Updated once per working day** (Daniil). State and seams only; sequencing
 > lives in the roadmap ledger, the checklist in the WBS, requests in the WBS
 > request index. Anything restated here is a drift surface.
 
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
-[docs/PRD.md](docs/PRD.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) —
-**§12 is the generation spec, the day's central artifact** →
-[docs/WBS.md](docs/WBS.md) → this file → the roadmap ledger's next open row.
-The gitignored `POSTMORTEM.md` holds collaboration findings — **read its last
-three sections before writing any code today.** End every working day with the
-`wrap-session` skill (.claude/skills/wrap-session).
+[docs/PRD.md](docs/PRD.md) — **§9.2 (wave tempo), §4.6 (caches), §5.3 (the
+trees), §7.6 (relics) changed today** → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+(§12 is the generation spec) → [docs/WBS.md](docs/WBS.md) — **decisions
+D17–D23 and the technical-debt register are today's** → this file → the
+roadmap ledger's next open row. The gitignored `POSTMORTEM.md` holds
+collaboration findings — **read its last three sections before writing any
+code today.** End every working day with the `wrap-session` skill.
 
 Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always;
-the run code `AD1-…` on the pause screen is the build marker).
+the run code `AD1-…` on the pause screen is the build marker, and since today
+the HUD's separators are visible braille dots — a HUD showing `seed N   1x`
+with a blank gap is the OLD build).
 
 ## Where the project is
 
-**Session 20 delivered WBS 2.27, the backbone reassessment** (PRs #88, #89,
-#93 [3-in-1 after a stacked-squash orphaning], #94, #95, #96): the generator
-specification is **ARCHITECTURE §12** — a rule HIERARCHY (definitional →
-topology → terrain → dressing; lower tiers win, higher tiers satisfied by
-rearrangement, never by knob relaxation) — with `verifyMap()` checking every
-invariant inside every `generateMap` call. The carve was rebuilt
-constraint-first in `engine/mapgen/carve.ts` (cell-denominated per-entry path
-floor that binds anchor arms too; availability gated at tunnels, branch
-starts, and joints; relaxation ladders deleted). The worker lifecycle is a
-transactional state machine (`app/workerRuntime.ts`, testable in Node): init
-yields exactly `ready | genError`, `playing` begins on `ready`, and **RunSave
-v3 carries the generated map** — resume never re-generates. Decisions
-**D11–D16** minted; the run code (`AD<genver>-<seed>-<threat>-<loadout>`)
-shows on pause/summary.
+**Session 21 (2026-09-03) opened with a fresh-eyes audit** of the whole
+codebase (three parallel read-only passes: engine; view/render/app;
+content/harness/tools/CI) and a design review of the game as a player. The
+audit's fix-first list shipped as **PR #98** (hygiene round: blank Latin-1
+glyphs made the HUD's separators invisible for three sessions; a stale
+snapshot across `ready`; meta saves versioned by the run format; `?threat=abc`
+crash; `sellTower` unbounded; empty-wave-1 roster crash; the "press R" lie).
+Everything else the audit found is in the **WBS technical-debt register**.
 
-**Three same-day playtest rounds hardened it** (his numbered reports, all
-closed): the **strand-level exactly-one-route law** (loops now cannot leave
-the generator — the slot-level tree check was provably not the law); in-tile
-road cycles refused at the authoring surface; the **special-shape law**
-(`tileIsSpecialShape`: touching OR twin-segment ⇒ chosen, never rolled — so
-plain maps have zero touch/crossing moments and tunnels self-limit to zero);
-loadout slots 3→5 with a **paged picker** and **minted-tile DELETE MODE**;
-**mirror-canonical asset identity** (gen_ns_4 was gen_ns_3's exact mirror —
-removed; tilegen and a CI law now dedup under rotation AND reflection).
+**Design round 1 then shipped as five PRs (#99–#103)**, every item approved
+by Daniil with amendments, decisions **D17–D23** minted:
 
-**THE 2.27 GATE IS STILL OPEN AND IT IS DANIIL'S**: he generates and plays
-loadout-heavy runs without producing a defect list. Three rounds each
-produced one; each was fixed and deployed same-day. Do not declare it.
+1. **Pacing (D17–D19, #99):** the wave clock runs launch-to-launch and never
+   waits for the last enemy; **CALL NEXT WAVE** (button and `N`) banks the
+   remaining clock as Scrap; **wave 1 waits for the call**; the next wave is
+   composed one wave ahead and shown by kind and count; **boss waves** every
+   5th and on the final wave by rule (one boss behind an escort, replacing
+   the elite surge); the PRD's `L` offset is live (hp × √(mean lane/floor));
+   **traits are rules** (`engine/sim/traits.ts`).
+2. **Relics (D20, #100):** `stackable` per relic, unstackables leave the pool
+   once held; draws cost 50 Ore ×1.5 per purchase, rerolls 15 ×1.5; pool
+   10→16 (Ballistics Lab cut; Second Wind, Quarry, Toll, Bounty Board, and
+   the first consumables Sandbags / Flashbang / Ore Pocket).
+3. **Caches and loot tables (D21, #101; WBS 2.22 half-shipped):** caches come
+   from prospected rock (≤3 per map) and every boss where it dies; opening is
+   free; contents roll a **loot table** in content on the new `loot` stream.
+   `SAVE_VERSION` 4.
+4. **Minimum range (D22, #102):** `minRange` is a folded stat; the Mortar has
+   a 2.5-cell dead zone; the range draws as a filled disc of fading rings
+   with the hole dark and red-rimmed, for every tower.
+5. **Tower trees (D23, #103):** every fork is two roles. New knobs:
+   `damageMul`, `shots`+`spread`, `pierceCount`, `shieldMul`,
+   `slowedBonusMul`, `freezeEvery`, `slowMul` as a stat, `ignoreArmor`,
+   `deepBore50/100`. Refinery mines slower (1 Ore / 40 s) and deep choices
+   grow the vein at a slower cycle.
+
+**NOT built today, approved for next:** the **geometry migration to 8×5-glyph
+cells** (option 1: board shrinks to fit the viewport, tiles stay 5×5), the
+sprite importer (his sprites arrive as JSON; expanded placeholders until then),
+committing `tools/art` (still untracked), and the rest of the debt register.
+
+**Two gates remain Daniil's:** the 2.27 gate (loadout-heavy runs without a
+defect list) and now **design round 1's gate** — a Standard run where the
+eleven review items are gone from his list, and a lab sweep of the 14 variants
+per tower showing no path winning every wave (the sweep is NOT yet written;
+the lab's reference "stronger" build is Marksman/Piercing/Railbore).
 
 ## Fresh-context warnings (beyond CONTRIBUTING)
 
-- **A rule that cannot cite its decision is a suspect, not a law.** The
-  no-enclosed-void pass carried "(Daniil, playtest 4)" in a comment for
-  three sessions; he never made that rule. Settled design arguments get
-  D-numbers at birth (D1–D16 in the WBS); spec rules cite provenance.
-- **Identity is a chosen equivalence relation.** Gameplay identity is
-  rotation-canonical (2.24); ASSET identity is rotation+reflection
-  (`mirrorCanonicalKey`); a "no duplicates" claim is only as strong as its
-  relation, and a perceptual report needs a perceptual relation.
-- **The minted pool is Daniil's browser's content** (localStorage,
-  per-browser by design). The repo cannot reach it; validity heals what the
-  rules refuse, DELETE MODE handles what they accept. Never promise behavior
-  about a minted tile you have not seen — `tile_yn7vhz` passed validity
-  despite "having a loop" to his eye; if he reports one again, get the
-  EXPORT SAVES file before claiming anything.
-- **Engine tests are hermetic by invariant, so real-content behavior needs
-  `harness/lab/mapgen-sweep.test.ts`** — the shipped library swept through
-  the app's exact knob derivation. The playtest found what hermetic shapes
-  never could; keep that suite growing.
-- **Windows PowerShell writes UTF-8 BOMs** (`-Encoding utf8`); the content
-  validator parses raw and CI fails on the BOM. Write JSON via node or
-  `[IO.File]::WriteAllText` with `UTF8Encoding($false)`; keep library.json
-  in tilegen's `JSON.stringify(…, null, 2)` format.
-- **Never squash-merge the bottom of a stacked PR chain** — GitHub closes
-  the stack unrecoverably (closed PRs cannot retarget). Merge top-down or
-  rebase per merge (`rebase --onto main <merged-sha>`).
-- **Multiline `git commit -m` breaks under PowerShell quoting** — always
-  `git commit -F <file>` from the scratchpad, and never chain branch
-  commands with the work they isolate (bit again this session).
-- **`gh pr merge` needs the permission rule** now present in
-  `.claude/settings.local.json`; the auto-mode classifier also refuses
-  letting the agent edit that file itself (correct boundary).
-- **A summary that invites a playtest must state, first and in bold, which
-  build he will hit and what proves he is on it.** He playtested unmerged
-  work once this session and re-found every reserved bug; two of three
-  reports that day were the old build.
+- **Blank glyphs are dropped from the atlas now**, and a harness test
+  (`glyphs.test.ts`) scans view/app source for any codepoint the font cannot
+  draw. Write `⠂` (a braille dot) where you would write `·`; never `»`,
+  `—`, `…`. The test is the law; CONTRIBUTING's "no Latin-1" was subtly wrong
+  (declared but empty) until today.
+- **`git commit -F <file>` and one command per step.** Heredocs in the Bash
+  tool broke three times today on quoting; scratchpad scripts (`node
+  file.mjs`) with anchored replacements that ABORT on a missing anchor were
+  the reliable edit path for multi-file changes.
+- **The permission classifier refuses `gh pr merge` when chained** with other
+  commands; a bare `gh pr merge N --squash --delete-branch` passes. CI must
+  be green on the HEAD commit — `gh pr checks --watch` started before a push
+  can report the old run; confirm `headRefOid` matches before merging.
+- **The browser pane starves `requestAnimationFrame` while hidden** and
+  `javascript_tool` reads of `hudText()` come back empty then; front the tab
+  (`tabs_select`), `resize_window` to ~1900 wide to see the HUD, and read after
+  a real wait. Screenshots worked once fronted; `zoom` does not.
+- **`python` on this machine resolves to another tool's venv** (hermes-agent,
+  3.11) while `pip` is Python 3.9's. The art pipeline works only because that
+  venv happens to carry numpy and Pillow. Use `python -m pip` and a project
+  venv before trusting `requirements.txt`.
+- **Wave-mode fixtures must call `sim.callWave()` or pass `firstWaveWaits:
+  false`** — wave 1 waits for the player now. The lab and every existing
+  wave test were updated; a new test that "just ticks" will sit at wave 0.
+- **A pushed commit must typecheck before the PR body claims green.** PR
+  #102's first push failed typecheck (a private lane in a test) and shipped
+  a fix commit; the PR body had already said "197 green".
 
-## Key seams for the next session
+## Key seams for the next session (the geometry migration)
 
-- **The 2.27 gate playtest is the only open thread of session 20.** If it
-  produces a defect list, the fix pattern that worked three times: confirm
-  the mechanism with a numbered evidence sweep BEFORE code (dist/lab scratch
-  scripts via esbuild), pin it as a law-level test, fix, deploy, live-verify
-  through `__ad`.
-- **`engine/mapgen/verify.ts`** — the law. Strand-level route-uniqueness
-  (`tier1/route-unique`) mirrors the flow field's own `stepAllowed`/
-  `strandStep` (exported from `sim/flow.ts`); if routing semantics ever
-  change, both move together or the law lies.
-- **`engine/mapgen/carve.ts`** — the road plan. Tunnel machinery is live
-  code but dormant content-wise (no two-group tile in any rolled pool since
-  twin_bend went special); it fires only in hermetic tests. Deliberate, not
-  dead — a future "tunnel basics" content decision re-arms it.
-- **`app/workerRuntime.ts`** — the lifecycle. All state commits atomically
-  in `newRun`; every code path posts `ready` or `genError`. simWorker.ts is
-  a shell; tests inject hermetic content.
-- **Session 21 (ledger): D8 naming mini-session first** — a conversation,
-  not build work (printing-trade lexicon; dev's position recorded at D8) —
-  then damage types (2.8) and attack shapes (4.10).
+- **`view/board/style.ts:16-17`** — `CELL_W`/`CELL_H`, the one constant.
+  Three places hard-code row/column positions and must move with it: the
+  bridge deck rows in `style.ts` (`y === 1`), cache and entry markers in
+  `BoardView.ts` (`gx + 1..3, gy + 1`), the fallback tower art. The sprite
+  loop in `BoardView.ts` indexes art by the VIEW's cell — a sprite whose
+  `cell` differs crashes; the audit's "sprite cell must equal the view cell"
+  lint does not exist yet and must land first.
+- **`app/protocol.ts:18`** — `BOARD_SLOTS` 12×7 must become a viewport-derived
+  value (option 1). Downstream: `workerRuntime.ts` knob derivation,
+  `mapgen-sweep.test.ts` and `content.test.ts` inline board sizes, the lab's
+  calibration seed, `SAVE_VERSION` (the map changes shape), the golden hash.
+- **The HUD/modal 2× scale and the 30-column HUD width** are unnamed literals
+  in `main.ts` (five copies) and `tilesmith.ts` (`ZOOM_W/H`); name them once.
+- **`tools/art`** is Daniil's Python image→`.xp` pipeline (untracked). Commit
+  it with `out/` and `__pycache__` ignored, `*.xp binary`, and a decision on
+  `vendor/fonts` (3.3 MB, licences unrecorded). Its `glyphs.py` should read
+  `glyphset-spleen.json` instead of re-parsing the BDF (three parsers today).
+- **Balance after today is unmeasured**: the wave clock, the L offset, boss
+  waves, the Refinery rate and the escalating relic prices all moved at once.
+  The lab's analytic model knows nothing of volleys, pierce or the clock. A
+  lab sweep before his playtest would say which of today's numbers are
+  obviously wrong; the numbers were chosen, not measured.
 
 ## Standing open items
 
-- **2.27 gate** — Daniil's loadout-heavy playtest verdict (see above).
-- `tile_yn7vhz` — a minted tile that LOOKS looped but passes validity. He
-  can delete it now; if he wants the shape class understood (possible spec
-  input for what validity should refuse), his save export is required.
-- 4.12 — playtest-1 visual items V8, V9 remain **lost**; re-ask at a
-  playtest, then write or retire the ID.
-- Shore palette reads as ore (gold on gold) — art-pass note on 6.6.
-- Relic rebalance for duplicate stacking (accepted as a later session).
-- ASSETS.md not audited since D3 closed — audit in the art session.
-- The REXPaint art pipeline is still **unproven**; both tools unwritten;
-  6.1 opens the presentation block. Accepted risk, recorded on the item.
+- **Design round 1 gate** — Daniil's Standard run; the 14-variant lab sweep.
+- **2.27 gate** — still his loadout-heavy verdict.
+- **Geometry migration (8×5 cells, option 1)** — next session, plan approved.
+- **Sprite importer** — waits for his JSON sprites; placeholders meanwhile.
+- **Technical-debt register** (WBS) — the audit's "everything else later".
+- `tile_yn7vhz`, 4.12 V8/V9, shore-as-ore, ASSETS.md audit — unchanged.

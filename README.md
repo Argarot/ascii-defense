@@ -40,12 +40,18 @@ resuming never re-rolls the world — a save doubles as an exact replay.
    before you buy it.
 3. Every third cleared wave offers a **pick-1-of-3 relic** over the live
    board: passives that break rules (overkill chains, slowed enemies take
-   more), actives fired from the Core (orbital strike, board freeze),
-   consumables. Duplicates stack. Spend banked Ore to draw or reroll.
+   more, a toll on every enemy walking past a tower), actives fired from the
+   Core (orbital strike, board freeze), consumables (sandbags, a flashbang).
+   Multipliers stack; a rule you already hold is never dealt again. Spend
+   Ore to draw or reroll — each purchase makes the next dearer.
 4. Rocks are containers: **prospect** them (scrap + time; Survey refineries
-   speed and automate it) to reveal ore, a cache, or bare ground.
-5. Survive the elite waves, the Juggernauts, and geometric scaling that
-   guarantees no build is safe forever — then hold wave 20.
+   speed and automate it) to reveal ore, a sealed cache, or bare ground.
+   **Caches open free**, and hold Scrap, Ore, a relic — or turn their own
+   ground into a boon. Every boss drops one where it falls.
+5. **The wave clock never waits for you**: waves come on a timer from the
+   last launch, you can **call the next one early** for Scrap, and the HUD
+   shows what is coming before it comes. Boss waves every fifth wave and on
+   the last; the road's length is paid for in enemy health. Hold wave 20.
 
 ## Where the project is
 
@@ -65,6 +71,14 @@ rule set — exactly one route per entry at the resolution enemies walk, so
 loops are impossible; a chosen special appears exactly once; a run start
 yields a fresh game or a stated error, never a silent fallback. The three
 bugs that forced the rebuild are named regression tests now.
+
+**Design round 1 (2026-09-03)** reworked the fundamentals a player's-eye
+review found flat: the wave clock and the call button, boss waves, traits as
+real rules, stackability and escalating prices for relics, caches that open
+free onto loot tables, a dead zone for the Mortar with the range drawn as a
+filled disc, and every tower fork rebuilt as two roles instead of two numbers.
+Next: the cell grows to 8×5 glyphs (square, 40 px) and the board fits itself
+to the screen.
 
 **Not built yet**: damage-type resistances, relic fusion, onboarding, art.
 The roadmap runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the
