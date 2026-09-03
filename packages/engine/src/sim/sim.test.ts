@@ -5,6 +5,7 @@ import { TileLibrary, resolveCells } from '../tiles/board';
 import { generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
 import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions } from './sim';
+import { effectiveStats } from './defs';
 import type { EnemyDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
@@ -840,5 +841,46 @@ describe('wave tempo and traits (design round 1, 2026-09-03)', () => {
     let guard = 0;
     while (sim.spawnRemaining() > 0 && guard++ < 1000) sim.tick();
     expect(sim.spawned).toBe(preview.kinds[0].count);
+  });
+});
+
+describe('the dead zone - minimum range (design round 1, item 2)', () => {
+  it('folds from the def and its mods, and can never swallow the whole range', () => {
+    const MORTAR: TowerDef = { id: 'm', cost: 1, range: 7, minRange: 2.5, fireEveryTicks: 10, projectile: { damage: 1, speed: 1 }, tiers: [
+      { choices: [{ name: 'Short Fuse', cost: 1, mods: { minRange: -1 } }, { name: 'Long Barrel', cost: 1, mods: { minRange: 20 } }] },
+    ] };
+    expect(effectiveStats(MORTAR, [-1, -1, -1]).minRange).toBe(2.5);
+    expect(effectiveStats(MORTAR, [0, -1, -1]).minRange).toBe(1.5);
+    expect(effectiveStats(MORTAR, [1, -1, -1]).minRange).toBe(6.5); // clamped below range
+    expect(effectiveStats(BOLT, [-1, -1, -1]).minRange).toBe(0);
+  });
+
+  it('a tower never aims inside its dead zone', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 20, spawnEveryTicks: 20 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const aims = (minRange: number): number[] => {
+      const def: TowerDef = { ...BOLT, range: 6, minRange };
+      const sim = new Sim(47, { ...simOpts, towerDefs: [def], enemyDefs: [{ ...WALKER, hp: 100000 }] });
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      const seen = new Set<number>();
+      const out: number[] = [];
+      for (let t = 0; t < 1500; t++) {
+        sim.tick();
+        for (let p = 0; p < sim.projX.length; p++) {
+          if (!sim.projAlive[p] || seen.has(p)) continue;
+          seen.add(p);
+          const dx = sim.projAimX[p] - (spot.x + 0.5);
+          const dy = sim.projAimY[p] - (spot.y + 0.5);
+          out.push(Math.sqrt(dx * dx + dy * dy));
+        }
+      }
+      return out;
+    };
+    const plain = aims(0);
+    expect(plain.length).toBeGreaterThan(0);
+    expect(Math.min(...plain)).toBeLessThan(3); // something walks close by
+    const zoned = aims(3);
+    expect(zoned.length).toBeGreaterThan(0);
+    for (const d of zoned) expect(d).toBeGreaterThanOrEqual(3 - 1e-6);
   });
 });

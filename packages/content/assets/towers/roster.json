@@ -84,6 +84,7 @@
       "name": "Mortar",
       "cost": 35,
       "range": 7,
+      "minRange": 2.5,
       "fireEveryTicks": 40,
       "attack": "projectile",
       "projectile": {

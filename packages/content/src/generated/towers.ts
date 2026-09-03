@@ -15,6 +15,10 @@ export interface TowerRoster {
       name?: string;
       cost: number;
       range: number;
+      /**
+       * Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.
+       */
+      minRange?: number;
       fireEveryTicks: number;
       /**
        * Required for attacking towers; absent on attack:none producers (Refinery).
@@ -94,6 +98,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -121,6 +129,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -156,6 +168,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -183,6 +199,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -218,6 +238,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -245,6 +269,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -271,6 +299,10 @@ export interface TowerRoster {
       name?: string;
       cost: number;
       range: number;
+      /**
+       * Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.
+       */
+      minRange?: number;
       fireEveryTicks: number;
       /**
        * Required for attacking towers; absent on attack:none producers (Refinery).
@@ -350,6 +382,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -377,6 +413,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -412,6 +452,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -439,6 +483,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -474,6 +522,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -501,6 +553,10 @@ export interface TowerRoster {
               mods?: {
                 damage?: number;
                 range?: number;
+                /**
+                 * Additive dead-zone delta in cells (negative shrinks it).
+                 */
+                minRange?: number;
                 fireEveryTicks?: number;
                 explodeRadius?: number;
                 slowTicks?: number;
@@ -567,6 +623,11 @@ export const towersSchema = {
           "range": {
             "type": "number",
             "exclusiveMinimum": 0
+          },
+          "minRange": {
+            "description": "Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.",
+            "type": "number",
+            "minimum": 0
           },
           "fireEveryTicks": {
             "type": "integer",
@@ -715,6 +776,10 @@ export const towersSchema = {
                             "type": "number"
                           },
                           "range": {
+                            "type": "number"
+                          },
+                          "minRange": {
+                            "description": "Additive dead-zone delta in cells (negative shrinks it).",
                             "type": "number"
                           },
                           "fireEveryTicks": {
