@@ -368,6 +368,7 @@ async function main(): Promise<void> {
                 `run code ${runCode(summary.seed)}`,
                 `kills ${summary.kills}`,
                 `ore banked +${summary.oreBanked} (total ${meta.bankedOre})`,
+                'banked ore will buy the workshop tree between runs (not built yet)',
                 ...(snap ? [`relics held ${snap.hud.relicCount}`] : []),
               ],
               items: [

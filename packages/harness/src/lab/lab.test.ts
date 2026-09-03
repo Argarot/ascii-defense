@@ -38,7 +38,7 @@ describe('the balance lab (session 12 gate)', () => {
         seed: 4242,
         map: SMALL,
         towers: Array.from({ length: 4 }, () => ({ towerId: 'bolt', choices: [0, 1, 1] as [number, number, number], at: 'auto' as const })),
-        relicIds: ['ballistics'],
+        relicIds: ['overflow'],
         maxWaves: 40,
       },
       content,
@@ -77,7 +77,7 @@ describe('the balance lab (session 12 gate)', () => {
       content,
     );
     const upgraded = runLab(
-      { seed: 4242, map: SMALL, towers: Array.from({ length: 4 }, () => ({ towerId: 'bolt', choices: [0, 1, 1] as [number, number, number], at: 'auto' as const })), relicIds: ['ballistics'], maxWaves: 40 },
+      { seed: 4242, map: SMALL, towers: Array.from({ length: 4 }, () => ({ towerId: 'bolt', choices: [0, 1, 1] as [number, number, number], at: 'auto' as const })), relicIds: ['overflow'], maxWaves: 40 },
       content,
     );
     expect(naked.result).toBe('died');

@@ -39,7 +39,7 @@ const maxedBolt = { towerId: 'bolt', choices: [0, 1, 1] as [number, number, numb
 const BUILDS: Record<string, Pick<LabSpec, 'towers' | 'relicIds'>> = {
   naked: { towers: Array.from({ length: 4 }, () => ({ towerId: 'bolt', choices: [-1, -1, -1] as [number, number, number], at: 'auto' as const })), relicIds: [] },
   mid: { towers: Array.from({ length: 5 }, () => ({ ...maxedBolt })), relicIds: [] },
-  wave48: { towers: Array.from({ length: 5 }, () => ({ ...maxedBolt, at: 'core' as const })), relicIds: ['loadbearing', 'ballistics', 'overflow', 'frostbite'] },
+  wave48: { towers: Array.from({ length: 5 }, () => ({ ...maxedBolt, at: 'core' as const })), relicIds: ['loadbearing', 'overflow', 'frostbite'] },
 };
 
 const CANDIDATES: { name: string; d: DifficultySpec }[] = [

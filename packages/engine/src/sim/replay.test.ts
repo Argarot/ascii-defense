@@ -179,7 +179,11 @@ describe('replay (WBS 1.4.8)', () => {
     // enemy hp carries the path-length offset, and three new lanes are
     // hashed (boss flag, last-hit tick, the next queue). An intended
     // tempo change; round-trip replay still proves bit-identical.
-    expect(sim.hashState()).toBe(3616661931);
+    // 3616661931 -> 1817380755 on 2026-09-03 (design round 1, PR 2): three
+    // new hashed lanes (relics bought, rerolls bought, Core hp maximum - a
+    // consumable can now raise it). No behaviour change on this run;
+    // round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(1817380755);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

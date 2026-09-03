@@ -21,10 +21,8 @@
 import {
   CACHE_CLAIM_COST,
   DEPOSIT_MAX,
-  OFFER_REROLL_COST,
   PROSPECT_COST,
   PROSPECT_TICKS,
-  RELIC_DRAW_COST,
   REPLAY_VERSION,
   Sim,
   TICK_HZ,
@@ -300,8 +298,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           hoverDesc: (hudHover?.kind === 'relic' && held[hudHover.index])
             ? `${held[hudHover.index].def.name} - ${held[hudHover.index].def.desc}`
             : targeting ? 'click the map to aim, Esc cancels' : null,
-          drawCost: RELIC_DRAW_COST,
-          canDraw: s.ore[0] >= RELIC_DRAW_COST,
+          drawCost: s.drawCost(),
+          canDraw: s.ore[0] >= s.drawCost(),
         }
       : null;
 
@@ -419,7 +417,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         ? {
             cards: offer.map((d) => ({ name: d.name, kind: d.kind, desc: d.desc })),
             wave: s.wave,
-            reroll: { cost: OFFER_REROLL_COST, can: s.ore[0] >= OFFER_REROLL_COST, ore: s.ore[0] },
+            reroll: { cost: s.rerollCost(), can: s.ore[0] >= s.rerollCost(), ore: s.ore[0] },
           }
         : null,
       events: [...s.events],
