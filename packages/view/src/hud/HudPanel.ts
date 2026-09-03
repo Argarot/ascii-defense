@@ -28,6 +28,8 @@ export interface HudStats {
   dmg: number;
   dps: string;
   range: number;
+  /** The dead zone in cells; 0 = none. Lower is better. */
+  minRange: number;
   slow: number;
   /** Blast radius in cells; 0 for non-explosive shots (WBS 2.19). */
   blast: number;
@@ -415,10 +417,10 @@ export class HudPanel {
       // Every displayed stat is higher-is-better, so a lower preview is a
       // DOWNGRADE and renders red - a green arrow pointing down is how a
       // range-18 tower once previewed 8.5 without anyone flinching (1.7.1).
-      const stat = (label: string, cur: number | string, pre: number | string | null): void => {
+      const stat = (label: string, cur: number | string, pre: number | string | null, lowerIsBetter = false): void => {
         term.write(0, y, `${label} ${cur}`, role('ui.text'));
         if (pre !== null && `${pre}` !== `${cur}`) {
-          const worse = parseFloat(`${pre}`) < parseFloat(`${cur}`);
+          const worse = lowerIsBetter ? parseFloat(`${pre}`) > parseFloat(`${cur}`) : parseFloat(`${pre}`) < parseFloat(`${cur}`);
           term.write(`${label} ${cur}`.length + 1, y, `-> ${pre}`, worse ? role('enemy.fast') : previewCol);
         }
         y++;
@@ -432,6 +434,11 @@ export class HudPanel {
         stat('dmg  ', t.stats.dmg, t.preview ? t.preview.dmg : null);
         stat('dps  ', t.stats.dps, t.preview ? t.preview.dps : null);
         stat('range', t.stats.range, t.preview ? t.preview.range : null);
+        // The dead zone (design round 1): printed only when it exists, and
+        // a SMALLER one is the upgrade.
+        if (t.stats.minRange > 0 || (t.preview && t.preview.minRange > 0)) {
+          stat('dead ', t.stats.minRange, t.preview ? t.preview.minRange : null, true);
+        }
         // The blast radius that deals the damage is the one printed here and
         // the one the effects layer draws - one number, three consumers (2.19).
         if (t.stats.blast > 0 || (t.preview && t.preview.blast > 0)) {

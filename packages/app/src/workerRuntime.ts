@@ -258,9 +258,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const range = aimRelic && hover
       ? { x: hover.x, y: hover.y, r: aimRelic.effects?.orbitalRadius ?? 1 }
       : selTower
-        ? { x: selTower.cellX, y: selTower.cellY, r: s.stats(selTower).range }
+        ? { x: selTower.cellX, y: selTower.cellY, r: s.stats(selTower).range, minR: s.stats(selTower).minRange }
         : buildTarget && selected && previewDef
-          ? { x: selected.x, y: selected.y, r: previewDef.range }
+          ? { x: selected.x, y: selected.y, r: previewDef.range, minR: previewDef.minRange ?? 0 }
           : null;
     const hoverTower = hover ? s.towerAt(hover.x, hover.y) : null;
     const infoTower = selTower ?? hoverTower;
@@ -276,6 +276,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       dmg: Math.round(e.damage * 10) / 10,
       dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
       range: Math.round(e.range * 10) / 10,
+      minRange: Math.round(e.minRange * 10) / 10,
       blast: Math.round(e.explodeRadius * 10) / 10,
       slow: e.slowTicks,
       prod: e.productionEveryTicks > 0 ? `${((e.production / e.productionEveryTicks) * TICK_HZ).toFixed(2)}/s` : null,
@@ -326,7 +327,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         towers,
         projectiles,
         range: selTower && effPreview && eff && effPreview.range !== eff.range
-          ? { x: selTower.cellX, y: selTower.cellY, r: effPreview.range }
+          ? { x: selTower.cellX, y: selTower.cellY, r: effPreview.range, minR: effPreview.minRange }
           : range,
         hoverBuildable: hover !== null && s.canBuildAt(hover.x, hover.y) && previewDef !== undefined && s.canAfford(previewDef.id),
         showGrid: ui.showGrid,

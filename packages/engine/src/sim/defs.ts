@@ -208,6 +208,7 @@ export function foldRelics(defs: readonly RelicDef[]): RelicFold {
 export interface StatMods {
   damage?: number;
   range?: number;
+  minRange?: number;
   fireEveryTicks?: number;
   explodeRadius?: number;
   slowTicks?: number;
@@ -238,6 +239,8 @@ export interface TowerDef {
   cost: number;
   /** Cells. */
   range: number;
+  /** Cells: the dead zone - nothing closer is ever targeted (design round 1, item 2). */
+  minRange?: number;
   fireEveryTicks: number;
   /** 'projectile' fires shots; 'pulse' hits everything in range on cooldown; 'none' never attacks (producers). */
   attack?: 'projectile' | 'pulse' | 'none';
@@ -252,6 +255,8 @@ export interface TowerDef {
 export interface EffectiveStats {
   damage: number;
   range: number;
+  /** The dead zone in cells; 0 = none. Always below range. */
+  minRange: number;
   fireEveryTicks: number;
   explodeRadius: number;
   slowTicks: number;
@@ -277,6 +282,7 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
   const out: EffectiveStats = {
     damage: def.projectile?.damage ?? 0,
     range: def.range,
+    minRange: def.minRange ?? 0,
     fireEveryTicks: def.fireEveryTicks,
     explodeRadius: def.projectile?.explodeRadius ?? 0,
     slowTicks: def.projectile?.slowTicks ?? 0,
@@ -290,6 +296,7 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     if (!m) return;
     out.damage += m.damage ?? 0;
     out.range += m.range ?? 0;
+    out.minRange += m.minRange ?? 0;
     out.fireEveryTicks += m.fireEveryTicks ?? 0;
     out.explodeRadius += m.explodeRadius ?? 0;
     out.slowTicks += m.slowTicks ?? 0;
@@ -297,6 +304,8 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     out.productionEveryTicks += m.productionEveryTicks ?? 0;
   });
   out.fireEveryTicks = Math.max(2, out.fireEveryTicks);
+  // A dead zone can shrink to nothing but never swallow the whole range.
+  out.minRange = Math.max(0, Math.min(out.minRange, Math.max(0, out.range - 0.5)));
   // A producer can be upgraded faster, never into a per-tick firehose.
   if (def.production) out.productionEveryTicks = Math.max(10, out.productionEveryTicks);
   return out;

@@ -1380,23 +1380,26 @@ export class Sim {
         this.emitPulse(ti, tower, eff);
         continue;
       }
-      const target = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, eff.range, tower.priority);
+      const target = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, eff.range, tower.priority, eff.minRange);
       if (target === -1) continue;
       tower.cooldown = eff.fireEveryTicks;
       this.fire(ti, tower, eff, target);
     }
   }
 
-  private acquire(cx: number, cy: number, range: number, priority: Priority): number {
+  private acquire(cx: number, cy: number, range: number, priority: Priority, minRange = 0): number {
     const { dist, width } = this.flow;
     const rangeSq = range * range;
+    // The dead zone (design round 1, item 2): a Mortar cannot lob at its
+    // own feet. Pulses pass 0 - a field with a hole makes no sense.
+    const minSq = minRange * minRange;
     const candidates: TargetCandidate[] = [];
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;
       const dx = this.posX[i] - cx;
       const dy = this.posY[i] - cy;
       const dSq = dx * dx + dy * dy;
-      if (dSq > rangeSq) continue;
+      if (dSq > rangeSq || dSq < minSq) continue;
       candidates.push({
         slot: i,
         flowDist: dist[Math.floor(this.posY[i]) * width + Math.floor(this.posX[i])],

@@ -437,6 +437,13 @@ inspector prints all read the *same* value, so an upgrade that widens the blast
 widens all three at once. A blast drawn smaller than it kills is the screen
 lying, and it corrupts the balance lab's evidence at the same time.
 
+**Some towers have a dead zone** *(design round 1, 2026-09-03 — D22)*. A
+minimum range is a real stat, folded like range: the Mortar cannot lob at its
+own feet, so a Mortar beside the road needs something else covering the
+near lane. The range drawing shows it for every tower — the covered area as
+concentric rings fading inward, the dead zone dark with a red rim — so the
+hole is read off the board before the first shell tells you.
+
 **Ballistics: aim is committed at fire time.** A shell is thrown at a *place*,
 not attached to a creature. It flies to where it was aimed and detonates there
 whether or not anyone is still standing on the spot — missing is a real outcome,

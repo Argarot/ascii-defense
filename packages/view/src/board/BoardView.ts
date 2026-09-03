@@ -96,8 +96,8 @@ export interface RenderState {
   hoverBuildable?: boolean;
   /** Faint markers on tile corners - the map's seams, visible on demand. */
   showGrid?: boolean;
-  /** Range overlay for the selected tower, in cell units. */
-  range?: { x: number; y: number; r: number } | null;
+  /** Range overlay for the selected tower, in cell units; minR = the dead zone. */
+  range?: { x: number; y: number; r: number; minR?: number } | null;
   /** The range shown is a pre-build preview: pulse it. */
   rangeIsPreview?: boolean;
   /** Entries the NEXT wave attacks from - telegraphed with blinking '!' markers. */
@@ -274,12 +274,21 @@ export class BoardView {
     // tint only the glyphs whose distance from the tower's center sits on
     // the radius, giving a near-true circle instead of a blocky area fill.
     if (state.range) {
+      // The range as a FILLED disc (Daniil, design round 1, item 2):
+      // concentric one-cell rings from the outer radius inward, each fainter
+      // than the one outside it, so the covered area reads as filled rather
+      // than as an outline. The dead zone inside minR gets no rings, sits
+      // darker, and wears a dark-red rim - the Mortar cannot lob at its own
+      // feet, and the board says so before the shell does. Same drawing
+      // for every tower: a Bolt is a full disc, a Mortar a disc with a hole.
       const cx = state.range.x + 0.5;
       const cy = state.range.y + 0.5;
       const r = state.range.r;
+      const minR = state.range.minR ?? 0;
       // Band half-width in cell units: wide enough that every glyph row and
       // column the circle crosses catches at least one tinted glyph.
       const band = 0.22;
+      const pulse = state.rangeIsPreview ? 0.9 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1) : 0;
       const minGx = Math.max(0, Math.floor((cx - r - 1) * CELL_W));
       const maxGx = Math.min(this.cellsW * CELL_W - 1, Math.ceil((cx + r + 1) * CELL_W));
       const minGy = Math.max(0, Math.floor((cy - r - 1) * CELL_H));
@@ -290,11 +299,19 @@ export class BoardView {
           const uy = (gy + 0.5) / CELL_H;
           const dx = ux - cx;
           const dy = uy - cy;
-          if (Math.abs(Math.sqrt(dx * dx + dy * dy) - r) <= band) {
-            // Brighten what is already there - the ring wears the terrain's
-            // own tone instead of flat paint (Daniil). Previews breathe.
-            const mul = state.rangeIsPreview ? 1.3 + 0.9 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1) : 1.9;
-            term.shade(gx, offsetY + gy, mul, 0.07);
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d > r + band) continue;
+          if (Math.abs(d - r) <= band) {
+            // The outer rim: brightest, and it breathes for previews.
+            term.shade(gx, offsetY + gy, (state.rangeIsPreview ? 1.3 : 1.9) + pulse, 0.07);
+          } else if (d < minR - band) {
+            term.shade(gx, offsetY + gy, 0.55, 0.0); // the hole: darker
+          } else if (minR > 0 && Math.abs(d - minR) <= band) {
+            term.tint(gx, offsetY + gy, '#4a1418'); // the hole's rim
+          } else if (d < r) {
+            // Ring k counts inward from the rim; each is a step fainter.
+            const k = Math.floor(r - d);
+            term.shade(gx, offsetY + gy, Math.max(1.06, 1.5 - 0.12 * k) + pulse * 0.3, 0.03);
           }
         }
     }
