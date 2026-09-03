@@ -257,8 +257,8 @@ export class Sim {
   // thrown at a PLACE). Ballistic shots detonate here no matter what happens
   // to the world in flight; homing shots keep it updated as a fallback so a
   // shot whose every target died still resolves somewhere real.
-  private readonly projAimX = new Float32Array(PROJ_CAP);
-  private readonly projAimY = new Float32Array(PROJ_CAP);
+  readonly projAimX = new Float32Array(PROJ_CAP);
+  readonly projAimY = new Float32Array(PROJ_CAP);
   readonly projAlive = new Uint8Array(PROJ_CAP);
   private readonly projTarget = new Int32Array(PROJ_CAP);
   private readonly projTargetGen = new Uint16Array(PROJ_CAP);
