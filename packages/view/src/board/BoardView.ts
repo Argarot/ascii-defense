@@ -44,22 +44,22 @@ const ENEMY_LOOK: Record<string, { glyph: string; roleName: string }> = {
 };
 
 const DESCRIBE: Record<CellType, string> = {
-  G: 'ground \u00b7 buildable',
-  X: 'road crossroads \u00b7 NEVER buildable',
-  B: 'road \u00b7 NEVER buildable \u00b7 bridge',
-  '-': 'road segment \u00b7 east-west',
-  '|': 'road segment \u00b7 north-south',
-  L: 'road segment \u00b7 bends north-east',
-  J: 'road segment \u00b7 bends north-west',
-  F: 'road segment \u00b7 bends south-east',
-  '7': 'road segment \u00b7 bends south-west',
-  T: 'road junction \u00b7 T \u00b7 stem south',
-  U: 'road junction \u00b7 T \u00b7 stem north',
-  E: 'road junction \u00b7 T \u00b7 opens east',
-  '3': 'road junction \u00b7 T \u00b7 opens west',
-  R: 'rock \u00b7 blocked',
-  O: 'ore \u00b7 buildable \u00b7 a refinery here mines Ore',
-  C: 'the CORE \u00b7 protect this \u00b7 every road leads here',
+  G: 'ground \u2802 buildable',
+  X: 'road crossroads \u2802 NEVER buildable',
+  B: 'road \u2802 NEVER buildable \u2802 bridge',
+  '-': 'road segment \u2802 east-west',
+  '|': 'road segment \u2802 north-south',
+  L: 'road segment \u2802 bends north-east',
+  J: 'road segment \u2802 bends north-west',
+  F: 'road segment \u2802 bends south-east',
+  '7': 'road segment \u2802 bends south-west',
+  T: 'road junction \u2802 T \u2802 stem south',
+  U: 'road junction \u2802 T \u2802 stem north',
+  E: 'road junction \u2802 T \u2802 opens east',
+  '3': 'road junction \u2802 T \u2802 opens west',
+  R: 'rock \u2802 blocked',
+  O: 'ore \u2802 buildable \u2802 a refinery here mines Ore',
+  C: 'the CORE \u2802 protect this \u2802 every road leads here',
 };
 
 export interface CellRef {
@@ -179,8 +179,8 @@ export class BoardView {
   describeCell(ref: CellRef | null): string {
     if (!ref) return '';
     const t = this.cellType(ref);
-    const base = t === null ? 'void \u00b7 unclaimed land \u00b7 the run grows here' : DESCRIBE[t];
-    return `cell ${ref.x},${ref.y} \u00b7 ${base}`;
+    const base = t === null ? 'void \u2802 unclaimed land \u2802 the run grows here' : DESCRIBE[t];
+    return `cell ${ref.x},${ref.y} \u2802 ${base}`;
   }
 
   render(state: RenderState, overlay?: (term: GLTerm) => void): void {
@@ -444,7 +444,7 @@ export class BoardView {
     // The end. A dark band across the middle so the message owns the eye.
     if (state.gameOver) {
       const msg = 'THE  CORE  HAS  FALLEN';
-      const sub = 'press R for a new run';
+      const sub = 'the summary has the rest';
       const midY = Math.floor((this.cellsH * CELL_H) / 2);
       const midX = Math.floor((this.cellsW * CELL_W) / 2);
       for (let y = midY - 2; y <= midY + 2; y++)

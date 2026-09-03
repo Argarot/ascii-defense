@@ -308,9 +308,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       const c = selected ?? hover;
       if (!c) return '';
       const dep = s.depositAt(c.x, c.y);
-      if (dep && s.cellAt(c.x, c.y) === 'O') return ` · ore left ${dep.left}/${dep.initial}`;
+      if (dep && s.cellAt(c.x, c.y) === 'O') return ` \u2802 ore left ${dep.left}/${dep.initial}`;
       const boon = s.boonAt(c.x, c.y);
-      return boon ? ` · BOON t${boon.tier}: ${Sim.boonEffect(boon.boon, boon.tier).text} for whatever is built here` : '';
+      return boon ? ` \u2802 BOON t${boon.tier}: ${Sim.boonEffect(boon.boon, boon.tier).text} for whatever is built here` : '';
     })();
 
     const offer = s.offerDefs();

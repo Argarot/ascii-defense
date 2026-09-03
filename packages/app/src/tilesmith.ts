@@ -28,7 +28,7 @@ import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import { addMintedTile, libraryTwinOf, loadMintedTiles } from './mintedTiles';
 
 const BASE = import.meta.env.BASE_URL;
-const ASSET_V = '5';
+const ASSET_V = '6';
 
 // The Core is not authorable content (playtest 12, item 11): a map has ONE
 // Core of a specific shape, and specials may never carry it. The C brush
