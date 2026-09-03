@@ -33,6 +33,7 @@ import {
   type RelicFold,
   type TowerDef,
   type LootTable,
+  type ProjectileSpec,
 } from './defs';
 import type { ReplayAction, ReplayInput } from './replay';
 
@@ -177,6 +178,8 @@ export interface CacheSpot {
   table: string;
   opened: boolean;
 }
+/** How far a piercing shot may hop to its next body (cells). */
+const PIERCE_REACH = 2.5;
 /** Scrap an opened cache pays when its rolled outcome cannot apply here. */
 const LOOT_FALLBACK_SCRAP = 60;
 /** Scrap price of prospecting a rock cell (PRD sec 4.6). */
@@ -202,6 +205,8 @@ export interface Tower {
   /** Ticks until the next production cycle completes; producers only. */
   prodCooldown: number;
   kills: number;
+  /** Pulses fired; Absolute Zero freezes every Nth. */
+  pulses: number;
   priority: Priority;
   /** Committed choice per tier; -1 = not yet chosen (either/or tree). */
   choices: [number, number, number];
@@ -270,6 +275,10 @@ export class Sim {
   private readonly projRadius = new Float32Array(PROJ_CAP);
   private readonly projSlowMul = new Float32Array(PROJ_CAP);
   private readonly projSlowTicks = new Int16Array(PROJ_CAP);
+  /** Tower rework lanes: enemies still to pass into, shield multiplier, armour-ignoring. */
+  private readonly projPierce = new Int16Array(PROJ_CAP);
+  private readonly projShieldMul = new Float32Array(PROJ_CAP);
+  private readonly projIgnoreArmor = new Uint8Array(PROJ_CAP);
   private freeProj: number[] = [];
   private projHigh = 0;
 
@@ -480,7 +489,7 @@ export class Sim {
     this.scrap -= def.cost;
     // Producers earn their first yield after one full cycle, not on placement.
     const prodCooldown = def.production ? effectiveStats(def, [-1, -1, -1]).productionEveryTicks : 0;
-    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, priority: 'first', choices: [-1, -1, -1] });
+    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1] });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
     this.emit({ kind: 'build', x, y });
     this.inputs.push({ tick: this.tickCount, a: { t: 'build', x, y, defId } });
@@ -508,6 +517,19 @@ export class Sim {
     if (cost === null || this.scrap < cost) return false;
     this.scrap -= cost;
     t.choices[tier] = option;
+    // Deep Bore / Deep Shaft (Refinery rework): the vein under the tower
+    // grows once, when chosen - more Ore in the end, at a slower cycle. The
+    // growth stays with the CELL, like any dealt deposit.
+    const unlock = this.opts.towerDefs[t.defIdx].tiers?.[tier]?.choices[option]?.unlocks;
+    if (unlock === 'deepBore50' || unlock === 'deepBore100') {
+      const k = y * this.opts.cellsW + x;
+      const init = this.depositInit.get(k);
+      if (init !== undefined) {
+        const grow = Math.round(init * (unlock === 'deepBore50' ? 0.5 : 1));
+        this.depositInit.set(k, init + grow);
+        this.depositLeft.set(k, (this.depositLeft.get(k) ?? 0) + grow);
+      }
+    }
     this.inputs.push({ tick: this.tickCount, a: { t: 'choose', x, y, tier, option } });
     return true;
   }
@@ -1081,13 +1103,15 @@ export class Sim {
     f32(this.projAimX, ph); f32(this.projAimY, ph);
     f32(this.projDamage, ph); f32(this.projSpeed, ph); f32(this.projRadius, ph); f32(this.projSlowMul, ph);
     i16(this.projTtl, ph); i16(this.projTargetGen, ph); i16(this.projSlowTicks, ph); i16(this.projTowerIdx, ph);
+    i16(this.projPierce, ph); f32(this.projShieldMul, ph);
+    for (let i = 0; i < ph; i++) u32(this.projIgnoreArmor[i]);
     for (let i = 0; i < ph; i++) { u32(this.projAlive[i]); u32(this.projTarget[i]); u32(this.projHoming[i]); }
     for (const s of this.freeProj) u32(s);
 
     i16(this.occupancy, this.occupancy.length);
     for (const t of this.towers) {
       if (!t) { u32(0xdead); continue; }
-      u32(t.cellX); u32(t.cellY); u32(t.defIdx); u32(t.cooldown); u32(t.prodCooldown); u32(t.kills);
+      u32(t.cellX); u32(t.cellY); u32(t.defIdx); u32(t.cooldown); u32(t.prodCooldown); u32(t.kills); u32(t.pulses);
       u32(PRIORITIES.indexOf(t.priority));
       for (const c of t.choices) u32(c + 1);
     }
@@ -1413,6 +1437,50 @@ export class Sim {
   private fire(towerIdx: number, tower: Tower, eff: EffectiveStats, target: number): void {
     const spec = this.opts.towerDefs[tower.defIdx].projectile;
     if (!spec) return; // producers never reach here (attack 'none' skips)
+    // A volley: `shots` projectiles at full stats, the extras scattered by
+    // `spread` cells on the combat stream (Hailstorm, Cluster). Determinism
+    // holds: the draw order is the shot order.
+    if (eff.shots <= 1) {
+      this.launch(towerIdx, tower, eff, spec, target, 0, 0);
+      return;
+    }
+    if (spec.homing) {
+      // Homing volleys SPRAY: each extra shot homes on a different enemy in
+      // range when there is one (nearest first), so Hailstorm answers a
+      // crowd rather than triple-tapping one body. No randomness spent.
+      const cx = tower.cellX + 0.5;
+      const cy = tower.cellY + 0.5;
+      const others: { i: number; dSq: number }[] = [];
+      const maxSq = eff.range * eff.range;
+      const minSq = eff.minRange * eff.minRange;
+      for (let i = 0; i < this.enemyHigh; i++) {
+        if (!this.alive[i] || i === target) continue;
+        const dx = this.posX[i] - cx;
+        const dy = this.posY[i] - cy;
+        const dSq = dx * dx + dy * dy;
+        if (dSq <= maxSq && dSq >= minSq) others.push({ i, dSq });
+      }
+      others.sort((p, q) => p.dSq - q.dSq || p.i - q.i);
+      this.launch(towerIdx, tower, eff, spec, target, 0, 0);
+      for (let n = 1; n < eff.shots; n++) {
+        const t = others.length > 0 ? others[(n - 1) % others.length].i : target;
+        this.launch(towerIdx, tower, eff, spec, t, 0, 0);
+      }
+      return;
+    }
+    // Ballistic volleys SCATTER: extra shells land around the aim point,
+    // offset by `spread` cells on the combat stream (Cluster). The draw
+    // order is the shell order, so replays stay exact.
+    const combat = this.rng.stream('combat');
+    this.launch(towerIdx, tower, eff, spec, target, 0, 0);
+    for (let n = 1; n < eff.shots; n++) {
+      const ox = eff.spread <= 0 ? 0 : (combat.int(-100, 100) / 100) * eff.spread;
+      const oy = eff.spread <= 0 ? 0 : (combat.int(-100, 100) / 100) * eff.spread;
+      this.launch(towerIdx, tower, eff, spec, target, ox, oy);
+    }
+  }
+
+  private launch(towerIdx: number, tower: Tower, eff: EffectiveStats, spec: ProjectileSpec, target: number, ox: number, oy: number): void {
     const p = this.freeProj.pop() ?? (this.projHigh < PROJ_CAP ? this.projHigh++ : -1);
     if (p === -1) return;
     const sx = tower.cellX + 0.5;
@@ -1425,14 +1493,20 @@ export class Sim {
     this.projTowerIdx[p] = towerIdx;
     this.projDamage[p] = eff.damage;
     this.projSpeed[p] = spec.speed;
-    this.projHoming[p] = spec.homing ? 1 : 0;
+    // A scattered extra shot is ballistic to its scattered point; the lead
+    // shot keeps the spec's homing.
+    this.projHoming[p] = spec.homing && ox === 0 && oy === 0 ? 1 : 0;
     this.projRadius[p] = spec.explosive ? eff.explodeRadius : 0;
-    this.projSlowMul[p] = spec.applyEffect === 'slow' ? (spec.slowMul ?? 0.6) : 0;
-    this.projSlowTicks[p] = spec.applyEffect === 'slow' ? eff.slowTicks : 0;
-    this.projAimX[p] = this.posX[target];
-    this.projAimY[p] = this.posY[target];
-    const dx = this.posX[target] - sx;
-    const dy = this.posY[target] - sy;
+    // Slows come from the folded stats now (Concussive gives a Mortar one).
+    this.projSlowMul[p] = eff.slowTicks > 0 && eff.slowMul < 1 ? eff.slowMul : 0;
+    this.projSlowTicks[p] = eff.slowTicks > 0 && eff.slowMul < 1 ? eff.slowTicks : 0;
+    this.projPierce[p] = this.projRadius[p] > 0 ? 0 : eff.pierceCount;
+    this.projShieldMul[p] = eff.shieldMul;
+    this.projIgnoreArmor[p] = eff.ignoreArmor ? 1 : 0;
+    this.projAimX[p] = this.posX[target] + ox;
+    this.projAimY[p] = this.posY[target] + oy;
+    const dx = this.projAimX[p] - sx;
+    const dy = this.projAimY[p] - sy;
     const d = Math.sqrt(dx * dx + dy * dy) || 1;
     this.projVX[p] = (dx / d) * spec.speed;
     this.projVY[p] = (dy / d) * spec.speed;
@@ -1505,27 +1579,65 @@ export class Sim {
         if (Math.sqrt(dx * dx + dy * dy) <= radius) this.damageEnemy(i, p);
       }
     }
+    // Piercing (Bolt rework): a radius-0 shot with passes left picks the
+    // nearest OTHER living enemy within PIERCE_REACH and flies on, homing.
+    if (this.projPierce[p] > 0 && this.projRadius[p] <= 0) {
+      const struck = this.projTarget[p];
+      const next = this.nearestAliveExcept(ix, iy, struck, PIERCE_REACH);
+      if (next !== -1) {
+        this.projPierce[p]--;
+        this.projTarget[p] = next;
+        this.projTargetGen[p] = this.gen[next];
+        this.projHoming[p] = 1;
+        this.projX[p] = ix;
+        this.projY[p] = iy;
+        this.projAimX[p] = this.posX[next];
+        this.projAimY[p] = this.posY[next];
+        this.projTtl[p] = Math.ceil((PIERCE_REACH * 2) / Math.max(0.05, this.projSpeed[p]));
+        return;
+      }
+    }
     this.despawnProj(p);
+  }
+
+  /** Nearest living enemy to a point other than `except`, within `reach`; -1 if none. */
+  private nearestAliveExcept(x: number, y: number, except: number, reach: number): number {
+    let best = -1;
+    let bestSq = reach * reach;
+    for (let i = 0; i < this.enemyHigh; i++) {
+      if (!this.alive[i] || i === except) continue;
+      const dx = this.posX[i] - x;
+      const dy = this.posY[i] - y;
+      const dSq = dx * dx + dy * dy;
+      if (dSq <= bestSq) {
+        bestSq = dSq;
+        best = i;
+      }
+    }
+    return best;
   }
 
   /** Armor blunts, shields burn first, slows apply, deaths pay bounties. */
   private damageEnemy(enemy: number, p: number): void {
-    this.applyDamage(enemy, this.projDamage[p], this.projSlowMul[p], this.projSlowTicks[p], this.projTowerIdx[p]);
+    this.applyDamage(enemy, this.projDamage[p], this.projSlowMul[p], this.projSlowTicks[p], this.projTowerIdx[p], this.projShieldMul[p], this.projIgnoreArmor[p] === 1);
   }
 
-  private applyDamage(enemy: number, raw: number, slowMulN: number, slowTicksN: number, towerIdx: number): void {
+  private applyDamage(enemy: number, raw: number, slowMulN: number, slowTicksN: number, towerIdx: number, shieldMul = 1, ignoreArmor = false): void {
     if (!this.alive[enemy]) return;
     const def = this.opts.enemyDefs[this.enemyDefIdx[enemy]];
     // Zero-damage attacks are pure control (Frost's base): effects land,
     // health does not move, armor's min-1 rule only applies to real hits.
-    let dmg = raw <= 0 ? 0 : Math.max(1, raw - (def.armor ?? 0));
+    // Railbore ignores armour outright.
+    let dmg = raw <= 0 ? 0 : Math.max(1, raw - (ignoreArmor ? 0 : (def.armor ?? 0)));
     // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
     // relic that turns Frost from utility into a damage amplifier.
     if (dmg > 0 && this.slowTicks[enemy] > 0) dmg *= this.fold.slowedDamageMul;
     if (this.shield[enemy] > 0) {
-      const absorbed = Math.min(this.shield[enemy], dmg);
+      // Shatter (Bolt rework): a shield takes shieldMul times the hit; the
+      // part that gets through to health is unchanged.
+      const absorbed = Math.min(this.shield[enemy], dmg * shieldMul);
       this.shield[enemy] -= absorbed;
-      dmg -= absorbed;
+      dmg -= absorbed / shieldMul;
     }
     this.hp[enemy] -= dmg;
     if (dmg > 0) this.lastHit[enemy] = this.tickCount;
@@ -1600,18 +1712,19 @@ export class Sim {
     const cx = tower.cellX + 0.5;
     const cy = tower.cellY + 0.5;
     const r2 = eff.range * eff.range;
+    tower.pulses++;
+    // Absolute Zero: every Nth pulse freezes the field solid (speed 0).
+    const freeze = eff.freezeEvery > 0 && tower.pulses % eff.freezeEvery === 0;
+    const slowMul = eff.slowTicks > 0 && eff.slowMul < 1 ? (freeze ? 0 : eff.slowMul) : freeze ? 0 : 0;
+    const slowTicks = eff.slowTicks > 0 && (eff.slowMul < 1 || freeze) ? eff.slowTicks : 0;
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;
       const dx = this.posX[i] - cx;
       const dy = this.posY[i] - cy;
       if (dx * dx + dy * dy > r2) continue;
-      this.applyDamage(
-        i,
-        eff.damage,
-        spec.applyEffect === 'slow' ? (spec.slowMul ?? 0.6) : 0,
-        spec.applyEffect === 'slow' ? eff.slowTicks : 0,
-        towerIdx,
-      );
+      // Brittle: this field's damage lands harder on anything already slowed.
+      const dmg = this.slowTicks[i] > 0 ? eff.damage * eff.slowedBonusMul : eff.damage;
+      this.applyDamage(i, dmg, slowMul, slowTicks, towerIdx, eff.shieldMul, eff.ignoreArmor);
     }
     this.emit({ kind: 'pulse', x: cx, y: cy, r: eff.range });
   }

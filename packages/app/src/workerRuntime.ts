@@ -277,6 +277,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
       range: Math.round(e.range * 10) / 10,
       minRange: Math.round(e.minRange * 10) / 10,
+      shots: e.shots,
+      pierce: e.pierceCount,
       blast: Math.round(e.explodeRadius * 10) / 10,
       slow: e.slowTicks,
       prod: e.productionEveryTicks > 0 ? `${((e.production / e.productionEveryTicks) * TICK_HZ).toFixed(2)}/s` : null,

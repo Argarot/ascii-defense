@@ -183,7 +183,12 @@ describe('replay (WBS 1.4.8)', () => {
     // new hashed lanes (relics bought, rerolls bought, Core hp maximum - a
     // consumable can now raise it). No behaviour change on this run;
     // round-trip replay still proves bit-identical.
-    expect(sim.hashState()).toBe(1817380755);
+    // 1817380755 -> 304351235 on 2026-09-03 (design round 1, PR 5, the tower
+    // rework): a tower's pulse count and three new projectile lanes (pierce,
+    // shield multiplier, armour-ignoring) are hashed; volleys and slows now
+    // read the folded stats. No behaviour change on this run's untiered
+    // bolts; round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(304351235);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

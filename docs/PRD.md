@@ -377,12 +377,22 @@ art pass rather than during it.
 
 M1 ships the first four. Target is **8 towers + the Core**, not 14.
 
-| Tower | Role | Path A | Path B | Path C | Milestone |
+| Tower | Role | Tier 1 | Tier 2 | Tier 3 | Milestone |
 |---|---|---|---|---|---|
-| Bolt Turret | cheap single target | Velocity | Caliber | Optics | M1 |
-| Mortar | AoE, minimum range | Payload | Cadence | Ordnance | M1 |
-| Frost Emitter | slow aura | Chill | Shatter | Field | M1 |
-| Refinery | economy (§6) | Extraction | Survey | — | M1 |
+| Bolt Turret | single target, homing | Marksman (reach) / Gatling (throughput) | Piercing (columns) / Shatter (shields) | Railbore (armour) / Hailstorm (crowds) | M1 |
+| Mortar | area, dead zone | Shaped Charge (the few) / Wide Burst (the many) | Long Barrel (sit back) / Short Fuse (sit close) | Concussive (control) / Cluster (saturation) | M1 |
+| Frost Emitter | slow field | Deep Chill (slow path) / Ice Shards (damage path) | Wide Field / Brittle | Absolute Zero / Shatterfield | M1 |
+| Refinery | economy (§6) | Wide Bore (more now) / Deep Bore (more in the end) | Survey / Automation | Mother Lode / Deep Shaft | M1 |
+
+*(Trees reworked in design round 1, 2026-09-03 — D23: every fork is two
+**roles** that answer different waves, never two numbers. Piercing answers a
+column, Shatter a shellback, Railbore a brute, Hailstorm a swarm; a Mortar
+chooses between reach with a bigger dead zone and close work with a smaller
+one; the Frost has a slow path and a damage path; the Refinery's deep
+choices trade a slower cycle for a bigger vein — costly, for players confident
+they can hold the ground. The mechanics these need — volleys, piercing,
+shield and armour rules, freezes, blast slows, vein growth — are engine
+knobs the content names.)*
 | ~~Wall~~ | **UNRESOLVED — see below** | — | — | — | — |
 | Acid Sprayer | DoT, armour shred | Corrosion | Volatility | Saturation | M4 |
 | Arc Coil | chain lightning | Conductivity | Overcharge | Capacitor | M4 |

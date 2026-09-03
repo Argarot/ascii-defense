@@ -884,3 +884,134 @@ describe('the dead zone - minimum range (design round 1, item 2)', () => {
     for (const d of zoned) expect(d).toBeGreaterThanOrEqual(3 - 1e-6);
   });
 });
+
+describe('the tower rework (design round 1, item 8): forks are roles, not sliders', () => {
+  const mk = (over: Partial<TowerDef>, tiers: TowerDef['tiers']): TowerDef => ({ ...BOLT, ...over, tiers });
+
+  it('effectiveStats folds the new mods: damageMul after adds, shots, pierce, shield, slow, freeze, armour', () => {
+    const def = mk({}, [
+      { choices: [{ name: 'a', cost: 1, mods: { damage: 2, damageMul: 0.5, shots: 2, spread: 0.6, pierceCount: 2, shieldMul: 1, slowedBonusMul: 0.5, freezeEvery: 4, slowMul: -0.4, slowTicks: 20 } }, { name: 'b', cost: 1, unlocks: 'ignoreArmor' }] },
+    ]);
+    const a = effectiveStats(def, [0, -1, -1]);
+    expect(a.damage).toBe((6 + 2) * 0.5);
+    expect(a.shots).toBe(3);
+    expect(a.spread).toBe(0.6);
+    expect(a.pierceCount).toBe(2);
+    expect(a.shieldMul).toBe(2);
+    expect(a.slowedBonusMul).toBe(1.5);
+    expect(a.freezeEvery).toBe(4);
+    expect(a.slowMul).toBeCloseTo(0.6, 6); // base 1 (no slow) - 0.4
+    expect(a.slowTicks).toBe(20);
+    expect(a.ignoreArmor).toBe(false);
+    expect(effectiveStats(def, [1, -1, -1]).ignoreArmor).toBe(true);
+    const base = effectiveStats(BOLT, [-1, -1, -1]);
+    expect([base.shots, base.pierceCount, base.shieldMul, base.slowedBonusMul, base.freezeEvery, base.slowMul]).toEqual([1, 0, 1, 1, 0, 1]);
+  });
+
+  it('a volley fires several projectiles at once; homing volleys spray across distinct targets', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 6, spawnEveryTicks: 3 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const def = mk({ fireEveryTicks: 1000 }, [{ choices: [{ name: 'Hail', cost: 1, mods: { shots: 2, damageMul: 0.45 } }, { name: 'x', cost: 1 }] }]);
+    const sim = new Sim(47, { ...simOpts, towerDefs: [def], enemyDefs: [{ ...WALKER, hp: 100000 }] });
+    let guard = 0;
+    while (guard++ < 2000 && sim.aliveCount() < 6) sim.tick();
+    // Built once the crowd is on the road, so the first volley is the one observed.
+    sim.buildTower(spot.x, spot.y, 'bolt');
+    sim.chooseTier(spot.x, spot.y, 0, 0);
+    let fired = 0;
+    const targets = new Set<number>();
+    for (let t = 0; t < 200 && fired === 0; t++) {
+      sim.tick();
+      for (let p = 0; p < sim.projX.length; p++) {
+        if (!sim.projAlive[p]) continue;
+        fired++;
+        targets.add((sim as unknown as { projTarget: Int32Array }).projTarget[p]);
+      }
+    }
+    expect(fired).toBe(3);
+    expect(targets.size).toBeGreaterThan(1); // sprayed, not triple-tapped
+  });
+
+  it('Shatter doubles shield damage; Railbore ignores armour; Piercing hits more than one body', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const firstHit = (def: TowerDef, enemy: EnemyDef, choice: number): { shield: number; hp: number } => {
+      const sim = new Sim(47, { ...simOpts, towerDefs: [def], enemyDefs: [enemy] });
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      if (choice >= 0) sim.chooseTier(spot.x, spot.y, 0, choice);
+      let guard = 0;
+      while (guard++ < 3000 && !(sim.alive[0] && (sim.shield[0] < (enemy.shield ?? 0) || sim.hp[0] < enemy.hp))) sim.tick();
+      return { shield: sim.shield[0], hp: sim.hp[0] };
+    };
+    const single = mk({ fireEveryTicks: 1000 }, [{ choices: [{ name: 'Shatter', cost: 1, mods: { shieldMul: 1 } }, { name: 'Rail', cost: 1, unlocks: 'ignoreArmor' }] }]);
+    const shelled: EnemyDef = { ...WALKER, hp: 1000, shield: 30 };
+    expect(firstHit(single, shelled, -1).shield).toBe(24); // 6 damage
+    expect(firstHit(single, shelled, 0).shield).toBe(18); // doubled on the shield
+    const armoured: EnemyDef = { ...WALKER, hp: 1000, armor: 4 };
+    expect(firstHit(single, armoured, -1).hp).toBe(998); // 6 - 4
+    expect(firstHit(single, armoured, 1).hp).toBe(994); // armour ignored
+
+    const kills = (pierce: number): number => {
+      const def = mk({ fireEveryTicks: 30 }, [{ choices: [{ name: 'P', cost: 1, mods: { pierceCount: pierce } }, { name: 'x', cost: 1 }] }]);
+      const sim = new Sim(47, { ...simOpts, maxSpawns: 30, spawnEveryTicks: 4, towerDefs: [def], enemyDefs: [{ ...WALKER, hp: 5 }] });
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      sim.chooseTier(spot.x, spot.y, 0, 0);
+      for (let t = 0; t < 1200; t++) sim.tick();
+      return sim.kills;
+    };
+    expect(kills(2)).toBeGreaterThan(kills(0));
+  });
+
+  it('Concussive: an explosive shell slows what it hits; Absolute Zero: every Nth pulse freezes; Brittle: slowed take more', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const tank: EnemyDef = { ...WALKER, hp: 100000 };
+    const mortar: TowerDef = { id: 'bolt', cost: 20, range: 6, fireEveryTicks: 20, projectile: { damage: 1, speed: 1, homing: false, explosive: true, explodeRadius: 1.5 }, tiers: [
+      { choices: [{ name: 'Concussive', cost: 1, mods: { slowMul: -0.4, slowTicks: 20 } }, { name: 'x', cost: 1 }] },
+    ] };
+    const m = new Sim(47, { ...simOpts, towerDefs: [mortar], enemyDefs: [tank] });
+    m.buildTower(spot.x, spot.y, 'bolt');
+    m.chooseTier(spot.x, spot.y, 0, 0);
+    let slowedSeen = false;
+    for (let t = 0; t < 600 && !slowedSeen; t++) {
+      m.tick();
+      if (m.alive[0] && m.slowTicks[0] > 0) slowedSeen = true;
+    }
+    expect(slowedSeen).toBe(true);
+
+    const frost: TowerDef = { id: 'bolt', cost: 20, range: 6, fireEveryTicks: 10, attack: 'pulse', projectile: { damage: 2, speed: 1, applyEffect: 'slow', slowMul: 0.5, slowTicks: 40 }, tiers: [
+      { choices: [{ name: 'AZ', cost: 1, mods: { freezeEvery: 2 } }, { name: 'Brittle', cost: 1, mods: { slowedBonusMul: 0.5 } }] },
+    ] };
+    const f = new Sim(47, { ...simOpts, towerDefs: [frost], enemyDefs: [tank] });
+    f.buildTower(spot.x, spot.y, 'bolt');
+    f.chooseTier(spot.x, spot.y, 0, 0);
+    let frozen = false;
+    for (let t = 0; t < 600 && !frozen; t++) {
+      f.tick();
+      if (f.alive[0] && f.slowTicks[0] > 0 && (f as unknown as { slowMul: Float32Array }).slowMul[0] === 0) frozen = true;
+    }
+    expect(frozen).toBe(true);
+
+    const hpAfter = (choice: number): number => {
+      const sim = new Sim(47, { ...simOpts, towerDefs: [frost], enemyDefs: [tank] });
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      if (choice >= 0) sim.chooseTier(spot.x, spot.y, 0, choice);
+      for (let t = 0; t < 400; t++) sim.tick();
+      return sim.alive[0] ? sim.hp[0] : -1;
+    };
+    expect(hpAfter(1)).toBeLessThan(hpAfter(-1)); // Brittle cuts deeper once the field has chilled
+  });
+
+  it('Deep Bore grows the vein under the refinery once, when chosen', () => {
+    const { cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(21, { startingScrap: 1000, maxSpawns: 1 });
+    const DEEP: TowerDef = { ...REFINERY, tiers: [{ choices: [{ name: 'Deep Bore', cost: 30, unlocks: 'deepBore50', mods: { productionEveryTicks: 400 } }, { name: 'x', cost: 30 }] }] };
+    const sim = new Sim(seed, { ...simOpts, towerDefs: [DEEP] });
+    const vein = cellOfType(cells, cellsW, cellsH, 'O');
+    const before = sim.depositAt(vein.x, vein.y)!;
+    sim.buildTower(vein.x, vein.y, 'refinery');
+    expect(sim.chooseTier(vein.x, vein.y, 0, 0)).toBe(true);
+    const after = sim.depositAt(vein.x, vein.y)!;
+    expect(after.initial).toBe(before.initial + Math.round(before.initial * 0.5));
+    expect(after.left).toBe(before.left + Math.round(before.initial * 0.5));
+  });
+});

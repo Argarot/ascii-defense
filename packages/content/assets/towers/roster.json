@@ -17,19 +17,20 @@
         {
           "choices": [
             {
-              "name": "Rifled",
+              "name": "Marksman",
               "cost": 25,
-              "desc": "Heavier rounds: +6 damage per shot.",
+              "desc": "Reach: +2.5 range. Covers more road from the same cell.",
               "mods": {
-                "damage": 6
+                "range": 2.5
               }
             },
             {
-              "name": "Gas Seals",
+              "name": "Gatling",
               "cost": 25,
-              "desc": "Faster cycling: fires 4 ticks sooner.",
+              "desc": "Throughput: fires twice as often, -1 range. More shots at fewer cells.",
               "mods": {
-                "fireEveryTicks": -4
+                "fireEveryTicks": -7,
+                "range": -1
               }
             }
           ]
@@ -37,21 +38,19 @@
         {
           "choices": [
             {
-              "name": "Long Scope",
+              "name": "Piercing",
               "cost": 55,
-              "desc": "Sees further and hits harder: +2.5 range, +4 damage.",
+              "desc": "Each shot passes through its target into up to 2 more enemies behind it. The answer to a column.",
               "mods": {
-                "range": 2.5,
-                "damage": 4
+                "pierceCount": 2
               }
             },
             {
-              "name": "Autoloader",
+              "name": "Shatter",
               "cost": 55,
-              "desc": "Faster AND harder: -4 ticks between shots, +3 damage.",
+              "desc": "Double damage to shields. The answer to shellbacks.",
               "mods": {
-                "fireEveryTicks": -4,
-                "damage": 3
+                "shieldMul": 1
               }
             }
           ]
@@ -61,18 +60,20 @@
             {
               "name": "Railbore",
               "cost": 120,
-              "desc": "One massive round: +22 damage per shot.",
+              "desc": "One massive round: +22 damage, and armour does nothing against it. The answer to brutes.",
               "mods": {
                 "damage": 22
-              }
+              },
+              "unlocks": "ignoreArmor"
             },
             {
               "name": "Hailstorm",
               "cost": 120,
-              "desc": "A stream of fire: -4 ticks between shots, +8 damage.",
+              "desc": "Three homing shots per volley at 45% damage each, each at a different enemy when there is one. More total damage, across the crowd.",
               "mods": {
-                "fireEveryTicks": -4,
-                "damage": 8
+                "shots": 2,
+                "damageMul": 0.45,
+                "spread": 0.6
               }
             }
           ]
@@ -98,19 +99,21 @@
         {
           "choices": [
             {
-              "name": "Heavy Shells",
+              "name": "Shaped Charge",
               "cost": 30,
-              "desc": "Bigger payload: +8 damage in the blast.",
+              "desc": "Focused payload: +12 damage in a blast 0.3 cells smaller. Kills the few.",
               "mods": {
-                "damage": 8
+                "damage": 12,
+                "explodeRadius": -0.3
               }
             },
             {
               "name": "Wide Burst",
               "cost": 30,
-              "desc": "Wider blast: +0.5 cells of explosion radius.",
+              "desc": "Wider blast: +0.6 cells of radius at 85% damage. Wounds the many.",
               "mods": {
-                "explodeRadius": 0.5
+                "explodeRadius": 0.6,
+                "damageMul": 0.85
               }
             }
           ]
@@ -118,20 +121,21 @@
         {
           "choices": [
             {
-              "name": "Siege Load",
+              "name": "Long Barrel",
               "cost": 65,
-              "desc": "Heavier and wider: +12 damage, +0.3 blast radius.",
+              "desc": "Reach: +2 range, but the dead zone grows by 1. Sit it back from the road.",
               "mods": {
-                "damage": 12,
-                "explodeRadius": 0.3
+                "range": 2,
+                "minRange": 1
               }
             },
             {
-              "name": "Drum Feed",
+              "name": "Short Fuse",
               "cost": 65,
-              "desc": "Much faster reload: fires 12 ticks sooner.",
+              "desc": "Close work: the dead zone shrinks by 1.5, range -1. Sit it right on the road.",
               "mods": {
-                "fireEveryTicks": -12
+                "minRange": -1.5,
+                "range": -1
               }
             }
           ]
@@ -139,20 +143,23 @@
         {
           "choices": [
             {
-              "name": "Bunker Buster",
+              "name": "Concussive",
               "cost": 140,
-              "desc": "Devastating payload: +30 damage in the blast.",
+              "desc": "The blast slows everything it hits to 60% for a second. Control, not just damage.",
               "mods": {
-                "damage": 30
+                "slowMul": -0.4,
+                "slowTicks": 20
               }
             },
             {
-              "name": "Carpet Fire",
+              "name": "Cluster",
               "cost": 140,
-              "desc": "Saturation: +0.8 blast radius, -8 ticks between shells.",
+              "desc": "Three shells per volley at 45% damage each, scattered around the aim point. Saturation.",
               "mods": {
-                "explodeRadius": 0.8,
-                "fireEveryTicks": -8
+                "shots": 2,
+                "damageMul": 0.45,
+                "explodeRadius": -0.3,
+                "spread": 1
               }
             }
           ]
@@ -168,7 +175,7 @@
       "attack": "none",
       "production": {
         "ore": 1,
-        "everyTicks": 600
+        "everyTicks": 800
       },
       "tiers": [
         {
@@ -176,18 +183,20 @@
             {
               "name": "Wide Bore",
               "cost": 30,
-              "desc": "Richer draw: +1 Ore per mining cycle.",
+              "desc": "2 Ore per cycle, but a cycle takes 60 s instead of 40. More Ore sooner; the vein empties sooner.",
               "mods": {
-                "production": 1
+                "production": 1,
+                "productionEveryTicks": 400
               }
             },
             {
-              "name": "Fast Cycle",
+              "name": "Deep Bore",
               "cost": 30,
-              "desc": "Faster cycles: mines 150 ticks sooner.",
+              "desc": "The vein under it grows by half, and every cycle takes 60 s. Less now, more in the end - for the patient.",
               "mods": {
-                "productionEveryTicks": -150
-              }
+                "productionEveryTicks": 400
+              },
+              "unlocks": "deepBore50"
             }
           ]
         },
@@ -196,7 +205,7 @@
             {
               "name": "Survey",
               "cost": 60,
-              "desc": "Unlocks prospecting speed-up: every Survey refinery accelerates ALL rock-breaking jobs.",
+              "desc": "Every Survey refinery speeds up ALL rock-breaking jobs, everywhere.",
               "unlocks": "surveySpeed"
             },
             {
@@ -212,19 +221,19 @@
             {
               "name": "Mother Lode",
               "cost": 120,
-              "desc": "Deep extraction: +2 Ore per cycle.",
+              "desc": "+2 Ore per cycle. The vein pays out fast and runs dry fast.",
               "mods": {
                 "production": 2
               }
             },
             {
-              "name": "Perpetual",
+              "name": "Deep Shaft",
               "cost": 120,
-              "desc": "Never idles long: -100 ticks per cycle, +1 Ore.",
+              "desc": "The vein under it doubles, and every cycle takes 40 s longer. The long game - only if you can hold this ground.",
               "mods": {
-                "productionEveryTicks": -100,
-                "production": 1
-              }
+                "productionEveryTicks": 800
+              },
+              "unlocks": "deepBore100"
             }
           ]
         }
@@ -250,15 +259,16 @@
             {
               "name": "Deep Chill",
               "cost": 25,
-              "desc": "Longer slow: chilled enemies stay slow 14 ticks more.",
+              "desc": "Colder: slowed enemies move at 40% instead of 55%, for 10 ticks longer. The slow path.",
               "mods": {
-                "slowTicks": 14
+                "slowMul": -0.15,
+                "slowTicks": 10
               }
             },
             {
               "name": "Ice Shards",
               "cost": 25,
-              "desc": "The field cuts: +4 damage per pulse.",
+              "desc": "The field cuts: +4 damage per pulse to everything inside it. The damage path.",
               "mods": {
                 "damage": 4
               }
@@ -270,17 +280,17 @@
             {
               "name": "Wide Field",
               "cost": 55,
-              "desc": "Bigger field: +1.5 range to the chill.",
+              "desc": "Bigger field: +1.5 range to the chill. More road under the slow.",
               "mods": {
                 "range": 1.5
               }
             },
             {
-              "name": "Rapid Cycle",
+              "name": "Brittle",
               "cost": 55,
-              "desc": "Pulses 8 ticks sooner.",
+              "desc": "This field's pulses deal +50% to anything already slowed. Chill first, then cut.",
               "mods": {
-                "fireEveryTicks": -8
+                "slowedBonusMul": 0.5
               }
             }
           ]
@@ -290,18 +300,17 @@
             {
               "name": "Absolute Zero",
               "cost": 120,
-              "desc": "The deep freeze: +30 slow ticks, +6 damage.",
+              "desc": "Every fourth pulse freezes the field solid: enemies stop dead for the slow's duration.",
               "mods": {
-                "slowTicks": 30,
-                "damage": 6
+                "freezeEvery": 4
               }
             },
             {
               "name": "Shatterfield",
               "cost": 120,
-              "desc": "Frozen enemies shatter: +16 damage per pulse.",
+              "desc": "+14 damage per pulse. The field becomes a weapon.",
               "mods": {
-                "damage": 16
+                "damage": 14
               }
             }
           ]

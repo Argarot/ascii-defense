@@ -113,11 +113,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             },
             {
               name: string;
@@ -144,11 +176,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             }
           ];
         },
@@ -183,11 +247,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             },
             {
               name: string;
@@ -214,11 +310,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             }
           ];
         },
@@ -253,11 +381,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             },
             {
               name: string;
@@ -284,11 +444,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             }
           ];
         }
@@ -397,11 +589,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             },
             {
               name: string;
@@ -428,11 +652,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             }
           ];
         },
@@ -467,11 +723,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             },
             {
               name: string;
@@ -498,11 +786,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             }
           ];
         },
@@ -537,11 +857,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             },
             {
               name: string;
@@ -568,11 +920,43 @@ export interface TowerRoster {
                  * Additive cycle-length delta (negative = faster).
                  */
                 productionEveryTicks?: number;
+                /**
+                 * Multiplies damage after every additive mod (Hailstorm's 45%).
+                 */
+                damageMul?: number;
+                /**
+                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+                 */
+                slowMul?: number;
+                /**
+                 * Additional projectiles per volley, each at full stats, sprayed by spread.
+                 */
+                shots?: number;
+                /**
+                 * Cells of random aim scatter per extra shot (combat stream).
+                 */
+                spread?: number;
+                /**
+                 * Additional enemies a shot passes into after its target (Bolt Piercing).
+                 */
+                pierceCount?: number;
+                /**
+                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
+                 */
+                shieldMul?: number;
+                /**
+                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+                 */
+                slowedBonusMul?: number;
+                /**
+                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+                 */
+                freezeEvery?: number;
               };
               /**
-               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.
+               * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
             }
           ];
         }
@@ -798,14 +1182,54 @@ export const towersSchema = {
                           "productionEveryTicks": {
                             "description": "Additive cycle-length delta (negative = faster).",
                             "type": "number"
+                          },
+                          "damageMul": {
+                            "description": "Multiplies damage after every additive mod (Hailstorm's 45%).",
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "slowMul": {
+                            "description": "Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.",
+                            "type": "number"
+                          },
+                          "shots": {
+                            "description": "Additional projectiles per volley, each at full stats, sprayed by spread.",
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "spread": {
+                            "description": "Cells of random aim scatter per extra shot (combat stream).",
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "pierceCount": {
+                            "description": "Additional enemies a shot passes into after its target (Bolt Piercing).",
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "shieldMul": {
+                            "description": "Additive bonus to damage dealt to shields (base 1; +1 = double).",
+                            "type": "number"
+                          },
+                          "slowedBonusMul": {
+                            "description": "Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).",
+                            "type": "number"
+                          },
+                          "freezeEvery": {
+                            "description": "Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.",
+                            "type": "integer",
+                            "minimum": 0
                           }
                         }
                       },
                       "unlocks": {
-                        "description": "Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously.",
+                        "description": "Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).",
                         "enum": [
                           "surveySpeed",
-                          "surveyAuto"
+                          "surveyAuto",
+                          "ignoreArmor",
+                          "deepBore50",
+                          "deepBore100"
                         ]
                       }
                     }
