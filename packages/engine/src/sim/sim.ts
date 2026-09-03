@@ -18,7 +18,7 @@
  */
 import { createRng, type Rng } from '../rng/rng';
 import { isBuildable, strandEntered, strandPorts, type CellType } from '../grid/cells';
-import type { GeneratedMap, CellRef } from '../mapgen/mapgen';
+import type { BoonRef, GeneratedMap, CellRef } from '../mapgen/mapgen';
 import { SHIELD_REGEN_DELAY, SHIELD_REGEN_TICKS, TRAIT_RULES, hasTrait } from './traits';
 import { computeFlowField, type FlowField } from './flow';
 import { PRIORITIES, pickTarget, type Priority, type TargetCandidate } from './targeting';
@@ -32,6 +32,7 @@ import {
   type RelicDef,
   type RelicFold,
   type TowerDef,
+  type LootTable,
 } from './defs';
 import type { ReplayAction, ReplayInput } from './replay';
 
@@ -67,6 +68,8 @@ export interface SimOptions {
    * want an autonomous run either set this false or call callWave().
    */
   firstWaveWaits?: boolean;
+  /** Loot tables caches roll (PRD sec 7.7); absent = caches cannot open. */
+  lootTables?: readonly LootTable[];
   /** The unlocked relic pool (PRD sec 7). Absent = no relic layer (tests). */
   relicDefs?: readonly RelicDef[];
   /** Wave scaling knobs; DEFAULT_DIFFICULTY when absent. */
@@ -136,7 +139,8 @@ export type SimEvent =
   | { kind: 'build'; x: number; y: number }
   | { kind: 'sell'; x: number; y: number }
   | { kind: 'waveStart'; wave: number }
-  | { kind: 'reveal'; x: number; y: number; found: 'ore' | 'cache' | 'none' };
+  | { kind: 'reveal'; x: number; y: number; found: 'ore' | 'cache' | 'none' }
+  | { kind: 'loot'; x: number; y: number; text: string };
 
 export type StampedSimEvent = SimEvent & { seq: number; tick: number };
 
@@ -165,8 +169,16 @@ function escalated(base: number, growth: number, n: number): number {
   for (let i = 0; i < n; i++) c *= growth;
   return Math.round(c);
 }
-/** Scrap price of claiming a cache (channel A - PRD sec 4.6, 7.3). */
-export const CACHE_CLAIM_COST = 40;
+/** A cache spot on the board (design round 1): opened free, rolls its table. */
+export interface CacheSpot {
+  x: number;
+  y: number;
+  /** Loot table id: 'rock_cache' from prospecting, 'boss_drop' off a boss. */
+  table: string;
+  opened: boolean;
+}
+/** Scrap an opened cache pays when its rolled outcome cannot apply here. */
+const LOOT_FALLBACK_SCRAP = 60;
 /** Scrap price of prospecting a rock cell (PRD sec 4.6). */
 export const PROSPECT_COST = 25;
 /** Base prospect duration: breaking rock is a COMMITMENT, not a purchase. */
@@ -317,8 +329,12 @@ export class Sim {
   private readonly cellsMut: (CellType | null)[];
   /** Every cell mutation, in order - the view's terrain overrides. */
   readonly cellChanges: { x: number; y: number; t: CellType }[] = [];
-  /** Indices into map.caches already claimed. */
-  readonly claimedCaches: number[] = [];
+  /** Cache spots the run produced - prospected rock, boss drops. Hashed. */
+  readonly caches: CacheSpot[] = [];
+  /** Boon ground an opened cache created; boonAt reads the map's and these. */
+  readonly extraBoons: BoonRef[] = [];
+  /** What caches gave, newest last (capped). Presentation only, not hashed. */
+  readonly lootLog: { tick: number; x: number; y: number; text: string }[] = [];
   /** Active prospect jobs: cell index -> ticks remaining. */
   readonly prospectJobs = new Map<number, number>();
   /** Remaining ore per vein cell (key = cell index). Finite: PRD sec 6. */
@@ -506,9 +522,10 @@ export class Sim {
     return this.foldStats({ ...t, choices: [...choices] as [number, number, number] });
   }
 
-  /** The boon under (x, y), or null (PRD sec 4.7). */
+  /** The boon under (x, y), or null (PRD sec 4.7) - dealt or cache-made. */
   boonAt(x: number, y: number): { boon: 'range' | 'damage' | 'rate'; tier: number } | null {
     for (const b of this.opts.map.boons ?? []) if (b.x === x && b.y === y) return { boon: b.boon, tier: b.tier ?? 1 };
+    for (const b of this.extraBoons) if (b.x === x && b.y === y) return { boon: b.boon, tier: b.tier ?? 1 };
     return null;
   }
 
@@ -691,31 +708,97 @@ export class Sim {
     return { left: this.depositLeft.get(k) ?? 0, initial: this.depositInit.get(k)!, tier: this.depositTier.get(k) ?? 1 };
   }
 
-  /** The unclaimed cache at (x, y), or null. */
-  cacheAt(x: number, y: number): { poolIdx: number; cost: number } | null {
-    const idx = this.opts.map.caches.findIndex((c) => c.x === x && c.y === y);
-    if (idx === -1 || this.claimedCaches.includes(idx)) return null;
-    return { poolIdx: this.opts.map.caches[idx].poolIdx, cost: CACHE_CLAIM_COST };
+  /** The unopened cache at (x, y), or null. */
+  cacheAt(x: number, y: number): CacheSpot | null {
+    for (const c of this.caches) if (!c.opened && c.x === x && c.y === y) return c;
+    return null;
   }
 
   /**
-   * Claim a cache: select and PAY - never build-to-claim, a tower can be
-   * sold back (Daniil, PRD sec 14). The relic inside was dealt at
-   * generation; a duplicate of something already held simply stacks in the
-   * fold (multipliers multiply).
+   * Open a cache (design round 1, Daniil): free - select it, click OPEN.
+   * The cache names a loot table; the table is rolled on the 'loot' stream
+   * NOW, so the outcome rides the input log like every other decision.
+   * What a cache can hold is content (PRD sec 7.7); this method only knows
+   * how to apply each outcome kind.
    */
-  claimCache(x: number, y: number): boolean {
-    if (this.status !== 'running' || !this.opts.relicDefs) return false;
-    const idx = this.opts.map.caches.findIndex((c) => c.x === x && c.y === y);
-    if (idx === -1 || this.claimedCaches.includes(idx)) return false;
-    if (this.scrap < CACHE_CLAIM_COST) return false;
-    this.scrap -= CACHE_CLAIM_COST;
-    this.claimedCaches.push(idx);
-    this.heldRelics.push(this.opts.map.caches[idx].poolIdx % this.opts.relicDefs.length);
-    this.relicCooldowns.push(0);
-    this.refold();
-    this.inputs.push({ tick: this.tickCount, a: { t: 'claimCache', x, y } });
+  openCache(x: number, y: number): boolean {
+    if (this.status !== 'running') return false;
+    const spot = this.cacheAt(x, y);
+    if (!spot) return false;
+    const table = (this.opts.lootTables ?? []).find((t) => t.id === spot.table);
+    if (!table) throw new Error(`cache at (${x},${y}) names loot table '${spot.table}', which content does not carry`);
+    spot.opened = true;
+    const text = this.rollLoot(table, x, y);
+    this.lootLog.push({ tick: this.tickCount, x, y, text });
+    if (this.lootLog.length > 8) this.lootLog.shift();
+    this.emit({ kind: 'loot', x: x + 0.5, y: y + 0.5, text });
+    this.inputs.push({ tick: this.tickCount, a: { t: 'openCache', x, y } });
     return true;
+  }
+
+  /** Weighted pick, then apply. Returns the player-facing line. */
+  private rollLoot(table: LootTable, x: number, y: number): string {
+    const loot = this.rng.stream('loot');
+    // Weights quantised to hundredths so a fractional weight still draws an
+    // integer (the stream has no float pick); order is the table's order.
+    const total = table.outcomes.reduce((a, o) => a + Math.round(o.weight * 100), 0);
+    let roll = loot.int(0, Math.max(0, total - 1));
+    let pick = table.outcomes[0];
+    for (const o of table.outcomes) {
+      const w = Math.round(o.weight * 100);
+      if (roll < w) { pick = o; break; }
+      roll -= w;
+    }
+    const fallback = (): string => { this.scrap += LOOT_FALLBACK_SCRAP; return `+${LOOT_FALLBACK_SCRAP} scrap`; };
+    switch (pick.kind) {
+      case 'scrap': {
+        const n = loot.int(pick.min ?? 0, Math.max(pick.min ?? 0, pick.max ?? 0));
+        this.scrap += n;
+        return `+${n} scrap`;
+      }
+      case 'ore': {
+        const n = loot.int(pick.min ?? 0, Math.max(pick.min ?? 0, pick.max ?? 0));
+        this.ore[0] += n;
+        return `+${n} ore`;
+      }
+      case 'boon': {
+        // The cache's own cell becomes boon ground - a place worth defending.
+        // Only ground can carry a boon (spec tier 3); a boss drop on the road
+        // never rolls this table, but the rule holds regardless of content.
+        if (this.cellAt(x, y) !== 'G' || this.boonAt(x, y) !== null) return fallback();
+        const kinds: BoonRef['boon'][] = ['range', 'damage', 'rate'];
+        const boon = kinds[loot.int(0, kinds.length - 1)];
+        const tier = Math.max(1, Math.min(4, pick.tier ?? 1)) as BoonRef['tier'];
+        this.extraBoons.push({ x, y, boon, tier });
+        return `boon ground: ${Sim.boonEffect(boon, tier).text}`;
+      }
+      case 'consumable': {
+        const defs = this.opts.relicDefs ?? [];
+        const idx: number[] = [];
+        defs.forEach((d, i) => { if (d.kind === 'consumable') idx.push(i); });
+        if (idx.length === 0) return fallback();
+        const di = idx[loot.int(0, idx.length - 1)];
+        this.heldRelics.push(di);
+        this.relicCooldowns.push(0);
+        this.refold();
+        return `relic: ${defs[di].name}`;
+      }
+      case 'relic': {
+        const defs = this.opts.relicDefs ?? [];
+        const pool = this.unheldPool().filter((i) => defs[i].kind !== 'consumable');
+        if (pool.length === 0) return fallback();
+        const di = pool[loot.int(0, pool.length - 1)];
+        this.heldRelics.push(di);
+        this.relicCooldowns.push(0);
+        this.refold();
+        return `relic: ${defs[di].name}`;
+      }
+      case 'nothing':
+        return 'empty';
+      default:
+        pick.kind satisfies never;
+        return fallback();
+    }
   }
 
   /** Towers holding a given survey capability. */
@@ -790,11 +873,9 @@ export class Sim {
         this.depositInit.set(k, amount);
         this.depositTier.set(k, 1);
       }
-      if (yields === 'cache' && this.opts.relicDefs) {
-        this.heldRelics.push((found!.poolIdx ?? 0) % this.opts.relicDefs.length);
-        this.relicCooldowns.push(0);
-        this.refold();
-      }
+      // A sealed cache is REVEALED, not granted: it sits on the opened ground
+      // until the player clicks OPEN (design round 1).
+      if (yields === 'cache') this.caches.push({ x, y, table: 'rock_cache', opened: false });
     }
     // AUTOMATION towers prospect their surroundings autonomously (free):
     // one job at a time each, nearest rock first, deterministic scan. A
@@ -934,7 +1015,7 @@ export class Sim {
       case 'useConsumable': return this.useConsumable(a.relicId);
       case 'buyRelic': return this.buyRelic();
       case 'rerollOffer': return this.rerollOffer();
-      case 'claimCache': return this.claimCache(a.x, a.y);
+      case 'openCache': return this.openCache(a.x, a.y);
       case 'prospect': return this.prospect(a.x, a.y);
       case 'callWave': return this.callWave();
       default: return a satisfies never; // the union is fully implemented
@@ -974,7 +1055,8 @@ export class Sim {
     for (const r of this.heldRelics) u32(r);
     for (const c of this.relicCooldowns) u32(c);
     for (const o of this.offer ?? [-1]) u32(o + 1);
-    for (const c of this.claimedCaches) u32(c);
+    for (const c of this.caches) { u32(c.x); u32(c.y); u32(c.opened ? 1 : 0); for (let i = 0; i < c.table.length; i++) u32(c.table.charCodeAt(i)); }
+    for (const b of this.extraBoons) { u32(b.x); u32(b.y); u32(b.tier ?? 1); u32(b.boon.charCodeAt(0)); }
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
     u32(this.status === 'won' ? 1 : 0);
     for (const [k, v] of this.depositLeft) { u32(k); u32(v); }
@@ -1462,6 +1544,11 @@ export class Sim {
       this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1)) + this.fold.killRefundScrap; // Tithe
       const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
+      // A boss drops a cache where it falls (design round 1, Daniil: "where
+      // it dies") - on the road, usually; opened like any other.
+      if (this.bossFlag[enemy]) {
+        this.caches.push({ x: Math.floor(this.posX[enemy]), y: Math.floor(this.posY[enemy]), table: 'boss_drop', opened: false });
+      }
       // Overflow (relic): excess damage chains to the nearest enemy, and a
       // chain kill's excess chains again - kills feed kills. Terminates
       // because every recursion step required a kill.

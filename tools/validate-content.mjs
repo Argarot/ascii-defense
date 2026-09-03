@@ -34,6 +34,7 @@ const SCHEMA_FOR = {
   'towers/': 'towers.schema.json',
   'relics/': 'relics.schema.json',
   'terrain/': 'terrain.schema.json',
+  'loot/': 'loot.schema.json',
 };
 
 const ajv = new Ajv({ allErrors: true, strictTypes: false });

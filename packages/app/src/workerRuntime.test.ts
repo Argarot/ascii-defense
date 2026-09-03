@@ -54,6 +54,10 @@ function makeRt() {
     enemyDefs: [WALKER],
     towerDefs: [BOLT],
     relicDefs: POOL,
+    lootTables: [
+      { id: 'rock_cache', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },
+      { id: 'boss_drop', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },
+    ],
   });
   const last = <T extends FromWorker['t']>(t: T) =>
     [...posts].reverse().find((p): p is Extract<FromWorker, { t: T }> => p.t === t);

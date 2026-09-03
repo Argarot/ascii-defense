@@ -1,0 +1,148 @@
+// AUTO-GENERATED from schema/loot.schema.json - do not edit.
+// Regenerate: node tools/build-content-types.mjs
+
+/**
+ * Loot tables (PRD sec 7.7, design round 1): a named, weighted list of outcomes. Sources (cache kinds) reference a table by id and carry no payout logic of their own; the sim rolls the table on the 'loot' RNG stream at open time so the result rides the input log. Adding an outcome kind is an engine change; reweighting or adding a table is content.
+ */
+export interface LootTables {
+  $schema?: string;
+  /**
+   * @minItems 1
+   */
+  tables: [
+    {
+      id: string;
+      /**
+       * @minItems 1
+       */
+      outcomes: [
+        {
+          /**
+           * scrap/ore: a uniform amount in [min, max]. boon: the cache's own cell becomes boon ground of `tier` (ground cells only; elsewhere it falls back to scrap). consumable: a random consumable relic. relic: a random non-consumable from the unheld pool. nothing: an empty cache.
+           */
+          kind: 'scrap' | 'ore' | 'boon' | 'consumable' | 'relic' | 'nothing';
+          weight: number;
+          min?: number;
+          max?: number;
+          tier?: number;
+        },
+        ...{
+          /**
+           * scrap/ore: a uniform amount in [min, max]. boon: the cache's own cell becomes boon ground of `tier` (ground cells only; elsewhere it falls back to scrap). consumable: a random consumable relic. relic: a random non-consumable from the unheld pool. nothing: an empty cache.
+           */
+          kind: 'scrap' | 'ore' | 'boon' | 'consumable' | 'relic' | 'nothing';
+          weight: number;
+          min?: number;
+          max?: number;
+          tier?: number;
+        }[]
+      ];
+    },
+    ...{
+      id: string;
+      /**
+       * @minItems 1
+       */
+      outcomes: [
+        {
+          /**
+           * scrap/ore: a uniform amount in [min, max]. boon: the cache's own cell becomes boon ground of `tier` (ground cells only; elsewhere it falls back to scrap). consumable: a random consumable relic. relic: a random non-consumable from the unheld pool. nothing: an empty cache.
+           */
+          kind: 'scrap' | 'ore' | 'boon' | 'consumable' | 'relic' | 'nothing';
+          weight: number;
+          min?: number;
+          max?: number;
+          tier?: number;
+        },
+        ...{
+          /**
+           * scrap/ore: a uniform amount in [min, max]. boon: the cache's own cell becomes boon ground of `tier` (ground cells only; elsewhere it falls back to scrap). consumable: a random consumable relic. relic: a random non-consumable from the unheld pool. nothing: an empty cache.
+           */
+          kind: 'scrap' | 'ore' | 'boon' | 'consumable' | 'relic' | 'nothing';
+          weight: number;
+          min?: number;
+          max?: number;
+          tier?: number;
+        }[]
+      ];
+    }[]
+  ];
+}
+
+/** The schema itself, for runtime validation. Same source as the type above. */
+export const lootSchema = {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ascii-defense/loot.schema.json",
+  "title": "LootTables",
+  "description": "Loot tables (PRD sec 7.7, design round 1): a named, weighted list of outcomes. Sources (cache kinds) reference a table by id and carry no payout logic of their own; the sim rolls the table on the 'loot' RNG stream at open time so the result rides the input log. Adding an outcome kind is an engine change; reweighting or adding a table is content.",
+  "type": "object",
+  "required": [
+    "tables"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "outcomes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "outcomes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "weight"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "description": "scrap/ore: a uniform amount in [min, max]. boon: the cache's own cell becomes boon ground of `tier` (ground cells only; elsewhere it falls back to scrap). consumable: a random consumable relic. relic: a random non-consumable from the unheld pool. nothing: an empty cache.",
+                  "enum": [
+                    "scrap",
+                    "ore",
+                    "boon",
+                    "consumable",
+                    "relic",
+                    "nothing"
+                  ]
+                },
+                "weight": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "min": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "tier": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;

@@ -19,7 +19,6 @@
  *    by hash, loudly.
  */
 import {
-  CACHE_CLAIM_COST,
   DEPOSIT_MAX,
   PROSPECT_COST,
   PROSPECT_TICKS,
@@ -35,6 +34,7 @@ import {
   validateTile,
   type EnemyDef,
   type GeneratedMap,
+  type LootTable,
   type RelicDef,
   type ReplayAction,
   type TileDef,
@@ -49,6 +49,7 @@ export interface WorkerRuntimeDeps {
   enemyDefs: readonly EnemyDef[];
   towerDefs: readonly TowerDef[];
   relicDefs: readonly RelicDef[];
+  lootTables: readonly LootTable[];
 }
 
 const TICK_MS = 1000 / TICK_HZ;
@@ -56,7 +57,7 @@ const SPEEDS = [0, 1, 2, 4, 8] as const;
 const MIN_SLOTS = 12;
 
 export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
-  const { post, basics, enemyDefs, towerDefs, relicDefs } = deps;
+  const { post, basics, enemyDefs, towerDefs, relicDefs, lootTables } = deps;
   const MAP_X = BOARD_SLOTS.w;
   const MAP_Y = BOARD_SLOTS.h;
   const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs);
@@ -142,6 +143,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         mode: 'waves',
         coreHp: 50,
         relicDefs,
+        lootTables,
         finalWave: THREAT.finalWave,
         interWaveTicks: THREAT.waveSeconds * TICK_HZ,
         difficulty: { hpLinear: 0.18, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
@@ -240,9 +242,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       if (dep) oreRichness.push({ x: d.x, y: d.y, frac: dep.left / DEPOSIT_MAX });
     }
     const caches: { x: number; y: number }[] = [];
-    map.caches.forEach((c, i) => {
-      if (!s.claimedCaches.includes(i)) caches.push({ x: c.x, y: c.y });
-    });
+    for (const c of s.caches) if (!c.opened) caches.push({ x: c.x, y: c.y });
 
     const paletteDefs = () => {
       if (selected && s.canBuildAt(selected.x, selected.y)) {
@@ -320,7 +320,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         selected,
         routeAllowed: s.flow.allowed,
         caches,
-        boons: (map.boons ?? []).map((b) => ({ x: b.x, y: b.y, tier: b.tier })),
+        boons: [...(map.boons ?? []), ...s.extraBoons].map((b) => ({ x: b.x, y: b.y, tier: b.tier })),
         oreRichness,
         enemies,
         towers,
@@ -375,7 +375,12 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         selectedBuild: 0,
         buildTargetSelected: buildTarget,
         core: coreInfo,
-        cache: selected && s.cacheAt(selected.x, selected.y) ? { cost: CACHE_CLAIM_COST, affordable: s.scrap >= CACHE_CLAIM_COST } : null,
+        cache: selected && s.cacheAt(selected.x, selected.y) ? { source: s.cacheAt(selected.x, selected.y)!.table } : null,
+        // The newest thing a cache gave, for a few seconds after it opened.
+        loot: (() => {
+          const last = s.lootLog[s.lootLog.length - 1];
+          return last && s.tickCount - last.tick < 6 * TICK_HZ ? last.text : null;
+        })(),
         rock: selected && s.cellAt(selected.x, selected.y) === 'R'
           ? {
               cost: PROSPECT_COST,
@@ -441,7 +446,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       case 'pickRelic': if (s.pickRelic(a.option)) syncOfferPause(); break;
       case 'rerollOffer': s.rerollOffer(); break;
       case 'buyRelic': s.buyRelic(); break;
-      case 'claimCache': s.claimCache(a.x, a.y); break;
+      case 'openCache': s.openCache(a.x, a.y); break;
       case 'prospect': s.prospect(a.x, a.y); break;
       case 'callWave': s.callWave(); break;
       case 'fireActive': s.fireActive(a.relicId, a.x, a.y); break;

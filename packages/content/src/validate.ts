@@ -14,8 +14,9 @@ import { spriteSchema, type Sprite } from './generated/sprite';
 import { relicsSchema, type RelicPool } from './generated/relics';
 import { towersSchema, type TowerRoster } from './generated/towers';
 import { terrainSchema, type TerrainAppearance } from './generated/terrain';
+import { lootSchema, type LootTables } from './generated/loot';
 
-export type { Palette, Sprite, EnemyRoster, TowerRoster, RelicPool, TerrainAppearance };
+export type { Palette, Sprite, EnemyRoster, TowerRoster, RelicPool, TerrainAppearance, LootTables };
 
 export interface ContentError {
   /** JSON path into the document, e.g. "/roles/ui.bg". */
@@ -51,3 +52,4 @@ export const validateEnemies: Validator<EnemyRoster> = wrap<EnemyRoster>(ajv.com
 export const validateTowers: Validator<TowerRoster> = wrap<TowerRoster>(ajv.compile(towersSchema));
 export const validateRelics: Validator<RelicPool> = wrap<RelicPool>(ajv.compile(relicsSchema));
 export const validateTerrain: Validator<TerrainAppearance> = wrap<TerrainAppearance>(ajv.compile(terrainSchema));
+export const validateLoot: Validator<LootTables> = wrap<LootTables>(ajv.compile(lootSchema));

@@ -84,8 +84,10 @@ export interface HudState {
   selectedTower: HudTowerInfo | null;
   /** The Core card, when a Core cell is selected. */
   core: HudCoreInfo | null;
-  /** The claim card, when an unclaimed cache cell is selected (PRD sec 4.6). */
-  cache: { cost: number; affordable: boolean } | null;
+  /** The cache card, when an unopened cache is selected (PRD sec 4.6): its source. */
+  cache: { source: string } | null;
+  /** What the last opened cache gave, shown briefly; null otherwise. */
+  loot: string | null;
   /** The prospect card, when a rock cell is selected. */
   rock: { cost: number; affordable: boolean; seconds: number; job: { pct: number } | null } | null;
   /** Animation phase 0..1 - preview numbers pulse on it. */
@@ -98,7 +100,7 @@ export type HudAction =
   | { kind: 'choose'; tier: number; option: number }
   | { kind: 'relic'; index: number }
   | { kind: 'coreDraw' }
-  | { kind: 'claimCache' }
+  | { kind: 'openCache' }
   | { kind: 'prospect' }
   | { kind: 'callWave' };
 
@@ -269,6 +271,7 @@ export class HudPanel {
       if (nw.canCall) this.regions.push({ row: y, x0: 0, x1: W - 4, action: { kind: 'callWave' } });
       y++;
     }
+    if (s.loot) term.write(0, y++, `found: ${s.loot}`, role('terrain.ore.lit'));
 
     // ---- build palette (vertical, hover previews radius on the board) ------
     // Shown ONLY when an empty buildable tile is selected (Daniil): the
@@ -305,15 +308,14 @@ export class HudPanel {
       term.write(0, y + 3, 'the summary has the rest', role('ui.text'));
     } else if (s.cache) {
       // ---- the claim card: replaces the build palette on a cache ----------
-      term.write(0, y++, 'RELIC CACHE', role('terrain.ore.lit'));
+      term.write(0, y++, s.cache.source === 'boss_drop' ? 'BOSS CACHE' : 'CACHE', role('terrain.ore.lit'));
       y++;
-      for (const line of this.wrap('Something is sealed in here. Pay to open it - no tower required, none allowed.', W, 4)) {
+      for (const line of this.wrap('Sealed. Opening it costs nothing but the click: Scrap, Ore, a relic - or the ground itself turns into a boon.', W, 5)) {
         term.write(0, y++, line, role('ui.text'));
       }
       y++;
-      const can = s.cache.affordable;
-      this.button(0, y, W - 6, `CLAIM - $${s.cache.cost}`, can ? role('ui.bg') : role('ui.dim'), can ? role('terrain.ore.lit') : role('ui.grid'));
-      if (can) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'claimCache' } });
+      this.button(0, y, W - 6, 'OPEN', role('ui.bg'), role('terrain.ore.lit'));
+      this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'openCache' } });
     } else if (s.rock) {
       // ---- the prospect card: rocks are containers (PRD sec 4.6) ----------
       term.write(0, y++, 'ROCK', role('ui.text'));

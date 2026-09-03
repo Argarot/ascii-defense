@@ -333,18 +333,13 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
       if (rockCells.has(key)) bad('tier3/rocks-unique', `two dealt contents at (${r.x},${r.y})`);
       rockCells.add(key);
       if (cellAt(r.x, r.y) !== 'R') bad('tier3/rocks-on-rock', `rock content at (${r.x},${r.y}) sits on '${cellAt(r.x, r.y)}'`);
-      if (r.yields === 'cache' && (r.poolIdx === undefined || r.poolIdx < 0 || r.poolIdx >= poolSize)) {
-        bad('tier3/rock-pool-idx', `rock cache at (${r.x},${r.y}) points at pool index ${r.poolIdx}`);
-      }
     }
     for (let i = 0; i < cells.length; i++) {
       if (cells[i] === 'R' && !rockCells.has(i)) {
         bad('tier3/rocks-dealt', `rock cell (${i % W},${(i / W) | 0}) has no dealt contents`);
       }
     }
-    for (const c of map.caches) {
-      if (c.poolIdx < 0 || c.poolIdx >= poolSize) bad('tier3/cache-pool-idx', `cache at (${c.x},${c.y}) points at pool index ${c.poolIdx}`);
-    }
+    void poolSize;
   }
 
   return issues;

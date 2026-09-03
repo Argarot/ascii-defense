@@ -91,7 +91,7 @@ export type WorkerAction =
   | { k: 'buyRelic' }
   | { k: 'slot'; index: number }
   | { k: 'fireActive'; relicId: string; x: number; y: number }
-  | { k: 'claimCache'; x: number; y: number }
+  | { k: 'openCache'; x: number; y: number }
   | { k: 'prospect'; x: number; y: number }
   | { k: 'callWave' };
 
@@ -108,5 +108,8 @@ export type FromWorker =
  * cannot honestly resume across the generator rebuild (their seed would
  * regenerate a DIFFERENT map and the input log would replay onto wrong
  * cells) - they are refused with a sentence, never silently corrupted.
+ * v4 (design round 1, 2026-09-03): the map's rock contents lost their pool
+ * index, caches moved into the sim (openCache replaced claimCache in the
+ * input log). A v3 save would replay a claim the sim no longer knows.
  */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;

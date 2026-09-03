@@ -100,6 +100,29 @@ export interface RelicEffects {
 
 export type RelicKind = 'passive' | 'active' | 'consumable';
 
+/**
+ * Loot tables (PRD sec 7.7, design round 1): a named, weighted outcome list,
+ * structurally matching the loot schema. A cache names a table; the sim
+ * rolls it on the 'loot' stream at OPEN time, so the result rides the input
+ * log like every other decision. Sources never carry payout code.
+ */
+export type LootKind = 'scrap' | 'ore' | 'boon' | 'consumable' | 'relic' | 'nothing';
+
+export interface LootOutcome {
+  kind: LootKind;
+  weight: number;
+  /** scrap/ore: uniform amount in [min, max]. */
+  min?: number;
+  max?: number;
+  /** boon: the tier the cache's cell becomes. */
+  tier?: number;
+}
+
+export interface LootTable {
+  id: string;
+  outcomes: readonly LootOutcome[];
+}
+
 export interface RelicDef {
   id: string;
   name: string;

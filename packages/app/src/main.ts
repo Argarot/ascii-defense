@@ -555,7 +555,7 @@ async function main(): Promise<void> {
       else act({ k: 'slot', index: action.index });
     }
     if (action.kind === 'coreDraw') act({ k: 'buyRelic' });
-    if (action.kind === 'claimCache' && selected) act({ k: 'claimCache', x: selected.x, y: selected.y });
+    if (action.kind === 'openCache' && selected) act({ k: 'openCache', x: selected.x, y: selected.y });
     if (action.kind === 'prospect' && selected) act({ k: 'prospect', x: selected.x, y: selected.y });
     if (action.kind === 'callWave') act({ k: 'callWave' });
   });
