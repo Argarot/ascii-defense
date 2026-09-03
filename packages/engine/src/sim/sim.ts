@@ -149,10 +149,22 @@ export const EVENT_CAP = 256;
 
 /** D4 (closed 2026-08-16): a pick-1-of-3 offer every this many waves. */
 export const OFFER_EVERY_WAVES = 3;
-/** Ore price of a blind draw from the pool at the Core (PRD sec 7.3 C). */
-export const RELIC_DRAW_COST = 15;
-/** Ore price of rerolling a standing offer. */
-export const OFFER_REROLL_COST = 8;
+/**
+ * Ore price of the FIRST blind draw at the Core (PRD sec 7.3 C). Every
+ * purchase this run multiplies the next by RELIC_COST_GROWTH (Daniil,
+ * design round 1): 50, 75, 113, 169... - relics get dearer, non-linearly.
+ */
+export const RELIC_DRAW_COST = 50;
+/** Ore price of the first reroll of a standing offer; escalates the same way. */
+export const OFFER_REROLL_COST = 15;
+export const RELIC_COST_GROWTH = 1.5;
+
+/** base * growth^n by repeated multiplication (pow is banned - determinism). */
+function escalated(base: number, growth: number, n: number): number {
+  let c = base;
+  for (let i = 0; i < n; i++) c *= growth;
+  return Math.round(c);
+}
 /** Scrap price of claiming a cache (channel A - PRD sec 4.6, 7.3). */
 export const CACHE_CLAIM_COST = 40;
 /** Scrap price of prospecting a rock cell (PRD sec 4.6). */
@@ -268,7 +280,7 @@ export class Sim {
    */
   readonly ore: number[] = [0];
   coreHp: number;
-  readonly coreHpMax: number;
+  coreHpMax: number; // Sandbags (consumable) raise it
   /** 'running' until the Core falls - or the final wave is held (D6). */
   status: 'running' | 'lost' | 'won' = 'running';
 
@@ -288,6 +300,9 @@ export class Sim {
   offer: number[] | null = null;
   /** Wave the last offer was generated for - one offer per eligible wave. */
   private offerWave = 0;
+  /** Purchases this run; each one makes the next dearer (escalating costs). */
+  private relicsBought = 0;
+  private rerollsBought = 0;
   private fold: RelicFold = EMPTY_FOLD;
   private freezeUntil = 0;
   private prodBoostUntil = 0;
@@ -616,8 +631,23 @@ export class Sim {
   private unheldPool(): number[] {
     const defs = this.opts.relicDefs ?? [];
     const pool: number[] = [];
-    for (let i = 0; i < defs.length; i++) pool.push(i);
+    for (let i = 0; i < defs.length; i++) {
+      // A held UNSTACKABLE relic leaves the pool: a second Vein Tap is a
+      // dead card, a second Frostbite is a bigger one (design round 1).
+      if (!(defs[i].stackable ?? false) && this.heldRelics.includes(i)) continue;
+      pool.push(i);
+    }
     return pool;
+  }
+
+  /** Ore price of the next blind draw - escalates per purchase this run. */
+  drawCost(): number {
+    return escalated(RELIC_DRAW_COST, RELIC_COST_GROWTH, this.relicsBought);
+  }
+
+  /** Ore price of the next reroll - escalates per reroll this run. */
+  rerollCost(): number {
+    return escalated(OFFER_REROLL_COST, RELIC_COST_GROWTH, this.rerollsBought);
   }
 
   /**
@@ -627,10 +657,12 @@ export class Sim {
    */
   buyRelic(): boolean {
     if (this.status !== 'running' || !this.opts.relicDefs) return false;
-    if (this.ore[0] < RELIC_DRAW_COST) return false;
+    const cost = this.drawCost();
+    if (this.ore[0] < cost) return false;
     const pool = this.unheldPool();
     if (pool.length === 0) return false;
-    this.ore[0] -= RELIC_DRAW_COST;
+    this.ore[0] -= cost;
+    this.relicsBought++;
     this.heldRelics.push(this.rng.stream('relics').pick(pool));
     this.relicCooldowns.push(0);
     this.refold();
@@ -641,10 +673,12 @@ export class Sim {
   /** Pay Ore, deal a fresh 3 from the pool in place of the standing offer. */
   rerollOffer(): boolean {
     if (this.status !== 'running' || this.offer === null) return false;
-    if (this.ore[0] < OFFER_REROLL_COST) return false;
+    const cost = this.rerollCost();
+    if (this.ore[0] < cost) return false;
     const pool = this.unheldPool();
     if (pool.length === 0) return false;
-    this.ore[0] -= OFFER_REROLL_COST;
+    this.ore[0] -= cost;
+    this.rerollsBought++;
     this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
     this.inputs.push({ tick: this.tickCount, a: { t: 'rerollOffer' } });
     return true;
@@ -704,7 +738,7 @@ export class Sim {
    * playtest 4), capped so five refineries do not make rock free.
    */
   prospectSpeed(): number {
-    return Math.min(5, 1 + this.surveyCount('surveySpeed'));
+    return Math.min(5, 1 + this.surveyCount('surveySpeed')) * this.fold.prospectSpeedMul; // Quarry multiplies past the cap
   }
 
   /** The active prospect job at (x, y), for the rock card's progress bar. */
@@ -813,6 +847,8 @@ export class Sim {
       this.prodBoostMul = e.productionMul;
     }
     if (e.killRefundScrap !== undefined) this.scrap += e.killRefundScrap; // flat grant when used as a one-shot
+    if (e.coreHpAdd !== undefined) { this.coreHpMax += e.coreHpAdd; this.coreHp += e.coreHpAdd; } // Sandbags
+    if (e.oreAdd !== undefined) this.ore[0] += e.oreAdd; // Ore Pocket
     this.heldRelics.splice(hi, 1);
     this.relicCooldowns.splice(hi, 1);
     this.refold();
@@ -934,7 +970,7 @@ export class Sim {
     u32(this.status === 'running' ? 1 : 0);
     for (const o of this.ore) u32(o);
     u32(this.freezeUntil); u32(this.prodBoostUntil); u32(Math.round(this.prodBoostMul * 1000));
-    u32(this.offerWave);
+    u32(this.offerWave); u32(this.relicsBought); u32(this.rerollsBought); u32(this.coreHpMax);
     for (const r of this.heldRelics) u32(r);
     for (const c of this.relicCooldowns) u32(c);
     for (const o of this.offer ?? [-1]) u32(o + 1);
@@ -1184,6 +1220,8 @@ export class Sim {
     // a straggler can never withhold it (D4 cadence, item 10's clock).
     this.maybeOffer(true);
     this.wave++;
+    // Second Wind (relic): the Core mends a little with every front opened.
+    if (this.fold.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.fold.coreHealPerWave);
     this.emit({ kind: 'waveStart', wave: this.wave });
     this.waveEntries = this.nextWaveEntries.length ? this.nextWaveEntries : this.pickWaveEntries(this.wave);
     this.nextWaveEntries = this.pickWaveEntries(this.wave + 1);
@@ -1419,7 +1457,9 @@ export class Sim {
       this.freeEnemies.push(enemy);
       this.emit({ kind: 'death', x: this.posX[enemy], y: this.posY[enemy] });
       this.kills++;
-      this.scrap += (def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL : 1) + this.fold.killRefundScrap; // Tithe
+      // Bounty Board (relic) multiplies boss bounty only; rounded so Scrap
+      // stays integral (the state hash truncates its lanes to integers).
+      this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1)) + this.fold.killRefundScrap; // Tithe
       const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
       // Overflow (relic): excess damage chains to the nearest enemy, and a
@@ -1430,6 +1470,21 @@ export class Sim {
         if (next !== -1) this.applyDamage(next, overkill, 0, 0, towerIdx);
       }
     }
+  }
+
+  /** Any tower in the eight cells around (x, y)? */
+  private towerTouches(x: number, y: number): boolean {
+    const W = this.opts.cellsW;
+    const H = this.opts.cellsH;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        if (this.occupancy[ny * W + nx] !== 0) return true;
+      }
+    return false;
   }
 
   /** Nearest living enemy to a point; scan order breaks ties (determinism). */
@@ -1525,6 +1580,9 @@ export class Sim {
           }
           continue;
         }
+        // Toll (relic): stepping into a cell that touches a tower costs the
+        // enemy Scrap - roads lined with towers become toll roads.
+        if (this.fold.tollScrap > 0 && this.towerTouches(cx, cy)) this.scrap += this.fold.tollScrap;
         let found = false;
         const mask = this.flow.allowed[cy * width + cx];
         for (let d = 0; d < 4; d++) {

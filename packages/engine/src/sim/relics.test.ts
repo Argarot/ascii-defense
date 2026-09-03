@@ -147,12 +147,14 @@ describe('offers (1.6.2 engine half)', () => {
 
 describe('the Ore sinks - draw and reroll (1.6.5)', () => {
   it('buyRelic: pays Ore, draws from the unheld pool, records', () => {
-    const { simOpts } = makeWorld(71, { startingOre: 20 });
+    const { simOpts } = makeWorld(71, { startingOre: 60 });
     const sim = new Sim(71, simOpts);
+    expect(sim.drawCost()).toBe(50);
     expect(sim.buyRelic()).toBe(true);
-    expect(sim.ore[0]).toBe(5);
+    expect(sim.ore[0]).toBe(10);
     expect(sim.heldRelics.length).toBe(1);
-    expect(sim.buyRelic()).toBe(false); // 5 < 15: broke
+    expect(sim.drawCost()).toBe(75); // escalates x1.5 per purchase (Daniil)
+    expect(sim.buyRelic()).toBe(false); // 10 < 75: broke
     expect(sim.inputs.filter((i) => i.a.t === 'buyRelic').length).toBe(1);
     // Determinism: same seed, same ore, same draw.
     const sim2 = new Sim(71, simOpts);
@@ -161,16 +163,18 @@ describe('the Ore sinks - draw and reroll (1.6.5)', () => {
   });
 
   it('rerollOffer: needs a standing offer and Ore, deals a fresh three', () => {
-    const { simOpts } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 10000, startingOre: 10 });
+    const { simOpts } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 10000, startingOre: 20 });
     const sim = new Sim(61, simOpts);
     expect(sim.rerollOffer()).toBe(false); // no offer up
     let guard = 0;
     while (sim.offer === null && guard++ < 60000) sim.tick();
     const before = [...sim.offer!];
+    expect(sim.rerollCost()).toBe(15);
     expect(sim.rerollOffer()).toBe(true);
-    expect(sim.ore[0]).toBe(2);
+    expect(sim.ore[0]).toBe(5);
     expect(sim.offer!.length).toBe(3);
-    expect(sim.rerollOffer()).toBe(false); // 2 < 8: broke
+    expect(sim.rerollCost()).toBe(23); // escalates x1.5 per reroll
+    expect(sim.rerollOffer()).toBe(false); // 5 < 23: broke
     // A reroll is a fresh deal, not a shuffle of the same three.
     expect(sim.offer).not.toEqual(before);
   });
@@ -455,5 +459,103 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
     }
     while (i < sim.inputs.length && sim.inputs[i].tick === fresh.tickCount) fresh.applyAction(sim.inputs[i++].a);
     expect(fresh.hashState()).toBe(sim.hashState());
+  });
+});
+
+describe('design round 1 (2026-09-03): stackability, escalating costs, the new knobs', () => {
+  const NEW: RelicDef[] = [
+    { id: 'frost2', name: 'Frostbite', kind: 'passive', desc: '', stackable: true, effects: { slowedDamageMul: 1.5 } },
+    { id: 'second_wind', name: 'Second Wind', kind: 'passive', desc: '', effects: { coreHealPerWave: 2 } },
+    { id: 'quarry', name: 'Quarry', kind: 'passive', desc: '', effects: { prospectSpeedMul: 3 } },
+    { id: 'toll', name: 'Toll', kind: 'passive', desc: '', stackable: true, effects: { tollScrap: 1 } },
+    { id: 'bounty_board', name: 'Bounty Board', kind: 'passive', desc: '', effects: { bossBountyMul: 1.5 } },
+    { id: 'sandbags', name: 'Sandbags', kind: 'consumable', desc: '', stackable: true, effects: { coreHpAdd: 15 } },
+    { id: 'ore_pocket', name: 'Ore Pocket', kind: 'consumable', desc: '', stackable: true, effects: { oreAdd: 20 } },
+  ];
+  const POOL2 = [...POOL, ...NEW];
+  const pool = (sim: Sim): string[] => (sim as unknown as { unheldPool(): number[] }).unheldPool().map((i) => POOL2[i].id);
+  const grant2 = (sim: Sim, id: string): void => {
+    sim.offer = [POOL2.findIndex((r) => r.id === id)];
+    if (!sim.pickRelic(0)) throw new Error('grant failed');
+  };
+
+  it('a held unstackable relic leaves the pool; a stackable one stays', () => {
+    const { simOpts } = makeWorld(61, { relicDefs: POOL2 });
+    const sim = new Sim(61, simOpts);
+    expect(pool(sim)).toContain('overflow');
+    expect(pool(sim)).toContain('frost2');
+    grant2(sim, 'overflow');
+    grant2(sim, 'frost2');
+    expect(pool(sim)).not.toContain('overflow'); // a second Overflow is a dead card
+    expect(pool(sim)).toContain('frost2'); // a second Frostbite is a bigger one
+    expect(pool(sim)).toContain('sandbags'); // consumables are always dealable
+  });
+
+  it('Second Wind mends the Core when a wave launches', () => {
+    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 50, relicDefs: POOL2 });
+    const sim = new Sim(61, simOpts);
+    grant2(sim, 'second_wind');
+    sim.coreHp = 10;
+    sim.callWave();
+    expect(sim.coreHp).toBe(12);
+    sim.coreHp = 49;
+    let guard = 0;
+    while (sim.spawnRemaining() > 0 && guard++ < 1000) sim.tick();
+    sim.callWave();
+    expect(sim.coreHp).toBe(50); // never above the maximum
+  });
+
+  it('Quarry multiplies prospect speed past the Survey cap', () => {
+    const { simOpts } = makeWorld(61, { relicDefs: POOL2 });
+    const sim = new Sim(61, simOpts);
+    expect(sim.prospectSpeed()).toBe(1);
+    grant2(sim, 'quarry');
+    expect(sim.prospectSpeed()).toBe(3);
+  });
+
+  it('Toll: enemies walking beside a tower pay Scrap', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(61, { relicDefs: POOL2, startingScrap: 100 });
+    const HARMLESS: TowerDef = { id: 'bolt', cost: 20, range: 6, fireEveryTicks: 10, projectile: { damage: 0, speed: 0.7, homing: true } };
+    const run = (toll: boolean): number => {
+      const sim = new Sim(61, { ...simOpts, towerDefs: [HARMLESS] });
+      if (toll) grant2(sim, 'toll');
+      const spot = nthGround(cells, cellsW, cellsH, 0);
+      // A spot touching the road: the first ground cell with a road neighbour.
+      let pick = spot;
+      outer: for (let y = 0; y < cellsH; y++)
+        for (let x = 0; x < cellsW; x++) {
+          if (cells[y * cellsW + x] !== 'G') continue;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const c = cells[(y + dy) * cellsW + (x + dx)];
+            if (c === 'X') { pick = { x, y }; break outer; }
+          }
+        }
+      expect(sim.buildTower(pick.x, pick.y, 'bolt')).toBe(true);
+      for (let t = 0; t < 1500; t++) sim.tick();
+      return sim.scrap;
+    };
+    expect(run(false)).toBe(80); // 100 - the tower, nobody dies (damage 0)
+    expect(run(true)).toBeGreaterThan(80);
+  });
+
+  it('consumables: Sandbags raise the Core and its maximum, Ore Pocket pays Ore, both free their slot', () => {
+    const { simOpts } = makeWorld(61, { relicDefs: POOL2, coreHp: 50 });
+    const sim = new Sim(61, simOpts);
+    grant2(sim, 'sandbags');
+    grant2(sim, 'ore_pocket');
+    sim.coreHp = 40;
+    expect(sim.useConsumable('sandbags')).toBe(true);
+    expect(sim.coreHpMax).toBe(65);
+    expect(sim.coreHp).toBe(55);
+    expect(sim.useConsumable('ore_pocket')).toBe(true);
+    expect(sim.ore[0]).toBe(20);
+    expect(sim.heldRelics.length).toBe(0);
+  });
+
+  it('Bounty Board folds as a boss-only multiplier', () => {
+    const { simOpts } = makeWorld(61, { relicDefs: POOL2 });
+    const sim = new Sim(61, simOpts);
+    grant2(sim, 'bounty_board');
+    expect((sim as unknown as { fold: { bossBountyMul: number } }).fold.bossBountyMul).toBe(1.5);
   });
 });

@@ -52,6 +52,10 @@
               "epic"
             ]
           },
+          "stackable": {
+            "description": "May the pool deal this relic again while it is held? Multipliers and charges stack; a boolean rule held twice is a dead card, so booleans are unstackable and leave the pool once held (design round 1). Absent = false.",
+            "type": "boolean"
+          },
           "cooldownTicks": {
             "description": "Actives: ticks between firings at 20 Hz.",
             "type": "integer",
@@ -127,6 +131,36 @@
                 "description": "Timed active: boost duration.",
                 "type": "integer",
                 "minimum": 1
+              },
+              "coreHealPerWave": {
+                "description": "Passive: the Core heals this much when a wave launches (Second Wind).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "prospectSpeedMul": {
+                "description": "Passive: prospect jobs run this much faster (Quarry).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "tollScrap": {
+                "description": "Passive: an enemy pays this Scrap on entering a cell beside a tower (Toll).",
+                "type": "number",
+                "minimum": 0
+              },
+              "bossBountyMul": {
+                "description": "Passive: boss bounty multiplier (Bounty Board).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "coreHpAdd": {
+                "description": "Consumable: raises Core hp and its maximum (Sandbags).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "oreAdd": {
+                "description": "Consumable: grants tier-1 Ore (Ore Pocket).",
+                "type": "number",
+                "exclusiveMinimum": 0
               }
             }
           }

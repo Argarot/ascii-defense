@@ -26,6 +26,10 @@ export interface RelicPool {
        */
       rarity?: 'common' | 'rare' | 'epic';
       /**
+       * May the pool deal this relic again while it is held? Multipliers and charges stack; a boolean rule held twice is a dead card, so booleans are unstackable and leave the pool once held (design round 1). Absent = false.
+       */
+      stackable?: boolean;
+      /**
        * Actives: ticks between firings at 20 Hz.
        */
       cooldownTicks?: number;
@@ -89,6 +93,30 @@ export interface RelicPool {
          * Timed active: boost duration.
          */
         boostTicks?: number;
+        /**
+         * Passive: the Core heals this much when a wave launches (Second Wind).
+         */
+        coreHealPerWave?: number;
+        /**
+         * Passive: prospect jobs run this much faster (Quarry).
+         */
+        prospectSpeedMul?: number;
+        /**
+         * Passive: an enemy pays this Scrap on entering a cell beside a tower (Toll).
+         */
+        tollScrap?: number;
+        /**
+         * Passive: boss bounty multiplier (Bounty Board).
+         */
+        bossBountyMul?: number;
+        /**
+         * Consumable: raises Core hp and its maximum (Sandbags).
+         */
+        coreHpAdd?: number;
+        /**
+         * Consumable: grants tier-1 Ore (Ore Pocket).
+         */
+        oreAdd?: number;
       };
     },
     ...{
@@ -107,6 +135,10 @@ export interface RelicPool {
        */
       rarity?: 'common' | 'rare' | 'epic';
       /**
+       * May the pool deal this relic again while it is held? Multipliers and charges stack; a boolean rule held twice is a dead card, so booleans are unstackable and leave the pool once held (design round 1). Absent = false.
+       */
+      stackable?: boolean;
+      /**
        * Actives: ticks between firings at 20 Hz.
        */
       cooldownTicks?: number;
@@ -170,6 +202,30 @@ export interface RelicPool {
          * Timed active: boost duration.
          */
         boostTicks?: number;
+        /**
+         * Passive: the Core heals this much when a wave launches (Second Wind).
+         */
+        coreHealPerWave?: number;
+        /**
+         * Passive: prospect jobs run this much faster (Quarry).
+         */
+        prospectSpeedMul?: number;
+        /**
+         * Passive: an enemy pays this Scrap on entering a cell beside a tower (Toll).
+         */
+        tollScrap?: number;
+        /**
+         * Passive: boss bounty multiplier (Bounty Board).
+         */
+        bossBountyMul?: number;
+        /**
+         * Consumable: raises Core hp and its maximum (Sandbags).
+         */
+        coreHpAdd?: number;
+        /**
+         * Consumable: grants tier-1 Ore (Ore Pocket).
+         */
+        oreAdd?: number;
       };
     }[]
   ];
@@ -229,6 +285,10 @@ export const relicsSchema = {
               "rare",
               "epic"
             ]
+          },
+          "stackable": {
+            "description": "May the pool deal this relic again while it is held? Multipliers and charges stack; a boolean rule held twice is a dead card, so booleans are unstackable and leave the pool once held (design round 1). Absent = false.",
+            "type": "boolean"
           },
           "cooldownTicks": {
             "description": "Actives: ticks between firings at 20 Hz.",
@@ -305,6 +365,36 @@ export const relicsSchema = {
                 "description": "Timed active: boost duration.",
                 "type": "integer",
                 "minimum": 1
+              },
+              "coreHealPerWave": {
+                "description": "Passive: the Core heals this much when a wave launches (Second Wind).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "prospectSpeedMul": {
+                "description": "Passive: prospect jobs run this much faster (Quarry).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "tollScrap": {
+                "description": "Passive: an enemy pays this Scrap on entering a cell beside a tower (Toll).",
+                "type": "number",
+                "minimum": 0
+              },
+              "bossBountyMul": {
+                "description": "Passive: boss bounty multiplier (Bounty Board).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "coreHpAdd": {
+                "description": "Consumable: raises Core hp and its maximum (Sandbags).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "oreAdd": {
+                "description": "Consumable: grants tier-1 Ore (Ore Pocket).",
+                "type": "number",
+                "exclusiveMinimum": 0
               }
             }
           }

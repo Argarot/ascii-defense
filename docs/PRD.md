@@ -604,6 +604,19 @@ switched itself off in silence.)*
 arrived: a flat pool deals game-breaking relics as readily as filler, so a run's
 ceiling is set by draw order rather than by play.
 
+**Duplicates are a per-relic property, not a global rule** *(D20, design round
+1, 2026-09-03)*. A multiplier or a charge held twice is a bigger one; a boolean
+rule held twice is a dead card. So each relic says whether it stacks, and an
+unstackable relic leaves the pool the moment it is held — an offer never shows
+a card worth nothing. Flat global numbers are not relics at all (§7.1's own
+test; Ballistics Lab was cut for it), and nothing in the pool multiplies by
+"triple".
+
+**Buying relics gets dearer, non-linearly** *(Daniil, D20)*. The first blind
+draw at the Core costs 50 Ore and every purchase multiplies the next by 1.5;
+rerolls start lower and climb the same way. Ore keeps its spend-now-or-bank
+tension (§6) precisely because the fourth relic costs what the first three did.
+
 ### 7.7 Loot tables — one answer to "what do I get" *(Daniil, 2026-08-17)*
 
 Rewards are currently hard-coded per source: a cache grants a relic, a vein

@@ -14,7 +14,8 @@
       "id": "frostbite",
       "name": "Frostbite",
       "kind": "passive",
-      "desc": "Slowed enemies take +50% damage from everything.",
+      "stackable": true,
+      "desc": "Slowed enemies take +50% damage from everything. Stacks.",
       "effects": {
         "slowedDamageMul": 1.5
       }
@@ -23,7 +24,8 @@
       "id": "tithe",
       "name": "Tithe",
       "kind": "passive",
-      "desc": "Every kill refunds 2 Scrap.",
+      "stackable": true,
+      "desc": "Every kill refunds 2 Scrap. Stacks.",
       "effects": {
         "killRefundScrap": 2
       }
@@ -56,19 +58,48 @@
       }
     },
     {
-      "id": "ballistics",
-      "name": "Ballistics Lab",
+      "id": "second_wind",
+      "name": "Second Wind",
       "kind": "passive",
-      "desc": "All towers deal +20% damage.",
+      "desc": "The Core mends 2 health every time a wave launches.",
       "effects": {
-        "damageMul": 1.2
+        "coreHealPerWave": 2
+      }
+    },
+    {
+      "id": "quarry",
+      "name": "Quarry",
+      "kind": "passive",
+      "desc": "Rock breaks three times faster - every prospect job, everywhere.",
+      "effects": {
+        "prospectSpeedMul": 3
+      }
+    },
+    {
+      "id": "toll",
+      "name": "Toll",
+      "kind": "passive",
+      "stackable": true,
+      "desc": "Every enemy pays 1 Scrap for each cell it walks beside a tower. Stacks.",
+      "effects": {
+        "tollScrap": 1
+      }
+    },
+    {
+      "id": "bounty_board",
+      "name": "Bounty Board",
+      "kind": "passive",
+      "desc": "Bosses pay half again as much Scrap.",
+      "effects": {
+        "bossBountyMul": 1.5
       }
     },
     {
       "id": "orbital",
       "name": "Orbital Lance",
       "kind": "active",
-      "desc": "Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly.",
+      "stackable": true,
+      "desc": "Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly. A second copy is a second charge.",
       "cooldownTicks": 1800,
       "effects": {
         "orbitalDamage": 400,
@@ -79,7 +110,8 @@
       "id": "stasis",
       "name": "Stasis Field",
       "kind": "active",
-      "desc": "Freeze every enemy for 4 seconds. Towers keep firing.",
+      "stackable": true,
+      "desc": "Freeze every enemy for 4 seconds. Towers keep firing. A second copy is a second charge.",
       "cooldownTicks": 2400,
       "effects": {
         "freezeTicks": 80
@@ -89,11 +121,42 @@
       "id": "deep_vein",
       "name": "Deep Vein",
       "kind": "active",
-      "desc": "Refineries produce five-fold for 20 seconds.",
+      "stackable": true,
+      "desc": "Refineries produce five-fold for 20 seconds. A second copy is a second charge.",
       "cooldownTicks": 2400,
       "effects": {
         "productionMul": 5,
         "boostTicks": 400
+      }
+    },
+    {
+      "id": "sandbags",
+      "name": "Sandbags",
+      "kind": "consumable",
+      "stackable": true,
+      "desc": "Use: the Core gains 15 health, and 15 to its maximum. One use.",
+      "effects": {
+        "coreHpAdd": 15
+      }
+    },
+    {
+      "id": "flashbang",
+      "name": "Flashbang",
+      "kind": "consumable",
+      "stackable": true,
+      "desc": "Use: every enemy freezes for 2 seconds. One use.",
+      "effects": {
+        "freezeTicks": 40
+      }
+    },
+    {
+      "id": "ore_pocket",
+      "name": "Ore Pocket",
+      "kind": "consumable",
+      "stackable": true,
+      "desc": "Use: 20 Ore, right now. One use.",
+      "effects": {
+        "oreAdd": 20
       }
     }
   ]

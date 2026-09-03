@@ -83,6 +83,19 @@ export interface RelicEffects {
   freezeTicks?: number;
   productionMul?: number;
   boostTicks?: number;
+  // ---- design round 1 (2026-09-03) knobs ----
+  /** Passive: the Core heals this much when a wave launches (Second Wind). */
+  coreHealPerWave?: number;
+  /** Passive: prospect jobs run this much faster (Quarry). */
+  prospectSpeedMul?: number;
+  /** Passive: an enemy pays this Scrap on entering a cell beside a tower (Toll). */
+  tollScrap?: number;
+  /** Passive: boss bounty multiplier (Bounty Board). */
+  bossBountyMul?: number;
+  /** Consumable: raises Core hp AND its maximum by this much (Sandbags). */
+  coreHpAdd?: number;
+  /** Consumable: grants this much tier-1 Ore (Ore Pocket). */
+  oreAdd?: number;
 }
 
 export type RelicKind = 'passive' | 'active' | 'consumable';
@@ -97,6 +110,13 @@ export interface RelicDef {
   rarity?: 'common' | 'rare' | 'epic';
   /** Actives: ticks between firings. */
   cooldownTicks?: number;
+  /**
+   * May the pool deal this relic again while it is held? Multipliers and
+   * charges stack (Frostbite, Orbital); a boolean rule held twice is a dead
+   * card (Vein Tap) - so booleans are unstackable and leave the pool once
+   * held (design round 1, item 1). Absent = false.
+   */
+  stackable?: boolean;
   effects?: RelicEffects;
 }
 
@@ -116,6 +136,10 @@ export interface RelicFold {
   damageMul: number;
   fireRateMul: number;
   rangeAdd: number;
+  coreHealPerWave: number;
+  prospectSpeedMul: number;
+  tollScrap: number;
+  bossBountyMul: number;
 }
 
 export const EMPTY_FOLD: RelicFold = {
@@ -128,6 +152,10 @@ export const EMPTY_FOLD: RelicFold = {
   damageMul: 1,
   fireRateMul: 1,
   rangeAdd: 0,
+  coreHealPerWave: 0,
+  prospectSpeedMul: 1,
+  tollScrap: 0,
+  bossBountyMul: 1,
 };
 
 /** Fold the always-on effects of the given relics (see RelicFold). */
@@ -145,6 +173,10 @@ export function foldRelics(defs: readonly RelicDef[]): RelicFold {
     out.damageMul *= e.damageMul ?? 1;
     out.fireRateMul *= e.fireRateMul ?? 1;
     out.rangeAdd += e.rangeAdd ?? 0;
+    out.coreHealPerWave += e.coreHealPerWave ?? 0;
+    out.prospectSpeedMul *= e.prospectSpeedMul ?? 1;
+    out.tollScrap += e.tollScrap ?? 0;
+    out.bossBountyMul *= e.bossBountyMul ?? 1;
   }
   return out;
 }
