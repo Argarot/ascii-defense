@@ -19,6 +19,7 @@
 import { createRng, type Rng } from '../rng/rng';
 import { isBuildable, strandEntered, strandPorts, type CellType } from '../grid/cells';
 import type { GeneratedMap, CellRef } from '../mapgen/mapgen';
+import { SHIELD_REGEN_DELAY, SHIELD_REGEN_TICKS, TRAIT_RULES, hasTrait } from './traits';
 import { computeFlowField, type FlowField } from './flow';
 import { PRIORITIES, pickTarget, type Priority, type TargetCandidate } from './targeting';
 import {
@@ -54,7 +55,18 @@ export interface SimOptions {
   startingOre?: number;
   coreHp?: number;
   /** Waves: pause between waves, in ticks. */
+  /**
+   * Wave tempo (design round 1, 2026-09-03): ticks from one wave's LAUNCH to
+   * the next auto-launch. The clock never waits for the last enemy to die -
+   * killing faster buys quiet, dawdling stacks waves (Daniil's item 10).
+   */
   interWaveTicks?: number;
+  /**
+   * Wave 1 waits for the player's CALL (default in waves mode): a fresh map
+   * deserves a look before the first front opens. Tests and the lab that
+   * want an autonomous run either set this false or call callWave().
+   */
+  firstWaveWaits?: boolean;
   /** The unlocked relic pool (PRD sec 7). Absent = no relic layer (tests). */
   relicDefs?: readonly RelicDef[];
   /** Wave scaling knobs; DEFAULT_DIFFICULTY when absent. */
@@ -147,6 +159,16 @@ export const CACHE_CLAIM_COST = 40;
 export const PROSPECT_COST = 25;
 /** Base prospect duration: breaking rock is a COMMITMENT, not a purchase. */
 export const PROSPECT_TICKS = 600;
+/** Scrap paid per second still on the wave clock when the player CALLS early. */
+export const CALL_BONUS_PER_SEC = 1;
+/** Boss waves: every this-many waves, and always the final wave (D17). */
+export const BOSS_EVERY_WAVES = 5;
+/** A boss is the heaviest unlocked enemy, scaled: hp, bounty, Core damage. */
+export const BOSS_HP_MUL = 6;
+export const BOSS_BOUNTY_MUL = 5;
+export const BOSS_DAMAGE_MUL = 3;
+/** Queue encoding: a boss entry is its defIdx OR this flag. */
+const BOSS_QUEUE_FLAG = 1 << 8;
 
 export interface Tower {
   cellX: number;
@@ -294,8 +316,22 @@ export class Sim {
   /** Entries the CURRENT wave uses; next wave's are telegraphed. */
   waveEntries: CellRef[] = [];
   nextWaveEntries: CellRef[] = [];
-  private spawnQueue: number[] = []; // enemy defIdx, in spawn order
-  private betweenTimer: number;
+  /** Enemies still to spawn this wave: defIdx, OR BOSS_QUEUE_FLAG for the boss. */
+  private spawnQueue: number[] = [];
+  /** The NEXT wave, composed one wave ahead so the HUD can show it (item 11). */
+  private nextQueue: number[] = [];
+  /** Ticks until the next auto-launch; -1 = waiting for the player's call. */
+  private waveTimer = -1;
+  /** 1 for a boss body - bounty and Core damage read it; hashed. */
+  readonly bossFlag = new Uint8Array(ENEMY_CAP);
+  /** Tick of the last hit taken; shielded enemies regrow after a pause. */
+  private readonly lastHit = new Int32Array(ENEMY_CAP);
+  /**
+   * Path-length offset (PRD sec 9, item 4): enemy hp scales by
+   * sqrt(mean lane / the threat's floor) so a long road is time under fire
+   * that the waves pay back, not a gift. 1 when the map states no floor.
+   */
+  private lengthMul = 1;
   private intraTimer = 0;
 
   private readonly rng: Rng;
@@ -326,10 +362,10 @@ export class Sim {
     this.ore[0] = opts.startingOre ?? 0;
     this.coreHpMax = opts.coreHp ?? 50;
     this.coreHp = this.coreHpMax;
-    this.interWaveTicks = opts.interWaveTicks ?? 160;
+    this.interWaveTicks = opts.interWaveTicks ?? 800; // 40 s launch-to-launch (design round 1)
     this.difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
     this.finalWave = opts.finalWave ?? 0;
-    this.betweenTimer = Math.min(this.interWaveTicks, 60); // first wave comes fast
+    this.waveTimer = (opts.firstWaveWaits ?? true) ? -1 : Math.min(this.interWaveTicks, 60);
     this.occupancy = new Uint16Array(opts.cellsW * opts.cellsH);
     this.cellsMut = opts.cells.slice();
     for (const d of opts.map.deposits ?? []) {
@@ -351,7 +387,20 @@ export class Sim {
             if (nx >= 0 && ny >= 0 && nx < opts.cellsW && ny < opts.cellsH) this.nearCore[ny * opts.cellsW + nx] = 1;
           }
       }
-    if (this.mode === 'waves') this.nextWaveEntries = this.pickWaveEntries(1);
+    if (this.mode === 'waves') {
+      this.nextWaveEntries = this.pickWaveEntries(1);
+      this.nextQueue = this.composeWave(1);
+      const floor = opts.map.pathFloorCells;
+      if (floor !== undefined && floor > 0 && opts.map.entries.length > 0) {
+        let sum = 0;
+        for (const e of opts.map.entries) sum += this.flow.dist[e.y * opts.cellsW + e.x];
+        const mean = sum / opts.map.entries.length;
+        // sqrt, not pow: exponent 0.5 is the PRD's value and pow is banned
+        // for cross-engine determinism. Never below 1 - a lane shorter than
+        // the floor is impossible by construction (spec sec 12 Tier 1).
+        this.lengthMul = Math.max(1, Math.sqrt(mean / floor));
+      }
+    }
   }
 
   // ---- building and upgrading ---------------------------------------------
@@ -777,10 +826,11 @@ export class Sim {
    * COMBINATIONS, not copies). Draws on the 'relics' stream, so map, waves
    * and combat draws are untouched by the relic layer existing.
    */
-  private maybeOffer(): void {
+  private maybeOffer(atLaunch: boolean): void {
     const defs = this.opts.relicDefs;
     if (!defs || this.offer !== null) return;
     if (this.wave === 0 || this.wave % OFFER_EVERY_WAVES !== 0 || this.offerWave === this.wave) return;
+    void atLaunch; // both call sites share the rule; the flag documents intent
     this.offerWave = this.wave;
     const pool = this.unheldPool();
     if (pool.length === 0) return;
@@ -850,6 +900,7 @@ export class Sim {
       case 'rerollOffer': return this.rerollOffer();
       case 'claimCache': return this.claimCache(a.x, a.y);
       case 'prospect': return this.prospect(a.x, a.y);
+      case 'callWave': return this.callWave();
       default: return a satisfies never; // the union is fully implemented
     }
   }
@@ -892,8 +943,10 @@ export class Sim {
     u32(this.status === 'won' ? 1 : 0);
     for (const [k, v] of this.depositLeft) { u32(k); u32(v); }
     for (const [k, v] of this.prospectJobs) { u32(k); u32(v); }
-    u32(this.betweenTimer); u32(this.intraTimer); u32(this.spawnTimer);
+    u32(this.waveTimer + 1); u32(this.intraTimer); u32(this.spawnTimer);
+    u32(Math.round(this.lengthMul * 1000));
     for (const q of this.spawnQueue) u32(q);
+    for (const q of this.nextQueue) u32(q + 0x10000);
     for (const e of this.waveEntries) { u32(e.x); u32(e.y); }
     for (const e of this.nextWaveEntries) { u32(e.x); u32(e.y); }
 
@@ -901,7 +954,8 @@ export class Sim {
     f32(this.posX, eh); f32(this.posY, eh); f32(this.hp, eh); f32(this.shield, eh);
     f32(this.slowMul, eh); f32(this.tgtX, eh); f32(this.tgtY, eh);
     i16(this.slowTicks, eh); i16(this.gen, eh);
-    for (let i = 0; i < eh; i++) u32((this.alive[i] << 8) | this.enemyDefIdx[i]);
+    for (let i = 0; i < eh; i++) u32((this.bossFlag[i] << 16) | (this.alive[i] << 8) | this.enemyDefIdx[i]);
+    for (let i = 0; i < eh; i++) u32(this.lastHit[i]);
     for (const s of this.freeEnemies) u32(s);
 
     const ph = this.projHigh;
@@ -927,11 +981,67 @@ export class Sim {
     return this.spawnQueue.length;
   }
 
-  /** Ticks until the next wave begins; 0 while a wave is in progress. */
+  /** Ticks until the next wave auto-launches; 0 when waiting for a call or done. */
   ticksToNextWave(): number {
     if (this.mode !== 'waves') return 0;
-    if (this.spawnQueue.length > 0 || this.aliveCount() > 0) return 0;
-    return Math.max(0, this.betweenTimer);
+    return Math.max(0, this.waveTimer);
+  }
+
+  /** Wave 1 has not been called yet. */
+  waitingForCall(): boolean {
+    return this.mode === 'waves' && this.wave === 0 && this.waveTimer < 0;
+  }
+
+  /** True when the final wave has been launched (nothing more will come). */
+  private lastWaveLaunched(): boolean {
+    return this.finalWave > 0 && this.wave >= this.finalWave;
+  }
+
+  /**
+   * The player may CALL the next wave once the current one has finished
+   * SPAWNING - overlapping waves is the bet, stacking five in a second is
+   * not - and never past the final wave.
+   */
+  canCallWave(): boolean {
+    if (this.status !== 'running' || this.mode !== 'waves') return false;
+    if (this.lastWaveLaunched()) return false;
+    return this.spawnQueue.length === 0;
+  }
+
+  /** Scrap the player would earn by calling right now (item 9's bonus). */
+  callBonus(): number {
+    if (this.waveTimer <= 0) return 0;
+    return Math.ceil(this.waveTimer / TICK_HZ) * CALL_BONUS_PER_SEC;
+  }
+
+  /** Launch the next wave now, banking the remaining clock as Scrap. */
+  callWave(): boolean {
+    if (!this.canCallWave()) return false;
+    this.scrap += this.callBonus();
+    this.launchWave();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'callWave' } });
+    return true;
+  }
+
+  /** What the next wave holds, for the HUD (composed one wave ahead). */
+  nextWavePreview(): { wave: number; boss: boolean; kinds: { id: string; count: number }[] } | null {
+    if (this.mode !== 'waves' || this.lastWaveLaunched()) return null;
+    const counts = new Map<number, number>();
+    let boss = false;
+    for (const q of this.nextQueue) {
+      if ((q & BOSS_QUEUE_FLAG) !== 0) { boss = true; continue; }
+      counts.set(q, (counts.get(q) ?? 0) + 1);
+    }
+    const kinds: { id: string; count: number }[] = [];
+    for (const [idx, n] of counts) {
+      const def = this.opts.enemyDefs[idx];
+      kinds.push({ id: def.id, count: n * (hasTrait(def, 'swarm') ? TRAIT_RULES.swarm.packSize : 1) });
+    }
+    return { wave: this.wave + 1, boss, kinds };
+  }
+
+  static isBossWave(wave: number, finalWave: number): boolean {
+    return wave > 0 && (wave % BOSS_EVERY_WAVES === 0 || (finalWave > 0 && wave === finalWave));
   }
 
   enemyDefOf(slot: number): EnemyDef {
@@ -1029,65 +1139,83 @@ export class Sim {
     return this.rng.stream('waves').shuffle(all).slice(0, count);
   }
 
+  /**
+   * Compose wave `w` on the waves stream: bigger and meaner as numbers grow.
+   * Composition escalates in KIND, not only count (PRD sec 9.1): each
+   * enemy's weight grows with waves since it unlocked, so late waves are
+   * heavies-with-escort instead of a bigger version of wave 1. Boss waves
+   * (every BOSS_EVERY_WAVES-th and the final wave, D17) add ONE boss behind
+   * the escort - the old elite surge made the victory wave a coincidence of
+   * two constants; this makes it a rule.
+   */
+  private composeWave(w: number): number[] {
+    const waves = this.rng.stream('waves');
+    const count = waveCount(this.difficulty, w);
+    const available: { idx: number; w: number }[] = [];
+    this.opts.enemyDefs.forEach((d, i) => {
+      const mw = d.minWave ?? 1;
+      if (mw <= w) available.push({ idx: i, w: 1 + (w - mw) });
+    });
+    const totalW = available.reduce((a, b) => a + b.w, 0);
+    // Unreachable given the constructor's minWave check (minWave never
+    // rises mid-run), kept as the invariant's local witness.
+    if (available.length === 0 || totalW <= 0) throw new Error(`wave ${w}: no enemy def is unlocked`);
+    const queue: number[] = [];
+    for (let n = 0; n < count; n++) {
+      let roll = waves.int(0, totalW - 1);
+      let pick = available[0].idx;
+      for (const a of available) {
+        if (roll < a.w) { pick = a.idx; break; }
+        roll -= a.w;
+      }
+      queue.push(pick);
+    }
+    if (Sim.isBossWave(w, this.finalWave)) {
+      let heavy = available[0].idx;
+      for (const a of available) if (this.opts.enemyDefs[a.idx].hp > this.opts.enemyDefs[heavy].hp) heavy = a.idx;
+      queue.push(heavy | BOSS_QUEUE_FLAG);
+    }
+    return queue;
+  }
+
+  /** The next wave starts NOW: by the clock or by the player's call. */
+  private launchWave(): void {
+    // An offer owed by the wave just ending is dealt at the latest here, so
+    // a straggler can never withhold it (D4 cadence, item 10's clock).
+    this.maybeOffer(true);
+    this.wave++;
+    this.emit({ kind: 'waveStart', wave: this.wave });
+    this.waveEntries = this.nextWaveEntries.length ? this.nextWaveEntries : this.pickWaveEntries(this.wave);
+    this.nextWaveEntries = this.pickWaveEntries(this.wave + 1);
+    this.spawnQueue = this.nextQueue;
+    this.nextQueue = this.lastWaveLaunched() ? [] : this.composeWave(this.wave + 1);
+    this.waveTimer = this.lastWaveLaunched() ? 0 : this.interWaveTicks;
+    this.intraTimer = 0;
+  }
+
   private wavePhase(): void {
-    if (this.spawnQueue.length === 0 && this.aliveCount() === 0) {
-      // Surviving the final wave IS the win (D6: a run ends).
-      if (this.finalWave > 0 && this.wave >= this.finalWave) {
-        this.status = 'won';
-        return;
-      }
-      // Between waves. Wave completion is when offers appear (D4).
-      this.maybeOffer();
-      if (--this.betweenTimer > 0) return;
-      this.wave++;
-      this.emit({ kind: 'waveStart', wave: this.wave });
-      this.waveEntries = this.nextWaveEntries.length ? this.nextWaveEntries : this.pickWaveEntries(this.wave);
-      this.nextWaveEntries = this.pickWaveEntries(this.wave + 1);
-      this.betweenTimer = this.interWaveTicks;
-      // Compose the wave: bigger and meaner as numbers grow.
-      const waves = this.rng.stream('waves');
-      const count = waveCount(this.difficulty, this.wave);
-      // Composition escalates in KIND, not only count (PRD sec 9.1): each
-      // enemy's weight grows with waves since it unlocked, so late waves
-      // are heavies-with-escort instead of a bigger version of wave 1.
-      const available: { idx: number; w: number }[] = [];
-      this.opts.enemyDefs.forEach((d, i) => {
-        const mw = d.minWave ?? 1;
-        if (mw <= this.wave) available.push({ idx: i, w: 1 + (this.wave - mw) });
-      });
-      const totalW = available.reduce((a, b) => a + b.w, 0);
-      this.spawnQueue = [];
-      // Unreachable given the constructor's minWave check (minWave never
-      // rises mid-run), kept as the invariant's local witness.
-      if (available.length === 0 || totalW <= 0) throw new Error(`wave ${this.wave}: no enemy def is unlocked`);
-      for (let n = 0; n < count; n++) {
-        let roll = waves.int(0, totalW - 1);
-        let pick = available[0].idx;
-        for (const a of available) {
-          if (roll < a.w) { pick = a.idx; break; }
-          roll -= a.w;
-        }
-        this.spawnQueue.push(pick);
-      }
-      // Every 5th wave is an ELITE wave: a surge of the heaviest thing alive.
-      if (this.wave % 5 === 0) {
-        let heavy = available[0].idx;
-        for (const a of available) if (this.opts.enemyDefs[a.idx].hp > this.opts.enemyDefs[heavy].hp) heavy = a.idx;
-        const surge = Math.max(2, Math.ceil(count / 6));
-        for (let n = 0; n < surge; n++) this.spawnQueue.push(heavy);
-      }
-      this.intraTimer = 0;
+    // Surviving the final wave IS the win (D6: a run ends).
+    if (this.lastWaveLaunched() && this.spawnQueue.length === 0 && this.aliveCount() === 0) {
+      this.status = 'won';
       return;
     }
+    // A cleared offer wave deals its offer as soon as the board is quiet.
+    if (this.spawnQueue.length === 0 && this.aliveCount() === 0) this.maybeOffer(false);
+    // The clock runs from the previous launch, whoever is still walking.
+    if (this.waveTimer > 0 && --this.waveTimer === 0) this.launchWave();
     if (this.spawnQueue.length > 0 && --this.intraTimer <= 0) {
       this.intraTimer = 6;
-      const defIdx = this.spawnQueue.shift()!;
+      const q = this.spawnQueue.shift()!;
+      const defIdx = q & ~BOSS_QUEUE_FLAG;
       const entry = this.waveEntries[(this.spawned + this.wave) % this.waveEntries.length];
-      this.spawn(entry, defIdx);
+      const boss = (q & BOSS_QUEUE_FLAG) !== 0;
+      // Swarm (traits.ts): one queue entry, a pack of bodies from one entry.
+      const pack = hasTrait(this.opts.enemyDefs[defIdx], 'swarm') ? TRAIT_RULES.swarm.packSize : 1;
+      for (let n = 0; n < pack; n++) this.spawn(entry, defIdx, boss);
     }
   }
 
-  private spawn(entry: CellRef, defIdx: number): void {
+  private spawn(entry: CellRef, defIdx: number, boss = false): void {
     const i = this.freeEnemies.pop() ?? (this.enemyHigh < ENEMY_CAP ? this.enemyHigh++ : -1);
     if (i === -1) return;
     const def = this.opts.enemyDefs[defIdx];
@@ -1096,8 +1224,10 @@ export class Sim {
     this.spawned++;
     this.enemyDefIdx[i] = defIdx;
     // Waves scale hp by the difficulty data. Trickle mode stays flat for tests.
-    const hpScale = this.mode === 'waves' ? waveHpScale(this.difficulty, Math.max(1, this.wave)) : 1;
-    this.hp[i] = def.hp * hpScale;
+    const hpScale = this.mode === 'waves' ? waveHpScale(this.difficulty, Math.max(1, this.wave)) * this.lengthMul : 1;
+    this.hp[i] = def.hp * hpScale * (boss ? BOSS_HP_MUL : 1);
+    this.bossFlag[i] = boss ? 1 : 0;
+    this.lastHit[i] = this.tickCount;
     this.spawnHp[i] = this.hp[i];
     this.shield[i] = def.shield ?? 0;
     this.slowTicks[i] = 0;
@@ -1275,8 +1405,12 @@ export class Sim {
       dmg -= absorbed;
     }
     this.hp[enemy] -= dmg;
-    if (slowTicksN > 0) {
-      this.slowTicks[enemy] = Math.max(this.slowTicks[enemy], slowTicksN);
+    if (dmg > 0) this.lastHit[enemy] = this.tickCount;
+    // Traits (traits.ts): armoured shrugs slows off entirely, fast shakes
+    // them off in half the time.
+    if (slowTicksN > 0 && !hasTrait(def, 'armoured')) {
+      const ticks = hasTrait(def, 'fast') ? Math.ceil(slowTicksN * TRAIT_RULES.fast.slowDurationMul) : slowTicksN;
+      this.slowTicks[enemy] = Math.max(this.slowTicks[enemy], ticks);
       this.slowMul[enemy] = slowMulN;
     }
     if (this.hp[enemy] <= 0) {
@@ -1285,7 +1419,7 @@ export class Sim {
       this.freeEnemies.push(enemy);
       this.emit({ kind: 'death', x: this.posX[enemy], y: this.posY[enemy] });
       this.kills++;
-      this.scrap += (def.bounty ?? 0) + this.fold.killRefundScrap; // Tithe
+      this.scrap += (def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL : 1) + this.fold.killRefundScrap; // Tithe
       const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
       // Overflow (relic): excess damage chains to the nearest enemy, and a
@@ -1351,7 +1485,14 @@ export class Sim {
     const { nodeDist, width } = this.flow;
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;
-      let speed = this.opts.enemyDefs[this.enemyDefIdx[i]].speed;
+      const edef = this.opts.enemyDefs[this.enemyDefIdx[i]];
+      let speed = edef.speed;
+      // Shielded (traits.ts): the shield regrows after a pause unhit, so
+      // focus fire breaks it and chip damage never does.
+      const shieldMax = edef.shield ?? 0;
+      if (shieldMax > 0 && hasTrait(edef, 'shielded') && this.shield[i] < shieldMax && this.tickCount - this.lastHit[i] > SHIELD_REGEN_DELAY) {
+        this.shield[i] = Math.min(shieldMax, this.shield[i] + shieldMax / SHIELD_REGEN_TICKS);
+      }
       if (this.slowTicks[i] > 0) {
         this.slowTicks[i]--;
         speed *= this.slowMul[i];
@@ -1374,7 +1515,7 @@ export class Sim {
           this.alive[i] = 0;
           this.freeEnemies.push(i);
           this.breaches++;
-          const dealt = this.opts.enemyDefs[this.enemyDefIdx[i]].damage;
+          const dealt = this.opts.enemyDefs[this.enemyDefIdx[i]].damage * (this.bossFlag[i] ? BOSS_DAMAGE_MUL : 1);
           this.emit({ kind: 'breach', x: this.posX[i], y: this.posY[i], dmg: dealt });
           this.coreDamage += dealt;
           this.coreHp -= dealt;

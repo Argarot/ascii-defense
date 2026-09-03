@@ -4,7 +4,7 @@ import { TILE_SIZE } from '../tiles/tile';
 import { TileLibrary, resolveCells } from '../tiles/board';
 import { generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { EVENT_CAP, Sim, TICK_HZ, type SimOptions } from './sim';
+import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions } from './sim';
 import type { EnemyDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
@@ -280,6 +280,7 @@ describe('towers and projectiles', () => {
     const sim = new Sim(43, {
       ...simOpts,
       mode: 'waves',
+      firstWaveWaits: false,
       maxSpawns: 0,
       coreHp: 6,
       interWaveTicks: 40,
@@ -499,7 +500,7 @@ describe('finite ore + the run ends (session 13)', () => {
   });
 
   it('holding the final wave WINS; a won run stays won', () => {
-    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 100000, finalWave: 2 });
+    const { simOpts } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 100000, finalWave: 2 });
     const sim = new Sim(61, simOpts);
     let guard = 0;
     while (sim.status === 'running' && guard++ < 100000) {
@@ -513,25 +514,36 @@ describe('finite ore + the run ends (session 13)', () => {
     expect(sim.hashState()).toBe(h); // frozen in victory
   });
 
-  it('every 5th wave carries an elite surge of the heaviest available enemy', () => {
+  it('every 5th wave and the final wave carry ONE boss behind the escort (D17)', () => {
     const heavy: EnemyDef = { id: 'tank', hp: 500, speed: 0.03, damage: 9, minWave: 1 };
-    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 100000, enemyDefs: [WALKER, heavy] });
+    const { simOpts } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 100000, enemyDefs: [WALKER, heavy], finalWave: 7, interWaveTicks: 200 });
     const sim = new Sim(61, simOpts);
+    const bossesSeenOnWave = new Map<number, number>();
     let guard = 0;
-    let wave5Spawned = 0;
-    let sawTankInWave5 = false;
-    while (sim.wave <= 5 && guard++ < 200000) {
+    while (sim.status === 'running' && guard++ < 200000) {
       sim.tick();
       if (sim.offer) sim.pickRelic(0);
-      if (sim.wave === 5) {
-        for (let i = 0; i < 128; i++) {
-          if (sim.alive[i] && sim.enemyDefOf(i).id === 'tank') sawTankInWave5 = true;
-        }
-        wave5Spawned = sim.spawned;
+      for (let i = 0; i < 256; i++) {
+        if (sim.alive[i] && sim.bossFlag[i]) bossesSeenOnWave.set(sim.wave, 1);
       }
     }
-    expect(wave5Spawned).toBeGreaterThan(0);
-    expect(sawTankInWave5).toBe(true);
+    // Boss waves are 5 (every fifth) and 7 (the final) - and nothing else.
+    expect(Sim.isBossWave(5, 7)).toBe(true);
+    expect(Sim.isBossWave(7, 7)).toBe(true);
+    expect(Sim.isBossWave(6, 7)).toBe(false);
+    expect(Sim.isBossWave(10, 0)).toBe(true);
+    expect(sim.status).toBe('won');
+    expect(bossesSeenOnWave.has(5)).toBe(true);
+    expect(bossesSeenOnWave.has(7)).toBe(true);
+    // A boss is the heaviest unlocked def, scaled up, and the preview said so.
+    const preview5 = (() => {
+      const fresh = new Sim(61, simOpts);
+      let g = 0;
+      while (fresh.wave < 4 && g++ < 100000) { fresh.tick(); if (fresh.offer) fresh.pickRelic(0); }
+      return fresh.nextWavePreview();
+    })();
+    expect(preview5?.wave).toBe(5);
+    expect(preview5?.boss).toBe(true);
   });
 });
 
@@ -715,5 +727,118 @@ describe('mutator guards (hygiene round, 2026-09-03)', () => {
   it('trickle mode keeps ignoring minWave (tests and the lab rely on it)', () => {
     const { simOpts } = makeWorld(11, { enemyDefs: [{ ...WALKER, minWave: 2 }] });
     expect(() => new Sim(11, simOpts)).not.toThrow();
+  });
+});
+
+describe('wave tempo and traits (design round 1, 2026-09-03)', () => {
+  it('the wave clock runs launch-to-launch: wave 2 comes while wave 1 still walks', () => {
+    const { simOpts } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 100000, interWaveTicks: 100 });
+    const sim = new Sim(61, simOpts);
+    for (let t = 0; t < 60; t++) sim.tick();
+    expect(sim.wave).toBe(1);
+    for (let t = 0; t < 100; t++) sim.tick();
+    expect(sim.wave).toBe(2);
+    expect(sim.aliveCount()).toBeGreaterThan(0); // nobody waited for them to die
+  });
+
+  it('wave 1 waits for the call; calling pays nothing; later calls bank the clock', () => {
+    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 100000, interWaveTicks: 400, startingScrap: 0 });
+    const sim = new Sim(61, simOpts);
+    for (let t = 0; t < 500; t++) sim.tick();
+    expect(sim.wave).toBe(0);
+    expect(sim.spawned).toBe(0);
+    expect(sim.waitingForCall()).toBe(true);
+    expect(sim.canCallWave()).toBe(true);
+    expect(sim.callBonus()).toBe(0);
+    expect(sim.callWave()).toBe(true);
+    expect(sim.wave).toBe(1);
+    expect(sim.scrap).toBe(0);
+    expect(sim.inputs.at(-1)?.a.t).toBe('callWave');
+    // Still spawning: no stacking five waves in a second.
+    expect(sim.canCallWave()).toBe(false);
+    expect(sim.callWave()).toBe(false);
+    let guard = 0;
+    while (sim.spawnRemaining() > 0 && guard++ < 1000) sim.tick();
+    expect(sim.canCallWave()).toBe(true);
+    const bonus = sim.callBonus();
+    expect(bonus).toBe(Math.ceil(sim.ticksToNextWave() / TICK_HZ));
+    expect(bonus).toBeGreaterThan(0);
+    expect(sim.callWave()).toBe(true);
+    expect(sim.scrap).toBe(bonus);
+    expect(sim.wave).toBe(2);
+  });
+
+  it('the next wave is known one wave ahead, and the final wave has no successor', () => {
+    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 100000, finalWave: 2 });
+    const sim = new Sim(61, simOpts);
+    const p1 = sim.nextWavePreview();
+    expect(p1?.wave).toBe(1);
+    const total = p1!.kinds.reduce((a, k) => a + k.count, 0);
+    sim.callWave();
+    let guard = 0;
+    while (sim.spawnRemaining() > 0 && guard++ < 1000) sim.tick();
+    expect(sim.spawned).toBe(total); // the preview was the truth
+    expect(sim.nextWavePreview()?.wave).toBe(2);
+    expect(sim.nextWavePreview()?.boss).toBe(true); // final wave = boss wave (D17)
+    sim.callWave();
+    expect(sim.nextWavePreview()).toBeNull();
+    expect(sim.canCallWave()).toBe(false);
+  });
+
+  it('a long road offsets: hp scales by sqrt(mean lane / floor), never below 1', () => {
+    const { simOpts, map, cellsW } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 100000 });
+    const sim = new Sim(61, simOpts);
+    let sum = 0;
+    for (const e of map.entries) sum += sim.flow.dist[e.y * cellsW + e.x];
+    const mean = sum / map.entries.length;
+    const expectedMul = Math.max(1, Math.sqrt(mean / map.pathFloorCells));
+    let guard = 0;
+    while (sim.spawned === 0 && guard++ < 1000) sim.tick();
+    const i = (() => { for (let k = 0; k < 64; k++) if (sim.alive[k]) return k; throw new Error('nobody spawned'); })();
+    const base = sim.enemyDefOf(i).hp * waveHpScale(DEFAULT_DIFFICULTY, 1);
+    expect(sim.spawnHp[i] / base).toBeCloseTo(expectedMul, 3);
+    expect(expectedMul).toBeGreaterThanOrEqual(1);
+  });
+
+  it('traits are rules: armoured ignores slows, fast halves them, shielded regrows', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const FROSTY: TowerDef = { id: 'bolt', cost: 20, range: 6, fireEveryTicks: 6, projectile: { damage: 1, speed: 0.6, homing: true, applyEffect: 'slow', slowMul: 0.5, slowTicks: 40 } };
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const maxSlow = (def: EnemyDef): number => {
+      const sim = new Sim(47, { ...simOpts, enemyDefs: [def], towerDefs: [FROSTY] });
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      let m = 0;
+      for (let t = 0; t < 600; t++) { sim.tick(); m = Math.max(m, sim.slowTicks[0]); }
+      return m;
+    };
+    // The walk phase spends one slow tick in the same tick the hit lands,
+    // so the highest OBSERVED value is one under the applied duration.
+    const tanky = { ...WALKER, hp: 100000 };
+    expect(maxSlow(tanky)).toBe(39);
+    expect(maxSlow({ ...tanky, traits: ['fast'] })).toBe(19);
+    expect(maxSlow({ ...tanky, traits: ['armoured'] })).toBe(0);
+
+    // Shielded: shot once, then left alone - the shield comes back.
+    const shieldy: EnemyDef = { ...WALKER, hp: 100000, shield: 30, traits: ['shielded'] };
+    const sim = new Sim(47, { ...simOpts, enemyDefs: [shieldy], towerDefs: [{ ...BOLT, fireEveryTicks: 1000 }] });
+    sim.buildTower(spot.x, spot.y, 'bolt');
+    let guard = 0;
+    while (guard++ < 2000 && !(sim.alive[0] && sim.shield[0] < 30)) sim.tick();
+    expect(sim.shield[0]).toBeLessThan(30);
+    sim.sellTower(spot.x, spot.y);
+    for (let t = 0; t < 200; t++) sim.tick();
+    expect(sim.shield[0]).toBe(30);
+  });
+
+  it('swarm spawns packs of three per queue entry, and the preview counts bodies', () => {
+    const swarm: EnemyDef = { ...WALKER, id: 'swarm', hp: 1, traits: ['swarm'] };
+    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 100000, enemyDefs: [swarm] });
+    const sim = new Sim(61, simOpts);
+    const preview = sim.nextWavePreview()!;
+    expect(preview.kinds[0].count).toBe(waveCount(DEFAULT_DIFFICULTY, 1) * 3);
+    sim.callWave();
+    let guard = 0;
+    while (sim.spawnRemaining() > 0 && guard++ < 1000) sim.tick();
+    expect(sim.spawned).toBe(preview.kinds[0].count);
   });
 });

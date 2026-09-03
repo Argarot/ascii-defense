@@ -556,6 +556,7 @@ async function main(): Promise<void> {
     if (action.kind === 'coreDraw') act({ k: 'buyRelic' });
     if (action.kind === 'claimCache' && selected) act({ k: 'claimCache', x: selected.x, y: selected.y });
     if (action.kind === 'prospect' && selected) act({ k: 'prospect', x: selected.x, y: selected.y });
+    if (action.kind === 'callWave') act({ k: 'callWave' });
   });
 
   modalTerm.canvas.addEventListener('click', (e) => {
@@ -615,6 +616,7 @@ async function main(): Promise<void> {
       send({ t: 'speed', idx: mirroredSpeed });
     }
     if (e.key === 'g' || e.key === 'G') showGrid = !showGrid;
+    if (e.key === 'n' || e.key === 'N') act({ k: 'callWave' }); // the sim refuses when it may not
     if ((e.key === 'x' || e.key === 'X' || e.key === 'Delete') && selected) act({ k: 'sell', x: selected.x, y: selected.y });
     if (selected) {
       const prio = { f: 'first', l: 'last', c: 'closest', w: 'weakest' } as const;

@@ -71,6 +71,7 @@ function makeGoldenSim(): { sim: Sim; enemyDefs: EnemyDef[]; towerDefs: TowerDef
     enemyDefs,
     towerDefs,
     mode: 'waves',
+    firstWaveWaits: false,
     startingScrap: 200,
     coreHp: 200,
   };
@@ -171,7 +172,14 @@ describe('replay (WBS 1.4.8)', () => {
     // enclosed-void repair pass deleted (D11), ore floor deleted (D12,
     // two fewer shuffle spends), caches uniform over all ground (D16).
     // Same rebuild arc, same reasons; round-trip replay bit-identical.
-    expect(sim.hashState()).toBe(1729252059);
+    // 1729252059 -> 3616661931 on 2026-09-03 (design round 1, PR 1): the
+    // wave clock runs launch-to-launch (40 s default) instead of waiting
+    // for the last enemy, the next wave is composed one wave ahead (the
+    // waves stream is spent earlier), boss waves replace the elite surge,
+    // enemy hp carries the path-length offset, and three new lanes are
+    // hashed (boss flag, last-hit tick, the next queue). An intended
+    // tempo change; round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(3616661931);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

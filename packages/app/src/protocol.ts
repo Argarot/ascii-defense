@@ -18,10 +18,11 @@ import type { HudState, RenderState } from '@ascii-defense/view';
 export const BOARD_SLOTS = { w: 12, h: 7 } as const;
 
 /** Threat levels as data (session 15); shared so both threads agree. */
+/** `waveSeconds`: the wave clock, launch to launch (design round 1, item 10). */
 export const THREAT_LEVELS = [
-  { name: 'Calm', entries: [2, 3] as const, pathBias: 12, finalWave: 15, hpGeometric: 1.05 },
-  { name: 'Standard', entries: [2, 5] as const, pathBias: 8, finalWave: 20, hpGeometric: 1.06 },
-  { name: 'Grim', entries: [3, 6] as const, pathBias: 5, finalWave: 25, hpGeometric: 1.08 },
+  { name: 'Calm', entries: [2, 3] as const, pathBias: 12, finalWave: 15, hpGeometric: 1.05, waveSeconds: 55 },
+  { name: 'Standard', entries: [2, 5] as const, pathBias: 8, finalWave: 20, hpGeometric: 1.06, waveSeconds: 40 },
+  { name: 'Grim', entries: [3, 6] as const, pathBias: 5, finalWave: 25, hpGeometric: 1.08, waveSeconds: 30 },
 ] as const;
 
 /** What the run IS, for saving: determinism makes this the whole state.
@@ -91,7 +92,8 @@ export type WorkerAction =
   | { k: 'slot'; index: number }
   | { k: 'fireActive'; relicId: string; x: number; y: number }
   | { k: 'claimCache'; x: number; y: number }
-  | { k: 'prospect'; x: number; y: number };
+  | { k: 'prospect'; x: number; y: number }
+  | { k: 'callWave' };
 
 export type FromWorker =
   | { t: 'ready'; seed: number; map: GeneratedMap; finalWave: number }

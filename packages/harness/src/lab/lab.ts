@@ -147,6 +147,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     towerDefs: content.towerDefs,
     relicDefs: content.relicDefs,
     mode: 'waves',
+    firstWaveWaits: false,
     coreHp: spec.coreHp ?? 50,
     startingScrap: 1_000_000, // the lab measures combat capability, not economy
     difficulty: spec.difficulty ?? DEFAULT_DIFFICULTY,

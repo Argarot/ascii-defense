@@ -31,7 +31,9 @@ export type ReplayAction =
   // relicId added 2026-08-16 while still reserved (multiple held actives need
   // disambiguation); no recorded replay ever carried the old shape.
   | { t: 'fireActive'; relicId: string; x?: number; y?: number }
-  | { t: 'useConsumable'; relicId: string };
+  | { t: 'useConsumable'; relicId: string }
+  // Design round 1 (2026-09-03): the player CALLS the next wave early.
+  | { t: 'callWave' };
 
 /** One recorded input: applied after `tick` ticks have completed. */
 export interface ReplayInput {
