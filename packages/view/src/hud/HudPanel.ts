@@ -30,6 +30,10 @@ export interface HudStats {
   range: number;
   /** The dead zone in cells; 0 = none. Lower is better. */
   minRange: number;
+  /** Projectiles per volley (1 = a single shot). */
+  shots: number;
+  /** Enemies a shot passes into after its target. */
+  pierce: number;
   slow: number;
   /** Blast radius in cells; 0 for non-explosive shots (WBS 2.19). */
   blast: number;
@@ -444,6 +448,12 @@ export class HudPanel {
         if (t.stats.blast > 0 || (t.preview && t.preview.blast > 0)) {
           stat('blast', t.stats.blast, t.preview ? t.preview.blast : null);
         }
+        if (t.stats.shots > 1 || (t.preview && t.preview.shots > 1)) {
+          stat('shots', t.stats.shots, t.preview ? t.preview.shots : null);
+        }
+        if (t.stats.pierce > 0 || (t.preview && t.preview.pierce > 0)) {
+          stat('pierce', t.stats.pierce, t.preview ? t.preview.pierce : null);
+        }
         if (t.stats.slow > 0 || (t.preview && t.preview.slow > 0)) {
           stat('slow ', `${t.stats.slow}t`, t.preview ? `${t.preview.slow}t` : null);
         }
@@ -501,7 +511,9 @@ export class HudPanel {
       // this says what they mean.
       if (t.choiceDesc) {
         y++;
-        for (const line of this.wrap(t.choiceDesc, W, 3)) term.write(0, y++, line, role('ui.text'));
+        // Five lines: the rework's sentences say what a fork DOES and what it
+        // answers, and a cut-off sentence is a lie by omission.
+        for (const line of this.wrap(t.choiceDesc, W, 5)) term.write(0, y++, line, role('ui.text'));
       }
       term.write(0, y + 1, 'X sells (70% back)', role('ui.dim'));
     } else {

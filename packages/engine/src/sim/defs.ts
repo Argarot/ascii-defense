@@ -214,6 +214,23 @@ export interface StatMods {
   slowTicks?: number;
   production?: number;
   productionEveryTicks?: number;
+  // ---- tower rework (design round 1, item 8) ----
+  /** Multiplies damage after every additive mod. */
+  damageMul?: number;
+  /** Additive delta to the applied speed multiplier (negative = colder). */
+  slowMul?: number;
+  /** Additional projectiles per volley. */
+  shots?: number;
+  /** Cells of aim scatter for extra shots. */
+  spread?: number;
+  /** Additional enemies a shot passes into after its target. */
+  pierceCount?: number;
+  /** Additive bonus to damage dealt to shields (base 1). */
+  shieldMul?: number;
+  /** Additive bonus vs already-slowed enemies, this tower only (base 1). */
+  slowedBonusMul?: number;
+  /** Pulse towers: every Nth pulse freezes instead of slowing. */
+  freezeEvery?: number;
 }
 
 export interface ChoiceDef {
@@ -225,7 +242,7 @@ export interface ChoiceDef {
   /** Capability grants (PRD sec 5.3): surveySpeed towers each speed EVERY
    *  prospect job (global, stacking); surveyAuto towers start free jobs on
    *  rock near themselves. Parallel choices, not one boolean. */
-  unlocks?: 'surveySpeed' | 'surveyAuto';
+  unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
 }
 
 /** One tier: an either/or, mutually exclusive choice (Tower Dominion style). */
@@ -264,6 +281,23 @@ export interface EffectiveStats {
   production: number;
   /** Production cycle length in ticks; 0 for non-producers. */
   productionEveryTicks: number;
+  // ---- tower rework (design round 1, item 8) ----
+  /** Speed multiplier a hit applies while slowed; 1 = no slow. */
+  slowMul: number;
+  /** Projectiles per volley (1 + extra). */
+  shots: number;
+  /** Aim scatter in cells for extra shots. */
+  spread: number;
+  /** Enemies a shot passes into after its target. */
+  pierceCount: number;
+  /** Damage multiplier against shields. */
+  shieldMul: number;
+  /** Damage multiplier against already-slowed enemies (this tower). */
+  slowedBonusMul: number;
+  /** Every Nth pulse freezes (0 = never). */
+  freezeEvery: number;
+  /** Hits ignore armour (Railbore). */
+  ignoreArmor: boolean;
 }
 
 /**
@@ -288,12 +322,31 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     slowTicks: def.projectile?.slowTicks ?? 0,
     production: (def.production?.ore ?? 0) + (def.production?.scrap ?? 0),
     productionEveryTicks: def.production?.everyTicks ?? 0,
+    slowMul: def.projectile?.applyEffect === 'slow' ? (def.projectile.slowMul ?? 0.6) : 1,
+    shots: 1,
+    spread: 0,
+    pierceCount: def.projectile?.pierceCount ?? 0,
+    shieldMul: 1,
+    slowedBonusMul: 1,
+    freezeEvery: 0,
+    ignoreArmor: false,
   };
+  let damageMul = 1;
   def.tiers?.forEach((tierDef, ti) => {
     const pick = choices[ti];
     if (pick === undefined || pick < 0) return;
-    const m = tierDef.choices[pick]?.mods;
+    const choice = tierDef.choices[pick];
+    if (choice?.unlocks === 'ignoreArmor') out.ignoreArmor = true;
+    const m = choice?.mods;
     if (!m) return;
+    damageMul *= m.damageMul ?? 1;
+    out.slowMul += m.slowMul ?? 0;
+    out.shots += m.shots ?? 0;
+    out.spread += m.spread ?? 0;
+    out.pierceCount += m.pierceCount ?? 0;
+    out.shieldMul += m.shieldMul ?? 0;
+    out.slowedBonusMul += m.slowedBonusMul ?? 0;
+    out.freezeEvery += m.freezeEvery ?? 0;
     out.damage += m.damage ?? 0;
     out.range += m.range ?? 0;
     out.minRange += m.minRange ?? 0;
@@ -303,6 +356,9 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     out.production += m.production ?? 0;
     out.productionEveryTicks += m.productionEveryTicks ?? 0;
   });
+  out.damage *= damageMul;
+  out.slowMul = Math.max(0, Math.min(1, out.slowMul));
+  out.shots = Math.max(1, out.shots);
   out.fireEveryTicks = Math.max(2, out.fireEveryTicks);
   // A dead zone can shrink to nothing but never swallow the whole range.
   out.minRange = Math.max(0, Math.min(out.minRange, Math.max(0, out.range - 0.5)));

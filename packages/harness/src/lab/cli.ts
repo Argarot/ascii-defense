@@ -35,7 +35,7 @@ const content: LabContent = {
 
 const SEED = 945046; // Daniil's map, both screenshots
 
-const maxedBolt = { towerId: 'bolt', choices: [0, 1, 1] as [number, number, number], at: 'auto' as const };
+const maxedBolt = { towerId: 'bolt', choices: [0, 0, 0] as [number, number, number], at: 'auto' as const };
 const BUILDS: Record<string, Pick<LabSpec, 'towers' | 'relicIds'>> = {
   naked: { towers: Array.from({ length: 4 }, () => ({ towerId: 'bolt', choices: [-1, -1, -1] as [number, number, number], at: 'auto' as const })), relicIds: [] },
   mid: { towers: Array.from({ length: 5 }, () => ({ ...maxedBolt })), relicIds: [] },
