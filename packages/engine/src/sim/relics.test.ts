@@ -99,13 +99,16 @@ function grant(sim: Sim, id: string): void {
 
 describe('offers (1.6.2 engine half)', () => {
   it(`every ${OFFER_EVERY_WAVES} completed waves: pick 1 of 3, no duplicates, on the relics stream`, () => {
-    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 10000, startingScrap: 0 });
+    const { simOpts } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 10000, startingScrap: 0 });
     const sim = new Sim(61, simOpts);
     // Run until the offer for wave 3 appears; undefended waves just breach.
     let guard = 0;
     while (sim.offer === null && guard++ < 60000) sim.tick();
     expect(sim.offer).not.toBeNull();
-    expect(sim.wave).toBe(OFFER_EVERY_WAVES);
+    // The offer is owed by wave 3 and dealt when the board goes quiet or, at
+    // the latest, when wave 4 launches (the clock no longer waits for the
+    // last enemy - design round 1, item 10); undefended, it is the latter.
+    expect([OFFER_EVERY_WAVES, OFFER_EVERY_WAVES + 1]).toContain(sim.wave);
     expect(sim.offer!.length).toBe(3);
     expect(new Set(sim.offer!).size).toBe(3);
     const offered = sim.offerDefs()!.map((d) => d.id);
@@ -125,7 +128,7 @@ describe('offers (1.6.2 engine half)', () => {
   });
 
   it('held relics never reappear in later offers', () => {
-    const { simOpts } = makeWorld(67, { mode: 'waves', coreHp: 100000 });
+    const { simOpts } = makeWorld(67, { mode: 'waves', firstWaveWaits: false, coreHp: 100000 });
     const sim = new Sim(67, simOpts);
     const seen: string[] = [];
     let guard = 0;
@@ -158,7 +161,7 @@ describe('the Ore sinks - draw and reroll (1.6.5)', () => {
   });
 
   it('rerollOffer: needs a standing offer and Ore, deals a fresh three', () => {
-    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 10000, startingOre: 10 });
+    const { simOpts } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 10000, startingOre: 10 });
     const sim = new Sim(61, simOpts);
     expect(sim.rerollOffer()).toBe(false); // no offer up
     let guard = 0;
@@ -338,7 +341,7 @@ describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
   });
 
   it('a relic run replays bit-identically, relic actions included', () => {
-    const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 10000 });
+    const { simOpts } = makeWorld(61, { mode: 'waves', firstWaveWaits: false, coreHp: 10000 });
     const sim = new Sim(61, simOpts);
     let guard = 0;
     while (sim.offer === null && guard++ < 60000) sim.tick();

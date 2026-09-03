@@ -66,6 +66,13 @@ export interface HudState {
   coreHpMax: number;
   wave: number;
   nextFronts: number;
+  /**
+   * The next wave, composed one wave ahead (design round 1, item 11), and
+   * the CALL button's state (item 9): `waiting` = wave 1 not yet called,
+   * `canCall` = the current wave has finished spawning, `callBonus` = Scrap
+   * for calling now. null once the final wave is out.
+   */
+  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number }[]; canCall: boolean; callBonus: number; waiting: boolean } | null;
   gameOver: boolean;
   L: number;
   seed: number;
@@ -92,7 +99,8 @@ export type HudAction =
   | { kind: 'relic'; index: number }
   | { kind: 'coreDraw' }
   | { kind: 'claimCache' }
-  | { kind: 'prospect' };
+  | { kind: 'prospect' }
+  | { kind: 'callWave' };
 
 /** One inventory slot on the Core card. Empty slots render too (Daniil). */
 export interface HudRelicSlot {
@@ -242,15 +250,32 @@ export class HudPanel {
       const rl = `RELICS ${s.relicCount}`;
       term.write(W - rl.length, 7, rl, role('ui.accent'));
     }
-    term.write(0, 8, `next: ${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'} \u2802 kills ${s.kills}`, role('ui.dim'));
-    term.write(0, 9, `road L=${s.L}`, role('ui.dim'));
+    term.write(0, 8, `kills ${s.kills} \u2802 road L=${s.L}`, role('ui.dim'));
+    // ---- the next wave, and the CALL button -------------------------------
+    // What is coming is shown before it comes (item 11): counts by kind,
+    // the fronts, and BOSS when one rides behind the escort. The button
+    // is the player's clock (item 9): calling early banks the remaining
+    // seconds as Scrap; wave 1 waits for the call and pays nothing.
+    let y = 9;
+    const nw = s.nextWave;
+    if (nw) {
+      const kinds = nw.kinds.map((k) => `${k.count} ${k.name}`).join(', ');
+      const fronts = `${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'}`;
+      const head = `wave ${nw.wave} \u2802 ${fronts}${nw.boss ? ' \u2802 BOSS' : ''}`;
+      term.write(0, y++, head, nw.boss ? role('enemy.fast') : role('ui.text'));
+      for (const line of this.wrap(kinds, W, 2)) term.write(0, y++, line, role('ui.dim'));
+      const label = nw.waiting ? `CALL WAVE 1` : nw.canCall ? `CALL WAVE ${nw.wave} +${nw.callBonus} scrap` : 'wave still arriving';
+      this.button(0, y, W - 4, label, nw.canCall ? role('ui.bg') : role('ui.dim'), nw.canCall ? role('ui.accent') : role('ui.grid'));
+      if (nw.canCall) this.regions.push({ row: y, x0: 0, x1: W - 4, action: { kind: 'callWave' } });
+      y++;
+    }
 
     // ---- build palette (vertical, hover previews radius on the board) ------
     // Shown ONLY when an empty buildable tile is selected (Daniil): the
     // palette is the answer to "what can go HERE", not a permanent fixture.
     // The app filters it to what is legal on that tile - a vein offers the
     // Refinery, ground offers fighters. Rows are buttons.
-    let y = 11;
+    y += 1;
     if (s.palette.length > 0) {
       term.write(0, y++, 'BUILD', role('ui.dim'));
       s.palette.forEach((p, i) => {

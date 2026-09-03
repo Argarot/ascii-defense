@@ -145,6 +145,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         coreHp: 50,
         relicDefs,
         finalWave: THREAT.finalWave,
+        interWaveTicks: THREAT.waveSeconds * TICK_HZ,
         difficulty: { hpLinear: 0.18, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
       });
       if (resume) {
@@ -346,6 +347,18 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         wave: s.wave,
         nextFronts: s.nextWaveEntries.length,
         nextWaveIn: Math.ceil(s.ticksToNextWave() / TICK_HZ),
+        nextWave: (() => {
+          const p = s.nextWavePreview();
+          if (!p) return null;
+          return {
+            wave: p.wave,
+            boss: p.boss,
+            kinds: p.kinds.map((k) => ({ name: enemyDefs.find((d) => d.id === k.id)?.name ?? k.id, count: k.count })),
+            canCall: s.canCallWave(),
+            callBonus: s.callBonus(),
+            waiting: s.waitingForCall(),
+          };
+        })(),
         gameOver: s.status === 'lost',
         victory: s.status === 'won',
         finalWave: THREAT.finalWave,
@@ -432,6 +445,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       case 'buyRelic': s.buyRelic(); break;
       case 'claimCache': s.claimCache(a.x, a.y); break;
       case 'prospect': s.prospect(a.x, a.y); break;
+      case 'callWave': s.callWave(); break;
       case 'fireActive': s.fireActive(a.relicId, a.x, a.y); break;
       case 'slot': {
         // Targeted actives never arrive here - the main thread arms aim

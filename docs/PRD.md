@@ -705,6 +705,33 @@ consequences, both accepted deliberately:
   runs" criterion (§17) is therefore measured with the relic layer held fixed —
   otherwise the harness will spend its life reporting the game working.
 
+### 9.2 Wave tempo *(Daniil, design round 1, 2026-09-03 — D17)*
+
+The wave clock runs **from one launch to the next** and never waits for the
+last enemy to die. Killing fast buys a quiet board before the next front;
+dawdling means two waves on the road at once. The player may **call the next
+wave early** once the current one has finished spawning, and is paid the
+remaining seconds in Scrap — calling is a bet, not a chore. **Wave 1 waits
+for the call**: a fresh map deserves a look before the first front opens.
+
+**The next wave is known before it comes.** It is composed one wave ahead
+and shown by kind and count, so "which tower answers this" is a decision
+made with the information it needs.
+
+**Boss waves** come every fifth wave **and on the final wave, by rule**: one
+boss — the heaviest enemy unlocked, scaled up in health, bounty and Core
+damage — behind a normal escort. *(The former elite surge happened to land
+on the victory wave because 20 is a multiple of 5; a rule now says so.)*
+
+**The road's length is paid for** (§9's `L`): enemy health scales by the
+square root of the mean lane length over the threat's floor. A long road is
+time under fire that the waves buy back, not a gift.
+
+**Traits are rules, not labels** (D19): armoured enemies ignore slows,
+shielded ones regrow their shield after a pause unhit, fast ones shake slows
+off in half the time, swarms arrive in packs of three. Each trait poses a
+different tower question.
+
 ## 10. The bot
 
 **One** policy, framed honestly as a **regression detector** — "did this change
