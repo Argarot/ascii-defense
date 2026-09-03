@@ -51,8 +51,9 @@ export type { VerifyIssue, VerifyMapOptions } from './mapgen/verify';
 
 export { computeFlowField } from './sim/flow';
 export type { FlowField } from './sim/flow';
-export { Sim, TICK_HZ, SELL_REFUND, OFFER_EVERY_WAVES, RELIC_DRAW_COST, OFFER_REROLL_COST, CACHE_CLAIM_COST, PROSPECT_COST, PROSPECT_TICKS, DEFAULT_DIFFICULTY, waveHpScale, waveCount } from './sim/sim';
-export type { DifficultySpec } from './sim/sim';
+export { Sim, TICK_HZ, SELL_REFUND, OFFER_EVERY_WAVES, RELIC_DRAW_COST, OFFER_REROLL_COST, PROSPECT_COST, PROSPECT_TICKS, DEFAULT_DIFFICULTY, waveHpScale, waveCount } from './sim/sim';
+export type { DifficultySpec, CacheSpot } from './sim/sim';
+export type { LootTable, LootOutcome, LootKind } from './sim/defs';
 export type { SimOptions, Tower, SimEvent, StampedSimEvent } from './sim/sim';
 export { EVENT_CAP } from './sim/sim';
 export { REPLAY_VERSION, contentHashOf, fnv1a, playReplay } from './sim/replay';

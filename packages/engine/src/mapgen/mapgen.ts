@@ -73,8 +73,6 @@ export interface RockContent {
   x: number;
   y: number;
   yields: 'ore' | 'cache' | 'none';
-  /** Set when yields is 'cache'. */
-  poolIdx?: number;
   /** Set when yields is 'ore': the hidden vein's size. */
   depositAmount?: number;
 }
@@ -111,7 +109,12 @@ export interface GeneratedMap {
   entries: CellRef[];
   /** Center of the Core tile, in cell coordinates. */
   core: CellRef;
-  /** Empty when relicPoolSize is absent. */
+  /**
+   * ALWAYS EMPTY since design round 1 (2026-09-03): caches are no longer
+   * scattered at generation - they come out of prospected rock (rare,
+   * capped per map) and off bosses, and the sim owns them. The field stays
+   * so v3 saves still type-check; the sim seeds nothing from it.
+   */
   caches: CacheRef[];
   rockContents: RockContent[];
   /** Every ore cell's finite vein (PRD sec 6). */
@@ -153,12 +156,13 @@ export const GENERATOR_VERSION = 1;
  */
 export const VOID_SHARE_CAP = 0.22;
 /** Caches per map when the relic layer is on (channel A of PRD sec 7.3). */
-export const CACHE_COUNT = 2;
 /** Boon cells per map (PRD sec 4.7). */
 export const BOON_COUNT = 2;
 /** What a rock cell secretly holds: ore, a cache, or (mostly) nothing. */
 export const ROCK_ORE_CHANCE = 0.3;
-export const ROCK_CACHE_CHANCE = 0.12;
+export const ROCK_CACHE_CHANCE = 0.06;
+/** Caches a map's rock may hide, at most (Daniil: "maybe 2-3 per map"). */
+export const ROCK_CACHE_MAX = 3;
 /** Vein size range; dealt per ore cell. Rich veins are visibly rich. */
 export const DEPOSIT_MIN = 30;
 export const DEPOSIT_MAX = 90;
@@ -459,6 +463,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       }
 
     const anyGround: CellRef[] = [];
+    const rockCells: CellRef[] = [];
     for (let cy = 0; cy < height * TILE_SIZE; cy++)
       for (let cx = 0; cx < cellsW; cx++) {
         const t = cellsNow[cy * cellsW + cx];
@@ -472,25 +477,30 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
               : { x: cx, y: cy, amount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX), tier: 1 },
           );
         } else if (t === 'R' && poolSize > 0) {
-          const roll = rng.int(0, 99);
-          const yields: RockContent['yields'] =
-            roll < ROCK_ORE_CHANCE * 100 ? 'ore' : roll < (ROCK_ORE_CHANCE + ROCK_CACHE_CHANCE) * 100 ? 'cache' : 'none';
-          rockContents.push(
-            yields === 'cache'
-              ? { x: cx, y: cy, yields, poolIdx: rng.int(0, poolSize - 1) }
-              : yields === 'ore'
-                ? { x: cx, y: cy, yields, depositAmount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX) }
-                : { x: cx, y: cy, yields },
-          );
+          rockCells.push({ x: cx, y: cy });
         } else if (t === 'G' && poolSize > 0) {
           // Caches land on ANY ground cell, uniformly - no distance
           // shaping (Daniil, 2026-08-19; spec tier 3).
           anyGround.push({ x: cx, y: cy });
         }
       }
-    const shuffled = rng.shuffle(anyGround);
-    for (const spot of shuffled.slice(0, CACHE_COUNT)) {
-      caches.push({ x: spot.x, y: spot.y, poolIdx: rng.int(0, poolSize - 1) });
+    void anyGround; // caches are no longer scattered on ground (design round 1)
+    // Rock contents: dealt in a shuffled order so the cache cap falls on
+    // random rocks, not the first rocks in scan order. Ore is common, a
+    // cache rare and capped (ROCK_CACHE_MAX), bare rock the rest.
+    let cachesDealt = 0;
+    for (const r of rng.shuffle(rockCells)) {
+      const roll = rng.int(0, 99);
+      const yields: RockContent['yields'] =
+        roll < ROCK_ORE_CHANCE * 100 ? 'ore'
+          : roll < (ROCK_ORE_CHANCE + ROCK_CACHE_CHANCE) * 100 && cachesDealt < ROCK_CACHE_MAX ? 'cache'
+            : 'none';
+      if (yields === 'cache') cachesDealt++;
+      rockContents.push(
+        yields === 'ore'
+          ? { x: r.x, y: r.y, yields, depositAmount: rng.int(DEPOSIT_MIN, DEPOSIT_MAX) }
+          : { x: r.x, y: r.y, yields },
+      );
     }
     // Boons live NEAR the road (playtest 5, item 10) - a buff nobody can
     // reach with a useful tower is decoration. Tier: 1 common .. 4 rare.

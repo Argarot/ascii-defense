@@ -23,7 +23,8 @@ export type ReplayAction =
   | { t: 'priority'; x: number; y: number; priority: Priority }
   | { t: 'sell'; x: number; y: number }
   // ---- reserved for Phase 6 (WBS 1.6) - see module doc ----
-  | { t: 'claimCache'; x: number; y: number }
+  // Design round 1: caches are OPENED (free), never claimed for Scrap.
+  | { t: 'openCache'; x: number; y: number }
   | { t: 'prospect'; x: number; y: number }
   | { t: 'pickRelic'; option: number }
   | { t: 'buyRelic' }

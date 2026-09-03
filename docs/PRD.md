@@ -283,19 +283,20 @@ it, and §14 for the full rejection.)*
 
 ### 4.6 Caches and prospecting — the map as a source of power
 
-Two ways the board itself hands you relics, both resolved at **generation
-time** so nothing rolls dice mid-run.
+*(Caches reworked in design round 1, 2026-09-03 — D21. The first design
+scattered relic-holding caches at generation and charged Scrap to claim them;
+in play every cache was an auto-claim with pure upside, a decision about
+nothing.)*
 
-**Caches** are an overlay: a list of cells the generator marks, each already
-holding a specific relic. Generation places them away from the road, so the
-cell they occupy is usually a cell you would have wanted for a tower — the same
-greed-versus-safety trade as ore.
-
-A cache is **claimed by selecting it and paying**, not by building on it. (The
-obvious alternative — build a tower on it to claim it — is not a cost at all:
-you sell the tower back immediately afterwards. Daniil, 2026-08-16.) Selecting
-a cache replaces the build palette in the HUD with a claim card: one price, one
-button.
+**Caches are sealed containers the run produces, not the generator.** Two
+sources: **prospected rock** hides one rarely (at most a few per map, dealt at
+generation so replays stay exact), and **every boss drops one where it dies**.
+A cache is **opened for free** — select it, click OPEN — and what it holds
+comes from a **loot table** (§7.7): Scrap, Ore, a consumable relic, rarely a
+full relic, or the cache's own cell turning into **boon ground**, which makes
+a cache a place worth defending rather than a coupon. A sealed cache blocks
+building until it is opened. *(The former claim-for-Scrap rule and the
+"greed versus safety" placement are gone: they never produced a decision.)*
 
 **Prospecting** applies the same idea to rock. Every rock cell is dealt hidden
 contents at generation — ore, a cache, or nothing — and prospecting *reveals*
@@ -627,6 +628,11 @@ A **loot table** is content: a named, weighted list of outcomes (Scrap, Ore of a
 tier, a relic drawn at a rarity, a special tile, nothing), rolled on a named RNG
 stream at claim time so it rides the input log like every other decision. Sources
 reference a table by id; they do not contain their own payout logic.
+
+*Shipped 2026-09-03 (design round 1)*: `content/assets/loot/tables.json`
+holds `rock_cache` and `boss_drop`; the outcome kinds are Scrap, Ore, boon
+ground, a consumable, a relic, nothing. Caches (§4.6) are the first consumer;
+void chests (§4.9) will be the second.
 
 This is deliberately built *with* the relic economy rather than before it:
 rarity weighting (§7.6) and a weighted outcome list are the same machinery, and

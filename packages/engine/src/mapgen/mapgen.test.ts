@@ -2,7 +2,7 @@
 import { createRng } from '../rng/rng';
 import { TILE_SIZE, deriveConnectors, validateTileCells } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt, type Board } from '../tiles/board';
-import { FILL_RADIUS, ORE_REACH, VOID_SHARE_CAP, generateMap } from './mapgen';
+import { FILL_RADIUS, ORE_REACH, ROCK_CACHE_MAX, VOID_SHARE_CAP, generateMap } from './mapgen';
 import { computeFlowField } from '../sim/flow';
 
 // The same tile shapes the shipped library provides, inline so engine tests
@@ -504,5 +504,17 @@ describe('the bridge in the flow field (4.9)', () => {
     expect(flow.nodeDist[node(2, 1, 0)]).toBe(6);
     // L is the underpass entry's walk: 7 cells down to the south Core.
     expect(flow.L).toBe(7);
+  });
+});
+
+describe('caches come from rock and bosses, never scattered (design round 1)', () => {
+  it('no map scatters caches; rock hides at most ROCK_CACHE_MAX, and rock contents carry no pool index', () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const map = generateMap(createRng(seed).stream('map'), LIB, { width: 10, height: 6, entries: 3, targetPathCells: 40, relicPoolSize: 5 });
+      expect(map.caches).toEqual([]);
+      const rockCaches = map.rockContents.filter((r) => r.yields === 'cache').length;
+      expect(rockCaches, `seed ${seed}`).toBeLessThanOrEqual(ROCK_CACHE_MAX);
+      for (const r of map.rockContents) expect('poolIdx' in r).toBe(false);
+    }
   });
 });

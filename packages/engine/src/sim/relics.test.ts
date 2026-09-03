@@ -9,6 +9,7 @@ import { TILE_SIZE } from '../tiles/tile';
 import { TileLibrary, resolveCells } from '../tiles/board';
 import { generateMap } from '../mapgen/mapgen';
 import { OFFER_EVERY_WAVES, Sim, type SimOptions } from './sim';
+import type { LootTable } from './defs';
 import type { EnemyDef, RelicDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
@@ -53,6 +54,12 @@ const POOL: RelicDef[] = [
   { id: 'orbital', name: 'Orbital', kind: 'active', desc: '', cooldownTicks: 100, effects: { orbitalDamage: 400, orbitalRadius: 3 } },
   { id: 'stasis', name: 'Stasis', kind: 'active', desc: '', cooldownTicks: 100, effects: { freezeTicks: 50 } },
   { id: 'deep_vein', name: 'Deep Vein', kind: 'active', desc: '', cooldownTicks: 100, effects: { productionMul: 5, boostTicks: 200 } },
+];
+
+/** Both shipped table ids, with tiny deterministic payouts for tests. */
+const TABLES: LootTable[] = [
+  { id: 'rock_cache', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },
+  { id: 'boss_drop', outcomes: [{ kind: 'ore', weight: 1, min: 5, max: 5 }] },
 ];
 
 function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
@@ -379,19 +386,20 @@ function nthGround(cells: readonly (string | null)[], W: number, H: number, nth:
 }
 
 describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)', () => {
-  it('caches: dealt at generation, claimed by paying, block building meanwhile', () => {
-    const { map, simOpts } = makeWorld(83, { startingScrap: 100 });
-    expect(map.caches.length).toBeGreaterThan(0);
+  it('caches: opened for free, block building while sealed, roll their table on the loot stream', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(83, { startingScrap: 100, lootTables: [{ id: 'rock_cache', outcomes: [{ kind: 'scrap', weight: 1, min: 25, max: 25 }] }] });
     const sim = new Sim(83, simOpts);
-    const c = map.caches[0];
-    expect(sim.cacheAt(c.x, c.y)).not.toBeNull();
-    expect(sim.canBuildDefAt(c.x, c.y, 'bolt')).toBe(false); // claim, never build
-    expect(sim.claimCache(c.x, c.y)).toBe(true);
-    expect(sim.scrap).toBe(60);
-    expect(sim.heldRelicInfo().map((h) => h.def.id)).toEqual([POOL[c.poolIdx % POOL.length].id]);
-    expect(sim.cacheAt(c.x, c.y)).toBeNull(); // claimed: gone
-    expect(sim.claimCache(c.x, c.y)).toBe(false);
-    expect(sim.canBuildDefAt(c.x, c.y, 'bolt')).toBe(true); // ground again
+    const g = nthGround(cells, cellsW, cellsH, 0);
+    sim.caches.push({ x: g.x, y: g.y, table: 'rock_cache', opened: false });
+    expect(sim.cacheAt(g.x, g.y)).not.toBeNull();
+    expect(sim.canBuildDefAt(g.x, g.y, 'bolt')).toBe(false); // open it, never build on it
+    expect(sim.openCache(g.x, g.y)).toBe(true);
+    expect(sim.scrap).toBe(125); // free to open; the table paid 25
+    expect(sim.lootLog.at(-1)?.text).toBe('+25 scrap');
+    expect(sim.inputs.at(-1)?.a.t).toBe('openCache');
+    expect(sim.cacheAt(g.x, g.y)).toBeNull(); // opened: gone
+    expect(sim.openCache(g.x, g.y)).toBe(false);
+    expect(sim.canBuildDefAt(g.x, g.y, 'bolt')).toBe(true); // ground again
   });
 
   it('prospecting is a JOB: costs scrap AND time, reveals what generation dealt', () => {
@@ -440,18 +448,21 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
   });
 
   it('a run with claims and prospects replays bit-identically', () => {
-    const { map, cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(83, { startingScrap: 5000 });
+    const { map, cells, cellsW, cellsH, simOpts, seed } = makeOreWorld(83, { startingScrap: 5000, lootTables: TABLES });
     const sim = new Sim(seed, simOpts);
     const vein = cellOfType(cells, cellsW, cellsH, 'O');
     sim.buildTower(vein.x, vein.y, 'refinery');
     sim.chooseTier(vein.x, vein.y, 0, 0);
     sim.chooseTier(vein.x, vein.y, 1, 1);
     for (let t = 0; t < 100; t++) sim.tick();
-    sim.claimCache(map.caches[0].x, map.caches[0].y);
+    const g0 = nthGround(cells, cellsW, cellsH, 0);
+    sim.caches.push({ x: g0.x, y: g0.y, table: 'rock_cache', opened: false });
+    sim.openCache(g0.x, g0.y);
     sim.prospect(map.rockContents[0].x, map.rockContents[0].y);
     for (let t = 0; t < 700; t++) sim.tick(); // the job completes mid-run
 
     const fresh = new Sim(seed, simOpts);
+    fresh.caches.push({ x: g0.x, y: g0.y, table: 'rock_cache', opened: false });
     let i = 0;
     while (fresh.tickCount < sim.tickCount) {
       while (i < sim.inputs.length && sim.inputs[i].tick === fresh.tickCount) fresh.applyAction(sim.inputs[i++].a);
@@ -557,5 +568,97 @@ describe('design round 1 (2026-09-03): stackability, escalating costs, the new k
     const sim = new Sim(61, simOpts);
     grant2(sim, 'bounty_board');
     expect((sim as unknown as { fold: { bossBountyMul: number } }).fold.bossBountyMul).toBe(1.5);
+  });
+});
+
+describe('caches and loot tables (design round 1, 2026-09-03)', () => {
+  const table = (kind: LootTable['outcomes'][number]['kind'], extra: Partial<LootTable['outcomes'][number]> = {}): LootTable[] =>
+    [{ id: 'rock_cache', outcomes: [{ kind, weight: 1, ...extra }] }];
+  const withCache = (seed: number, tables: LootTable[], where: 'G' | 'X' = 'G') => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(seed, { lootTables: tables, startingScrap: 0 });
+    const sim = new Sim(seed, simOpts);
+    const at = where === 'G' ? nthGround(cells, cellsW, cellsH, 0) : cellOfType(cells, cellsW, cellsH, 'X');
+    sim.caches.push({ x: at.x, y: at.y, table: 'rock_cache', opened: false });
+    return { sim, at };
+  };
+
+  it('every outcome kind applies: ore, boon, consumable, relic, nothing', () => {
+    const ore = withCache(83, table('ore', { min: 7, max: 7 }));
+    ore.sim.openCache(ore.at.x, ore.at.y);
+    expect(ore.sim.ore[0]).toBe(7);
+
+    const boon = withCache(83, table('boon', { tier: 2 }));
+    expect(boon.sim.boonAt(boon.at.x, boon.at.y)).toBeNull();
+    boon.sim.openCache(boon.at.x, boon.at.y);
+    expect(boon.sim.boonAt(boon.at.x, boon.at.y)?.tier).toBe(2);
+    expect(boon.sim.extraBoons).toHaveLength(1);
+    expect(boon.sim.lootLog.at(-1)?.text).toMatch(/^boon ground/);
+
+    const cons = withCache(83, table('consumable'));
+    cons.sim.openCache(cons.at.x, cons.at.y);
+    expect(cons.sim.heldRelicInfo().map((h) => h.def.kind)).toEqual(['consumable']);
+
+    const relic = withCache(83, table('relic'));
+    relic.sim.openCache(relic.at.x, relic.at.y);
+    expect(relic.sim.heldRelicInfo()).toHaveLength(1);
+    expect(relic.sim.heldRelicInfo()[0].def.kind).not.toBe('consumable');
+
+    const nothing = withCache(83, table('nothing'));
+    nothing.sim.openCache(nothing.at.x, nothing.at.y);
+    expect(nothing.sim.lootLog.at(-1)?.text).toBe('empty');
+  });
+
+  it('a boon rolled on a road cell (a boss drop) falls back to Scrap', () => {
+    const { sim, at } = withCache(83, table('boon', { tier: 2 }), 'X');
+    sim.openCache(at.x, at.y);
+    expect(sim.extraBoons).toHaveLength(0);
+    expect(sim.scrap).toBe(60);
+  });
+
+  it('the roll is deterministic per seed and rides the input log', () => {
+    const mixed: LootTable[] = [{ id: 'rock_cache', outcomes: [
+      { kind: 'scrap', weight: 35, min: 60, max: 120 }, { kind: 'ore', weight: 25, min: 10, max: 30 },
+      { kind: 'boon', weight: 20, tier: 2 }, { kind: 'consumable', weight: 12 }, { kind: 'relic', weight: 8 },
+    ] }];
+    const a = withCache(91, mixed);
+    const b = withCache(91, mixed);
+    a.sim.openCache(a.at.x, a.at.y);
+    b.sim.openCache(b.at.x, b.at.y);
+    expect(a.sim.lootLog.at(-1)?.text).toBe(b.sim.lootLog.at(-1)?.text);
+    expect(a.sim.hashState()).toBe(b.sim.hashState());
+  });
+
+  it('a prospected rock that hides a cache REVEALS a sealed cache - nothing is granted', () => {
+    // Rock caches are rare and capped; scan seeds until a map deals one.
+    let found: { seed: number; x: number; y: number } | null = null;
+    for (let seed = 83; seed < 400 && !found; seed++) {
+      const { map } = makeWorld(seed);
+      const rc = map.rockContents.find((r) => r.yields === 'cache');
+      if (rc) found = { seed, x: rc.x, y: rc.y };
+    }
+    expect(found).not.toBeNull();
+    const { simOpts } = makeWorld(found!.seed, { startingScrap: 5000, maxSpawns: 1, lootTables: TABLES });
+    const sim = new Sim(found!.seed, simOpts);
+    expect(sim.prospect(found!.x, found!.y)).toBe(true);
+    for (let t = 0; t < 600; t++) sim.tick();
+    expect(sim.cellAt(found!.x, found!.y)).toBe('G');
+    expect(sim.heldRelics).toHaveLength(0);
+    expect(sim.cacheAt(found!.x, found!.y)?.table).toBe('rock_cache');
+  });
+
+  it('a boss drops a cache where it dies, and the drop rolls the boss table', () => {
+    const CANNON: TowerDef = { id: 'bolt', cost: 20, range: 60, fireEveryTicks: 1, projectile: { damage: 100000, speed: 5, homing: true } };
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(83, { mode: 'waves', coreHp: 100000, finalWave: 1, startingScrap: 100, towerDefs: [CANNON], lootTables: TABLES });
+    const sim = new Sim(83, simOpts);
+    const spot = nthGround(cells, cellsW, cellsH, 0);
+    expect(sim.buildTower(spot.x, spot.y, 'bolt')).toBe(true);
+    expect(sim.nextWavePreview()?.boss).toBe(true); // the final wave is a boss wave
+    sim.callWave();
+    let guard = 0;
+    while (guard++ < 5000 && !sim.caches.some((c) => c.table === 'boss_drop')) sim.tick();
+    const drop = sim.caches.find((c) => c.table === 'boss_drop');
+    expect(drop).toBeDefined();
+    expect(sim.openCache(drop!.x, drop!.y)).toBe(true);
+    expect(sim.ore[0]).toBe(5);
   });
 });
