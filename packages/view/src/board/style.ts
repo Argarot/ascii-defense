@@ -9,9 +9,10 @@
  */
 import { CELL_TYPES, ROAD_PORTS, type CellType } from '@ascii-defense/engine';
 import type { TermSurface } from '@ascii-defense/render';
-import { validateGrid, validateTerrain } from '@ascii-defense/content';
+import { validateGrid, validateSprite, validateTerrain } from '@ascii-defense/content';
 import terrainJson from '@ascii-defense/content/assets/terrain/appearance.json';
 import gridJson from '@ascii-defense/content/assets/grid.json';
+import roadJson from '@ascii-defense/content/assets/sprites/road_muted_cobble.json';
 import { role } from '../palette';
 
 // The cell geometry is CONTENT (grid.json, D24): the linter checks every
@@ -40,6 +41,17 @@ for (const c of CELL_TYPES) {
 }
 
 export const POOLS = APPEARANCE.pools as Record<CellType, string>;
+
+// The road family (session 22): Daniil's sprites, one state per road letter,
+// four static variations each. Load-or-explain like the palette; a road
+// letter the sprite lacks falls back to the glyph pool below.
+const roadResult = validateSprite.check(roadJson);
+if (!roadResult.ok) throw new Error('road sprite failed validation: ' + roadResult.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
+export const ROAD_SPRITE = roadResult.value;
+/** Which of a state's variations a cell shows: the mixing hash of its glyph origin, never dice. */
+export function roadVariation(gx0: number, gy0: number, count: number): number {
+  return count <= 1 ? 0 : Math.floor(hash2(gx0, gy0, 41) * count) % count;
+}
 
 export const TERRAIN_KEY: Record<CellType, string> = {
   G: 'ground',
@@ -124,25 +136,40 @@ export function drawTerrainCell(
   const rim = ROAD_PORTS[kind] === undefined ? 0 : (shade.rim ?? 0);
   const kerb = role('terrain.rock.lit');
   const drift = shade.drift ?? 0;
-  // The bridge (4.9) must read as one road CARRIED OVER another, so it gets
-  // its own drawing instead of the generic road texture: the east-west deck
-  // as a solid band across the middle row with lit edge rails above and
-  // below, and the north-south underpass showing through in the corners.
-  if (kind === 'B') {
-    // Rails on the top and bottom rows, the deck everything between - the
-    // same drawing at any cell height (the 5x3 original had one deck row).
-    for (let y = 0; y < CELL_H; y++)
+  // Roads are SPRITES (session 22): one state per letter, a variation per
+  // cell by position hash. The letter's kerbs are baked into the art; the
+  // route graph can still close a side the letter leaves open (an 'X' at a
+  // dead end, a port facing ground), and THAT side gets the hairline kerb
+  // drawn over the sprite - the sim's verdict, not the letter's.
+  const roadState = rim !== 0 || ROAD_PORTS[kind] !== undefined ? ROAD_SPRITE.states[kind] : undefined;
+  if (roadState) {
+    const variations = [roadState, ...(roadState.variations ?? [])];
+    const v = variations[roadVariation(gx0, gy0, variations.length)];
+    for (let y = 0; y < CELL_H; y++) {
+      const art = [...v.art[y]];
+      const ink = [...v.ink[y]];
+      const bgKeys = v.bgInk ? [...v.bgInk[y]] : null;
       for (let x = 0; x < CELL_W; x++) {
-        if (y > 0 && y < CELL_H - 1) {
-          // Deck planking: an unbroken band, unmistakably built rather than
-          // trodden. '=' reads as planks laid across the direction of travel.
-          term.put(gx0 + x, gy0 + y, '=', lit, bg);
-        } else {
-          // Rails on the deck's edges: full-width braille hairlines hugging
-          // the deck, the underpass passing beneath them.
-          term.put(gx0 + x, gy0 + y, String.fromCodePoint(0x2800 | (y === 0 ? 0xc0 : 0x09)), kerb, bg);
-        }
+        const fgRole = ROAD_SPRITE.inkMap[ink[x]];
+        const bgRole = bgKeys ? ROAD_SPRITE.inkMap[bgKeys[x]] : undefined;
+        const cellBg = shade.bg ?? (bgRole ? role(bgRole) : dark);
+        const ch = art[x];
+        term.put(gx0 + x, gy0 + y, ch === ' ' || !fgRole ? ' ' : ch, fgRole ? role(fgRole) : mid, cellBg);
       }
+    }
+    // Sides the graph closes but the letter opens: kerb them over the art.
+    const unexpected = rim & (ROAD_PORTS[kind] ?? 0);
+    if (unexpected !== 0) {
+      for (let y = 0; y < CELL_H; y++)
+        for (let x = 0; x < CELL_W; x++) {
+          let dots = 0;
+          if ((unexpected & 1) !== 0 && y === 0) dots |= 0x09;
+          if ((unexpected & 4) !== 0 && y === CELL_H - 1) dots |= 0xc0;
+          if ((unexpected & 8) !== 0 && x === 0) dots |= 0x47;
+          if ((unexpected & 2) !== 0 && x === CELL_W - 1) dots |= 0xb8;
+          if (dots !== 0) term.put(gx0 + x, gy0 + y, String.fromCodePoint(0x2800 | dots), kerb, shade.bg ?? dark);
+        }
+    }
     return;
   }
   for (let y = 0; y < CELL_H; y++)
