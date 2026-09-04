@@ -5,7 +5,7 @@
  * No screen owns game state (PRD sec 15.1): items carry ids, the app decides
  * what an id means.
  */
-import type { GLTerm } from '@ascii-defense/render';
+import type { TermSurface } from '@ascii-defense/render';
 import { TILE_SIZE, tileRimMask, type CellType } from '@ascii-defense/engine';
 import { CELL_H, CELL_W, drawTerrainCell } from '../board/style';
 import { role } from '../palette';
@@ -47,7 +47,7 @@ const TILE_GH = TILE_SIZE * CELL_H;
 export class MenuScreen {
   private regions: { row: number; rowEnd?: number; x0: number; x1: number; id: string }[] = [];
 
-  render(term: GLTerm, spec: MenuSpec): void {
+  render(term: TermSurface, spec: MenuSpec): void {
     this.regions = [];
     const W = term.cols;
     // The board dims to backdrop under a screen (playtest 10): a checkerboard

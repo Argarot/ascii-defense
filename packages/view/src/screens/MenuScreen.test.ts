@@ -7,13 +7,12 @@
  * rows fits entirely - every clickable region inside the terminal.
  */
 import { describe, expect, it } from 'vitest';
-import type { GLTerm } from '@ascii-defense/render';
+import { TextTerm } from '@ascii-defense/render';
 import { MenuScreen, type MenuSpec } from './MenuScreen';
 
 // The modal terminal's dimensions in the live app: half the board grid.
 const MODAL = { cols: 150, rows: 52 };
-const fakeTerm = () =>
-  ({ cols: MODAL.cols, rows: MODAL.rows, put: () => {}, write: () => {} }) as unknown as GLTerm;
+const fakeTerm = () => new TextTerm(MODAL);
 
 const g = (...rows: string[]): string[] => rows;
 const TILE = g('GGGGG', 'GG|GG', 'GG|GG', 'GG|GG', 'GGGGG');

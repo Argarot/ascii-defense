@@ -9,7 +9,7 @@
  * The words, the buttons and the previews are all the same region data, so
  * they cannot drift apart.
  */
-import type { GLTerm } from '@ascii-defense/render';
+import type { TermSurface } from '@ascii-defense/render';
 import { PRIORITIES, type Priority } from '@ascii-defense/engine';
 import { role } from '../palette';
 
@@ -157,7 +157,7 @@ export class HudPanel {
   private contentH = 0;
 
   constructor(
-    private term: GLTerm,
+    private term: TermSurface,
     private glyphPxW: number,
     private glyphPxH: number,
   ) {}
