@@ -69,10 +69,10 @@
             {
               "name": "Hailstorm",
               "cost": 120,
-              "desc": "Three homing shots per volley at 45% damage each, each at a different enemy when there is one. More total damage, across the crowd.",
+              "desc": "Three homing shots per volley at 60% damage each, each at a different enemy when there is one. More total damage, across the crowd.",
               "mods": {
                 "shots": 2,
-                "damageMul": 0.45,
+                "damageMul": 0.6,
                 "spread": 0.6
               }
             }
@@ -154,12 +154,12 @@
             {
               "name": "Cluster",
               "cost": 140,
-              "desc": "Three shells per volley at 45% damage each, scattered around the aim point. Saturation.",
+              "desc": "Three shells per volley at 60% damage each, scattered around the aim point. Saturation.",
               "mods": {
                 "shots": 2,
-                "damageMul": 0.45,
+                "damageMul": 0.6,
                 "explodeRadius": -0.3,
-                "spread": 1
+                "spread": 0.7
               }
             }
           ]
