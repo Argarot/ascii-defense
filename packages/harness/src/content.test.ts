@@ -71,3 +71,41 @@ describe('shipped combat rosters - cross-content sanity', () => {
     expect(new Set(tIds).size).toBe(tIds.length);
   });
 });
+
+// ---- sprites v2 (session 22): every tower state the sim can reach has art ----
+import boltSprite from '@ascii-defense/content/assets/sprites/bolt.json';
+import mortarSprite from '@ascii-defense/content/assets/sprites/mortar.json';
+import frostSprite from '@ascii-defense/content/assets/sprites/frost.json';
+import refinerySprite from '@ascii-defense/content/assets/sprites/refinery.json';
+import roadSprite from '@ascii-defense/content/assets/sprites/road_muted_cobble.json';
+import grid from '@ascii-defense/content/assets/grid.json';
+
+describe('imported sprites cover what the game can show', () => {
+  const towerSprites = [boltSprite, mortarSprite, frostSprite, refinerySprite];
+  // The 15 choice paths a three-tier either/or tree can reach.
+  const PATHS = [''];
+  for (const a of ['0', '1']) { PATHS.push(a); for (const b of ['0', '1']) { PATHS.push(a + b); for (const c of ['0', '1']) PATHS.push(a + b + c); } }
+
+  it('every tower in the roster has a sprite with all 15 states, two idle frames each, at the grid cell', () => {
+    for (const t of towers.towers) {
+      const sp = towerSprites.find((s) => s.id === t.id);
+      expect(sp, `sprite for ${t.id}`).toBeDefined();
+      expect(sp!.cell).toEqual(grid.cell);
+      for (const p of PATHS) {
+        const st = (sp!.states as Record<string, { art: string[]; frames?: unknown[] }>)[p];
+        expect(st, `${t.id} state '${p}'`).toBeDefined();
+        expect(st.frames?.length, `${t.id} state '${p}' frames`).toBe(1);
+      }
+    }
+  });
+
+  it('the road sprite has every road letter with four variations', () => {
+    const letters = ['|', '-', 'L', 'J', 'F', '7', 'T', 'U', 'E', '3', 'X', 'B'];
+    for (const l of letters) {
+      const st = (roadSprite.states as Record<string, { variations?: unknown[] }>)[l];
+      expect(st, `road '${l}'`).toBeDefined();
+      expect(st.variations?.length).toBe(3);
+    }
+    expect(Object.keys(roadSprite.states).sort()).toEqual([...letters].sort());
+  });
+});

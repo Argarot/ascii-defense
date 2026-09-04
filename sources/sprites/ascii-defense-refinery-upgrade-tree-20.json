@@ -1,0 +1,931 @@
+{
+  "meta": {
+    "study": 20,
+    "font": "Spleen 5x8",
+    "canvasGlyphs": [
+      8,
+      5
+    ],
+    "nativePixels": [
+      40,
+      40
+    ],
+    "selectedConcept": "01 Screw Auger",
+    "absorbedConcepts": {
+      "Mother Lode": "02 Twin Auger",
+      "Perpetual": "04 Rotary Table"
+    },
+    "tree": "base + 2 T1 + 4 T2 + 8 T3 = 15 states / 14 upgrades",
+    "animation": "two-frame 650ms mechanical idle; fixed footprint; exactly one glyph change plus local gold pulse"
+  },
+  "palette": {
+    "steel_high": "#efe7da",
+    "steel_mid": "#b3a28a",
+    "steel_low": "#6d5b47",
+    "steel_shadow": "#20170f",
+    "brown_deep": "#2a1708",
+    "brown_mid": "#6f3e13",
+    "brown_edge": "#a96620",
+    "brass_mid": "#c48822",
+    "brass_edge": "#e4ad38",
+    "brass_high": "#f7d36d",
+    "ore": "#ffe898",
+    "ore_dim": "#aa7320",
+    "legendary": "#fff6c8"
+  },
+  "choices": {
+    "T1": {
+      "W": "Wide Bore",
+      "C": "Fast Cycle"
+    },
+    "T2": {
+      "S": "Survey",
+      "A": "Automation"
+    },
+    "T3": {
+      "M": "Mother Lode",
+      "P": "Perpetual"
+    }
+  },
+  "visualCues": {
+    "W": "wider drive head",
+    "C": "twin cycling flywheels",
+    "S": "ore-sensing prongs",
+    "A": "shaft control pods",
+    "M": "Twin Auger gantry + two bits",
+    "P": "powered Rotary Table"
+  },
+  "states": [
+    {
+      "path": "BASE",
+      "name": "BASE · SCREW AUGER",
+      "tier": 0,
+      "parent": null,
+      "occupied": 19,
+      "idleA": [
+        "  [R]   ",
+        " /===\\  ",
+        "  |#|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "idleB": [
+        "  [R]   ",
+        " /===\\  ",
+        "  |*|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          2
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "W",
+      "name": "Wide Bore",
+      "tier": 1,
+      "parent": "",
+      "occupied": 21,
+      "idleA": [
+        " [=R=]  ",
+        " /===\\  ",
+        "  |#|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "idleB": [
+        " [=R=]  ",
+        " /===\\  ",
+        "  |*|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          2
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "C",
+      "name": "Fast Cycle",
+      "tier": 1,
+      "parent": "",
+      "occupied": 21,
+      "idleA": [
+        "  [R]   ",
+        " /===\\  ",
+        " =|#|=  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "idleB": [
+        "  [R]   ",
+        " /===\\  ",
+        " =|*|=  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          2
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "WS",
+      "name": "Wide Bore · Survey",
+      "tier": 2,
+      "parent": "W",
+      "occupied": 23,
+      "idleA": [
+        " [=R=]  ",
+        "^/===\\^ ",
+        "  |#|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "idleB": [
+        " [=R=]  ",
+        "^/===\\^ ",
+        "  |*|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          2
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "WA",
+      "name": "Wide Bore · Automation",
+      "tier": 2,
+      "parent": "W",
+      "occupied": 23,
+      "idleA": [
+        " [=R=]  ",
+        " /===\\  ",
+        " +|#|+  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "idleB": [
+        " [=R=]  ",
+        " /===\\  ",
+        " +|*|+  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          2
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "CS",
+      "name": "Fast Cycle · Survey",
+      "tier": 2,
+      "parent": "C",
+      "occupied": 23,
+      "idleA": [
+        "  [R]   ",
+        "^/===\\^ ",
+        " =|#|=  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "idleB": [
+        "  [R]   ",
+        "^/===\\^ ",
+        " =|*|=  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          2
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "CA",
+      "name": "Fast Cycle · Automation",
+      "tier": 2,
+      "parent": "C",
+      "occupied": 23,
+      "idleA": [
+        "  [R]   ",
+        " /===\\  ",
+        "=[|#|]= ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "idleB": [
+        "  [R]   ",
+        " /===\\  ",
+        "=[|*|]= ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          2
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "WSM",
+      "name": "Wide Bore · Survey · Mother Lode",
+      "tier": 3,
+      "parent": "WS",
+      "occupied": 26,
+      "idleA": [
+        "[==R==] ",
+        "^/|=|\\^ ",
+        "  |#|   ",
+        "[_|_|_] ",
+        "  V V   "
+      ],
+      "idleB": [
+        "[==R==] ",
+        "^/|=|\\^ ",
+        "  |#|   ",
+        "[_|_|_] ",
+        "  v V   "
+      ],
+      "glyphChangeCells": [
+        [
+          2,
+          4
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "WSP",
+      "name": "Wide Bore · Survey · Perpetual",
+      "tier": 3,
+      "parent": "WS",
+      "occupied": 27,
+      "idleA": [
+        ".-=R=-. ",
+        "^(===)^ ",
+        "  |#|   ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "idleB": [
+        ".-=R=-. ",
+        "^(=-=)^ ",
+        "  |#|   ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "WAM",
+      "name": "Wide Bore · Automation · Mother Lode",
+      "tier": 3,
+      "parent": "WA",
+      "occupied": 26,
+      "idleA": [
+        "[==R==] ",
+        " /|=|\\  ",
+        " +|#|+  ",
+        "[_|_|_] ",
+        "  V V   "
+      ],
+      "idleB": [
+        "[==R==] ",
+        " /|=|\\  ",
+        " +|#|+  ",
+        "[_|_|_] ",
+        "  v V   "
+      ],
+      "glyphChangeCells": [
+        [
+          2,
+          4
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "WAP",
+      "name": "Wide Bore · Automation · Perpetual",
+      "tier": 3,
+      "parent": "WA",
+      "occupied": 27,
+      "idleA": [
+        ".-=R=-. ",
+        " (===)  ",
+        " +|#|+  ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "idleB": [
+        ".-=R=-. ",
+        " (=-=)  ",
+        " +|#|+  ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "CSM",
+      "name": "Fast Cycle · Survey · Mother Lode",
+      "tier": 3,
+      "parent": "CS",
+      "occupied": 28,
+      "idleA": [
+        "[==R==] ",
+        "^/|=|\\^ ",
+        " =|#|=  ",
+        "[_|_|_] ",
+        "  V V   "
+      ],
+      "idleB": [
+        "[==R==] ",
+        "^/|=|\\^ ",
+        " =|#|=  ",
+        "[_|_|_] ",
+        "  v V   "
+      ],
+      "glyphChangeCells": [
+        [
+          2,
+          4
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "CSP",
+      "name": "Fast Cycle · Survey · Perpetual",
+      "tier": 3,
+      "parent": "CS",
+      "occupied": 27,
+      "idleA": [
+        " .-R-.  ",
+        "^(===)^ ",
+        " =|#|=  ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "idleB": [
+        " .-R-.  ",
+        "^(=-=)^ ",
+        " =|#|=  ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "CAM",
+      "name": "Fast Cycle · Automation · Mother Lode",
+      "tier": 3,
+      "parent": "CA",
+      "occupied": 28,
+      "idleA": [
+        "[==R==] ",
+        " /|=|\\  ",
+        "=[|#|]= ",
+        "[_|_|_] ",
+        "  V V   "
+      ],
+      "idleB": [
+        "[==R==] ",
+        " /|=|\\  ",
+        "=[|#|]= ",
+        "[_|_|_] ",
+        "  v V   "
+      ],
+      "glyphChangeCells": [
+        [
+          2,
+          4
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "CAP",
+      "name": "Fast Cycle · Automation · Perpetual",
+      "tier": 3,
+      "parent": "CA",
+      "occupied": 27,
+      "idleA": [
+        " .-R-.  ",
+        " (===)  ",
+        "=[|#|]= ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "idleB": [
+        " .-R-.  ",
+        " (=-=)  ",
+        "=[|#|]= ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    }
+  ]
+}

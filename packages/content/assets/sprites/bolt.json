@@ -1,22 +1,760 @@
 {
   "$schema": "../../schema/sprite.schema.json",
   "id": "bolt",
-  "cell": [5, 3],
-  "frameMs": 700,
-  "tiers": {
+  "cell": [
+    8,
+    5
+  ],
+  "frameMs": 720,
+  "source": "sources/sprites/ascii-defense-bolt-upgrade-tree-12.json via tools/import-sprites.mjs",
+  "states": {
     "0": {
-      "art": [".-^-.", "|[O]|", "'---'"],
-      "ink": ["FFFFF", "FFCFF", "FFFFF"],
+      "art": [
+        " .-#-.  ",
+        "|{o}|==>",
+        "   ||)  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        ".aaaaa..",
+        "ddfddhhj",
+        "...kkk..",
+        "...mm...",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        ".bbcbb..",
+        "begebiii",
+        "...lll..",
+        "...ll...",
+        "iiiiiiii"
+      ],
       "frames": [
         {
-          "art": [".-^-.", "|[o]|", "'---'"],
-          "ink": ["FFFFF", "FFCFF", "FFFFF"]
+          "art": [
+            " .-#-.  ",
+            "|{O}|=->",
+            "   ||}  ",
+            "   ||   ",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            ".ooooo..",
+            "ppqppssj",
+            "...kkk..",
+            "...mm...",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            ".bbcbb..",
+            "berebiii",
+            "...lll..",
+            "...ll...",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "1": {
+      "art": [
+        " .-=-.  ",
+        "|(o)|==>",
+        " : ||): ",
+        "   ||   ",
+        " /_||_\\ "
+      ],
+      "ink": [
+        ".aaaaa..",
+        "dtftdhhj",
+        ".t.kktt.",
+        "...mm...",
+        ".mnmmnm."
+      ],
+      "bgInk": [
+        ".bbcbb..",
+        "bugubiii",
+        ".u.lluu.",
+        "...ll...",
+        ".iiiiii."
+      ],
+      "frames": [
+        {
+          "art": [
+            " .-=-.  ",
+            "|(O)|=->",
+            " : ||}: ",
+            "   ||   ",
+            " /_||_\\ "
+          ],
+          "ink": [
+            ".ooooo..",
+            "ptqtpssj",
+            ".t.kkkt.",
+            "...mm...",
+            ".mnmmnm."
+          ],
+          "bgInk": [
+            ".bbcbb..",
+            "burubiii",
+            ".u.lllu.",
+            "...ll...",
+            ".iiiiii."
+          ]
+        }
+      ]
+    },
+    "10": {
+      "art": [
+        "-+.-=-. ",
+        "|(o)|==>",
+        " : ||): ",
+        "  /||\\  ",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        "vvaaaaa.",
+        "dtftdhhj",
+        ".t.kktt.",
+        "..mmmm..",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        "wwbbcbb.",
+        "bugubiii",
+        ".u.lluu.",
+        "..bllb..",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            "-x.-=-. ",
+            "|(O)|=->",
+            " : ||}: ",
+            "  /||\\  ",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            "vvooooo.",
+            "ptqtpssj",
+            ".t.kkkt.",
+            "..mmmm..",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            "wwbbcbb.",
+            "burubiii",
+            ".u.lllu.",
+            "..bllb..",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "11": {
+      "art": [
+        " .-=-.  ",
+        "|(o)|==>",
+        "[#]||)  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        ".aaaaa..",
+        "dtftdhhj",
+        "xxxkkt..",
+        "...mm...",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        ".bbcbb..",
+        "bugubiii",
+        "yyyllu..",
+        "...ll...",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            " .-=-.  ",
+            "|(O)|=->",
+            "[=]||}  ",
+            "   ||   ",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            ".ooooo..",
+            "ptqtpssj",
+            "xxxkkk..",
+            "...mm...",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            ".bbcbb..",
+            "burubiii",
+            "yyylll..",
+            "...ll...",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "100": {
+      "art": [
+        "-+.-=-.]",
+        "|(o)|H=>",
+        " : ||): ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        "vvaaaaaa",
+        "dtftdhhj",
+        ".t.kktt.",
+        "m.mmmm.m",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        "wwbbcbbe",
+        "bugubiii",
+        ".u.lluu.",
+        "b.llll.b",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            "-x.-=-.]",
+            "|(O)|#=>",
+            " : ||}: ",
+            "/ [||] \\",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            "vvoooooo",
+            "ptqtpssj",
+            ".t.kkkt.",
+            "m.mmmm.m",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            "wwbbcbbe",
+            "burubiii",
+            ".u.lllu.",
+            "b.llll.b",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "101": {
+      "art": [
+        "^.-=-==>",
+        "|(o)|==>",
+        " : ||): ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        "vvaaahhj",
+        "dtftdhhj",
+        ".t.kktt.",
+        "mmmmmmmm",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        "wwbcbiii",
+        "bugubiii",
+        ".u.lluu.",
+        "lbbllbbl",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            "+.-=-=->",
+            "|(O)|=->",
+            " : ||}: ",
+            "|\\/||\\/|",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            "vvooossj",
+            "ptqtpssj",
+            ".t.kkkt.",
+            "mmmmmmmm",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            "wwbcbiii",
+            "burubiii",
+            ".u.lllu.",
+            "lbbllbbl",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "110": {
+      "art": [
+        "[.-=-.] ",
+        "|(o)|H=>",
+        "[#]||)  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        "aaaaaaa.",
+        "dtftdhhj",
+        "xxxkkt..",
+        "m.mmmm.m",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        "ebbcbbe.",
+        "bugubiii",
+        "yyyllu..",
+        "b.llll.b",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            "[.-=-.] ",
+            "|(O)|#=>",
+            "[=]||}  ",
+            "/ [||] \\",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            "ooooooo.",
+            "ptqtpssj",
+            "xxxkkk..",
+            "m.mmmm.m",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            "ebbcbbe.",
+            "burubiii",
+            "yyylll..",
+            "b.llll.b",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "111": {
+      "art": [
+        " .-=-==>",
+        "|(o)|==>",
+        "[#]||)  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        ".aaaahhj",
+        "dtftdhhj",
+        "xxxkkt..",
+        "mmmmmmmm",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        ".bbcbiii",
+        "bugubiii",
+        "yyyllu..",
+        "lbbllbbl",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            " .-=-=->",
+            "|(O)|=->",
+            "[=]||}  ",
+            "|\\/||\\/|",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            ".oooossj",
+            "ptqtpssj",
+            "xxxkkk..",
+            "mmmmmmmm",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            ".bbcbiii",
+            "burubiii",
+            "yyylll..",
+            "lbbllbbl",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "": {
+      "art": [
+        " .-#-.  ",
+        "|[o]|==>",
+        "   ||)  ",
+        "   ||   ",
+        " /_||_\\ "
+      ],
+      "ink": [
+        ".aaaaa..",
+        "ddfddhhj",
+        "...kkk..",
+        "...mm...",
+        ".mnmmnm."
+      ],
+      "bgInk": [
+        ".bbcbb..",
+        "begebiii",
+        "...lll..",
+        "...ll...",
+        ".iiiiii."
+      ],
+      "frames": [
+        {
+          "art": [
+            " .-=-.  ",
+            "|[O]|=->",
+            "   ||}  ",
+            "   ||   ",
+            " /_||_\\ "
+          ],
+          "ink": [
+            ".ooooo..",
+            "ppqppssj",
+            "...kkk..",
+            "...mm...",
+            ".mnmmnm."
+          ],
+          "bgInk": [
+            ".bbcbb..",
+            "berebiii",
+            "...lll..",
+            "...ll...",
+            ".iiiiii."
+          ]
+        }
+      ]
+    },
+    "00": {
+      "art": [
+        "-+.-#-. ",
+        "|{o}|==>",
+        "   ||)  ",
+        "  /||\\  ",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        "vvaaaaa.",
+        "ddfddhhj",
+        "...kkk..",
+        "..mmmm..",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        "wwbbcbb.",
+        "begebiii",
+        "...lll..",
+        "..bllb..",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            "-x.-#-. ",
+            "|{O}|=->",
+            "   ||}  ",
+            "  /||\\  ",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            "vvooooo.",
+            "ppqppssj",
+            "...kkk..",
+            "..mmmm..",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            "wwbbcbb.",
+            "berebiii",
+            "...lll..",
+            "..bllb..",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "01": {
+      "art": [
+        " .-#-.  ",
+        "|{o}|==>",
+        "[#]||)  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        ".aaaaa..",
+        "ddfddhhj",
+        "xxxkkk..",
+        "...mm...",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        ".bbcbb..",
+        "begebiii",
+        "yyylll..",
+        "...ll...",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            " .-#-.  ",
+            "|{O}|=->",
+            "[=]||}  ",
+            "   ||   ",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            ".ooooo..",
+            "ppqppssj",
+            "xxxkkk..",
+            "...mm...",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            ".bbcbb..",
+            "berebiii",
+            "yyylll..",
+            "...ll...",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "000": {
+      "art": [
+        "-+.-#-.]",
+        "|{o}|H=>",
+        "   ||)  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        "vvaaaaaa",
+        "ddfddhhj",
+        "...kkk..",
+        "m.mmmm.m",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        "wwbbcbbe",
+        "begebiii",
+        "...lll..",
+        "b.llll.b",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            "-x.-#-.]",
+            "|{O}|#=>",
+            "   ||}  ",
+            "/ [||] \\",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            "vvoooooo",
+            "ppqppssj",
+            "...kkk..",
+            "m.mmmm.m",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            "wwbbcbbe",
+            "berebiii",
+            "...lll..",
+            "b.llll.b",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "001": {
+      "art": [
+        "^.-#-==>",
+        "|{o}|==>",
+        "   ||)  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        "vvaaahhj",
+        "ddfddhhj",
+        "...kkk..",
+        "mmmmmmmm",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        "wwbcbiii",
+        "begebiii",
+        "...lll..",
+        "lbbllbbl",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            "+.-#-=->",
+            "|{O}|=->",
+            "   ||}  ",
+            "|\\/||\\/|",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            "vvooossj",
+            "ppqppssj",
+            "...kkk..",
+            "mmmmmmmm",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            "wwbcbiii",
+            "berebiii",
+            "...lll..",
+            "lbbllbbl",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "010": {
+      "art": [
+        "[.-#-.] ",
+        "|{o}|H=>",
+        "[#]||)  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        "aaaaaaa.",
+        "ddfddhhj",
+        "xxxkkk..",
+        "m.mmmm.m",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        "ebbcbbe.",
+        "begebiii",
+        "yyylll..",
+        "b.llll.b",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            "[.-#-.] ",
+            "|{O}|#=>",
+            "[=]||}  ",
+            "/ [||] \\",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            "ooooooo.",
+            "ppqppssj",
+            "xxxkkk..",
+            "m.mmmm.m",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            "ebbcbbe.",
+            "berebiii",
+            "yyylll..",
+            "b.llll.b",
+            "iiiiiiii"
+          ]
+        }
+      ]
+    },
+    "011": {
+      "art": [
+        " .-#-==>",
+        "|{o}|==>",
+        "[#]||)  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ],
+      "ink": [
+        ".aaaahhj",
+        "ddfddhhj",
+        "xxxkkk..",
+        "mmmmmmmm",
+        "mmnmmnmm"
+      ],
+      "bgInk": [
+        ".bbcbiii",
+        "begebiii",
+        "yyylll..",
+        "lbbllbbl",
+        "iiiiiiii"
+      ],
+      "frames": [
+        {
+          "art": [
+            " .-#-=->",
+            "|{O}|=->",
+            "[=]||}  ",
+            "|\\/||\\/|",
+            "|/_||_\\|"
+          ],
+          "ink": [
+            ".oooossj",
+            "ppqppssj",
+            "xxxkkk..",
+            "mmmmmmmm",
+            "mmnmmnmm"
+          ],
+          "bgInk": [
+            ".bbcbiii",
+            "berebiii",
+            "yyylll..",
+            "lbbllbbl",
+            "iiiiiiii"
+          ]
         }
       ]
     }
   },
   "inkMap": {
-    "F": "tower.frame",
-    "C": "path.1"
+    ".": null,
+    "a": "tower.bolt.turret_high",
+    "b": "tower.bolt.mix.141c25",
+    "c": "tower.bolt.mix.131e23",
+    "d": "tower.bolt.turret_edge",
+    "e": "tower.bolt.mix.11231f",
+    "f": "tower.bolt.breech",
+    "g": "tower.bolt.mix.163325",
+    "h": "tower.bolt.bolt_shaft",
+    "i": "tower.bolt.mix.151d24",
+    "j": "tower.bolt.bolt_tip",
+    "k": "tower.bolt.steel_high",
+    "l": "tower.bolt.mix.151e23",
+    "m": "tower.bolt.steel_mid",
+    "n": "tower.bolt.mix.818d88",
+    "o": "tower.bolt.mix.caecd3",
+    "p": "tower.bolt.mix.89c8a1",
+    "q": "tower.bolt.mix.cde9b9",
+    "r": "tower.bolt.mix.183728",
+    "s": "tower.bolt.mix.dab970",
+    "t": "tower.bolt.seal",
+    "u": "tower.bolt.mix.122121",
+    "v": "tower.bolt.scope",
+    "w": "tower.bolt.mix.131f23",
+    "x": "tower.bolt.loader",
+    "y": "tower.bolt.mix.162021"
   }
 }

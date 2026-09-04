@@ -1,0 +1,585 @@
+{
+  "meta": {
+    "study": 15,
+    "font": "Spleen 5x8",
+    "canvasGlyphs": [
+      8,
+      5
+    ],
+    "nativePixels": [
+      40,
+      40
+    ],
+    "selectedConcept": "02 60MM Commando Mortar",
+    "tree": "base + 2 T1 + 4 T2 + 8 T3 = 15 states / 14 upgrades",
+    "animation": "two-frame 820ms micro-idle; fixed footprint; zero-to-two glyph changes plus local colour fading"
+  },
+  "palette": {
+    "gun_high": "#e2edf0",
+    "gun_mid": "#8fa5ad",
+    "gun_low": "#435b65",
+    "shadow": "#17151b",
+    "armour_deep": "#321317",
+    "armour_mid": "#8c342b",
+    "armour_edge": "#e87551",
+    "armour_high": "#ffc0a3",
+    "muzzle": "#fff2d2",
+    "muzzle_faded": "#cdbda8",
+    "shell": "#ffd078",
+    "brass": "#d89a4f",
+    "wide": "#e99b68",
+    "legendary": "#fff0ad"
+  },
+  "choices": {
+    "T1": {
+      "H": "Heavy Shells",
+      "W": "Wide Burst"
+    },
+    "T2": {
+      "S": "Siege Load",
+      "D": "Drum Feed"
+    },
+    "T3": {
+      "B": "Bunker Buster",
+      "C": "Carpet Fire"
+    }
+  },
+  "visualCues": {
+    "H": "reinforced tube collar and recoil plate",
+    "W": "wider stabilising baseplate",
+    "S": "ready-shell siege tray",
+    "D": "side-mounted rotating drum",
+    "B": "armoured muzzle and twin recoil rails",
+    "C": "ready-round pair and outer stabiliser fins"
+  },
+  "states": [
+    {
+      "path": "BASE",
+      "name": "BASE",
+      "tier": 0,
+      "parent": null,
+      "occupied": 12,
+      "idleA": [
+        "    M   ",
+        "   //   ",
+        "  '//   ",
+        "  //    ",
+        " /__\\   "
+      ],
+      "idleB": [
+        "    M   ",
+        "   //   ",
+        "  '//   ",
+        "  //    ",
+        " /__\\   "
+      ],
+      "glyphChangeCells": [],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "H",
+      "name": "Heavy Shells",
+      "tier": 1,
+      "parent": "",
+      "occupied": 14,
+      "idleA": [
+        "    M   ",
+        "   //   ",
+        "  [//]  ",
+        "  //    ",
+        "/___\\   "
+      ],
+      "idleB": [
+        "    M   ",
+        "   //   ",
+        "  [//]  ",
+        "  //    ",
+        "/___\\   "
+      ],
+      "glyphChangeCells": [],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "W",
+      "name": "Wide Burst",
+      "tier": 1,
+      "parent": "",
+      "occupied": 14,
+      "idleA": [
+        "    M   ",
+        "   //   ",
+        "  '//   ",
+        "  //    ",
+        "/____\\  "
+      ],
+      "idleB": [
+        "    M   ",
+        "   //   ",
+        "  '//   ",
+        "  //    ",
+        "/____\\  "
+      ],
+      "glyphChangeCells": [],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "HS",
+      "name": "Heavy Shells · Siege Load",
+      "tier": 2,
+      "parent": "H",
+      "occupied": 17,
+      "idleA": [
+        "    M   ",
+        "   //   ",
+        "  [//]  ",
+        "  //[!] ",
+        "/___\\   "
+      ],
+      "idleB": [
+        "    M   ",
+        "   //   ",
+        "  [//]  ",
+        "  //[|] ",
+        "/___\\   "
+      ],
+      "glyphChangeCells": [
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "HD",
+      "name": "Heavy Shells · Drum Feed",
+      "tier": 2,
+      "parent": "H",
+      "occupied": 17,
+      "idleA": [
+        "    M   ",
+        "   //   ",
+        "  [//]  ",
+        "  //(=) ",
+        "/___\\   "
+      ],
+      "idleB": [
+        "    M   ",
+        "   //   ",
+        "  [//]  ",
+        "  //(-) ",
+        "/___\\   "
+      ],
+      "glyphChangeCells": [
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "WS",
+      "name": "Wide Burst · Siege Load",
+      "tier": 2,
+      "parent": "W",
+      "occupied": 17,
+      "idleA": [
+        "    M   ",
+        "   //   ",
+        "  '//   ",
+        "  //[!] ",
+        "/____\\  "
+      ],
+      "idleB": [
+        "    M   ",
+        "   //   ",
+        "  '//   ",
+        "  //[|] ",
+        "/____\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "WD",
+      "name": "Wide Burst · Drum Feed",
+      "tier": 2,
+      "parent": "W",
+      "occupied": 17,
+      "idleA": [
+        "    M   ",
+        "   //   ",
+        "  '//   ",
+        "  //(=) ",
+        "/____\\  "
+      ],
+      "idleB": [
+        "    M   ",
+        "   //   ",
+        "  '//   ",
+        "  //(-) ",
+        "/____\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "HSB",
+      "name": "Heavy Shells · Siege Load · Bunker Buster",
+      "tier": 3,
+      "parent": "HS",
+      "occupied": 21,
+      "idleA": [
+        "   [M]  ",
+        "  |//|  ",
+        "  [//]  ",
+        "  //[!] ",
+        "/___\\   "
+      ],
+      "idleB": [
+        "   [M]  ",
+        "  |//|  ",
+        "  [//]  ",
+        "  //[|] ",
+        "/___\\   "
+      ],
+      "glyphChangeCells": [
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "HSC",
+      "name": "Heavy Shells · Siege Load · Carpet Fire",
+      "tier": 3,
+      "parent": "HS",
+      "occupied": 21,
+      "idleA": [
+        "    M   ",
+        "!! //   ",
+        "^ [//] ^",
+        "  //[!] ",
+        "/___\\   "
+      ],
+      "idleB": [
+        "    M   ",
+        "!| //   ",
+        "^ [//] ^",
+        "  //[|] ",
+        "/___\\   "
+      ],
+      "glyphChangeCells": [
+        [
+          1,
+          1
+        ],
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          7,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "HDB",
+      "name": "Heavy Shells · Drum Feed · Bunker Buster",
+      "tier": 3,
+      "parent": "HD",
+      "occupied": 21,
+      "idleA": [
+        "   [M]  ",
+        "  |//|  ",
+        "  [//]  ",
+        "  //(=) ",
+        "/___\\   "
+      ],
+      "idleB": [
+        "   [M]  ",
+        "  |//|  ",
+        "  [//]  ",
+        "  //(-) ",
+        "/___\\   "
+      ],
+      "glyphChangeCells": [
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "HDC",
+      "name": "Heavy Shells · Drum Feed · Carpet Fire",
+      "tier": 3,
+      "parent": "HD",
+      "occupied": 21,
+      "idleA": [
+        "    M   ",
+        "!! //   ",
+        "^ [//] ^",
+        "  //(=) ",
+        "/___\\   "
+      ],
+      "idleB": [
+        "    M   ",
+        "!| //   ",
+        "^ [//] ^",
+        "  //(-) ",
+        "/___\\   "
+      ],
+      "glyphChangeCells": [
+        [
+          1,
+          1
+        ],
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          7,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "WSB",
+      "name": "Wide Burst · Siege Load · Bunker Buster",
+      "tier": 3,
+      "parent": "WS",
+      "occupied": 21,
+      "idleA": [
+        "   [M]  ",
+        "  |//|  ",
+        "  '//   ",
+        "  //[!] ",
+        "/____\\  "
+      ],
+      "idleB": [
+        "   [M]  ",
+        "  |//|  ",
+        "  '//   ",
+        "  //[|] ",
+        "/____\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "WSC",
+      "name": "Wide Burst · Siege Load · Carpet Fire",
+      "tier": 3,
+      "parent": "WS",
+      "occupied": 21,
+      "idleA": [
+        "    M   ",
+        "!! //   ",
+        "^ '//  ^",
+        "  //[!] ",
+        "/____\\  "
+      ],
+      "idleB": [
+        "    M   ",
+        "!| //   ",
+        "^ '//  ^",
+        "  //[|] ",
+        "/____\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          1,
+          1
+        ],
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          7,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "WDB",
+      "name": "Wide Burst · Drum Feed · Bunker Buster",
+      "tier": 3,
+      "parent": "WD",
+      "occupied": 21,
+      "idleA": [
+        "   [M]  ",
+        "  |//|  ",
+        "  '//   ",
+        "  //(=) ",
+        "/____\\  "
+      ],
+      "idleB": [
+        "   [M]  ",
+        "  |//|  ",
+        "  '//   ",
+        "  //(-) ",
+        "/____\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "path": "WDC",
+      "name": "Wide Burst · Drum Feed · Carpet Fire",
+      "tier": 3,
+      "parent": "WD",
+      "occupied": 21,
+      "idleA": [
+        "    M   ",
+        "!! //   ",
+        "^ '//  ^",
+        "  //(=) ",
+        "/____\\  "
+      ],
+      "idleB": [
+        "    M   ",
+        "!| //   ",
+        "^ '//  ^",
+        "  //(-) ",
+        "/____\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          1,
+          1
+        ],
+        [
+          5,
+          3
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          4,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          7,
+          2
+        ]
+      ]
+    }
+  ]
+}
