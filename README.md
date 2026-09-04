@@ -77,8 +77,11 @@ review found flat: the wave clock and the call button, boss waves, traits as
 real rules, stackability and escalating prices for relics, caches that open
 free onto loot tables, a dead zone for the Mortar with the range drawn as a
 filled disc, and every tower fork rebuilt as two roles instead of two numbers.
-Next: the cell grows to 8×5 glyphs (square, 40 px) and the board fits itself
-to the screen.
+**Session 22 (2026-09-04)** grew the cell to 8×5 glyphs (a 40 px square) and
+made the board fit the screen; Daniil's own tower trees (fifteen states each,
+two idle frames) and cobbled roads (four variations, picked by position) are
+on the board through a sprite format that keys art by upgrade path. The
+variant sweep in `docs/lab/` measures every path; three forks still lose.
 
 **Not built yet**: damage-type resistances, relic fusion, onboarding, art.
 The roadmap runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the
