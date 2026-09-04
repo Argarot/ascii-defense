@@ -11,9 +11,10 @@ import type { CellRef, GeneratedMap, ReplayInput, StampedSimEvent, TileDef } fro
 import type { HudState, RenderState } from '@ascii-defense/view';
 
 /**
- * Board dimensions in tile slots - ONE source of truth for both threads
- * (spec sec 12 parameterization; previously duplicated in main.ts and the
- * worker, a drift surface). Derivable from resolution in a later session.
+ * The DEFAULT board in tile slots: what the worker uses when init names no
+ * board (tests, the lab). The app derives the real size from the viewport
+ * (boardSize.ts, D24) and sends it with init; a resumed save brings its own
+ * map and therefore its own size.
  */
 export const BOARD_SLOTS = { w: 12, h: 7 } as const;
 
@@ -74,7 +75,7 @@ export interface FrameSnapshot {
 }
 
 export type ToWorker =
-  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave }
+  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave; board?: { w: number; h: number } }
   | { t: 'frame'; ui: UiState }
   | { t: 'speed'; idx: number }
   | { t: 'action'; a: WorkerAction }

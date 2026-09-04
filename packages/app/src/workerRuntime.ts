@@ -58,8 +58,6 @@ const MIN_SLOTS = 12;
 
 export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   const { post, basics, enemyDefs, towerDefs, relicDefs, lootTables } = deps;
-  const MAP_X = BOARD_SLOTS.w;
-  const MAP_Y = BOARD_SLOTS.h;
   const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs);
 
   // The current run - null until the first successful init. Everything here
@@ -76,8 +74,13 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   let acc = 0;
   let lastBeat = 0;
 
-  function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave): void {
+  function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave, board?: { w: number; h: number }): void {
     try {
+      // The board is the caller's (viewport-derived, D24) or the default; a
+      // resumed save is exactly its map's size, whatever the screen is now.
+      // (A save without a map is refused further down; it must not throw here.)
+      const MAP_X = resume?.map ? resume.map.board.width : (board?.w ?? BOARD_SLOTS.w);
+      const MAP_Y = resume?.map ? resume.map.board.height : (board?.h ?? BOARD_SLOTS.h);
       const nextThreatIdx = Math.min(THREAT_LEVELS.length - 1, Math.max(0, tIdx));
       const THREAT = THREAT_LEVELS[nextThreatIdx];
       // The loadout may mix MINTED defs and SHIPPED specials (already in
@@ -469,7 +472,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   function handle(m: ToWorker): void {
     switch (m.t) {
       case 'init':
-        newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume);
+        newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume, m.board);
         break;
       case 'frame': {
         if (!sim) break; // no run yet: nothing to serve, and never a lie

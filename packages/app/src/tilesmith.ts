@@ -23,7 +23,7 @@ import {
   validateTileCells,
   type CellType,
 } from '@ascii-defense/engine';
-import { CELL_W, CELL_H, drawTerrainCell, role } from '@ascii-defense/view';
+import { CELL_W, CELL_H, GLYPH_PX_W, GLYPH_PX_H, drawTerrainCell, role } from '@ascii-defense/view';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import { addMintedTile, libraryTwinOf, loadMintedTiles } from './mintedTiles';
 
@@ -45,8 +45,8 @@ const BRUSH_GRID: CellType[][] = [
   ['G', 'R', 'O', 'C'],
 ];
 
-const ZOOM_W = 10; // px per glyph at the smith's 2x zoom
-const ZOOM_H = 16;
+const ZOOM_W = GLYPH_PX_W * 2; // px per glyph at the smith's 2x zoom
+const ZOOM_H = GLYPH_PX_H * 2;
 const CELL_PX_W = ZOOM_W * CELL_W;
 const CELL_PX_H = ZOOM_H * CELL_H;
 

@@ -8,10 +8,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import { TextTerm } from '@ascii-defense/render';
-import { MenuScreen, type MenuSpec } from './MenuScreen';
+import { MenuScreen, tileCapacity, type MenuSpec } from './MenuScreen';
 
-// The modal terminal's dimensions in the live app: half the board grid.
-const MODAL = { cols: 150, rows: 52 };
+// The modal terminal's dimensions in the live app on a 1920x1080 screen at
+// the 8x5 cell: a 7x5-tile board at half resolution (140 x 62 glyphs).
+const MODAL = { cols: 140, rows: 62 };
+// What the app pages at: the capacity for one body line, three item rows
+// and a footer around the tiles.
+const PER_PAGE = tileCapacity(MODAL.cols, MODAL.rows, 4 + 1 + 6 + 2);
 const fakeTerm = () => new TextTerm(MODAL);
 
 const g = (...rows: string[]): string[] => rows;
@@ -33,12 +37,13 @@ describe('loadout tile paging fits the modal', () => {
     expect(overflow).toBe(true);
   });
 
-  it('a 10-tile page plus pager rows fits entirely', () => {
+  it('a page of tileCapacity tiles plus pager rows fits entirely, and one more does not', () => {
+    expect(PER_PAGE).toBeGreaterThan(0);
     const screen = new MenuScreen();
     const spec: MenuSpec = {
       title: 'LOADOUT',
       body: ['pick'],
-      tiles: tiles(10),
+      tiles: tiles(PER_PAGE),
       items: [
         { id: 'page:prev', label: '< PREV PAGE', disabled: true },
         { id: 'page:next', label: 'NEXT PAGE >' },

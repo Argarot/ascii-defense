@@ -41,12 +41,16 @@ Fixed nomenclature, used everywhere in code and docs:
 | Level | Size | Role |
 |---|---|---|
 | **Glyph** | 1 character (5×8 px) | Smallest drawable unit |
-| **Cell** | 5×3 glyphs (25×24 px) | **The placement unit.** One tower occupies exactly one cell |
-| **Terrain tile** | 5×5 cells (125×120 px) | The Carcassonne piece the player lays |
+| **Cell** | 8×5 glyphs (40×40 px) | **The placement unit.** One tower occupies exactly one cell |
+| **Terrain tile** | 5×5 cells (200×200 px) | The generator's unit |
 
-A 1920×1200 display holds roughly **15×9 = 135 tiles**, or ~3,400 cells.
+*(D24, 2026-09-04: the cell grew from 5×3 glyphs to 8×5 — exactly square,
+40 glyphs of drawing room — and the board stopped being a constant.)* The
+board is sized to the screen at boot: a 1920×1080 display holds **7×5
+tiles** beside the HUD, a 2560×1440 one 11×6, clamped between 6×4 and 12×7.
+A saved run carries its map and can only continue on a screen that fits it.
 
-Cells and tiles are square within 4%. Glyphs are **not** square (5×8), so art is
+Cells and tiles are exactly square. Glyphs are **not** (5×8), so art is
 authored in glyph grids and the aspect is absorbed by the cell shape.
 
 ## 4. The map
