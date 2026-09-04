@@ -79,12 +79,14 @@ export interface LabContent {
 }
 
 /** The live app's map-knob derivation, reproduced draw-for-draw. */
-export function demoMap(seed: number, lib: TileLibrary, poolSize: number): { map: GeneratedMap; cellsW: number; cellsH: number; cells: readonly (CellType | null)[] } {
+export function demoMap(seed: number, lib: TileLibrary, poolSize: number, board = { w: 12, h: 7 }): { map: GeneratedMap; cellsW: number; cellsH: number; cells: readonly (CellType | null)[] } {
   const knobs = createRng(seed).stream('map');
   const entries = knobs.int(2, 5);
   const targetPathCells = (8 + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
-  const map = generateMap(knobs, lib, { width: 12, height: 7, entries, targetPathCells, relicPoolSize: poolSize });
-  return { map, cellsW: 12 * TILE_SIZE, cellsH: 7 * TILE_SIZE, cells: resolveCells(map.board, lib) };
+  // Since D24 the app's board is viewport-derived (7x5 at 1920x1080); the
+  // default here is the old 12x7 so existing sweeps keep their baseline.
+  const map = generateMap(knobs, lib, { width: board.w, height: board.h, entries, targetPathCells, relicPoolSize: poolSize });
+  return { map, cellsW: board.w * TILE_SIZE, cellsH: board.h * TILE_SIZE, cells: resolveCells(map.board, lib) };
 }
 
 function makeWorld(spec: LabSpec, content: LabContent) {
