@@ -220,8 +220,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const s = sim;
     const { hover, selected, hudHover } = ui;
     const speed = SPEEDS[speedIdx];
-    const towers: { x: number; y: number; id: string }[] = [];
-    for (const t of s.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: s.towerDef(t).id });
+    const towers: { x: number; y: number; id: string; choices: readonly number[] }[] = [];
+    for (const t of s.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: s.towerDef(t).id, choices: t.choices });
     const projectiles: { x: number; y: number; vx: number; vy: number }[] = [];
     for (let i = 0; i < s.projX.length; i++) {
       if (s.projAlive[i]) projectiles.push({ x: s.projX[i], y: s.projY[i], vx: s.projVX[i], vy: s.projVY[i] });

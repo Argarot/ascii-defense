@@ -6,14 +6,15 @@
  * runnable locally: node tools/validate-content.mjs
  *
  * Rules currently active:
- *   schema     every asset validates against its mapped schema
- *   sprite/dims       art and ink grids match the declared cell   (no sprites yet)
- *   sprite/ink-keys   every ink glyph appears in the sprite's inkMap
+ *   schema            every asset validates against its mapped schema
+ *   sprite/cell       every sprite's cell equals content/assets/grid.json -
+ *                     a mismatch used to crash the view on the first tower
+ *   sprite/dims       every art, ink and bgInk grid (base, frames,
+ *                     variations) matches the declared cell
+ *   sprite/ink-keys   every ink and bgInk key appears in the sprite's inkMap
  *   sprite/roles      every inkMap role resolves in the palette
- *
- * The sprite rules are exercised the moment the first REXPaint import lands
- * (M1 Phase 2); they run against zero files until then, which is reported so
- * nobody mistakes "no findings" for "checked".
+ *   sprite/glyphs     every art glyph exists in the shipped spleen atlas -
+ *                     GLTerm draws NOTHING for an absent glyph, silently
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -35,7 +36,12 @@ const SCHEMA_FOR = {
   'relics/': 'relics.schema.json',
   'terrain/': 'terrain.schema.json',
   'loot/': 'loot.schema.json',
+  'grid.json': 'grid.schema.json',
 };
+
+/** The shipped font, so a glyph that would draw as nothing fails here. */
+const ATLAS = JSON.parse(readFileSync('packages/app/public/assets/glyphset-spleen.json', 'utf8'));
+const GLYPHS = new Set(ATLAS.codepoints);
 
 const ajv = new Ajv({ allErrors: true, strictTypes: false });
 const compiled = new Map();
@@ -67,27 +73,41 @@ function validate(relPath, doc) {
 
 // ---- linter rules beyond schemas -------------------------------------------
 
-function lintSprite(relPath, sprite, palette) {
+function lintSprite(relPath, sprite, palette, grid) {
   const [w, h] = sprite.cell;
-  // Every frame - the base pair and each entry of the idle cycle (WBS 4.1) -
-  // obeys the same dimension and ink rules; a frame model that let frame 2
+  if (grid && (w !== grid.cell[0] || h !== grid.cell[1])) {
+    findings.push(`${relPath}: cell [${w}, ${h}] does not match grid.json [${grid.cell}] - the view would index past its art`);
+  }
+  // Every grid - base, each idle frame, each variation and ITS frames -
+  // obeys the same dimension and key rules; a frame model that let frame 2
   // be a different size would push the failure to the renderer.
-  const lintFrame = (tier, label, art, ink) => {
-    if (art.length !== h) findings.push(`${relPath}: tier ${tier} ${label} art has ${art.length} rows, cell declares ${h}`);
-    if (ink.length !== h) findings.push(`${relPath}: tier ${tier} ${label} ink has ${ink.length} rows, cell declares ${h}`);
-    art.forEach((row, i) => {
-      if ([...row].length !== w) findings.push(`${relPath}: tier ${tier} ${label} art row ${i} is ${[...row].length} glyphs, cell declares ${w}`);
-    });
-    ink.forEach((row, i) => {
-      if ([...row].length !== w) findings.push(`${relPath}: tier ${tier} ${label} ink row ${i} is ${[...row].length} keys, cell declares ${w}`);
-      for (const key of row) {
-        if (!(key in sprite.inkMap)) findings.push(`${relPath}: tier ${tier} ${label} ink key '${key}' missing from inkMap`);
+  const lintGrid = (label, kind, rows, keyed) => {
+    if (rows.length !== h) findings.push(`${relPath}: ${label} ${kind} has ${rows.length} rows, cell declares ${h}`);
+    rows.forEach((row, i) => {
+      const cells = [...row];
+      if (cells.length !== w) findings.push(`${relPath}: ${label} ${kind} row ${i} is ${cells.length} wide, cell declares ${w}`);
+      for (const ch of cells) {
+        if (keyed) {
+          if (!(ch in sprite.inkMap)) findings.push(`${relPath}: ${label} ${kind} key '${ch}' missing from inkMap`);
+        } else if (ch !== ' ' && !GLYPHS.has(ch.codePointAt(0))) {
+          findings.push(`${relPath}: ${label} art glyph '${ch}' (U+${ch.codePointAt(0).toString(16)}) is not in the font`);
+        }
       }
     });
   };
-  for (const [tier, { art, ink, frames }] of Object.entries(sprite.tiers)) {
-    lintFrame(tier, 'base', art, ink);
-    (frames ?? []).forEach((f, i) => lintFrame(tier, `frame ${i + 1}`, f.art, f.ink));
+  const lintFrame = (label, f) => {
+    lintGrid(label, 'art', f.art, false);
+    lintGrid(label, 'ink', f.ink, true);
+    if (f.bgInk) lintGrid(label, 'bgInk', f.bgInk, true);
+  };
+  for (const [key, st] of Object.entries(sprite.states)) {
+    const label = `state '${key}'`;
+    lintFrame(label, st);
+    (st.frames ?? []).forEach((f, i) => lintFrame(`${label} frame ${i + 1}`, f));
+    (st.variations ?? []).forEach((v, i) => {
+      lintFrame(`${label} variation ${i + 1}`, v);
+      (v.frames ?? []).forEach((f, j) => lintFrame(`${label} variation ${i + 1} frame ${j + 1}`, f));
+    });
   }
   for (const [key, role] of Object.entries(sprite.inkMap)) {
     if (role !== null && role !== 'PATH' && palette && !(role in palette.roles)) {
@@ -113,11 +133,13 @@ for (const relPath of walk(ASSET_DIR)) {
 }
 
 const palette = docs.get('palette.json') ?? null;
+const grid = docs.get('grid.json') ?? null;
+if (!grid) findings.push('grid.json is missing - sprites have no cell to be checked against');
 let spriteCount = 0;
 for (const [relPath, doc] of docs) {
   if (schemaFor(relPath) === 'sprite.schema.json') {
     spriteCount++;
-    lintSprite(relPath, doc, palette);
+    lintSprite(relPath, doc, palette, grid);
   }
 }
 

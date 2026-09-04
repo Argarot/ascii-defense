@@ -14,10 +14,15 @@ That is why [PRD.md](PRD.md) names no glyph. If you find yourself writing
 |---|---|
 | **Font** | [spleen 5×8](https://github.com/fcambus/spleen), BSD-2-Clause, F. Cambus |
 | **Glyph** | 5 × 8 px — **not square** |
-| **Cell** | **5 × 3 glyphs** = 25 × 24 px — the placement unit, one tower per cell |
-| **Tile** | 5 × 5 cells = 125 × 120 px — the piece the player lays |
-| **Board** | ~15 × 9 tiles on 1920 × 1200 |
+| **Cell** | **8 × 5 glyphs = 40 × 40 px, exactly square** — the placement unit, one tower per cell *(D24, 2026-09-04; was 5 × 3 = 25 × 24)* |
+| **Tile** | 5 × 5 cells = 200 × 200 px — the generator's unit |
+| **Board** | sized to the viewport at boot: about 8 × 5 tiles beside the HUD on a 1920-wide screen |
 | **Colour** | 24-bit per glyph, foreground and background, no palette cap |
+
+The cell is declared ONCE, in `content/assets/grid.json`; the content linter
+refuses any sprite whose `cell` differs, and the view reads its cell size from
+the same file. Changing it means redrawing every sprite — stated plainly in
+ARCHITECTURE §1, and true.
 
 ### What spleen gives you, and what it does not
 
@@ -73,67 +78,71 @@ dimensions, so the editor UI will also render at 5×8. Cramped but workable.
 
 Commit `.xp` sources alongside the generated JSON so art stays editable.
 
-## 3. Sprite format
+## 3. Sprite format (v2, session 22 — 2026-09-04)
 
-Art is a grid of glyphs plus a parallel grid of **ink keys** naming colour roles.
+Art is a grid of glyphs plus parallel grids of **ink keys** naming colour
+roles. A sprite is a map of **states**, keyed by a string the view chooses:
 
-```jsonc
-{
-  "id": "tower_bolt",
-  "cell": [5, 3],
-  "tiers": {
-    "1": {
-      "art": [".-^-.", "|[O]|", "'---'"],
-      "ink": ["fffff", "fcwcf", "fffff"]
-    }
-  },
-  "inkMap": { "f": "tower.frame", "c": "PATH", "w": "tower.core", ".": null }
-}
-```
-
-- `art[r].length` must equal `cell[0]`; `art.length` must equal `cell[1]`.
-  Validated; a mismatch is reported, not drawn.
-- **`.` is transparent** — terrain shows through, so sprites do not read as
-  rectangular stamps.
-- **`"PATH"` resolves to the instance's upgrade path colour**, so one drawing
-  serves all three specialisations instead of needing three copies.
-
-### Frames (the idle cycle — WBS 4.1, session 16)
-
-A tier may carry additional **idle frames** beyond its base art, and the sprite
-a **`frameMs`** cadence; the cycle is `[base, ...frames]`:
+- **towers**: the committed choice path — `""` base, `"0"`, `"01"`, `"010"`
+  (option index per tier, in tier order). Fifteen keys cover a three-tier
+  either/or tree; the view falls back to the longest authored prefix.
+- **terrain**: the cell letter (`"|"`, `"L"`, `"B"` …).
 
 ```jsonc
 {
   "id": "bolt",
-  "cell": [5, 3],
-  "frameMs": 700,
-  "tiers": {
-    "0": {
-      "art": [".-^-.", "|[O]|", "'---'"],
-      "ink": ["FFFFF", "FFCFF", "FFFFF"],
-      "frames": [{ "art": [".-^-.", "|[o]|", "'---'"], "ink": ["FFFFF", "FFCFF", "FFFFF"] }]
-    }
+  "cell": [8, 5],
+  "frameMs": 720,
+  "source": "sources/sprites/ascii-defense-bolt-upgrade-tree-12.json via tools/import-sprites.mjs",
+  "states": {
+    "": {
+      "art":   [" .-#-.  ", "|[o]|==>", "   ||)  ", "   ||   ", " /_||_\\ "],
+      "ink":   [".abcba..", "defgh...", "...ii...", "...ii...", ".jjiijj."],
+      "bgInk": [".kkkkk..", "lmnml...", "...oo...", "...oo...", ".pppppp."],
+      "frames": [{ "art": ["…"], "ink": ["…"], "bgInk": ["…"] }]
+    },
+    "0": { "…": "…" }
   },
-  "inkMap": { "F": "tower.frame", "C": "path.1" }
+  "inkMap": { "a": "tower.bolt.turret_high", "k": "tower.bolt.mix.1a2b3c", ".": null }
 }
 ```
 
-Rules that keep this cheap and honest:
+- Every grid is exactly `cell` in size, and `cell` equals
+  `content/assets/grid.json`; the linter refuses anything else.
+- **`.` is transparent** — terrain shows through, so sprites do not read as
+  rectangular stamps. A space in `art` is always transparent.
+- **`bgInk`** is optional: per-glyph background roles through the same
+  `inkMap`. Without it a tower stands on its ground role.
+- **`"PATH"`** resolves to the instance's upgrade-path colour.
+- **`frames`** are the idle cycle `[base, ...frames]` at `frameMs` on the
+  wall clock; reduced motion pins frame 0; the view offsets each instance's
+  phase by its board position so a row of towers churns out of step.
+- **`variations`** are static alternates of a state (roads have four). The
+  view picks one per board position with the mixing hash — same cell, same
+  look forever, no randomness spent.
 
-- Every frame is the **same cell size** as the base — the linter enforces it.
-- The cycle runs on the **wall clock**, never sim time: idles are ambient, the
-  sim knows nothing, and pause does not stop a tower breathing. The view
-  offsets each instance's phase by its board position so a row of identical
-  towers churns out of step.
-- **Reduced motion pins frame 0 forever** (PRD §15.4).
-- The format is **plain grids, nothing importer-specific** (decided
-  2026-08-17): when the REXPaint round trip lands (6.1), `.xp` layers become
-  frames at import time and the schema does not change.
+### Where sprites come from: `sources/sprites/` and the importer
 
-Terrain is a **weighted glyph pool per cell type** plus three colours (lit, mid,
-dark), applied per row at the boundary of a terrain mass. That is where depth
-comes from — shading, never geometry.
+Sprites are **not hand-edited** under `content/assets/sprites/`. Daniil's
+generators (`sources/sprites/generate_*.py`, committed for provenance) emit
+study files (`sources/sprites/*.json`); `node tools/import-sprites.mjs` turns
+them into the format above and adds the palette roles they need. The tower
+studies carry no per-glyph colour — their colour is a **rule** in the
+generator (row, glyph, chosen path) — so the importer ports each rule and
+paints every glyph with it, substituting the game's ground colour for the
+study's grass. Every computed colour becomes a palette role
+(`tower.<id>.<name>` for the study's named colours, `tower.<id>.mix.<hex>`
+for mixed ones), so a re-tint is still a palette edit. The road family comes
+in already sprite-shaped; its `tiers` are the twelve road letters in the
+generator's `ROAD_ORDER` and its `frames` become `variations`.
+
+Re-import after a study changes and the diff is the change. A study with a new
+rule fails to import until the rule is ported — never guessed.
+
+Terrain that has no sprite yet (ground, rock, ore, Core, water) is a
+**weighted glyph pool per cell type** plus three colours (lit, mid, dark),
+applied per row at the boundary of a terrain mass. That is where depth comes
+from — shading, never geometry.
 
 ## 4. Palette
 
@@ -177,16 +186,16 @@ Enforced in CI:
   `term.has()` and reports, so a missing glyph is never silently dropped
 - every referenced sprite id exists, and every sprite is referenced
 
-## 7. Still to do
+## 7. State of the art (2026-09-04)
 
-Everything currently under `public/assets/` is **scale and format demonstration,
-not art**. It is hand-typed, was drawn against three different fonts across the
-week, and should be replaced wholesale.
-
-- Define the material language — before any sprite.
-- Redraw terrain, towers and enemies in REXPaint at 5×3.
-- Biome palettes.
-- Animation frames — the format supports named frames; none are authored.
-- Effects: projectiles, impacts, explosions, deaths. Deferred past M1 by
-  decision; the subcell coordinates they need ship in M1.
-- UI chrome: HUD, tile hand, menus, tech tree — light box drawing only.
+- **Towers**: all four have full 15-state trees with two idle frames, drawn
+  by Daniil at 8×5, imported. Their state names predate the design-round-1
+  tree rework (Rifled/Gas Seals vs Marksman/Gatling); the shapes stand,
+  the visuals get renamed later.
+- **Roads**: twelve letters, four static variations each, muted river cobble.
+- **Still placeholders**: ground, rock, ore, Core, water — glyph pools scaled
+  to the larger cell until Daniil draws them. Enemies are single glyphs.
+- **UI chrome**: light box drawing only.
+- **Effects**: authored in code (the effects layer), not as sprites.
+- The REXPaint round trip (§2) remains an unexercised option; the working
+  authoring path is the generators plus the importer.

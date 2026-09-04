@@ -1,0 +1,1027 @@
+{
+  "meta": {
+    "study": 17,
+    "font": "Spleen 5x8",
+    "canvasGlyphs": [
+      8,
+      5
+    ],
+    "nativePixels": [
+      40,
+      40
+    ],
+    "selectedConcept": "04 Crystal Cage",
+    "absorbedConcept": "06 Snow Lantern as Absolute Zero capstone",
+    "tree": "base + 2 T1 + 4 T2 + 8 T3 = 15 states / 14 upgrades",
+    "animation": "two-frame 720ms micro-idle; fixed footprint; zero-to-one glyph changes plus local colour pulse"
+  },
+  "palette": {
+    "steel_high": "#e8f2f5",
+    "steel_mid": "#9eb3bf",
+    "steel_low": "#506978",
+    "steel_shadow": "#15232d",
+    "ice_deep": "#08283d",
+    "ice_mid": "#17678b",
+    "ice_edge": "#5cc7e7",
+    "ice_high": "#b9efff",
+    "core": "#d8f9ff",
+    "pulse": "#72dcff",
+    "pulse_dim": "#4999ba",
+    "legendary": "#f4feff"
+  },
+  "choices": {
+    "T1": {
+      "D": "Deep Chill",
+      "I": "Ice Shards"
+    },
+    "T2": {
+      "W": "Wide Field",
+      "R": "Rapid Cycle"
+    },
+    "T3": {
+      "A": "Absolute Zero",
+      "S": "Shatterfield"
+    }
+  },
+  "visualCues": {
+    "D": "insulated cold reservoir",
+    "I": "faceted crown tips",
+    "W": "extended radial vanes",
+    "R": "cycling support coils",
+    "A": "closed Snow Lantern chamber",
+    "S": "lower fragmentation crown"
+  },
+  "states": [
+    {
+      "path": "BASE",
+      "name": "BASE · CRYSTAL CAGE",
+      "tier": 0,
+      "parent": null,
+      "occupied": 17,
+      "idleA": [
+        "  /F\\   ",
+        " <^+^>  ",
+        "  \\|/   ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        "  /F\\   ",
+        " <^*^>  ",
+        "  \\|/   ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ]
+      ]
+    },
+    {
+      "path": "D",
+      "name": "Deep Chill",
+      "tier": 1,
+      "parent": "",
+      "occupied": 19,
+      "idleA": [
+        "  /F\\   ",
+        " <^+^>  ",
+        "  \\|/   ",
+        "  [|]   ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        "  /F\\   ",
+        " <^*^>  ",
+        "  \\|/   ",
+        "  [|]   ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ]
+      ]
+    },
+    {
+      "path": "I",
+      "name": "Ice Shards",
+      "tier": 1,
+      "parent": "",
+      "occupied": 19,
+      "idleA": [
+        " ^/F\\^  ",
+        " <^+^>  ",
+        "  \\|/   ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        " ^/F\\^  ",
+        " <^*^>  ",
+        "  \\|/   ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ]
+      ]
+    },
+    {
+      "path": "DW",
+      "name": "Deep Chill · Wide Field",
+      "tier": 2,
+      "parent": "D",
+      "occupied": 21,
+      "idleA": [
+        "  /F\\   ",
+        "-<^+^>- ",
+        "  \\|/   ",
+        "  [|]   ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        "  /F\\   ",
+        "-<^*^>- ",
+        "  \\|/   ",
+        "  [|]   ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          6,
+          1
+        ]
+      ]
+    },
+    {
+      "path": "DR",
+      "name": "Deep Chill · Rapid Cycle",
+      "tier": 2,
+      "parent": "D",
+      "occupied": 21,
+      "idleA": [
+        "  /F\\   ",
+        " <^+^>  ",
+        "  \\|/   ",
+        " =[|]=  ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        "  /F\\   ",
+        " <^*^>  ",
+        "  \\|/   ",
+        " =[|]=  ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "path": "IW",
+      "name": "Ice Shards · Wide Field",
+      "tier": 2,
+      "parent": "I",
+      "occupied": 21,
+      "idleA": [
+        " ^/F\\^  ",
+        "-<^+^>- ",
+        "  \\|/   ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        " ^/F\\^  ",
+        "-<^*^>- ",
+        "  \\|/   ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          6,
+          1
+        ]
+      ]
+    },
+    {
+      "path": "IR",
+      "name": "Ice Shards · Rapid Cycle",
+      "tier": 2,
+      "parent": "I",
+      "occupied": 21,
+      "idleA": [
+        " ^/F\\^  ",
+        " <^+^>  ",
+        "  \\|/   ",
+        "  =|=   ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        " ^/F\\^  ",
+        " <^*^>  ",
+        "  \\|/   ",
+        "  =|=   ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ]
+    },
+    {
+      "path": "DWA",
+      "name": "Deep Chill · Wide Field · Absolute Zero",
+      "tier": 3,
+      "parent": "DW",
+      "occupied": 23,
+      "idleA": [
+        "  {F}   ",
+        "</:*:\\> ",
+        " \\:+:/  ",
+        "  [|]   ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        "  {F}   ",
+        "</:+:\\> ",
+        " \\:+:/  ",
+        "  [|]   ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "DWS",
+      "name": "Deep Chill · Wide Field · Shatterfield",
+      "tier": 3,
+      "parent": "DW",
+      "occupied": 23,
+      "idleA": [
+        "  /F\\   ",
+        "-<^+^>- ",
+        " /\\|/\\  ",
+        "  [|]   ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        "  /F\\   ",
+        "-<^x^>- ",
+        " /\\|/\\  ",
+        "  [|]   ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "DRA",
+      "name": "Deep Chill · Rapid Cycle · Absolute Zero",
+      "tier": 3,
+      "parent": "DR",
+      "occupied": 23,
+      "idleA": [
+        "  {F}   ",
+        " /:*:\\  ",
+        " \\:+:/  ",
+        " =[|]=  ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        "  {F}   ",
+        " /:+:\\  ",
+        " \\:+:/  ",
+        " =[|]=  ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "path": "DRS",
+      "name": "Deep Chill · Rapid Cycle · Shatterfield",
+      "tier": 3,
+      "parent": "DR",
+      "occupied": 23,
+      "idleA": [
+        "  /F\\   ",
+        " <^+^>  ",
+        " /\\|/\\  ",
+        " =[|]=  ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        "  /F\\   ",
+        " <^x^>  ",
+        " /\\|/\\  ",
+        " =[|]=  ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          3,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "path": "IWA",
+      "name": "Ice Shards · Wide Field · Absolute Zero",
+      "tier": 3,
+      "parent": "IW",
+      "occupied": 23,
+      "idleA": [
+        " ^{F}^  ",
+        "</:*:\\> ",
+        " \\:+:/  ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        " ^{F}^  ",
+        "</:+:\\> ",
+        " \\:+:/  ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "IWS",
+      "name": "Ice Shards · Wide Field · Shatterfield",
+      "tier": 3,
+      "parent": "IW",
+      "occupied": 23,
+      "idleA": [
+        " ^/F\\^  ",
+        "-<^+^>- ",
+        " /\\|/\\  ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        " ^/F\\^  ",
+        "-<^x^>- ",
+        " /\\|/\\  ",
+        "   |    ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "IRA",
+      "name": "Ice Shards · Rapid Cycle · Absolute Zero",
+      "tier": 3,
+      "parent": "IR",
+      "occupied": 23,
+      "idleA": [
+        " ^{F}^  ",
+        " /:*:\\  ",
+        " \\:+:/  ",
+        "  =|=   ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        " ^{F}^  ",
+        " /:+:\\  ",
+        " \\:+:/  ",
+        "  =|=   ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ]
+    },
+    {
+      "path": "IRS",
+      "name": "Ice Shards · Rapid Cycle · Shatterfield",
+      "tier": 3,
+      "parent": "IR",
+      "occupied": 23,
+      "idleA": [
+        " ^/F\\^  ",
+        " <^+^>  ",
+        " /\\|/\\  ",
+        "  =|=   ",
+        " /_=_\\  "
+      ],
+      "idleB": [
+        " ^/F\\^  ",
+        " <^x^>  ",
+        " /\\|/\\  ",
+        "  =|=   ",
+        " /_=_\\  "
+      ],
+      "glyphChangeCells": [
+        [
+          3,
+          1
+        ]
+      ],
+      "colourChangeCells": [
+        [
+          1,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,364 @@
+{
+  "meta": {
+    "study": 12,
+    "font": "Spleen 5x8",
+    "canvasGlyphs": [
+      8,
+      5
+    ],
+    "nativePixels": [
+      40,
+      40
+    ],
+    "selectedConcept": "05 Drum-loaded Gun",
+    "tree": "base + 2 T1 + 4 T2 + 8 T3 = 15 states / 14 upgrades",
+    "animation": "two-frame mechanical idle with fixed footprint"
+  },
+  "palette": {
+    "steel_high": "#eef3ef",
+    "steel_mid": "#a7b2ad",
+    "steel_low": "#5d6d66",
+    "steel_shadow": "#18231f",
+    "turret_deep": "#10261c",
+    "turret_mid": "#285b40",
+    "turret_edge": "#86c79f",
+    "turret_high": "#c9ecd2",
+    "breech": "#c7e7b1",
+    "bolt_shaft": "#d6b56b",
+    "bolt_tip": "#ffe19a",
+    "scope": "#9fd9da",
+    "loader": "#d39b62",
+    "seal": "#74bca0"
+  },
+  "choices": {
+    "T1": {
+      "R": "Rifled",
+      "G": "Gas Seals"
+    },
+    "T2": {
+      "S": "Long Scope",
+      "L": "Autoloader"
+    },
+    "T3": {
+      "B": "Railbore",
+      "H": "Hailstorm"
+    }
+  },
+  "states": [
+    {
+      "path": "BASE",
+      "name": "BASE",
+      "tier": 0,
+      "parent": null,
+      "occupied": 24,
+      "idleA": [
+        " .-#-.  ",
+        "|[o]|==>",
+        "   ||)  ",
+        "   ||   ",
+        " /_||_\\ "
+      ],
+      "idleB": [
+        " .-=-.  ",
+        "|[O]|=->",
+        "   ||}  ",
+        "   ||   ",
+        " /_||_\\ "
+      ]
+    },
+    {
+      "path": "R",
+      "name": "Rifled",
+      "tier": 1,
+      "parent": "",
+      "occupied": 26,
+      "idleA": [
+        " .-#-.  ",
+        "|{o}|==>",
+        "   ||)  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        " .-#-.  ",
+        "|{O}|=->",
+        "   ||}  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "G",
+      "name": "Gas Seals",
+      "tier": 1,
+      "parent": "",
+      "occupied": 26,
+      "idleA": [
+        " .-=-.  ",
+        "|(o)|==>",
+        " : ||): ",
+        "   ||   ",
+        " /_||_\\ "
+      ],
+      "idleB": [
+        " .-=-.  ",
+        "|(O)|=->",
+        " : ||}: ",
+        "   ||   ",
+        " /_||_\\ "
+      ]
+    },
+    {
+      "path": "RS",
+      "name": "Rifled · Long Scope",
+      "tier": 2,
+      "parent": "R",
+      "occupied": 30,
+      "idleA": [
+        "-+.-#-. ",
+        "|{o}|==>",
+        "   ||)  ",
+        "  /||\\  ",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        "-x.-#-. ",
+        "|{O}|=->",
+        "   ||}  ",
+        "  /||\\  ",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "RL",
+      "name": "Rifled · Autoloader",
+      "tier": 2,
+      "parent": "R",
+      "occupied": 29,
+      "idleA": [
+        " .-#-.  ",
+        "|{o}|==>",
+        "[#]||)  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        " .-#-.  ",
+        "|{O}|=->",
+        "[=]||}  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "GS",
+      "name": "Gas Seals · Long Scope",
+      "tier": 2,
+      "parent": "G",
+      "occupied": 32,
+      "idleA": [
+        "-+.-=-. ",
+        "|(o)|==>",
+        " : ||): ",
+        "  /||\\  ",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        "-x.-=-. ",
+        "|(O)|=->",
+        " : ||}: ",
+        "  /||\\  ",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "GL",
+      "name": "Gas Seals · Autoloader",
+      "tier": 2,
+      "parent": "G",
+      "occupied": 29,
+      "idleA": [
+        " .-=-.  ",
+        "|(o)|==>",
+        "[#]||)  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        " .-=-.  ",
+        "|(O)|=->",
+        "[=]||}  ",
+        "   ||   ",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "RSB",
+      "name": "Rifled · Long Scope · Railbore",
+      "tier": 3,
+      "parent": "RS",
+      "occupied": 33,
+      "idleA": [
+        "-+.-#-.]",
+        "|{o}|H=>",
+        "   ||)  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        "-x.-#-.]",
+        "|{O}|#=>",
+        "   ||}  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "RSH",
+      "name": "Rifled · Long Scope · Hailstorm",
+      "tier": 3,
+      "parent": "RS",
+      "occupied": 35,
+      "idleA": [
+        "^.-#-==>",
+        "|{o}|==>",
+        "   ||)  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        "+.-#-=->",
+        "|{O}|=->",
+        "   ||}  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "RLB",
+      "name": "Rifled · Autoloader · Railbore",
+      "tier": 3,
+      "parent": "RL",
+      "occupied": 35,
+      "idleA": [
+        "[.-#-.] ",
+        "|{o}|H=>",
+        "[#]||)  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        "[.-#-.] ",
+        "|{O}|#=>",
+        "[=]||}  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "RLH",
+      "name": "Rifled · Autoloader · Hailstorm",
+      "tier": 3,
+      "parent": "RL",
+      "occupied": 37,
+      "idleA": [
+        " .-#-==>",
+        "|{o}|==>",
+        "[#]||)  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        " .-#-=->",
+        "|{O}|=->",
+        "[=]||}  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "GSB",
+      "name": "Gas Seals · Long Scope · Railbore",
+      "tier": 3,
+      "parent": "GS",
+      "occupied": 35,
+      "idleA": [
+        "-+.-=-.]",
+        "|(o)|H=>",
+        " : ||): ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        "-x.-=-.]",
+        "|(O)|#=>",
+        " : ||}: ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "GSH",
+      "name": "Gas Seals · Long Scope · Hailstorm",
+      "tier": 3,
+      "parent": "GS",
+      "occupied": 37,
+      "idleA": [
+        "^.-=-==>",
+        "|(o)|==>",
+        " : ||): ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        "+.-=-=->",
+        "|(O)|=->",
+        " : ||}: ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "GLB",
+      "name": "Gas Seals · Autoloader · Railbore",
+      "tier": 3,
+      "parent": "GL",
+      "occupied": 35,
+      "idleA": [
+        "[.-=-.] ",
+        "|(o)|H=>",
+        "[#]||)  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        "[.-=-.] ",
+        "|(O)|#=>",
+        "[=]||}  ",
+        "/ [||] \\",
+        "|/_||_\\|"
+      ]
+    },
+    {
+      "path": "GLH",
+      "name": "Gas Seals · Autoloader · Hailstorm",
+      "tier": 3,
+      "parent": "GL",
+      "occupied": 37,
+      "idleA": [
+        " .-=-==>",
+        "|(o)|==>",
+        "[#]||)  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ],
+      "idleB": [
+        " .-=-=->",
+        "|(O)|=->",
+        "[=]||}  ",
+        "|\\/||\\/|",
+        "|/_||_\\|"
+      ]
+    }
+  ]
+}

@@ -67,6 +67,25 @@ export interface CellRef {
   y: number;
 }
 
+/**
+ * The sprite state for a tower's committed choices: option indices per tier,
+ * in tier order, stopping at the first uncommitted tier ('' = base). Falls
+ * back through shorter prefixes so a sprite authored for fewer tiers still
+ * resolves; '' must exist (the linter does not enforce that yet).
+ */
+export function spriteState(sp: Sprite, choices: readonly number[]): Sprite['states'][string] {
+  let key = '';
+  for (const c of choices) {
+    if (c < 0) break;
+    key += String(c);
+  }
+  for (let k = key; ; k = k.slice(0, -1)) {
+    const st = sp.states[k];
+    if (st) return st;
+    if (k === '') throw new Error(`sprite '${sp.id}' has no base state ''`);
+  }
+}
+
 export interface BoardViewOptions {
   /** Board size in tiles. */
   mapX: number;
@@ -87,8 +106,9 @@ export interface RenderState {
    *  state (WBS 2.14): shield bracket, health mark, slow tint. No tooltips -
    *  the enemy itself is the readout (PRD sec 8). */
   enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean }[];
-  /** Live towers, in cell coordinates, with their def id for per-type art. */
-  towers?: readonly { x: number; y: number; id?: string }[];
+  /** Live towers, in cell coordinates, with their def id for per-type art and
+   *  their committed choices for per-state art (sprite v2). */
+  towers?: readonly { x: number; y: number; id?: string; choices?: readonly number[] }[];
   /** Projectiles in flight, continuous cell units; per-tick velocity, when
    *  given, draws a short trail behind the head (WBS 4.1). */
   projectiles?: readonly { x: number; y: number; vx?: number; vy?: number }[];
@@ -243,8 +263,11 @@ export class BoardView {
       const gx0 = t.x * CELL_W;
       const gy0 = offsetY + t.y * CELL_H;
       if (sp) {
-        const tier = sp.tiers['0']; // per-tier art arrives with the art pass (M6)
-        const cycle = [tier, ...(tier.frames ?? [])];
+        // Sprite v2 (session 22): the state is keyed by the tower's committed
+        // choices ('' base, '0', '01', '010'...), falling back to the longest
+        // authored prefix so a sprite drawn for fewer tiers still shows.
+        const st = spriteState(sp, t.choices ?? []);
+        const cycle = [st, ...(st.frames ?? [])];
         // Offset each tower's cycle by its position so a row of refineries
         // churns out of step instead of marching in lockstep.
         const fi =
@@ -252,14 +275,24 @@ export class BoardView {
             ? (Math.floor((state.animMs ?? 0) / (sp.frameMs ?? 600)) + t.x * 7 + t.y * 13) % cycle.length
             : 0;
         const frame = cycle[fi];
-        for (let r = 0; r < CELL_H; r++)
-          for (let c = 0; c < CELL_W; c++) {
-            const chr = frame.art[r][c];
-            const inkRole = sp.inkMap[frame.ink[r][c]];
+        const rows = Math.min(CELL_H, frame.art.length);
+        for (let r = 0; r < rows; r++) {
+          const artRow = [...frame.art[r]];
+          const inkRow = [...frame.ink[r]];
+          const bgRow = frame.bgInk ? [...frame.bgInk[r]] : null;
+          const cols = Math.min(CELL_W, artRow.length);
+          for (let c = 0; c < cols; c++) {
+            const chr = artRow[c];
+            const inkRole = sp.inkMap[inkRow[c]];
             if (chr === ' ' || inkRole === null || inkRole === undefined || !term.has(chr)) continue;
             const rn = inkRole === 'PATH' ? 'tower.core' : inkRole;
-            term.put(gx0 + c, gy0 + r, chr, role(rn), role('tower.ground'));
+            // A per-glyph background (bgInk) is the sprite's own; without one
+            // the tower stands on its ground role.
+            const bgRole = bgRow ? sp.inkMap[bgRow[c]] : undefined;
+            const bg = bgRole === null || bgRole === undefined || bgRole === 'PATH' ? role('tower.ground') : role(bgRole);
+            term.put(gx0 + c, gy0 + r, chr, role(rn), bg);
           }
+        }
       } else {
         for (let r = 0; r < CELL_H; r++)
           for (let c = 0; c < CELL_W; c++) {

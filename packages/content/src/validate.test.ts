@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { validatePalette, validateSprite } from './validate';
 
+// Sprite v2 (session 22): states keyed by choice path, frames = animation,
+// variations = static alternates, bgInk optional.
 const goodSprite = {
   id: 'tower_bolt',
   cell: [5, 3],
-  tiers: {
-    '1': { art: ['.-^-.', '|[O]|', "'---'"], ink: ['fffff', 'fcwcf', 'fffff'] },
+  states: {
+    '': { art: ['.-^-.', '|[O]|', "'---'"], ink: ['fffff', 'fcwcf', 'fffff'], bgInk: ['.....', '.....', '.....'] },
+    '0': { art: ['.-^-.', '|[O]|', "'---'"], ink: ['fffff', 'fcwcf', 'fffff'], frames: [{ art: ['.-^-.', '|[o]|', "'---'"], ink: ['fffff', 'fcwcf', 'fffff'] }] },
   },
   inkMap: { f: 'tower.frame', c: 'PATH', w: 'tower.core', '.': null },
 };
@@ -38,8 +41,8 @@ describe('sprite validation', () => {
     expect(validateSprite.check(bad).ok).toBe(false);
   });
 
-  it('rejects a tier missing its ink grid', () => {
-    const bad = { ...goodSprite, tiers: { '1': { art: ['.'] } } };
+  it('rejects a state missing its ink grid', () => {
+    const bad = { ...goodSprite, states: { '': { art: ['.'] } } };
     expect(validateSprite.check(bad).ok).toBe(false);
   });
 
