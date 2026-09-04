@@ -18,7 +18,7 @@ import {
   type CellType,
   type GeneratedMap,
 } from '@ascii-defense/engine';
-import type { GLTerm } from '@ascii-defense/render';
+import type { TermSurface } from '@ascii-defense/render';
 import type { Sprite } from '@ascii-defense/content';
 import { role } from '../palette';
 import { isReducedMotion } from '../motion';
@@ -156,7 +156,7 @@ export class BoardView {
   readonly cellsH: number;
 
   constructor(
-    private term: GLTerm,
+    private term: TermSurface,
     private lib: TileLibrary,
     private opts: BoardViewOptions,
   ) {
@@ -203,7 +203,7 @@ export class BoardView {
     return `cell ${ref.x},${ref.y} \u2802 ${base}`;
   }
 
-  render(state: RenderState, overlay?: (term: GLTerm) => void): void {
+  render(state: RenderState, overlay?: (term: TermSurface) => void): void {
     const term = this.term;
     const richnessAt = state.oreRichness
       ? new Map(state.oreRichness.map((r) => [r.y * this.cellsW + r.x, r.frac]))

@@ -12,6 +12,8 @@
  * decide what our art looks like.
  */
 
+import type { TermSurface } from './TermSurface';
+
 export interface GlyphSet {
   cell: [number, number];
   codepoints: number[];
@@ -74,7 +76,7 @@ function rgb(hex: string): [number, number, number] {
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
-export class GLTerm {
+export class GLTerm implements TermSurface {
   readonly canvas: HTMLCanvasElement;
   private readonly transparent: boolean;
   readonly cols: number;

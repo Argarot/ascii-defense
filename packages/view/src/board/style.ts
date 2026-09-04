@@ -8,7 +8,7 @@
  * This module keeps only the drawing RULES - shading, rims, richness, drift.
  */
 import { CELL_TYPES, ROAD_PORTS, type CellType } from '@ascii-defense/engine';
-import type { GLTerm } from '@ascii-defense/render';
+import type { TermSurface } from '@ascii-defense/render';
 import { validateTerrain } from '@ascii-defense/content';
 import terrainJson from '@ascii-defense/content/assets/terrain/appearance.json';
 import { role } from '../palette';
@@ -87,7 +87,7 @@ export interface TerrainShade {
  * Consistent light: highlights top, shadow bottom, everywhere.
  */
 export function drawTerrainCell(
-  term: GLTerm,
+  term: TermSurface,
   kind: CellType,
   gx0: number,
   gy0: number,
@@ -180,7 +180,7 @@ const WATER_POOL = APPEARANCE.waterPool;
  * rather than a cut. Procedural and safe by construction: border cells
  * never carry road (PRD sec 4.2).
  */
-export function drawVoidCell(term: GLTerm, gx0: number, gy0: number, drift = 0, hoverBg?: string, shore = 0): void {
+export function drawVoidCell(term: TermSurface, gx0: number, gy0: number, drift = 0, hoverBg?: string, shore = 0): void {
   const dark = role('terrain.water.dark');
   const mid = role('terrain.water.mid');
   const lit = role('terrain.water.lit');

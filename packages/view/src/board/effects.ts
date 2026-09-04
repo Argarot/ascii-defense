@@ -12,7 +12,7 @@
  * to a short-lived STATIC mark: the information survives, the motion doesn't.
  */
 import type { StampedSimEvent } from '@ascii-defense/engine';
-import type { GLTerm } from '@ascii-defense/render';
+import type { TermSurface } from '@ascii-defense/render';
 import { role } from '../palette';
 import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, hash2 } from './style';
@@ -106,7 +106,7 @@ export class EffectsLayer {
   }
 
   /** Draw everything still alive at this sim tick. Call after the board, before any end screen. */
-  draw(term: GLTerm, nowTick: number): void {
+  draw(term: TermSurface, nowTick: number): void {
     const still = isReducedMotion();
     this.effects = this.effects.filter((e) => nowTick - e.start <= e.ttl && nowTick >= e.start);
     for (const e of this.effects) {
@@ -124,7 +124,7 @@ export class EffectsLayer {
 
   /** Iterate the glyphs whose centre lies on a ring, in cell units. */
   private ring(
-    term: GLTerm,
+    term: TermSurface,
     x: number,
     y: number,
     rNow: number,
@@ -144,7 +144,7 @@ export class EffectsLayer {
   }
 
   /** The expanding tower pulse - the visual that used to live in BoardView. */
-  private drawPulse(term: GLTerm, e: Effect, age01: number, still: boolean): void {
+  private drawPulse(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     const rNow = still ? e.r : e.r * age01;
     const strength = still ? 1.5 : 1 + 1.4 * (1 - age01);
     this.ring(term, e.x, e.y, rNow, 0.24, (gx, gy) => term.shade(gx, gy, strength, 0.08));
@@ -157,7 +157,7 @@ export class EffectsLayer {
    * on top of it. Playtest 12: the 1.5r overshoot read as a much bigger
    * blast than the one that kills.
    */
-  private drawBlast(term: GLTerm, e: Effect, age01: number, still: boolean): void {
+  private drawBlast(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     // Shockwave ring: expands to the kill radius over the lifetime and
     // fades to smoke as it arrives - nothing is ever drawn beyond r.
     const rNow = still ? e.r : Math.max(0.4, e.r * age01);
@@ -190,7 +190,7 @@ export class EffectsLayer {
   }
 
   /** A plain hit: one bright glyph, gone in a blink. Already static. */
-  private drawSpark(term: GLTerm, e: Effect, age01: number): void {
+  private drawSpark(term: TermSurface, e: Effect, age01: number): void {
     const gx = Math.floor(e.x * CELL_W);
     const gy = Math.floor(e.y * CELL_H);
     if (age01 < 0.5) term.put(gx, gy, 'x', role('fx.flash'));
@@ -198,7 +198,7 @@ export class EffectsLayer {
   }
 
   /** A kill: a puff that rises and thins. Reduced motion: it stays put. */
-  private drawDeath(term: GLTerm, e: Effect, age01: number, still: boolean): void {
+  private drawDeath(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     const gx = Math.floor(e.x * CELL_W);
     const rise = still ? 0 : Math.floor(age01 * 2);
     const gy = Math.floor(e.y * CELL_H) - rise;
@@ -210,7 +210,7 @@ export class EffectsLayer {
    * A breach: the cell the enemy died into flashes red and decays. Damage to
    * the Core is the one event that must never be missable (PRD sec 5.4).
    */
-  private drawBreach(term: GLTerm, e: Effect, age01: number, still: boolean): void {
+  private drawBreach(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     const bg = still ? '#4a1520' : mixHex('#8a2231', '#12060a', age01);
     const gx0 = Math.floor(e.x) * CELL_W;
     const gy0 = Math.floor(e.y) * CELL_H;
@@ -219,7 +219,7 @@ export class EffectsLayer {
   }
 
   /** Construction dust: a sparse settle around the cell. Skipped when still - the tower appearing is its own feedback. */
-  private drawDust(term: GLTerm, e: Effect, age01: number, still: boolean): void {
+  private drawDust(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     if (still) return;
     const gx0 = Math.floor(e.x) * CELL_W;
     const gy0 = Math.floor(e.y) * CELL_H;

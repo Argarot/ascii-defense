@@ -8,7 +8,7 @@
  * Regions are glyph-coordinate rectangles the app maps clicks through, the
  * same words-are-buttons contract as the HUD.
  */
-import type { GLTerm } from '@ascii-defense/render';
+import type { TermSurface } from '@ascii-defense/render';
 import { role } from '../palette';
 
 export interface OfferCard {
@@ -43,7 +43,7 @@ export class OfferModal {
     return null;
   }
 
-  render(term: GLTerm, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean; ore: number }): void {
+  render(term: TermSurface, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean; ore: number }): void {
     this.regions = [];
     const totalW = cards.length * CARD_W + (cards.length - 1) * GAP;
     const x0 = Math.max(0, Math.floor((term.cols - totalW) / 2));

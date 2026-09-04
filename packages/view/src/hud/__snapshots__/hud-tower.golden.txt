@@ -1,0 +1,52 @@
+ASCII DEFENSE    next wave 23s
+seed 12345 ⠂ 1x
+
+SCRAP 145               ORE 12
+CORE 41/50
+=======================
+
+WAVE 4/20             RELICS 2
+kills 37 ⠂ road L=122
+wave 5 ⠂ 2 fronts ⠂ BOSS
+9 grunt, 2 brute
+ CALL WAVE 5 +23 scrap
+found: +80 scrap
+
+------------------------------
+Bolt Turret
+kills 12
+
+dmg   8
+dps   11.4
+range 6 -> 8.5
+
+priority
+ [F]irst        [L]ast
+ [C]losest      [W]eakest
+
+UPGRADES
+T1
+ Marksman       Gatling
+
+ $25            $25
+T2
+ Piercing       Shatter
+
+ locked         locked
+T3
+ Railbore       Hailstorm
+
+ locked         locked
+
+Reach: +2.5 range. Covers more
+road from the same cell.
+
+X sells (70% back)
+
+
+
+
+
+space pause ⠂ 1-4 speed
+F/L/C/W priority ⠂ X sell
+G seams ⠂ Esc menu
