@@ -9,12 +9,21 @@
  */
 import { CELL_TYPES, ROAD_PORTS, type CellType } from '@ascii-defense/engine';
 import type { TermSurface } from '@ascii-defense/render';
-import { validateTerrain } from '@ascii-defense/content';
+import { validateGrid, validateTerrain } from '@ascii-defense/content';
 import terrainJson from '@ascii-defense/content/assets/terrain/appearance.json';
+import gridJson from '@ascii-defense/content/assets/grid.json';
 import { role } from '../palette';
 
-export const CELL_W = 5;
-export const CELL_H = 3;
+// The cell geometry is CONTENT (grid.json, D24): the linter checks every
+// sprite against the same file, so the view and the art cannot disagree.
+const gridResult = validateGrid.check(gridJson);
+if (!gridResult.ok) throw new Error('grid.json failed validation: ' + gridResult.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
+/** Glyphs per cell: 8 x 5 of the 5 x 8 font = a 40 px square. */
+export const CELL_W: number = gridResult.value.cell[0];
+export const CELL_H: number = gridResult.value.cell[1];
+/** Pixels per glyph - the bitmap font's native size, never scaled fractionally. */
+export const GLYPH_PX_W: number = gridResult.value.glyphPx[0];
+export const GLYPH_PX_H: number = gridResult.value.glyphPx[1];
 
 const terrainResult = validateTerrain.check(terrainJson);
 if (!terrainResult.ok) {
@@ -120,9 +129,11 @@ export function drawTerrainCell(
   // as a solid band across the middle row with lit edge rails above and
   // below, and the north-south underpass showing through in the corners.
   if (kind === 'B') {
+    // Rails on the top and bottom rows, the deck everything between - the
+    // same drawing at any cell height (the 5x3 original had one deck row).
     for (let y = 0; y < CELL_H; y++)
       for (let x = 0; x < CELL_W; x++) {
-        if (y === 1) {
+        if (y > 0 && y < CELL_H - 1) {
           // Deck planking: an unbroken band, unmistakably built rather than
           // trodden. '=' reads as planks laid across the direction of travel.
           term.put(gx0 + x, gy0 + y, '=', lit, bg);

@@ -1,7 +1,7 @@
 // DATA plus the typed validation/registry layer. No game logic.
 // The full asset registry (typed lookups, sprite resolution) lands with the
 // art pipeline in M1 Phase 2-3.
-export { validatePalette, validateSprite, validateEnemies, validateTowers, validateRelics, validateTerrain, validateLoot } from './validate';
+export { validatePalette, validateSprite, validateEnemies, validateTowers, validateRelics, validateTerrain, validateLoot, validateGrid } from './validate';
 export type {
   Palette,
   Sprite,
@@ -10,6 +10,7 @@ export type {
   RelicPool,
   TerrainAppearance,
   LootTables,
+  Grid,
   Validator,
   ContentError,
 } from './validate';

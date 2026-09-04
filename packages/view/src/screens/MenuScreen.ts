@@ -44,6 +44,19 @@ export interface MenuSpec {
 const TILE_GW = TILE_SIZE * CELL_W; // tile preview width in glyphs
 const TILE_GH = TILE_SIZE * CELL_H;
 
+/**
+ * How many tile previews a screen of `cols` x `rows` can show at once with
+ * `reservedRows` of title, body, items and footer around them - the same
+ * arithmetic render() lays out with, so the app pages the loadout pool at
+ * a count that fits THIS screen instead of a literal (playtest 18 found the
+ * overflow at 5x3; at 8x5 a tile preview is 40x25 glyphs and far fewer fit).
+ */
+export function tileCapacity(cols: number, rows: number, reservedRows: number): number {
+  const perRow = Math.max(1, Math.floor((cols - 10) / (TILE_GW + 3)));
+  const rowsFit = Math.floor((rows - 2 - reservedRows) / (TILE_GH + 3));
+  return Math.max(1, perRow * Math.max(0, rowsFit));
+}
+
 export class MenuScreen {
   private regions: { row: number; rowEnd?: number; x0: number; x1: number; id: string }[] = [];
 

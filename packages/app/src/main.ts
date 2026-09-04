@@ -19,8 +19,11 @@ import {
   HudPanel,
   MenuScreen,
   OfferModal,
+  tileCapacity,
   CELL_W,
   CELL_H,
+  GLYPH_PX_W,
+  GLYPH_PX_H,
   isReducedMotion,
   role,
   setReducedMotion,
@@ -32,8 +35,9 @@ import boltSpriteJson from '@ascii-defense/content/assets/sprites/bolt.json';
 import mortarSpriteJson from '@ascii-defense/content/assets/sprites/mortar.json';
 import frostSpriteJson from '@ascii-defense/content/assets/sprites/frost.json';
 import refinerySpriteJson from '@ascii-defense/content/assets/sprites/refinery.json';
-import { BOARD_SLOTS, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
+import { THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 import { META_KEY, RUN_KEY, loadMetaFrom, loadRunFrom, saveMetaTo, type MetaSave } from './persistence';
+import { boardSlotsFor } from './boardSize';
 
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
   if (!r.ok) throw new Error(`${what} failed validation: ` + r.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
@@ -48,8 +52,10 @@ const ASSET_V = '6';
 const load = <T>(p: string): Promise<T> =>
   fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
-const GLYPH_PX_W = 5;
-const GLYPH_PX_H = 8;
+/** The HUD and the menus draw at this integer multiple of the font (crisp). */
+const UI_SCALE = 2;
+/** The HUD's width in its own glyph columns. */
+const HUD_COLS = 30;
 
 // ---- persistence (PRD sec 15.2) lives in persistence.ts (Node-testable) ----
 const loadMeta = (): ReturnType<typeof loadMetaFrom> => loadMetaFrom(localStorage);
@@ -69,14 +75,35 @@ async function main(): Promise<void> {
     ...savedLoadout.filter((t) => !mintedNow.some((m) => m.id === t.id) && !tileLibraryJson.tiles.some((s) => s.id === t.id)),
   ]);
 
-  const mapX = BOARD_SLOTS.w, mapY = BOARD_SLOTS.h; // one truth, shared with the worker
+  // The board fits THIS screen (D24, option 1): tile slots from the viewport,
+  // clamped to what the generator is tuned for. The worker is told with
+  // every init; a resumed save must be this size too (checked below).
+  const { w: mapX, h: mapY } = boardSlotsFor(window.innerWidth, window.innerHeight, {
+    cellW: CELL_W, cellH: CELL_H, glyphPxW: GLYPH_PX_W, glyphPxH: GLYPH_PX_H, hudCols: HUD_COLS, hudScale: UI_SCALE,
+  });
+  /**
+   * A save carries its map, and the board on screen is sized to THIS
+   * viewport: a save made for another size cannot draw here. Refused with
+   * a sentence (the data stays for export), never squeezed or stretched.
+   */
+  const loadRunForThisScreen = (): ReturnType<typeof loadRunFrom> => {
+    const r = loadRun();
+    if (r.run && (r.run.map.board.width !== mapX || r.run.map.board.height !== mapY)) {
+      return { run: null, problem: `run save was made for a ${r.run.map.board.width}x${r.run.map.board.height}-tile board; this screen fits ${mapX}x${mapY} - it cannot continue here` };
+    }
+    return r;
+  };
   const boardCols = mapX * TILE_SIZE * CELL_W;
-  const term = new GLTerm(glyphs, { cols: boardCols, rows: mapY * TILE_SIZE * CELL_H, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
+  const boardRows = mapY * TILE_SIZE * CELL_H;
+  const term = new GLTerm(glyphs, { cols: boardCols, rows: boardRows, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
   const view = new BoardView(term, lib, { mapX, mapY, glyphPxW: GLYPH_PX_W, glyphPxH: GLYPH_PX_H, sprites: SPRITES });
   const effects = new EffectsLayer();
-  const hudTerm = new GLTerm(glyphs, { cols: 30, rows: Math.floor((mapY * TILE_SIZE * CELL_H) / 2), cellPx: GLYPH_PX_W * 2, cellPxH: GLYPH_PX_H * 2, background: role('ui.bg') });
-  const hud = new HudPanel(hudTerm, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
-  const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / 2), rows: Math.floor((mapY * TILE_SIZE * CELL_H) / 2), cellPx: GLYPH_PX_W * 2, cellPxH: GLYPH_PX_H * 2, transparent: true });
+  // UI surfaces at UI_SCALE: the same pixel height as the board, so the
+  // modal covers it exactly (the old /2 rounding left an 8 px gap).
+  const uiRows = Math.floor(boardRows / UI_SCALE);
+  const hudTerm = new GLTerm(glyphs, { cols: HUD_COLS, rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, background: role('ui.bg') });
+  const hud = new HudPanel(hudTerm, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
+  const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, transparent: true });
   modalTerm.canvas.style.position = 'absolute';
   modalTerm.canvas.style.left = '0';
   modalTerm.canvas.style.top = '0';
@@ -85,7 +112,7 @@ async function main(): Promise<void> {
 
   // ---- state ---------------------------------------------------------------
   const { meta, problem: metaProblem } = loadMeta();
-  const runLoad = loadRun();
+  const runLoad = loadRunForThisScreen();
   let saveProblem = metaProblem ?? runLoad.problem;
   if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
 
@@ -103,10 +130,12 @@ async function main(): Promise<void> {
   const shippedSpecials: TileDef[] = tileLibraryJson.tiles.filter((t) => t.special === true);
   let setupThreat = 1; // synced to the live threat when the screen opens
   let setupLoadout: string[] = [];
-  // The loadout pool pages (playtest 18: the modal shows two rows of five
-  // tiles - MenuScreen wraps at ~5 per row on the half-resolution modal -
-  // and anything beyond clipped off-screen with no way to reach it).
-  const TILES_PER_PAGE = 10;
+  // The loadout pool pages at what the modal can SHOW (playtest 18 found
+  // the overflow at 5x3 as a literal 10; at 8x5 a preview is 40x25 glyphs
+  // and the count comes from the same arithmetic the screen lays out with).
+  // Reserved rows: title block 4, one body line, up to 4 item rows x2, a
+  // footer 2.
+  const TILES_PER_PAGE = tileCapacity(Math.floor(boardCols / UI_SCALE), uiRows, 4 + 1 + 8 + 2);
   let loadoutPage = 0;
   // Delete mode (playtest 18): armed, clicking a MINTED tile removes it
   // permanently - the pool is the player's content, so pruning it is a
@@ -201,14 +230,14 @@ async function main(): Promise<void> {
   const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave, loadout?: TileDef[]): void => {
     threatIdx = tIdx;
     lastLoadout = resume?.loadout ?? loadout ?? [];
-    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout });
+    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout, board: { w: mapX, h: mapY } });
     pendingStart = true; // 'playing' begins on 'ready', not on send
     mirroredSpeed = 1;
   };
 
   // Boot: an attract-mode run simmers behind the title (paused = board only).
   const urlSeed = Number(new URLSearchParams(location.search).get('seed'));
-  send({ t: 'init', seed: Number.isInteger(urlSeed) && urlSeed > 0 ? urlSeed : Date.now() % 1_000_000, threatIdx });
+  send({ t: 'init', seed: Number.isInteger(urlSeed) && urlSeed > 0 ? urlSeed : Date.now() % 1_000_000, threatIdx, board: { w: mapX, h: mapY } });
   send({ t: 'speed', idx: 0 });
 
   // ---- autosave (PRD sec 15.2): every few seconds and on the way out -------
@@ -234,7 +263,7 @@ async function main(): Promise<void> {
   app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
   cap.className = 'hud';
-  cap.textContent = 'spleen 5x8 \u2802 sim in a worker \u2802 space pauses, 1/2/3/4 set speed, Esc menus \u2802 ';
+  cap.textContent = `spleen 5x8 \u2802 ${CELL_W}x${CELL_H} glyph cells \u2802 ${mapX}x${mapY} tiles \u2802 space pauses, 1-4 set speed, N calls the wave, Esc menus \u2802 `;
   const smithLink = document.createElement('a');
   smithLink.href = 'tilesmith.html';
   smithLink.textContent = 'tile smith ->';
@@ -244,7 +273,7 @@ async function main(): Promise<void> {
 
   // ---- screens -------------------------------------------------------------
   const menuSpec = (): import('@ascii-defense/view').MenuSpec | null => {
-    const runSave = loadRun();
+    const runSave = loadRunForThisScreen();
     switch (mode) {
       case 'title':
         return {
@@ -454,7 +483,7 @@ async function main(): Promise<void> {
         break;
       }
       case 'continue': {
-        const r = loadRun();
+        const r = loadRunForThisScreen();
         if (r.run) startRun(r.run.threatIdx, r.run.seed, r.run);
         break;
       }
@@ -567,12 +596,12 @@ async function main(): Promise<void> {
       // click that arrives before the next render would otherwise land on
       // the previous menu's rows (found by synthetic-click verification).
       if (mode !== renderedMenuMode) return;
-      const id = menu.itemAt(e.offsetX, e.offsetY, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
+      const id = menu.itemAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
       if (id) menuAction(id);
       return;
     }
     if (snap?.offer) {
-      const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W * 2, GLYPH_PX_H * 2);
+      const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
       if (option === -1) act({ k: 'rerollOffer' });
       else if (option !== null) act({ k: 'pickRelic', option });
     }

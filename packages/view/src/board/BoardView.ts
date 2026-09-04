@@ -29,8 +29,28 @@ export { CELL_W, CELL_H } from './style';
 // Fallback art for a tower with no sprite in content - distinct silhouette,
 // no animation. Every shipped tower has a sprite; this catches new content
 // authored ahead of its art.
-const TOWER_ART_DEFAULT = { art: ['.-^-.', '|[?]|', "'---'"], coreRole: 'path.3' };
 const TOWER_CORE = /[OMFR?]/;
+/** A framed box with '[?]' in the middle, at whatever size the cell is. */
+function fallbackArt(w: number, h: number): string[] {
+  const mid = Math.floor(h / 2);
+  const cx = Math.floor(w / 2);
+  const rows: string[] = [];
+  for (let y = 0; y < h; y++) {
+    let row = '';
+    for (let x = 0; x < w; x++) {
+      if (y === 0) row += x === 0 || x === w - 1 ? '.' : x === cx ? '^' : '-';
+      else if (y === h - 1) row += x === 0 || x === w - 1 ? "'" : '-';
+      else if (y === mid && x >= cx - 1 && x <= cx + 1) row += '[?]'[x - (cx - 1)];
+      else row += x === 0 || x === w - 1 ? '|' : ' ';
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+const TOWER_ART_DEFAULT = { art: fallbackArt(CELL_W, CELL_H), coreRole: 'path.3' };
+/** The middle row and the three middle columns of a cell - where markers sit. */
+const MID_Y = Math.floor(CELL_H / 2);
+const MID_X = Math.floor(CELL_W / 2);
 
 // Per-enemy-type look, so the roster is readable on the board. Placeholder
 // until sprites; unknown ids fall back to the classic '@'.
@@ -426,9 +446,9 @@ export class BoardView {
     for (const c of state.caches ?? []) {
       const gx = c.x * CELL_W;
       const gy = offsetY + c.y * CELL_H;
-      term.put(gx + 1, gy + 1, '[', role('terrain.ore.lit'));
-      term.put(gx + 2, gy + 1, '?', '#ffffff', '#5a4a12');
-      term.put(gx + 3, gy + 1, ']', role('terrain.ore.lit'));
+      term.put(gx + MID_X - 1, gy + MID_Y, '[', role('terrain.ore.lit'));
+      term.put(gx + MID_X, gy + MID_Y, '?', '#ffffff', '#5a4a12');
+      term.put(gx + MID_X + 1, gy + MID_Y, ']', role('terrain.ore.lit'));
     }
 
     // Entry markers, two honest states (Daniil: a blink at a quiet entry
@@ -437,8 +457,8 @@ export class BoardView {
     for (const t of state.activeEntries ?? []) {
       const gx = t.x * CELL_W;
       const gy = offsetY + t.y * CELL_H;
-      term.put(gx + 1, gy + 1, '>', '#ffffff', '#8a2231');
-      term.put(gx + 3, gy + 1, '>', '#ffffff', '#8a2231');
+      term.put(gx + MID_X - 1, gy + MID_Y, '>', '#ffffff', '#8a2231');
+      term.put(gx + MID_X + 1, gy + MID_Y, '>', '#ffffff', '#8a2231');
     }
     const breathe = 1.3 + 1.5 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1);
     for (const t of state.telegraph ?? []) {
@@ -448,8 +468,8 @@ export class BoardView {
         for (let xx = 0; xx < CELL_W; xx++) term.shade(gx + xx, gy + yy, breathe, 0.12);
       // No bold in a bitmap font; contrast does bold's job - bright glyphs
       // on a solid dark-red plate that the breathing cannot wash out.
-      term.put(gx + 1, gy + 1, '!', '#ffffff', '#8a2231');
-      term.put(gx + 3, gy + 1, '!', '#ffffff', '#8a2231');
+      term.put(gx + MID_X - 1, gy + MID_Y, '!', '#ffffff', '#8a2231');
+      term.put(gx + MID_X + 1, gy + MID_Y, '!', '#ffffff', '#8a2231');
     }
 
     // The effects layer paints here - above the world, below the selection

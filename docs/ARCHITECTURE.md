@@ -133,11 +133,16 @@ shading uses in place of block elements.
   box drawing.
 - **No block elements.** `█▓▒░` do not exist; braille replaces them.
 - **Only light box drawing.** UI chrome cannot use `╔═╗`.
-- **Glyphs are 5×8, not square.** Square-ish cells require a 5×3 glyph grid.
+- **Glyphs are 5×8, not square.** An exactly square cell is 8×5 glyphs
+  (40×40 px) — D24, 2026-09-04; the first year ran 5×3 (25×24).
 
 ## 4. The grid, and subcell coordinates
 
-Three levels — glyph, cell (5×3 glyphs), tile (5×5 cells) — per PRD §3.
+Three levels — glyph, cell (8×5 glyphs), tile (5×5 cells) — per PRD §3. The
+cell is declared once in `content/assets/grid.json`: the view reads it, the
+content linter checks every sprite against it, and the board's size in tiles
+is derived from the viewport at boot (`app/boardSize.ts`), clamped to the
+6×4 … 12×7 range the generator is tuned for.
 
 **Entity positions are stored in subcell units from M1.** Cogmind positions
 particles on a subcell grid inside every cell, which is why its effects flow
