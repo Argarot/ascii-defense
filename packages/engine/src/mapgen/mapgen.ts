@@ -175,14 +175,19 @@ export const CORE_STRIP = 1;
 
 /**
  * The cell grid a run actually plays on: the board's tiles resolved, plus
- * the Core strip - null except the face. THE way to get cells from a map;
- * resolveCells alone is the tile grid without the Core.
+ * the Core strip - GROUND except the face (session 25, Daniil: "make the
+ * non-core cells ground sprites, actually buildable ones"; the two cells
+ * touching the face are the precious ones of PRD sec 4.5). THE way to get
+ * cells from a map; resolveCells alone is the tile grid without the Core.
  */
 export function mapCells(map: GeneratedMap, lib: TileLibrary): (CellType | null)[] {
   const tileW = map.board.width * TILE_SIZE;
   const tiles = resolveCells(map.board, lib);
   const out: (CellType | null)[] = new Array(map.cellsW * map.cellsH).fill(null);
-  for (let y = 0; y < map.cellsH; y++) for (let x = 0; x < tileW; x++) out[y * map.cellsW + x] = tiles[y * tileW + x];
+  for (let y = 0; y < map.cellsH; y++) {
+    for (let x = 0; x < tileW; x++) out[y * map.cellsW + x] = tiles[y * tileW + x];
+    for (let x = tileW; x < map.cellsW; x++) out[y * map.cellsW + x] = 'G';
+  }
   for (const c of map.coreFace) out[c.y * map.cellsW + c.x] = 'C';
   return out;
 }

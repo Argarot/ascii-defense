@@ -49,9 +49,9 @@ function state(over: Partial<HudState> = {}): HudState {
     rock: null,
     phase: 0,
     roster: [
-      { id: 'bolt', name: 'Bolt Turret', cost: 20, affordable: true, buildable: true },
+      { id: 'bolt', name: 'Bolt Turret', short: 'Bolt', cost: 20, affordable: true, buildable: true },
       { id: 'mortar', name: 'Mortar', cost: 35, affordable: true, buildable: true },
-      { id: 'frost', name: 'Frost Emitter', cost: 25, affordable: true, buildable: true },
+      { id: 'frost', name: 'Frost Emitter', short: 'Frost', cost: 25, affordable: true, buildable: true },
       { id: 'refinery', name: 'Refinery', cost: 60, affordable: false, buildable: false },
     ],
     waveNow: [{ name: 'skitter', count: 3, traits: ['fast'] }, { name: 'shellback', count: 1, traits: ['shielded'] }],
@@ -86,10 +86,12 @@ describe('the strip as text', () => {
     const term = new TextTerm(STRIP);
     const strip = new StripPanel(term, 10, 16, SPRITES);
     strip.render(state({ coreCard: { ...state().coreCard!, canDraw: true } }));
-    // The second button (mortar): 15 columns per button, any row below the title.
-    expect(strip.actionAt((1 + 15 + 3) * 10, 3 * 16)).toEqual({ kind: 'buildId', id: 'mortar' });
+    // The second button (mortar): 10 columns per button, any row below the title.
+    expect(strip.actionAt((1 + 10 + 3) * 10, 3 * 16)).toEqual({ kind: 'buildId', id: 'mortar' });
     // The greyed refinery is still a target - the click reaches the sim, which says no.
-    expect(strip.actionAt((1 + 45 + 3) * 10, 3 * 16)).toEqual({ kind: 'buildId', id: 'refinery' });
+    expect(strip.actionAt((1 + 30 + 3) * 10, 3 * 16)).toEqual({ kind: 'buildId', id: 'refinery' });
+    // A spare slot is room, not a button.
+    expect(strip.actionAt((1 + 50 + 3) * 10, 3 * 16)).toBeNull();
     // A ready slot in the Core section is a relic action; an empty one is nothing.
     const text = term.toText().split('\n');
     const orRow = text.findIndex((l) => l.includes('OR '));

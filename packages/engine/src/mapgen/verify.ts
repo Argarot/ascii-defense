@@ -51,8 +51,8 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
   // ---- Tier 0: the Core is a FACE past the east border, fed once ----------
   // Session 24 (Daniil): no tile carries the Core. Three 'C' cells stand in
   // the strip column, stacked, centred on `core`; exactly one road cell
-  // touches them - the root's east port - and every other Core-adjacent
-  // cell is nothing at all.
+  // touches them - the root's east port. The rest of the column is plain
+  // GROUND (session 25): buildable, never road, so the face is fed once.
   if (W !== tileW + CORE_STRIP || H !== height * TILE_SIZE) {
     bad('tier0/cell-grid', `cell grid ${W}x${H} is not ${tileW + CORE_STRIP}x${height * TILE_SIZE}`);
   }
@@ -67,6 +67,11 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
   let coreCells = 0;
   for (const c of cells) if (c === 'C') coreCells++;
   if (coreCells !== 3) bad('tier0/core-cells', `${coreCells} Core cells on the grid, not 3`);
+  for (let y = 0; y < H; y++)
+    for (let x = tileW; x < W; x++) {
+      const c = cellAt(x, y);
+      if (c !== 'C' && c !== 'G') bad('tier0/strip-ground', `strip cell (${x},${y}) is '${c}'; the column is ground around the face`);
+    }
   let feeds = 0;
   for (const c of face) {
     const west = cellAt(c.x - 1, c.y);

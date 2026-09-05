@@ -36,6 +36,18 @@ const TRAIT_WORD: Record<string, string> = {
   fast: 'fast',
   swarm: 'swarm x3',
 };
+/** The same trait as a two-glyph MARK for a narrow strip: the shield's brackets are the board's own. */
+const TRAIT_MARK: Record<string, string> = {
+  armoured: '##',
+  shielded: '()',
+  fast: '>>',
+  swarm: 'x3',
+};
+function traitText(traits: readonly string[], room: number): string {
+  const words = traits.map((t) => TRAIT_WORD[t] ?? t).join(' ');
+  if (words.length <= room) return words;
+  return traits.map((t) => TRAIT_MARK[t] ?? t.slice(0, 2)).join(' ').slice(0, Math.max(0, room));
+}
 
 interface Region {
   row: number;
@@ -44,7 +56,15 @@ interface Region {
   action: HudAction;
 }
 
-const BUTTON_W = 15; // room for "Frost Emitter" under a centred 8-glyph sprite
+/**
+ * One button per roster slot, eight slots (session 25, Daniil: "leave space
+ * for more towers"; PRD sec 5.3's target is eight). Ten columns: the 8-glyph
+ * sprite with a margin each side, and a SHORT name under it (the roster's
+ * `short`; the full names are too long). On a 7-tile strip (144 columns)
+ * the eight buttons take 82, the wave 32 and the Core card the rest.
+ */
+const BUTTON_W = 10;
+export const BUTTON_SLOTS = 8;
 
 export class StripPanel {
   private regions: Region[] = [];
@@ -83,11 +103,14 @@ export class StripPanel {
     // ---- BUILD: the roster as sprite buttons -------------------------------
     const roster = s.roster ?? [];
     term.write(1, 0, 'BUILD', dim);
-    roster.forEach((t, i) => {
+    roster.slice(0, BUTTON_SLOTS).forEach((t, i) => {
       const x0 = 1 + i * BUTTON_W;
       const usable = t.affordable && t.buildable;
       const selected = t.id === s.selectedBuildId;
-      const plate = selected ? accent : usable ? grid : bg;
+      // The plate never changes with selection (Daniil, session 25: the
+      // accent plate was distracting). Selection is the name in accent with
+      // a marker before it - readable, not loud.
+      const plate = usable ? grid : bg;
       for (let r = 1; r < H; r++) for (let c = 0; c < BUTTON_W; c++) term.put(x0 + c, r, ' ', plate, plate);
       const sp = this.sprites.get(t.id);
       const sx = x0 + Math.floor((BUTTON_W - CELL_W) / 2);
@@ -97,19 +120,27 @@ export class StripPanel {
       } else {
         term.write(sx, 3, t.id.slice(0, CELL_W), usable ? text : dim, plate);
       }
-      const name = t.name.slice(0, BUTTON_W - 2);
-      term.write(x0 + 1, 1 + CELL_H, name, selected ? bg : usable ? text : dim, plate);
+      const name = (t.short ?? t.name).slice(0, BUTTON_W - 2);
+      if (selected) term.put(x0, 1 + CELL_H, '>', accent, plate);
+      term.write(x0 + 1, 1 + CELL_H, name, selected ? accent : usable ? text : dim, plate);
       const cost = `$${t.cost}`;
-      term.write(x0 + BUTTON_W - 1 - cost.length, 2 + CELL_H, cost, selected ? bg : t.affordable ? text : role('enemy.fast'), plate);
+      term.write(x0 + BUTTON_W - 1 - cost.length, 2 + CELL_H, cost, t.affordable ? text : role('enemy.fast'), plate);
       for (let r = 1; r < H; r++) this.regions.push({ row: r, x0, x1: x0 + BUTTON_W, action: { kind: 'buildId', id: t.id } });
     });
-    const buildW = 1 + roster.length * BUTTON_W + 1;
+    // The spare slots are drawn as empty frames: the room for the towers
+    // still to come is visible, not implied.
+    for (let i = roster.length; i < BUTTON_SLOTS; i++) {
+      const x0 = 1 + i * BUTTON_W;
+      term.put(x0, 1, '┌', grid); term.put(x0 + BUTTON_W - 2, 1, '┐', grid);
+      term.put(x0, H - 1, '└', grid); term.put(x0 + BUTTON_W - 2, H - 1, '┘', grid);
+    }
+    const buildW = 1 + BUTTON_SLOTS * BUTTON_W + 1;
     // The hint shares the title row: the buttons' bottom row is their cost.
     if (s.buildTargetSelected) term.write(8, 0, 'click a button: builds on the selected tile'.slice(0, Math.max(0, buildW - 9)), dim);
 
     // ---- WAVE: now and next, with traits -------------------------------------
     const wx = buildW + 1;
-    const waveW = Math.max(28, Math.min(52, Math.floor((W - wx) * 0.55)));
+    const waveW = Math.max(32, Math.min(52, Math.floor((W - wx) * 0.55)));
     const colW = Math.floor(waveW / 2);
     const head = s.finalWave > 0 ? `WAVE ${s.wave}/${s.finalWave}` : `WAVE ${s.wave}`;
     term.write(wx, 0, head, text);
@@ -117,11 +148,11 @@ export class StripPanel {
     term.write(wx, 1, 'NOW', dim);
     const now = s.waveNow ?? [];
     if (now.length === 0) term.write(wx, 2, 'the road is empty', dim);
-    const KIND_W = 13;
+    const KIND_W = 12;
     now.slice(0, H - 2).forEach((k, i) => {
       const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);
       term.write(wx, 2 + i, line, text);
-      term.write(wx + KIND_W, 2 + i, k.traits.map((t) => TRAIT_WORD[t] ?? t).join(' ').slice(0, Math.max(0, colW - KIND_W - 1)), dim);
+      term.write(wx + KIND_W, 2 + i, traitText(k.traits, colW - KIND_W - 1), dim);
     });
     const nx = wx + colW;
     if (s.nextWave) {
@@ -130,7 +161,7 @@ export class StripPanel {
       nw.kinds.slice(0, H - 2).forEach((k, i) => {
         const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);
         term.write(nx, 2 + i, line, text);
-        term.write(nx + KIND_W, 2 + i, (k.traits ?? []).map((t) => TRAIT_WORD[t] ?? t).join(' ').slice(0, Math.max(0, colW - KIND_W - 1)), dim);
+        term.write(nx + KIND_W, 2 + i, traitText(k.traits ?? [], colW - KIND_W - 1), dim);
       });
     } else {
       term.write(nx, 1, 'NEXT', dim);

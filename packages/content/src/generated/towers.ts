@@ -13,6 +13,10 @@ export interface TowerRoster {
     {
       id: string;
       name?: string;
+      /**
+       * The name the strip's button shows under the sprite (session 25): at most nine glyphs. Absent = the name, cut.
+       */
+      short?: string;
       cost: number;
       range: number;
       /**
@@ -489,6 +493,10 @@ export interface TowerRoster {
     ...{
       id: string;
       name?: string;
+      /**
+       * The name the strip's button shows under the sprite (session 25): at most nine glyphs. Absent = the name, cut.
+       */
+      short?: string;
       cost: number;
       range: number;
       /**
@@ -999,6 +1007,11 @@ export const towersSchema = {
           },
           "name": {
             "type": "string"
+          },
+          "short": {
+            "description": "The name the strip's button shows under the sprite (session 25): at most nine glyphs. Absent = the name, cut.",
+            "type": "string",
+            "maxLength": 9
           },
           "cost": {
             "type": "number",

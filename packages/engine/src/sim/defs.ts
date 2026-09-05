@@ -253,6 +253,8 @@ export interface TowerTierDef {
 export interface TowerDef {
   id: string;
   name?: string;
+  /** The name a button can afford (up to nine glyphs); the strip shows it under the sprite. */
+  short?: string;
   cost: number;
   /** Cells. */
   range: number;
