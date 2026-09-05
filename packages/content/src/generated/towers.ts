@@ -77,6 +77,10 @@ export interface TowerRoster {
         slowTicks?: number;
       };
       /**
+       * What its hits are (session 26, PRD sec 8): kinetic or energy. Enemies multiply damage by their resist entry for the type. Absent = untyped (producers).
+       */
+      damageType?: 'kinetic' | 'energy';
+      /**
        * projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).
        */
       attack?: 'projectile' | 'pulse' | 'chain' | 'none';
@@ -616,6 +620,10 @@ export interface TowerRoster {
          */
         slowTicks?: number;
       };
+      /**
+       * What its hits are (session 26, PRD sec 8): kinetic or energy. Enemies multiply damage by their resist entry for the type. Absent = untyped (producers).
+       */
+      damageType?: 'kinetic' | 'energy';
       /**
        * projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).
        */
@@ -1245,6 +1253,13 @@ export const towersSchema = {
                 "minimum": 1
               }
             }
+          },
+          "damageType": {
+            "description": "What its hits are (session 26, PRD sec 8): kinetic or energy. Enemies multiply damage by their resist entry for the type. Absent = untyped (producers).",
+            "enum": [
+              "kinetic",
+              "energy"
+            ]
           },
           "attack": {
             "description": "projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).",

@@ -8,9 +8,21 @@
  * features (Daniil, session A), so that later balance and effects work is
  * data plus small engine additions, never a migration.
  */
+/** The two damage types (PRD sec 8): what a tower deals, what an enemy resists. */
+export type DamageType = 'kinetic' | 'energy';
+export const DAMAGE_TYPES: readonly DamageType[] = ['kinetic', 'energy'];
+
+/** An enemy's multiplier against a type: 1 when it names none (0 = immune, <1 resists, >1 weak). */
+export function resistMul(def: EnemyDef, type: DamageType | undefined): number {
+  if (!type) return 1;
+  return def.resist?.[type] ?? 1;
+}
+
 export interface EnemyDef {
   id: string;
   name?: string;
+  /** Damage multipliers by type (session 26, WBS 2.8): 0 immune, 0.5 resists, 1.5 weak. Absent = 1. */
+  resist?: Partial<Record<DamageType, number>>;
   hp: number;
   /** Cells per tick at 20 Hz. */
   speed: number;
@@ -261,6 +273,8 @@ export interface TowerDef {
   short?: string;
   /** One sentence: what it is and what it answers (the build card, the catalogue). */
   desc?: string;
+  /** What its hits are (session 26, WBS 2.8); absent = untyped, every enemy takes it at 1. */
+  damageType?: DamageType;
   cost: number;
   /** Cells. */
   range: number;

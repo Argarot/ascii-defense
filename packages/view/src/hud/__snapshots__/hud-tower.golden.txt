@@ -16,6 +16,7 @@ found: +80 scrap
 Bolt Turret
 kills 12
 
+type  kinetic
 dmg   8
 dps   11.4
 range 6 -> 8.5
@@ -42,7 +43,6 @@ Reach: +2.5 range. Covers more
 road from the same cell.
 
 X sells (70% back)
-
 
 
 

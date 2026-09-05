@@ -136,6 +136,10 @@
               }
             }
           },
+          "damageType": {
+            "description": "What its hits are (session 26, PRD sec 8): kinetic or energy. Enemies multiply damage by their resist entry for the type. Absent = untyped (producers).",
+            "enum": ["kinetic", "energy"]
+          },
           "attack": {
             "description": "projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).",
             "enum": [

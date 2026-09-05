@@ -25,6 +25,13 @@ export interface EnemyRoster {
       bounty?: number;
       traits?: ('armoured' | 'shielded' | 'fast' | 'swarm')[];
       /**
+       * Damage multipliers by type (session 26, PRD sec 8): 0 immune, 0.5 resists, 1.5 weak; absent = 1. Applied before armour; an immune body takes nothing.
+       */
+      resist?: {
+        kinetic?: number;
+        energy?: number;
+      };
+      /**
        * Flat damage reduction per hit; hits always deal at least 1.
        */
       armor?: number;
@@ -51,6 +58,13 @@ export interface EnemyRoster {
        */
       bounty?: number;
       traits?: ('armoured' | 'shielded' | 'fast' | 'swarm')[];
+      /**
+       * Damage multipliers by type (session 26, PRD sec 8): 0 immune, 0.5 resists, 1.5 weak; absent = 1. Applied before armour; an immune body takes nothing.
+       */
+      resist?: {
+        kinetic?: number;
+        energy?: number;
+      };
       /**
        * Flat damage reduction per hit; hits always deal at least 1.
        */
@@ -132,6 +146,21 @@ export const enemiesSchema = {
               ]
             },
             "uniqueItems": true
+          },
+          "resist": {
+            "description": "Damage multipliers by type (session 26, PRD sec 8): 0 immune, 0.5 resists, 1.5 weak; absent = 1. Applied before armour; an immune body takes nothing.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kinetic": {
+                "type": "number",
+                "minimum": 0
+              },
+              "energy": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
           },
           "armor": {
             "description": "Flat damage reduction per hit; hits always deal at least 1.",

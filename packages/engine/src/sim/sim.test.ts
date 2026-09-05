@@ -405,6 +405,42 @@ describe('towers and projectiles', () => {
     expect(checked).toBe(true);
   });
 
+  it('damage types decide fights: a resisting body takes half, a weak one half again, an immune one nothing (session 26)', () => {
+    const { map, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 3, spawnEveryTicks: 1 });
+    const COIL: TowerDef = { id: 'bolt', cost: 20, range: 8, fireEveryTicks: 10, attack: 'pulse', damageType: 'energy', projectile: { damage: 10, speed: 1 } };
+    const parked: EnemyDef = { ...WALKER, hp: 10000, speed: 0.005, resist: { energy: 0.5 } };
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [COIL] });
+    for (const entry of map.entries) {
+      let placed = false;
+      for (let dy = -3; dy <= 3 && !placed; dy++)
+        for (let dx = -3; dx <= 3; dx++) {
+          const x = entry.x + dx;
+          const y = entry.y + dy;
+          if (x >= 0 && y >= 0 && x < cellsW && y < cellsH && sim.canBuildAt(x, y) && sim.buildTower(x, y, 'bolt')) { placed = true; break; }
+        }
+    }
+    for (let t = 0; t < 40; t++) sim.tick();
+    // Every hit was 5, never 10: totals are multiples of 5 and at least one is not a multiple of 10.
+    let hit = 0;
+    for (let i = 0; i < 64; i++) if (sim.alive[i] && sim.hp[i] < 10000) { hit++; expect((10000 - sim.hp[i]) % 5).toBe(0); }
+    expect(hit).toBeGreaterThan(0);
+    // The same tower against an immune body: nothing, not even the min-1 chip.
+    const immune: EnemyDef = { ...WALKER, hp: 10000, speed: 0.005, resist: { energy: 0 } };
+    const sim2 = new Sim(53, { ...simOpts, enemyDefs: [immune], towerDefs: [COIL] });
+    for (const entry of map.entries) {
+      let placed = false;
+      for (let dy = -3; dy <= 3 && !placed; dy++)
+        for (let dx = -3; dx <= 3; dx++) {
+          const x = entry.x + dx;
+          const y = entry.y + dy;
+          if (x >= 0 && y >= 0 && x < cellsW && y < cellsH && sim2.canBuildAt(x, y) && sim2.buildTower(x, y, 'bolt')) { placed = true; break; }
+        }
+    }
+    for (let t = 0; t < 40; t++) sim2.tick();
+    for (let i = 0; i < 64; i++) if (sim2.alive[i]) expect(sim2.hp[i]).toBe(10000);
+    expect(sim2.events.some((e) => e.kind === 'pulse')).toBe(true);
+  });
+
   it('chain towers arc through nearby bodies with falloff, no projectiles (session 25)', () => {
     // Six bodies over three entries, one tick apart: every entry gets a pair standing together.
     const { map, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 6, spawnEveryTicks: 1 });
