@@ -107,8 +107,10 @@ async function main(): Promise<void> {
   const hud = new HudPanel(hudTerm, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE, SPRITES);
   // The strip (4.27): a full-width panel under the board at the HUD's
   // scale - build buttons as the towers' own sprites, the wave, the Core.
-  const stripTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: STRIP_ROWS, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, background: role('ui.bg') });
-  const strip = new StripPanel(stripTerm, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE, SPRITES);
+  // The strip at the BOARD's scale (feedback item 6, 2026-09-05): the same
+  // 128 px as before, twice the columns and rows.
+  const stripTerm = new GLTerm(glyphs, { cols: boardCols, rows: STRIP_ROWS, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
+  const strip = new StripPanel(stripTerm, GLYPH_PX_W, GLYPH_PX_H, SPRITES);
   let stripHover: HudAction | null = null;
   const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, transparent: true });
   modalTerm.canvas.style.position = 'absolute';

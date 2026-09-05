@@ -259,6 +259,8 @@ export interface TowerDef {
   name?: string;
   /** The name a button can afford (up to nine glyphs); the strip shows it under the sprite. */
   short?: string;
+  /** One sentence: what it is and what it answers (the build card, the catalogue). */
+  desc?: string;
   cost: number;
   /** Cells. */
   range: number;

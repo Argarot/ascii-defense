@@ -59,7 +59,7 @@ function towerRows() {
     const rate = t.attack === 'none' ? '' : n(TICK_HZ / t.fireEveryTicks, 2);
     const dps = t.attack === 'none' ? '' : n((dmg * TICK_HZ) / t.fireEveryTicks, 1);
     const prod = t.production ? `${t.production.ore} Ore / ${n(t.production.everyTicks / TICK_HZ)} s` : '';
-    return [`**${t.name ?? t.id}**`, t.id, t.cost, n(t.range), rate, dmg || '', dps, prod || towerShape(t)];
+    return [`**${t.name ?? t.id}**`, t.id, t.cost, n(t.range), rate, dmg || '', dps, prod || towerShape(t), t.desc ?? ''];
   });
 }
 function tierRows(t) {
@@ -91,7 +91,7 @@ const SECTIONS = {
     [
       `${towers.length} towers in \`packages/content/assets/towers/roster.json\`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).`,
       '',
-      table(['Tower', 'id', 'Cost', 'Range', 'Rate', 'Damage', 'DPS', 'Shape / production'], towerRows()),
+      table(['Tower', 'id', 'Cost', 'Range', 'Rate', 'Damage', 'DPS', 'Shape / production', 'What it is'], towerRows()),
       '',
       ...towers.flatMap((t) => [`#### ${t.name ?? t.id} - the tree`, '', table(['Tier', 'Choice', 'Cost', 'What it does', 'Data'], tierRows(t)), '']),
     ].join('\n'),

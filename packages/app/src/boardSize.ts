@@ -27,7 +27,7 @@ export interface BoardSizeOptions {
 const CHROME_W = 24;
 /** Vertical chrome: page padding, the caption line, borders. */
 const CHROME_H = 70;
-/** The strip under the board (4.27): its rows at the HUD's scale. */
+/** The strip under the board (4.27): its height as HUD-scale rows (it renders at board scale with twice the rows, the same pixels). */
 export const STRIP_ROWS_RESERVED = 8;
 /** The generator is tuned between these; a tinier board would starve the
  *  carve of room for entries, a bigger one is the old 12x7 ceiling. */

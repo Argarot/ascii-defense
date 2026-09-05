@@ -26,8 +26,15 @@ import { drawSpriteFrame } from '../board/sprites';
 import { CELL_H, CELL_W } from '../board/style';
 import type { HudAction, HudState } from './HudPanel';
 
-/** Rows the strip takes at the HUD's font scale; the board loses that much height (boardSize.ts). */
-export const STRIP_ROWS = 8;
+/**
+ * Rows the strip takes at the BOARD's font scale (feedback 2026-09-05 item
+ * 6: the 2x strip ran out of room with six towers and twelve slots; at 1x
+ * the same 128 px hold sixteen rows and twice the columns). boardSize.ts
+ * reserves the same height as eight HUD-scale rows.
+ */
+export const STRIP_ROWS = 16;
+/** A button's rows: the sprite, the name, the cost. */
+const BUTTON_H = 7;
 
 /** A trait, in a word the strip can afford (the rule lives in engine/sim/traits.ts). */
 const TRAIT_WORD: Record<string, string> = {
@@ -111,7 +118,7 @@ export class StripPanel {
       // accent plate was distracting). Selection is the name in accent with
       // a marker before it - readable, not loud.
       const plate = usable ? grid : bg;
-      for (let r = 1; r < H; r++) for (let c = 0; c < BUTTON_W; c++) term.put(x0 + c, r, ' ', plate, plate);
+      for (let r = 1; r <= BUTTON_H; r++) for (let c = 0; c < BUTTON_W; c++) term.put(x0 + c, r, ' ', plate, plate);
       const sp = this.sprites.get(t.id);
       const sx = x0 + Math.floor((BUTTON_W - CELL_W) / 2);
       if (sp) {
@@ -125,18 +132,20 @@ export class StripPanel {
       term.write(x0 + 1, 1 + CELL_H, name, selected ? accent : usable ? text : dim, plate);
       const cost = `$${t.cost}`;
       term.write(x0 + BUTTON_W - 1 - cost.length, 2 + CELL_H, cost, t.affordable ? text : role('enemy.fast'), plate);
-      for (let r = 1; r < H; r++) this.regions.push({ row: r, x0, x1: x0 + BUTTON_W, action: { kind: 'buildId', id: t.id } });
+      for (let r = 1; r <= BUTTON_H; r++) this.regions.push({ row: r, x0, x1: x0 + BUTTON_W, action: { kind: 'buildId', id: t.id } });
     });
     // The spare slots are drawn as empty frames: the room for the towers
     // still to come is visible, not implied.
     for (let i = roster.length; i < BUTTON_SLOTS; i++) {
       const x0 = 1 + i * BUTTON_W;
       term.put(x0, 1, '┌', grid); term.put(x0 + BUTTON_W - 2, 1, '┐', grid);
-      term.put(x0, H - 1, '└', grid); term.put(x0 + BUTTON_W - 2, H - 1, '┘', grid);
+      term.put(x0, BUTTON_H, '└', grid); term.put(x0 + BUTTON_W - 2, BUTTON_H, '┘', grid);
     }
     const buildW = 1 + BUTTON_SLOTS * BUTTON_W + 1;
-    // The hint shares the title row: the buttons' bottom row is their cost.
-    if (s.buildTargetSelected) term.write(8, 0, 'click a button: builds on the selected tile'.slice(0, Math.max(0, buildW - 9)), dim);
+    // Under the buttons: what a click does, and where the card is.
+    term.write(1, BUTTON_H + 2, s.buildTargetSelected ? 'click a button: builds on the selected tile' : 'select a tile, then click a button', dim);
+    term.write(1, BUTTON_H + 3, 'hover a button: its card in the column', dim);
+    term.write(1, BUTTON_H + 4, 'grey: not enough scrap, or not for that tile', dim);
 
     // ---- WAVE: now and next, with traits -------------------------------------
     const wx = buildW + 1;

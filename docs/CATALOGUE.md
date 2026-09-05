@@ -11,14 +11,14 @@
 <!-- generated:towers -->
 6 towers in `packages/content/assets/towers/roster.json`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).
 
-| Tower | id | Cost | Range | Rate | Damage | DPS | Shape / production |
-|---|---|---|---|---|---|---|---|
-| **Bolt Turret** | bolt | 20 | 6 | 1.43 | 8 | 11.4 | homing shot |
-| **Mortar** | mortar | 35 | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 |
-| **Refinery** | refinery | 30 | 0.5 |  |  |  | 1 Ore / 40 s |
-| **Frost Emitter** | frost | 25 | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once |
-| **Tesla Coil** | tesla | 40 | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop |
-| **Missile Rack** | missile | 50 | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 |
+| Tower | id | Cost | Range | Rate | Damage | DPS | Shape / production | What it is |
+|---|---|---|---|---|---|---|---|---|
+| **Bolt Turret** | bolt | 20 | 6 | 1.43 | 8 | 11.4 | homing shot | Homing single shots at a steady rate. The all-rounder; its tree picks a job. |
+| **Mortar** | mortar | 35 | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. |
+| **Refinery** | refinery | 30 | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. |
+| **Frost Emitter** | frost | 25 | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Control first, damage on a path. |
+| **Tesla Coil** | tesla | 40 | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. |
+| **Missile Rack** | missile | 50 | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. |
 
 #### Bolt Turret - the tree
 
