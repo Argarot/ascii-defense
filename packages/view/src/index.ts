@@ -14,3 +14,4 @@ export { MenuScreen, tileCapacity } from './screens/MenuScreen';
 export type { MenuItem, MenuSpec } from './screens/MenuScreen';
 export { isReducedMotion, setReducedMotion } from './motion';
 export { role } from './palette';
+export { interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP } from './board/interpolate';

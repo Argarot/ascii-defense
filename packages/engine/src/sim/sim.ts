@@ -574,6 +574,11 @@ export class Sim {
    * 25): cooldown01 runs 1 (just fired) to 0 (ready); sinceFire is ticks
    * since the last shot, -1 before the first.
    */
+  /** The generation of an enemy slot: a recycled slot is a new body (the view's interpolation keys on it). */
+  enemyGen(i: number): number {
+    return this.gen[i];
+  }
+
   firePhase(t: Tower): { cooldown01: number; sinceFire: number } {
     const every = Math.max(1, this.stats(t).fireEveryTicks);
     return { cooldown01: Math.max(0, Math.min(1, t.cooldown / every)), sinceFire: t.lastFire < 0 ? -1 : this.tickCount - t.lastFire };
