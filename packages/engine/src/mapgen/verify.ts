@@ -126,6 +126,19 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
         }
       }
     }
+    // D28: lanes balanced - when the carve reports the band met, the
+    // shortest entry route is at least that share of the longest, in the
+    // cells enemies walk. Reported, never forced: a board that cannot
+    // balance says 0 and is not held to it.
+    if ((map.laneBand ?? 0) > 0 && map.entries.length > 1) {
+      const lanes = map.entries.map((e) => flow!.dist[e.y * W + e.x]);
+      const shortest = Math.min(...lanes);
+      const longest = Math.max(...lanes);
+      // A slot-level band of 0.7 lands within a tile of itself in cells.
+      if (shortest < map.laneBand * longest - TILE_SIZE) {
+        bad('tier1/lanes-balanced', `shortest lane ${shortest} cells < ${map.laneBand} x longest ${longest}`);
+      }
+    }
   } catch (err) {
     bad('tier1/routes', err instanceof Error ? err.message : String(err));
   }
@@ -300,6 +313,14 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
           dist[nk] = dist[k] + 1;
           q.push(nk);
         }
+      }
+    }
+    // D28: the board fills - the road covers the share the carve reports.
+    {
+      let roadCount = 0;
+      isRoadSlot.forEach((v) => { if (v) roadCount++; });
+      if (roadCount < Math.floor((map.coverage ?? 0) * width * height)) {
+        bad('tier2/coverage', `${roadCount}/${width * height} road slots below the reported coverage ${(map.coverage ?? 0).toFixed(2)}`);
       }
     }
     let voidCount = 0;

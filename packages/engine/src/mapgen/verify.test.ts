@@ -113,7 +113,7 @@ describe('verifyMap: the current generator against the spec (the baseline)', () 
     }
     const loopMap = {
       board, entries: [], core: { x: 0, y: 0 }, coreFace: [], cellsW: 2 * 5 + 1, cellsH: 2 * 5,
-      caches: [], rockContents: [], deposits: [], boons: [], voidShareTarget: 1, pathFloorCells: 0,
+      caches: [], rockContents: [], deposits: [], boons: [], voidShareTarget: 1, pathFloorCells: 0, coverage: 0, laneBand: 0,
     };
     const issues = verifyMap(loopMap, LIB, {});
     expect(issues.some((i) => i.rule === 'tier1/road-tree')).toBe(true);
@@ -148,7 +148,7 @@ describe('regression: loops on generated maps (playtest 2026-08-19, seed 633440)
     const ringMap = {
       board, entries: [], core, coreFace: [{ x: core.x, y: core.y - 1 }, core, { x: core.x, y: core.y + 1 }],
       cellsW: 3 * 5 + 1, cellsH: 3 * 5, caches: [], rockContents: [], deposits: [], boons: [],
-      voidShareTarget: 1, pathFloorCells: 0,
+      voidShareTarget: 1, pathFloorCells: 0, coverage: 0, laneBand: 0,
     };
     const issues = verifyMap(ringMap, LIB, {});
     expect(issues.some((i) => i.rule === 'tier1/route-unique'), JSON.stringify(issues)).toBe(true);

@@ -71,12 +71,14 @@ describe('map generation v2 - trees, void, spread', () => {
         const W = opts.width * TILE_SIZE;
         const H = opts.height * TILE_SIZE;
 
-        expect(map.entries.length, JSON.stringify(opts)).toBe(opts.entries);
+        // Session 24 (D28): entries are EMERGENT - at least the threat's roll,
+        // more when filling the board needs more walks.
+        expect(map.entries.length, JSON.stringify(opts)).toBeGreaterThanOrEqual(opts.entries);
         for (const e of map.entries) {
           expect(e.x === 0 || e.y === 0 || e.x === W - 1 || e.y === H - 1).toBe(true);
           expect(cells[e.y * W + e.x]).toBe('X');
         }
-        expect(new Set(map.entries.map((e) => `${e.x},${e.y}`)).size).toBe(opts.entries);
+        expect(new Set(map.entries.map((e) => `${e.x},${e.y}`)).size).toBe(map.entries.length);
       }
     }
   });
@@ -275,7 +277,7 @@ describe('map generation v2 - trees, void, spread', () => {
         entries: 5,
         targetPathCells: 130,
       });
-      expect(map.entries.length).toBe(5);
+      expect(map.entries.length).toBeGreaterThanOrEqual(5); // emergent since D28
     }
   });
 
@@ -402,8 +404,9 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
       const placed = map.board.slots.filter(Boolean).map((p) => p!.tileId);
       for (const id of opts.specials) expect(placed.filter((p) => p === id).length, `${id} seed ${seed * 3}`).toBe(1);
       // One arm per anchor joins the tree; every other arm is a new entry:
-      // 4-way + 3-way + 4-way contribute exactly 3 + 2 + 3 fronts.
-      expect(map.entries.length).toBe(opts.entries + 8);
+      // 4-way + 3-way + 4-way contribute 3 + 2 + 3 fronts - and since D28
+      // the board fills, so more walks (more entries) may follow.
+      expect(map.entries.length).toBeGreaterThanOrEqual(opts.entries + 8);
       expect(new Set(map.entries.map((e) => `${e.x},${e.y}`)).size).toBe(map.entries.length);
       // NO LOOPS: the slot graph is a tree even with anchors woven in.
       const { nodes, edges } = roadGraph(map.board, JUNCTIONS, opts.width, opts.height);

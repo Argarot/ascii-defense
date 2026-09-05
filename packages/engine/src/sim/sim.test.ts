@@ -2,6 +2,7 @@
 import { createRng } from '../rng/rng';
 import { TILE_SIZE } from '../tiles/tile';
 import { TileLibrary } from '../tiles/board';
+import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
 import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions } from './sim';
@@ -47,8 +48,8 @@ function cellOfType(cells: readonly (string | null)[], W: number, H: number, typ
   throw new Error(`no ${type} cell on this board`);
 }
 
-function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
-  const opts = { width: 10, height: 6, entries: 3, targetPathCells: 40 };
+function makeWorld(seed: number, extra: Partial<SimOptions> = {}, gen: { coverage?: number } = {}) {
+  const opts = { width: 10, height: 6, entries: 3, targetPathCells: 40, ...gen };
   const map = generateMap(createRng(seed).stream('map'), LIB, opts);
   const cellsW = map.cellsW;
   const cellsH = map.cellsH;
@@ -78,8 +79,49 @@ function makeOreWorld(start: number, extra: Partial<SimOptions> = {}) {
 }
 
 /** First buildable cell adjacent to a route cell - a spot a player would pick. */
+/**
+ * A ground cell touching the road, NEAREST THE CORE first (nth = 0 is the
+ * closest). Session 24: the Core has one entrance at the east edge, so every
+ * enemy from every entry walks past the cells beside the root tile - the
+ * spot a tower test needs. On the old centre-Core boards the first cell in
+ * scan order happened to sit on the main road; on a filled board it sits
+ * beside a branch nobody walks.
+ */
 function buildSpotNear(cells: readonly (string | null)[], W: number, H: number, nth = 0): { x: number; y: number } {
-  let seen = 0;
+  // Nearness is ROAD distance to the Core, not board distance: a branch can
+  // hug the east edge one row off the face without being on the way in.
+  const flow = computeFlowField(cells as (CellType | null)[], W, H, []);
+  const spots: { x: number; y: number; d: number }[] = [];
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      if (cells[y * W + x] !== 'G') continue;
+      let d = Infinity;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || cells[ny * W + nx] !== 'X') continue;
+        const fd = flow.dist[ny * W + nx];
+        if (fd >= 0 && fd < d) d = fd;
+      }
+      if (d < Infinity) spots.push({ x, y, d });
+    }
+  spots.sort((a, b) => a.d - b.d || a.y - b.y || a.x - b.x);
+  const s = spots[nth];
+  if (!s) throw new Error('no build spot found');
+  return { x: s.x, y: s.y };
+}
+
+/**
+ * A ground cell touching the road NEAREST THE CORE. Session 24: the Core
+ * has one entrance at the east edge, so every enemy from every entry walks
+ * past the cells beside the root tile - the spot for a test that needs one
+ * tower to see the one enemy.
+ */
+function spotOnEveryLane(cells: readonly (string | null)[], W: number, H: number): { x: number; y: number } {
+  let core = { x: W - 1, y: Math.floor(H / 2) };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (cells[y * W + x] === 'C') core = { x, y };
+  let best: { x: number; y: number } | null = null;
+  let bestD = Infinity;
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       if (cells[y * W + x] !== 'G') continue;
@@ -88,9 +130,12 @@ function buildSpotNear(cells: readonly (string | null)[], W: number, H: number, 
         const ny = y + dy;
         return nx >= 0 && ny >= 0 && nx < W && ny < H && cells[ny * W + nx] === 'X';
       });
-      if (nearRoad && seen++ === nth) return { x, y };
+      if (!nearRoad) continue;
+      const d = Math.abs(x - core.x) + Math.abs(y - core.y);
+      if (d < bestD) { bestD = d; best = { x, y }; }
     }
-  throw new Error('no build spot found');
+  if (!best) throw new Error('no build spot found');
+  return best;
 }
 
 describe('flow field', () => {
@@ -311,7 +356,7 @@ describe('towers and projectiles', () => {
     const tanky = { ...WALKER, hp: 1000 }; // survives, just slower
     const plain = new Sim(47, { ...simOpts, enemyDefs: [tanky] });
     const frosty = new Sim(47, { ...simOpts, enemyDefs: [tanky], towerDefs: [FROSTY] });
-    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const spot = spotOnEveryLane(cells, cellsW, cellsH);
     frosty.buildTower(spot.x, spot.y, 'bolt');
     const budget = 4000;
     for (let t = 0; t < budget; t++) {
@@ -324,10 +369,13 @@ describe('towers and projectiles', () => {
 
     // Armor: a 5-damage shot on 3 armor deals 2; shields burn before hp.
     // Slow, unkillable target parked in range: only the damage math varies.
-    const { map } = makeWorld(47);
+    // A SPARSE board here (coverage 0.3): the test parks one gun beside
+    // every entry, and a filled board (D28) has more entries than it has
+    // ground beside them.
+    const { map, cells: sparse, cellsW: sW, cellsH: sH, simOpts: sparseOpts } = makeWorld(47, {}, { coverage: 0.3 });
     const armored = { ...WALKER, hp: 10000, speed: 0.005, armor: 3, shield: 4 };
     const GUN: TowerDef = { ...BOLT, range: 8, fireEveryTicks: 4, projectile: { damage: 5, speed: 0.6, homing: true } };
-    const sim = new Sim(47, { ...simOpts, enemyDefs: [armored], towerDefs: [GUN] });
+    const sim = new Sim(47, { ...sparseOpts, enemyDefs: [armored], towerDefs: [GUN] });
     // The lone spawn picks any entry; cover them all so it parks in range.
     let guns = 0;
     for (const entry of map.entries) {
@@ -335,7 +383,7 @@ describe('towers and projectiles', () => {
         for (let dx = -3; dx <= 3; dx++) {
           const x = entry.x + dx;
           const y = entry.y + dy;
-          if (x >= 0 && y >= 0 && x < cellsW && y < cellsH && cells[y * cellsW + x] === 'G' && sim.canBuildAt(x, y)) {
+          if (x >= 0 && y >= 0 && x < sW && y < sH && sparse[y * sW + x] === 'G' && sim.canBuildAt(x, y)) {
             if (sim.buildTower(x, y, 'bolt')) guns++;
             dy = 4; // one gun per entry is plenty
             break;
@@ -857,13 +905,17 @@ describe('the dead zone - minimum range (design round 1, item 2)', () => {
       const def: TowerDef = { ...BOLT, range: 6, minRange };
       const sim = new Sim(47, { ...simOpts, towerDefs: [def], enemyDefs: [{ ...WALKER, hp: 100000 }] });
       sim.buildTower(spot.x, spot.y, 'bolt');
-      const seen = new Set<number>();
+      // A shot is NEW when its slot turns alive - slots recycle, so keying
+      // on the slot alone counted one shot per slot for the whole run.
+      const wasAlive = new Uint8Array(sim.projAlive.length);
       const out: number[] = [];
       for (let t = 0; t < 1500; t++) {
         sim.tick();
         for (let p = 0; p < sim.projX.length; p++) {
-          if (!sim.projAlive[p] || seen.has(p)) continue;
-          seen.add(p);
+          const alive = sim.projAlive[p];
+          const fresh = alive && !wasAlive[p];
+          wasAlive[p] = alive;
+          if (!fresh) continue;
           const dx = sim.projAimX[p] - (spot.x + 0.5);
           const dy = sim.projAimY[p] - (spot.y + 0.5);
           out.push(Math.sqrt(dx * dx + dy * dy));
@@ -908,14 +960,28 @@ describe('the tower rework (design round 1, item 8): forks are roles, not slider
     const spot = buildSpotNear(cells, cellsW, cellsH);
     const def = mk({ fireEveryTicks: 1000 }, [{ choices: [{ name: 'Hail', cost: 1, mods: { shots: 2, damageMul: 0.45 } }, { name: 'x', cost: 1 }] }]);
     const sim = new Sim(47, { ...simOpts, towerDefs: [def], enemyDefs: [{ ...WALKER, hp: 100000 }] });
+    // Wait for a CROWD at the spot (three within four cells), then build:
+    // a volley sprays across targets only when there are targets.
+    const crowd = (): number => {
+      let n = 0;
+      for (let i = 0; i < sim.posX.length; i++) {
+        if (!sim.alive[i]) continue;
+        const dx = sim.posX[i] - (spot.x + 0.5);
+        const dy = sim.posY[i] - (spot.y + 0.5);
+        if (dx * dx + dy * dy <= 16) n++;
+      }
+      return n;
+    };
     let guard = 0;
-    while (guard++ < 2000 && sim.aliveCount() < 6) sim.tick();
-    // Built once the crowd is on the road, so the first volley is the one observed.
+    while (guard++ < 4000 && crowd() < 3) sim.tick();
+    expect(crowd()).toBeGreaterThanOrEqual(3);
     sim.buildTower(spot.x, spot.y, 'bolt');
     sim.chooseTier(spot.x, spot.y, 0, 0);
     let fired = 0;
     const targets = new Set<number>();
-    for (let t = 0; t < 200 && fired === 0; t++) {
+    // The spot is beside the Core's feeder (session 24): the crowd needs the
+    // length of a lane to reach it.
+    for (let t = 0; t < 1200 && fired === 0; t++) {
       sim.tick();
       for (let p = 0; p < sim.projX.length; p++) {
         if (!sim.projAlive[p]) continue;
@@ -968,7 +1034,7 @@ describe('the tower rework (design round 1, item 8): forks are roles, not slider
     m.buildTower(spot.x, spot.y, 'bolt');
     m.chooseTier(spot.x, spot.y, 0, 0);
     let slowedSeen = false;
-    for (let t = 0; t < 600 && !slowedSeen; t++) {
+    for (let t = 0; t < 1500 && !slowedSeen; t++) {
       m.tick();
       if (m.alive[0] && m.slowTicks[0] > 0) slowedSeen = true;
     }
@@ -981,7 +1047,7 @@ describe('the tower rework (design round 1, item 8): forks are roles, not slider
     f.buildTower(spot.x, spot.y, 'bolt');
     f.chooseTier(spot.x, spot.y, 0, 0);
     let frozen = false;
-    for (let t = 0; t < 600 && !frozen; t++) {
+    for (let t = 0; t < 1500 && !frozen; t++) {
       f.tick();
       if (f.alive[0] && f.slowTicks[0] > 0 && (f as unknown as { slowMul: Float32Array }).slowMul[0] === 0) frozen = true;
     }
@@ -991,8 +1057,15 @@ describe('the tower rework (design round 1, item 8): forks are roles, not slider
       const sim = new Sim(47, { ...simOpts, towerDefs: [frost], enemyDefs: [tank] });
       sim.buildTower(spot.x, spot.y, 'bolt');
       if (choice >= 0) sim.chooseTier(spot.x, spot.y, 0, choice);
-      for (let t = 0; t < 400; t++) sim.tick();
-      return sim.alive[0] ? sim.hp[0] : -1;
+      // The spot is at the lane's end (session 24): the tank walks the whole
+      // lane past the tower and breaches; its LAST hp while alive is the read.
+      let last = tank.hp;
+      let seen = false;
+      for (let t = 0; t < 4000; t++) {
+        sim.tick();
+        if (sim.alive[0]) { seen = true; last = sim.hp[0]; } else if (seen) break;
+      }
+      return last;
     };
     expect(hpAfter(1)).toBeLessThan(hpAfter(-1)); // Brittle cuts deeper once the field has chilled
   });
