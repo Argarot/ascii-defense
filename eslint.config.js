@@ -32,6 +32,8 @@ export default tseslint.config(
       'node_modules/',
       'vendor/',
       'REXPaint-v*/',
+      // The art agent's studies and reviews (session 27): the importer reads them; nobody lints them.
+      'sources/',
       // Daniil's art tooling, authored by another agent (session 23): the
       // standalone sprite editor (a REXPaint equivalent for sprite v2) and
       // the image-to-.xp solver. Tracked, not linted to this config.
