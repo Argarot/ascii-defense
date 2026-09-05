@@ -318,6 +318,174 @@
           ]
         }
       ]
+    },
+    {
+      "id": "tesla",
+      "name": "Tesla Coil",
+      "short": "Tesla",
+      "cost": 40,
+      "range": 4,
+      "fireEveryTicks": 20,
+      "attack": "chain",
+      "projectile": {
+        "damage": 9,
+        "speed": 1
+      },
+      "chain": {
+        "count": 3,
+        "reach": 2.5,
+        "falloff": 0.7
+      },
+      "tiers": [
+        {
+          "choices": [
+            {
+              "name": "Long Arc",
+              "cost": 40,
+              "desc": "Reach: +1.5 range. The first arc finds bodies further out.",
+              "mods": {
+                "range": 1.5
+              }
+            },
+            {
+              "name": "Twin Coil",
+              "cost": 40,
+              "desc": "Throughput: arcs every 12 ticks instead of 20. More arcs, the same bite.",
+              "mods": {
+                "fireEveryTicks": -8
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Forked",
+              "cost": 80,
+              "desc": "Every arc hits two more bodies. The answer to a column.",
+              "mods": {
+                "chainCount": 2
+              }
+            },
+            {
+              "name": "Grounding",
+              "cost": 80,
+              "desc": "Bodies the arc touches slow to 60% for 15 ticks. Control on a chain.",
+              "mods": {
+                "slowMul": -0.4,
+                "slowTicks": 15
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Overload",
+              "cost": 160,
+              "desc": "+16 damage on the first hop, and every hop after it. The answer to brutes.",
+              "mods": {
+                "damage": 16
+              }
+            },
+            {
+              "name": "Conductor",
+              "cost": 160,
+              "desc": "Three more bodies per arc, hops span two more cells, at 80% damage. The answer to swarms.",
+              "mods": {
+                "chainCount": 3,
+                "chainReach": 2,
+                "damageMul": 0.8
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "missile",
+      "name": "Missile Rack",
+      "short": "Missiles",
+      "cost": 50,
+      "range": 9,
+      "minRange": 2,
+      "fireEveryTicks": 60,
+      "attack": "projectile",
+      "projectile": {
+        "damage": 30,
+        "speed": 0.5,
+        "homing": true,
+        "explosive": true,
+        "explodeRadius": 1
+      },
+      "tiers": [
+        {
+          "choices": [
+            {
+              "name": "Warhead",
+              "cost": 50,
+              "desc": "+20 damage per missile. Kills the one it was sent for.",
+              "mods": {
+                "damage": 20
+              }
+            },
+            {
+              "name": "Seeker",
+              "cost": 50,
+              "desc": "Reach: +2 range, and a missile every 50 ticks instead of 60.",
+              "mods": {
+                "range": 2,
+                "fireEveryTicks": -10
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Salvo",
+              "cost": 100,
+              "desc": "Two missiles per launch at 75% damage, each homing on a different enemy when there is one.",
+              "mods": {
+                "shots": 1,
+                "damageMul": 0.75
+              }
+            },
+            {
+              "name": "Fragmentation",
+              "cost": 100,
+              "desc": "Blast +0.6 cells at 85% damage. Wounds the many.",
+              "mods": {
+                "explodeRadius": 0.6,
+                "damageMul": 0.85
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Bunker Buster",
+              "cost": 200,
+              "desc": "+40 damage, and armour does nothing against it. The answer to a Juggernaut.",
+              "mods": {
+                "damage": 40
+              },
+              "unlocks": "ignoreArmor"
+            },
+            {
+              "name": "Barrage",
+              "cost": 200,
+              "desc": "Three missiles per launch at 60% damage each. Saturation from range.",
+              "mods": {
+                "shots": 2,
+                "damageMul": 0.6,
+                "spread": 0.8
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

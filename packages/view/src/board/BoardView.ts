@@ -74,6 +74,7 @@ const ENEMY_LOOK: Record<string, { glyph: string; roleName: string }> = {
 const PROJECTILE_LOOK: Record<string, { glyph: string; roleName: string }> = {
   bolt: { glyph: '-', roleName: 'tower.bolt.bolt_shaft' },
   mortar: { glyph: '*', roleName: 'tower.core' },
+  missile: { glyph: '>', roleName: 'fx.ember' },
 };
 const PROJECTILE_DEFAULT = PROJECTILE_LOOK.mortar;
 

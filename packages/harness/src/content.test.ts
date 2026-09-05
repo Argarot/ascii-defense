@@ -77,11 +77,14 @@ import boltSprite from '@ascii-defense/content/assets/sprites/bolt.json';
 import mortarSprite from '@ascii-defense/content/assets/sprites/mortar.json';
 import frostSprite from '@ascii-defense/content/assets/sprites/frost.json';
 import refinerySprite from '@ascii-defense/content/assets/sprites/refinery.json';
+import teslaSprite from '@ascii-defense/content/assets/sprites/tesla.json';
+import missileSprite from '@ascii-defense/content/assets/sprites/missile.json';
 import roadSprite from '@ascii-defense/content/assets/sprites/road_muted_cobble.json';
 import grid from '@ascii-defense/content/assets/grid.json';
 
 describe('imported sprites cover what the game can show', () => {
-  const towerSprites = [boltSprite, mortarSprite, frostSprite, refinerySprite];
+  // The four studies and the two session-25 placeholders (tools/placeholder-sprites.mjs).
+  const towerSprites = [boltSprite, mortarSprite, frostSprite, refinerySprite, teslaSprite, missileSprite];
   // The 15 choice paths a three-tier either/or tree can reach.
   const PATHS = [''];
   for (const a of ['0', '1']) { PATHS.push(a); for (const b of ['0', '1']) { PATHS.push(a + b); for (const c of ['0', '1']) PATHS.push(a + b + c); } }

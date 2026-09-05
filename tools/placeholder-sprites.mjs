@@ -123,6 +123,66 @@ for (const [id, r] of Object.entries(RELICS)) {
   write(`relic_${id}`, { id: `relic_${id}`, kind: 'relic', cell: [4, 3], source: SOURCE, states: { '': frame(keys, r.rows, roleOf) }, inkMap: keys.inkMap });
 }
 
+// ---- tower trees: a base in two frames, a glyph patch per choice, one colour rule -----
+// State keys follow the sprite format ('' base, '0', '01', '010'...): the
+// patches of every committed choice are laid over the base in tier order,
+// so fifteen states come from a base and six patches - the studies' own
+// economy, without the studies' hand.
+const TOWERS = {
+  tesla: {
+    roles: { 'tower.tesla.coil': '#c9d6df', 'tower.tesla.core': '#7fe7ff', 'tower.tesla.arc': '#5cd6ff', 'tower.tesla.copper': '#d4884a' },
+    ground: 'tower.ground',
+    frames: [
+      [' .-~-.  ', ' ( * )  ', '  }|{   ', '  ||    ', '|/_||_\\|'],
+      [' .-~-.  ', ' ( + )  ', '  {|}   ', '  ||    ', '|/_||_\\|'],
+    ],
+    // [tier][option] -> rows to overwrite (index -> text)
+    patches: [
+      [{ 0: '-.-~-.- ' }, { 1: ' (*)(*) ' }],
+      [{ 2: ' }}|{{  ' }, { 4: '#/_||_\\#' }],
+      [{ 1: ' ( @ )  ' }, { 0: '~.-~-.~ ' }],
+    ],
+    roleOf: (ch) => ('*+@'.includes(ch) ? 'tower.tesla.core' : ch === '~' ? 'tower.tesla.arc' : ch === '=' || ch === '#' ? 'tower.tesla.copper' : 'tower.tesla.coil'),
+  },
+  missile: {
+    roles: { 'tower.missile.tube': '#8a9a7a', 'tower.missile.warhead': '#e2573f', 'tower.missile.frame': '#9eb3bf', 'tower.missile.rack': '#506978' },
+    ground: 'tower.ground',
+    frames: [
+      [' /\\  /\\ ', ' || ||  ', '[||=||] ', ' ====== ', '|/_||_\\|'],
+      [' /\\  /\\ ', ' || ||  ', '[||-||] ', ' ====== ', '|/_||_\\|'],
+    ],
+    patches: [
+      [{ 0: ' /#\\/#\\ ' }, { 2: '[||o||] ' }],
+      [{ 0: '/\\/\\/\\/\\' }, { 3: ' =*==*= ' }],
+      [{ 1: ' |#||#| ' }, { 0: '/\\/\\/\\/\\', 1: ' |||||| ' }],
+    ],
+    roleOf: (ch, x, y) => ('#o*'.includes(ch) ? 'tower.missile.warhead' : ch === '=' || ch === '-' ? 'tower.missile.rack' : y <= 2 && '/\\|'.includes(ch) ? 'tower.missile.tube' : 'tower.missile.frame'),
+  },
+};
+for (const [id, t] of Object.entries(TOWERS)) {
+  for (const [k, v] of Object.entries(t.roles)) palette.roles[k] ??= v;
+  const keys = makeKeys();
+  const states = {};
+  const apply = (rows, choices) => {
+    const out = rows.slice();
+    choices.forEach((opt, tier) => {
+      for (const [row, text] of Object.entries(t.patches[tier][opt])) out[Number(row)] = text;
+    });
+    return out;
+  };
+  const keysOf = [[]];
+  for (const a of [0, 1]) keysOf.push([a]);
+  for (const a of [0, 1]) for (const b of [0, 1]) keysOf.push([a, b]);
+  for (const a of [0, 1]) for (const b of [0, 1]) for (const c of [0, 1]) keysOf.push([a, b, c]);
+  for (const choices of keysOf) {
+    const [base, ...rest] = t.frames.map((rows) => frame(keys, apply(rows, choices), t.roleOf));
+    states[choices.join('')] = { ...base, frames: rest };
+  }
+  write(id, { id, kind: 'tower', cell: [8, 5], frameMs: 720, source: SOURCE, states, inkMap: keys.inkMap });
+}
+palette.roles = Object.fromEntries(Object.entries(palette.roles).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+writeFileSync(PALETTE, JSON.stringify(palette, null, 2) + '\n');
+
 // ---- the Core face: three stacked cells; the road arrives at the middle one's west edge --
 {
   const keys = makeKeys();

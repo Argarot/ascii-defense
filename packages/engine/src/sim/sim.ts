@@ -135,6 +135,7 @@ export function waveCount(d: DifficultySpec, wave: number): number {
 export type SimEvent =
   | { kind: 'pulse'; x: number; y: number; r: number }
   | { kind: 'strike'; x: number; y: number; r: number } // the orbital: a column from the sky, then a blast of radius r (session 25)
+  | { kind: 'arc'; pts: readonly { x: number; y: number }[] } // a chain: the tower's centre, then every body hit in order (session 25)
   | { kind: 'freeze'; ticks: number } // every enemy held for this long (Stasis, Flashbang)
   | { kind: 'impact'; x: number; y: number; r: number } // r 0 = plain hit, >0 = blast radius
   | { kind: 'death'; x: number; y: number }
@@ -1430,7 +1431,8 @@ export class Sim {
       if (target === -1) continue;
       tower.cooldown = eff.fireEveryTicks;
       tower.lastFire = this.tickCount;
-      this.fire(ti, tower, eff, target);
+      if (def.attack === 'chain') this.chain(ti, tower, eff, target);
+      else this.fire(ti, tower, eff, target);
     }
   }
 
@@ -1455,6 +1457,47 @@ export class Sim {
       });
     }
     return pickTarget(candidates, priority);
+  }
+
+  /**
+   * The chain (session 25, the Tesla Coil): no projectile. The arc lands on
+   * the target, then hops to the nearest body not yet hit within
+   * chainReach of the last one, up to chainCount bodies, each hop at
+   * chainFalloff of the previous damage. Slows ride the arc (Grounding);
+   * shields and armour rules are the projectile's. Ties break by slot
+   * index, so replays stay exact. The view draws the arc from its event.
+   */
+  private chain(towerIdx: number, tower: Tower, eff: EffectiveStats, target: number): void {
+    const slowMulN = eff.slowTicks > 0 && eff.slowMul < 1 ? eff.slowMul : 0;
+    const slowTicksN = eff.slowTicks > 0 && eff.slowMul < 1 ? eff.slowTicks : 0;
+    const pts: { x: number; y: number }[] = [{ x: tower.cellX + 0.5, y: tower.cellY + 0.5 }];
+    const hit = new Set<number>();
+    const reachSq = eff.chainReach * eff.chainReach;
+    let cur = target;
+    let dmg = eff.damage;
+    for (let n = 0; n < Math.max(1, eff.chainCount); n++) {
+      const cx = this.posX[cur];
+      const cy = this.posY[cur];
+      pts.push({ x: cx, y: cy });
+      this.applyDamage(cur, dmg, slowMulN, slowTicksN, towerIdx, eff.shieldMul, eff.ignoreArmor);
+      hit.add(cur);
+      dmg *= eff.chainFalloff;
+      let best = -1;
+      let bestSq = reachSq;
+      for (let i = 0; i < this.enemyHigh; i++) {
+        if (!this.alive[i] || hit.has(i)) continue;
+        const dx = this.posX[i] - cx;
+        const dy = this.posY[i] - cy;
+        const dSq = dx * dx + dy * dy;
+        if (dSq < bestSq || (dSq === bestSq && best !== -1 && i < best)) {
+          bestSq = dSq;
+          best = i;
+        }
+      }
+      if (best === -1) break;
+      cur = best;
+    }
+    this.emit({ kind: 'arc', pts });
   }
 
   private fire(towerIdx: number, tower: Tower, eff: EffectiveStats, target: number): void {

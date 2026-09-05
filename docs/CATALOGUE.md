@@ -9,7 +9,7 @@
 ## Towers *(generated)*
 
 <!-- generated:towers -->
-4 towers in `packages/content/assets/towers/roster.json`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).
+6 towers in `packages/content/assets/towers/roster.json`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).
 
 | Tower | id | Cost | Range | Rate | Damage | DPS | Shape / production |
 |---|---|---|---|---|---|---|---|
@@ -17,6 +17,8 @@
 | **Mortar** | mortar | 35 | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 |
 | **Refinery** | refinery | 30 | 0.5 |  |  |  | 1 Ore / 40 s |
 | **Frost Emitter** | frost | 25 | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once |
+| **Tesla Coil** | tesla | 40 | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop |
+| **Missile Rack** | missile | 50 | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 |
 
 #### Bolt Turret - the tree
 
@@ -61,6 +63,28 @@
 | T2 | **Brittle** | 55 | This field's pulses deal +50% to anything already slowed. Chill first, then cut. | slowedBonusMul +0.5 |
 | T3 | **Absolute Zero** | 120 | Every fourth pulse freezes the field solid: enemies stop dead for the slow's duration. | freezeEvery +4 |
 | T3 | **Shatterfield** | 120 | +14 damage per pulse. The field becomes a weapon. | damage +14 |
+
+#### Tesla Coil - the tree
+
+| Tier | Choice | Cost | What it does | Data |
+|---|---|---|---|---|
+| T1 | **Long Arc** | 40 | Reach: +1.5 range. The first arc finds bodies further out. | range +1.5 |
+| T1 | **Twin Coil** | 40 | Throughput: arcs every 12 ticks instead of 20. More arcs, the same bite. | fireEveryTicks -8 |
+| T2 | **Forked** | 80 | Every arc hits two more bodies. The answer to a column. | chainCount +2 |
+| T2 | **Grounding** | 80 | Bodies the arc touches slow to 60% for 15 ticks. Control on a chain. | slowMul -0.4, slowTicks +15 |
+| T3 | **Overload** | 160 | +16 damage on the first hop, and every hop after it. The answer to brutes. | damage +16 |
+| T3 | **Conductor** | 160 | Three more bodies per arc, hops span two more cells, at 80% damage. The answer to swarms. | chainCount +3, chainReach +2, damageMul +0.8 |
+
+#### Missile Rack - the tree
+
+| Tier | Choice | Cost | What it does | Data |
+|---|---|---|---|---|
+| T1 | **Warhead** | 50 | +20 damage per missile. Kills the one it was sent for. | damage +20 |
+| T1 | **Seeker** | 50 | Reach: +2 range, and a missile every 50 ticks instead of 60. | range +2, fireEveryTicks -10 |
+| T2 | **Salvo** | 100 | Two missiles per launch at 75% damage, each homing on a different enemy when there is one. | shots +1, damageMul +0.75 |
+| T2 | **Fragmentation** | 100 | Blast +0.6 cells at 85% damage. Wounds the many. | explodeRadius +0.6, damageMul +0.85 |
+| T3 | **Bunker Buster** | 200 | +40 damage, and armour does nothing against it. The answer to a Juggernaut. | damage +40, unlocks ignoreArmor |
+| T3 | **Barrage** | 200 | Three missiles per launch at 60% damage each. Saturation from range. | shots +2, damageMul +0.6, spread +0.8 |
 
 <!-- /generated -->
 

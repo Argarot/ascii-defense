@@ -18,12 +18,14 @@ import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, hash2 } from './style';
 
 interface Effect {
-  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'beam' | 'frost';
+  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'beam' | 'frost' | 'arc';
   x: number; // continuous cell units, same space the sim speaks
   y: number;
   r: number;
   start: number; // sim tick of birth
   ttl: number; // lifetime in sim ticks
+  /** The arc's points: the tower's centre, then every body hit (session 25). */
+  pts?: readonly { x: number; y: number }[];
 }
 
 /** Enough for the busiest wave; past this the oldest eye candy yields. */
@@ -38,6 +40,7 @@ const TTL: Record<Effect['kind'], number> = {
   dust: 8,
   beam: 8,
   frost: 40, // overridden per event by the freeze's own length
+  arc: 4,
 };
 /** The beam's fall before its blast opens, in ticks. */
 const BEAM_FALL = 3;
@@ -82,6 +85,10 @@ export class EffectsLayer {
           break;
         case 'freeze':
           this.add({ kind: 'frost', x: 0, y: 0, r: 0, start: e.tick, ttl: Math.max(1, e.ticks) });
+          break;
+        case 'arc':
+          this.add({ kind: 'arc', x: e.pts[0]?.x ?? 0, y: e.pts[0]?.y ?? 0, r: 0, start: e.tick, ttl: TTL.arc, pts: e.pts });
+          for (let i = 1; i < e.pts.length; i++) this.add({ kind: 'spark', x: e.pts[i].x, y: e.pts[i].y, r: 0, start: e.tick, ttl: TTL.spark });
           break;
         case 'impact':
           if (e.r > 0) this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.blast });
@@ -133,6 +140,7 @@ export class EffectsLayer {
         case 'dust': this.drawDust(term, e, age01, still); break;
         case 'beam': this.drawBeam(term, e, age01, still); break;
         case 'frost': this.drawFrost(term, e, age01, still); break;
+        case 'arc': this.drawArc(term, e, age01, still); break;
       }
     }
   }
@@ -270,6 +278,40 @@ export class EffectsLayer {
         term.shade(gx, gy, 1.3 + 0.5 * fade, 0.1);
         if (!still && hash2(gx, gy, 19) < 0.08 * fade) term.put(gx, gy, '*', ice);
       }
+  }
+
+  /**
+   * A chain arc (session 25, the Tesla Coil): a jagged line of light from
+   * the tower through every body it hit, glyph by direction, jittered by
+   * the hash so no two arcs look stamped, cooling to smoke over four
+   * ticks. Reduced motion: the straight line, one tick.
+   */
+  private drawArc(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    const pts = e.pts ?? [];
+    if (still && age01 > 0.3) return;
+    const fg = mixHex(role('tower.tesla.arc'), role('fx.smoke'), still ? 0 : age01);
+    const jitterSeed = Math.floor(age01 * 4) + 3;
+    for (let i = 1; i < pts.length; i++) {
+      const x0 = pts[i - 1].x * CELL_W;
+      const y0 = pts[i - 1].y * CELL_H;
+      const x1 = pts[i].x * CELL_W;
+      const y1 = pts[i].y * CELL_H;
+      const steps = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
+      for (let s = 1; s < steps; s++) {
+        const t = s / steps;
+        const gx = Math.floor(x0 + (x1 - x0) * t);
+        let gy = Math.floor(y0 + (y1 - y0) * t);
+        if (!still) {
+          const j = hash2(gx, gy, jitterSeed);
+          if (j < 0.25) gy -= 1;
+          else if (j > 0.75) gy += 1;
+        }
+        const dx = x1 - x0;
+        const dy = (y1 - y0) * (CELL_W / CELL_H);
+        const ch = Math.abs(dx) > 2 * Math.abs(dy) ? '-' : Math.abs(dy) > 2 * Math.abs(dx) ? '|' : dx * dy > 0 ? '\\' : '/';
+        if (gx >= 0 && gy >= 0 && gx < term.cols && gy < term.rows) term.put(gx, gy, ch, fg);
+      }
+    }
   }
 
   private drawDust(term: TermSurface, e: Effect, age01: number, still: boolean): void {

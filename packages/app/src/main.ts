@@ -46,7 +46,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 // tower sprites in roster order.
 const SPRITE_JSON = import.meta.glob('../../content/assets/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
 const SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
-const HERO = ['bolt', 'mortar', 'frost', 'refinery'].map((id) => SPRITES.find((s) => s.id === id)).filter((s) => s !== undefined);
+const HERO = ['bolt', 'mortar', 'frost', 'refinery', 'tesla', 'missile'].map((id) => SPRITES.find((s) => s.id === id)).filter((s) => s !== undefined);
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '6';

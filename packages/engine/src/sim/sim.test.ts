@@ -405,6 +405,45 @@ describe('towers and projectiles', () => {
     expect(checked).toBe(true);
   });
 
+  it('chain towers arc through nearby bodies with falloff, no projectiles (session 25)', () => {
+    // Six bodies over three entries, one tick apart: every entry gets a pair standing together.
+    const { map, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 6, spawnEveryTicks: 1 });
+    const COIL: TowerDef = {
+      id: 'bolt',
+      cost: 20,
+      range: 8,
+      fireEveryTicks: 10,
+      attack: 'chain',
+      projectile: { damage: 10, speed: 1 },
+      chain: { count: 3, reach: 4, falloff: 0.3 }, // 0.3: hop totals are never multiples of the first hop, whatever the arc count
+    };
+    const parked: EnemyDef = { ...WALKER, hp: 10000, speed: 0.005 };
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [COIL] });
+    for (const entry of map.entries) {
+      let placed = false;
+      for (let dy = -3; dy <= 3 && !placed; dy++)
+        for (let dx = -3; dx <= 3; dx++) {
+          const x = entry.x + dx;
+          const y = entry.y + dy;
+          if (x >= 0 && y >= 0 && x < cellsW && y < cellsH && sim.canBuildAt(x, y) && sim.buildTower(x, y, 'bolt')) { placed = true; break; }
+        }
+    }
+    for (let t = 0; t < 60; t++) sim.tick();
+    let anyProj = 0;
+    for (let i = 0; i < sim.projAlive.length; i++) anyProj += sim.projAlive[i];
+    expect(anyProj).toBe(0);
+    // An arc carries the tower's centre and at least two bodies once the pack is out.
+    const arcs = sim.events.filter((e) => e.kind === 'arc');
+    expect(arcs.length).toBeGreaterThan(0);
+    expect(Math.max(...arcs.map((a) => (a.kind === 'arc' ? a.pts.length : 0)))).toBeGreaterThanOrEqual(3);
+    // Falloff: some body took a 3-damage hop alongside the 10-damage first hops.
+    const taken = new Set<number>();
+    for (let i = 0; i < 64; i++) if (sim.alive[i]) taken.add(Math.round((10000 - sim.hp[i]) * 100) / 100);
+    const values = [...taken].filter((v) => v > 0);
+    expect(values.length).toBeGreaterThan(0);
+    expect(values.some((v) => v % 10 !== 0)).toBe(true);
+  });
+
   it('pulse towers hit everything in range on cooldown, no projectiles', () => {
     const { map, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
     const PULSER: TowerDef = {
