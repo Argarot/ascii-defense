@@ -77,6 +77,11 @@ review found flat: the wave clock and the call button, boss waves, traits as
 real rules, stackability and escalating prices for relics, caches that open
 free onto loot tables, a dead zone for the Mortar with the range drawn as a
 filled disc, and every tower fork rebuilt as two roles instead of two numbers.
+**Sessions 23–24 (2026-09-05)** moved the Core to the east edge as a
+three-cell face with one entrance (Daniil's redesign), filled the board with
+road on a carve that no longer fails any loadout, put a strip under the board
+with the towers as sprite buttons and the Core's actives, measured the
+difficulty with an economy, and made the title a full-screen page.
 **Session 22 (2026-09-04)** grew the cell to 8×5 glyphs (a 40 px square) and
 made the board fit the screen; Daniil's own tower trees (fifteen states each,
 two idle frames) and cobbled roads (four variations, picked by position) are
