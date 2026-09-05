@@ -84,15 +84,19 @@ const bothTypes = (at: TowerPlacement['at']): TowerPlacement[] => [
   { towerId: 'mortar', choices: [1, 1, 0], at }, { towerId: 'bolt', choices: RAILBORE, at },
 ];
 // Session 26 PR 5: every tower in a pair with a partner it should want.
-const pair = (at: TowerPlacement['at'], a: TowerPlacement, b: TowerPlacement, rest: TowerPlacement[]): TowerPlacement[] => [a, b, ...rest].map((t) => ({ ...t, at }));
 const P = (towerId: string, choices: [number, number, number]): TowerPlacement => ({ towerId, choices, at: 'choke' });
+// Session 27 PR 6: the instruments - a Laser goes 'inline' (aimed along the
+// most road), a Bastion 'adjacent' (touching the last tower placed).
+const A = (towerId: string, choices: [number, number, number], at: TowerPlacement['at']): TowerPlacement => ({ towerId, choices, at });
 const EIGHT: [string, TowerPlacement[]][] = [
-  ['Laser line + Frost (Focus, Overheat, Cutter)', pair('choke', P('laser', [0, 0, 0]), P('frost', [1, 0, 1]), [P('laser', [0, 0, 0]), P('laser', [1, 1, 0]), P('bolt', RAILBORE)])],
-  ['Missiles + Bastion + Railbore', pair('choke', P('missile', [0, 1, 0]), P('bastion', [0, 0, 0]), [P('bolt', RAILBORE), P('missile', [1, 0, 1]), P('bolt', RAILBORE)])],
-  ['Tesla + Bastion + Frost', pair('choke', P('tesla', [0, 0, 0]), P('bastion', [0, 1, 0]), [P('frost', [1, 0, 1]), P('tesla', [1, 1, 0]), P('tesla', [0, 0, 1])])],
+  ['Laser line, aimed (Capacitor, Fast Cycle, Cutter) + Frost + Railbore', [A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline'), P('bolt', RAILBORE)]],
+  ['Missiles + Bastion (adjacent) + Railbore', [P('missile', [0, 1, 0]), A('bastion', [0, 0, 0], 'adjacent'), P('bolt', RAILBORE), P('missile', [1, 0, 1]), P('bolt', RAILBORE)]],
+  ['Tesla + Bastion (adjacent) + Frost', [P('tesla', [0, 0, 0]), A('bastion', [0, 1, 0], 'adjacent'), P('frost', [1, 0, 1]), P('tesla', [1, 1, 0]), P('tesla', [0, 0, 1])]],
   ['Hailstorm (close quarters) line + Frost + Mortar', mixed('choke', HAILSTORM)],
-  ['Bastion + four Railbores', pair('choke', P('bastion', [0, 1, 0]), P('bolt', RAILBORE), [P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE)])],
+  ['Railbore, then Bastion (adjacent), then three Railbores', [P('bolt', RAILBORE), A('bastion', [0, 1, 0], 'adjacent'), P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE)]],
 ];
+/** The crowd bodies: a crowd role's value shows in how many of these fell, not on the death wave. */
+const CROWD = new Set(['swarmling', 'skitter']);
 const BUILDS: Build[] = [
   ...EIGHT.map(([name, towers]) => ({ name: `choke, ${name}, economy`, towers, content: baseContent, economy: { startingScrap: 100 } })),
   { name: 'choke, KINETIC only (3 Railbore + Mortar + Missiles), economy', towers: soloKinetic('choke'), content: baseContent, economy: { startingScrap: 100 } },
@@ -109,10 +113,12 @@ const BUILDS: Build[] = [
 console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
 for (const board of BOARDS) {
   console.log(`## board ${board.w}x${board.h}\n`);
-  console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean |');
-  console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|');
+  console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | crowd kills | all kills |');
+  console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
   for (const b of BUILDS) {
     const deaths: (number | null)[] = [];
+    let crowd = 0;
+    let all = 0;
     for (const seed of SEEDS) {
       const spec: LabSpec = {
         seed,
@@ -126,13 +132,14 @@ for (const board of BOARDS) {
       try {
         const r = runLab(spec, b.content);
         deaths.push(r.deathWave);
+        for (const [id, k] of Object.entries(r.killsByDef)) { all += k; if (CROWD.has(id)) crowd += k; }
       } catch {
         deaths.push(-1);
       }
     }
     const nums = deaths.map((d) => (d === null ? MAX_WAVES + 1 : d === -1 ? 0 : d));
     const mean = nums.reduce((a, c) => a + c, 0) / nums.length;
-    console.log(`| ${b.name} | ${deaths.map((d) => (d === null ? `>${MAX_WAVES}` : d === -1 ? 'n/a' : String(d))).join(' | ')} | ${mean.toFixed(1)} |`);
+    console.log(`| ${b.name} | ${deaths.map((d) => (d === null ? `>${MAX_WAVES}` : d === -1 ? 'n/a' : String(d))).join(' | ')} | ${mean.toFixed(1)} | ${(crowd / SEEDS.length).toFixed(0)} | ${(all / SEEDS.length).toFixed(0)} |`);
   }
   console.log('');
 }
