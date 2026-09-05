@@ -1,0 +1,44 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "enemy_husk",
+  "kind": "enemy",
+  "cell": [
+    4,
+    3
+  ],
+  "frameMs": 360,
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "/HH\\",
+        "|..|",
+        "|__|"
+      ],
+      "ink": [
+        "abba",
+        "aaaa",
+        "aaaa"
+      ],
+      "frames": [
+        {
+          "art": [
+            "/HH\\",
+            "|. |",
+            "|__|"
+          ],
+          "ink": [
+            "abba",
+            "aa.a",
+            "aaaa"
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "enemy.limb",
+    "b": "enemy.husk"
+  }
+}

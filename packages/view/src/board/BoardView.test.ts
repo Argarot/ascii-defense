@@ -11,6 +11,7 @@ import { TILE_SIZE, TileLibrary, createRng, generateMap, resolveCells } from '@a
 import { validateSprite } from '@ascii-defense/content';
 import boltJson from '@ascii-defense/content/assets/sprites/bolt.json';
 import mortarJson from '@ascii-defense/content/assets/sprites/mortar.json';
+import gruntJson from '@ascii-defense/content/assets/sprites/enemy_grunt.json';
 import { BoardView, CELL_H, CELL_W, spriteState, type RenderState } from './BoardView';
 import { EffectsLayer } from './effects';
 
@@ -28,7 +29,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: unknown[] }): 
   if (!r.ok) throw new Error('sprite invalid');
   return r.value;
 }
-const SPRITES = [must(validateSprite.check(boltJson)), must(validateSprite.check(mortarJson))];
+const SPRITES = [must(validateSprite.check(boltJson)), must(validateSprite.check(mortarJson)), must(validateSprite.check(gruntJson))];
 
 function world() {
   const opts = { width: 4, height: 3, entries: 2, targetPathCells: 15 };

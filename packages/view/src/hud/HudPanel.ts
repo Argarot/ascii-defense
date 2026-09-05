@@ -10,6 +10,8 @@
  * they cannot drift apart.
  */
 import type { TermSurface } from '@ascii-defense/render';
+import type { Sprite } from '@ascii-defense/content';
+import { drawSpriteFrame } from '../board/sprites';
 import { PRIORITIES, type Priority } from '@ascii-defense/engine';
 import { role } from '../palette';
 
@@ -166,11 +168,16 @@ export class HudPanel {
   private scroll = 0;
   private contentH = 0;
 
+  private readonly sprites: Map<string, Sprite>;
+
   constructor(
     private term: TermSurface,
     private glyphPxW: number,
     private glyphPxH: number,
-  ) {}
+    sprites: readonly Sprite[] = [],
+  ) {
+    this.sprites = new Map(sprites.map((s) => [s.id, s]));
+  }
 
   /** Wheel input: positive = down. Clamped to the last render's overflow. */
   scrollBy(lines: number): void {
@@ -404,7 +411,9 @@ export class HudPanel {
           term.put(x0, rowBase, '┌', fg); term.put(x0 + 3, rowBase, '┐', fg);
           term.put(x0, rowBase + 2, '└', fg); term.put(x0 + 3, rowBase + 2, '┘', fg);
         } else {
-          term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, bg);
+          const rsp = slot.id ? this.sprites.get(`relic_${slot.id}`) : undefined;
+          if (rsp) drawSpriteFrame(term, rsp, rsp.states[''], x0, rowBase, slot.state === 'cooling' ? { flatFg: 'ui.dim' } : { transparent: true });
+          else term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, bg);
           if (slot.state === 'cooling') {
             term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, bg);
           }

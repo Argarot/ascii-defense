@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "enemy_grunt",
+  "kind": "enemy",
+  "cell": [
+    3,
+    2
+  ],
+  "frameMs": 360,
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "(@)",
+        "/ \\"
+      ],
+      "ink": [
+        "aba",
+        "a.a"
+      ],
+      "frames": [
+        {
+          "art": [
+            "(@)",
+            "\\ /"
+          ],
+          "ink": [
+            "aba",
+            "a.a"
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "enemy.limb",
+    "b": "enemy.eye"
+  }
+}

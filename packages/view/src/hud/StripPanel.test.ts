@@ -9,6 +9,7 @@ import { TextTerm } from '@ascii-defense/render';
 import { validateSprite } from '@ascii-defense/content';
 import boltJson from '@ascii-defense/content/assets/sprites/bolt.json';
 import mortarJson from '@ascii-defense/content/assets/sprites/mortar.json';
+import orbitalJson from '@ascii-defense/content/assets/sprites/relic_orbital.json';
 import { StripPanel, STRIP_ROWS } from './StripPanel';
 import type { HudState } from './HudPanel';
 
@@ -16,7 +17,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: unknown[] }): 
   if (!r.ok) throw new Error('sprite invalid');
   return r.value;
 }
-const SPRITES = [must(validateSprite.check(boltJson)), must(validateSprite.check(mortarJson))];
+const SPRITES = [must(validateSprite.check(boltJson)), must(validateSprite.check(mortarJson)), must(validateSprite.check(orbitalJson))];
 /** A 7-tile board's strip: (7 * 5 + 1) * 8 glyphs / 2 = 144 columns. */
 const STRIP = { cols: 144, rows: STRIP_ROWS };
 
@@ -93,11 +94,12 @@ describe('the strip as text', () => {
     // A spare slot is room, not a button.
     expect(strip.actionAt((1 + 50 + 3) * 10, 3 * 16)).toBeNull();
     // A ready slot in the Core section is a relic action; an empty one is nothing.
+    // The Orbital slot carries its sprite (session 25): the beam's '**' row.
     const text = term.toText().split('\n');
-    const orRow = text.findIndex((l) => l.includes('OR '));
-    const orX = text[orRow].indexOf('OR');
+    const orRow = text.findIndex((l) => l.includes(' ** '));
+    const orX = text[orRow].indexOf('**') - 1;
     expect(orX).toBeGreaterThan(0);
-    expect(strip.actionAt((orX - 1) * 10, orRow * 16)).toEqual({ kind: 'relic', index: 0 });
+    expect(strip.actionAt(orX * 10, orRow * 16)).toEqual({ kind: 'relic', index: 0 });
     expect(strip.actionAt((orX + 5 * 3 + 1) * 10, orRow * 16)).toBeNull();
     // The draw plate, when affordable.
     const drawRow = text.findIndex((l) => l.includes('DRAW RELIC'));

@@ -203,7 +203,9 @@ export class StripPanel {
           term.put(x0, rowBase, '┌', fg); term.put(x0 + 3, rowBase, '┐', fg);
           term.put(x0, rowBase + 2, '└', fg); term.put(x0 + 3, rowBase + 2, '┘', fg);
         } else {
-          term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, sbg);
+          const rsp = slot.id ? this.sprites.get(`relic_${slot.id}`) : undefined;
+          if (rsp) drawSpriteFrame(term, rsp, rsp.states[''], x0, rowBase, slot.state === 'cooling' ? { flatFg: 'ui.dim' } : { transparent: true });
+          else term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, sbg);
           if (slot.state === 'cooling') term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, sbg);
           for (let r = 0; r < slotH; r++) this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
         }

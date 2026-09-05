@@ -33,10 +33,6 @@ import {
 import type { CellRef, HudAction, HudState, RenderState } from '@ascii-defense/view';
 import { validateSprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
-import boltSpriteJson from '@ascii-defense/content/assets/sprites/bolt.json';
-import mortarSpriteJson from '@ascii-defense/content/assets/sprites/mortar.json';
-import frostSpriteJson from '@ascii-defense/content/assets/sprites/frost.json';
-import refinerySpriteJson from '@ascii-defense/content/assets/sprites/refinery.json';
 import { THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 import { META_KEY, RUN_KEY, loadMetaFrom, loadRunFrom, saveMetaTo, type MetaSave } from './persistence';
 import { boardSlotsFor } from './boardSize';
@@ -45,9 +41,12 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
   if (!r.ok) throw new Error(`${what} failed validation: ` + r.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
   return r.value;
 }
-const SPRITES = [boltSpriteJson, mortarSpriteJson, frostSpriteJson, refinerySpriteJson].map((s) =>
-  must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`),
-);
+// Every sprite content ships (session 25): towers, enemies, relics, the
+// Core face - one glob, validated at boot. The title's hero row is the
+// tower sprites in roster order.
+const SPRITE_JSON = import.meta.glob('../../content/assets/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
+const SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
+const HERO = ['bolt', 'mortar', 'frost', 'refinery'].map((id) => SPRITES.find((s) => s.id === id)).filter((s) => s !== undefined);
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '6';
@@ -105,7 +104,7 @@ async function main(): Promise<void> {
   // modal covers it exactly (the old /2 rounding left an 8 px gap).
   const uiRows = Math.floor(boardRows / UI_SCALE);
   const hudTerm = new GLTerm(glyphs, { cols: HUD_COLS, rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, background: role('ui.bg') });
-  const hud = new HudPanel(hudTerm, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
+  const hud = new HudPanel(hudTerm, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE, SPRITES);
   // The strip (4.27): a full-width panel under the board at the HUD's
   // scale - build buttons as the towers' own sprites, the wave, the Core.
   const stripTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: STRIP_ROWS, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, background: role('ui.bg') });
@@ -305,7 +304,7 @@ async function main(): Promise<void> {
       case 'title':
         return {
           title: 'ASCII DEFENSE',
-          hero: SPRITES,
+          hero: HERO,
           caption: `spleen 5x8 \u2802 ${CELL_W}x${CELL_H} glyph cells \u2802 ${mapX}x${mapY} tiles`,
           body: [
             'the board is a press; the waves want it stopped',
