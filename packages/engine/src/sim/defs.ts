@@ -262,6 +262,9 @@ export interface StatMods {
   auraReach?: number;
   /** Additive to the aura's production-rate multiplier for neighbouring producers. */
   auraProduction?: number;
+  /** A burn on every body hit (session 27, the Laser's Sear): damage per tick, and for how many ticks. */
+  burnDps?: number;
+  burnTicks?: number;
 }
 
 /** A tower's unique gift when it stands next to the Core (PRD sec 4.5, WBS 2.35). */
@@ -381,6 +384,9 @@ export interface EffectiveStats {
   auraProdMul: number;
   /** Set by the sim when the tower stands next to the Core and its boon applied. */
   coreBoon: boolean;
+  /** A burn applied by every hit: damage per tick for burnTicks; 0 = none. */
+  burnDps: number;
+  burnTicks: number;
 }
 
 /**
@@ -426,6 +432,8 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     auraReach: def.aura?.reach ?? 0,
     auraProdMul: def.aura?.productionMul ?? 1,
     coreBoon: false,
+    burnDps: 0,
+    burnTicks: 0,
   };
   let damageMul = 1;
   def.tiers?.forEach((tierDef, ti) => {
@@ -453,6 +461,8 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     out.auraRangeAdd += m.auraRange ?? 0;
     out.auraReach += m.auraReach ?? 0;
     out.auraProdMul += m.auraProduction ?? 0;
+    out.burnDps += m.burnDps ?? 0;
+    out.burnTicks += m.burnTicks ?? 0;
     out.damage += m.damage ?? 0;
     out.range += m.range ?? 0;
     out.minRange += m.minRange ?? 0;
@@ -504,6 +514,8 @@ export function applyCoreBoon(out: EffectiveStats, boon: CoreBoon): void {
   out.auraRangeAdd += m.auraRange ?? 0;
   out.auraReach += m.auraReach ?? 0;
   out.auraProdMul += m.auraProduction ?? 0;
+  out.burnDps += m.burnDps ?? 0;
+  out.burnTicks += m.burnTicks ?? 0;
   for (const flag of boon.flags ?? []) {
     if (flag === 'noDeadZone') out.minRange = 0;
   }

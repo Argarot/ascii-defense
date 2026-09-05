@@ -249,7 +249,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       const owner = s.towers[s.projTowerIdx[i]];
       projectiles.push({ x: s.projX[i], y: s.projY[i], vx: s.projVX[i], vy: s.projVY[i], kind: owner ? s.towerDef(owner).id : '', k: i });
     }
-    const enemies: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean; frozen: boolean; slows: number; k: number; g: number }[] = [];
+    const enemies: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean; frozen: boolean; burning: boolean; slows: number; k: number; g: number }[] = [];
     for (let i = 0; i < s.posX.length; i++) {
       if (!s.alive[i]) continue;
       const statuses = s.enemyStatuses(i);
@@ -259,6 +259,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         shielded: s.shield[i] > 0,
         slowed: s.slowTicks[i] > 0,
         frozen: statuses.some((st) => st.kind === 'frozen'),
+        burning: statuses.some((st) => st.kind === 'burn'),
         // Distinct SOURCES of slow on the body: the marks count them.
         slows: new Set(statuses.filter((st) => st.kind === 'slow').map((st) => st.src)).size,
       });

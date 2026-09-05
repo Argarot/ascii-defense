@@ -19,7 +19,7 @@
 | **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts. | every third pulse freezes the field solid. |
 | **Tesla Coil** | tesla | 40 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. | every arc hits two more bodies. |
 | **Missile Rack** | missile | 50 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. | two missiles per launch. |
-| **Laser Lance** | laser | 45 | energy | 6 | 6.67 | 3 | 20 | beam: a corridor 1 wide down its facing, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces, through every body on it; the damage climbs while it holds one. Rotate it with R. | the heat climbs one multiple higher. |
+| **Laser Lance** | laser | 45 | energy | 12 | 6.67 | 3 | 20 | beam: down its facing to where the road turns (at most 12 cells), every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces, to where the road turns, through every body on it; the damage climbs while it holds one. R rotates it. | the heat climbs one multiple higher. |
 | **Bastion** | bastion | 40 |  | 1.5 |  |  |  | aura: neighbours within 1 cell(s) hit x1.15 | Shoots nothing. Every tower touching it hits harder; its tree makes the ring wider and the gift bigger. | the aura reaches one cell further. |
 
 The two ground cells touching the Core face (and the border cells beside it) are the precious ground of PRD §4.5: a tower there gets the gift in the last column, folded like a tier.
@@ -94,12 +94,12 @@ The two ground cells touching the Core face (and the border cells beside it) are
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Focus** | 45 | Reach: +3 cells of corridor. A longer run of road under the beam. | range +3 |
-| T1 | **Wide Beam** | 45 | A corridor two cells wide instead of one. Catches the lane beside the road. | beamWidth +1 |
-| T2 | **Overheat** | 90 | Heat climbs to triple damage instead of double. Hold the lead longer, hit harder. | beamRampMax +1 |
-| T2 | **Capacitor** | 90 | +2 damage per pulse, cold or hot. Steady output. | damage +2 |
-| T3 | **Cutter** | 180 | Every pulse at 150%. The answer to a column standing in the beam. | damageMul +1.5 |
-| T3 | **Sweep** | 180 | Every second the lance turns toward the facing with the most bodies in reach. Heat resets on the turn. | unlocks sweep |
+| T1 | **Capacitor** | 45 | +2 damage per pulse, cold or hot. The damage path starts steady. | damage +2 |
+| T1 | **Chill** | 45 | Every body in the beam moves at 70% while it stands in it. The control path starts cold. | slowMul -0.3, slowTicks +8 |
+| T2 | **Fast Cycle** | 90 | A pulse every 2 ticks instead of 3: half again the output. | fireEveryTicks -1 |
+| T2 | **Sear** | 90 | Bodies leave the beam burning: 2 a tick for a second. The beam keeps hurting after they pass. | burnDps +2, burnTicks +20 |
+| T3 | **Cutter** | 180 | Every pulse at 150% and the heat climbs one multiple higher. The answer to a column standing in the beam. | damageMul +1.5, beamRampMax +1 |
+| T3 | **Deep Sear** | 180 | The burn doubles and lasts two seconds; the chill deepens to 50%. Nothing walks out of this beam unmarked. | burnDps +2, burnTicks +20, slowMul -0.2 |
 
 #### Bastion - the tree
 

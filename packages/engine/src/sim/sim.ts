@@ -319,6 +319,13 @@ export class Sim {
    * before, so the golden did not move.
    */
   private readonly slowEntries: ({ mul: number; ticks: number; src: string }[] | undefined)[] = new Array(ENEMY_CAP);
+  /**
+   * Burns (session 27, the Laser's Sear): damage per tick with a source,
+   * several at once each on its own clock - the same shape as slows,
+   * without a resolved array: the damage lands each tick through
+   * applyDamage, so the hash sees it in hp.
+   */
+  private readonly burnEntries: ({ dps: number; ticks: number; src: string; type: DamageType | undefined }[] | undefined)[] = new Array(ENEMY_CAP);
   private freeProj: number[] = [];
   private projHigh = 0;
 
@@ -642,12 +649,38 @@ export class Sim {
     this.resolveSlows(i);
   }
 
+  /** Light a burn on a body: one entry per source, refreshed if the same source burns again. */
+  private applyBurn(enemy: number, dps: number, ticks: number, src: string, type: DamageType | undefined): void {
+    if (dps <= 0 || ticks <= 0 || !this.alive[enemy]) return;
+    const list = (this.burnEntries[enemy] ??= []);
+    const same = list.find((e) => e.src === src);
+    if (same) { same.dps = Math.max(same.dps, dps); same.ticks = Math.max(same.ticks, ticks); same.type = type; }
+    else list.push({ dps, ticks, src, type });
+  }
+
+  /** Every burn lands its damage this tick; spent ones fall away. */
+  private tickBurns(i: number): void {
+    const list = this.burnEntries[i];
+    if (!list) return;
+    for (const e of list) {
+      if (!this.alive[i]) break;
+      this.applyDamage(i, e.dps, 0, 0, -1, 1, false, e.type);
+      e.ticks--;
+    }
+    let w = 0;
+    for (const e of list) if (e.ticks > 0) list[w++] = e;
+    list.length = w;
+    if (w === 0) this.burnEntries[i] = undefined;
+  }
+
   /**
    * What a body is under right now, for the view and the card (WBS 2.31):
-   * one entry per slow with its source, and 'frozen' when it stands still.
+   * one entry per slow with its source, 'frozen' when it stands still,
+   * one entry per burn with its source.
    */
-  enemyStatuses(i: number): { kind: 'slow' | 'frozen'; src: string; mul: number; ticks: number }[] {
-    const out: { kind: 'slow' | 'frozen'; src: string; mul: number; ticks: number }[] = [];
+  enemyStatuses(i: number): { kind: 'slow' | 'frozen' | 'burn'; src: string; mul: number; ticks: number }[] {
+    const out: { kind: 'slow' | 'frozen' | 'burn'; src: string; mul: number; ticks: number }[] = [];
+    for (const e of this.burnEntries[i] ?? []) if (e.ticks > 0) out.push({ kind: 'burn', src: e.src, mul: e.dps, ticks: e.ticks });
     if (this.tickCount < this.freezeUntil) out.push({ kind: 'frozen', src: 'relic', mul: 0, ticks: this.freezeUntil - this.tickCount });
     for (const e of this.slowEntries[i] ?? []) {
       if (e.ticks <= 0) continue;
@@ -1553,6 +1586,7 @@ export class Sim {
     this.slowTicks[i] = 0;
     this.slowMul[i] = 1;
     this.slowEntries[i] = undefined;
+    this.burnEntries[i] = undefined;
     this.posX[i] = entry.x + 0.5;
     this.posY[i] = entry.y + 0.5;
     this.tgtX[i] = entry.x + 0.5;
@@ -1635,12 +1669,15 @@ export class Sim {
       let best = tower.facing;
       let bestN = -1;
       for (let f = 0; f < 4; f++) {
-        const n = this.bodiesInCorridor(cx, cy, f, eff.range, eff.beamWidth).length;
+        const n = this.bodiesInCorridor(cx, cy, f, this.corridorLength(tower.cellX, tower.cellY, f, eff.range), eff.beamWidth).length;
         if (n > bestN) { bestN = n; best = f; }
       }
       if (best !== tower.facing) { tower.facing = best; tower.heat = 1; tower.beamLead = -1; }
     }
-    const bodies = this.bodiesInCorridor(cx, cy, tower.facing, eff.range, eff.beamWidth);
+    // The beam reaches to the road's TURN (Daniil, 2026-09-06): its length
+    // is the straight run in front of it, never a number on a card.
+    const reach = this.corridorLength(tower.cellX, tower.cellY, tower.facing, eff.range);
+    const bodies = this.bodiesInCorridor(cx, cy, tower.facing, reach, eff.beamWidth);
     if (bodies.length === 0) {
       tower.heat = 1;
       tower.beamLead = -1;
@@ -1654,8 +1691,12 @@ export class Sim {
     const slowMulN = eff.slowTicks > 0 && eff.slowMul < 1 ? eff.slowMul : 0;
     const slowTicksN = eff.slowTicks > 0 && eff.slowMul < 1 ? eff.slowTicks : 0;
     const type = this.opts.towerDefs[tower.defIdx].damageType;
-    for (const b of bodies) this.applyDamage(b.i, eff.damage * tower.heat, slowMulN, slowTicksN, towerIdx, eff.shieldMul, eff.ignoreArmor, type);
-    const len = Math.min(eff.range, this.corridorLength(tower.cellX, tower.cellY, tower.facing, eff.range));
+    const srcId = this.opts.towerDefs[tower.defIdx].id;
+    for (const b of bodies) {
+      this.applyDamage(b.i, eff.damage * tower.heat, slowMulN, slowTicksN, towerIdx, eff.shieldMul, eff.ignoreArmor, type);
+      if (eff.burnDps > 0) this.applyBurn(b.i, eff.burnDps, eff.burnTicks, srcId, type);
+    }
+    const len = this.corridorLength(tower.cellX, tower.cellY, tower.facing, eff.range);
     this.emit({ kind: 'beam', x0: cx, y0: cy, x1: cx + FACING_DX[tower.facing] * len, y1: cy + FACING_DY[tower.facing] * len, w: eff.beamWidth, heat: tower.heat });
   }
 
@@ -1678,13 +1719,25 @@ export class Sim {
     return out;
   }
 
-  /** Cells the corridor covers before it leaves the grid. */
-  private corridorLength(x: number, y: number, facing: number, range: number): number {
+  /**
+   * The beam's reach (session 27, Daniil: "reach all the way til the turn
+   * of the road, so in a straight line"): the corridor crosses whatever
+   * stands in front of the tower until it has found road, then runs along
+   * the road while the road keeps going straight, and stops where the
+   * road turns or ends - or at `cap` cells, or the grid's edge. A beam
+   * that never meets road runs to the cap.
+   */
+  private corridorLength(x: number, y: number, facing: number, cap: number): number {
     let k = 0;
-    while (k < range) {
+    let onRoad = false;
+    while (k < cap) {
       const nx = x + FACING_DX[facing] * (k + 1);
       const ny = y + FACING_DY[facing] * (k + 1);
       if (nx < 0 || ny < 0 || nx >= this.opts.cellsW || ny >= this.opts.cellsH) break;
+      const c = this.cellAt(nx, ny);
+      const road = c !== null && isRoad(c);
+      if (onRoad && !road) break;
+      if (road) onRoad = true;
       k++;
     }
     return k;
@@ -2065,6 +2118,7 @@ export class Sim {
         speed *= this.slowMul[i];
         this.tickSlows(i);
       }
+      if (this.burnEntries[i]) this.tickBurns(i);
       const dx = this.tgtX[i] - this.posX[i];
       const dy = this.tgtY[i] - this.posY[i];
       const d = Math.sqrt(dx * dx + dy * dy);

@@ -463,7 +463,7 @@ M1 ships the first four. Target is **8 towers + the Core**, not 14.
 | Refinery | economy (§6) | Wide Bore (more now) / Deep Bore (more in the end) | Survey / Automation | Mother Lode / Deep Shaft | M1 |
 | Tesla Coil | chain arcs, short range *(session 25)* | Long Arc (reach) / Twin Coil (throughput) | Forked (more bodies) / Grounding (slow on the chain) | Overload (damage) / Conductor (swarms) | shipped 2026-09-05 |
 | Missile Rack | homing explosive, long range, dead zone *(session 25)* | Warhead (damage) / Seeker (reach, rate) | Salvo (two missiles) / Fragmentation (blast) | Bunker Buster (armour) / Barrage (three missiles) | shipped 2026-09-05 |
-| Laser Lance | a beam down the road it FACES, heat on a held target *(session 26, with facing §5.5)* | Focus (reach) / Wide Beam (corridor) | Overheat (hotter) / Capacitor (steady) | Cutter (columns) / Sweep (re-aims itself) | shipped 2026-09-05 |
+| Laser Lance | a beam down the road it FACES to where the road turns, heat on a held target *(session 26; reworked 2026-09-06 on Daniil's feedback)* | Capacitor (damage) / Chill (control) | Fast Cycle / Sear (a burn) | Cutter / Deep Sear | shipped 2026-09-05, reworked 09-06 |
 | Bastion | support aura, shoots nothing *(session 26)* | Command (harder) / Logistics (faster) | Reach (a wider ring) / Hardpoint (+range) | Warlord / Quartermaster | shipped 2026-09-05 — **eight towers** |
 
 *(Trees reworked in design round 1, 2026-09-03 — D23: every fork is two
