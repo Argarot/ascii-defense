@@ -28,7 +28,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP } from '@ascii-defense/view';
+  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState } from '@ascii-defense/view';
 import { validateSprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -111,14 +111,12 @@ async function main(): Promise<void> {
   const stripTerm = new GLTerm(glyphs, { cols: boardCols, rows: STRIP_ROWS, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
   const strip = new StripPanel(stripTerm, GLYPH_PX_W, GLYPH_PX_H, SPRITES);
   let stripHover: HudAction | null = null;
-  // Interpolation (6.9, Daniil's go 2026-09-05): the previous snapshot,
-  // the world time the current one's tick arrived, and how many ticks it
-  // covered. The picture blends between the two by the world clock.
-  let prevSnap: FrameSnapshot | null = null;
-  let snapAtMs = 0;
-  let snapTicks = 1;
+  // Motion v2 (session 27): the picture is drawn at a STEADY time on the
+  // world clock, one tick behind the newest snapshot, blended between the
+  // two snapshots that bracket it - whatever bursts the worker's ticks
+  // arrive in. The ring keeps the last few snapshots for that.
+  const clock = new RenderClock<FrameSnapshot>();
   let worldMs = 0;
-  const WORLD_TICK_MS = 50;
   const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, transparent: true });
   modalTerm.canvas.style.position = 'absolute';
   modalTerm.canvas.style.left = '0';
@@ -239,14 +237,9 @@ async function main(): Promise<void> {
       // finished run's ore a second time and apply its prospected rocks to
       // the wrong board.
       snap = null;
+      clock.reset();
     } else if (m.t === 'snapshot') {
-      if (snap && m.s.tick > snap.tick) {
-        prevSnap = snap;
-        snapAtMs = worldMs;
-        snapTicks = m.s.tick - snap.tick;
-      } else if (!snap || m.s.tick < snap.tick) {
-        prevSnap = null; // a new run, or a replayed one: nothing to blend from
-      }
+      clock.push(m.s, worldMs);
       snap = m.s;
     } else if (m.t === 'saved') {
       saveWaiters.get(m.id)?.(m.save);
@@ -773,20 +766,23 @@ async function main(): Promise<void> {
       }
 
       view.applyCellChanges(snap.cellChanges);
-      // Walkers and shots between their last two known positions - never
-      // ahead of the sim; pause holds the blend where it is.
-      const alpha = prevSnap ? (worldMs - snapAtMs) / (snapTicks * WORLD_TICK_MS) : 1;
+      // The world at a steady render time: walkers and shots between the
+      // two snapshots that bracket it, effects aged by the same continuous
+      // tick - never ahead of the sim; pause holds everything where it is.
+      const renderTick = clock.renderTick(worldMs);
+      const pair = clock.bracket(renderTick);
+      const shown = pair ? pair.b : snap;
       const board: RenderState = {
-        ...snap.board,
+        ...shown.board,
         phase: animPhase,
         animMs,
         drift,
-        enemies: prevSnap ? interpolate(prevSnap.board.enemies ?? [], snap.board.enemies ?? [], alpha, WALKER_MAX_STEP) : snap.board.enemies,
-        projectiles: prevSnap ? interpolate(prevSnap.board.projectiles ?? [], snap.board.projectiles ?? [], alpha, SHOT_MAX_STEP) : snap.board.projectiles,
+        enemies: pair ? interpolate(pair.a.board.enemies ?? [], pair.b.board.enemies ?? [], pair.alpha, WALKER_MAX_STEP) : shown.board.enemies,
+        projectiles: pair ? interpolate(pair.a.board.projectiles ?? [], pair.b.board.projectiles ?? [], pair.alpha, SHOT_MAX_STEP) : shown.board.projectiles,
       };
       view.render(board, (t) => {
         effects.ingest(snap!.events);
-        effects.draw(t, snap!.tick);
+        effects.draw(t, pair ? renderTick : snap!.tick);
       });
       const hudState: HudState = {
         ...snap.hud,

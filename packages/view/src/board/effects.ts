@@ -181,7 +181,12 @@ export class EffectsLayer {
     if (this.effects.length > EFFECT_CAP) this.effects.shift();
   }
 
-  /** Draw everything still alive at this sim tick. Call after the board, before any end screen. */
+  /**
+   * Draw everything still alive at this sim tick - a CONTINUOUS tick since
+   * session 27 (the render clock's), so a blast blooms through sixty frames
+   * a second instead of stepping twenty times. Call after the board, before
+   * any end screen.
+   */
   draw(term: TermSurface, nowTick: number): void {
     const still = isReducedMotion();
     this.effects = this.effects.filter((e) => nowTick - e.start <= e.ttl && nowTick >= e.start);
