@@ -24,13 +24,21 @@ describe('the attack look', () => {
   it('is idle before the first shot and once the cycle is spent', () => {
     expect(attackLook(BOLT, st, st, -1, 0)).toBeNull();
     expect(attackLook(BOLT, st, st, 40, 0.6)).toBeNull(); // 2 s after a shot, mid-cooldown
+    expect(attackLook(BOLT, { ...st, sequences: undefined }, st, 40, 0.6)).toBeNull();
   });
-  it('derives a flash, a recoil, smoke and a charge spark from the idle frame', () => {
-    expect(attackLook(BOLT, st, st, 0, 1)?.flatFg).toBe('fx.flash');
-    expect(attackLook(BOLT, st, st, 2, 0.9)?.dy).toBe(1); // 100 ms: the recoil
-    expect(attackLook(BOLT, st, st, 5, 0.8)?.overlay?.ch).toBe('~'); // 250 ms: smoke
-    const charge = attackLook(BOLT, st, st, 20, CHARGE_SHARE / 2);
+  it('falls back to a muzzle spark, smoke and a charge spark over an unmoved idle frame', () => {
+    const bare = { ...st, sequences: undefined };
+    expect(attackLook(BOLT, bare, st, 0, 1)?.overlay?.ch).toBe('*');
+    expect(attackLook(BOLT, bare, st, 0, 1)?.dy).toBeUndefined(); // the body never moves (feedback item 2)
+    expect(attackLook(BOLT, bare, st, 4, 0.8)?.overlay?.ch).toBe('~'); // 200 ms: smoke
+    const charge = attackLook(BOLT, bare, st, 20, CHARGE_SHARE / 2);
     expect(charge?.overlay?.role).toBe('fx.ember');
+  });
+  it('every imported tower sprite carries placeholder sequences: fire is the alt idle frame, briefly', () => {
+    expect(st.sequences?.fire?.[0].art).toEqual(st.frames?.[0].art);
+    expect(st.sequences?.fire?.[0].ms).toBe(100);
+    expect(attackLook(BOLT, st, st, 0, 1)?.frame.art).toEqual(st.frames?.[0].art);
+    expect(attackLook(BOLT, st, st, 3, 0.9)?.frame.art).toEqual(st.art); // 150 ms: cool = the base
   });
   it('plays authored sequences by their own durations, fire then cool, then charge by progress', () => {
     const f = (tag: string, ms: number) => ({ art: [tag.padEnd(8)] as [string], ink: ['a'.repeat(8)] as [string], ms });

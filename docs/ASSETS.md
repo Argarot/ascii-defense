@@ -139,7 +139,15 @@ single-glyph look or the two-letter tag when none exists.
   without them gets a placeholder the view derives from its base art (a
   flash and a recoil), so the mechanism is visible before the art arrives.
   **This is the model every future sprite is authored against**: a study
-  that wants its own attack animation ships these four lists.
+  that wants its own attack animation ships these four lists — in the
+  study, per state, as `charge`/`fire`/`cool`/`hit`: lists of
+  `{ rows, ms?, frame? }` (`frame` picks the colour rule's pulse, 0 or 1).
+  Every shipped sprite already carries PLACEHOLDER sequences written by the
+  importer and the generator (fire = the alt idle frame for 100 ms, cool =
+  the base for 150 ms, charge = alt then base): a twinkle, never a jump
+  (feedback 2026-09-05). The art agent's lists replace them; the view's
+  own fallback (a muzzle spark and smoke over an unmoved frame) only shows
+  for a sprite with no sequences at all.
 
 ### Where sprites come from: `sources/sprites/` and the importer
 

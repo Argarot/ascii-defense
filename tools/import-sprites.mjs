@@ -30,6 +30,15 @@
  *
  * Anything this script does not understand is an error, never a guess: a
  * study with a new rule needs the rule ported before it imports.
+ *
+ * SEQUENCES (session 26, feedback item 2): a study state may carry
+ * `charge`, `fire`, `cool`, `hit` - each a list of { rows, ms?, frame? }
+ * (rows = the art grid, frame = 0 or 1 for the colour rule's pulse) - and
+ * they import as the sprite's sequences. A state without them gets the
+ * PLACEHOLDER below: fire = the alt idle frame for 100 ms, cool = the
+ * base for 150 ms, charge = alt then base at 100 ms each - a twinkle, not
+ * a jump. The art agent's real sequences replace them by adding the lists
+ * to the study; nothing else moves.
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -302,7 +311,17 @@ function importTower(id, spec) {
     }).join('');
     const base = paint(seq, st.idleA, 0);
     const alt = paint(seq, st.idleB, 1);
-    states[key] = { ...base, frames: [alt] };
+    const sequences = {};
+    for (const name of ['charge', 'fire', 'cool', 'hit']) {
+      const list = st[name];
+      if (Array.isArray(list) && list.length > 0) {
+        sequences[name] = list.map((f) => ({ ...paint(seq, f.rows, f.frame ?? 1), ...(f.ms ? { ms: f.ms } : {}) }));
+      }
+    }
+    sequences.fire ??= [{ ...alt, ms: 100 }];
+    sequences.cool ??= [{ ...base, ms: 150 }];
+    sequences.charge ??= [{ ...alt, ms: 100 }, { ...base, ms: 100 }];
+    states[key] = { ...base, frames: [alt], sequences };
   }
   const expected = 1 + 2 + 4 + 8;
   if (Object.keys(states).length !== expected) throw new Error(`${id}: ${Object.keys(states).length} states, expected ${expected}`);

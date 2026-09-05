@@ -82,18 +82,19 @@ function seqFrame(sp: Sprite, seq: readonly SpriteFrame[], ageMs: number): Sprit
 
 /** The share of the cooldown during which a tower reads as CHARGING. */
 export const CHARGE_SHARE = 0.25;
-/** The derived placeholder's timings (ms): flash, recoil, then smoke. */
-const DERIVED_FIRE_MS = [60, 100] as const;
-const DERIVED_COOL_MS = 300;
+/** The derived fallback's timings (ms): a muzzle spark, then a wisp of smoke. */
+const DERIVED_FIRE_MS = 80;
+const DERIVED_COOL_MS = 240;
 
 /**
  * What a tower looks like at this moment of its attack cycle (session 25;
- * ASSETS.md sec 3): its authored `fire`, `cool` and `charge` sequences when
- * the state has them, else a placeholder DERIVED from the idle frame - a
- * flash, a one-row recoil, a wisp of smoke, a charge spark - so the
- * mechanism is visible before the art agent's sequences arrive. Null =
- * idle. `sinceFire` is in ticks (-1 before the first shot); `cooldown01`
- * runs 1 (just fired) to 0 (ready).
+ * ASSETS.md sec 3): its `fire`, `cool` and `charge` sequences when the
+ * state has them (every shipped sprite does - the importer and the
+ * generator write placeholders), else a SUBTLE fallback over the idle
+ * frame: a muzzle spark, a wisp of smoke, a charge spark. Feedback
+ * 2026-09-05 item 2: the flash-and-recoil read as a jump; the tower's body
+ * never moves now. Null = idle. `sinceFire` is in ticks (-1 before the
+ * first shot); `cooldown01` runs 1 (just fired) to 0 (ready).
  */
 export function attackLook(sp: Sprite, st: Sprite['states'][string], idle: SpriteFrame, sinceFire: number, cooldown01: number): AttackLook | null {
   if (sinceFire < 0) return null;
@@ -108,9 +109,8 @@ export function attackLook(sp: Sprite, st: Sprite['states'][string], idle: Sprit
       if (c) return { frame: c };
     }
   } else {
-    if (age < DERIVED_FIRE_MS[0]) return { frame: idle, flatFg: 'fx.flash' };
-    if (age < DERIVED_FIRE_MS[0] + DERIVED_FIRE_MS[1]) return { frame: idle, dy: 1 };
-    const coolAge = age - DERIVED_FIRE_MS[0] - DERIVED_FIRE_MS[1];
+    if (age < DERIVED_FIRE_MS) return { frame: idle, overlay: { x: CELL_W - 1, y: 0, ch: '*', role: 'fx.flash' } };
+    const coolAge = age - DERIVED_FIRE_MS;
     if (coolAge < DERIVED_COOL_MS) return { frame: idle, overlay: { x: CELL_W - 1, y: coolAge < DERIVED_COOL_MS / 2 ? 0 : -1, ch: '~', role: 'fx.smoke' } };
   }
   // CHARGE: the last share of the cooldown, while the tower is engaged.
