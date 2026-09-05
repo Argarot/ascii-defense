@@ -28,8 +28,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS,
-} from '@ascii-defense/view';
+  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState } from '@ascii-defense/view';
 import { validateSprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -112,6 +111,14 @@ async function main(): Promise<void> {
   const stripTerm = new GLTerm(glyphs, { cols: boardCols, rows: STRIP_ROWS, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
   const strip = new StripPanel(stripTerm, GLYPH_PX_W, GLYPH_PX_H, SPRITES);
   let stripHover: HudAction | null = null;
+  // Interpolation (6.9, Daniil's go 2026-09-05): the previous snapshot,
+  // the world time the current one's tick arrived, and how many ticks it
+  // covered. The picture blends between the two by the world clock.
+  let prevSnap: FrameSnapshot | null = null;
+  let snapAtMs = 0;
+  let snapTicks = 1;
+  let worldMs = 0;
+  const WORLD_TICK_MS = 50;
   const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, transparent: true });
   modalTerm.canvas.style.position = 'absolute';
   modalTerm.canvas.style.left = '0';
@@ -233,6 +240,13 @@ async function main(): Promise<void> {
       // the wrong board.
       snap = null;
     } else if (m.t === 'snapshot') {
+      if (snap && m.s.tick > snap.tick) {
+        prevSnap = snap;
+        snapAtMs = worldMs;
+        snapTicks = m.s.tick - snap.tick;
+      } else if (!snap || m.s.tick < snap.tick) {
+        prevSnap = null; // a new run, or a replayed one: nothing to blend from
+      }
       snap = m.s;
     } else if (m.t === 'saved') {
       saveWaiters.get(m.id)?.(m.save);
@@ -717,7 +731,6 @@ async function main(): Promise<void> {
 
   // ---- the frame loop ------------------------------------------------------
   let last = performance.now();
-  let worldMs = 0;
   const frame = (now: number): void => {
     const dt = Math.min(now - last, 250);
     last = now;
@@ -744,7 +757,17 @@ async function main(): Promise<void> {
       }
 
       view.applyCellChanges(snap.cellChanges);
-      const board: RenderState = { ...snap.board, phase: animPhase, animMs, drift };
+      // Walkers and shots between their last two known positions - never
+      // ahead of the sim; pause holds the blend where it is.
+      const alpha = prevSnap ? (worldMs - snapAtMs) / (snapTicks * WORLD_TICK_MS) : 1;
+      const board: RenderState = {
+        ...snap.board,
+        phase: animPhase,
+        animMs,
+        drift,
+        enemies: prevSnap ? interpolate(prevSnap.board.enemies ?? [], snap.board.enemies ?? [], alpha, WALKER_MAX_STEP) : snap.board.enemies,
+        projectiles: prevSnap ? interpolate(prevSnap.board.projectiles ?? [], snap.board.projectiles ?? [], alpha, SHOT_MAX_STEP) : snap.board.projectiles,
+      };
       view.render(board, (t) => {
         effects.ingest(snap!.events);
         effects.draw(t, snap!.tick);

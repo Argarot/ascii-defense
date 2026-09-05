@@ -140,7 +140,7 @@ export interface RenderState {
    *  so each enemy type reads differently on the board, plus the readout
    *  state (WBS 2.14): shield bracket, health mark, slow tint. No tooltips -
    *  the enemy itself is the readout (PRD sec 8). */
-  enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean }[];
+  enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean; k?: number; g?: number }[];
   /** Live towers, in cell coordinates, with their def id for per-type art and
    *  their committed choices for per-state art (sprite v2). */
   /** cooldown01 runs 1 (just fired) to 0 (ready); sinceFire is ticks since the last shot, -1 before the first (session 25). */
@@ -148,7 +148,7 @@ export interface RenderState {
   /** Projectiles in flight, continuous cell units; per-tick velocity, when
    *  given, draws a short trail behind the head (WBS 4.1). */
   /** Shots in flight; `kind` is the firing tower's id, which picks the glyph. */
-  projectiles?: readonly { x: number; y: number; vx?: number; vy?: number; kind?: string }[];
+  projectiles?: readonly { x: number; y: number; vx?: number; vy?: number; kind?: string; k?: number }[];
   /** The hovered cell accepts a build right now (sim's verdict, not ours). */
   hoverBuildable?: boolean;
   /** Faint markers on tile corners - the map's seams, visible on demand. */

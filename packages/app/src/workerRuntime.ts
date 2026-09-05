@@ -229,18 +229,20 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const speed = SPEEDS[speedIdx];
     const towers: { x: number; y: number; id: string; choices: readonly number[]; cooldown01: number; sinceFire: number }[] = [];
     for (const t of s.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: s.towerDef(t).id, choices: t.choices, ...s.firePhase(t) });
-    const projectiles: { x: number; y: number; vx: number; vy: number; kind: string }[] = [];
+    // k (and g for walkers) are stable identities across snapshots: the
+    // main thread interpolates a body between its last two positions (6.9).
+    const projectiles: { x: number; y: number; vx: number; vy: number; kind: string; k: number }[] = [];
     for (let i = 0; i < s.projX.length; i++) {
       if (!s.projAlive[i]) continue;
       // A sold tower's shots in flight keep flying; they just lose their look.
       const owner = s.towers[s.projTowerIdx[i]];
-      projectiles.push({ x: s.projX[i], y: s.projY[i], vx: s.projVX[i], vy: s.projVY[i], kind: owner ? s.towerDef(owner).id : '' });
+      projectiles.push({ x: s.projX[i], y: s.projY[i], vx: s.projVX[i], vy: s.projVY[i], kind: owner ? s.towerDef(owner).id : '', k: i });
     }
-    const enemies: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean }[] = [];
+    const enemies: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean; k: number; g: number }[] = [];
     for (let i = 0; i < s.posX.length; i++) {
       if (!s.alive[i]) continue;
       enemies.push({
-        x: s.posX[i], y: s.posY[i], id: s.enemyDefOf(i).id,
+        x: s.posX[i], y: s.posY[i], id: s.enemyDefOf(i).id, k: i, g: s.enemyGen(i),
         hp01: s.spawnHp[i] > 0 ? s.hp[i] / s.spawnHp[i] : 1,
         shielded: s.shield[i] > 0,
         slowed: s.slowTicks[i] > 0,
