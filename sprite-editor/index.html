@@ -1,0 +1,2532 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Defense Sprite Editor</title>
+    <style>
+:root {
+  color-scheme: dark;
+  --bg: #080b10;
+  --panel: #10151d;
+  --panel-2: #151c26;
+  --panel-3: #1b2531;
+  --line: #2d3b4c;
+  --line-bright: #465d72;
+  --text: #d8e1eb;
+  --muted: #7f91a4;
+  --accent: #2ee6a0;
+  --accent-dark: #113c31;
+  --warning: #ffbd5d;
+  --danger: #ff7777;
+  --shadow: rgba(0, 0, 0, 0.42);
+  font-family: ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  background: var(--bg);
+  color: var(--text);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(46, 230, 160, 0.08), transparent 35%),
+    var(--bg);
+}
+
+button, select, input {
+  font: inherit;
+  color: inherit;
+}
+
+button, select, input[type="search"], input[type="number"] {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 4px;
+}
+
+button {
+  min-height: 30px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled), select:hover { border-color: var(--line-bright); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:disabled { opacity: 0.38; cursor: default; }
+button.primary { color: #06130e; background: var(--accent); border-color: var(--accent); font-weight: 800; }
+button.danger { color: #ffaaaa; }
+button.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dark); }
+
+.topbar {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(12, 17, 24, 0.96);
+  box-shadow: 0 8px 24px var(--shadow);
+  position: relative;
+  z-index: 3;
+}
+
+.brand { display: flex; align-items: baseline; gap: 9px; white-space: nowrap; }
+.brand-mark { color: var(--accent); font-weight: 900; }
+.brand > span:not(.brand-mark) { color: var(--muted); }
+.brand strong { color: var(--text); }
+.file-actions, .history-actions { display: flex; gap: 7px; align-items: center; }
+.file-actions { flex: 1; }
+.history-actions { margin-left: auto; }
+.topbar select { height: 30px; max-width: 180px; }
+
+.workspace {
+  height: calc(100vh - 54px);
+  display: grid;
+  grid-template-columns: 250px minmax(500px, 1fr) 370px;
+}
+
+.sidebar {
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--panel);
+  padding: 18px;
+}
+
+.states-panel { border-right: 1px solid var(--line); }
+.inspector-panel { border-left: 1px solid var(--line); }
+.inspector-panel section + section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+
+.panel-heading, .section-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.panel-heading { margin-bottom: 16px; }
+h1 { font-size: 16px; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; }
+h2 { margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #aebdcb; }
+.eyebrow { color: var(--accent); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+.muted { color: var(--muted); font-size: 11px; }
+.badge { padding: 3px 6px; border: 1px solid #70582e; color: var(--warning); background: #2c2417; border-radius: 3px; font-size: 10px; }
+.hidden { display: none !important; }
+
+.drop-prompt {
+  min-height: 210px;
+  border: 1px dashed var(--line-bright);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+  background: rgba(46, 230, 160, 0.025);
+}
+.drop-prompt strong { color: var(--text); font-size: 12px; }
+.drop-icon { color: var(--accent); font-size: 30px; }
+body.dragging .drop-prompt, body.dragging .canvas-shell { border-color: var(--accent); background: rgba(46, 230, 160, 0.08); }
+
+.state-list { display: grid; gap: 5px; margin: 10px 0; max-height: 260px; overflow-y: auto; }
+.state-item { width: 100%; display: flex; justify-content: space-between; text-align: left; }
+.state-item span:last-child { color: var(--muted); font-size: 10px; }
+.state-actions, .row-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.row-actions { grid-template-columns: repeat(3, 1fr); }
+.row-actions button { padding-inline: 5px; font-size: 11px; }
+.mini-actions { display: flex; gap: 4px; }
+.mini-actions button { min-height: 24px; padding: 2px 7px; font-size: 10px; }
+.micro-button { min-height: 23px; padding: 2px 6px; color: var(--muted); font-size: 9px; }
+.timeline-title { margin-top: 24px; margin-bottom: 8px; }
+.stepper { display: grid; grid-template-columns: 32px 1fr 32px; gap: 5px; margin-bottom: 6px; }
+.stepper select { min-width: 0; }
+.timing-field { color: var(--muted); font-size: 10px; display: flex; align-items: center; gap: 4px; }
+.timing-field input { width: 70px; padding: 3px 5px; }
+
+.stage-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #0a0e14; }
+.stage-toolbar, .statusbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; background: var(--panel); }
+.stage-toolbar { border-bottom: 1px solid var(--line); }
+.stage-toolbar { flex-wrap: wrap; }
+.statusbar { border-top: 1px solid var(--line); min-height: 40px; color: var(--muted); font-size: 11px; }
+.tool-group, .view-group { display: flex; gap: 5px; align-items: center; }
+.tool-group button { padding-inline: 8px; font-size: 11px; }
+.view-group select { height: 30px; }
+.view-group label { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.view-group input[type="range"] { width: 90px; accent-color: var(--accent); }
+.spacer { flex: 1; }
+
+.canvas-shell {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+  background-color: #070a0e;
+  background-image:
+    linear-gradient(45deg, #0e141c 25%, transparent 25%),
+    linear-gradient(-45deg, #0e141c 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #0e141c 75%),
+    linear-gradient(-45deg, transparent 75%, #0e141c 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+}
+.canvas-shell.empty { border: 1px dashed transparent; }
+#spriteCanvas { image-rendering: pixelated; box-shadow: 0 15px 60px #000; cursor: crosshair; }
+.canvas-empty { display: flex; flex-direction: column; gap: 8px; align-items: center; color: var(--muted); }
+.canvas-empty strong { color: var(--text); font-size: 17px; }
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-height: 42px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 10px;
+}
+.preview-toolbar label, .composite-controls { display: flex; align-items: center; gap: 5px; }
+.preview-toolbar input[type="number"] { width: 46px; padding: 4px; }
+.preview-toolbar input[type="checkbox"] { accent-color: var(--accent); }
+.composite-controls { flex-wrap: wrap; }
+.composite-controls select { max-width: 150px; height: 29px; }
+
+.compare-dock {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid var(--line-bright);
+  background: rgba(10, 14, 20, 0.96);
+  box-shadow: 0 12px 35px #000;
+  z-index: 2;
+}
+.frame-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  min-height: 0;
+  padding: 5px;
+  background: #0b1016;
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.frame-preview.current { border: 1px solid var(--accent); color: var(--accent); border-radius: 4px; }
+.frame-preview canvas { width: 90px; height: 90px; image-rendering: pixelated; }
+
+.validation-pill { border: 1px solid var(--line); padding: 4px 7px; border-radius: 999px; }
+.validation-pill.ok { color: var(--accent); border-color: #25785c; }
+.validation-pill.error { color: var(--danger); border-color: #743b45; }
+.validation-pill.warning { color: var(--warning); border-color: #70582e; }
+.validation-panel { max-height: 150px; overflow: auto; padding: 10px 14px; border-top: 1px solid var(--line); background: #10151d; font-size: 11px; }
+.validation-panel ul { margin: 0; padding-left: 20px; }
+.validation-panel .error-text { color: var(--danger); }
+.validation-panel .warning-text { color: var(--warning); }
+
+.apply-grid { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 10px; }
+.apply-grid label { font-size: 11px; color: var(--muted); }
+.apply-grid input { accent-color: var(--accent); }
+.field-label { display: block; color: var(--muted); font-size: 10px; margin: 10px 0 5px; }
+.role-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 24px; align-items: center; gap: 7px; }
+.role-row select { min-width: 0; height: 31px; }
+.role-row code { color: var(--accent); text-align: center; }
+.swatch { width: 22px; height: 22px; border: 1px solid var(--line-bright); background: #fff; }
+.swatch.transparent {
+  background: conic-gradient(#8090a0 25%, #28313c 0 50%, #8090a0 0 75%, #28313c 0) 0 0 / 8px 8px;
+}
+
+.colour-slots { display: grid; grid-template-columns: 52px 52px 1fr; gap: 6px; margin: 10px 0; }
+.colour-slot { display: flex; align-items: center; gap: 5px; padding: 3px 6px; }
+.colour-slot span { width: 18px; height: 18px; border: 1px solid var(--line-bright); }
+.colour-slots input { min-width: 0; padding: 5px 7px; text-transform: uppercase; }
+#colourWheel {
+  display: block;
+  width: min(220px, 100%);
+  height: auto;
+  margin: 8px auto;
+  border-radius: 50%;
+  cursor: crosshair;
+  image-rendering: auto;
+}
+.value-slider, .brush-controls label { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+.value-slider input, .brush-controls input { flex: 1; accent-color: var(--accent); }
+.colour-assign-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 12px; }
+.brush-controls { display: grid; gap: 7px; padding: 9px; border: 1px solid var(--line); background: #0c1118; }
+.brush-controls label:not(:first-child) { justify-content: space-between; }
+.brush-controls select { width: 165px; height: 28px; }
+.colour-note { margin: 8px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+
+.selected-glyph { display: flex; align-items: center; gap: 12px; margin: 10px 0; padding: 8px; background: var(--panel-2); border: 1px solid var(--line); }
+#selectedGlyphCanvas { image-rendering: pixelated; background: #080b10; border: 1px solid var(--line); }
+.selected-glyph strong { display: block; font-size: 26px; line-height: 1; }
+.selected-glyph code { color: var(--muted); font-size: 10px; }
+.glyph-filters { display: grid; grid-template-columns: 1fr 120px; gap: 6px; }
+.glyph-filters input, .glyph-filters select { min-width: 0; height: 31px; padding: 4px 7px; }
+.glyph-browser { margin-top: 8px; height: 330px; overflow-y: auto; border: 1px solid var(--line); background: #090d12; }
+#glyphCanvas { display: block; image-rendering: pixelated; cursor: pointer; }
+
+.shortcuts details { font-size: 11px; color: var(--muted); }
+.shortcuts summary { cursor: pointer; color: var(--text); }
+.shortcuts dl { display: grid; grid-template-columns: 70px 1fr; gap: 6px; }
+.shortcuts dt { color: var(--accent); }
+.shortcuts dd { margin: 0; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 20;
+  background: #18212b;
+  border: 1px solid var(--line-bright);
+  box-shadow: 0 12px 40px #000;
+  padding: 10px 16px;
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .workspace { grid-template-columns: 220px minmax(380px, 1fr) 320px; }
+  .brand > span:not(.brand-mark) { display: none; }
+  .tool-group button { font-size: 0; width: 34px; }
+  .tool-group button::first-letter { font-size: 11px; }
+}
+
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">[+]</span>
+        <span>ASCII Defense</span>
+        <strong>Sprite Editor</strong>
+      </div>
+      <div class="file-actions">
+        <button id="newButton" title="Create a blank Sprite v2">New</button>
+        <button id="openButton" class="primary">Open JSON</button>
+        <select id="exampleSelect" aria-label="Open bundled sprite">
+          <option value="">Bundled sprites...</option>
+          <option value="bolt">Bolt</option>
+          <option value="mortar">Mortar</option>
+          <option value="frost">Frost</option>
+          <option value="refinery">Refinery</option>
+          <option value="road_muted_cobble">Roads</option>
+        </select>
+        <button id="referenceButton" title="Supply a colour reference for a legacy tower study">Tower reference</button>
+        <button id="saveButton" disabled>Download v2 JSON</button>
+        <button id="palettePatchButton" class="hidden">Download palette patch</button>
+      </div>
+      <div class="history-actions">
+        <button id="undoButton" disabled title="Undo (Ctrl+Z)">Undo</button>
+        <button id="redoButton" disabled title="Redo (Ctrl+Y)">Redo</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar states-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">Sprite</span>
+            <h1 id="spriteTitle">No sprite open</h1>
+          </div>
+          <span id="dirtyBadge" class="badge hidden">Edited</span>
+        </div>
+
+        <div id="dropPrompt" class="drop-prompt">
+          <span class="drop-icon">{ }</span>
+          <strong>Drop a sprite JSON here</strong>
+          <span>Sprite v2, tower study, or road study</span>
+        </div>
+
+        <section id="stateSection" class="hidden">
+          <div class="section-title-row">
+            <h2>States</h2>
+            <div class="mini-actions">
+              <button id="addStateButton" title="Add state">+</button>
+              <button id="duplicateStateButton" title="Duplicate state">Copy</button>
+            </div>
+          </div>
+          <div id="stateList" class="state-list"></div>
+          <div class="state-actions">
+            <button id="renameStateButton">Rename</button>
+            <button id="deleteStateButton" class="danger">Delete</button>
+          </div>
+
+          <div class="section-title-row timeline-title">
+            <h2>Versions</h2>
+            <span id="versionSummary" class="muted"></span>
+          </div>
+          <div class="stepper">
+            <button id="previousVariationButton" aria-label="Previous variation">&lt;</button>
+            <select id="variationSelect" aria-label="Variation"></select>
+            <button id="nextVariationButton" aria-label="Next variation">&gt;</button>
+          </div>
+          <div class="row-actions">
+            <button id="addVariationButton">+ Variation</button>
+            <button id="deleteVariationButton" class="danger">Delete</button>
+          </div>
+
+          <div class="section-title-row timeline-title">
+            <h2>Animation</h2>
+            <label class="timing-field">ms <input id="frameMsInput" type="number" min="60" step="10"></label>
+          </div>
+          <div class="stepper">
+            <button id="previousFrameButton" aria-label="Previous frame">&lt;</button>
+            <select id="frameSelect" aria-label="Animation frame"></select>
+            <button id="nextFrameButton" aria-label="Next frame">&gt;</button>
+          </div>
+          <div class="row-actions">
+            <button id="playButton">Play</button>
+            <button id="addFrameButton">+ Frame</button>
+            <button id="deleteFrameButton" class="danger">Delete</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="stage-panel">
+        <div class="stage-toolbar">
+          <div class="tool-group" role="toolbar" aria-label="Paint tools">
+            <button class="tool active" data-tool="pencil" title="Pencil (1)">Pencil</button>
+            <button class="tool" data-tool="eraser" title="Erase (2)">Erase</button>
+            <button class="tool" data-tool="fill" title="Flood fill (3)">Fill</button>
+            <button class="tool" data-tool="eyedropper" title="Eyedropper (4); right-click or Alt-click also picks">Eyedropper</button>
+            <button class="tool" data-tool="rectangle" title="Rectangle (5)">Rect</button>
+            <button class="tool" data-tool="select" title="Select for copy/paste (6)">Select</button>
+            <button class="tool" data-tool="brush" title="Colour brush (7)">Colour brush</button>
+          </div>
+          <div class="view-group">
+            <select id="viewMode" aria-label="Canvas view mode">
+              <option value="edit">Edit</option>
+              <option value="tile">Tile preview</option>
+              <option value="composite">Composite preview</option>
+            </select>
+            <button id="compareButton" title="Compare previous and next animation frames">Compare frames</button>
+            <label><input id="gridCheckbox" type="checkbox" checked> Grid</label>
+            <label>Zoom <input id="zoomInput" type="range" min="3" max="18" value="10"></label>
+            <span id="zoomLabel">10x</span>
+          </div>
+        </div>
+
+        <div id="previewToolbar" class="preview-toolbar hidden">
+          <label>Across <input id="tileColsInput" type="number" min="1" max="8" value="3"></label>
+          <label>Down <input id="tileRowsInput" type="number" min="1" max="8" value="3"></label>
+          <label><input id="cycleVariationsCheckbox" type="checkbox" checked> Cycle versions</label>
+          <span id="compositeControls" class="composite-controls hidden">
+            <button id="loadCompanionButton">Load layer JSON</button>
+            <select id="companionExampleSelect" aria-label="Load bundled layer">
+              <option value="">Bundled layer...</option>
+              <option value="bolt">Bolt</option>
+              <option value="mortar">Mortar</option>
+              <option value="frost">Frost</option>
+              <option value="refinery">Refinery</option>
+              <option value="road_muted_cobble">Roads</option>
+            </select>
+            <select id="companionStateSelect" aria-label="Layer state"></select>
+            <select id="companionVariationSelect" aria-label="Layer version"></select>
+            <select id="companionLayerSelect" aria-label="Layer order">
+              <option value="under">Layer underneath</option>
+              <option value="over">Layer on top</option>
+            </select>
+            <button id="clearCompanionButton">Clear layer</button>
+            <span id="companionLabel" class="muted">No layer loaded</span>
+          </span>
+        </div>
+
+        <div id="canvasShell" class="canvas-shell empty">
+          <canvas id="spriteCanvas" aria-label="Sprite painting canvas"></canvas>
+          <div id="canvasEmpty" class="canvas-empty">
+            <span>8 x 5 glyph cells</span>
+            <strong>Open JSON to begin</strong>
+          </div>
+          <div id="compareDock" class="compare-dock hidden">
+            <button class="frame-preview" data-frame-offset="-1">
+              <span>Previous</span>
+              <canvas id="previousFrameCanvas" width="120" height="120"></canvas>
+            </button>
+            <div class="frame-preview current">
+              <span>Current</span>
+              <canvas id="currentFrameCanvas" width="120" height="120"></canvas>
+            </div>
+            <button class="frame-preview" data-frame-offset="1">
+              <span>Next</span>
+              <canvas id="nextFrameCanvas" width="120" height="120"></canvas>
+            </button>
+          </div>
+        </div>
+
+        <div class="statusbar">
+          <span id="cellStatus">Cell --, --</span>
+          <span id="selectionStatus">No selection</span>
+          <span class="spacer"></span>
+          <button id="validateButton" disabled>Validate</button>
+          <span id="validationPill" class="validation-pill idle">Not checked</span>
+        </div>
+        <div id="validationPanel" class="validation-panel hidden"></div>
+      </section>
+
+      <aside class="sidebar inspector-panel">
+        <section>
+          <div class="section-title-row">
+            <h2>Apply</h2>
+            <span class="muted">REXPaint-style channels</span>
+          </div>
+          <div class="apply-grid">
+            <label><input id="applyGlyph" type="checkbox" checked> Glyph</label>
+            <label><input id="applyForeground" type="checkbox" checked> Fore</label>
+            <label><input id="applyBackground" type="checkbox" checked> Back</label>
+          </div>
+        </section>
+
+        <section class="role-section">
+          <div class="section-title-row">
+            <h2>Colour roles</h2>
+            <button id="loadPaletteButton" class="micro-button">Load palette</button>
+          </div>
+          <label class="field-label" for="foregroundSelect">Foreground</label>
+          <div class="role-row">
+            <span id="foregroundSwatch" class="swatch"></span>
+            <select id="foregroundSelect"></select>
+            <code id="foregroundKey">-</code>
+          </div>
+          <label class="field-label" for="backgroundSelect">Background</label>
+          <div class="role-row">
+            <span id="backgroundSwatch" class="swatch transparent"></span>
+            <select id="backgroundSelect"></select>
+            <code id="backgroundKey">.</code>
+          </div>
+        </section>
+
+        <section class="colour-lab-section">
+          <div class="section-title-row">
+            <h2>Colour lab</h2>
+            <span class="muted">Custom palette roles</span>
+          </div>
+          <div class="colour-slots">
+            <button id="colourSlotA" class="colour-slot active"><span></span>A</button>
+            <button id="colourSlotB" class="colour-slot"><span></span>B</button>
+            <input id="colourHexInput" type="text" value="#d8e1eb" maxlength="7" aria-label="Selected colour hex value">
+          </div>
+          <canvas id="colourWheel" width="220" height="220" aria-label="Hue and saturation colour wheel"></canvas>
+          <label class="value-slider">Value <input id="colourValueInput" type="range" min="0" max="100" value="88"><span id="colourValueLabel">88%</span></label>
+          <div class="colour-assign-row">
+            <button id="useForegroundButton">Use as Fore</button>
+            <button id="useBackgroundButton">Use as Back</button>
+          </div>
+          <div class="brush-controls">
+            <label>Brush size <input id="brushSizeInput" type="range" min="1" max="8" value="3"><span id="brushSizeLabel">3</span></label>
+            <label>Shape
+              <select id="brushShapeSelect">
+                <option value="circle">Circle</option>
+                <option value="square">Square</option>
+              </select>
+            </label>
+            <label>Paint
+              <select id="brushModeSelect">
+                <option value="solid">Solid A</option>
+                <option value="linear">Gradient A to B</option>
+                <option value="radial">Fade A to B</option>
+              </select>
+            </label>
+            <label>Direction
+              <select id="brushDirectionSelect">
+                <option value="horizontal">Left to right</option>
+                <option value="vertical">Top to bottom</option>
+                <option value="diagonal">Diagonal</option>
+              </select>
+            </label>
+          </div>
+          <p class="colour-note">After painting a custom colour, use Download palette patch too. Sprite v2 stores role names, not hex values.</p>
+        </section>
+
+        <section class="glyph-section">
+          <div class="section-title-row">
+            <h2>Glyphs</h2>
+            <div class="mini-actions">
+              <span id="glyphCount" class="muted">0</span>
+              <button id="loadGlyphsetButton" class="micro-button">Load atlas</button>
+            </div>
+          </div>
+          <div class="selected-glyph">
+            <canvas id="selectedGlyphCanvas" width="70" height="70"></canvas>
+            <div>
+              <strong id="selectedGlyphCharacter">-</strong>
+              <code id="selectedGlyphCode">No atlas</code>
+            </div>
+          </div>
+          <div class="glyph-filters">
+            <input id="glyphSearch" type="search" placeholder="Character or U+2800">
+            <select id="glyphRange">
+              <option value="all">All ranges</option>
+              <option value="ascii">ASCII</option>
+              <option value="braille">Braille</option>
+              <option value="box">Box drawing</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="glyph-browser">
+            <canvas id="glyphCanvas" aria-label="Glyph palette"></canvas>
+          </div>
+        </section>
+
+        <section class="shortcuts">
+          <details>
+            <summary>Keyboard shortcuts</summary>
+            <dl>
+              <dt>1-6</dt><dd>Tools</dd>
+              <dt>7</dt><dd>Colour brush</dd>
+              <dt>Right-click</dt><dd>Eyedropper</dd>
+              <dt>[ / ]</dt><dd>Previous / next version</dd>
+              <dt>, / .</dt><dd>Previous / next frame</dd>
+              <dt>Space</dt><dd>Play animation</dd>
+              <dt>Ctrl+C/V</dt><dd>Copy / paste selection</dd>
+              <dt>Ctrl+Z/Y</dt><dd>Undo / redo</dd>
+              <dt>Ctrl+S</dt><dd>Download JSON</dd>
+            </dl>
+          </details>
+        </section>
+      </aside>
+    </main>
+
+    <input id="fileInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="referenceInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="paletteInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="glyphsetInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="companionInput" class="hidden" type="file" accept="application/json,.json">
+    <div id="toast" class="toast hidden" role="status"></div>
+    <script>window.__SPRITE_EDITOR_ASSETS__={"palette":{"$schema":"../schema/palette.schema.json","roles":{"ui.bg":"#000000","ui.text":"#d3dae7","ui.dim":"#65758a","ui.accent":"#2ee6a0","ui.grid":"#2e3d4e","tower.frame":"#7286a0","tower.core":"#ffffff","tower.ground":"#0c1017","enemy.eye":"#ffd166","enemy.fast":"#ff8484","enemy.swarm":"#baf7c9","enemy.brute":"#e0a458","enemy.shell":"#9bd4ff","enemy.husk":"#c39bd3","path.1":"#4cc9f0","path.2":"#ffb703","path.3":"#c08cff","path.4":"#5ce68c","terrain.ground.mid":"#3d4f61","terrain.ground.lit":"#54687d","terrain.ground.dark":"#141c25","terrain.road.mid":"#93abc4","terrain.road.lit":"#c2d6ea","terrain.road.dark":"#333f4d","terrain.rock.mid":"#5a6a7c","terrain.rock.lit":"#8698ab","terrain.rock.dark":"#1b232c","terrain.ore.mid":"#ffd15c","terrain.ore.lit":"#fff0b0","terrain.ore.dark":"#2a2415","terrain.core.mid":"#2bbfae","terrain.core.lit":"#a8fff2","terrain.core.dark":"#0d2b26","terrain.water.mid":"#1d3550","terrain.water.lit":"#2e4d6e","terrain.water.dark":"#060d16","terrain.shore.lit":"#cfc196","terrain.shore.mid":"#8f8264","terrain.shore.dark":"#1c1a12","fx.flash":"#fff3c4","fx.ember":"#ff9e4a","fx.smoke":"#66788c","tower.bolt.turret_high":"#c9ecd2","tower.bolt.mix.141c25":"#141c25","tower.bolt.mix.131e23":"#131e23","tower.bolt.turret_edge":"#86c79f","tower.bolt.mix.11231f":"#11231f","tower.bolt.breech":"#c7e7b1","tower.bolt.mix.163325":"#163325","tower.bolt.bolt_shaft":"#d6b56b","tower.bolt.mix.151d24":"#151d24","tower.bolt.bolt_tip":"#ffe19a","tower.bolt.steel_high":"#eef3ef","tower.bolt.mix.151e23":"#151e23","tower.bolt.steel_mid":"#a7b2ad","tower.bolt.mix.818d88":"#818d88","tower.bolt.mix.caecd3":"#caecd3","tower.bolt.mix.89c8a1":"#89c8a1","tower.bolt.mix.cde9b9":"#cde9b9","tower.bolt.mix.183728":"#183728","tower.bolt.mix.dab970":"#dab970","tower.bolt.seal":"#74bca0","tower.bolt.mix.122121":"#122121","tower.bolt.scope":"#9fd9da","tower.bolt.mix.131f23":"#131f23","tower.bolt.loader":"#d39b62","tower.bolt.mix.162021":"#162021","tower.mortar.muzzle":"#fff2d2","tower.mortar.mix.271419":"#271419","tower.mortar.gun_high":"#e2edf0","tower.mortar.mix.151b23":"#151b23","tower.mortar.brass":"#d89a4f","tower.mortar.gun_mid":"#8fa5ad","tower.mortar.mix.141b23":"#141b23","tower.mortar.armour_edge":"#e87551","tower.mortar.mix.8c9ba1":"#8c9ba1","tower.mortar.muzzle_faded":"#cdbda8","tower.mortar.mix.151a22":"#151a22","tower.mortar.wide":"#e99b68","tower.mortar.mix.1b1a22":"#1b1a22","tower.mortar.armour_high":"#ffc0a3","tower.mortar.mix.151921":"#151921","tower.mortar.shell":"#ffd078","tower.mortar.mix.24171d":"#24171d","tower.mortar.mix.ffe7ab":"#ffe7ab","tower.mortar.mix.29161b":"#29161b","tower.mortar.mix.23181e":"#23181e","tower.frost.steel_high":"#e8f2f5","tower.frost.mix.111f2a":"#111f2a","tower.frost.core":"#d8f9ff","tower.frost.ice_edge":"#5cc7e7","tower.frost.mix.0d2333":"#0d2333","tower.frost.pulse_dim":"#4999ba","tower.frost.mix.141e27":"#141e27","tower.frost.steel_mid":"#9eb3bf","tower.frost.legendary":"#f4feff","tower.frost.pulse":"#72dcff","tower.frost.ice_high":"#b9efff","tower.refinery.steel_high":"#efe7da","tower.refinery.mix.201915":"#201915","tower.refinery.ore":"#ffe898","tower.refinery.mix.171b20":"#171b20","tower.refinery.mix.bd9251":"#bd9251","tower.refinery.steel_mid":"#b3a28a","tower.refinery.brass_mid":"#c48822","tower.refinery.legendary":"#fff6c8","tower.refinery.brass_high":"#f7d36d","tower.refinery.brass_edge":"#e4ad38","terrain.road.cobble.bg0":"#374149","terrain.road.cobble.bg1":"#39434b","terrain.road.cobble.bg2":"#343e45","terrain.road.cobble.bg3":"#3b454d","terrain.road.cobble.bg4":"#354047","terrain.road.cobble.ink0":"#49565d","terrain.road.cobble.ink1":"#4e5b62","terrain.road.cobble.ink2":"#536168","terrain.road.cobble.ink3":"#59676e","terrain.road.cobble.ink4":"#5f6d74","terrain.road.cobble.ink5":"#65747b","terrain.road.cobble.ink6":"#6d7c82","terrain.road.cobble.ink7":"#76858a","terrain.road.cobble.edge":"#c9d8d5","terrain.road.cobble.rail":"#b7c5c3","terrain.road.cobble.deck":"#59676e","terrain.road.cobble.under":"#4b5960"}},"grid":{"$schema":"../schema/grid.schema.json","cell":[8,5],"glyphPx":[5,8]},"glyphset":{"source":"spleen 5x8 (BSD-2-Clause) F. Cambus — complete","cell":[5,8],"count":376,"codepoints":[32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,160,9472,9474,9484,9488,9492,9496,9500,9508,9516,9524,9532,9670,9674,9698,9699,9700,9701,9829,9830,10240,10241,10242,10243,10244,10245,10246,10247,10248,10249,10250,10251,10252,10253,10254,10255,10256,10257,10258,10259,10260,10261,10262,10263,10264,10265,10266,10267,10268,10269,10270,10271,10272,10273,10274,10275,10276,10277,10278,10279,10280,10281,10282,10283,10284,10285,10286,10287,10288,10289,10290,10291,10292,10293,10294,10295,10296,10297,10298,10299,10300,10301,10302,10303,10304,10305,10306,10307,10308,10309,10310,10311,10312,10313,10314,10315,10316,10317,10318,10319,10320,10321,10322,10323,10324,10325,10326,10327,10328,10329,10330,10331,10332,10333,10334,10335,10336,10337,10338,10339,10340,10341,10342,10343,10344,10345,10346,10347,10348,10349,10350,10351,10352,10353,10354,10355,10356,10357,10358,10359,10360,10361,10362,10363,10364,10365,10366,10367,10368,10369,10370,10371,10372,10373,10374,10375,10376,10377,10378,10379,10380,10381,10382,10383,10384,10385,10386,10387,10388,10389,10390,10391,10392,10393,10394,10395,10396,10397,10398,10399,10400,10401,10402,10403,10404,10405,10406,10407,10408,10409,10410,10411,10412,10413,10414,10415,10416,10417,10418,10419,10420,10421,10422,10423,10424,10425,10426,10427,10428,10429,10430,10431,10432,10433,10434,10435,10436,10437,10438,10439,10440,10441,10442,10443,10444,10445,10446,10447,10448,10449,10450,10451,10452,10453,10454,10455,10456,10457,10458,10459,10460,10461,10462,10463,10464,10465,10466,10467,10468,10469,10470,10471,10472,10473,10474,10475,10476,10477,10478,10479,10480,10481,10482,10483,10484,10485,10486,10487,10488,10489,10490,10491,10492,10493,10494,10495,57506,57520,57521,57522,57523],"bits":"AAAAAAAAAAAgICAgIAAgAFBQUAAAAAAAAFD4UFD4UAAgcKBgMDDgIBCQoCBAUJCAIFBQYKiQaAAgICAAAAAAABAgQEBAQCAQQCAQEBAQIEAAAJBg8GCQAAAAICD4ICAAAAAAAAAgIEAAAAAA8AAAAAAAAAAAACAAEBAgIEBAgIAAYJCw0JBgAAAgYCAgIHAAAGCQEGCA8AAAYJAgEJBgAACAoKDwICAAAPCA4BAQ4AAAYIDgkJBgAADwkBAgQEAAAGCQYJCQYAAAYJCQcBBgAAAAACAAACAAAAAAIAAgIEAAECBAQCAQAAAAAPAA8AAAAEAgEBAgQABgkBAgQABAAABgkLCwgHAAAGCQkPCQkAAA4JDgkJDgAABwgICAgHAAAOCQkJCQ4AAAcIDggIBwAABwgIDggIAAAHCAsJCQcAAAkJDwkJCQAABwICAgIHAAAHAgICAgwAAAkJDgkJCQAACAgICAgHAAAJDw8JCQkAAAkNDQsLCQAABgkJCQkGAAAOCQkOCAgAAAYJCQkJBgMADgkJDgkJAAAHCAYBAQ4AAA+CAgICAgAACQkJCQkHAAAJCQkJBgYAAAkJCQ8PCQAACQkGBgkJAAAJCQkHAQ4AAA8BAgQIDwAHBAQEBAQEBwgIBAQCAgEBBwEBAQEBAQcAAgUIgAAAAAAAAAAAAAAPBAIAAAAAAAAAAAYBBwkHAAgIDgkJCQ4AAAAHCAgIBwABAQcJCQkHAAAABwkPCAcAAwQEDgQEBAAAAAcJCQYBDggIDgkJCQkAAAIABgICAwAAAgACAgICDAgICQoMCgkABAQEBAQEAwAAAAkPDwkJAAAADgkJCQkAAAAGCQkJBgAAAA4JCQ4ICAAABwkJBwEBAAAHCQgICAAAAAcIBgEOAAQEDgQEBAMAAAAJCQkJBwAAAAkJCQYGAAAACQkPDwkAAAAJBgYJCQAAAAkJCQcBDgAADwECBA8AAwQEDAwEBAMCAgICAgICAgwCAgMDAgIMAAAABIsAAAAAAAAAAAAAAAAAAA+AAAAAAgICAgICAgIAAAADggICAgAAAA4CAgICAgICA4AAAAACAgIOAAAAAAICAgOCAgICAgICDgICAgIAAAAPggICAgICAg+AAAAAAgICD4ICAgIAAgcPhwIAAAACBQiFAgAAAAAAAIGDh4+AAAAIDA4PD4+PDgwIAAAAD4eDgYCAAAAABQ+PhwIAAAACBw+HAgAAAAAAAAAAAAAEAAAAAAAAAAAABAAAAAAABAAEAAAAAAAAAAAABAAAAAQAAAAEAAAAAAAEAAQAAAAEAAQABAAAAAEAAAAAAAAABQAAAAAAAAABAAQAAAAAAAUABAAAAAAAAQAAAAQAAAAFAAAABAAAAAEABAAEAAAABQAEAAQAAAAAAAEAAAAAAAQAAQAAAAAAAAAFAAAAAAAEAAUAAAAAAAAAAQAEAAAABAABAAQAAAAAAAUABAAAAAQABQAEAAAAAQABAAAAAAAFAAEAAAAAAAEABQAAAAAABQAFAAAAAAABAAEABAAAAAUAAQAEAAAAAQAFAAQAAAAFAAUABAAAAAAAAAABAAAABAAAAAEAAAAAAAQAAQAAAAQABAABAAAAAAAAAAUAAAAEAAAABQAAAAAABAAFAAAABAAEAAUAAAABAAAAAQAAAAUAAAABAAAAAQAEAAEAAAAFAAQAAQAAAAEAAAAFAAAABQAAAAUAAAABAAQABQAAAAUABAAFAAAAAAABAAEAAAAEAAEAAQAAAAAABQABAAAABAAFAAEAAAAAAAEABQAAAAQAAQAFAAAAAAAFAAUAAAAEAAUABQAAAAEAAQABAAAABQABAAEAAAABAAUAAQAAAAUABQABAAAAAQABAAUAAAAFAAEABQAAAAEABQAFAAAABQAFAAUAAAAAAAAAAAAEAAQAAAAAAAQAAAAEAAAABAAEAAQAAAAEAAAAAAAEAAQABAAAAAQABAAAAAQABAAEAAQABAAEAAQAAQAAAAAABAAFAAAAAAAEAAEABAAAAAQABQAEAAAABAABAAAABAAEAAUAAAAEAAQAAQAEAAQABAAFAAQABAAEAAAAAQAAAAQABAABAAAABAAAAAUAAAAEAAQABQAAAAQAAAABAAQABAAEAAEABAAEAAAABQAEAAQABAAFAAQABAABAAEAAAAEAAUAAQAAAAQAAQAFAAAABAAFAAUAAAAEAAEAAQAEAAQABQABAAQABAABAAUABAAEAAUABQAEAAQAAAAAAAEABAAEAAAAAQAEAAAABAABAAQABAAEAAEABAAAAAAABQAEAAQAAAAFAAQAAAAEAAUABAAEAAQABQAEAAEAAAABAAQABQAAAAEABAABAAQAAQAEAAUABAABAAQAAQAAAAUABAAFAAAABQAEAAEABAAFAAQABQAEAAUABAAAAAEAAQAEAAQAAQABAAQAAAAFAAEABAAEAAUAAQAEAAAAAQAFAAQABAABAAUABAAAAAUABQAEAAQABQAFAAQAAQABAAEABAAFAAEAAQAEAAEABQABAAQABQAFAAEABAABAAEABQAEAAUAAQAFAAQAAQAFAAUABAAFAAUABQAEAAAAAAAAAAEABAAAAAAAAQAAAAQAAAABAAQABAAAAAEAAAAAAAQAAQAEAAAABAABAAAABAAEAAEABAAEAAQAAQABAAAAAAABAAUAAAAAAAEAAQAEAAAAAQAFAAQAAAABAAEAAAAEAAEABQAAAAQAAQABAAQABAABAAUABAAEAAEAAAABAAAAAQAEAAEAAAABAAAABQAAAAEABAAFAAAAAQAAAAEABAABAAQAAQAEAAEAAAAFAAQAAQAEAAUABAABAAEAAQAAAAEABQABAAAAAQABAAUAAAABAAUABQAAAAEAAQABAAQAAQAFAAEABAABAAEABQAEAAEABQAFAAQAAQAAAAAAAQABAAQAAAABAAEAAAAEAAEAAQAEAAQAAQABAAAAAAAFAAEABAAAAAUAAQAAAAQABQABAAQABAAFAAEAAQAAAAEAAQAFAAAAAQABAAEABAABAAEABQAEAAEAAQABAAAABQABAAUAAAAFAAEAAQAEAAUAAQAFAAQABQABAAAAAQABAAEABAABAAEAAQAAAAUAAQABAAQABQABAAEAAAABAAUAAQAEAAEABQABAAAABQAFAAEABAAFAAUAAQABAAEAAQABAAUAAQABAAEAAQAFAAEAAQAFAAUAAQABAAEAAQAFAAEABQABAAUAAQABAAUABQABAAUABQAFAAEAAAAAAAAABQAEAAAAAAAFAAAABAAAAAUABAAEAAAABQAAAAAABAAFAAQAAAAEAAUAAAAEAAQABQAEAAQABAAFAAEAAAAAAAUABQAAAAAABQABAAQAAAAFAAUABAAAAAUAAQAAAAQABQAFAAAABAAFAAEABAAEAAUABQAEAAQABQAAAAEAAAAFAAQAAQAAAAUAAAAFAAAABQAEAAUAAAAFAAAAAQAEAAUABAABAAQABQAAAAUABAAFAAQABQAEAAUAAQABAAAABQAFAAEAAAAFAAEABQAAAAUABQAFAAAABQABAAEABAAFAAUAAQAEAAUAAQAFAAQABQAFAAUABAAFAAAAAAABAAUABAAAAAEABQAAAAQAAQAFAAQABAABAAUAAAAAAAUABQAEAAAABQAFAAAABAAFAAUABAAEAAUABQABAAAAAQAFAAUAAAABAAUAAQAEAAEABQAFAAQAAQAFAAEAAAAFAAUABQAAAAUABQABAAQABQAFAAUABAAFAAUAAAABAAEABQAEAAEAAQAFAAAABQABAAUABAAFAAEABQAAAAEABQAFAAQAAQAFAAUAAAAFAAUABQAEAAUABQAFAAEAAQABAAUABQABAAEABQABAAUAAQAFAAUABQABAAUAAQABAAUABQAFAAEABQAFAAEABQAFAAUABQAFAAUABQACBQUPjY2PgAgMDg8PDgwICAQCAQECBAgBAwcPDwcDAQECBAgIBAIBA="},"sprites":{"bolt":{"$schema":"../../schema/sprite.schema.json","id":"bolt","cell":[8,5],"frameMs":720,"source":"sources/sprites/ascii-defense-bolt-upgrade-tree-12.json via tools/import-sprites.mjs","states":{"0":{"art":[" .-#-.  ","|{o}|==>","   ||)  ","   ||   ","|/_||_\\|"],"ink":[".aaaaa..","ddfddhhj","...kkk..","...mm...","mmnmmnmm"],"bgInk":[".bbcbb..","begebiii","...lll..","...ll...","iiiiiiii"],"frames":[{"art":[" .-#-.  ","|{O}|=->","   ||}  ","   ||   ","|/_||_\\|"],"ink":[".ooooo..","ppqppssj","...kkk..","...mm...","mmnmmnmm"],"bgInk":[".bbcbb..","berebiii","...lll..","...ll...","iiiiiiii"]}]},"1":{"art":[" .-=-.  ","|(o)|==>"," : ||): ","   ||   "," /_||_\\ "],"ink":[".aaaaa..","dtftdhhj",".t.kktt.","...mm...",".mnmmnm."],"bgInk":[".bbcbb..","bugubiii",".u.lluu.","...ll...",".iiiiii."],"frames":[{"art":[" .-=-.  ","|(O)|=->"," : ||}: ","   ||   "," /_||_\\ "],"ink":[".ooooo..","ptqtpssj",".t.kkkt.","...mm...",".mnmmnm."],"bgInk":[".bbcbb..","burubiii",".u.lllu.","...ll...",".iiiiii."]}]},"10":{"art":["-+.-=-. ","|(o)|==>"," : ||): ","  /||\\  ","|/_||_\\|"],"ink":["vvaaaaa.","dtftdhhj",".t.kktt.","..mmmm..","mmnmmnmm"],"bgInk":["wwbbcbb.","bugubiii",".u.lluu.","..bllb..","iiiiiiii"],"frames":[{"art":["-x.-=-. ","|(O)|=->"," : ||}: ","  /||\\  ","|/_||_\\|"],"ink":["vvooooo.","ptqtpssj",".t.kkkt.","..mmmm..","mmnmmnmm"],"bgInk":["wwbbcbb.","burubiii",".u.lllu.","..bllb..","iiiiiiii"]}]},"11":{"art":[" .-=-.  ","|(o)|==>","[#]||)  ","   ||   ","|/_||_\\|"],"ink":[".aaaaa..","dtftdhhj","xxxkkt..","...mm...","mmnmmnmm"],"bgInk":[".bbcbb..","bugubiii","yyyllu..","...ll...","iiiiiiii"],"frames":[{"art":[" .-=-.  ","|(O)|=->","[=]||}  ","   ||   ","|/_||_\\|"],"ink":[".ooooo..","ptqtpssj","xxxkkk..","...mm...","mmnmmnmm"],"bgInk":[".bbcbb..","burubiii","yyylll..","...ll...","iiiiiiii"]}]},"100":{"art":["-+.-=-.]","|(o)|H=>"," : ||): ","/ [||] \\","|/_||_\\|"],"ink":["vvaaaaaa","dtftdhhj",".t.kktt.","m.mmmm.m","mmnmmnmm"],"bgInk":["wwbbcbbe","bugubiii",".u.lluu.","b.llll.b","iiiiiiii"],"frames":[{"art":["-x.-=-.]","|(O)|#=>"," : ||}: ","/ [||] \\","|/_||_\\|"],"ink":["vvoooooo","ptqtpssj",".t.kkkt.","m.mmmm.m","mmnmmnmm"],"bgInk":["wwbbcbbe","burubiii",".u.lllu.","b.llll.b","iiiiiiii"]}]},"101":{"art":["^.-=-==>","|(o)|==>"," : ||): ","|\\/||\\/|","|/_||_\\|"],"ink":["vvaaahhj","dtftdhhj",".t.kktt.","mmmmmmmm","mmnmmnmm"],"bgInk":["wwbcbiii","bugubiii",".u.lluu.","lbbllbbl","iiiiiiii"],"frames":[{"art":["+.-=-=->","|(O)|=->"," : ||}: ","|\\/||\\/|","|/_||_\\|"],"ink":["vvooossj","ptqtpssj",".t.kkkt.","mmmmmmmm","mmnmmnmm"],"bgInk":["wwbcbiii","burubiii",".u.lllu.","lbbllbbl","iiiiiiii"]}]},"110":{"art":["[.-=-.] ","|(o)|H=>","[#]||)  ","/ [||] \\","|/_||_\\|"],"ink":["aaaaaaa.","dtftdhhj","xxxkkt..","m.mmmm.m","mmnmmnmm"],"bgInk":["ebbcbbe.","bugubiii","yyyllu..","b.llll.b","iiiiiiii"],"frames":[{"art":["[.-=-.] ","|(O)|#=>","[=]||}  ","/ [||] \\","|/_||_\\|"],"ink":["ooooooo.","ptqtpssj","xxxkkk..","m.mmmm.m","mmnmmnmm"],"bgInk":["ebbcbbe.","burubiii","yyylll..","b.llll.b","iiiiiiii"]}]},"111":{"art":[" .-=-==>","|(o)|==>","[#]||)  ","|\\/||\\/|","|/_||_\\|"],"ink":[".aaaahhj","dtftdhhj","xxxkkt..","mmmmmmmm","mmnmmnmm"],"bgInk":[".bbcbiii","bugubiii","yyyllu..","lbbllbbl","iiiiiiii"],"frames":[{"art":[" .-=-=->","|(O)|=->","[=]||}  ","|\\/||\\/|","|/_||_\\|"],"ink":[".oooossj","ptqtpssj","xxxkkk..","mmmmmmmm","mmnmmnmm"],"bgInk":[".bbcbiii","burubiii","yyylll..","lbbllbbl","iiiiiiii"]}]},"":{"art":[" .-#-.  ","|[o]|==>","   ||)  ","   ||   "," /_||_\\ "],"ink":[".aaaaa..","ddfddhhj","...kkk..","...mm...",".mnmmnm."],"bgInk":[".bbcbb..","begebiii","...lll..","...ll...",".iiiiii."],"frames":[{"art":[" .-=-.  ","|[O]|=->","   ||}  ","   ||   "," /_||_\\ "],"ink":[".ooooo..","ppqppssj","...kkk..","...mm...",".mnmmnm."],"bgInk":[".bbcbb..","berebiii","...lll..","...ll...",".iiiiii."]}]},"00":{"art":["-+.-#-. ","|{o}|==>","   ||)  ","  /||\\  ","|/_||_\\|"],"ink":["vvaaaaa.","ddfddhhj","...kkk..","..mmmm..","mmnmmnmm"],"bgInk":["wwbbcbb.","begebiii","...lll..","..bllb..","iiiiiiii"],"frames":[{"art":["-x.-#-. ","|{O}|=->","   ||}  ","  /||\\  ","|/_||_\\|"],"ink":["vvooooo.","ppqppssj","...kkk..","..mmmm..","mmnmmnmm"],"bgInk":["wwbbcbb.","berebiii","...lll..","..bllb..","iiiiiiii"]}]},"01":{"art":[" .-#-.  ","|{o}|==>","[#]||)  ","   ||   ","|/_||_\\|"],"ink":[".aaaaa..","ddfddhhj","xxxkkk..","...mm...","mmnmmnmm"],"bgInk":[".bbcbb..","begebiii","yyylll..","...ll...","iiiiiiii"],"frames":[{"art":[" .-#-.  ","|{O}|=->","[=]||}  ","   ||   ","|/_||_\\|"],"ink":[".ooooo..","ppqppssj","xxxkkk..","...mm...","mmnmmnmm"],"bgInk":[".bbcbb..","berebiii","yyylll..","...ll...","iiiiiiii"]}]},"000":{"art":["-+.-#-.]","|{o}|H=>","   ||)  ","/ [||] \\","|/_||_\\|"],"ink":["vvaaaaaa","ddfddhhj","...kkk..","m.mmmm.m","mmnmmnmm"],"bgInk":["wwbbcbbe","begebiii","...lll..","b.llll.b","iiiiiiii"],"frames":[{"art":["-x.-#-.]","|{O}|#=>","   ||}  ","/ [||] \\","|/_||_\\|"],"ink":["vvoooooo","ppqppssj","...kkk..","m.mmmm.m","mmnmmnmm"],"bgInk":["wwbbcbbe","berebiii","...lll..","b.llll.b","iiiiiiii"]}]},"001":{"art":["^.-#-==>","|{o}|==>","   ||)  ","|\\/||\\/|","|/_||_\\|"],"ink":["vvaaahhj","ddfddhhj","...kkk..","mmmmmmmm","mmnmmnmm"],"bgInk":["wwbcbiii","begebiii","...lll..","lbbllbbl","iiiiiiii"],"frames":[{"art":["+.-#-=->","|{O}|=->","   ||}  ","|\\/||\\/|","|/_||_\\|"],"ink":["vvooossj","ppqppssj","...kkk..","mmmmmmmm","mmnmmnmm"],"bgInk":["wwbcbiii","berebiii","...lll..","lbbllbbl","iiiiiiii"]}]},"010":{"art":["[.-#-.] ","|{o}|H=>","[#]||)  ","/ [||] \\","|/_||_\\|"],"ink":["aaaaaaa.","ddfddhhj","xxxkkk..","m.mmmm.m","mmnmmnmm"],"bgInk":["ebbcbbe.","begebiii","yyylll..","b.llll.b","iiiiiiii"],"frames":[{"art":["[.-#-.] ","|{O}|#=>","[=]||}  ","/ [||] \\","|/_||_\\|"],"ink":["ooooooo.","ppqppssj","xxxkkk..","m.mmmm.m","mmnmmnmm"],"bgInk":["ebbcbbe.","berebiii","yyylll..","b.llll.b","iiiiiiii"]}]},"011":{"art":[" .-#-==>","|{o}|==>","[#]||)  ","|\\/||\\/|","|/_||_\\|"],"ink":[".aaaahhj","ddfddhhj","xxxkkk..","mmmmmmmm","mmnmmnmm"],"bgInk":[".bbcbiii","begebiii","yyylll..","lbbllbbl","iiiiiiii"],"frames":[{"art":[" .-#-=->","|{O}|=->","[=]||}  ","|\\/||\\/|","|/_||_\\|"],"ink":[".oooossj","ppqppssj","xxxkkk..","mmmmmmmm","mmnmmnmm"],"bgInk":[".bbcbiii","berebiii","yyylll..","lbbllbbl","iiiiiiii"]}]}},"inkMap":{".":null,"a":"tower.bolt.turret_high","b":"tower.bolt.mix.141c25","c":"tower.bolt.mix.131e23","d":"tower.bolt.turret_edge","e":"tower.bolt.mix.11231f","f":"tower.bolt.breech","g":"tower.bolt.mix.163325","h":"tower.bolt.bolt_shaft","i":"tower.bolt.mix.151d24","j":"tower.bolt.bolt_tip","k":"tower.bolt.steel_high","l":"tower.bolt.mix.151e23","m":"tower.bolt.steel_mid","n":"tower.bolt.mix.818d88","o":"tower.bolt.mix.caecd3","p":"tower.bolt.mix.89c8a1","q":"tower.bolt.mix.cde9b9","r":"tower.bolt.mix.183728","s":"tower.bolt.mix.dab970","t":"tower.bolt.seal","u":"tower.bolt.mix.122121","v":"tower.bolt.scope","w":"tower.bolt.mix.131f23","x":"tower.bolt.loader","y":"tower.bolt.mix.162021"}},"mortar":{"$schema":"../../schema/sprite.schema.json","id":"mortar","cell":[8,5],"frameMs":820,"source":"sources/sprites/ascii-defense-mortar-upgrade-tree-15.json via tools/import-sprites.mjs","states":{"0":{"art":["    M   ","   //   ","  [//]  ","  //    ","/___\\   "],"ink":["....a...","...cc...","..hcch..","..ff....","hiiih..."],"bgInk":["....b...","...dd...","..kddk..","..gg....","kkkkk..."],"frames":[{"art":["    M   ","   //   ","  [//]  ","  //    ","/___\\   "],"ink":["....j...","...cc...","..hcch..","..ff....","hiiih..."],"bgInk":["....b...","...dd...","..kddk..","..gg....","kkkkk..."]}]},"1":{"art":["    M   ","   //   ","  '//   ","  //    ","/____\\  "],"ink":["....a...","...cc...","..ecc...","..ff....","liiiil.."],"bgInk":["....b...","...dd...","..ddd...","..gg....","mmmmmm.."],"frames":[{"art":["    M   ","   //   ","  '//   ","  //    ","/____\\  "],"ink":["....j...","...cc...","..ecc...","..ff....","liiiil.."],"bgInk":["....b...","...dd...","..ddd...","..gg....","mmmmmm.."]}]},"10":{"art":["    M   ","   //   ","  '//   ","  //[!] ","/____\\  "],"ink":["....a...","...cc...","..ecc...","..ffnpn.","liiiil.."],"bgInk":["....b...","...dd...","..ddd...","..ggooo.","mmmmmm.."],"frames":[{"art":["    M   ","   //   ","  '//   ","  //[|] ","/____\\  "],"ink":["....j...","...cc...","..ecc...","..ffnpn.","liiiil.."],"bgInk":["....b...","...dd...","..ddd...","..ggooo.","mmmmmm.."]}]},"11":{"art":["    M   ","   //   ","  '//   ","  //(=) ","/____\\  "],"ink":["....a...","...cc...","..ecc...","..ffnen.","liiiil.."],"bgInk":["....b...","...dd...","..ddd...","..ggqqq.","mmmmmm.."],"frames":[{"art":["    M   ","   //   ","  '//   ","  //(-) ","/____\\  "],"ink":["....j...","...cc...","..ecc...","..ffnen.","liiiil.."],"bgInk":["....b...","...dd...","..ddd...","..ggqqq.","mmmmmm.."]}]},"100":{"art":["   [M]  ","  |//|  ","  '//   ","  //[!] ","/____\\  "],"ink":["...rar..","..rccr..","..ecc...","..ffnpn.","liiiil.."],"bgInk":["...sbs..","..sdds..","..ddd...","..ggooo.","mmmmmm.."],"frames":[{"art":["   [M]  ","  |//|  ","  '//   ","  //[|] ","/____\\  "],"ink":["...rjr..","..rccr..","..ecc...","..ffnpn.","liiiil.."],"bgInk":["...sbs..","..sdds..","..ddd...","..ggooo.","mmmmmm.."]}]},"101":{"art":["    M   ","!! //   ","^ '//  ^","  //[!] ","/____\\  "],"ink":["....a...","pp.cc...","p.ecc..p","..ffnpn.","liiiil.."],"bgInk":["....b...","tt.dd...","t.ddd..t","..ggooo.","mmmmmm.."],"frames":[{"art":["    M   ","!| //   ","^ '//  ^","  //[|] ","/____\\  "],"ink":["....j...","pe.cc...","p.ecc..e","..ffnpn.","liiiil.."],"bgInk":["....b...","tt.dd...","t.ddd..t","..ggooo.","mmmmmm.."]}]},"110":{"art":["   [M]  ","  |//|  ","  '//   ","  //(=) ","/____\\  "],"ink":["...rar..","..rccr..","..ecc...","..ffnen.","liiiil.."],"bgInk":["...sbs..","..sdds..","..ddd...","..ggqqq.","mmmmmm.."],"frames":[{"art":["   [M]  ","  |//|  ","  '//   ","  //(-) ","/____\\  "],"ink":["...rjr..","..rccr..","..ecc...","..ffnen.","liiiil.."],"bgInk":["...sbs..","..sdds..","..ddd...","..ggqqq.","mmmmmm.."]}]},"111":{"art":["    M   ","!! //   ","^ '//  ^","  //(=) ","/____\\  "],"ink":["....a...","pp.cc...","p.ecc..p","..ffnen.","liiiil.."],"bgInk":["....b...","tt.dd...","t.ddd..t","..ggqqq.","mmmmmm.."],"frames":[{"art":["    M   ","!| //   ","^ '//  ^","  //(-) ","/____\\  "],"ink":["....j...","pe.cc...","p.ecc..e","..ffnen.","liiiil.."],"bgInk":["....b...","tt.dd...","t.ddd..t","..ggqqq.","mmmmmm.."]}]},"":{"art":["    M   ","   //   ","  '//   ","  //    "," /__\\   "],"ink":["....a...","...cc...","..ecc...","..ff....",".hiih..."],"bgInk":["....b...","...dd...","..ddd...","..gg....",".dddd..."],"frames":[{"art":["    M   ","   //   ","  '//   ","  //    "," /__\\   "],"ink":["....j...","...cc...","..ecc...","..ff....",".hiih..."],"bgInk":["....b...","...dd...","..ddd...","..gg....",".dddd..."]}]},"00":{"art":["    M   ","   //   ","  [//]  ","  //[!] ","/___\\   "],"ink":["....a...","...cc...","..hcch..","..ffnpn.","hiiih..."],"bgInk":["....b...","...dd...","..kddk..","..ggooo.","kkkkk..."],"frames":[{"art":["    M   ","   //   ","  [//]  ","  //[|] ","/___\\   "],"ink":["....j...","...cc...","..hcch..","..ffnpn.","hiiih..."],"bgInk":["....b...","...dd...","..kddk..","..ggooo.","kkkkk..."]}]},"01":{"art":["    M   ","   //   ","  [//]  ","  //(=) ","/___\\   "],"ink":["....a...","...cc...","..hcch..","..ffnen.","hiiih..."],"bgInk":["....b...","...dd...","..kddk..","..ggqqq.","kkkkk..."],"frames":[{"art":["    M   ","   //   ","  [//]  ","  //(-) ","/___\\   "],"ink":["....j...","...cc...","..hcch..","..ffnen.","hiiih..."],"bgInk":["....b...","...dd...","..kddk..","..ggqqq.","kkkkk..."]}]},"000":{"art":["   [M]  ","  |//|  ","  [//]  ","  //[!] ","/___\\   "],"ink":["...rar..","..rccr..","..hcch..","..ffnpn.","hiiih..."],"bgInk":["...sbs..","..sdds..","..kddk..","..ggooo.","kkkkk..."],"frames":[{"art":["   [M]  ","  |//|  ","  [//]  ","  //[|] ","/___\\   "],"ink":["...rjr..","..rccr..","..hcch..","..ffnpn.","hiiih..."],"bgInk":["...sbs..","..sdds..","..kddk..","..ggooo.","kkkkk..."]}]},"001":{"art":["    M   ","!! //   ","^ [//] ^","  //[!] ","/___\\   "],"ink":["....a...","pp.cc...","p.hcch.p","..ffnpn.","hiiih..."],"bgInk":["....b...","tt.dd...","t.kddk.t","..ggooo.","kkkkk..."],"frames":[{"art":["    M   ","!| //   ","^ [//] ^","  //[|] ","/___\\   "],"ink":["....j...","pe.cc...","p.hcch.e","..ffnpn.","hiiih..."],"bgInk":["....b...","tt.dd...","t.kddk.t","..ggooo.","kkkkk..."]}]},"010":{"art":["   [M]  ","  |//|  ","  [//]  ","  //(=) ","/___\\   "],"ink":["...rar..","..rccr..","..hcch..","..ffnen.","hiiih..."],"bgInk":["...sbs..","..sdds..","..kddk..","..ggqqq.","kkkkk..."],"frames":[{"art":["   [M]  ","  |//|  ","  [//]  ","  //(-) ","/___\\   "],"ink":["...rjr..","..rccr..","..hcch..","..ffnen.","hiiih..."],"bgInk":["...sbs..","..sdds..","..kddk..","..ggqqq.","kkkkk..."]}]},"011":{"art":["    M   ","!! //   ","^ [//] ^","  //(=) ","/___\\   "],"ink":["....a...","pp.cc...","p.hcch.p","..ffnen.","hiiih..."],"bgInk":["....b...","tt.dd...","t.kddk.t","..ggqqq.","kkkkk..."],"frames":[{"art":["    M   ","!| //   ","^ [//] ^","  //(-) ","/___\\   "],"ink":["....j...","pe.cc...","p.hcch.e","..ffnen.","hiiih..."],"bgInk":["....b...","tt.dd...","t.kddk.t","..ggqqq.","kkkkk..."]}]}},"inkMap":{".":null,"a":"tower.mortar.muzzle","b":"tower.mortar.mix.271419","c":"tower.mortar.gun_high","d":"tower.mortar.mix.151b23","e":"tower.mortar.brass","f":"tower.mortar.gun_mid","g":"tower.mortar.mix.141b23","h":"tower.mortar.armour_edge","i":"tower.mortar.mix.8c9ba1","j":"tower.mortar.muzzle_faded","k":"tower.mortar.mix.151a22","l":"tower.mortar.wide","m":"tower.mortar.mix.1b1a22","n":"tower.mortar.armour_high","o":"tower.mortar.mix.151921","p":"tower.mortar.shell","q":"tower.mortar.mix.24171d","r":"tower.mortar.mix.ffe7ab","s":"tower.mortar.mix.29161b","t":"tower.mortar.mix.23181e"}},"frost":{"$schema":"../../schema/sprite.schema.json","id":"frost","cell":[8,5],"frameMs":720,"source":"sources/sprites/ascii-defense-frost-upgrade-tree-aligned-17.json via tools/import-sprites.mjs","states":{"0":{"art":["  /F\\   "," \u003c^+^>  ","  \\|/   ","  [|]   "," /_=_\\  "],"ink":["..aca...",".dfffd..","..aaa...","..kak...",".hhdhh.."],"bgInk":["..bbb...",".ebbbe..","..bbb...","..ggg...",".ggggg.."],"frames":[{"art":["  /F\\   "," \u003c^*^>  ","  \\|/   ","  [|]   "," /_=_\\  "],"ink":["..aia...",".djjjd..","..aaa...","..kak...",".hhdhh.."],"bgInk":["..bbb...",".ebbbe..","..bbb...","..ggg...",".ggggg.."]}]},"1":{"art":[" ^/F\\^  "," \u003c^+^>  ","  \\|/   ","   |    "," /_=_\\  "],"ink":[".fkckf..",".dfffd..","..aaa...","...a....",".hhdhh.."],"bgInk":[".bbbbb..",".ebbbe..","..bbb...","...g....",".ggggg.."],"frames":[{"art":[" ^/F\\^  "," \u003c^*^>  ","  \\|/   ","   |    "," /_=_\\  "],"ink":[".jkikj..",".djjjd..","..aaa...","...a....",".hhdhh.."],"bgInk":[".bbbbb..",".ebbbe..","..bbb...","...g....",".ggggg.."]}]},"10":{"art":[" ^/F\\^  ","-\u003c^+^>- ","  \\|/   ","   |    "," /_=_\\  "],"ink":[".fkckf..","fdfffdf.","..aaa...","...a....",".hhdhh.."],"bgInk":[".bbbbb..","bebbbeb.","..bbb...","...g....",".ggggg.."],"frames":[{"art":[" ^/F\\^  ","-\u003c^*^>- ","  \\|/   ","   |    "," /_=_\\  "],"ink":[".jkikj..","jdjjjdj.","..aaa...","...a....",".hhdhh.."],"bgInk":[".bbbbb..","bebbbeb.","..bbb...","...g....",".ggggg.."]}]},"11":{"art":[" ^/F\\^  "," \u003c^+^>  ","  \\|/   ","  =|=   "," /_=_\\  "],"ink":[".fkckf..",".dfffd..","..aaa...","..faf...",".hhdhh.."],"bgInk":[".bbbbb..",".ebbbe..","..bbb...","..ggg...",".ggggg.."],"frames":[{"art":[" ^/F\\^  "," \u003c^*^>  ","  \\|/   ","  =|=   "," /_=_\\  "],"ink":[".jkikj..",".djjjd..","..aaa...","..jaj...",".hhdhh.."],"bgInk":[".bbbbb..",".ebbbe..","..bbb...","..ggg...",".ggggg.."]}]},"100":{"art":[" ^{F}^  ","\u003c/:*:\\> "," \\:+:/  ","   |    "," /_=_\\  "],"ink":[".fdcdf..","fdfffaf.",".fffff..","...a....",".hhdhh.."],"bgInk":[".eeeee..","eeeeeee.",".eeeee..","...g....",".ggggg.."],"frames":[{"art":[" ^{F}^  ","\u003c/:+:\\> "," \\:+:/  ","   |    "," /_=_\\  "],"ink":[".jdidj..","jdjjjaj.",".jjjjj..","...a....",".hhdhh.."],"bgInk":[".eeeee..","eeeeeee.",".eeeee..","...g....",".ggggg.."]}]},"101":{"art":[" ^/F\\^  ","-\u003c^+^>- "," /\\|/\\  ","   |    "," /_=_\\  "],"ink":[".fkckf..","fdfffdf.",".ffkff..","...a....",".hhdhh.."],"bgInk":[".bbbbb..","bebbbeb.",".bbbbb..","...g....",".ggggg.."],"frames":[{"art":[" ^/F\\^  ","-\u003c^x^>- "," /\\|/\\  ","   |    "," /_=_\\  "],"ink":[".jkikj..","jdjjjdj.",".jjkjj..","...a....",".hhdhh.."],"bgInk":[".bbbbb..","bebbbeb.",".bbbbb..","...g....",".ggggg.."]}]},"110":{"art":[" ^{F}^  "," /:*:\\  "," \\:+:/  ","  =|=   "," /_=_\\  "],"ink":[".fdcdf..",".afffa..",".fffff..","..faf...",".hhdhh.."],"bgInk":[".eeeee..",".eeeee..",".eeeee..","..ggg...",".ggggg.."],"frames":[{"art":[" ^{F}^  "," /:+:\\  "," \\:+:/  ","  =|=   "," /_=_\\  "],"ink":[".jdidj..",".ajjja..",".jjjjj..","..jaj...",".hhdhh.."],"bgInk":[".eeeee..",".eeeee..",".eeeee..","..ggg...",".ggggg.."]}]},"111":{"art":[" ^/F\\^  "," \u003c^+^>  "," /\\|/\\  ","  =|=   "," /_=_\\  "],"ink":[".fkckf..",".dfffd..",".ffkff..","..faf...",".hhdhh.."],"bgInk":[".bbbbb..",".ebbbe..",".bbbbb..","..ggg...",".ggggg.."],"frames":[{"art":[" ^/F\\^  "," \u003c^x^>  "," /\\|/\\  ","  =|=   "," /_=_\\  "],"ink":[".jkikj..",".djjjd..",".jjkjj..","..jaj...",".hhdhh.."],"bgInk":[".bbbbb..",".ebbbe..",".bbbbb..","..ggg...",".ggggg.."]}]},"":{"art":["  /F\\   "," \u003c^+^>  ","  \\|/   ","   |    "," /_=_\\  "],"ink":["..aca...",".dfffd..","..aaa...","...a....",".hhdhh.."],"bgInk":["..bbb...",".ebbbe..","..bbb...","...g....",".ggggg.."],"frames":[{"art":["  /F\\   "," \u003c^*^>  ","  \\|/   ","   |    "," /_=_\\  "],"ink":["..aia...",".djjjd..","..aaa...","...a....",".hhdhh.."],"bgInk":["..bbb...",".ebbbe..","..bbb...","...g....",".ggggg.."]}]},"00":{"art":["  /F\\   ","-\u003c^+^>- ","  \\|/   ","  [|]   "," /_=_\\  "],"ink":["..aca...","fdfffdf.","..aaa...","..kak...",".hhdhh.."],"bgInk":["..bbb...","bebbbeb.","..bbb...","..ggg...",".ggggg.."],"frames":[{"art":["  /F\\   ","-\u003c^*^>- ","  \\|/   ","  [|]   "," /_=_\\  "],"ink":["..aia...","jdjjjdj.","..aaa...","..kak...",".hhdhh.."],"bgInk":["..bbb...","bebbbeb.","..bbb...","..ggg...",".ggggg.."]}]},"01":{"art":["  /F\\   "," \u003c^+^>  ","  \\|/   "," =[|]=  "," /_=_\\  "],"ink":["..aca...",".dfffd..","..aaa...",".fkakf..",".hhdhh.."],"bgInk":["..bbb...",".ebbbe..","..bbb...",".ggggg..",".ggggg.."],"frames":[{"art":["  /F\\   "," \u003c^*^>  ","  \\|/   "," =[|]=  "," /_=_\\  "],"ink":["..aia...",".djjjd..","..aaa...",".jkakj..",".hhdhh.."],"bgInk":["..bbb...",".ebbbe..","..bbb...",".ggggg..",".ggggg.."]}]},"000":{"art":["  {F}   ","\u003c/:*:\\> "," \\:+:/  ","  [|]   "," /_=_\\  "],"ink":["..dcd...","fdfffaf.",".fffff..","..kak...",".hhdhh.."],"bgInk":["..eee...","eeeeeee.",".eeeee..","..ggg...",".ggggg.."],"frames":[{"art":["  {F}   ","\u003c/:+:\\> "," \\:+:/  ","  [|]   "," /_=_\\  "],"ink":["..did...","jdjjjaj.",".jjjjj..","..kak...",".hhdhh.."],"bgInk":["..eee...","eeeeeee.",".eeeee..","..ggg...",".ggggg.."]}]},"001":{"art":["  /F\\   ","-\u003c^+^>- "," /\\|/\\  ","  [|]   "," /_=_\\  "],"ink":["..aca...","fdfffdf.",".ffkff..","..kak...",".hhdhh.."],"bgInk":["..bbb...","bebbbeb.",".bbbbb..","..ggg...",".ggggg.."],"frames":[{"art":["  /F\\   ","-\u003c^x^>- "," /\\|/\\  ","  [|]   "," /_=_\\  "],"ink":["..aia...","jdjjjdj.",".jjkjj..","..kak...",".hhdhh.."],"bgInk":["..bbb...","bebbbeb.",".bbbbb..","..ggg...",".ggggg.."]}]},"010":{"art":["  {F}   "," /:*:\\  "," \\:+:/  "," =[|]=  "," /_=_\\  "],"ink":["..dcd...",".afffa..",".fffff..",".fkakf..",".hhdhh.."],"bgInk":["..eee...",".eeeee..",".eeeee..",".ggggg..",".ggggg.."],"frames":[{"art":["  {F}   "," /:+:\\  "," \\:+:/  "," =[|]=  "," /_=_\\  "],"ink":["..did...",".ajjja..",".jjjjj..",".jkakj..",".hhdhh.."],"bgInk":["..eee...",".eeeee..",".eeeee..",".ggggg..",".ggggg.."]}]},"011":{"art":["  /F\\   "," \u003c^+^>  "," /\\|/\\  "," =[|]=  "," /_=_\\  "],"ink":["..aca...",".dfffd..",".ffkff..",".fkakf..",".hhdhh.."],"bgInk":["..bbb...",".ebbbe..",".bbbbb..",".ggggg..",".ggggg.."],"frames":[{"art":["  /F\\   "," \u003c^x^>  "," /\\|/\\  "," =[|]=  "," /_=_\\  "],"ink":["..aia...",".djjjd..",".jjkjj..",".jkakj..",".hhdhh.."],"bgInk":["..bbb...",".ebbbe..",".bbbbb..",".ggggg..",".ggggg.."]}]}},"inkMap":{".":null,"a":"tower.frost.steel_high","b":"tower.frost.mix.111f2a","c":"tower.frost.core","d":"tower.frost.ice_edge","e":"tower.frost.mix.0d2333","f":"tower.frost.pulse_dim","g":"tower.frost.mix.141e27","h":"tower.frost.steel_mid","i":"tower.frost.legendary","j":"tower.frost.pulse","k":"tower.frost.ice_high"}},"refinery":{"$schema":"../../schema/sprite.schema.json","id":"refinery","cell":[8,5],"frameMs":650,"source":"sources/sprites/ascii-defense-refinery-upgrade-tree-20.json via tools/import-sprites.mjs","states":{"0":{"art":[" [=R=]  "," /===\\  ","  |#|   ","[__|__] ","   V    "],"ink":[".aecea..",".aaaaa..","..aea...","fffffff.","...g...."],"bgInk":[".bbdbb..",".dbbbd..","..dbd...","bdddddb.","...d...."],"frames":[{"art":[" [=R=]  "," /===\\  ","  |*|   ","[__|__] ","   V    "],"ink":[".aihia..",".aaaaa..","..aia...","fffffff.","...i...."],"bgInk":[".bbdbb..",".dbbbd..","..dbd...","bdddddb.","...d...."]}]},"1":{"art":["  [R]   "," /===\\  "," =|#|=  ","[__|__] ","   V    "],"ink":["..aca...",".aaaaa..",".eaeae..","fffffff.","...g...."],"bgInk":["..bdb...",".dbbbd..",".bdbdb..","bdddddb.","...d...."],"frames":[{"art":["  [R]   "," /===\\  "," =|*|=  ","[__|__] ","   V    "],"ink":["..aha...",".aaaaa..",".iaiai..","fffffff.","...i...."],"bgInk":["..bdb...",".dbbbd..",".bdbdb..","bdddddb.","...d...."]}]},"10":{"art":["  [R]   ","^/===\\^ "," =|#|=  ","[__|__] ","   V    "],"ink":["..aca...","eaaaaae.",".eaeae..","fffffff.","...g...."],"bgInk":["..bdb...","ddbbbdd.",".bdbdb..","bdddddb.","...d...."],"frames":[{"art":["  [R]   ","^/===\\^ "," =|*|=  ","[__|__] ","   V    "],"ink":["..aha...","iaaaaai.",".iaiai..","fffffff.","...i...."],"bgInk":["..bdb...","ddbbbdd.",".bdbdb..","bdddddb.","...d...."]}]},"11":{"art":["  [R]   "," /===\\  ","=[|#|]= ","[__|__] ","   V    "],"ink":["..aca...",".aaaaa..","eeaeaee.","fffffff.","...g...."],"bgInk":["..bdb...",".dbbbd..","bbdbdbb.","bdddddb.","...d...."],"frames":[{"art":["  [R]   "," /===\\  ","=[|*|]= ","[__|__] ","   V    "],"ink":["..aha...",".aaaaa..","iiaiaii.","fffffff.","...i...."],"bgInk":["..bdb...",".dbbbd..","bbdbdbb.","bdddddb.","...d...."]}]},"100":{"art":["[==R==] ","^/|=|\\^ "," =|#|=  ","[_|_|_] ","  V V   "],"ink":["aaacaaa.","eaaaaae.",".eaeae..","fffffff.","..g.g..."],"bgInk":["bbbdbbb.","dddbddd.",".bdbdb..","bdddddb.","..d.d..."],"frames":[{"art":["[==R==] ","^/|=|\\^ "," =|#|=  ","[_|_|_] ","  v V   "],"ink":["aaahaaa.","iaaaaai.",".iaiai..","fffffff.","..i.i..."],"bgInk":["bbbdbbb.","dddbddd.",".bdbdb..","bdddddb.","..d.d..."]}]},"101":{"art":[" .-R-.  ","^(===)^ "," =|#|=  ","[==|==] ","  \\V/   "],"ink":[".jjcjj..","eajjjae.",".eaeae..","ajjajja.","..fgf..."],"bgInk":[".ddddd..","dbbbbbd.",".bdbdb..","bdddddb.","..ddd..."],"frames":[{"art":[" .-R-.  ","^(=-=)^ "," =|#|=  ","[==|==] ","  \\V/   "],"ink":[".jjhjj..","iajjjai.",".iaiai..","ajjajja.","..fif..."],"bgInk":[".ddddd..","dbbdbbd.",".bdbdb..","bdddddb.","..ddd..."]}]},"110":{"art":["[==R==] "," /|=|\\  ","=[|#|]= ","[_|_|_] ","  V V   "],"ink":["aaacaaa.",".aaaaa..","eeaeaee.","fffffff.","..g.g..."],"bgInk":["bbbdbbb.",".ddbdd..","bbdbdbb.","bdddddb.","..d.d..."],"frames":[{"art":["[==R==] "," /|=|\\  ","=[|#|]= ","[_|_|_] ","  v V   "],"ink":["aaahaaa.",".aaaaa..","iiaiaii.","fffffff.","..i.i..."],"bgInk":["bbbdbbb.",".ddbdd..","bbdbdbb.","bdddddb.","..d.d..."]}]},"111":{"art":[" .-R-.  "," (===)  ","=[|#|]= ","[==|==] ","  \\V/   "],"ink":[".jjcjj..",".ajjja..","eeaeaee.","ajjajja.","..fgf..."],"bgInk":[".ddddd..",".bbbbb..","bbdbdbb.","bdddddb.","..ddd..."],"frames":[{"art":[" .-R-.  "," (=-=)  ","=[|#|]= ","[==|==] ","  \\V/   "],"ink":[".jjhjj..",".ajjja..","iiaiaii.","ajjajja.","..fif..."],"bgInk":[".ddddd..",".bbdbb..","bbdbdbb.","bdddddb.","..ddd..."]}]},"":{"art":["  [R]   "," /===\\  ","  |#|   ","[__|__] ","   V    "],"ink":["..aca...",".aaaaa..","..aea...","fffffff.","...g...."],"bgInk":["..bdb...",".dbbbd..","..dbd...","bdddddb.","...d...."],"frames":[{"art":["  [R]   "," /===\\  ","  |*|   ","[__|__] ","   V    "],"ink":["..aha...",".aaaaa..","..aia...","fffffff.","...i...."],"bgInk":["..bdb...",".dbbbd..","..dbd...","bdddddb.","...d...."]}]},"00":{"art":[" [=R=]  ","^/===\\^ ","  |#|   ","[__|__] ","   V    "],"ink":[".aecea..","eaaaaae.","..aea...","fffffff.","...g...."],"bgInk":[".bbdbb..","ddbbbdd.","..dbd...","bdddddb.","...d...."],"frames":[{"art":[" [=R=]  ","^/===\\^ ","  |*|   ","[__|__] ","   V    "],"ink":[".aihia..","iaaaaai.","..aia...","fffffff.","...i...."],"bgInk":[".bbdbb..","ddbbbdd.","..dbd...","bdddddb.","...d...."]}]},"01":{"art":[" [=R=]  "," /===\\  "," +|#|+  ","[__|__] ","   V    "],"ink":[".aecea..",".aaaaa..",".eaeae..","fffffff.","...g...."],"bgInk":[".bbdbb..",".dbbbd..",".bdbdb..","bdddddb.","...d...."],"frames":[{"art":[" [=R=]  "," /===\\  "," +|*|+  ","[__|__] ","   V    "],"ink":[".aihia..",".aaaaa..",".iaiai..","fffffff.","...i...."],"bgInk":[".bbdbb..",".dbbbd..",".bdbdb..","bdddddb.","...d...."]}]},"000":{"art":["[==R==] ","^/|=|\\^ ","  |#|   ","[_|_|_] ","  V V   "],"ink":["aeeceea.","eaaaaae.","..aea...","fffffff.","..g.g..."],"bgInk":["bbbdbbb.","dddbddd.","..dbd...","bdddddb.","..d.d..."],"frames":[{"art":["[==R==] ","^/|=|\\^ ","  |#|   ","[_|_|_] ","  v V   "],"ink":["aiihiia.","iaaaaai.","..aia...","fffffff.","..i.i..."],"bgInk":["bbbdbbb.","dddbddd.","..dbd...","bdddddb.","..d.d..."]}]},"001":{"art":[".-=R=-. ","^(===)^ ","  |#|   ","[==|==] ","  \\V/   "],"ink":["jjecejj.","eajjjae.","..aea...","ajjajja.","..fgf..."],"bgInk":["ddbdbdd.","dbbbbbd.","..dbd...","bdddddb.","..ddd..."],"frames":[{"art":[".-=R=-. ","^(=-=)^ ","  |#|   ","[==|==] ","  \\V/   "],"ink":["jjihijj.","iajjjai.","..aia...","ajjajja.","..fif..."],"bgInk":["ddbdbdd.","dbbdbbd.","..dbd...","bdddddb.","..ddd..."]}]},"010":{"art":["[==R==] "," /|=|\\  "," +|#|+  ","[_|_|_] ","  V V   "],"ink":["aeeceea.",".aaaaa..",".eaeae..","fffffff.","..g.g..."],"bgInk":["bbbdbbb.",".ddbdd..",".bdbdb..","bdddddb.","..d.d..."],"frames":[{"art":["[==R==] "," /|=|\\  "," +|#|+  ","[_|_|_] ","  v V   "],"ink":["aiihiia.",".aaaaa..",".iaiai..","fffffff.","..i.i..."],"bgInk":["bbbdbbb.",".ddbdd..",".bdbdb..","bdddddb.","..d.d..."]}]},"011":{"art":[".-=R=-. "," (===)  "," +|#|+  ","[==|==] ","  \\V/   "],"ink":["jjecejj.",".ajjja..",".eaeae..","ajjajja.","..fgf..."],"bgInk":["ddbdbdd.",".bbbbb..",".bdbdb..","bdddddb.","..ddd..."],"frames":[{"art":[".-=R=-. "," (=-=)  "," +|#|+  ","[==|==] ","  \\V/   "],"ink":["jjihijj.",".ajjja..",".iaiai..","ajjajja.","..fif..."],"bgInk":["ddbdbdd.",".bbdbb..",".bdbdb..","bdddddb.","..ddd..."]}]}},"inkMap":{".":null,"a":"tower.refinery.steel_high","b":"tower.refinery.mix.201915","c":"tower.refinery.ore","d":"tower.refinery.mix.171b20","e":"tower.refinery.mix.bd9251","f":"tower.refinery.steel_mid","g":"tower.refinery.brass_mid","h":"tower.refinery.legendary","i":"tower.refinery.brass_high","j":"tower.refinery.brass_edge"}},"road_muted_cobble":{"$schema":"../../schema/sprite.schema.json","id":"road_muted_cobble","cell":[8,5],"source":"sources/sprites/ascii-defense-complete-road-sprites-31.json via tools/import-sprites.mjs","states":{"3":{"art":["⠊⠁{} {}⡇",".{}{}⠂⠁⡜","{}⠄{}{}⢱","⠄  {}{}⡸","⢄+{}: *⡇"],"ink":["EaaaaaaE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EaaaaaaE"],"bgInk":["01033010","11003313","00011043","10304003","01033010"],"variations":[{"art":["⠊⠁ ⠂{}:⡇","+, **: ⢱"," :{}⠄{}⡎","{}+{}..⢣","⢄*{}+{}⡇"],"ink":["EaaaaaaE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EaaaaaaE"],"bgInk":["01033010","13401422","03400030","13003440","01033010"]},{"art":["⠊+{}⠁{}⡇","+⠄ {}* ⡜",",,⠁.{}+⢣",".+⠂⠁ ⠂*⡎","⢄{}{}⠄,⡱"],"ink":["EaaaaaaE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EaaaaaaE"],"bgInk":["01033010","10404130","00210020","14010200","01033010"]},{"art":["⠊{}{}: ⡇","⠄{},{}+⢱",".⠄{}{}+⢇","+,⠁{}{}⢸","⢄ :{}{}⡇"],"ink":["EaaaaaaE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EaaaaaaE"],"bgInk":["01033010","10000044","00140302","10011003","01033010"]}]},"7":{"art":["⠊⠑⠓⠤⠤⠲⠒⡄",":{} {} ⢸",".{} {}+⡇","{}{}⠂ *⡸","⢄*:⠂:: ⡇"],"ink":["EEEEEEEE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EaaaaaaE"],"bgInk":["00400224","14132140","00000200","10300003","01033010"],"variations":[{"art":["⠒⠚⠉⠢⠔⠲⠒⡄","⠄+⠄⠄:,*⢱","{}.⠄+⠄,⡎"," *.⠂+. ⢸","⢄{}*{}:⡇"],"ink":["EEEEEEEE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EaaaaaaE"],"bgInk":["00202030","10400044","03002300","13440003","01033010"]},{"art":["⠒⠲⠤⠤⠎⠉⠲⡀"," ,,+ .,⢣","+.⠁+.*:⡎"," {}   ,⡸","⢄*. +⠁.⡇"],"ink":["EEEEEEEE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EaaaaaaE"],"bgInk":["04202103","10003320","03310132","12211014","01033010"]},{"art":["⠊⠋⠒⠒⠦⠔⠒⡄",".+{}{},⡸","*{} {}+⢱","{}{}{}.⡸","⢄+{}+:*⡇"],"ink":["EEEEEEEE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EaaaaaaE"],"bgInk":["00201022","12430013","04030100","10030000","01033010"]}]},"|":{"art":["⢸{}* ⠄*⡇","⡎{}:⠁{}⡜","⢸.{}{},⢱","⡇⠄.⠁{}*⡸","⢱, ⠁*,⠂⡇"],"ink":["EaaaaaaE","EaaaaaaE","EaaaaaaE","EaaaaaaE","EaaaaaaE"],"bgInk":["01033010","10321032","30001120","30014430","01033010"],"variations":[{"art":["⢸,:..:⠄⡇","⡇ :{}{}⢱","⡸+ : +⠁⡎","⢇ ⠂⠁⠂+⠄⢣","⢸⠄{}+.+⡇"],"ink":["EaaaaaaE","EaaaaaaE","EaaaaaaE","EaaaaaaE","EaaaaaaE"],"bgInk":["01033010","20002300","30012412","00300010","01033010"]},{"art":["⢸{}{}{}⡇","⡎{} :⠂:⡜","⡸{}{}{}⢣","⢣{} {}:⡎","⢸ {}: ,⡱"],"ink":["EaaaaaaE","EaaaaaaE","EaaaaaaE","EaaaaaaE","EaaaaaaE"],"bgInk":["01033010","12020120","10020114","00101102","01033010"]},{"art":["⢸.{} ⠁.⡇","⡎.: +,,⢱","⢇⠁⠁ {}+⢇","⡎:* .+⠂⢸","⢸{}⠂{},⡇"],"ink":["EaaaaaaE","EaaaaaaE","EaaaaaaE","EaaaaaaE","EaaaaaaE"],"bgInk":["01033010","14012201","02314323","00000431","01033010"]}]},"-":{"art":["⠒⠉⠉⠲⠤⠔⠲⠒","{}{}{}⠄ ","⠁+:+⠁ :,","..{}{} +","⠤⠤⠦⠒⠒⢤⢄⡠"],"ink":["EEEEEEEE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EEEEEEEE"],"bgInk":["00000220","12134031","00014110","13002001","02041320"],"variations":[{"art":["⠒⠒⠴⠤⠒⠙⠒⠒",".⠄{}{} :","*{}{}   ",",{}{}⠄⠄ ","⠤⠔⠦⠔⠢⣀⡤⠤"],"ink":["EEEEEEEE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EEEEEEEE"],"bgInk":["00011000","12001001","01311110","12001201","00000100"]},{"art":["⠊⠓⠤⠤⠤⠖⠊⠑","{}{}{}{}","{}*{}⠄:*"," ,{}*{}:","⠤⠤⣀⡰⠒⠒⠦⠤"],"ink":["EEEEEEEE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EEEEEEEE"],"bgInk":["02011020","10000011","01320130","12000041","02000000"]},{"art":["⠒⠊⠉⠖⠲⠤⠔⠒","{}{}, ⠄ ","*{}⠁{}⠁.","⠁{}⠁+,+⠄","⠤⠤⠔⠲⠤⠤⣠⡠"],"ink":["EEEEEEEE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EEEEEEEE"],"bgInk":["00020300","10000001","00031000","10232021","03000010"]}]},"L":{"art":["⢸⠂+ .:,⠑","⡎⠁++{}  ","⢸*+{} ⠄ ","⡇+* ⠁:  ","⠘⠤⠦⠒⠒⢤⢄⡠"],"ink":["EaaaaaaE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EEEEEEEE"],"bgInk":["01033010","20120201","34020100","01004301","31212310"],"variations":[{"art":["⢸⠁{}:⠂+⠑","⡇  *,+ :","⡸.*.  ⠁⠂","⢇{}⠁+{},","⠘⠤⠦⠔⠢⣀⡤⠤"],"ink":["EaaaaaaE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EEEEEEEE"],"bgInk":["01033010","01000111","00240000","10020401","20204340"]},{"art":["⢸,:,*{}⠑","⡎ ,⠁{}⠄.","⡸.{}{}⠁⠄","⢣⠂:+⠁{}⠂","⠈⠦⣀⡰⠒⠒⠦⠤"],"ink":["EaaaaaaE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EEEEEEEE"],"bgInk":["01033010","03000011","00300230","40320001","10010010"]},{"art":["⢸⠂ {} ⠂⠑","⡎{}{}*⠁+","⢇+: *{} ","⡎:{}{}+ ","⠘⠤⠔⠲⠤⠤⣠⡠"],"ink":["EaaaaaaE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EEEEEEEE"],"bgInk":["01033010","33333001","04021000","12100021","30011310"]}]},"J":{"art":["⠊+{}{}*⡇"," ,,+ ++⢱","{}⠂⠁*{}⡇","{}.,,+⠂⢸","⢄⡠⡤⠒⠒⠴⠤⠃"],"ink":["EaaaaaaE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EEEEEEEE"],"bgInk":["01033010","11312210","00332030","12200000","03320333"],"variations":[{"art":["⠊*{}{}⠂⡇"," {}{}⠄ ⢸","⠁⠄ ⠄⠄{}⢇"," {}⠁ * ⡸","⠤⢤⣀⠔⠢⠴⠤⠃"],"ink":["EaaaaaaE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EEEEEEEE"],"bgInk":["01033010","10401224","00000010","13410000","00104200"]},{"art":["⠊ : {} ⡇","++ {}:.⢱",":⠂{}*{}⢇"," ⠁, {},⡜","⠤⠴⠒⠒⢆⣀⠴⠁"],"ink":["EaaaaaaE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EEEEEEEE"],"bgInk":["01033010","10020001","00100110","10411010","00302234"]},{"art":["⠊⠂{}.{}⡇"," {}⠄⠄⠄⠂⢱","+{}  ⠂ ⡸","{}.⠂*{}⢱","⢄⣄⠤⠤⠖⠢⠤⠃"],"ink":["EaaaaaaE","aaaaaaaE","aaaaaaaE","aaaaaaaE","EEEEEEEE"],"bgInk":["01033010","10310020","00033410","14000001","01004000"]}]},"F":{"art":["⢠⠒⠖⠤⠤⠚⠊⠑","⡇:+{}:{}","⢸*⠁ *⠁ :","⢇{}:{}+:","⢸{}{} .⡠"],"ink":["EEEEEEEE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EaaaaaaE"],"bgInk":["24202120","00102001","00020210","02130201","01033010"],"variations":[{"art":["⢠⠒⠖⠢⠔⠉⠓⠒","⡎,⠁.{}:.","⢱⠁ ⠂{}{}","⡇ :⠄+⠁:,","⢸. ,  +⡠"],"ink":["EEEEEEEE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EaaaaaaE"],"bgInk":["03403300","11002001","03403400","11020101","01033010"]},{"art":["⢀⠖⠉⠱⠤⠤⠖⠒","⡜{}{} {}","⢱{}⠄{}*.","⢇+⠁{} ⠁.","⢸,⠁ {}.⡠"],"ink":["EEEEEEEE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EaaaaaaE"],"bgInk":["00102420","02100301","00200010","41004031","01033010"]},{"art":["⢠⠒⠢⠴⠒⠒⠙⠑","⢇⠄⠁+{}.⠂","⡎⠂{}⠂{}⠂","⢇{}{}{},","⢸{}{}*⠄⡠"],"ink":["EEEEEEEE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EaaaaaaE"],"bgInk":["00210210","10403021","30000230","02001041","01033010"]}]},"T":{"art":["⠒⠉⠉⠲⠤⠔⠲⠒"," + ⠁⠄{} ","*{}{}⠄*,","{} .*{},","⢄{},*⠂,⡠"],"ink":["EEEEEEEE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EaaaaaaE"],"bgInk":["04300040","10200241","01313020","11003201","01033010"],"variations":[{"art":["⠒⠒⠴⠤⠒⠙⠒⠒","{}{}{}{}","+  {}:* ","*,⠁*{},⠂","⢄{}.{} ⡠"],"ink":["EEEEEEEE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EaaaaaaE"],"bgInk":["02000040","13000031","02340300","12103201","01033010"]},{"art":["⠊⠓⠤⠤⠤⠖⠊⠑",".⠂:, ⠁. ","{} ⠁⠄+*.",".{} ⠄⠂⠂,","⢄+{}+⠂,⡠"],"ink":["EEEEEEEE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EaaaaaaE"],"bgInk":["01014000","12110401","03210320","10001121","01033010"]},{"art":["⠒⠊⠉⠖⠲⠤⠔⠒"," {}.++,,","⠄:. .{}⠂","{}:{}:{}","⢄⠄⠂⠂* *⡠"],"ink":["EEEEEEEE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EaaaaaaE"],"bgInk":["01100310","11000301","03300210","10300321","01033010"]}]},"U":{"art":["⠊ ⠁*{},⠑","*{}.+*:*","⠁.* ⠁{} ","{}⠄..+.⠁","⠤⠤⠦⠒⠒⢤⢄⡠"],"ink":["EaaaaaaE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EEEEEEEE"],"bgInk":["01033010","10021001","04401040","11130041","01140000"],"variations":[{"art":["⠊{}{}⠁*⠑",".⠁⠄{}⠁{}","{}{}+,{}",":⠂{}{}{}","⠤⠔⠦⠔⠢⣀⡤⠤"],"ink":["EaaaaaaE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EEEEEEEE"],"bgInk":["01033010","11401401","00423130","11211211","00000040"]},{"art":["⠊, ⠄{}⠄⠑","..{}{}. ","⠁⠁{}.,{}","{}⠁*,{},","⠤⠤⣀⡰⠒⠒⠦⠤"],"ink":["EaaaaaaE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EEEEEEEE"],"bgInk":["01033010","10004001","00403340","10102311","02102130"]},{"art":["⠊ {}{}.⠑",":,{}+ {}",",⠁{}{},.","{}*::{}⠁","⠤⠤⠔⠲⠤⠤⣠⡠"],"ink":["EaaaaaaE","aaaaaaaa","aaaaaaaa","aaaaaaaa","EEEEEEEE"],"bgInk":["01033010","12220301","01000200","11402011","03011030"]}]},"E":{"art":["⢸ :⠁{},⠑","⡎{}{}{}⠁","⢸{}+{}:⠄","⡇+.,.,⠁+","⢱⠁{}.⠄⠂⡠"],"ink":["EaaaaaaE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EaaaaaaE"],"bgInk":["01033010","11102031","40334100","00424111","01033010"],"variations":[{"art":["⢸{}*⠁ ⠂⠑","⡇,*⠄{}{}","⡸*{}:{}+","⢇ + +⠁{}","⢸{}{} ,⡠"],"ink":["EaaaaaaE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EaaaaaaE"],"bgInk":["01033010","00000241","10103140","00000031","01033010"]},{"art":["⢸{}{}  ⠑","⡎*{}{}++","⡸ ⠂+{}:⠂","⢣:{} ⠄+⠁","⢸{} {},⡠"],"ink":["EaaaaaaE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EaaaaaaE"],"bgInk":["01033010","40100201","33204000","00230001","01033010"]},{"art":["⢸:{} ⠄+⠑","⡎:⠄. *{}","⢇.,** {}","⡎⠂::⠂{}⠂","⢸⠄. {}+⡠"],"ink":["EaaaaaaE","Eaaaaaaa","Eaaaaaaa","Eaaaaaaa","EaaaaaaE"],"bgInk":["01033010","02024011","02011100","13000131","01033010"]}]},"X":{"art":["+. {} :⠂","{}⠂+{}* ",":{}{}+{}","*{}⠁{}⠂⠂","  ++⠄ + "],"ink":["aaaaaaaa","aaaaaaaa","aaaaaaaa","aaaaaaaa","aaaaaaaa"],"bgInk":["01033010","10013041","00203100","12001011","01033010"],"variations":[{"art":["::. *{}:","⠁+*+ {}⠂","{}{}⠂+ ."," {}: ⠄:*","*.  ⠄+⠂⠁"],"ink":["aaaaaaaa","aaaaaaaa","aaaaaaaa","aaaaaaaa","aaaaaaaa"],"bgInk":["01033010","13100101","02102000","13212011","01033010"]},{"art":[":+{}{}{}","{}⠂,⠄  ⠁","⠂*: {}{}","  *:.{}⠄","{}{}⠁⠁*,"],"ink":["aaaaaaaa","aaaaaaaa","aaaaaaaa","aaaaaaaa","aaaaaaaa"],"bgInk":["01033010","11121401","00004010","10311111","01033010"]},{"art":[":{}{}+. ","⠂+⠄⠂⠁⠂⠁,","⠂⠂.*⠁ ⠂:","{}{},{} ",".{}.⠁⠁+⠁"],"ink":["aaaaaaaa","aaaaaaaa","aaaaaaaa","aaaaaaaa","aaaaaaaa"],"bgInk":["01033010","10101101","00024010","13313121","01033010"]}]},"B":{"art":["⢺⣀⣀⣀⣀⣀⣀⡗","⠈⡆{}{}⠘⡄","⢸⠂+:*:⢰⠁","+⡇  ,+⠸⡀","⢴⠉⠉⠉⠉⠉⠉⡧"],"ink":["EEEEEEEE","UUaaaaUU","UadaadUU","aUaaaaUU","EEEEEEEE"],"bgInk":["01033010","10400301","00301410","10000101","01033010"],"variations":[{"art":["⢺⢄⣀⣀⣀⣀⡠⡗",".⡇  :⠂⢰⠁","⠸⡀ +,,⠈⡆","⢀⠇.*{}⢠⠃","⢼⠊⠉⠉⠉⠉⠑⡧"],"ink":["EEEEEEEE","aUaaaaUU","UUadaaUU","UUaaaaUU","EEEEEEEE"],"bgInk":["01033010","13004411","00204100","10000211","01033010"]},{"art":["⢺⣀⣀⣀⣀⣀⣀⡗","⠈⡆{}+⠂⠘⡄","⠸⡀⠄+⠁:⢠⠃","⢠⠃. {}⠈⡆","⢼⠉⠉⠉⠉⠉⠹⡣"],"ink":["EEEEEEEE","UUaaaaUU","UUaaadUU","UUaaaaUU","EEEEEEEE"],"bgInk":["01033010","10101001","00103010","10430101","01033010"]},{"art":["⢺⢄⣀⣀⣀⣀⡠⡗","⠈⡆:⠁⠄*⢰⠁","⢀⠇:.⠄⠄⢀⠇","⠈⡆*⠂,.⢸⠄","⢼⠊⠉⠉⠉⠉⠑⡧"],"ink":["EEEEEEEE","UUaaaaUU","UUdaaaUU","UUaaaaUa","EEEEEEEE"],"bgInk":["01033010","12100041","04003220","10000421","01033010"]}]}},"inkMap":{"0":"terrain.road.cobble.bg0","1":"terrain.road.cobble.bg1","2":"terrain.road.cobble.bg2","3":"terrain.road.cobble.bg3","4":"terrain.road.cobble.bg4","a":"terrain.road.cobble.ink0","b":"terrain.road.cobble.ink1","c":"terrain.road.cobble.ink2","d":"terrain.road.cobble.ink3","e":"terrain.road.cobble.ink4","f":"terrain.road.cobble.ink5","g":"terrain.road.cobble.ink6","h":"terrain.road.cobble.ink7","E":"terrain.road.cobble.edge","R":"terrain.road.cobble.rail","D":"terrain.road.cobble.deck","U":"terrain.road.cobble.under"}}}};</script>
+    <script>(() => {
+  // sprite-editor/core.js
+  var ROAD_ORDER = ["|", "-", "L", "J", "F", "7", "T", "U", "E", "3", "X", "B"];
+  var INK_KEY_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+  function cells(row) {
+    return Array.from(row ?? "");
+  }
+  function detectDocumentKind(doc) {
+    if (!doc || typeof doc !== "object") return "unknown";
+    if (doc.states && !Array.isArray(doc.states) && doc.inkMap) return "runtime";
+    if (Array.isArray(doc.states) && doc.meta?.canvasGlyphs) return "tower-study";
+    if (doc.tiers && doc.inkMap && Array.isArray(doc.cell)) return "road-study";
+    return "unknown";
+  }
+  function inferTowerId(filename, study) {
+    const haystack = `${filename ?? ""} ${study?.meta?.selectedConcept ?? ""}`.toLowerCase();
+    for (const id of ["bolt", "mortar", "frost", "refinery"]) {
+      if (haystack.includes(id)) return id;
+    }
+    return null;
+  }
+  function sourceLabel(filename) {
+    return filename ? `converted from ${filename} by sprite-editor` : "converted by sprite-editor";
+  }
+  function assertRows(rows, width, height, label) {
+    if (!Array.isArray(rows) || rows.length !== height) {
+      throw new Error(`${label} must contain ${height} rows`);
+    }
+    rows.forEach((row, y) => {
+      if (cells(row).length !== width) {
+        throw new Error(`${label} row ${y + 1} must be ${width} glyphs wide`);
+      }
+    });
+  }
+  function copyColourGrid(referenceFrame, art, label) {
+    if (!referenceFrame?.ink) {
+      throw new Error(`${label} has no matching colour grid in the runtime reference`);
+    }
+    const result = { art: clone(art), ink: clone(referenceFrame.ink) };
+    if (referenceFrame.bgInk) result.bgInk = clone(referenceFrame.bgInk);
+    return result;
+  }
+  function convertTowerStudy(study, { filename = "", runtimeReference } = {}) {
+    const id = inferTowerId(filename, study);
+    if (!id) {
+      throw new Error("This tower study needs a recognizable tower id in its filename");
+    }
+    if (!runtimeReference || detectDocumentKind(runtimeReference) !== "runtime") {
+      throw new Error(`The ${id} study needs its matching runtime Sprite v2 JSON for colour roles`);
+    }
+    if (runtimeReference.id !== id) {
+      throw new Error(`Runtime reference '${runtimeReference.id}' does not match tower study '${id}'`);
+    }
+    const cell = clone(study.meta.canvasGlyphs);
+    const [width, height] = cell;
+    const tiers = ["T1", "T2", "T3"].map((key) => Object.keys(study.choices?.[key] ?? {}));
+    const states = {};
+    for (const sourceState of study.states) {
+      const path = sourceState.path === "BASE" ? "" : sourceState.path;
+      const key = Array.from(path).map((letter, tierIndex) => {
+        const optionIndex = tiers[tierIndex]?.indexOf(letter) ?? -1;
+        if (optionIndex < 0) {
+          throw new Error(`Unknown choice '${letter}' in study path '${path}'`);
+        }
+        return String(optionIndex);
+      }).join("");
+      const referenceState = runtimeReference.states[key];
+      if (!referenceState) throw new Error(`Runtime reference has no state '${key || "BASE"}'`);
+      assertRows(sourceState.idleA, width, height, `${sourceState.path} idleA`);
+      assertRows(sourceState.idleB, width, height, `${sourceState.path} idleB`);
+      const state = copyColourGrid(referenceState, sourceState.idleA, `state '${key}'`);
+      const frameReference = referenceState.frames?.[0] ?? referenceState;
+      state.frames = [copyColourGrid(frameReference, sourceState.idleB, `state '${key}' frame 1`)];
+      states[key] = state;
+    }
+    return {
+      $schema: "../../schema/sprite.schema.json",
+      id,
+      cell,
+      frameMs: runtimeReference.frameMs ?? parseFrameMs(study.meta.animation),
+      source: sourceLabel(filename),
+      states,
+      inkMap: clone(runtimeReference.inkMap)
+    };
+  }
+  function parseFrameMs(text) {
+    const match = /(\d+)\s*ms/i.exec(text ?? "");
+    return match ? Number(match[1]) : 720;
+  }
+  function stripFrame(frame) {
+    const result = { art: clone(frame.art), ink: clone(frame.ink) };
+    if (frame.bgInk) result.bgInk = clone(frame.bgInk);
+    return result;
+  }
+  function convertRoadStudy(study, { filename = "" } = {}) {
+    const states = {};
+    for (const [tierKey, tier] of Object.entries(study.tiers)) {
+      const stateKey = ROAD_ORDER[Number(tierKey)];
+      if (stateKey === void 0) throw new Error(`Road tier '${tierKey}' has no state mapping`);
+      const state = stripFrame(tier);
+      if (tier.frames?.length) state.variations = tier.frames.map(stripFrame);
+      states[stateKey] = state;
+    }
+    return {
+      $schema: "../../schema/sprite.schema.json",
+      id: study.id,
+      cell: clone(study.cell),
+      source: sourceLabel(filename),
+      states,
+      inkMap: clone(study.inkMap)
+    };
+  }
+  function convertDocument(doc, options = {}) {
+    switch (detectDocumentKind(doc)) {
+      case "runtime":
+        return clone(doc);
+      case "tower-study":
+        return convertTowerStudy(doc, options);
+      case "road-study":
+        return convertRoadStudy(doc, options);
+      default:
+        throw new Error("Unrecognized JSON. Expected Sprite v2, tower study, or road study");
+    }
+  }
+  function framesFor(state, variationIndex = 0) {
+    const body = variationIndex === 0 ? state : state.variations?.[variationIndex - 1];
+    return body ? [body, ...body.frames ?? []] : [];
+  }
+  function targetFor(sprite, stateKey, variationIndex = 0, frameIndex = 0) {
+    const state = sprite.states[stateKey];
+    if (!state) return null;
+    return framesFor(state, variationIndex)[frameIndex] ?? null;
+  }
+  function roleForKey(sprite, key) {
+    return Object.prototype.hasOwnProperty.call(sprite.inkMap, key) ? sprite.inkMap[key] : void 0;
+  }
+  function keyForRole(sprite, role) {
+    const existing = Object.entries(sprite.inkMap).find(([, mapped]) => mapped === role);
+    if (existing) return existing[0];
+    for (const key of INK_KEY_ALPHABET) {
+      if (!Object.prototype.hasOwnProperty.call(sprite.inkMap, key)) {
+        sprite.inkMap[key] = role;
+        return key;
+      }
+    }
+    for (let codepoint = 57344; codepoint <= 63743; codepoint++) {
+      const key = String.fromCodePoint(codepoint);
+      if (!Object.prototype.hasOwnProperty.call(sprite.inkMap, key)) {
+        sprite.inkMap[key] = role;
+        return key;
+      }
+    }
+    throw new Error("This sprite has exhausted the available one-character ink keys");
+  }
+  function replaceCell(row, x, value) {
+    const values = cells(row);
+    values[x] = value;
+    return values.join("");
+  }
+  function makeFrame(width, height, foregroundKey = ".") {
+    return {
+      art: Array.from({ length: height }, () => " ".repeat(width)),
+      ink: Array.from({ length: height }, () => foregroundKey.repeat(width)),
+      bgInk: Array.from({ length: height }, () => ".".repeat(width))
+    };
+  }
+  function validateSprite(sprite, { paletteRoles = null, glyphCodepoints = null, expectedCell = null } = {}) {
+    const errors = [];
+    const warnings = [];
+    if (!sprite || typeof sprite !== "object") return { errors: ["Document is not an object"], warnings };
+    if (!/^[a-z][a-z0-9_]*$/.test(sprite.id ?? "")) errors.push("id must use lowercase letters, digits, and underscores");
+    if (!Array.isArray(sprite.cell) || sprite.cell.length !== 2 || sprite.cell.some((n) => !Number.isInteger(n) || n < 1)) {
+      errors.push("cell must be [positive width, positive height]");
+    }
+    if (!sprite.states || typeof sprite.states !== "object" || Array.isArray(sprite.states) || !Object.keys(sprite.states).length) {
+      errors.push("states must be a non-empty object");
+    }
+    if (!sprite.inkMap || typeof sprite.inkMap !== "object" || Array.isArray(sprite.inkMap)) {
+      errors.push("inkMap must be an object");
+    }
+    if (errors.length) return { errors, warnings };
+    const [width, height] = sprite.cell;
+    if (expectedCell && (width !== expectedCell[0] || height !== expectedCell[1])) {
+      errors.push(`cell [${width}, ${height}] does not match project grid [${expectedCell[0]}, ${expectedCell[1]}]`);
+    }
+    const allowedTop = /* @__PURE__ */ new Set(["$schema", "id", "cell", "frameMs", "source", "states", "inkMap"]);
+    Object.keys(sprite).filter((key) => !allowedTop.has(key)).forEach((key) => errors.push(`unsupported top-level property '${key}'`));
+    if (sprite.$schema !== void 0 && typeof sprite.$schema !== "string") errors.push("$schema must be a string");
+    if (sprite.source !== void 0 && typeof sprite.source !== "string") errors.push("source must be a string");
+    if (sprite.frameMs !== void 0 && (!Number.isInteger(sprite.frameMs) || sprite.frameMs < 60)) {
+      errors.push("frameMs must be an integer of at least 60");
+    }
+    const glyphs = glyphCodepoints ? new Set(glyphCodepoints) : null;
+    const roles = paletteRoles ? new Set(Object.keys(paletteRoles)) : null;
+    if (Object.prototype.hasOwnProperty.call(sprite.inkMap, ".") && sprite.inkMap["."] !== null) {
+      warnings.push("inkMap '.' should map to null transparency");
+    }
+    const checkRows = (rows, label, keyed) => {
+      if (!Array.isArray(rows) || rows.length !== height) {
+        errors.push(`${label} must have ${height} rows`);
+        return;
+      }
+      rows.forEach((row, y) => {
+        const rowCells = cells(row);
+        if (rowCells.length !== width) errors.push(`${label} row ${y + 1} must be ${width} cells wide`);
+        rowCells.forEach((value) => {
+          if (keyed && !Object.prototype.hasOwnProperty.call(sprite.inkMap, value)) {
+            errors.push(`${label} uses unmapped ink key '${value}'`);
+          } else if (!keyed && value !== " " && glyphs && !glyphs.has(value.codePointAt(0))) {
+            errors.push(`${label} uses glyph U+${value.codePointAt(0).toString(16).toUpperCase()} absent from the font`);
+          }
+        });
+      });
+    };
+    const checkFrame = (frame, label, kind = "frame") => {
+      if (!frame || typeof frame !== "object") {
+        errors.push(`${label} is not an object`);
+        return;
+      }
+      const allowed = kind === "state" ? /* @__PURE__ */ new Set(["art", "ink", "bgInk", "frames", "variations"]) : kind === "variation" ? /* @__PURE__ */ new Set(["art", "ink", "bgInk", "frames"]) : /* @__PURE__ */ new Set(["art", "ink", "bgInk"]);
+      Object.keys(frame).filter((key) => !allowed.has(key)).forEach((key) => errors.push(`${label} has unsupported property '${key}'`));
+      checkRows(frame.art, `${label} art`, false);
+      checkRows(frame.ink, `${label} ink`, true);
+      if (frame.bgInk) checkRows(frame.bgInk, `${label} bgInk`, true);
+    };
+    for (const [stateKey, state] of Object.entries(sprite.states)) {
+      checkFrame(state, `state '${stateKey || "BASE"}'`, "state");
+      if (state.frames !== void 0 && (!Array.isArray(state.frames) || !state.frames.length)) {
+        errors.push(`state '${stateKey || "BASE"}' frames must be a non-empty array when present`);
+      }
+      if (state.variations !== void 0 && (!Array.isArray(state.variations) || !state.variations.length)) {
+        errors.push(`state '${stateKey || "BASE"}' variations must be a non-empty array when present`);
+      }
+      (state.frames ?? []).forEach((frame, index) => checkFrame(frame, `state '${stateKey || "BASE"}' frame ${index + 1}`));
+      (state.variations ?? []).forEach((variation, variationIndex) => {
+        checkFrame(variation, `state '${stateKey || "BASE"}' variation ${variationIndex + 1}`, "variation");
+        if (variation.frames !== void 0 && (!Array.isArray(variation.frames) || !variation.frames.length)) {
+          errors.push(`state '${stateKey || "BASE"}' variation ${variationIndex + 1} frames must be a non-empty array when present`);
+        }
+        (variation.frames ?? []).forEach((frame, frameIndex) => checkFrame(frame, `state '${stateKey || "BASE"}' variation ${variationIndex + 1} frame ${frameIndex + 1}`));
+      });
+    }
+    for (const [key, role] of Object.entries(sprite.inkMap)) {
+      if (cells(key).length !== 1) errors.push(`inkMap key '${key}' must be one character`);
+      if (role !== null && typeof role !== "string") errors.push(`inkMap key '${key}' must map to a string role or null`);
+      if (role !== null && role !== "PATH" && roles && !roles.has(role)) {
+        errors.push(`inkMap key '${key}' names palette role '${role}' that is not loaded`);
+      }
+    }
+    return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
+  }
+  function stateLabel(key) {
+    return key === "" ? "BASE" : key;
+  }
+  function codepointLabel(codepoint) {
+    return `U+${codepoint.toString(16).toUpperCase().padStart(4, "0")}`;
+  }
+
+  // sprite-editor/app.js
+  var $ = (selector) => document.querySelector(selector);
+  var $$ = (selector) => Array.from(document.querySelectorAll(selector));
+  var ROAD_STATE_ORDER = ["|", "-", "L", "J", "F", "7", "T", "U", "E", "3", "X", "B"];
+  var ui = {
+    newButton: $("#newButton"),
+    openButton: $("#openButton"),
+    saveButton: $("#saveButton"),
+    palettePatchButton: $("#palettePatchButton"),
+    referenceButton: $("#referenceButton"),
+    exampleSelect: $("#exampleSelect"),
+    undoButton: $("#undoButton"),
+    redoButton: $("#redoButton"),
+    fileInput: $("#fileInput"),
+    referenceInput: $("#referenceInput"),
+    paletteInput: $("#paletteInput"),
+    glyphsetInput: $("#glyphsetInput"),
+    spriteTitle: $("#spriteTitle"),
+    dirtyBadge: $("#dirtyBadge"),
+    dropPrompt: $("#dropPrompt"),
+    stateSection: $("#stateSection"),
+    stateList: $("#stateList"),
+    addStateButton: $("#addStateButton"),
+    duplicateStateButton: $("#duplicateStateButton"),
+    renameStateButton: $("#renameStateButton"),
+    deleteStateButton: $("#deleteStateButton"),
+    variationSelect: $("#variationSelect"),
+    previousVariationButton: $("#previousVariationButton"),
+    nextVariationButton: $("#nextVariationButton"),
+    addVariationButton: $("#addVariationButton"),
+    deleteVariationButton: $("#deleteVariationButton"),
+    versionSummary: $("#versionSummary"),
+    frameSelect: $("#frameSelect"),
+    previousFrameButton: $("#previousFrameButton"),
+    nextFrameButton: $("#nextFrameButton"),
+    addFrameButton: $("#addFrameButton"),
+    deleteFrameButton: $("#deleteFrameButton"),
+    playButton: $("#playButton"),
+    frameMsInput: $("#frameMsInput"),
+    gridCheckbox: $("#gridCheckbox"),
+    zoomInput: $("#zoomInput"),
+    zoomLabel: $("#zoomLabel"),
+    canvasShell: $("#canvasShell"),
+    canvas: $("#spriteCanvas"),
+    canvasEmpty: $("#canvasEmpty"),
+    cellStatus: $("#cellStatus"),
+    viewMode: $("#viewMode"),
+    compareButton: $("#compareButton"),
+    previewToolbar: $("#previewToolbar"),
+    tileColsInput: $("#tileColsInput"),
+    tileRowsInput: $("#tileRowsInput"),
+    cycleVariationsCheckbox: $("#cycleVariationsCheckbox"),
+    compositeControls: $("#compositeControls"),
+    loadCompanionButton: $("#loadCompanionButton"),
+    companionExampleSelect: $("#companionExampleSelect"),
+    companionStateSelect: $("#companionStateSelect"),
+    companionVariationSelect: $("#companionVariationSelect"),
+    companionLayerSelect: $("#companionLayerSelect"),
+    clearCompanionButton: $("#clearCompanionButton"),
+    companionLabel: $("#companionLabel"),
+    companionInput: $("#companionInput"),
+    compareDock: $("#compareDock"),
+    previousFrameCanvas: $("#previousFrameCanvas"),
+    currentFrameCanvas: $("#currentFrameCanvas"),
+    nextFrameCanvas: $("#nextFrameCanvas"),
+    selectionStatus: $("#selectionStatus"),
+    validateButton: $("#validateButton"),
+    validationPill: $("#validationPill"),
+    validationPanel: $("#validationPanel"),
+    applyGlyph: $("#applyGlyph"),
+    applyForeground: $("#applyForeground"),
+    applyBackground: $("#applyBackground"),
+    foregroundSelect: $("#foregroundSelect"),
+    backgroundSelect: $("#backgroundSelect"),
+    foregroundSwatch: $("#foregroundSwatch"),
+    backgroundSwatch: $("#backgroundSwatch"),
+    foregroundKey: $("#foregroundKey"),
+    backgroundKey: $("#backgroundKey"),
+    glyphSearch: $("#glyphSearch"),
+    glyphRange: $("#glyphRange"),
+    glyphCanvas: $("#glyphCanvas"),
+    glyphCount: $("#glyphCount"),
+    selectedGlyphCanvas: $("#selectedGlyphCanvas"),
+    selectedGlyphCharacter: $("#selectedGlyphCharacter"),
+    selectedGlyphCode: $("#selectedGlyphCode"),
+    loadPaletteButton: $("#loadPaletteButton"),
+    loadGlyphsetButton: $("#loadGlyphsetButton"),
+    colourSlotA: $("#colourSlotA"),
+    colourSlotB: $("#colourSlotB"),
+    colourHexInput: $("#colourHexInput"),
+    colourWheel: $("#colourWheel"),
+    colourValueInput: $("#colourValueInput"),
+    colourValueLabel: $("#colourValueLabel"),
+    useForegroundButton: $("#useForegroundButton"),
+    useBackgroundButton: $("#useBackgroundButton"),
+    brushSizeInput: $("#brushSizeInput"),
+    brushSizeLabel: $("#brushSizeLabel"),
+    brushShapeSelect: $("#brushShapeSelect"),
+    brushModeSelect: $("#brushModeSelect"),
+    brushDirectionSelect: $("#brushDirectionSelect"),
+    toast: $("#toast")
+  };
+  var app = {
+    sprite: null,
+    filename: "",
+    palette: { roles: {} },
+    contentGrid: null,
+    glyphset: null,
+    glyphBytes: null,
+    glyphIndex: /* @__PURE__ */ new Map(),
+    stateKey: "",
+    variationIndex: 0,
+    frameIndex: 0,
+    glyphCodepoint: 35,
+    foregroundRole: "PATH",
+    backgroundRole: null,
+    tool: "pencil",
+    viewMode: "edit",
+    zoom: 10,
+    grid: true,
+    undo: [],
+    redo: [],
+    dirty: false,
+    painting: false,
+    lastPaintCell: null,
+    hoverCell: null,
+    dragStart: null,
+    dragEnd: null,
+    selection: null,
+    clipboard: null,
+    playing: false,
+    playTimer: null,
+    pendingStudy: null,
+    glyphLayout: [],
+    validationTimer: null,
+    compareFrames: false,
+    tileCols: 3,
+    tileRows: 3,
+    companion: null,
+    companionFilename: "",
+    companionStateKey: "",
+    companionVariationIndex: 0,
+    companionLayer: "under",
+    colourSlot: 0,
+    colours: ["#d8e1eb", "#10151d"],
+    colourHsv: [{ h: 210, s: 0.08, v: 0.89 }, { h: 214, s: 0.41, v: 0.11 }],
+    brushSize: 3,
+    brushShape: "circle",
+    brushMode: "solid",
+    brushDirection: "horizontal",
+    customRoles: /* @__PURE__ */ new Set()
+  };
+  function toast(message, duration = 2600) {
+    ui.toast.textContent = message;
+    ui.toast.classList.remove("hidden");
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => ui.toast.classList.add("hidden"), duration);
+  }
+  function roleColour(role) {
+    if (role === null || role === void 0) return null;
+    if (role === "PATH") return app.palette.roles["path.1"] ?? "#4cc9f0";
+    if (app.palette.roles[role]) return app.palette.roles[role];
+    let hash = 0;
+    for (const char of role) hash = (hash << 5) - hash + char.codePointAt(0) | 0;
+    return `hsl(${Math.abs(hash) % 360} 45% 60%)`;
+  }
+  function clamp(value, low = 0, high = 1) {
+    return Math.max(low, Math.min(high, value));
+  }
+  function hsvToRgb({ h, s, v }) {
+    const hue = (h % 360 + 360) % 360;
+    const chroma = v * s;
+    const section = hue / 60;
+    const second = chroma * (1 - Math.abs(section % 2 - 1));
+    const choices = section < 1 ? [chroma, second, 0] : section < 2 ? [second, chroma, 0] : section < 3 ? [0, chroma, second] : section < 4 ? [0, second, chroma] : section < 5 ? [second, 0, chroma] : [chroma, 0, second];
+    const match = v - chroma;
+    return choices.map((channel) => Math.round((channel + match) * 255));
+  }
+  function rgbToHsv([rByte, gByte, bByte]) {
+    const r = rByte / 255;
+    const g = gByte / 255;
+    const b = bByte / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    let h = 0;
+    if (delta) {
+      if (max === r) h = 60 * ((g - b) / delta % 6);
+      else if (max === g) h = 60 * ((b - r) / delta + 2);
+      else h = 60 * ((r - g) / delta + 4);
+    }
+    return { h: (h + 360) % 360, s: max ? delta / max : 0, v: max };
+  }
+  function hexToRgb(hex) {
+    const match = /^#?([0-9a-f]{6})$/i.exec(hex ?? "");
+    if (!match) return null;
+    return [0, 2, 4].map((offset) => parseInt(match[1].slice(offset, offset + 2), 16));
+  }
+  function rgbToHex(rgb) {
+    return `#${rgb.map((channel) => Math.round(clamp(channel, 0, 255)).toString(16).padStart(2, "0")).join("")}`;
+  }
+  function mixHex(first, second, amount) {
+    const a = hexToRgb(first);
+    const b = hexToRgb(second);
+    return rgbToHex(a.map((channel, index) => channel + (b[index] - channel) * clamp(amount)));
+  }
+  function activeColour() {
+    return app.colours[app.colourSlot];
+  }
+  function setActiveColour(hex) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return false;
+    const normalized = rgbToHex(rgb);
+    app.colours[app.colourSlot] = normalized;
+    app.colourHsv[app.colourSlot] = rgbToHsv(rgb);
+    renderColourLab();
+    return true;
+  }
+  function ensureCustomRole(hex) {
+    if (!app.sprite) return null;
+    const normalized = rgbToHex(hexToRgb(hex));
+    const role = `sprite.${app.sprite.id}.custom.${normalized.slice(1)}`;
+    app.palette.roles[role] = normalized;
+    app.customRoles.add(role);
+    return role;
+  }
+  function customRolesUsed() {
+    if (!app.sprite) return [];
+    const prefix = `sprite.${app.sprite.id}.custom.`;
+    return [...new Set(Object.values(app.sprite.inkMap))].filter((role) => typeof role === "string" && role.startsWith(prefix) && app.palette.roles[role]);
+  }
+  function renderColourWheel() {
+    const canvas = ui.colourWheel;
+    const ctx = canvas.getContext("2d");
+    const image = ctx.createImageData(canvas.width, canvas.height);
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const radius = Math.min(cx, cy) - 3;
+    const value = app.colourHsv[app.colourSlot].v;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const dx = x + 0.5 - cx;
+        const dy = y + 0.5 - cy;
+        const saturation = Math.sqrt(dx * dx + dy * dy) / radius;
+        const offset = (y * canvas.width + x) * 4;
+        if (saturation > 1) {
+          image.data[offset + 3] = 0;
+          continue;
+        }
+        const hue = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+        const [r, g, b] = hsvToRgb({ h: hue, s: saturation, v: value });
+        image.data[offset] = r;
+        image.data[offset + 1] = g;
+        image.data[offset + 2] = b;
+        image.data[offset + 3] = 255;
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+    const hsv = app.colourHsv[app.colourSlot];
+    const angle = hsv.h * Math.PI / 180;
+    const markerX = cx + Math.cos(angle) * hsv.s * radius;
+    const markerY = cy + Math.sin(angle) * hsv.s * radius;
+    ctx.strokeStyle = hsv.v > 0.55 ? "#000000" : "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(markerX, markerY, 6, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  function renderColourLab() {
+    [ui.colourSlotA, ui.colourSlotB].forEach((button, index) => {
+      button.classList.toggle("active", app.colourSlot === index);
+      button.querySelector("span").style.background = app.colours[index];
+    });
+    ui.colourHexInput.value = activeColour().toUpperCase();
+    ui.colourValueInput.value = String(Math.round(app.colourHsv[app.colourSlot].v * 100));
+    ui.colourValueLabel.textContent = `${ui.colourValueInput.value}%`;
+    ui.brushSizeInput.value = String(app.brushSize);
+    ui.brushSizeLabel.textContent = String(app.brushSize);
+    ui.brushShapeSelect.value = app.brushShape;
+    ui.brushModeSelect.value = app.brushMode;
+    ui.brushDirectionSelect.value = app.brushDirection;
+    renderColourWheel();
+  }
+  function decodeGlyphset(glyphset) {
+    if (!glyphset?.cell || !Array.isArray(glyphset.codepoints) || typeof glyphset.bits !== "string") {
+      throw new Error("Invalid glyphset JSON");
+    }
+    const binary = atob(glyphset.bits);
+    const expected = glyphset.codepoints.length * glyphset.cell[1];
+    if (binary.length !== expected) throw new Error(`Glyphset has ${binary.length} bitmap bytes; expected ${expected}`);
+    app.glyphset = glyphset;
+    app.glyphBytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    app.glyphIndex = new Map(glyphset.codepoints.map((cp, index) => [cp, index]));
+    if (!app.glyphIndex.has(app.glyphCodepoint)) app.glyphCodepoint = glyphset.codepoints[0];
+    renderGlyphBrowser();
+    renderSelectedGlyph();
+    renderCanvas();
+  }
+  function drawGlyph(ctx, codepoint, x, y, scale, colour = "#ffffff") {
+    if (!app.glyphset || !app.glyphBytes) return false;
+    const slot = app.glyphIndex.get(codepoint);
+    if (slot === void 0) return false;
+    const [width, height] = app.glyphset.cell;
+    ctx.fillStyle = colour;
+    for (let row = 0; row < height; row++) {
+      const byte = app.glyphBytes[slot * height + row];
+      for (let col = 0; col < width; col++) {
+        if (byte >> 7 - col & 1) ctx.fillRect(x + col * scale, y + row * scale, scale, scale);
+      }
+    }
+    return true;
+  }
+  function sortedSpriteStateKeys(sprite) {
+    if (!sprite) return [];
+    const keys = Object.keys(sprite.states);
+    if (ROAD_STATE_ORDER.every((key) => keys.includes(key))) {
+      const roadKeys = ROAD_STATE_ORDER.filter((key) => keys.includes(key));
+      return [...roadKeys, ...keys.filter((key) => !ROAD_STATE_ORDER.includes(key))];
+    }
+    return keys.sort((a, b) => {
+      if (a === "") return -1;
+      if (b === "") return 1;
+      return a.length - b.length || a.localeCompare(b, void 0, { numeric: true });
+    });
+  }
+  function sortedStateKeys() {
+    return sortedSpriteStateKeys(app.sprite);
+  }
+  function currentState() {
+    return app.sprite?.states[app.stateKey] ?? null;
+  }
+  function currentBody() {
+    const state = currentState();
+    if (!state) return null;
+    return app.variationIndex === 0 ? state : state.variations?.[app.variationIndex - 1] ?? null;
+  }
+  function currentTarget() {
+    return app.sprite ? targetFor(app.sprite, app.stateKey, app.variationIndex, app.frameIndex) : null;
+  }
+  function clampNavigation() {
+    if (!app.sprite) return;
+    if (!app.sprite.states[app.stateKey]) app.stateKey = sortedStateKeys()[0] ?? "";
+    const variations = currentState()?.variations?.length ?? 0;
+    app.variationIndex = Math.max(0, Math.min(app.variationIndex, variations));
+    const frames = framesFor(currentState(), app.variationIndex);
+    app.frameIndex = Math.max(0, Math.min(app.frameIndex, Math.max(0, frames.length - 1)));
+  }
+  function setSprite(sprite, filename) {
+    stopPlayback();
+    app.sprite = sprite;
+    app.filename = filename || `${sprite.id}.json`;
+    app.stateKey = Object.prototype.hasOwnProperty.call(sprite.states, "") ? "" : sortedStateKeys()[0];
+    app.variationIndex = 0;
+    app.frameIndex = 0;
+    app.undo = [];
+    app.redo = [];
+    app.dirty = false;
+    app.selection = null;
+    app.hoverCell = null;
+    const target = currentTarget();
+    let foregroundRole = null;
+    let backgroundRole = null;
+    if (target) {
+      for (let y = 0; y < sprite.cell[1] && !foregroundRole; y++) {
+        for (let x = 0; x < sprite.cell[0] && !foregroundRole; x++) {
+          if (cells(target.art[y])[x] === " ") continue;
+          const foreground = roleForKey(sprite, cells(target.ink[y])[x]);
+          if (typeof foreground === "string") foregroundRole = foreground;
+          const background = roleForKey(sprite, cells(target.bgInk?.[y] ?? ".".repeat(sprite.cell[0]))[x]);
+          if (typeof background === "string") backgroundRole = background;
+        }
+      }
+    }
+    app.foregroundRole = foregroundRole ?? Object.values(sprite.inkMap).find((role) => typeof role === "string") ?? "PATH";
+    app.backgroundRole = backgroundRole;
+    renderAll();
+    runValidation(false);
+  }
+  function historySnapshot() {
+    if (!app.sprite) return;
+    app.undo.push(JSON.stringify(app.sprite));
+    if (app.undo.length > 200) app.undo.shift();
+    app.redo = [];
+    app.dirty = true;
+    updateHistoryButtons();
+  }
+  function restoreSnapshot(serialized, destination) {
+    if (!app.sprite) return;
+    destination.push(JSON.stringify(app.sprite));
+    app.sprite = JSON.parse(serialized);
+    clampNavigation();
+    app.dirty = true;
+    renderAll();
+  }
+  function undo() {
+    const snapshot = app.undo.pop();
+    if (snapshot) restoreSnapshot(snapshot, app.redo);
+  }
+  function redo() {
+    const snapshot = app.redo.pop();
+    if (snapshot) restoreSnapshot(snapshot, app.undo);
+  }
+  function updateHistoryButtons() {
+    ui.undoButton.disabled = !app.undo.length;
+    ui.redoButton.disabled = !app.redo.length;
+    ui.dirtyBadge.classList.toggle("hidden", !app.dirty);
+  }
+  function markChanged(full = false) {
+    app.dirty = true;
+    updateHistoryButtons();
+    if (full) renderAll();
+    else {
+      renderCanvas();
+      scheduleValidation();
+    }
+  }
+  function scheduleValidation() {
+    clearTimeout(app.validationTimer);
+    app.validationTimer = setTimeout(() => runValidation(false), 180);
+  }
+  function renderAll() {
+    const hasSprite = Boolean(app.sprite);
+    ui.spriteTitle.textContent = hasSprite ? app.sprite.id : "No sprite open";
+    ui.dropPrompt.classList.toggle("hidden", hasSprite);
+    ui.stateSection.classList.toggle("hidden", !hasSprite);
+    ui.canvasEmpty.classList.toggle("hidden", hasSprite);
+    ui.canvasShell.classList.toggle("empty", !hasSprite);
+    ui.saveButton.disabled = !hasSprite;
+    ui.validateButton.disabled = !hasSprite;
+    updateHistoryButtons();
+    renderStateList();
+    renderTimeline();
+    renderPreviewControls();
+    renderRoleControls();
+    renderColourLab();
+    renderCanvas();
+    renderGlyphBrowser();
+    renderSelectedGlyph();
+    scheduleValidation();
+  }
+  function renderPreviewControls() {
+    const previewing = app.viewMode !== "edit";
+    ui.viewMode.value = app.viewMode;
+    ui.previewToolbar.classList.toggle("hidden", !previewing);
+    ui.compositeControls.classList.toggle("hidden", app.viewMode !== "composite");
+    ui.tileColsInput.value = String(app.tileCols);
+    ui.tileRowsInput.value = String(app.tileRows);
+    ui.companionLabel.textContent = app.companion ? app.companion.id : "No layer loaded";
+    ui.companionStateSelect.replaceChildren();
+    ui.companionVariationSelect.replaceChildren();
+    if (app.companion) {
+      for (const key of sortedSpriteStateKeys(app.companion)) {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = stateLabel(key);
+        ui.companionStateSelect.append(option);
+      }
+      if (!app.companion.states[app.companionStateKey]) app.companionStateKey = sortedSpriteStateKeys(app.companion)[0];
+      ui.companionStateSelect.value = app.companionStateKey;
+      const state = app.companion.states[app.companionStateKey];
+      const count = 1 + (state.variations?.length ?? 0);
+      for (let index = 0; index < count; index++) {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = index === 0 ? "Version 0" : `Version ${index}`;
+        ui.companionVariationSelect.append(option);
+      }
+      app.companionVariationIndex = Math.min(app.companionVariationIndex, count - 1);
+      ui.companionVariationSelect.value = String(app.companionVariationIndex);
+    }
+    ui.companionStateSelect.disabled = !app.companion;
+    ui.companionVariationSelect.disabled = !app.companion;
+    ui.companionLayerSelect.value = app.companionLayer;
+    ui.clearCompanionButton.disabled = !app.companion;
+    ui.palettePatchButton.classList.toggle("hidden", customRolesUsed().length === 0);
+  }
+  function renderStateList() {
+    ui.stateList.replaceChildren();
+    if (!app.sprite) return;
+    for (const key of sortedStateKeys()) {
+      const state = app.sprite.states[key];
+      const button = document.createElement("button");
+      button.className = `state-item${key === app.stateKey ? " active" : ""}`;
+      const name = document.createElement("span");
+      name.textContent = stateLabel(key);
+      const counts = document.createElement("span");
+      const versionCount = 1 + (state.variations?.length ?? 0);
+      const frameCount = 1 + (state.frames?.length ?? 0);
+      counts.textContent = `${versionCount}v / ${frameCount}f`;
+      button.append(name, counts);
+      button.addEventListener("click", () => {
+        app.stateKey = key;
+        app.variationIndex = 0;
+        app.frameIndex = 0;
+        app.selection = null;
+        renderStateList();
+        renderTimeline();
+        renderCanvas();
+      });
+      ui.stateList.append(button);
+    }
+  }
+  function renderTimeline() {
+    const state = currentState();
+    ui.variationSelect.replaceChildren();
+    ui.frameSelect.replaceChildren();
+    if (!state) return;
+    const variationCount = 1 + (state.variations?.length ?? 0);
+    for (let index = 0; index < variationCount; index++) {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = index === 0 ? "Version 0 (base)" : `Version ${index}`;
+      ui.variationSelect.append(option);
+    }
+    ui.variationSelect.value = String(app.variationIndex);
+    ui.versionSummary.textContent = `${variationCount} total`;
+    ui.previousVariationButton.disabled = variationCount < 2;
+    ui.nextVariationButton.disabled = variationCount < 2;
+    ui.deleteVariationButton.disabled = app.variationIndex === 0;
+    const frames = framesFor(state, app.variationIndex);
+    frames.forEach((_, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = index === 0 ? "Frame 0 (base)" : `Frame ${index}`;
+      ui.frameSelect.append(option);
+    });
+    ui.frameSelect.value = String(app.frameIndex);
+    ui.previousFrameButton.disabled = frames.length < 2;
+    ui.nextFrameButton.disabled = frames.length < 2;
+    ui.deleteFrameButton.disabled = app.frameIndex === 0;
+    ui.playButton.disabled = frames.length < 2;
+    ui.playButton.textContent = app.playing ? "Stop" : "Play";
+    ui.frameMsInput.value = String(app.sprite.frameMs ?? 720);
+  }
+  function paletteRoleNames() {
+    const names = /* @__PURE__ */ new Set(["PATH"]);
+    Object.values(app.sprite?.inkMap ?? {}).forEach((role) => {
+      if (typeof role === "string") names.add(role);
+    });
+    Object.keys(app.palette.roles ?? {}).forEach((role) => names.add(role));
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }
+  function addRoleOptions(select, includeTransparent) {
+    select.replaceChildren();
+    if (includeTransparent) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Transparent";
+      select.append(option);
+    }
+    for (const role of paletteRoleNames()) {
+      const option = document.createElement("option");
+      option.value = role;
+      option.textContent = role;
+      select.append(option);
+    }
+  }
+  function mappedKeyForRole(role) {
+    if (!app.sprite) return "-";
+    if (role === null) return ".";
+    return Object.entries(app.sprite.inkMap).find(([, mapped]) => mapped === role)?.[0] ?? "+";
+  }
+  function renderRoleControls() {
+    addRoleOptions(ui.foregroundSelect, false);
+    addRoleOptions(ui.backgroundSelect, true);
+    if (!paletteRoleNames().includes(app.foregroundRole)) app.foregroundRole = paletteRoleNames()[0] ?? "PATH";
+    ui.foregroundSelect.value = app.foregroundRole;
+    ui.backgroundSelect.value = app.backgroundRole ?? "";
+    ui.foregroundSwatch.style.background = roleColour(app.foregroundRole);
+    ui.backgroundSwatch.classList.toggle("transparent", app.backgroundRole === null);
+    ui.backgroundSwatch.style.background = app.backgroundRole === null ? "" : roleColour(app.backgroundRole);
+    ui.foregroundKey.textContent = mappedKeyForRole(app.foregroundRole);
+    ui.backgroundKey.textContent = mappedKeyForRole(app.backgroundRole);
+  }
+  function drawTransparency(ctx, width, height, unit = 12) {
+    ctx.fillStyle = "#18212b";
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = "#222d39";
+    for (let y = 0; y < height; y += unit) {
+      for (let x = 0; x < width; x += unit) {
+        if ((x / unit + y / unit) % 2 === 0) ctx.fillRect(x, y, unit, unit);
+      }
+    }
+  }
+  function drawSpriteTarget(ctx, sprite, target, offsetX, offsetY, zoom) {
+    if (!sprite || !target || !app.glyphset) return;
+    const [glyphWidth, glyphHeight] = app.glyphset.cell;
+    const [width, height] = sprite.cell;
+    const cellWidth = glyphWidth * zoom;
+    const cellHeight = glyphHeight * zoom;
+    for (let y = 0; y < height; y++) {
+      const art = cells(target.art[y]);
+      const ink = cells(target.ink[y]);
+      const bg = cells(target.bgInk?.[y] ?? ".".repeat(width));
+      for (let x = 0; x < width; x++) {
+        const char = art[x];
+        const foregroundRole = roleForKey(sprite, ink[x]);
+        if (char === " " || foregroundRole === null || foregroundRole === void 0) continue;
+        const backgroundRole = roleForKey(sprite, bg[x]);
+        const px = offsetX + x * cellWidth;
+        const py = offsetY + y * cellHeight;
+        ctx.fillStyle = roleColour(backgroundRole) ?? roleColour("tower.ground") ?? "#0c1017";
+        ctx.fillRect(px, py, cellWidth, cellHeight);
+        const ok = drawGlyph(ctx, char.codePointAt(0), px, py, zoom, roleColour(foregroundRole));
+        if (!ok) {
+          ctx.strokeStyle = "#ff3b81";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px + 2, py + 2, cellWidth - 4, cellHeight - 4);
+        }
+      }
+    }
+  }
+  function targetForVersion(sprite, stateKey, variationIndex, frameIndex) {
+    const state = sprite?.states[stateKey];
+    if (!state) return null;
+    const versionFrames = framesFor(state, variationIndex);
+    return versionFrames[frameIndex % versionFrames.length] ?? versionFrames[0] ?? null;
+  }
+  function companionTarget(variationIndex = app.companionVariationIndex) {
+    return targetForVersion(app.companion, app.companionStateKey, variationIndex, app.frameIndex);
+  }
+  function renderCanvas() {
+    const target = currentTarget();
+    if (!target || !app.glyphset || !app.sprite) {
+      ui.canvas.width = 1;
+      ui.canvas.height = 1;
+      return;
+    }
+    const [glyphWidth, glyphHeight] = app.glyphset.cell;
+    const [width, height] = app.sprite.cell;
+    const cellWidth = glyphWidth * app.zoom;
+    const cellHeight = glyphHeight * app.zoom;
+    const tileCols = app.viewMode === "edit" ? 1 : app.tileCols;
+    const tileRows = app.viewMode === "edit" ? 1 : app.tileRows;
+    const tilePixelWidth = width * cellWidth;
+    const tilePixelHeight = height * cellHeight;
+    ui.canvas.width = tileCols * tilePixelWidth;
+    ui.canvas.height = tileRows * tilePixelHeight;
+    const ctx = ui.canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    drawTransparency(ctx, ui.canvas.width, ui.canvas.height, app.zoom * 2);
+    const state = currentState();
+    const variationCount = 1 + (state.variations?.length ?? 0);
+    for (let tileY = 0; tileY < tileRows; tileY++) {
+      for (let tileX = 0; tileX < tileCols; tileX++) {
+        const tileIndex = tileY * tileCols + tileX;
+        const variationIndex = app.viewMode !== "edit" && ui.cycleVariationsCheckbox.checked ? tileIndex % variationCount : app.variationIndex;
+        const activeTarget = targetForVersion(app.sprite, app.stateKey, variationIndex, app.frameIndex);
+        const offsetX = tileX * tilePixelWidth;
+        const offsetY = tileY * tilePixelHeight;
+        const companionState = app.companion?.states[app.companionStateKey];
+        const companionVariationCount = 1 + (companionState?.variations?.length ?? 0);
+        const companionVariationIndex = ui.cycleVariationsCheckbox.checked ? tileIndex % companionVariationCount : app.companionVariationIndex;
+        const companion = app.viewMode === "composite" ? companionTarget(companionVariationIndex) : null;
+        if (companion && app.companionLayer === "under") drawSpriteTarget(ctx, app.companion, companion, offsetX, offsetY, app.zoom);
+        drawSpriteTarget(ctx, app.sprite, activeTarget, offsetX, offsetY, app.zoom);
+        if (companion && app.companionLayer === "over") drawSpriteTarget(ctx, app.companion, companion, offsetX, offsetY, app.zoom);
+      }
+    }
+    if (app.grid) {
+      ctx.strokeStyle = "rgba(150, 180, 205, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 1; x < width * tileCols; x++) {
+        ctx.moveTo(x * cellWidth + 0.5, 0);
+        ctx.lineTo(x * cellWidth + 0.5, ui.canvas.height);
+      }
+      for (let y = 1; y < height * tileRows; y++) {
+        ctx.moveTo(0, y * cellHeight + 0.5);
+        ctx.lineTo(ui.canvas.width, y * cellHeight + 0.5);
+      }
+      ctx.stroke();
+      if (app.viewMode !== "edit") {
+        ctx.strokeStyle = "rgba(46, 230, 160, 0.55)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 1; x < tileCols; x++) {
+          ctx.moveTo(x * tilePixelWidth, 0);
+          ctx.lineTo(x * tilePixelWidth, ui.canvas.height);
+        }
+        for (let y = 1; y < tileRows; y++) {
+          ctx.moveTo(0, y * tilePixelHeight);
+          ctx.lineTo(ui.canvas.width, y * tilePixelHeight);
+        }
+        ctx.stroke();
+      }
+    }
+    if (app.viewMode === "edit") {
+      drawRectOverlay(ctx, app.selection, "#2ee6a0", cellWidth, cellHeight);
+      if (app.dragStart && app.dragEnd) {
+        drawRectOverlay(ctx, normalizedRect(app.dragStart, app.dragEnd), app.tool === "rectangle" ? "#ffbd5d" : "#2ee6a0", cellWidth, cellHeight);
+      }
+    }
+    renderFrameCompare();
+  }
+  function renderTargetPreview(canvas, target) {
+    const ctx = canvas.getContext("2d");
+    drawTransparency(ctx, canvas.width, canvas.height, 8);
+    if (!target || !app.sprite || !app.glyphset) return;
+    const [glyphWidth, glyphHeight] = app.glyphset.cell;
+    const scale = Math.max(1, Math.floor(Math.min(canvas.width / (app.sprite.cell[0] * glyphWidth), canvas.height / (app.sprite.cell[1] * glyphHeight))));
+    const renderedWidth = app.sprite.cell[0] * glyphWidth * scale;
+    const renderedHeight = app.sprite.cell[1] * glyphHeight * scale;
+    drawSpriteTarget(ctx, app.sprite, target, Math.floor((canvas.width - renderedWidth) / 2), Math.floor((canvas.height - renderedHeight) / 2), scale);
+  }
+  function renderFrameCompare() {
+    const frames = currentState() ? framesFor(currentState(), app.variationIndex) : [];
+    const show = app.compareFrames && app.viewMode === "edit" && frames.length > 1;
+    ui.compareDock.classList.toggle("hidden", !show);
+    ui.compareButton.classList.toggle("active", show);
+    if (!show) return;
+    const previous = (app.frameIndex - 1 + frames.length) % frames.length;
+    const next = (app.frameIndex + 1) % frames.length;
+    renderTargetPreview(ui.previousFrameCanvas, frames[previous]);
+    renderTargetPreview(ui.currentFrameCanvas, frames[app.frameIndex]);
+    renderTargetPreview(ui.nextFrameCanvas, frames[next]);
+  }
+  function drawRectOverlay(ctx, rect, colour, cellWidth, cellHeight) {
+    if (!rect) return;
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(
+      rect.x * cellWidth + 1,
+      rect.y * cellHeight + 1,
+      rect.width * cellWidth - 2,
+      rect.height * cellHeight - 2
+    );
+    ctx.setLineDash([]);
+  }
+  function visibleGlyphCodepoints() {
+    if (!app.glyphset) return [];
+    const range = ui.glyphRange.value;
+    const query = ui.glyphSearch.value.trim();
+    let exact = null;
+    if (/^U\+[0-9a-f]+$/i.test(query)) exact = parseInt(query.slice(2), 16);
+    else if (/^0x[0-9a-f]+$/i.test(query)) exact = parseInt(query.slice(2), 16);
+    else if (Array.from(query).length === 1) exact = query.codePointAt(0);
+    return app.glyphset.codepoints.filter((cp) => {
+      const inRange = range === "all" || range === "ascii" && cp >= 32 && cp <= 126 || range === "braille" && cp >= 10240 && cp <= 10495 || range === "box" && cp >= 9472 && cp <= 9599 || range === "other" && !(cp >= 32 && cp <= 126 || cp >= 10240 && cp <= 10495 || cp >= 9472 && cp <= 9599);
+      if (!inRange) return false;
+      if (!query) return true;
+      if (exact !== null) return cp === exact;
+      return codepointLabel(cp).includes(query.toUpperCase());
+    });
+  }
+  function renderGlyphBrowser() {
+    const ctx = ui.glyphCanvas.getContext("2d");
+    if (!app.glyphset) {
+      ui.glyphCanvas.width = 1;
+      ui.glyphCanvas.height = 1;
+      ui.glyphCount.textContent = "No atlas";
+      return;
+    }
+    const tileWidth = 29;
+    const tileHeight = 35;
+    const availableWidth = Math.max(250, ui.glyphCanvas.parentElement.clientWidth - 2);
+    const columns = Math.max(8, Math.floor(availableWidth / tileWidth));
+    const codepoints = visibleGlyphCodepoints();
+    app.glyphLayout = codepoints;
+    ui.glyphCanvas.width = columns * tileWidth;
+    ui.glyphCanvas.height = Math.max(tileHeight, Math.ceil(codepoints.length / columns) * tileHeight);
+    ctx.fillStyle = "#090d12";
+    ctx.fillRect(0, 0, ui.glyphCanvas.width, ui.glyphCanvas.height);
+    codepoints.forEach((cp, index) => {
+      const x = index % columns * tileWidth;
+      const y = Math.floor(index / columns) * tileHeight;
+      if (cp === app.glyphCodepoint) {
+        ctx.fillStyle = "#113c31";
+        ctx.fillRect(x, y, tileWidth, tileHeight);
+        ctx.strokeStyle = "#2ee6a0";
+        ctx.strokeRect(x + 0.5, y + 0.5, tileWidth - 1, tileHeight - 1);
+      } else {
+        ctx.strokeStyle = "#1f2a36";
+        ctx.strokeRect(x + 0.5, y + 0.5, tileWidth - 1, tileHeight - 1);
+      }
+      const [gw, gh] = app.glyphset.cell;
+      const scale = 3;
+      drawGlyph(ctx, cp, x + Math.floor((tileWidth - gw * scale) / 2), y + Math.floor((tileHeight - gh * scale) / 2), scale, "#d8e1eb");
+    });
+    ui.glyphCanvas.dataset.columns = String(columns);
+    ui.glyphCount.textContent = `${codepoints.length} / ${app.glyphset.codepoints.length}`;
+  }
+  function renderSelectedGlyph() {
+    const canvas = ui.selectedGlyphCanvas;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#080b10";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (!app.glyphset) return;
+    const [width, height] = app.glyphset.cell;
+    const scale = Math.max(1, Math.floor(Math.min((canvas.width - 12) / width, (canvas.height - 12) / height)));
+    drawGlyph(
+      ctx,
+      app.glyphCodepoint,
+      Math.floor((canvas.width - width * scale) / 2),
+      Math.floor((canvas.height - height * scale) / 2),
+      scale,
+      roleColour(app.foregroundRole)
+    );
+    const char = String.fromCodePoint(app.glyphCodepoint);
+    ui.selectedGlyphCharacter.textContent = char === " " ? "SPACE" : char;
+    ui.selectedGlyphCode.textContent = `${codepointLabel(app.glyphCodepoint)} / ${app.glyphIndex.get(app.glyphCodepoint)}`;
+  }
+  function canvasCell(event) {
+    if (!app.sprite || !app.glyphset) return null;
+    const rect = ui.canvas.getBoundingClientRect();
+    const scaleX = ui.canvas.width / rect.width;
+    const scaleY = ui.canvas.height / rect.height;
+    const [glyphWidth, glyphHeight] = app.glyphset.cell;
+    const x = Math.floor((event.clientX - rect.left) * scaleX / (glyphWidth * app.zoom));
+    const y = Math.floor((event.clientY - rect.top) * scaleY / (glyphHeight * app.zoom));
+    if (x < 0 || y < 0 || x >= app.sprite.cell[0] || y >= app.sprite.cell[1]) return null;
+    return { x, y };
+  }
+  function normalizedRect(a, b) {
+    const x = Math.min(a.x, b.x);
+    const y = Math.min(a.y, b.y);
+    return { x, y, width: Math.abs(a.x - b.x) + 1, height: Math.abs(a.y - b.y) + 1 };
+  }
+  function ensureBackground(target) {
+    if (!target.bgInk) target.bgInk = Array.from({ length: app.sprite.cell[1] }, () => ".".repeat(app.sprite.cell[0]));
+  }
+  function applyAt(x, y, tool = app.tool) {
+    const target = currentTarget();
+    if (!target) return;
+    if (tool === "eraser") {
+      ensureBackground(target);
+      target.art[y] = replaceCell(target.art[y], x, " ");
+      target.ink[y] = replaceCell(target.ink[y], x, ".");
+      target.bgInk[y] = replaceCell(target.bgInk[y], x, ".");
+      return;
+    }
+    if (ui.applyGlyph.checked) target.art[y] = replaceCell(target.art[y], x, String.fromCodePoint(app.glyphCodepoint));
+    if (ui.applyForeground.checked) {
+      const key = keyForRole(app.sprite, app.foregroundRole);
+      target.ink[y] = replaceCell(target.ink[y], x, key);
+    }
+    if (ui.applyBackground.checked) {
+      ensureBackground(target);
+      const key = app.backgroundRole === null ? "." : keyForRole(app.sprite, app.backgroundRole);
+      target.bgInk[y] = replaceCell(target.bgInk[y], x, key);
+    }
+  }
+  function applyColourAt(x, y, hex) {
+    const target = currentTarget();
+    if (!target) return;
+    const role = ensureCustomRole(hex);
+    const key = keyForRole(app.sprite, role);
+    if (ui.applyForeground.checked) target.ink[y] = replaceCell(target.ink[y], x, key);
+    if (ui.applyBackground.checked) {
+      ensureBackground(target);
+      target.bgInk[y] = replaceCell(target.bgInk[y], x, key);
+    }
+  }
+  function applyColourBrush(centerX, centerY) {
+    if (!ui.applyForeground.checked && !ui.applyBackground.checked) return;
+    const size = app.brushSize;
+    const start = -Math.floor((size - 1) / 2);
+    const end = start + size - 1;
+    const geometricCenter = (start + end) / 2;
+    const radius = Math.max(0.5, size / 2);
+    for (let offsetY = start; offsetY <= end; offsetY++) {
+      for (let offsetX = start; offsetX <= end; offsetX++) {
+        const x = centerX + offsetX;
+        const y = centerY + offsetY;
+        if (x < 0 || y < 0 || x >= app.sprite.cell[0] || y >= app.sprite.cell[1]) continue;
+        const dx = offsetX - geometricCenter;
+        const dy = offsetY - geometricCenter;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (app.brushShape === "circle" && distance > radius) continue;
+        let amount = 0;
+        if (app.brushMode === "linear") {
+          if (size === 1) amount = 0;
+          else if (app.brushDirection === "vertical") amount = (offsetY - start) / (size - 1);
+          else if (app.brushDirection === "diagonal") amount = (offsetX - start + (offsetY - start)) / (2 * (size - 1));
+          else amount = (offsetX - start) / (size - 1);
+        } else if (app.brushMode === "radial") amount = clamp(distance / radius);
+        applyColourAt(x, y, mixHex(app.colours[0], app.colours[1], amount));
+      }
+    }
+  }
+  function pickAt(x, y) {
+    const target = currentTarget();
+    if (!target) return;
+    const char = cells(target.art[y])[x];
+    if (char !== " " && app.glyphIndex.has(char.codePointAt(0))) app.glyphCodepoint = char.codePointAt(0);
+    const inkKey = cells(target.ink[y])[x];
+    const foreground = roleForKey(app.sprite, inkKey);
+    if (typeof foreground === "string") app.foregroundRole = foreground;
+    const bgKey = cells(target.bgInk?.[y] ?? ".".repeat(app.sprite.cell[0]))[x];
+    const background = roleForKey(app.sprite, bgKey);
+    app.backgroundRole = typeof background === "string" ? background : null;
+    const pickedHex = roleColour(foreground);
+    if (pickedHex && /^#[0-9a-f]{6}$/i.test(pickedHex)) setActiveColour(pickedHex);
+    renderRoleControls();
+    renderGlyphBrowser();
+    renderSelectedGlyph();
+    toast(`Picked ${char === " " ? "SPACE" : char} at ${x},${y}`);
+  }
+  function floodFill(startX, startY) {
+    const target = currentTarget();
+    if (!target) return;
+    ensureBackground(target);
+    const before = {
+      art: cells(target.art[startY])[startX],
+      ink: cells(target.ink[startY])[startX],
+      bg: cells(target.bgInk[startY])[startX]
+    };
+    const matches = (x, y) => {
+      const glyphMatches = !ui.applyGlyph.checked || cells(target.art[y])[x] === before.art;
+      const foregroundMatches = !ui.applyForeground.checked || cells(target.ink[y])[x] === before.ink;
+      const backgroundMatches = !ui.applyBackground.checked || cells(target.bgInk[y])[x] === before.bg;
+      return glyphMatches && foregroundMatches && backgroundMatches;
+    };
+    const queue = [{ x: startX, y: startY }];
+    const visited = /* @__PURE__ */ new Set();
+    while (queue.length) {
+      const { x, y } = queue.pop();
+      const id = `${x},${y}`;
+      if (visited.has(id) || x < 0 || y < 0 || x >= app.sprite.cell[0] || y >= app.sprite.cell[1] || !matches(x, y)) continue;
+      visited.add(id);
+      applyAt(x, y, "pencil");
+      queue.push({ x: x - 1, y }, { x: x + 1, y }, { x, y: y - 1 }, { x, y: y + 1 });
+    }
+  }
+  function applyRectangle(rect, filled) {
+    for (let y = rect.y; y < rect.y + rect.height; y++) {
+      for (let x = rect.x; x < rect.x + rect.width; x++) {
+        if (filled || x === rect.x || y === rect.y || x === rect.x + rect.width - 1 || y === rect.y + rect.height - 1) {
+          applyAt(x, y, "pencil");
+        }
+      }
+    }
+  }
+  function copySelection() {
+    const target = currentTarget();
+    if (!target || !app.sprite) return;
+    const rect = app.selection ?? { x: 0, y: 0, width: app.sprite.cell[0], height: app.sprite.cell[1] };
+    ensureBackground(target);
+    const take = (rows) => rows.slice(rect.y, rect.y + rect.height).map((row) => cells(row).slice(rect.x, rect.x + rect.width).join(""));
+    app.clipboard = { width: rect.width, height: rect.height, art: take(target.art), ink: take(target.ink), bgInk: take(target.bgInk) };
+    toast(`Copied ${rect.width} x ${rect.height} cells`);
+  }
+  function pasteSelection() {
+    const target = currentTarget();
+    if (!target || !app.clipboard) return;
+    const origin = app.selection ? { x: app.selection.x, y: app.selection.y } : app.hoverCell ?? { x: 0, y: 0 };
+    historySnapshot();
+    ensureBackground(target);
+    for (let y = 0; y < app.clipboard.height; y++) {
+      for (let x = 0; x < app.clipboard.width; x++) {
+        const tx = origin.x + x;
+        const ty = origin.y + y;
+        if (tx >= app.sprite.cell[0] || ty >= app.sprite.cell[1]) continue;
+        target.art[ty] = replaceCell(target.art[ty], tx, cells(app.clipboard.art[y])[x]);
+        target.ink[ty] = replaceCell(target.ink[ty], tx, cells(app.clipboard.ink[y])[x]);
+        target.bgInk[ty] = replaceCell(target.bgInk[ty], tx, cells(app.clipboard.bgInk[y])[x]);
+      }
+    }
+    markChanged();
+    toast(`Pasted at ${origin.x},${origin.y}`);
+  }
+  function cycleVariation(delta) {
+    const count = 1 + (currentState()?.variations?.length ?? 0);
+    if (count < 1) return;
+    app.variationIndex = (app.variationIndex + delta + count) % count;
+    app.frameIndex = 0;
+    renderTimeline();
+    renderCanvas();
+  }
+  function cycleFrame(delta) {
+    const state = currentState();
+    if (!state) return;
+    const count = framesFor(state, app.variationIndex).length;
+    if (count < 1) return;
+    app.frameIndex = (app.frameIndex + delta + count) % count;
+    renderTimeline();
+    renderCanvas();
+  }
+  function startPlayback() {
+    const state = currentState();
+    if (!state) return;
+    const count = framesFor(state, app.variationIndex).length;
+    if (count < 2) return;
+    app.playing = true;
+    const tick = () => {
+      if (!app.playing) return;
+      cycleFrame(1);
+      app.playTimer = setTimeout(tick, Math.max(60, app.sprite.frameMs ?? 720));
+    };
+    app.playTimer = setTimeout(tick, Math.max(60, app.sprite.frameMs ?? 720));
+    renderTimeline();
+  }
+  function stopPlayback() {
+    app.playing = false;
+    clearTimeout(app.playTimer);
+    app.playTimer = null;
+    if (app.sprite) renderTimeline();
+  }
+  function togglePlayback() {
+    if (app.playing) stopPlayback();
+    else startPlayback();
+  }
+  function addState(duplicate) {
+    if (!app.sprite) return;
+    const key = prompt("New state key (empty means BASE):", duplicate ? `${app.stateKey}_copy` : "");
+    if (key === null) return;
+    if (Object.prototype.hasOwnProperty.call(app.sprite.states, key)) {
+      toast(`State '${stateLabel(key)}' already exists`);
+      return;
+    }
+    historySnapshot();
+    app.sprite.states[key] = duplicate && currentState() ? clone(currentState()) : makeFrame(app.sprite.cell[0], app.sprite.cell[1]);
+    app.stateKey = key;
+    app.variationIndex = 0;
+    app.frameIndex = 0;
+    markChanged(true);
+  }
+  function renameState() {
+    if (!app.sprite) return;
+    const next = prompt("State key:", app.stateKey);
+    if (next === null || next === app.stateKey) return;
+    if (Object.prototype.hasOwnProperty.call(app.sprite.states, next)) {
+      toast(`State '${stateLabel(next)}' already exists`);
+      return;
+    }
+    historySnapshot();
+    const updated = {};
+    for (const [key, state] of Object.entries(app.sprite.states)) updated[key === app.stateKey ? next : key] = state;
+    app.sprite.states = updated;
+    app.stateKey = next;
+    markChanged(true);
+  }
+  function deleteState() {
+    if (!app.sprite) return;
+    if (Object.keys(app.sprite.states).length === 1) {
+      toast("A sprite must keep at least one state");
+      return;
+    }
+    if (!confirm(`Delete state '${stateLabel(app.stateKey)}'? You can still Undo.`)) return;
+    historySnapshot();
+    delete app.sprite.states[app.stateKey];
+    app.stateKey = sortedStateKeys()[0];
+    app.variationIndex = 0;
+    app.frameIndex = 0;
+    markChanged(true);
+  }
+  function addVariation() {
+    const state = currentState();
+    const target = currentBody();
+    if (!state || !target) return;
+    historySnapshot();
+    const variation = { art: clone(target.art), ink: clone(target.ink) };
+    if (target.bgInk) variation.bgInk = clone(target.bgInk);
+    if (target.frames) variation.frames = clone(target.frames);
+    state.variations ??= [];
+    state.variations.push(variation);
+    app.variationIndex = state.variations.length;
+    app.frameIndex = 0;
+    markChanged(true);
+  }
+  function deleteVariation() {
+    const state = currentState();
+    if (!state || app.variationIndex === 0) return;
+    historySnapshot();
+    state.variations.splice(app.variationIndex - 1, 1);
+    app.variationIndex = Math.min(app.variationIndex - 1, state.variations.length);
+    app.frameIndex = 0;
+    if (!state.variations.length) delete state.variations;
+    markChanged(true);
+  }
+  function addFrame() {
+    const body = currentBody();
+    const target = currentTarget();
+    if (!body || !target) return;
+    historySnapshot();
+    const frame = { art: clone(target.art), ink: clone(target.ink) };
+    if (target.bgInk) frame.bgInk = clone(target.bgInk);
+    body.frames ??= [];
+    body.frames.push(frame);
+    app.frameIndex = body.frames.length;
+    markChanged(true);
+  }
+  function deleteFrame() {
+    const body = currentBody();
+    if (!body || app.frameIndex === 0) return;
+    historySnapshot();
+    body.frames.splice(app.frameIndex - 1, 1);
+    app.frameIndex = Math.min(app.frameIndex - 1, body.frames.length);
+    if (!body.frames.length) delete body.frames;
+    markChanged(true);
+  }
+  function runValidation(expand = true) {
+    if (!app.sprite) return null;
+    const result = validateSprite(app.sprite, {
+      paletteRoles: app.palette.roles,
+      glyphCodepoints: app.glyphset?.codepoints,
+      expectedCell: app.contentGrid?.cell
+    });
+    const count = result.errors.length + result.warnings.length;
+    ui.validationPill.className = "validation-pill";
+    if (result.errors.length) {
+      ui.validationPill.classList.add("error");
+      ui.validationPill.textContent = `${result.errors.length} error${result.errors.length === 1 ? "" : "s"}`;
+    } else if (result.warnings.length) {
+      ui.validationPill.classList.add("warning");
+      ui.validationPill.textContent = `${result.warnings.length} warning${result.warnings.length === 1 ? "" : "s"}`;
+    } else {
+      ui.validationPill.classList.add("ok");
+      ui.validationPill.textContent = "Valid Sprite v2";
+    }
+    ui.validationPanel.replaceChildren();
+    if (count) {
+      const list = document.createElement("ul");
+      result.errors.forEach((message) => {
+        const item = document.createElement("li");
+        item.className = "error-text";
+        item.textContent = message;
+        list.append(item);
+      });
+      result.warnings.forEach((message) => {
+        const item = document.createElement("li");
+        item.className = "warning-text";
+        item.textContent = message;
+        list.append(item);
+      });
+      ui.validationPanel.append(list);
+    } else {
+      ui.validationPanel.textContent = "All dimensions, ink keys, palette roles, and glyphs pass the editor checks.";
+    }
+    if (expand) ui.validationPanel.classList.toggle("hidden");
+    return result;
+  }
+  function downloadJson(data, filename) {
+    const blob = new Blob([`${JSON.stringify(data, null, 2)}
+`], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  }
+  function downloadSprite() {
+    if (!app.sprite) return;
+    const result = runValidation(false);
+    if (result.errors.length) {
+      ui.validationPanel.classList.remove("hidden");
+      toast("Fix validation errors before downloading");
+      return;
+    }
+    const filename = `${app.sprite.id}.json`;
+    downloadJson(app.sprite, filename);
+    app.dirty = false;
+    updateHistoryButtons();
+    toast(`Downloaded ${filename}${customRolesUsed().length ? "; also download the palette patch" : ""}`, 4200);
+  }
+  function downloadPalettePatch() {
+    if (!app.sprite) return;
+    const roles = Object.fromEntries(customRolesUsed().map((role) => [role, app.palette.roles[role]]));
+    if (!Object.keys(roles).length) return;
+    downloadJson({ $schema: "../schema/palette.schema.json", roles }, `${app.sprite.id}.palette-patch.json`);
+    toast(`Downloaded ${app.sprite.id}.palette-patch.json`);
+  }
+  async function readJsonFile(file) {
+    try {
+      return JSON.parse(await file.text());
+    } catch (error) {
+      throw new Error(`${file.name}: ${error.message}`);
+    }
+  }
+  async function fetchJson(path) {
+    const embedded = window.__SPRITE_EDITOR_ASSETS__;
+    if (embedded) {
+      if (path.endsWith("/palette.json")) return clone(embedded.palette);
+      if (path.endsWith("/grid.json")) return clone(embedded.grid);
+      if (path.endsWith("/glyphset-spleen.json")) return clone(embedded.glyphset);
+      const spriteMatch = /\/sprites\/([^/]+)\.json$/.exec(path);
+      if (spriteMatch && embedded.sprites?.[spriteMatch[1]]) return clone(embedded.sprites[spriteMatch[1]]);
+    }
+    const response = await fetch(path);
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return response.json();
+  }
+  async function convertForCompanion(doc, filename) {
+    const kind = detectDocumentKind(doc);
+    if (kind === "tower-study") {
+      const id = inferTowerId(filename, doc);
+      if (!id) throw new Error("Legacy tower layer filename must identify its matching tower");
+      const reference = await fetchJson(`../packages/content/assets/sprites/${id}.json`);
+      return convertDocument(doc, { filename, runtimeReference: reference });
+    }
+    return convertDocument(doc, { filename });
+  }
+  function setCompanion(sprite, filename) {
+    if (app.sprite && (sprite.cell[0] !== app.sprite.cell[0] || sprite.cell[1] !== app.sprite.cell[1])) {
+      throw new Error(`Layer cell [${sprite.cell}] does not match open sprite [${app.sprite.cell}]`);
+    }
+    app.companion = sprite;
+    app.companionFilename = filename;
+    app.companionStateKey = Object.prototype.hasOwnProperty.call(sprite.states, "") ? "" : sortedSpriteStateKeys(sprite)[0];
+    app.companionVariationIndex = 0;
+    renderPreviewControls();
+    renderCanvas();
+  }
+  async function openCompanionFile(file) {
+    setCompanion(await convertForCompanion(await readJsonFile(file), file.name), file.name);
+    toast(`Loaded preview layer ${app.companion.id}`);
+  }
+  async function openBundledCompanion(id) {
+    if (!id) return;
+    setCompanion(await fetchJson(`../packages/content/assets/sprites/${id}.json`), `${id}.json`);
+    ui.companionExampleSelect.value = "";
+    toast(`Loaded preview layer ${id}`);
+  }
+  async function openDocumentFile(file) {
+    const doc = await readJsonFile(file);
+    const kind = detectDocumentKind(doc);
+    if (kind === "tower-study") {
+      const id = inferTowerId(file.name, doc);
+      if (!id) {
+        app.pendingStudy = { doc, filename: file.name };
+        ui.referenceInput.click();
+        toast("Choose the matching runtime Sprite v2 colour reference");
+        return;
+      }
+      try {
+        const reference = await fetchJson(`../packages/content/assets/sprites/${id}.json`);
+        setSprite(convertDocument(doc, { filename: file.name, runtimeReference: reference }), file.name);
+        toast(`Converted ${id} tower study to Sprite v2`);
+      } catch (error) {
+        app.pendingStudy = { doc, filename: file.name };
+        ui.referenceInput.click();
+        toast(`Could not auto-load ${id} colours; choose its runtime sprite`);
+      }
+      return;
+    }
+    setSprite(convertDocument(doc, { filename: file.name }), file.name);
+    toast(kind === "road-study" ? "Converted road study to Sprite v2" : `Opened ${file.name}`);
+  }
+  async function acceptTowerReference(file) {
+    const reference = await readJsonFile(file);
+    if (detectDocumentKind(reference) !== "runtime") throw new Error("Tower reference must be a runtime Sprite v2 JSON");
+    if (!app.pendingStudy) {
+      toast("Open a legacy tower study first, then supply its reference");
+      return;
+    }
+    const { doc, filename } = app.pendingStudy;
+    setSprite(convertDocument(doc, { filename, runtimeReference: reference }), filename);
+    app.pendingStudy = null;
+    toast("Converted tower study to Sprite v2");
+  }
+  async function openBundled(id) {
+    if (!id) return;
+    const sprite = await fetchJson(`../packages/content/assets/sprites/${id}.json`);
+    setSprite(sprite, `${id}.json`);
+    ui.exampleSelect.value = "";
+    toast(`Opened bundled ${id}`);
+  }
+  function createNewSprite() {
+    const id = prompt("Sprite id (lowercase letters, digits, underscores):", "new_sprite");
+    if (id === null) return;
+    if (!/^[a-z][a-z0-9_]*$/.test(id)) {
+      toast("Invalid sprite id");
+      return;
+    }
+    const defaultCell = app.contentGrid?.cell?.join(",") ?? "8,5";
+    const dimensions = prompt("Cell size as width,height:", defaultCell);
+    if (dimensions === null) return;
+    const match = /^\s*(\d+)\s*,\s*(\d+)\s*$/.exec(dimensions);
+    if (!match || Number(match[1]) < 1 || Number(match[2]) < 1) {
+      toast("Cell size must look like 8,5");
+      return;
+    }
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    const sprite = {
+      $schema: "../../schema/sprite.schema.json",
+      id,
+      cell: [width, height],
+      frameMs: 720,
+      source: "created with sprite-editor",
+      states: { "": makeFrame(width, height, "a") },
+      inkMap: { ".": null, a: "PATH" }
+    };
+    setSprite(sprite, `${id}.json`);
+  }
+  function setTool(tool) {
+    app.tool = tool;
+    $$(".tool").forEach((button) => button.classList.toggle("active", button.dataset.tool === tool));
+    ui.canvas.style.cursor = tool === "eyedropper" ? "copy" : tool === "select" ? "cell" : "crosshair";
+  }
+  ui.canvas.addEventListener("pointerdown", (event) => {
+    if (app.viewMode !== "edit") {
+      toast("Switch to Edit to paint; preview canvases are read-only");
+      return;
+    }
+    const point = canvasCell(event);
+    if (!point || !currentTarget()) return;
+    ui.canvas.setPointerCapture(event.pointerId);
+    app.hoverCell = point;
+    if (app.tool === "eyedropper" || event.button === 2 || event.altKey) {
+      pickAt(point.x, point.y);
+      return;
+    }
+    if (app.tool === "fill") {
+      historySnapshot();
+      floodFill(point.x, point.y);
+      markChanged();
+      return;
+    }
+    if (app.tool === "rectangle" || app.tool === "select") {
+      app.dragStart = point;
+      app.dragEnd = point;
+      renderCanvas();
+      return;
+    }
+    historySnapshot();
+    app.painting = true;
+    app.lastPaintCell = `${point.x},${point.y}`;
+    if (app.tool === "brush") applyColourBrush(point.x, point.y);
+    else applyAt(point.x, point.y);
+    markChanged();
+  });
+  ui.canvas.addEventListener("pointermove", (event) => {
+    const point = canvasCell(event);
+    app.hoverCell = point;
+    ui.cellStatus.textContent = point ? `Cell ${point.x}, ${point.y}` : "Cell --, --";
+    if (!point) return;
+    if (app.dragStart) {
+      app.dragEnd = point;
+      renderCanvas();
+      return;
+    }
+    if (app.painting) {
+      const id = `${point.x},${point.y}`;
+      if (id !== app.lastPaintCell) {
+        app.lastPaintCell = id;
+        if (app.tool === "brush") applyColourBrush(point.x, point.y);
+        else applyAt(point.x, point.y);
+        markChanged();
+      }
+    }
+  });
+  function endCanvasDrag(event) {
+    if (app.dragStart && app.dragEnd) {
+      const rect = normalizedRect(app.dragStart, app.dragEnd);
+      if (app.tool === "select") {
+        app.selection = rect;
+        ui.selectionStatus.textContent = `${rect.width} x ${rect.height} selected`;
+      } else {
+        historySnapshot();
+        applyRectangle(rect, event.shiftKey);
+        markChanged();
+      }
+    }
+    app.painting = false;
+    app.lastPaintCell = null;
+    app.dragStart = null;
+    app.dragEnd = null;
+    renderRoleControls();
+    renderPreviewControls();
+    renderCanvas();
+  }
+  ui.canvas.addEventListener("pointerup", endCanvasDrag);
+  ui.canvas.addEventListener("pointercancel", endCanvasDrag);
+  ui.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+  ui.canvas.addEventListener("pointerleave", () => {
+    if (!app.painting && !app.dragStart) ui.cellStatus.textContent = "Cell --, --";
+  });
+  ui.glyphCanvas.addEventListener("pointerdown", (event) => {
+    const rect = ui.glyphCanvas.getBoundingClientRect();
+    const scaleX = ui.glyphCanvas.width / rect.width;
+    const scaleY = ui.glyphCanvas.height / rect.height;
+    const columns = Number(ui.glyphCanvas.dataset.columns || 1);
+    const x = Math.floor((event.clientX - rect.left) * scaleX / 29);
+    const y = Math.floor((event.clientY - rect.top) * scaleY / 35);
+    const cp = app.glyphLayout[y * columns + x];
+    if (cp === void 0) return;
+    app.glyphCodepoint = cp;
+    renderGlyphBrowser();
+    renderSelectedGlyph();
+  });
+  ui.newButton.addEventListener("click", createNewSprite);
+  ui.openButton.addEventListener("click", () => ui.fileInput.click());
+  ui.referenceButton.addEventListener("click", () => ui.referenceInput.click());
+  ui.loadPaletteButton.addEventListener("click", () => ui.paletteInput.click());
+  ui.loadGlyphsetButton.addEventListener("click", () => ui.glyphsetInput.click());
+  ui.saveButton.addEventListener("click", downloadSprite);
+  ui.palettePatchButton.addEventListener("click", downloadPalettePatch);
+  ui.undoButton.addEventListener("click", undo);
+  ui.redoButton.addEventListener("click", redo);
+  ui.fileInput.addEventListener("change", () => ui.fileInput.files[0] && openDocumentFile(ui.fileInput.files[0]).catch((error) => toast(error.message, 5e3)));
+  ui.referenceInput.addEventListener("change", () => ui.referenceInput.files[0] && acceptTowerReference(ui.referenceInput.files[0]).catch((error) => toast(error.message, 5e3)));
+  ui.paletteInput.addEventListener("change", async () => {
+    if (!ui.paletteInput.files[0]) return;
+    try {
+      const palette = await readJsonFile(ui.paletteInput.files[0]);
+      if (!palette.roles || typeof palette.roles !== "object") throw new Error("Palette JSON must contain a roles object");
+      app.palette = { ...app.palette, roles: { ...app.palette.roles, ...palette.roles } };
+      renderRoleControls();
+      renderPreviewControls();
+      renderCanvas();
+      runValidation(false);
+      toast(`Merged ${Object.keys(palette.roles).length} palette roles`);
+    } catch (error) {
+      toast(error.message, 5e3);
+    }
+  });
+  ui.glyphsetInput.addEventListener("change", async () => {
+    if (!ui.glyphsetInput.files[0]) return;
+    try {
+      decodeGlyphset(await readJsonFile(ui.glyphsetInput.files[0]));
+      runValidation(false);
+      toast(`Loaded ${app.glyphset.codepoints.length} glyphs`);
+    } catch (error) {
+      toast(error.message, 5e3);
+    }
+  });
+  ui.exampleSelect.addEventListener("change", () => openBundled(ui.exampleSelect.value).catch((error) => toast(`Cannot open bundled sprite: ${error.message}`, 5e3)));
+  ui.viewMode.addEventListener("change", () => {
+    app.viewMode = ui.viewMode.value;
+    app.selection = null;
+    renderPreviewControls();
+    renderCanvas();
+  });
+  ui.compareButton.addEventListener("click", () => {
+    app.compareFrames = !app.compareFrames;
+    renderFrameCompare();
+  });
+  ui.tileColsInput.addEventListener("change", () => {
+    app.tileCols = Math.max(1, Math.min(8, Number(ui.tileColsInput.value) || 1));
+    renderPreviewControls();
+    renderCanvas();
+  });
+  ui.tileRowsInput.addEventListener("change", () => {
+    app.tileRows = Math.max(1, Math.min(8, Number(ui.tileRowsInput.value) || 1));
+    renderPreviewControls();
+    renderCanvas();
+  });
+  ui.cycleVariationsCheckbox.addEventListener("change", renderCanvas);
+  ui.loadCompanionButton.addEventListener("click", () => ui.companionInput.click());
+  ui.companionInput.addEventListener("change", () => ui.companionInput.files[0] && openCompanionFile(ui.companionInput.files[0]).catch((error) => toast(error.message, 5e3)));
+  ui.companionExampleSelect.addEventListener("change", () => openBundledCompanion(ui.companionExampleSelect.value).catch((error) => toast(error.message, 5e3)));
+  ui.companionStateSelect.addEventListener("change", () => {
+    app.companionStateKey = ui.companionStateSelect.value;
+    app.companionVariationIndex = 0;
+    renderPreviewControls();
+    renderCanvas();
+  });
+  ui.companionVariationSelect.addEventListener("change", () => {
+    app.companionVariationIndex = Number(ui.companionVariationSelect.value);
+    renderCanvas();
+  });
+  ui.companionLayerSelect.addEventListener("change", () => {
+    app.companionLayer = ui.companionLayerSelect.value;
+    renderCanvas();
+  });
+  ui.clearCompanionButton.addEventListener("click", () => {
+    app.companion = null;
+    app.companionFilename = "";
+    renderPreviewControls();
+    renderCanvas();
+  });
+  $$(".frame-preview[data-frame-offset]").forEach((button) => button.addEventListener("click", () => cycleFrame(Number(button.dataset.frameOffset))));
+  ui.addStateButton.addEventListener("click", () => addState(false));
+  ui.duplicateStateButton.addEventListener("click", () => addState(true));
+  ui.renameStateButton.addEventListener("click", renameState);
+  ui.deleteStateButton.addEventListener("click", deleteState);
+  ui.variationSelect.addEventListener("change", () => {
+    app.variationIndex = Number(ui.variationSelect.value);
+    app.frameIndex = 0;
+    renderTimeline();
+    renderCanvas();
+  });
+  ui.previousVariationButton.addEventListener("click", () => cycleVariation(-1));
+  ui.nextVariationButton.addEventListener("click", () => cycleVariation(1));
+  ui.addVariationButton.addEventListener("click", addVariation);
+  ui.deleteVariationButton.addEventListener("click", deleteVariation);
+  ui.frameSelect.addEventListener("change", () => {
+    app.frameIndex = Number(ui.frameSelect.value);
+    renderCanvas();
+  });
+  ui.previousFrameButton.addEventListener("click", () => cycleFrame(-1));
+  ui.nextFrameButton.addEventListener("click", () => cycleFrame(1));
+  ui.addFrameButton.addEventListener("click", addFrame);
+  ui.deleteFrameButton.addEventListener("click", deleteFrame);
+  ui.playButton.addEventListener("click", togglePlayback);
+  ui.frameMsInput.addEventListener("change", () => {
+    if (!app.sprite) return;
+    const next = Math.max(60, Math.round(Number(ui.frameMsInput.value) || 720));
+    historySnapshot();
+    app.sprite.frameMs = next;
+    markChanged(true);
+    if (app.playing) {
+      stopPlayback();
+      startPlayback();
+    }
+  });
+  ui.gridCheckbox.addEventListener("change", () => {
+    app.grid = ui.gridCheckbox.checked;
+    renderCanvas();
+  });
+  ui.zoomInput.addEventListener("input", () => {
+    app.zoom = Number(ui.zoomInput.value);
+    ui.zoomLabel.textContent = `${app.zoom}x`;
+    renderCanvas();
+  });
+  ui.validateButton.addEventListener("click", () => runValidation(true));
+  ui.foregroundSelect.addEventListener("change", () => {
+    app.foregroundRole = ui.foregroundSelect.value;
+    renderRoleControls();
+    renderSelectedGlyph();
+  });
+  ui.backgroundSelect.addEventListener("change", () => {
+    app.backgroundRole = ui.backgroundSelect.value || null;
+    renderRoleControls();
+  });
+  ui.colourSlotA.addEventListener("click", () => {
+    app.colourSlot = 0;
+    renderColourLab();
+  });
+  ui.colourSlotB.addEventListener("click", () => {
+    app.colourSlot = 1;
+    renderColourLab();
+  });
+  ui.colourHexInput.addEventListener("change", () => {
+    if (!setActiveColour(ui.colourHexInput.value)) {
+      ui.colourHexInput.value = activeColour().toUpperCase();
+      toast("Colour must be a six-digit hex value such as #2ee6a0");
+    }
+  });
+  ui.colourValueInput.addEventListener("input", () => {
+    const hsv = app.colourHsv[app.colourSlot];
+    hsv.v = Number(ui.colourValueInput.value) / 100;
+    app.colours[app.colourSlot] = rgbToHex(hsvToRgb(hsv));
+    renderColourLab();
+  });
+  function updateColourFromWheel(event) {
+    const rect = ui.colourWheel.getBoundingClientRect();
+    const x = (event.clientX - rect.left) * ui.colourWheel.width / rect.width;
+    const y = (event.clientY - rect.top) * ui.colourWheel.height / rect.height;
+    const cx = ui.colourWheel.width / 2;
+    const cy = ui.colourWheel.height / 2;
+    const dx = x - cx;
+    const dy = y - cy;
+    const radius = Math.min(cx, cy) - 3;
+    const saturation = Math.sqrt(dx * dx + dy * dy) / radius;
+    if (saturation > 1.08) return;
+    const hsv = app.colourHsv[app.colourSlot];
+    hsv.h = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+    hsv.s = clamp(saturation);
+    app.colours[app.colourSlot] = rgbToHex(hsvToRgb(hsv));
+    renderColourLab();
+  }
+  ui.colourWheel.addEventListener("pointerdown", (event) => {
+    ui.colourWheel.setPointerCapture(event.pointerId);
+    updateColourFromWheel(event);
+  });
+  ui.colourWheel.addEventListener("pointermove", (event) => {
+    if (ui.colourWheel.hasPointerCapture(event.pointerId)) updateColourFromWheel(event);
+  });
+  ui.useForegroundButton.addEventListener("click", () => {
+    if (!app.sprite) return toast("Open a sprite first");
+    app.foregroundRole = ensureCustomRole(activeColour());
+    renderRoleControls();
+    renderSelectedGlyph();
+    toast(`Foreground set to ${activeColour()}`);
+  });
+  ui.useBackgroundButton.addEventListener("click", () => {
+    if (!app.sprite) return toast("Open a sprite first");
+    app.backgroundRole = ensureCustomRole(activeColour());
+    renderRoleControls();
+    toast(`Background set to ${activeColour()}`);
+  });
+  ui.brushSizeInput.addEventListener("input", () => {
+    app.brushSize = Number(ui.brushSizeInput.value);
+    ui.brushSizeLabel.textContent = String(app.brushSize);
+  });
+  ui.brushShapeSelect.addEventListener("change", () => {
+    app.brushShape = ui.brushShapeSelect.value;
+  });
+  ui.brushModeSelect.addEventListener("change", () => {
+    app.brushMode = ui.brushModeSelect.value;
+  });
+  ui.brushDirectionSelect.addEventListener("change", () => {
+    app.brushDirection = ui.brushDirectionSelect.value;
+  });
+  ui.glyphSearch.addEventListener("input", renderGlyphBrowser);
+  ui.glyphRange.addEventListener("change", renderGlyphBrowser);
+  $$(".tool").forEach((button) => button.addEventListener("click", () => setTool(button.dataset.tool)));
+  window.addEventListener("keydown", (event) => {
+    if (["INPUT", "SELECT", "TEXTAREA"].includes(event.target.tagName)) return;
+    if (event.ctrlKey || event.metaKey) {
+      const key = event.key.toLowerCase();
+      if (key === "z") {
+        event.preventDefault();
+        event.shiftKey ? redo() : undo();
+      } else if (key === "y") {
+        event.preventDefault();
+        redo();
+      } else if (key === "s") {
+        event.preventDefault();
+        downloadSprite();
+      } else if (key === "c") {
+        event.preventDefault();
+        copySelection();
+      } else if (key === "v") {
+        event.preventDefault();
+        pasteSelection();
+      }
+      return;
+    }
+    const tools = { 1: "pencil", 2: "eraser", 3: "fill", 4: "eyedropper", 5: "rectangle", 6: "select", 7: "brush" };
+    if (tools[event.key]) setTool(tools[event.key]);
+    else if (event.key === "[") cycleVariation(-1);
+    else if (event.key === "]") cycleVariation(1);
+    else if (event.key === ",") cycleFrame(-1);
+    else if (event.key === ".") cycleFrame(1);
+    else if (event.key === " ") {
+      event.preventDefault();
+      togglePlayback();
+    }
+  });
+  window.addEventListener("dragenter", (event) => {
+    event.preventDefault();
+    document.body.classList.add("dragging");
+  });
+  window.addEventListener("dragover", (event) => event.preventDefault());
+  window.addEventListener("dragleave", (event) => {
+    if (event.relatedTarget === null) document.body.classList.remove("dragging");
+  });
+  window.addEventListener("drop", (event) => {
+    event.preventDefault();
+    document.body.classList.remove("dragging");
+    const file = [...event.dataTransfer.files].find((candidate) => candidate.name.toLowerCase().endsWith(".json"));
+    if (file) openDocumentFile(file).catch((error) => toast(error.message, 5e3));
+  });
+  window.addEventListener("resize", renderGlyphBrowser);
+  window.addEventListener("beforeunload", (event) => {
+    if (!app.dirty) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+  async function loadProjectResources() {
+    const failures = [];
+    try {
+      app.palette = await fetchJson("../packages/content/assets/palette.json");
+    } catch (error) {
+      failures.push("palette");
+    }
+    try {
+      app.contentGrid = await fetchJson("../packages/content/assets/grid.json");
+    } catch (error) {
+      failures.push("project grid");
+    }
+    try {
+      decodeGlyphset(await fetchJson("../packages/app/public/assets/glyphset-spleen.json"));
+    } catch (error) {
+      failures.push("glyph atlas");
+    }
+    renderAll();
+    if (failures.length) toast(`Could not auto-load ${failures.join(" and ")}. Serve the repository root over HTTP.`, 6e3);
+  }
+  loadProjectResources();
+})();
+</script>
+  </body>
+</html>

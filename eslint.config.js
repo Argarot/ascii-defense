@@ -32,6 +32,11 @@ export default tseslint.config(
       'node_modules/',
       'vendor/',
       'REXPaint-v*/',
+      // Daniil's art tooling, authored by another agent (session 23): the
+      // standalone sprite editor (a REXPaint equivalent for sprite v2) and
+      // the image-to-.xp solver. Tracked, not linted to this config.
+      'sprite-editor/',
+      'tools/art/',
       // Codegen output: linting it means linting the generator's style.
       'packages/content/src/generated/',
     ],
