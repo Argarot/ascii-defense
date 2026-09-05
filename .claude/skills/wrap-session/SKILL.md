@@ -41,8 +41,8 @@ earlier ones:
    before editing; patching the top of a drifted doc produced a
    self-contradicting README once already.
 5. **HANDOVER.md** — full rewrite, not a patch (it is a daily document):
-   state, NEXT session with its gate, fresh-context warnings, key seams for
-   the next session, standing open items. No sequencing, no checklists.
+   state, fresh-context warnings, **"Next session, proposed"** (see below),
+   standing open items. No sequencing, no checklists.
 6. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings
    with tags (`[process] [comms] [claude-weakness] [claude-strength]
    [daniil] [tooling]`). Corrections Daniil had to repeat get an entry.
@@ -70,8 +70,27 @@ earlier ones:
      feedback;
   3. anything planned-but-NOT-BUILT marked explicitly (absence otherwise
      reads as a bug);
-  4. **the next session's plan with its gate**, pulled from the ledger, so
-     his entire next input can be the word "go".
+  4. **the next session's plan** — see "The next-session plan" below. His
+     entire next input must be able to be the word "go".
+
+## The next-session plan (Daniil, 2026-09-05 — stated twice, now a rule)
+
+Every shipped session ends with a PROPOSED PLAN for the next one, in the
+final reply AND as HANDOVER's "Next session, proposed" section. A pointer
+("next in the ledger is X") is not a plan and has failed twice. The plan
+names:
+
+- the theme, in a sentence, and why it is next (what it unblocks);
+- **the PR list**, each with its scope and its test/proof, sized to a full
+  working day — Daniil: "enough of these tiny things, I want to see
+  meaningful progress every time, not just minor cosmetic stuff". Six
+  small fixes are not a session; one theme with visible results is;
+- the gate, as his judgement on the live build;
+- what he has to do (art, decisions), with defaults stated so "go" is
+  enough when he has no amendment;
+- the biggest risk and what it makes expensive later if built wrong.
+
+The ledger row and this section say the same thing; the reply repeats it.
 
 ## Hard rules carried from eleven postmortem sessions
 
