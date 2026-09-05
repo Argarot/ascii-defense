@@ -3,6 +3,8 @@
 export { BoardView } from './board/BoardView';
 export type { BoardViewOptions, CellRef, RenderState } from './board/BoardView';
 export { HudPanel } from './hud/HudPanel';
+export { StripPanel, STRIP_ROWS } from './hud/StripPanel';
+export { drawSpriteFrame } from './board/sprites';
 export { OfferModal } from './board/OfferModal';
 export type { OfferCard } from './board/OfferModal';
 export type { HudState, HudTowerInfo, HudTierInfo, HudChoiceInfo, HudAction, HudCoreInfo, HudRelicSlot } from './hud/HudPanel';

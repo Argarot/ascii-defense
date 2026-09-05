@@ -27,6 +27,8 @@ import {
   isReducedMotion,
   role,
   setReducedMotion,
+  StripPanel,
+  STRIP_ROWS,
 } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState } from '@ascii-defense/view';
 import { validateSprite } from '@ascii-defense/content';
@@ -104,6 +106,11 @@ async function main(): Promise<void> {
   const uiRows = Math.floor(boardRows / UI_SCALE);
   const hudTerm = new GLTerm(glyphs, { cols: HUD_COLS, rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, background: role('ui.bg') });
   const hud = new HudPanel(hudTerm, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
+  // The strip (4.27): a full-width panel under the board at the HUD's
+  // scale - build buttons as the towers' own sprites, the wave, the Core.
+  const stripTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: STRIP_ROWS, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, background: role('ui.bg') });
+  const strip = new StripPanel(stripTerm, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE, SPRITES);
+  let stripHover: HudAction | null = null;
   const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, transparent: true });
   modalTerm.canvas.style.position = 'absolute';
   modalTerm.canvas.style.left = '0';
@@ -260,6 +267,9 @@ async function main(): Promise<void> {
   leftCol.style.position = 'relative';
   leftCol.appendChild(term.canvas);
   leftCol.appendChild(modalTerm.canvas);
+  stripTerm.canvas.style.display = 'block';
+  stripTerm.canvas.style.marginTop = '4px';
+  leftCol.appendChild(stripTerm.canvas);
   app.appendChild(leftCol);
   app.appendChild(hudTerm.canvas);
   const cap = document.createElement('div');
@@ -566,10 +576,13 @@ async function main(): Promise<void> {
   hudTerm.canvas.addEventListener('mousemove', (e) => { hudHover = hud.actionAt(e.offsetX, e.offsetY); });
   hudTerm.canvas.addEventListener('mouseleave', () => { hudHover = null; });
   hudTerm.canvas.addEventListener('wheel', (e) => { hud.scrollBy(e.deltaY > 0 ? 2 : -2); e.preventDefault(); }, { passive: false });
-  hudTerm.canvas.addEventListener('click', (e) => {
-    if (!inGame()) return;
-    const action = hud.actionAt(e.offsetX, e.offsetY);
-    if (!action || !snap) return;
+  /** One handler for HUD-shaped actions, whichever panel raised them. */
+  const onHudAction = (action: HudAction): void => {
+    if (!snap) return;
+    if (action.kind === 'buildId') {
+      selectedBuildId = action.id;
+      if (selected) act({ k: 'build', x: selected.x, y: selected.y, defId: action.id });
+    }
     if (action.kind === 'build') {
       const entry = snap.hud.palette[action.index];
       if (entry?.id) {
@@ -588,6 +601,18 @@ async function main(): Promise<void> {
     if (action.kind === 'openCache' && selected) act({ k: 'openCache', x: selected.x, y: selected.y });
     if (action.kind === 'prospect' && selected) act({ k: 'prospect', x: selected.x, y: selected.y });
     if (action.kind === 'callWave') act({ k: 'callWave' });
+  };
+  hudTerm.canvas.addEventListener('click', (e) => {
+    if (!inGame()) return;
+    const action = hud.actionAt(e.offsetX, e.offsetY);
+    if (action) onHudAction(action);
+  });
+  stripTerm.canvas.addEventListener('mousemove', (e) => { stripHover = strip.actionAt(e.offsetX, e.offsetY); });
+  stripTerm.canvas.addEventListener('mouseleave', () => { stripHover = null; });
+  stripTerm.canvas.addEventListener('click', (e) => {
+    if (!inGame()) return;
+    const action = strip.actionAt(e.offsetX, e.offsetY);
+    if (action) onHudAction(action);
   });
 
   modalTerm.canvas.addEventListener('click', (e) => {
@@ -677,7 +702,7 @@ async function main(): Promise<void> {
     const animMs = still ? 0 : worldMs;
     const drift = still ? 0 : Math.floor(worldMs / 1400);
 
-    send({ t: 'frame', ui: { hover, selected, hudHover, targeting, showGrid } as UiState });
+    send({ t: 'frame', ui: { hover, selected, hudHover: hudHover ?? stripHover, targeting, showGrid } as UiState });
 
     if (snap && currentMap) {
       // The run ended while playing: bank once, then the summary owns the eye.
@@ -705,12 +730,14 @@ async function main(): Promise<void> {
         selectedBuild: snap.hud.palette.findIndex((p) => p.id === selectedBuildId),
       };
       hud.render(hudState);
+      strip.render({ ...hudState, selectedBuildId });
 
       // Overlay: a screen, else the offer, else nothing. The HUD hides
       // behind fullscreen menus (playtest 12, item 4) - a menu is not a
       // moment to read tower stats, and the panel pulled the eye.
       const spec = menuSpec();
       hudTerm.canvas.style.visibility = spec && mode !== 'paused' ? 'hidden' : 'visible';
+      stripTerm.canvas.style.visibility = spec && mode !== 'paused' ? 'hidden' : 'visible';
       modalTerm.clear();
       renderedMenuMode = spec ? mode : null;
       if (spec) {

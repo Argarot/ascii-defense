@@ -263,7 +263,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const palette = paletteDefs();
     const selTower = selected ? s.towerAt(selected.x, selected.y) : null;
     const buildTarget = selected !== null && s.canBuildAt(selected.x, selected.y);
-    const previewDef = (hudHover?.kind === 'build' ? palette[hudHover.index] : undefined) ?? palette[0];
+    const previewDef =
+      (hudHover?.kind === 'build' ? palette[hudHover.index] : hudHover?.kind === 'buildId' ? towerDefs.find((d) => d.id === hudHover.id) : undefined) ?? palette[0];
     const aimRelic = targeting !== null ? relicDefs.find((r) => r.id === targeting) : undefined;
     const range = aimRelic && hover
       ? { x: hover.x, y: hover.y, r: aimRelic.effects?.orbitalRadius ?? 1 }
@@ -295,8 +296,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     });
 
     const held = s.heldRelicInfo();
-    const coreInfo = selected && s.cellAt(selected.x, selected.y) === 'C'
-      ? {
+    // The Core card is built ONCE and shown twice: always in the strip
+    // (4.27), and in the column when the face is selected.
+    const coreCard = {
           hp: s.coreHp,
           hpMax: s.coreHpMax,
           slots: Array.from({ length: Math.max(MIN_SLOTS, held.length) }, (_, i) => {
@@ -313,8 +315,24 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             : targeting ? 'click the map to aim, Esc cancels' : null,
           drawCost: s.drawCost(),
           canDraw: s.ore[0] >= s.drawCost(),
-        }
-      : null;
+        };
+    const coreInfo = selected && s.cellAt(selected.x, selected.y) === 'C' ? coreCard : null;
+    // The strip's roster: every tower, with affordability and whether it
+    // fits the selected tile (a Refinery wants a vein).
+    const roster = towerDefs.map((d) => ({
+      id: d.id,
+      name: d.name ?? d.id,
+      cost: d.cost,
+      affordable: s.canAfford(d.id),
+      buildable: selected ? s.canBuildDefAt(selected.x, selected.y, d.id) : true,
+    }));
+    // The strip's NOW column: alive enemies by kind, with traits.
+    const nowCounts = new Map<string, number>();
+    for (let i = 0; i < s.posX.length; i++) if (s.alive[i]) nowCounts.set(s.enemyDefOf(i).id, (nowCounts.get(s.enemyDefOf(i).id) ?? 0) + 1);
+    const waveNow = [...nowCounts].map(([id, count]) => {
+      const d = enemyDefs.find((e) => e.id === id);
+      return { name: d?.name ?? id, count, traits: d?.traits ?? [] };
+    });
 
     const cellDescribe = (() => {
       const c = selected ?? hover;
@@ -364,7 +382,10 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           return {
             wave: p.wave,
             boss: p.boss,
-            kinds: p.kinds.map((k) => ({ name: enemyDefs.find((d) => d.id === k.id)?.name ?? k.id, count: k.count })),
+            kinds: p.kinds.map((k) => {
+              const d = enemyDefs.find((e) => e.id === k.id);
+              return { name: d?.name ?? k.id, count: k.count, traits: d?.traits ?? [] };
+            }),
             canCall: s.canCallWave(),
             callBonus: s.callBonus(),
             waiting: s.waitingForCall(),
@@ -388,6 +409,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         selectedBuild: 0,
         buildTargetSelected: buildTarget,
         core: coreInfo,
+        coreCard,
+        roster,
+        waveNow,
         cache: selected && s.cacheAt(selected.x, selected.y) ? { source: s.cacheAt(selected.x, selected.y)!.table } : null,
         // The newest thing a cache gave, for a few seconds after it opened.
         loot: (() => {

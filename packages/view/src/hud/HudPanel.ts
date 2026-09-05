@@ -78,7 +78,15 @@ export interface HudState {
    * `canCall` = the current wave has finished spawning, `callBonus` = Scrap
    * for calling now. null once the final wave is out.
    */
-  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number }[]; canCall: boolean; callBonus: number; waiting: boolean } | null;
+  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number; traits?: readonly string[] }[]; canCall: boolean; callBonus: number; waiting: boolean } | null;
+  /** The strip (4.27): every tower in the roster, whether the player can pay and whether it fits the selected tile. */
+  roster?: readonly { id: string; name: string; cost: number; affordable: boolean; buildable: boolean }[];
+  /** The strip: alive enemies by kind, with each kind's traits. */
+  waveNow?: readonly { name: string; count: number; traits: readonly string[] }[];
+  /** The strip: the Core card, ALWAYS (the HUD column's copy shows only when the face is selected). */
+  coreCard?: HudCoreInfo | null;
+  /** The build the strip highlights (the last button clicked). */
+  selectedBuildId?: string | null;
   gameOver: boolean;
   L: number;
   seed: number;
@@ -103,6 +111,8 @@ export interface HudState {
 export type HudAction =
   | { kind: 'priority'; value: Priority }
   | { kind: 'build'; index: number }
+  /** The strip's buttons name the tower, not a palette index (4.27). */
+  | { kind: 'buildId'; id: string }
   | { kind: 'choose'; tier: number; option: number }
   | { kind: 'relic'; index: number }
   | { kind: 'coreDraw' }
@@ -285,7 +295,7 @@ export class HudPanel {
     // The app filters it to what is legal on that tile - a vein offers the
     // Refinery, ground offers fighters. Rows are buttons.
     y += 1;
-    if (s.palette.length > 0) {
+    if (s.palette.length > 0 && !s.roster) {
       term.write(0, y++, 'BUILD', role('ui.dim'));
       s.palette.forEach((p, i) => {
         const sel = i === s.selectedBuild;
@@ -297,6 +307,12 @@ export class HudPanel {
       term.write(0, y + 1, 'click a button: builds on', role('ui.accent'));
       term.write(0, y + 2, 'the selected tile', role('ui.accent'));
       y += 4;
+    } else if (s.palette.length > 0 && s.buildTargetSelected) {
+      // The strip (4.27) carries the build buttons as sprites; the column
+      // only points at them.
+      term.write(0, y++, 'build from the strip', role('ui.accent'));
+      term.write(0, y++, 'below the board', role('ui.accent'));
+      y += 2;
     } else if (!s.selectedTower && !s.gameOver) {
       term.write(0, y++, 'select an empty tile to', role('ui.dim'));
       term.write(0, y++, 'build on it', role('ui.dim'));
@@ -351,6 +367,13 @@ export class HudPanel {
       term.write(0, y++, `hp ${c.hp}/${c.hpMax}`, hpCol);
       term.write(0, y++, '='.repeat(Math.max(0, Math.round(frac * (W - 2)))), hpCol);
       y++;
+      if (s.coreCard) {
+        // The strip (4.27) owns the slots and the actives now; the column
+        // says so instead of drawing them twice.
+        term.write(0, y++, 'relics and actives live', role('ui.dim'));
+        term.write(0, y++, 'in the strip below', role('ui.dim'));
+        return this.finish(term, s);
+      }
       term.write(0, y++, 'RELIC SLOTS', role('ui.dim'));
       // Stone Story-style grid: empty slots render as empty boxes - what you
       // COULD hold is as visible as what you do (Daniil). SQUARE slots
@@ -531,10 +554,14 @@ export class HudPanel {
       if (line.trim()) term.write(0, y++, line.trim(), role('ui.text'));
     }
 
-    // ---- help footer -------------------------------------------------------
+    this.finish(term, s);
+  }
+
+  /** The help footer and the flush - the one exit every branch takes. */
+  private finish(term: { rows: number; write: (x: number, y: number, s: string, fg: string, bg?: string) => void; flush: () => void }, _s: HudState): void {
+    void _s;
     const help = ['space pause \u2802 1-4 speed', 'F/L/C/W priority \u2802 X sell', 'G seams \u2802 Esc menu'];
     help.forEach((h, i) => term.write(0, term.rows - help.length + i, h, role('ui.dim')));
-
     term.flush();
   }
 }
