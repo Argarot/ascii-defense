@@ -33,7 +33,7 @@ import {
   type RelicFold,
   type TowerDef,
   type LootTable,
-  type ProjectileSpec, resistMul, type DamageType } from './defs';
+  type ProjectileSpec, resistMul, type DamageType, applyCoreBoon } from './defs';
 import type { ReplayAction, ReplayInput } from './replay';
 
 export const TICK_HZ = 20;
@@ -513,7 +513,8 @@ export class Sim {
     // interaction (Daniil - a tower on a cache would just be sold back).
     if (this.cacheAt(x, y) !== null) return false;
     const minesOre = (def.production?.ore ?? 0) > 0;
-    if (minesOre) return cell === 'O'; // refineries live on veins, full stop
+    // Refineries live on veins - except next to the Core, where the mineAnywhere gift lets one stand on plain ground (PRD sec 4.5).
+    if (minesOre) return cell === 'O' || (cell === 'G' && def.coreBoon?.flags?.includes('mineAnywhere') === true && this.nearCore[y * this.opts.cellsW + x] === 1);
     if (cell === 'G') return true;
     if (cell === 'R') return this.fold.buildOnRock; // Vein Tap
     return false; // O is Refinery ground; road and C are never buildable
@@ -670,7 +671,35 @@ export class Sim {
   }
 
   private foldStats(t: Tower): EffectiveStats {
-    const out = effectiveStats(this.opts.towerDefs[t.defIdx], t.choices);
+    const def = this.opts.towerDefs[t.defIdx];
+    const out = effectiveStats(def, t.choices);
+    // The Core's gift (PRD sec 4.5, WBS 2.35): a tower standing next to
+    // the face gets its own unique boon, folded like a tier.
+    if (def.coreBoon && this.nearCore[t.cellY * this.opts.cellsW + t.cellX]) applyCoreBoon(out, def.coreBoon);
+    // Supporters (session 26, the Bastion): the strongest aura of each
+    // kind within reach applies; a supporter's aura is read from its own
+    // tree and Core boon only, never from this fold - no recursion, no
+    // two Bastions feeding each other forever.
+    let auraDmg = 1;
+    let auraRate = 1;
+    let auraRange = 0;
+    let auraProd = 1;
+    for (const s of this.towers) {
+      if (!s || s === t) continue;
+      const sdef = this.opts.towerDefs[s.defIdx];
+      if (!sdef.aura) continue;
+      const se = effectiveStats(sdef, s.choices);
+      if (sdef.coreBoon && this.nearCore[s.cellY * this.opts.cellsW + s.cellX]) applyCoreBoon(se, sdef.coreBoon);
+      if (Math.max(Math.abs(s.cellX - t.cellX), Math.abs(s.cellY - t.cellY)) > se.auraReach) continue;
+      auraDmg = Math.max(auraDmg, se.auraDamageMul);
+      auraRate = Math.max(auraRate, se.auraRateMul);
+      auraRange = Math.max(auraRange, se.auraRangeAdd);
+      auraProd = Math.max(auraProd, se.auraProdMul);
+    }
+    if (auraDmg !== 1) out.damage *= auraDmg;
+    if (auraRate !== 1) out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / auraRate));
+    if (auraRange !== 0) out.range += auraRange;
+    if (auraProd !== 1 && out.productionEveryTicks > 0) out.productionEveryTicks = Math.max(1, Math.round(out.productionEveryTicks / auraProd));
     const f = this.fold;
     if (f !== EMPTY_FOLD) {
       out.damage *= f.damageMul;
@@ -1084,6 +1113,11 @@ export class Sim {
     this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
   }
 
+  /** Does this cell touch the Core face (chebyshev 1)? The precious ground of PRD sec 4.5. */
+  isNearCore(x: number, y: number): boolean {
+    return x >= 0 && y >= 0 && x < this.opts.cellsW && y < this.opts.cellsH && this.nearCore[y * this.opts.cellsW + x] === 1;
+  }
+
   /** Turn a tower (WBS 2.34): a replayed input; radial towers accept it and ignore it. */
   setFacing(x: number, y: number, facing: number): boolean {
     if (this.status !== 'running') return false;
@@ -1371,7 +1405,9 @@ export class Sim {
       const def = this.opts.towerDefs[tower.defIdx];
       const prod = def.production;
       if (!prod) continue;
-      const onVein = this.cellAt(tower.cellX, tower.cellY) === 'O';
+      // The Refinery's Core boon: next to the face it mines from nothing.
+      const anywhere = def.coreBoon?.flags?.includes('mineAnywhere') === true && this.nearCore[tower.cellY * this.opts.cellsW + tower.cellX] === 1;
+      const onVein = this.cellAt(tower.cellX, tower.cellY) === 'O' || anywhere;
       const oreShare = prod.ore ?? 0;
       const scrapShare = prod.scrap ?? 0;
       if ((oreShare === 0 || !onVein) && scrapShare === 0) continue; // idle: timer holds
@@ -1384,7 +1420,10 @@ export class Sim {
       // A def mixing ore and scrap splits the folded yield by its base ratio;
       // shipped content never does (ore-only), but the shape must not lie.
       const total = oreShare + scrapShare;
-      if (oreShare > 0 && onVein) {
+      if (oreShare > 0 && anywhere && this.cellAt(tower.cellX, tower.cellY) !== 'O') {
+        // No vein under it: the Core pays, and nothing runs dry.
+        this.ore[0] = (this.ore[0] ?? 0) + Math.round((yielded * oreShare) / total);
+      } else if (oreShare > 0 && onVein) {
         const k = tower.cellY * this.opts.cellsW + tower.cellX;
         const left = this.depositLeft.get(k) ?? 0;
         const mined = Math.min(left, Math.round((yielded * oreShare) / total));

@@ -60,6 +60,8 @@ export interface HudTowerInfo {
   priority: Priority;
   /** A line-shaped tower's facing (0 n, 1 e, 2 s, 3 w); null for radial towers (WBS 2.34). */
   facing?: number | null;
+  /** The Core's gift in effect on this tower (PRD sec 4.5); null when it stands elsewhere. */
+  coreBoon?: string | null;
   tiers: readonly HudTierInfo[];
   /** The hovered choice's written sentence (2.10); null when nothing hovers. */
   choiceDesc?: string | null;
@@ -105,7 +107,7 @@ export interface HudState {
   buildTargetSelected: boolean;
   selectedTower: HudTowerInfo | null;
   /** The hovered build button's tower, before it is bought (feedback item 1, 2026-09-05). */
-  buildPreview?: { name: string; cost: number; desc: string; stats: HudStats } | null;
+  buildPreview?: { name: string; cost: number; desc: string; stats: HudStats; coreBoon?: string | null } | null;
   /** The Core card, when a Core cell is selected. */
   core: HudCoreInfo | null;
   /** The cache card, when an unopened cache is selected (PRD sec 4.6): its source. */
@@ -343,6 +345,7 @@ export class HudPanel {
       const costText = `$${p.cost}`;
       term.write(W - costText.length, y++, costText, role('ui.text'));
       for (const line of this.wrapText(p.desc, W).slice(0, 3)) term.write(0, y++, line, role('ui.dim'));
+      if (p.coreBoon) for (const line of this.wrapText(p.coreBoon, W).slice(0, 3)) term.write(0, y++, line, role('terrain.core.lit'));
       const st = p.stats;
       const line = (label: string, v: number | string): void => { term.write(0, y++, `${label} ${v}`, role('ui.text')); };
       if (st.prod !== null) line('ore  ', st.prod);
@@ -482,6 +485,7 @@ export class HudPanel {
       } else {
         term.write(0, y++, `kills ${t.kills}`, role('ui.dim'));
       }
+      if (t.coreBoon) for (const line of this.wrapText(t.coreBoon, W).slice(0, 3)) term.write(0, y++, line, role('terrain.core.lit'));
       y++;
       // Stats, with hover-preview deltas pulsing green (Daniil: see what
       // you are buying BEFORE you buy it).

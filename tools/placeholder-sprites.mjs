@@ -158,6 +158,20 @@ const TOWERS = {
     ],
     roleOf: (ch) => ('#+X'.includes(ch) ? 'tower.laser.lens' : ch === '=' ? 'tower.laser.beam' : '<>'.includes(ch) ? 'tower.laser.lens' : '_'.includes(ch) ? 'tower.laser.dark' : 'tower.laser.body'),
   },
+  bastion: {
+    roles: { 'tower.bastion.wall': '#b8a98a', 'tower.bastion.banner': '#e2b23f', 'tower.bastion.dark': '#5a5040', 'tower.bastion.glow': '#ffe9a8' },
+    ground: 'tower.ground',
+    frames: [
+      ['  |>    ', ' [====] ', ' |    | ', ' |_/\\_| ', '|/_||_\\|'],
+      ['  |>>   ', ' [====] ', ' |    | ', ' |_/\\_| ', '|/_||_\\|'],
+    ],
+    patches: [
+      [{ 0: '  |>*   ' }, { 2: ' |=  =| ' }],
+      [{ 1: '[======]' }, { 3: ' |#/\\_| ' }],
+      [{ 0: ' *|>>*  ' }, { 2: ' |o  o| ' }],
+    ],
+    roleOf: (ch) => ('>*'.includes(ch) ? 'tower.bastion.banner' : ch === 'o' || ch === '#' ? 'tower.bastion.glow' : ch === '_' ? 'tower.bastion.dark' : 'tower.bastion.wall'),
+  },
   missile: {
     roles: { 'tower.missile.tube': '#8a9a7a', 'tower.missile.warhead': '#e2573f', 'tower.missile.frame': '#9eb3bf', 'tower.missile.rack': '#506978' },
     ground: 'tower.ground',

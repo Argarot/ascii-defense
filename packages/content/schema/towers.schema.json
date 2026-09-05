@@ -54,26 +54,112 @@
             "type": "number",
             "minimum": 0
           },
+          "aura": {
+            "description": "Support towers (session 26, the Bastion): every tower within reach cells gets these multipliers; the strongest of each kind applies when several supporters overlap.",
+            "type": "object",
+            "required": [
+              "damageMul",
+              "rateMul",
+              "rangeAdd",
+              "reach",
+              "productionMul"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "damageMul": {
+                "type": "number",
+                "minimum": 0
+              },
+              "rateMul": {
+                "type": "number",
+                "minimum": 0
+              },
+              "rangeAdd": {
+                "type": "number"
+              },
+              "reach": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "productionMul": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "coreBoon": {
+            "description": "The tower's unique gift when it stands next to the Core face (PRD sec 4.5, WBS 2.35): additive mods like a tier, plus rule flags. Every tower has one.",
+            "type": "object",
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "mods": {
+                "$ref": "#/definitions/mods"
+              },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "noDeadZone",
+                    "mineAnywhere"
+                  ]
+                },
+                "uniqueItems": true
+              }
+            }
+          },
           "beam": {
             "description": "attack:beam only (session 26, the Laser Lance; WBS 2.34): a corridor width cells wide down the tower's facing for range cells; every body in it takes the damage each fire; holding one lead target heats the beam by rampStep per fire up to rampMax times the damage.",
             "type": "object",
-            "required": ["width", "rampStep", "rampMax"],
+            "required": [
+              "width",
+              "rampStep",
+              "rampMax"
+            ],
             "additionalProperties": false,
             "properties": {
-              "width": { "type": "number", "exclusiveMinimum": 0 },
-              "rampStep": { "type": "number", "minimum": 0 },
-              "rampMax": { "type": "number", "minimum": 1 }
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "rampStep": {
+                "type": "number",
+                "minimum": 0
+              },
+              "rampMax": {
+                "type": "number",
+                "minimum": 1
+              }
             }
           },
           "chain": {
             "description": "attack:chain only (session 25, the Tesla Coil): the arc hits count bodies, each within reach cells of the last, at falloff of the previous hop's damage.",
             "type": "object",
-            "required": ["count", "reach", "falloff"],
+            "required": [
+              "count",
+              "reach",
+              "falloff"
+            ],
             "additionalProperties": false,
             "properties": {
-              "count": { "type": "integer", "minimum": 1 },
-              "reach": { "type": "number", "exclusiveMinimum": 0 },
-              "falloff": { "type": "number", "minimum": 0, "maximum": 1 }
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "reach": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "falloff": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
             }
           },
           "fireEveryTicks": {
@@ -149,7 +235,10 @@
           },
           "damageType": {
             "description": "What its hits are (session 26, PRD sec 8): kinetic or energy. Enemies multiply damage by their resist entry for the type. Absent = untyped (producers).",
-            "enum": ["kinetic", "energy"]
+            "enum": [
+              "kinetic",
+              "energy"
+            ]
           },
           "attack": {
             "description": "projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).",
@@ -222,90 +311,7 @@
                         "minLength": 1
                       },
                       "mods": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                          "damage": {
-                            "type": "number"
-                          },
-                          "range": {
-                            "type": "number"
-                          },
-                          "minRange": {
-                            "description": "Additive dead-zone delta in cells (negative shrinks it).",
-                            "type": "number"
-                          },
-                          "fireEveryTicks": {
-                            "type": "number"
-                          },
-                          "explodeRadius": {
-                            "type": "number"
-                          },
-                          "slowTicks": {
-                            "type": "number"
-                          },
-                          "production": {
-                            "description": "Additive yield per cycle.",
-                            "type": "number"
-                          },
-                          "productionEveryTicks": {
-                            "description": "Additive cycle-length delta (negative = faster).",
-                            "type": "number"
-                          },
-                          "damageMul": {
-                            "description": "Multiplies damage after every additive mod (Hailstorm's 45%).",
-                            "type": "number",
-                            "exclusiveMinimum": 0
-                          },
-                          "slowMul": {
-                            "description": "Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.",
-                            "type": "number"
-                          },
-                          "shots": {
-                            "description": "Additional projectiles per volley, each at full stats, sprayed by spread.",
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "spread": {
-                            "description": "Cells of random aim scatter per extra shot (combat stream).",
-                            "type": "number",
-                            "minimum": 0
-                          },
-                          "pierceCount": {
-                            "description": "Additional enemies a shot passes into after its target (Bolt Piercing).",
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "shieldMul": {
-                            "description": "Additive bonus to damage dealt to shields (base 1; +1 = double).",
-                            "type": "number"
-                          },
-                          "slowedBonusMul": {
-                            "description": "Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).",
-                            "type": "number"
-                          },
-                          "freezeEvery": {
-                            "description": "Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.",
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "chainCount": {
-                            "description": "Chain towers: additional bodies per arc.",
-                            "type": "integer"
-                          },
-                          "chainReach": {
-                            "description": "Chain towers: additional cells a hop may span.",
-                            "type": "number"
-                          },
-                          "beamWidth": {
-                            "description": "Beam towers: additional cells of corridor width.",
-                            "type": "number"
-                          },
-                          "beamRampMax": {
-                            "description": "Beam towers: additional multiplier at full heat.",
-                            "type": "number"
-                          }
-                        }
+                        "$ref": "#/definitions/mods"
                       },
                       "unlocks": {
                         "description": "Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).",
@@ -315,8 +321,8 @@
                           "ignoreArmor",
                           "deepBore50",
                           "deepBore100",
-                            "sweep"
-                          ]
+                          "sweep"
+                        ]
                       }
                     }
                   }
@@ -324,6 +330,114 @@
               }
             }
           }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "mods": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "damage": {
+          "type": "number"
+        },
+        "range": {
+          "type": "number"
+        },
+        "minRange": {
+          "description": "Additive dead-zone delta in cells (negative shrinks it).",
+          "type": "number"
+        },
+        "fireEveryTicks": {
+          "type": "number"
+        },
+        "explodeRadius": {
+          "type": "number"
+        },
+        "slowTicks": {
+          "type": "number"
+        },
+        "production": {
+          "description": "Additive yield per cycle.",
+          "type": "number"
+        },
+        "productionEveryTicks": {
+          "description": "Additive cycle-length delta (negative = faster).",
+          "type": "number"
+        },
+        "damageMul": {
+          "description": "Multiplies damage after every additive mod (Hailstorm's 45%).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "slowMul": {
+          "description": "Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.",
+          "type": "number"
+        },
+        "shots": {
+          "description": "Additional projectiles per volley, each at full stats, sprayed by spread.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "spread": {
+          "description": "Cells of random aim scatter per extra shot (combat stream).",
+          "type": "number",
+          "minimum": 0
+        },
+        "pierceCount": {
+          "description": "Additional enemies a shot passes into after its target (Bolt Piercing).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "shieldMul": {
+          "description": "Additive bonus to damage dealt to shields (base 1; +1 = double).",
+          "type": "number"
+        },
+        "slowedBonusMul": {
+          "description": "Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).",
+          "type": "number"
+        },
+        "freezeEvery": {
+          "description": "Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "chainCount": {
+          "description": "Chain towers: additional bodies per arc.",
+          "type": "integer"
+        },
+        "chainReach": {
+          "description": "Chain towers: additional cells a hop may span.",
+          "type": "number"
+        },
+        "beamWidth": {
+          "description": "Beam towers: additional cells of corridor width.",
+          "type": "number"
+        },
+        "beamRampMax": {
+          "description": "Beam towers: additional multiplier at full heat.",
+          "type": "number"
+        },
+        "auraDamage": {
+          "description": "Support towers: additive to the aura's damage multiplier.",
+          "type": "number"
+        },
+        "auraRate": {
+          "description": "Support towers: additive to the aura's fire-rate multiplier.",
+          "type": "number"
+        },
+        "auraRange": {
+          "description": "Support towers: cells of range the aura adds.",
+          "type": "number"
+        },
+        "auraReach": {
+          "description": "Support towers: additional cells of reach.",
+          "type": "integer"
+        },
+        "auraProduction": {
+          "description": "Support towers: additive to the aura's production-rate multiplier.",
+          "type": "number"
         }
       }
     }

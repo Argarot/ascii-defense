@@ -353,7 +353,13 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     // tower's card in the column before anything is bought.
     const previewHover = hudHover?.kind === 'buildId' ? towerDefs.find((d) => d.id === hudHover.id) : undefined;
     const buildPreview = previewHover
-      ? { name: previewHover.name ?? previewHover.id, cost: previewHover.cost, desc: previewHover.desc ?? '', stats: toStats(effectiveStats(previewHover, [-1, -1, -1]), previewHover) }
+      ? {
+          name: previewHover.name ?? previewHover.id,
+          cost: previewHover.cost,
+          desc: previewHover.desc ?? '',
+          stats: toStats(effectiveStats(previewHover, [-1, -1, -1]), previewHover),
+          coreBoon: selected && s.isNearCore(selected.x, selected.y) ? (previewHover.coreBoon?.text ?? null) : null,
+        }
       : null;
     // The strip's NOW column: alive enemies by kind, with traits.
     const nowCounts = new Map<string, number>();
@@ -369,7 +375,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       const dep = s.depositAt(c.x, c.y);
       if (dep && s.cellAt(c.x, c.y) === 'O') return ` \u2802 ore left ${dep.left}/${dep.initial}`;
       const boon = s.boonAt(c.x, c.y);
-      return boon ? ` \u2802 BOON t${boon.tier}: ${Sim.boonEffect(boon.boon, boon.tier).text} for whatever is built here` : '';
+      const near = s.isNearCore(c.x, c.y) && s.cellAt(c.x, c.y) !== 'C' ? ' \u2802 NEXT TO THE CORE: every tower has a unique gift here' : '';
+      return (boon ? ` \u2802 BOON t${boon.tier}: ${Sim.boonEffect(boon.boon, boon.tier).text} for whatever is built here` : '') + near;
     })();
 
     const offer = s.offerDefs();
@@ -469,6 +476,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
               offVein: def.production !== undefined && (def.production.ore ?? 0) > 0 && s.cellAt(infoTower.cellX, infoTower.cellY) !== 'O',
               priority: infoTower.priority,
               facing: def.attack === 'beam' ? infoTower.facing : null,
+              coreBoon: s.isNearCore(infoTower.cellX, infoTower.cellY) ? (def.coreBoon?.text ?? null) : null,
               choiceDesc: hudHover?.kind === 'choose' ? (def.tiers?.[hudHover.tier]?.choices[hudHover.option]?.desc ?? null) : null,
               tiers: (def.tiers ?? []).map((tierDef, ti) => ({
                 choices: tierDef.choices.map((c, ci) => {

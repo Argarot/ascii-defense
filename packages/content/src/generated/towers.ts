@@ -28,6 +28,24 @@ export interface TowerRoster {
        */
       minRange?: number;
       /**
+       * Support towers (session 26, the Bastion): every tower within reach cells gets these multipliers; the strongest of each kind applies when several supporters overlap.
+       */
+      aura?: {
+        damageMul: number;
+        rateMul: number;
+        rangeAdd: number;
+        reach: number;
+        productionMul: number;
+      };
+      /**
+       * The tower's unique gift when it stands next to the Core face (PRD sec 4.5, WBS 2.35): additive mods like a tier, plus rule flags. Every tower has one.
+       */
+      coreBoon?: {
+        text: string;
+        mods?: Mods;
+        flags?: ('noDeadZone' | 'mineAnywhere')[];
+      };
+      /**
        * attack:beam only (session 26, the Laser Lance; WBS 2.34): a corridor width cells wide down the tower's facing for range cells; every body in it takes the damage each fire; holding one lead target heats the beam by rampStep per fire up to rampMax times the damage.
        */
       beam?: {
@@ -123,73 +141,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -202,73 +154,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -289,73 +175,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -368,73 +188,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -455,73 +209,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -534,73 +222,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -628,6 +250,24 @@ export interface TowerRoster {
        */
       minRange?: number;
       /**
+       * Support towers (session 26, the Bastion): every tower within reach cells gets these multipliers; the strongest of each kind applies when several supporters overlap.
+       */
+      aura?: {
+        damageMul: number;
+        rateMul: number;
+        rangeAdd: number;
+        reach: number;
+        productionMul: number;
+      };
+      /**
+       * The tower's unique gift when it stands next to the Core face (PRD sec 4.5, WBS 2.35): additive mods like a tier, plus rule flags. Every tower has one.
+       */
+      coreBoon?: {
+        text: string;
+        mods?: Mods;
+        flags?: ('noDeadZone' | 'mineAnywhere')[];
+      };
+      /**
        * attack:beam only (session 26, the Laser Lance; WBS 2.34): a corridor width cells wide down the tower's facing for range cells; every body in it takes the damage each fire; holding one lead target heats the beam by rampStep per fire up to rampMax times the damage.
        */
       beam?: {
@@ -723,73 +363,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -802,73 +376,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -889,73 +397,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -968,73 +410,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -1055,73 +431,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -1134,73 +444,7 @@ export interface TowerRoster {
                * One written sentence: what this choice DOES, in play terms (WBS 2.10 - every purchase is explained before it is bought). Shown on hover in the inspector.
                */
               desc?: string;
-              mods?: {
-                damage?: number;
-                range?: number;
-                /**
-                 * Additive dead-zone delta in cells (negative shrinks it).
-                 */
-                minRange?: number;
-                fireEveryTicks?: number;
-                explodeRadius?: number;
-                slowTicks?: number;
-                /**
-                 * Additive yield per cycle.
-                 */
-                production?: number;
-                /**
-                 * Additive cycle-length delta (negative = faster).
-                 */
-                productionEveryTicks?: number;
-                /**
-                 * Multiplies damage after every additive mod (Hailstorm's 45%).
-                 */
-                damageMul?: number;
-                /**
-                 * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
-                 */
-                slowMul?: number;
-                /**
-                 * Additional projectiles per volley, each at full stats, sprayed by spread.
-                 */
-                shots?: number;
-                /**
-                 * Cells of random aim scatter per extra shot (combat stream).
-                 */
-                spread?: number;
-                /**
-                 * Additional enemies a shot passes into after its target (Bolt Piercing).
-                 */
-                pierceCount?: number;
-                /**
-                 * Additive bonus to damage dealt to shields (base 1; +1 = double).
-                 */
-                shieldMul?: number;
-                /**
-                 * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
-                 */
-                slowedBonusMul?: number;
-                /**
-                 * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
-                 */
-                freezeEvery?: number;
-                /**
-                 * Chain towers: additional bodies per arc.
-                 */
-                chainCount?: number;
-                /**
-                 * Chain towers: additional cells a hop may span.
-                 */
-                chainReach?: number;
-                /**
-                 * Beam towers: additional cells of corridor width.
-                 */
-                beamWidth?: number;
-                /**
-                 * Beam towers: additional multiplier at full heat.
-                 */
-                beamRampMax?: number;
-              };
+              mods?: Mods;
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
@@ -1211,6 +455,93 @@ export interface TowerRoster {
       ];
     }[]
   ];
+}
+export interface Mods {
+  damage?: number;
+  range?: number;
+  /**
+   * Additive dead-zone delta in cells (negative shrinks it).
+   */
+  minRange?: number;
+  fireEveryTicks?: number;
+  explodeRadius?: number;
+  slowTicks?: number;
+  /**
+   * Additive yield per cycle.
+   */
+  production?: number;
+  /**
+   * Additive cycle-length delta (negative = faster).
+   */
+  productionEveryTicks?: number;
+  /**
+   * Multiplies damage after every additive mod (Hailstorm's 45%).
+   */
+  damageMul?: number;
+  /**
+   * Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.
+   */
+  slowMul?: number;
+  /**
+   * Additional projectiles per volley, each at full stats, sprayed by spread.
+   */
+  shots?: number;
+  /**
+   * Cells of random aim scatter per extra shot (combat stream).
+   */
+  spread?: number;
+  /**
+   * Additional enemies a shot passes into after its target (Bolt Piercing).
+   */
+  pierceCount?: number;
+  /**
+   * Additive bonus to damage dealt to shields (base 1; +1 = double).
+   */
+  shieldMul?: number;
+  /**
+   * Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).
+   */
+  slowedBonusMul?: number;
+  /**
+   * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
+   */
+  freezeEvery?: number;
+  /**
+   * Chain towers: additional bodies per arc.
+   */
+  chainCount?: number;
+  /**
+   * Chain towers: additional cells a hop may span.
+   */
+  chainReach?: number;
+  /**
+   * Beam towers: additional cells of corridor width.
+   */
+  beamWidth?: number;
+  /**
+   * Beam towers: additional multiplier at full heat.
+   */
+  beamRampMax?: number;
+  /**
+   * Support towers: additive to the aura's damage multiplier.
+   */
+  auraDamage?: number;
+  /**
+   * Support towers: additive to the aura's fire-rate multiplier.
+   */
+  auraRate?: number;
+  /**
+   * Support towers: cells of range the aura adds.
+   */
+  auraRange?: number;
+  /**
+   * Support towers: additional cells of reach.
+   */
+  auraReach?: number;
+  /**
+   * Support towers: additive to the aura's production-rate multiplier.
+   */
+  auraProduction?: number;
 }
 
 /** The schema itself, for runtime validation. Same source as the type above. */
@@ -1269,6 +600,65 @@ export const towersSchema = {
             "description": "Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.",
             "type": "number",
             "minimum": 0
+          },
+          "aura": {
+            "description": "Support towers (session 26, the Bastion): every tower within reach cells gets these multipliers; the strongest of each kind applies when several supporters overlap.",
+            "type": "object",
+            "required": [
+              "damageMul",
+              "rateMul",
+              "rangeAdd",
+              "reach",
+              "productionMul"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "damageMul": {
+                "type": "number",
+                "minimum": 0
+              },
+              "rateMul": {
+                "type": "number",
+                "minimum": 0
+              },
+              "rangeAdd": {
+                "type": "number"
+              },
+              "reach": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "productionMul": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "coreBoon": {
+            "description": "The tower's unique gift when it stands next to the Core face (PRD sec 4.5, WBS 2.35): additive mods like a tier, plus rule flags. Every tower has one.",
+            "type": "object",
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "mods": {
+                "$ref": "#/definitions/mods"
+              },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "noDeadZone",
+                    "mineAnywhere"
+                  ]
+                },
+                "uniqueItems": true
+              }
+            }
           },
           "beam": {
             "description": "attack:beam only (session 26, the Laser Lance; WBS 2.34): a corridor width cells wide down the tower's facing for range cells; every body in it takes the damage each fire; holding one lead target heats the beam by rampStep per fire up to rampMax times the damage.",
@@ -1468,90 +858,7 @@ export const towersSchema = {
                         "minLength": 1
                       },
                       "mods": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                          "damage": {
-                            "type": "number"
-                          },
-                          "range": {
-                            "type": "number"
-                          },
-                          "minRange": {
-                            "description": "Additive dead-zone delta in cells (negative shrinks it).",
-                            "type": "number"
-                          },
-                          "fireEveryTicks": {
-                            "type": "number"
-                          },
-                          "explodeRadius": {
-                            "type": "number"
-                          },
-                          "slowTicks": {
-                            "type": "number"
-                          },
-                          "production": {
-                            "description": "Additive yield per cycle.",
-                            "type": "number"
-                          },
-                          "productionEveryTicks": {
-                            "description": "Additive cycle-length delta (negative = faster).",
-                            "type": "number"
-                          },
-                          "damageMul": {
-                            "description": "Multiplies damage after every additive mod (Hailstorm's 45%).",
-                            "type": "number",
-                            "exclusiveMinimum": 0
-                          },
-                          "slowMul": {
-                            "description": "Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.",
-                            "type": "number"
-                          },
-                          "shots": {
-                            "description": "Additional projectiles per volley, each at full stats, sprayed by spread.",
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "spread": {
-                            "description": "Cells of random aim scatter per extra shot (combat stream).",
-                            "type": "number",
-                            "minimum": 0
-                          },
-                          "pierceCount": {
-                            "description": "Additional enemies a shot passes into after its target (Bolt Piercing).",
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "shieldMul": {
-                            "description": "Additive bonus to damage dealt to shields (base 1; +1 = double).",
-                            "type": "number"
-                          },
-                          "slowedBonusMul": {
-                            "description": "Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).",
-                            "type": "number"
-                          },
-                          "freezeEvery": {
-                            "description": "Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.",
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "chainCount": {
-                            "description": "Chain towers: additional bodies per arc.",
-                            "type": "integer"
-                          },
-                          "chainReach": {
-                            "description": "Chain towers: additional cells a hop may span.",
-                            "type": "number"
-                          },
-                          "beamWidth": {
-                            "description": "Beam towers: additional cells of corridor width.",
-                            "type": "number"
-                          },
-                          "beamRampMax": {
-                            "description": "Beam towers: additional multiplier at full heat.",
-                            "type": "number"
-                          }
-                        }
+                        "$ref": "#/definitions/mods"
                       },
                       "unlocks": {
                         "description": "Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).",
@@ -1570,6 +877,114 @@ export const towersSchema = {
               }
             }
           }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "mods": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "damage": {
+          "type": "number"
+        },
+        "range": {
+          "type": "number"
+        },
+        "minRange": {
+          "description": "Additive dead-zone delta in cells (negative shrinks it).",
+          "type": "number"
+        },
+        "fireEveryTicks": {
+          "type": "number"
+        },
+        "explodeRadius": {
+          "type": "number"
+        },
+        "slowTicks": {
+          "type": "number"
+        },
+        "production": {
+          "description": "Additive yield per cycle.",
+          "type": "number"
+        },
+        "productionEveryTicks": {
+          "description": "Additive cycle-length delta (negative = faster).",
+          "type": "number"
+        },
+        "damageMul": {
+          "description": "Multiplies damage after every additive mod (Hailstorm's 45%).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "slowMul": {
+          "description": "Additive delta to the speed multiplier a hit applies (base: the projectile's slowMul, or 1 = no slow). Negative = colder.",
+          "type": "number"
+        },
+        "shots": {
+          "description": "Additional projectiles per volley, each at full stats, sprayed by spread.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "spread": {
+          "description": "Cells of random aim scatter per extra shot (combat stream).",
+          "type": "number",
+          "minimum": 0
+        },
+        "pierceCount": {
+          "description": "Additional enemies a shot passes into after its target (Bolt Piercing).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "shieldMul": {
+          "description": "Additive bonus to damage dealt to shields (base 1; +1 = double).",
+          "type": "number"
+        },
+        "slowedBonusMul": {
+          "description": "Additive bonus to this tower's damage against already-slowed enemies (base 1; +0.5 = +50%).",
+          "type": "number"
+        },
+        "freezeEvery": {
+          "description": "Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "chainCount": {
+          "description": "Chain towers: additional bodies per arc.",
+          "type": "integer"
+        },
+        "chainReach": {
+          "description": "Chain towers: additional cells a hop may span.",
+          "type": "number"
+        },
+        "beamWidth": {
+          "description": "Beam towers: additional cells of corridor width.",
+          "type": "number"
+        },
+        "beamRampMax": {
+          "description": "Beam towers: additional multiplier at full heat.",
+          "type": "number"
+        },
+        "auraDamage": {
+          "description": "Support towers: additive to the aura's damage multiplier.",
+          "type": "number"
+        },
+        "auraRate": {
+          "description": "Support towers: additive to the aura's fire-rate multiplier.",
+          "type": "number"
+        },
+        "auraRange": {
+          "description": "Support towers: cells of range the aura adds.",
+          "type": "number"
+        },
+        "auraReach": {
+          "description": "Support towers: additional cells of reach.",
+          "type": "integer"
+        },
+        "auraProduction": {
+          "description": "Support towers: additive to the aura's production-rate multiplier.",
+          "type": "number"
         }
       }
     }
