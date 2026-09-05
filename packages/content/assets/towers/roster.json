@@ -78,10 +78,10 @@
             {
               "name": "Hailstorm",
               "cost": 120,
-              "desc": "Three homing shots per volley at 60% damage each, each at a different enemy when there is one. More total damage, across the crowd.",
+              "desc": "Three homing shots per volley at full damage, each at a different enemy when there is one - but the reach drops to close quarters. Point-blank saturation: the answer to a crowd at the choke.",
               "mods": {
                 "shots": 2,
-                "damageMul": 0.6,
+                "range": -2.5,
                 "spread": 0.6
               }
             }

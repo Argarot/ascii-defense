@@ -33,7 +33,7 @@ The two ground cells touching the Core face (and the border cells beside it) are
 | T2 | **Piercing** | 55 | Each shot passes through its target into up to 2 more enemies behind it. The answer to a column. | pierceCount +2 |
 | T2 | **Shatter** | 55 | Double damage to shields. The answer to shellbacks. | shieldMul +1 |
 | T3 | **Railbore** | 120 | One massive round: +22 damage, and armour does nothing against it. The answer to brutes. | damage +22, unlocks ignoreArmor |
-| T3 | **Hailstorm** | 120 | Three homing shots per volley at 60% damage each, each at a different enemy when there is one. More total damage, across the crowd. | shots +2, damageMul +0.6, spread +0.6 |
+| T3 | **Hailstorm** | 120 | Three homing shots per volley at full damage, each at a different enemy when there is one - but the reach drops to close quarters. Point-blank saturation: the answer to a crowd at the choke. | shots +2, range -2.5, spread +0.6 |
 
 #### Mortar - the tree
 
