@@ -165,8 +165,8 @@ export interface RenderState {
   /** The sim's route graph (FlowField.allowed): legal steps per cell. Kerbs
    *  are drawn from ITS verdict, so what looks connected IS connected. */
   routeAllowed?: Uint8Array;
-  /** Boon cells (PRD sec 4.7) - corner marks = tier, visible under towers. */
-  boons?: readonly { x: number; y: number; tier?: number }[];
+  /** Boon cells (PRD sec 4.7) - corner marks = tier, visible under towers; the type picks the colour (4.29). */
+  boons?: readonly { x: number; y: number; tier?: number; boon?: 'range' | 'damage' | 'rate' }[];
   /** The Core has fallen; draw the end screen over everything. */
   gameOver?: boolean;
   /** Animation phase 0..1 for breathing UI (telegraphs). */
@@ -457,16 +457,23 @@ export class BoardView {
       term.put(gx, gy, look.glyph, role(look.roleName));
     }
 
-    // Boon ground: corner tint that stays visible when a tower stands on
-    // it (bg-only writes never disturb the tower's glyphs) - the telegraph
-    // Daniil specified in PRD sec 4.7.
+    // Boon ground (PRD sec 4.7, 4.29 - Daniil): EACH BOON TYPE WEARS ITS OWN
+    // COLOUR - a range platform, a heat sink and a power tap are three
+    // backgrounds, not one. An EMPTY boon cell also shows corner GLYPHS so
+    // the eye finds the cell it belongs to; once a tower stands on it only
+    // the background survives (bg-only writes never disturb the tower's
+    // glyphs). One corner per tier (playtest 5, item 8): glanceable rarity.
+    const towerCells = new Set((state.towers ?? []).map((t) => t.y * this.cellsW + t.x));
     for (const b of state.boons ?? []) {
       const gx = b.x * CELL_W;
       const gy = offsetY + b.y * CELL_H;
-      const corners = [[0, 0], [CELL_W - 1, 0], [0, CELL_H - 1], [CELL_W - 1, CELL_H - 1]] as const;
-      // One corner per tier (playtest 5, item 8): glanceable rarity.
+      const colour = role(`boon.${b.boon ?? 'range'}`);
+      const corners = [[0, 0, '┌'], [CELL_W - 1, 0, '┐'], [0, CELL_H - 1, '└'], [CELL_W - 1, CELL_H - 1, '┘']] as const;
+      const built = towerCells.has(b.y * this.cellsW + b.x);
       for (let i = 0; i < Math.min(4, b.tier ?? 1); i++) {
-        term.tint(gx + corners[i][0], gy + corners[i][1], '#2b8a75');
+        const [cx, cy, glyph] = corners[i];
+        if (built || !term.has(glyph)) term.tint(gx + cx, gy + cy, colour);
+        else term.put(gx + cx, gy + cy, glyph, role('ui.text'), colour);
       }
     }
 

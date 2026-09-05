@@ -351,7 +351,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         selected,
         routeAllowed: s.flow.allowed,
         caches,
-        boons: [...(map.boons ?? []), ...s.extraBoons].map((b) => ({ x: b.x, y: b.y, tier: b.tier })),
+        boons: [...(map.boons ?? []), ...s.extraBoons].map((b) => ({ x: b.x, y: b.y, tier: b.tier, boon: b.boon })),
         oreRichness,
         enemies,
         towers,

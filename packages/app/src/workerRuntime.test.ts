@@ -101,7 +101,7 @@ describe('the lifecycle contract: init yields ready or genError, never silence',
     rt.handle({ t: 'frame', ui: UI });
     const snap = last('snapshot')!.s;
     expect(snap.seed).toBe(firstSeed);
-    expect(snap.board.boons).toEqual(firstBoons.map((b) => ({ x: b.x, y: b.y, tier: b.tier })));
+    expect(snap.board.boons).toEqual(firstBoons.map((b) => ({ x: b.x, y: b.y, tier: b.tier, boon: b.boon })));
   });
 
   it('DROPPED SPECIALS: an impossible loadout is refused with a sentence, never silently', () => {
