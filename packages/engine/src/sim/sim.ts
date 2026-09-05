@@ -134,6 +134,8 @@ export function waveCount(d: DifficultySpec, wave: number): number {
  */
 export type SimEvent =
   | { kind: 'pulse'; x: number; y: number; r: number }
+  | { kind: 'strike'; x: number; y: number; r: number } // the orbital: a column from the sky, then a blast of radius r (session 25)
+  | { kind: 'freeze'; ticks: number } // every enemy held for this long (Stasis, Flashbang)
   | { kind: 'impact'; x: number; y: number; r: number } // r 0 = plain hit, >0 = blast radius
   | { kind: 'death'; x: number; y: number }
   | { kind: 'breach'; x: number; y: number; dmg: number }
@@ -210,6 +212,8 @@ export interface Tower {
   priority: Priority;
   /** Committed choice per tier; -1 = not yet chosen (either/or tree). */
   choices: [number, number, number];
+  /** Tick of the last shot or pulse; -1 before the first. The view's attack animations key off it (session 25). Never hashed. */
+  lastFire: number;
 }
 
 export const SELL_REFUND = 0.7;
@@ -490,7 +494,7 @@ export class Sim {
     this.scrap -= def.cost;
     // Producers earn their first yield after one full cycle, not on placement.
     const prodCooldown = def.production ? effectiveStats(def, [-1, -1, -1]).productionEveryTicks : 0;
-    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1] });
+    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1 });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
     this.emit({ kind: 'build', x, y });
     this.inputs.push({ tick: this.tickCount, a: { t: 'build', x, y, defId } });
@@ -564,6 +568,16 @@ export class Sim {
   }
 
   /** Tier fold, then the relic fold on top - the ONE place relics touch stats. */
+  /**
+   * Where a tower is in its attack cycle, for the view's animations (session
+   * 25): cooldown01 runs 1 (just fired) to 0 (ready); sinceFire is ticks
+   * since the last shot, -1 before the first.
+   */
+  firePhase(t: Tower): { cooldown01: number; sinceFire: number } {
+    const every = Math.max(1, this.stats(t).fireEveryTicks);
+    return { cooldown01: Math.max(0, Math.min(1, t.cooldown / every)), sinceFire: t.lastFire < 0 ? -1 : this.tickCount - t.lastFire };
+  }
+
   stats(t: Tower): EffectiveStats {
     return this.foldStats(t);
   }
@@ -651,9 +665,12 @@ export class Sim {
         const dy = this.posY[i] - cy;
         if (Math.sqrt(dx * dx + dy * dy) <= r) this.applyDamage(i, e.orbitalDamage, 0, 0, -1);
       }
-      this.emit({ kind: 'pulse', x: cx, y: cy, r });
+      this.emit({ kind: 'strike', x: cx, y: cy, r });
     }
-    if (e.freezeTicks !== undefined) this.freezeUntil = this.tickCount + e.freezeTicks;
+    if (e.freezeTicks !== undefined) {
+      this.freezeUntil = this.tickCount + e.freezeTicks;
+      this.emit({ kind: 'freeze', ticks: e.freezeTicks });
+    }
     if (e.productionMul !== undefined) {
       this.prodBoostUntil = this.tickCount + (e.boostTicks ?? 0);
       this.prodBoostMul = e.productionMul;
@@ -945,7 +962,10 @@ export class Sim {
     const hi = this.heldRelics.findIndex((di) => defs[di].id === relicId && defs[di].kind === 'consumable');
     if (hi === -1) return false;
     const e = defs[this.heldRelics[hi]].effects ?? {};
-    if (e.freezeTicks !== undefined) this.freezeUntil = this.tickCount + e.freezeTicks;
+    if (e.freezeTicks !== undefined) {
+      this.freezeUntil = this.tickCount + e.freezeTicks;
+      this.emit({ kind: 'freeze', ticks: e.freezeTicks });
+    }
     if (e.productionMul !== undefined) {
       this.prodBoostUntil = this.tickCount + (e.boostTicks ?? 0);
       this.prodBoostMul = e.productionMul;
@@ -1402,12 +1422,14 @@ export class Sim {
         const any = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, eff.range, 'closest');
         if (any === -1) continue;
         tower.cooldown = eff.fireEveryTicks;
+        tower.lastFire = this.tickCount;
         this.emitPulse(ti, tower, eff);
         continue;
       }
       const target = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, eff.range, tower.priority, eff.minRange);
       if (target === -1) continue;
       tower.cooldown = eff.fireEveryTicks;
+      tower.lastFire = this.tickCount;
       this.fire(ti, tower, eff, target);
     }
   }

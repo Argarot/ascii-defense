@@ -18,7 +18,7 @@ import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, hash2 } from './style';
 
 interface Effect {
-  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust';
+  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'beam' | 'frost';
   x: number; // continuous cell units, same space the sim speaks
   y: number;
   r: number;
@@ -36,7 +36,11 @@ const TTL: Record<Effect['kind'], number> = {
   death: 6,
   breach: 9,
   dust: 8,
+  beam: 8,
+  frost: 40, // overridden per event by the freeze's own length
 };
+/** The beam's fall before its blast opens, in ticks. */
+const BEAM_FALL = 3;
 
 /** Linear mix of two #rrggbb colours - effects fade by colour, not alpha. */
 function mixHex(h1: string, h2: string, t01: number): string {
@@ -69,6 +73,15 @@ export class EffectsLayer {
       switch (e.kind) {
         case 'pulse':
           this.add({ kind: 'pulse', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.pulse });
+          break;
+        case 'strike':
+          // The orbital (6.10): a column from the top edge to the cell, then
+          // the blast of the kill radius opening where it lands.
+          this.add({ kind: 'beam', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.beam });
+          this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick + BEAM_FALL, ttl: TTL.blast });
+          break;
+        case 'freeze':
+          this.add({ kind: 'frost', x: 0, y: 0, r: 0, start: e.tick, ttl: Math.max(1, e.ticks) });
           break;
         case 'impact':
           if (e.r > 0) this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.blast });
@@ -118,6 +131,8 @@ export class EffectsLayer {
         case 'death': this.drawDeath(term, e, age01, still); break;
         case 'breach': this.drawBreach(term, e, age01, still); break;
         case 'dust': this.drawDust(term, e, age01, still); break;
+        case 'beam': this.drawBeam(term, e, age01, still); break;
+        case 'frost': this.drawFrost(term, e, age01, still); break;
       }
     }
   }
@@ -219,6 +234,44 @@ export class EffectsLayer {
   }
 
   /** Construction dust: a sparse settle around the cell. Skipped when still - the tower appearing is its own feedback. */
+  /**
+   * The orbital's column: a line of light from the top edge down to the
+   * cell, three glyphs wide at its brightest, thinning and cooling as the
+   * blast takes over. Reduced motion: a single static column.
+   */
+  private drawBeam(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    const gx = Math.floor(e.x * CELL_W);
+    const gyEnd = Math.floor(e.y * CELL_H);
+    const bright = still ? 0.5 : 1 - age01;
+    const fg = mixHex(role('fx.smoke'), role('fx.flash'), bright);
+    const wide = !still && age01 < 0.45;
+    for (let gy = 0; gy <= gyEnd; gy++) {
+      term.put(gx, gy, age01 < 0.7 || still ? '|' : ':', fg);
+      if (wide) {
+        term.put(gx - 1, gy, hash2(gx - 1, gy, 7) < 0.6 ? '|' : ':', mixHex(role('fx.smoke'), role('fx.flash'), bright * 0.6));
+        term.put(gx + 1, gy, hash2(gx + 1, gy, 7) < 0.6 ? '|' : ':', mixHex(role('fx.smoke'), role('fx.flash'), bright * 0.6));
+      }
+    }
+  }
+
+  /**
+   * A freeze (Stasis, Flashbang): the board's edges frost over for as long
+   * as the enemies are held - a cold frame two glyphs deep, with hashed
+   * sparkles that thin out as the effect ends. Cheap: the border only.
+   */
+  private drawFrost(term: TermSurface, _e: Effect, age01: number, still: boolean): void {
+    const ice = role('tower.frost.ice_edge');
+    const depth = 2;
+    const fade = still ? 1 : 1 - age01;
+    for (let gy = 0; gy < term.rows; gy++)
+      for (let gx = 0; gx < term.cols; gx++) {
+        const d = Math.min(gx, gy, term.cols - 1 - gx, term.rows - 1 - gy);
+        if (d >= depth) continue;
+        term.shade(gx, gy, 1.3 + 0.5 * fade, 0.1);
+        if (!still && hash2(gx, gy, 19) < 0.08 * fade) term.put(gx, gy, '*', ice);
+      }
+  }
+
   private drawDust(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     if (still) return;
     const gx0 = Math.floor(e.x) * CELL_W;

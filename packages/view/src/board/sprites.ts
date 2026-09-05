@@ -8,7 +8,7 @@ import type { Sprite } from '@ascii-defense/content';
 import { role } from '../palette';
 import { CELL_H, CELL_W } from './style';
 
-export type SpriteFrame = { art: readonly string[]; ink: readonly string[]; bgInk?: readonly string[] };
+export type SpriteFrame = { art: readonly string[]; ink: readonly string[]; bgInk?: readonly string[]; ms?: number };
 
 export interface DrawSpriteOptions {
   /** Paint every glyph in this role instead of the sprite's own inks (a greyed button). */
@@ -21,6 +21,8 @@ export interface DrawSpriteOptions {
    * still paints.
    */
   transparent?: boolean;
+  /** Draw at most this many rows (a recoil that must not spill into the cell below). */
+  clipRows?: number;
 }
 
 /**
@@ -32,7 +34,7 @@ export type SpriteSurface = Pick<TermSurface, 'put'> & { has?: (ch: string) => b
 
 export function drawSpriteFrame(term: SpriteSurface, sp: Sprite, frame: SpriteFrame, gx0: number, gy0: number, opts: DrawSpriteOptions = {}): void {
   const ground = role(opts.groundRole ?? 'tower.ground');
-  const rows = Math.min(CELL_H, frame.art.length);
+  const rows = Math.min(opts.clipRows ?? CELL_H, CELL_H, frame.art.length);
   for (let r = 0; r < rows; r++) {
     const artRow = [...frame.art[r]];
     const inkRow = [...frame.ink[r]];
@@ -49,6 +51,75 @@ export function drawSpriteFrame(term: SpriteSurface, sp: Sprite, frame: SpriteFr
       term.put(gx0 + c, gy0 + r, chr, opts.flatFg ? role(opts.flatFg) : role(rn), bg);
     }
   }
+}
+
+/** World-clock milliseconds per sim tick: the sequences' time base. */
+export const TICK_MS = 50;
+
+export interface AttackLook {
+  frame: SpriteFrame;
+  /** Paint every glyph in this role (a flash). */
+  flatFg?: string;
+  /** Draw the frame this many rows lower, clipped to the cell (a recoil). */
+  dy?: number;
+  /** One extra glyph over the cell (smoke, a charge spark). */
+  overlay?: { x: number; y: number; ch: string; role: string };
+}
+
+/** Sum of a sequence's frame durations in ms. */
+function seqMs(sp: Sprite, seq: readonly SpriteFrame[]): number {
+  return seq.reduce((n, f) => n + (f.ms ?? sp.frameMs ?? 600), 0);
+}
+/** The frame of a sequence at `ageMs`, or null once it has run out. */
+function seqFrame(sp: Sprite, seq: readonly SpriteFrame[], ageMs: number): SpriteFrame | null {
+  let t = 0;
+  for (const f of seq) {
+    t += f.ms ?? sp.frameMs ?? 600;
+    if (ageMs < t) return f;
+  }
+  return null;
+}
+
+/** The share of the cooldown during which a tower reads as CHARGING. */
+export const CHARGE_SHARE = 0.25;
+/** The derived placeholder's timings (ms): flash, recoil, then smoke. */
+const DERIVED_FIRE_MS = [60, 100] as const;
+const DERIVED_COOL_MS = 300;
+
+/**
+ * What a tower looks like at this moment of its attack cycle (session 25;
+ * ASSETS.md sec 3): its authored `fire`, `cool` and `charge` sequences when
+ * the state has them, else a placeholder DERIVED from the idle frame - a
+ * flash, a one-row recoil, a wisp of smoke, a charge spark - so the
+ * mechanism is visible before the art agent's sequences arrive. Null =
+ * idle. `sinceFire` is in ticks (-1 before the first shot); `cooldown01`
+ * runs 1 (just fired) to 0 (ready).
+ */
+export function attackLook(sp: Sprite, st: Sprite['states'][string], idle: SpriteFrame, sinceFire: number, cooldown01: number): AttackLook | null {
+  if (sinceFire < 0) return null;
+  const seqs = st.sequences ?? {};
+  const age = sinceFire * TICK_MS;
+  // FIRE, then COOL, by age since the shot.
+  if (seqs.fire) {
+    const f = seqFrame(sp, seqs.fire, age);
+    if (f) return { frame: f };
+    if (seqs.cool) {
+      const c = seqFrame(sp, seqs.cool, age - seqMs(sp, seqs.fire));
+      if (c) return { frame: c };
+    }
+  } else {
+    if (age < DERIVED_FIRE_MS[0]) return { frame: idle, flatFg: 'fx.flash' };
+    if (age < DERIVED_FIRE_MS[0] + DERIVED_FIRE_MS[1]) return { frame: idle, dy: 1 };
+    const coolAge = age - DERIVED_FIRE_MS[0] - DERIVED_FIRE_MS[1];
+    if (coolAge < DERIVED_COOL_MS) return { frame: idle, overlay: { x: CELL_W - 1, y: coolAge < DERIVED_COOL_MS / 2 ? 0 : -1, ch: '~', role: 'fx.smoke' } };
+  }
+  // CHARGE: the last share of the cooldown, while the tower is engaged.
+  if (cooldown01 > 0 && cooldown01 <= CHARGE_SHARE) {
+    const p = 1 - cooldown01 / CHARGE_SHARE; // 0 at the start of the charge, 1 at ready
+    if (seqs.charge) return { frame: seqs.charge[Math.min(seqs.charge.length - 1, Math.floor(p * seqs.charge.length))] };
+    return { frame: idle, overlay: { x: 0, y: 0, ch: Math.floor(age / 100) % 2 === 0 ? '+' : '*', role: 'fx.ember' } };
+  }
+  return null;
 }
 
 /** The idle frame of a state at a wall-clock time, phase-offset by `salt` so a crowd is out of step. */
