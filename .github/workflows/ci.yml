@@ -58,6 +58,10 @@ jobs:
       - name: Catalogue drift check
         run: node tools/codex.mjs --check
 
+      # The docs reference each other; the seams that drifted before are held (tools/doc-drift.mjs).
+      - name: Doc drift check
+        run: node tools/doc-drift.mjs
+
       # Generated types must match the schemas in the same commit. Regenerate
       # and fail on any diff - committed types can never drift.
       - name: Content type drift check

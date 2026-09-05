@@ -18,6 +18,9 @@ files — that is how drift starts.
   right after PR creation means *pending*, not failed — wait and re-watch).
 - Full gate locally: `npm run typecheck && npm run lint && npm test &&
   npm run build`.
+- **The branch check is a gate, not a print**: `test "$(git branch
+  --show-current)" != main || exit 1` before any commit (a failed compound
+  command stranded a wrap commit on local main on 2026-09-06).
 - Live deployment sanity: load the site cache-busted (`?cb=<sha>`), confirm
   the new bundle name, and exercise one shipped feature through the `__ad`
   debug handle. Screenshots fail in the hidden pane; verify UI claims with
@@ -46,6 +49,17 @@ earlier ones:
 6. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings
    with tags (`[process] [comms] [claude-weakness] [claude-strength]
    [daniil] [tooling]`). Corrections Daniil had to repeat get an entry.
+7. **`node tools/doc-drift.mjs`** (Daniil, 2026-09-06: "make sure the docs
+   don't drift from each other, and that the repo description is
+   up-to-date") — HANDOVER's proposed session names the ledger's NEXT row
+   (by row number and title), README's newest session paragraph is the
+   ledger's newest DONE row, README's top paragraph describes the map the
+   game makes, ASSETS names every sprite kind, the catalogue and codex twin
+   are current, and the **GitHub description and homepage** match (`gh repo
+   edit --description … --homepage …` when they do not). CI runs the same
+   check minus the GitHub half. A drift it cannot express (a number quoted
+   in two files, a rejected design still described as live) is still yours
+   to read for: grep the day's changed nouns across docs/ before shipping.
 
 ## 3. Invariant hygiene
 
