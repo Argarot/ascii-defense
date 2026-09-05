@@ -205,6 +205,8 @@ every small board**, and three shipped specials need up to 46 rerolls at
 - **Every tile counts now; nearly every tile carries road.** The tree grows
   from the Core until it covers about nine slots in ten; the one or two it
   leaves out are the build islands and the ore. Void all but disappears.
+- **The Core is a face at the east edge** (§4.5), fed by one root tile on
+  the east border; entries only on the north, west and south borders.
 - **Specials are placed first, as fixed nodes.** Their arms are edges the
   tree must use; the tree grows through them. Anchorage stops being a
   search that can fail.
@@ -291,6 +293,26 @@ the generator decides how much ground exists and where, so "tens of towers,
 not thousands" is a generation target, tuned as data.
 
 ### 4.5 The Core
+
+**The Core sits at the east edge, next to the HUD** *(Daniil, 2026-09-05;
+session 24)*. It is no longer a tile in the middle of the board. The board
+gains one cell column past its east border and a three-cell **Core face**
+stands in it where the road arrives; the rest of that column is the wall the
+road ends at. The road tree roots at the tile in front of the face, so the
+Core has **exactly one entrance**; enemies never spawn on that side; every
+lane shares its last stretch. What this buys: the tile the Core used to
+occupy and the ring around it go back to the board; the road's shape is
+simpler to balance; the actives the Core carries have a natural home in the
+strip under the board, right beside the face; and the Core-adjacent range
+relic drops from a ring of twelve cells to at most four.
+
+**Cells next to the Core are meant to be precious** *(Daniil, 2026-09-05 —
+design intent, details in a later session; WBS 2.35)*. The rules and the
+towers will be designed so that the few cells beside the face are the most
+valuable ground on the map, and **every tower gets a unique boon when placed
+next to the Core** — not the same multiplier for all. Today's rule (the
+Loadbearing relic's triple range) is the placeholder for that layer.
+
 
 The Core is a special tile placed near the board center; its center cells are
 Core cells; roads attach to its connectors. Mechanically:

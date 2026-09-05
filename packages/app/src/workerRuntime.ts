@@ -30,7 +30,7 @@ import {
   contentHashOf,
   createRng,
   generateMap,
-  resolveCells,
+  mapCells,
   validateTile,
   type EnemyDef,
   type GeneratedMap,
@@ -111,6 +111,10 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           post({ t: 'genError', message: 'this save predates the generator rebuild - it cannot continue' });
           return;
         }
+        if (!resume.map.coreFace) {
+          post({ t: 'genError', message: 'this save predates the Core at the edge - it cannot continue' });
+          return;
+        }
         nextMap = resume.map;
       } else {
         // EVERY chosen id is a special to guarantee - minted or shipped.
@@ -137,9 +141,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       }
 
       const nextSim = new Sim(resume ? resume.seed : nextSeed, {
-        cells: resolveCells(nextMap.board, nextLib),
-        cellsW: MAP_X * TILE_SIZE,
-        cellsH: MAP_Y * TILE_SIZE,
+        cells: mapCells(nextMap, nextLib),
+        cellsW: nextMap.cellsW,
+        cellsH: nextMap.cellsH,
         map: nextMap,
         enemyDefs,
         towerDefs,

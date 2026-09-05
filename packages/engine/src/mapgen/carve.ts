@@ -31,7 +31,6 @@ export interface RoadSpecialSpec {
 /** What the carve needs to know about the tile pool: shape availability. */
 export interface CarveIndex {
   hasRoad(partitionKey: string): boolean;
-  hasCore(sigKey: string): boolean;
 }
 
 export interface CarveOptions {
@@ -44,7 +43,8 @@ export interface CarveOptions {
 }
 
 export interface RoadPlan {
-  coreK: number;
+  /** The ROOT slot: on the east border, its east port is the Core's one entrance (session 24). */
+  rootK: number;
   /** Primary road segment per slot: the edges it connects. */
   roadEdges: Map<number, Set<Edge>>;
   /** Tunnel second segments: two roads in one slot, never merging. */
@@ -84,10 +84,17 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
 
   const slotIdx = (x: number, y: number): number => y * width + x;
 
-  // ---- 1. the Core slot, near the center with a little seeded jitter -------
-  const coreX = Math.floor(width / 2) + (width > 4 ? rng.int(-1, 1) : 0);
-  const coreY = Math.floor(height / 2) + (height > 4 ? rng.int(-1, 1) : 0);
-  const coreK = slotIdx(coreX, coreY);
+  // ---- 1. the ROOT slot: on the east border, facing the Core ---------------
+  // The Core is not a tile any more (session 24, Daniil): it is a three-cell
+  // FACE in an extra cell column past the east border, and the road reaches
+  // it through exactly one port - the root slot's east edge. The root's row
+  // is drawn from the middle third of the board so the tree has room on
+  // both sides; its east port is fixed before any walk moves.
+  const rootX = width - 1;
+  const rootLo = Math.floor(height / 3);
+  const rootHi = Math.max(rootLo, Math.ceil((2 * height) / 3) - 1);
+  const rootY = rootLo === rootHi ? rootLo : rng.int(rootLo, rootHi);
+  const coreK = slotIdx(rootX, rootY);
 
   const roadEdges = new Map<number, Set<Edge>>();
   const secondSegment = new Map<number, Set<Edge>>();
@@ -101,6 +108,7 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
     set.add(e);
     roadEdges.set(k, set);
   };
+  addEdge(coreK, 'e');
 
   /**
    * Availability gate for growing an EXISTING slot by one edge (tree branch
@@ -113,7 +121,7 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
     for (const x of extra) grown.add(x);
     grown.add(e);
     if (grown.size > 4) return false;
-    return k === coreK ? index.hasCore(sigKey(grown)) : index.hasRoad(partitionKey([[...grown]]));
+    return index.hasRoad(partitionKey([[...grown]]));
   };
 
   function edgeCell(sx: number, sy: number, e: Edge): CellRef {
@@ -145,7 +153,8 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
       let x = startK % width;
       let y = Math.floor(startK / width);
       let steps = 0;
-      let cameFrom: Edge | null = null;
+      // The root's east side IS the Core: the first walk never turns that way.
+      let cameFrom: Edge | null = startK === coreK ? 'e' : null;
       const newSlots: number[] = [];
       const newEdges: [number, Edge][] = [];
       const newTunnels: [number, Set<Edge>][] = [];
@@ -165,7 +174,8 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
             const ny = y + dy;
             const exits = nx < 0 || ny < 0 || nx >= width || ny >= height;
             if (exits) {
-              if (wandering) continue;
+              // The east border is the Core's side: no entry ever spawns there.
+              if (wandering || nx >= width) continue;
               legal.push({ e, exits });
               continue;
             }
@@ -186,6 +196,7 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
                 const [ox, oy] = EDGE_DELTA[out];
                 const lx = nx + ox;
                 const ly = ny + oy;
+                if (lx >= width) continue; // never out through the Core's side
                 const landExit = lx < 0 || ly < 0 || lx >= width || ly >= height;
                 if (!landExit) {
                   const lk = slotIdx(lx, ly);
@@ -408,12 +419,13 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
             const nx = x + EDGE_DELTA[e][0];
             const ny = y + EDGE_DELTA[e][1];
             if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
-              if (!wandering) exits.push(e);
+              if (!wandering && nx < width) exits.push(e); // never the Core's side
               continue;
             }
             const nk = slotIdx(nx, ny);
             if (local.includes(nk) || nk === ak || roadSlots.has(nk) || forced.has(nk) || armEdges.has(nk)) continue;
-            moves.push({ e, d: Math.min(nx, ny, width - 1 - nx, height - 1 - ny) });
+            // Distance to a border an entry may use: north, south or west.
+            moves.push({ e, d: Math.min(nx, ny, height - 1 - ny) });
           }
           if (exits.length > 0) {
             const e = exits.length === 1 ? exits[0] : exits[rng.int(0, exits.length - 1)];
@@ -478,7 +490,7 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
   }
 
   return {
-    coreK,
+    rootK: coreK,
     roadEdges,
     secondSegment,
     forced,

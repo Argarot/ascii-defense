@@ -2,61 +2,6 @@
   "$schema": "../../schema/tiles.schema.json",
   "tiles": [
     {
-      "id": "core_end",
-      "name": "the Core (terminus)",
-      "cells": [
-        "GGGGG",
-        "GCCCG",
-        "GCCC-",
-        "GCCCG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "core_l",
-      "name": "the Core (corner)",
-      "cells": [
-        "GGGGG",
-        "GCCCG",
-        "GCCC-",
-        "GCCCG",
-        "GG|GG"
-      ]
-    },
-    {
-      "id": "core_i",
-      "name": "the Core (through)",
-      "cells": [
-        "GGGGG",
-        "GCCCG",
-        "-CCC-",
-        "GCCCG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "core_t",
-      "name": "the Core (tri)",
-      "cells": [
-        "GG|GG",
-        "GCCCG",
-        "-CCC-",
-        "GCCCG",
-        "GGGGG"
-      ]
-    },
-    {
-      "id": "core_x",
-      "name": "the Core (nexus)",
-      "cells": [
-        "GG|GG",
-        "GCCCG",
-        "-CCC-",
-        "GCCCG",
-        "GG|GG"
-      ]
-    },
-    {
       "id": "straight",
       "name": "causeway",
       "cells": [

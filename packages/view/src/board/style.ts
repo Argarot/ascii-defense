@@ -236,6 +236,12 @@ const WATER_POOL = APPEARANCE.waterPool;
  * rather than a cut. Procedural and safe by construction: border cells
  * never carry road (PRD sec 4.2).
  */
+/** The Core strip's empty cells (session 24): a flat dark wall, nothing to read. */
+export function drawStripCell(term: TermSurface, gx0: number, gy0: number): void {
+  const bg = role('terrain.rock.dark');
+  for (let y = 0; y < CELL_H; y++) for (let x = 0; x < CELL_W; x++) term.put(gx0 + x, gy0 + y, ' ', bg, bg);
+}
+
 export function drawVoidCell(term: TermSurface, gx0: number, gy0: number, drift = 0, hoverBg?: string, shore = 0): void {
   const dark = role('terrain.water.dark');
   const mid = role('terrain.water.mid');

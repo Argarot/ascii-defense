@@ -19,7 +19,7 @@ import {
   createRng,
   generateMap,
   isRoad,
-  resolveCells,
+  mapCells,
   waveCount,
   waveHpScale,
   TILE_SIZE,
@@ -86,13 +86,13 @@ export function demoMap(seed: number, lib: TileLibrary, poolSize: number, board 
   // Since D24 the app's board is viewport-derived (7x5 at 1920x1080); the
   // default here is the old 12x7 so existing sweeps keep their baseline.
   const map = generateMap(knobs, lib, { width: board.w, height: board.h, entries, targetPathCells, relicPoolSize: poolSize });
-  return { map, cellsW: board.w * TILE_SIZE, cellsH: board.h * TILE_SIZE, cells: resolveCells(map.board, lib) };
+  return { map, cellsW: map.cellsW, cellsH: map.cellsH, cells: mapCells(map, lib) };
 }
 
 function makeWorld(spec: LabSpec, content: LabContent) {
   if (spec.map === 'demo') return demoMap(spec.seed, content.lib, content.relicDefs.length);
   const map = generateMap(createRng(spec.seed).stream('map'), content.lib, { ...spec.map, relicPoolSize: content.relicDefs.length });
-  return { map, cellsW: spec.map.width * TILE_SIZE, cellsH: spec.map.height * TILE_SIZE, cells: resolveCells(map.board, content.lib) };
+  return { map, cellsW: map.cellsW, cellsH: map.cellsH, cells: mapCells(map, content.lib) };
 }
 
 /** Road cells within `range` of cell (x, y), measured centre to centre.

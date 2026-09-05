@@ -8,10 +8,10 @@
  * ids mirror the spec so a failure names the law it breaks.
  */
 import { TILE_SIZE, tilePartition, type Edge } from '../tiles/tile';
-import { TileLibrary, resolveCells, slotAt } from '../tiles/board';
+import { TileLibrary, slotAt } from '../tiles/board';
 import { isRoad, isRouteCell, roadsConnect, strandPorts, type CellType } from '../grid/cells';
 import { DIRS, computeFlowField, stepAllowed, strandStep, type FlowField } from '../sim/flow';
-import { ORE_REACH, VOID_SHARE_CAP, type GeneratedMap } from './mapgen';
+import { CORE_STRIP, ORE_REACH, VOID_SHARE_CAP, mapCells, type GeneratedMap } from './mapgen';
 
 export interface VerifyIssue {
   /** Spec rule id, e.g. 'tier1/road-tree'. */
@@ -41,26 +41,43 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
   };
   const { board } = map;
   const { width, height } = board;
-  const W = width * TILE_SIZE;
-  const H = height * TILE_SIZE;
-  const cells = resolveCells(board, lib);
+  const W = map.cellsW;
+  const H = map.cellsH;
+  const tileW = width * TILE_SIZE;
+  const cells = mapCells(map, lib);
   const cellAt = (x: number, y: number): CellType | null =>
     x < 0 || y < 0 || x >= W || y >= H ? null : cells[y * W + x];
 
-  // ---- Tier 0: one Core near center --------------------------------------
-  if (cellAt(map.core.x, map.core.y) !== 'C') {
-    bad('tier0/core', `core cell (${map.core.x},${map.core.y}) is '${cellAt(map.core.x, map.core.y)}', not 'C'`);
+  // ---- Tier 0: the Core is a FACE past the east border, fed once ----------
+  // Session 24 (Daniil): no tile carries the Core. Three 'C' cells stand in
+  // the strip column, stacked, centred on `core`; exactly one road cell
+  // touches them - the root's east port - and every other Core-adjacent
+  // cell is nothing at all.
+  if (W !== tileW + CORE_STRIP || H !== height * TILE_SIZE) {
+    bad('tier0/cell-grid', `cell grid ${W}x${H} is not ${tileW + CORE_STRIP}x${height * TILE_SIZE}`);
   }
-  const coreSlotX = Math.floor(map.core.x / TILE_SIZE);
-  const coreSlotY = Math.floor(map.core.y / TILE_SIZE);
-  if (Math.abs(coreSlotX - Math.floor(width / 2)) > 1 || Math.abs(coreSlotY - Math.floor(height / 2)) > 1) {
-    bad('tier0/core-near-center', `core slot (${coreSlotX},${coreSlotY}) is not within 1 of board center`);
+  const face = map.coreFace ?? [];
+  if (face.length !== 3) bad('tier0/core-face', `the Core face has ${face.length} cells, not 3`);
+  for (const c of face) {
+    if (c.x !== tileW) bad('tier0/core-face', `face cell (${c.x},${c.y}) is not in the Core strip (x=${tileW})`);
+    if (cellAt(c.x, c.y) !== 'C') bad('tier0/core-face', `face cell (${c.x},${c.y}) is '${cellAt(c.x, c.y)}', not 'C'`);
   }
+  if (face.length === 3 && (face[1].y !== face[0].y + 1 || face[2].y !== face[1].y + 1)) bad('tier0/core-face', 'the face is not three stacked cells');
+  if (face.length === 3 && (map.core.x !== face[1].x || map.core.y !== face[1].y)) bad('tier0/core', 'core is not the middle face cell');
+  let coreCells = 0;
+  for (const c of cells) if (c === 'C') coreCells++;
+  if (coreCells !== 3) bad('tier0/core-cells', `${coreCells} Core cells on the grid, not 3`);
+  let feeds = 0;
+  for (const c of face) {
+    const west = cellAt(c.x - 1, c.y);
+    if (west !== null && isRoad(west) && roadsConnect(west, 'C', 1, 0)) feeds++;
+  }
+  if (feeds !== 1) bad('tier0/core-one-entrance', `${feeds} road cells feed the Core face, not 1`);
   let coreTiles = 0;
   for (const p of board.slots) {
     if (p && lib.resolved(p.tileId, p.rotation).cells.some((row) => row.includes('C'))) coreTiles++;
   }
-  if (coreTiles !== 1) bad('tier0/one-core', `${coreTiles} core tiles on the board`);
+  if (coreTiles !== 0) bad('tier0/no-core-tiles', `${coreTiles} tile(s) carry the Core; the Core is not a tile`);
 
   // ---- Tier 0: specials exactly once, from a known pool ------------------
   const knownIds = new Set(lib.ids());
@@ -81,8 +98,9 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
     const key = `${e.x},${e.y}`;
     if (seenEntries.has(key)) bad('tier1/entries-distinct', `duplicate entry at ${key}`);
     seenEntries.add(key);
-    if (e.x !== 0 && e.y !== 0 && e.x !== W - 1 && e.y !== H - 1) {
-      bad('tier1/entries-on-border', `entry ${key} is not on the board border`);
+    // North, west or south: the east border is the Core's side.
+    if (e.x !== 0 && e.y !== 0 && e.y !== H - 1) {
+      bad('tier1/entries-on-border', `entry ${key} is not on a north, west or south border`);
     }
     const c = cellAt(e.x, e.y);
     if (c === null || !isRoad(c)) bad('tier1/entries-are-road', `entry ${key} sits on '${c}'`);

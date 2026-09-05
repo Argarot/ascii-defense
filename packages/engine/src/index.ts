@@ -44,7 +44,7 @@ export {
 } from './tiles/board';
 export type { Board, Placement, PlaceOptions } from './tiles/board';
 
-export { generateMap, DEPOSIT_MAX, VOID_SHARE_CAP, GENERATOR_VERSION } from './mapgen/mapgen';
+export { generateMap, mapCells, CORE_STRIP, DEPOSIT_MAX, VOID_SHARE_CAP, GENERATOR_VERSION } from './mapgen/mapgen';
 export type { GeneratedMap, MapGenOptions, CellRef, CacheRef, RockContent, OreDeposit, BoonRef } from './mapgen/mapgen';
 export { verifyMap } from './mapgen/verify';
 export type { VerifyIssue, VerifyMapOptions } from './mapgen/verify';
