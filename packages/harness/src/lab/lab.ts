@@ -37,9 +37,14 @@ export interface TowerPlacement {
   /** Committed tier choices, -1 for open. */
   choices: [number, number, number];
   /** 'auto': best road coverage anywhere. 'core': best coverage among cells
-   *  adjacent to the Core block (how a Loadbearing build actually plays). */
-  at: 'auto' | 'core' | { x: number; y: number };
+   *  adjacent to the Core block (how a Loadbearing build actually plays).
+   *  'choke' (session 24): best coverage among cells beside the road's last
+   *  CHOKE_REACH cells before the Core - the shared tail every lane walks. */
+  at: 'auto' | 'core' | 'choke' | { x: number; y: number };
 }
+
+/** Road cells within this many cells of the Core (by route) are the choke. */
+export const CHOKE_REACH = 15;
 
 export interface LabSpec {
   seed: number;
@@ -51,6 +56,14 @@ export interface LabSpec {
   difficulty?: DifficultySpec;
   maxWaves: number;
   coreHp?: number;
+  /**
+   * Session 24: an ECONOMY. With this set the lab starts with this much
+   * scrap and builds the plan INCREMENTALLY - the next tower when it can
+   * pay for it, then each listed tier choice in order when it can pay -
+   * the way a player actually plays. Without it every tower and choice is
+   * placed at tick 0 with unlimited scrap (combat capability, not economy).
+   */
+  economy?: { startingScrap: number };
 }
 
 export interface WaveRow {
@@ -113,21 +126,37 @@ function coverage(cells: readonly (CellType | null)[], W: number, H: number, x: 
 }
 
 /** Greedy best-coverage placement, the way a player actually builds. */
-function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, range: number, nearCoreOnly = false): { x: number; y: number } | null {
-  const nearCore = new Set<number>();
-  if (nearCoreOnly) {
+function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, range: number, where: 'auto' | 'core' | 'choke' = 'auto'): { x: number; y: number } | null {
+  const allowed = new Set<number>();
+  if (where === 'core') {
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++) {
         if (cells[y * W + x] !== 'C') continue;
         for (let dy = -1; dy <= 1; dy++)
-          for (let dx = -1; dx <= 1; dx++) nearCore.add((y + dy) * W + (x + dx));
+          for (let dx = -1; dx <= 1; dx++) allowed.add((y + dy) * W + (x + dx));
+      }
+  } else if (where === 'choke') {
+    // Ground touching a road cell within CHOKE_REACH of the Core by route.
+    const flow = computeFlowField(cells, W, H, []);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        if (cells[y * W + x] !== 'G') continue;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const c = cells[ny * W + nx];
+          if (c === null || !isRoad(c)) continue;
+          const d = flow.dist[ny * W + nx];
+          if (d >= 0 && d <= CHOKE_REACH) allowed.add(y * W + x);
+        }
       }
   }
   let best: { x: number; y: number } | null = null;
   let bestCov = -1;
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
-      if (nearCoreOnly && !nearCore.has(y * W + x)) continue;
+      if (where !== 'auto' && !allowed.has(y * W + x)) continue;
       if (!sim.canBuildDefAt(x, y, towerId)) continue;
       const cov = coverage(cells, W, H, x, y, range);
       if (cov > bestCov) {
@@ -151,7 +180,8 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     mode: 'waves',
     firstWaveWaits: false,
     coreHp: spec.coreHp ?? 50,
-    startingScrap: 1_000_000, // the lab measures combat capability, not economy
+    // Without an economy the lab measures combat capability, not scrap.
+    startingScrap: spec.economy ? spec.economy.startingScrap : 1_000_000,
     difficulty: spec.difficulty ?? DEFAULT_DIFFICULTY,
   });
 
@@ -164,20 +194,52 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   }
 
   const placed: LabReport['towersPlaced'] = [];
-  for (const p of spec.towers) {
+  /** Place the next tower of the plan; returns false when it cannot (no spot, or - with an economy - no scrap). */
+  const placeNext = (p: TowerPlacement): boolean => {
     const def = content.towerDefs.find((d) => d.id === p.towerId);
     if (!def) throw new Error(`unknown tower '${p.towerId}'`);
+    if (spec.economy && !sim.canAfford(p.towerId)) return false;
     const spot =
-      p.at === 'auto' || p.at === 'core'
-        ? (autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range, p.at === 'core') ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range))
+      typeof p.at === 'string'
+        ? (autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range, p.at) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range))
         : p.at;
     if (!spot || !sim.buildTower(spot.x, spot.y, p.towerId)) throw new Error(`cannot place ${p.towerId}`);
+    placed.push({ towerId: p.towerId, x: spot.x, y: spot.y });
+    return true;
+  };
+  /** Buy the next listed tier choice on a placed tower; false when it cannot pay or nothing is left. */
+  const upgradeNext = (i: number): boolean => {
+    const p = spec.towers[i];
+    const at = placed[i];
     for (let tier = 0; tier < 3; tier++) {
       const opt = p.choices[tier];
-      if (opt >= 0 && !sim.chooseTier(spot.x, spot.y, tier, opt)) throw new Error(`cannot choose t${tier} on ${p.towerId}`);
+      if (opt < 0) return false;
+      const tower = sim.towerAt(at.x, at.y);
+      if (!tower) return false;
+      if (tower.choices[tier] >= 0) continue; // bought already
+      const cost = sim.choiceCost(tower, tier, opt);
+      if (cost === null) return false;
+      if (spec.economy && sim.scrap < cost) return false;
+      if (!sim.chooseTier(at.x, at.y, tier, opt)) throw new Error(`cannot choose t${tier} on ${p.towerId}`);
+      return true;
     }
-    placed.push({ towerId: p.towerId, x: spot.x, y: spot.y });
-  }
+    return false;
+  };
+  let nextToPlace = 0;
+  /** One pass of the plan: towers first, then upgrades in listed order; loops until nothing more is affordable. */
+  const advancePlan = (): void => {
+    for (;;) {
+      if (nextToPlace < spec.towers.length) {
+        if (!placeNext(spec.towers[nextToPlace])) return;
+        nextToPlace++;
+        continue;
+      }
+      let bought = false;
+      for (let i = 0; i < placed.length && !bought; i++) bought = upgradeNext(i);
+      if (!bought) return;
+    }
+  };
+  advancePlan();
 
   const diff = spec.difficulty ?? DEFAULT_DIFFICULTY;
   const waves: WaveRow[] = [];
@@ -188,6 +250,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   const guard = spec.maxWaves * 20_000;
   for (let t = 0; t < guard; t++) {
     sim.tick();
+    if (spec.economy && t % 20 === 0) advancePlan(); // once a second: scrap arrives with kills
     if (sim.offer !== null) sim.pickRelic(0);
     if (sim.wave !== lastWave) {
       if (lastWave > 0) {
