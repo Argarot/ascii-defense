@@ -509,6 +509,19 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       seed,
       paused: speedIdx === 0,
       speed: SPEEDS[speedIdx],
+      ...(s.status !== 'running' ? { story: story(s) } : {}),
+    };
+  }
+
+  /** The run's story for the summary (session 27): what killed, what came, what was held. */
+  function story(s: Sim): NonNullable<FrameSnapshot['story']> {
+    const kills = new Map<string, number>();
+    for (const t of s.towers) if (t) { const name = s.towerDef(t).name ?? s.towerDef(t).id; kills.set(name, (kills.get(name) ?? 0) + t.kills); }
+    const met = enemyDefs.map((d, i) => ({ name: d.name ?? d.id, count: s.spawnedByDef[i] ?? 0 })).filter((m) => m.count > 0);
+    return {
+      killsByTower: [...kills].map(([name, k]) => ({ name, kills: k })).sort((a, b) => b.kills - a.kills),
+      met,
+      relics: s.heldRelicInfo().map((h) => h.def.name),
     };
   }
 

@@ -72,6 +72,8 @@ export interface FrameSnapshot {
   paused: boolean;
   /** Current speed multiplier, for the main thread's world-ambient clock (4.25). */
   speed: number;
+  /** The run's story, once it has ended (session 27): kills by tower, bodies met, relics held. */
+  story?: { killsByTower: { name: string; kills: number }[]; met: { name: string; count: number }[]; relics: string[] };
 }
 
 export type ToWorker =

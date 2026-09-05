@@ -16,3 +16,4 @@ export { isReducedMotion, setReducedMotion } from './motion';
 export { role } from './palette';
 export { interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP } from './board/interpolate';
 export { RenderClock, RENDER_DELAY, TICK_MS as WORLD_TICK_MS } from './board/renderClock';
+export { setPaletteSet } from './palette';

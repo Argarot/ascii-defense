@@ -31,11 +31,19 @@ export interface KeyStore {
 export interface MetaSave {
   version: number;
   bankedOre: number;
-  settings: { reducedMotion: boolean | null }; // null = follow the OS
+  settings: {
+    reducedMotion: boolean | null; // null = follow the OS
+    /** The HUD's and menus' font multiple; 1 or 2 (session 27). Applied at boot. */
+    hudScale: 1 | 2;
+    /** 'default' or 'colourblind' - a role override set in the view (session 27, WBS 4.24). */
+    palette: 'default' | 'colourblind';
+    /** The first-run prompts have been seen (session 27, WBS 4.23). */
+    onboarded: boolean;
+  };
   history: { seed: number; threat: string; wave: number; status: string; kills: number }[];
 }
 
-export const defaultMeta = (): MetaSave => ({ version: META_VERSION, bankedOre: 0, settings: { reducedMotion: null }, history: [] });
+export const defaultMeta = (): MetaSave => ({ version: META_VERSION, bankedOre: 0, settings: { reducedMotion: null, hudScale: 2, palette: 'default', onboarded: false }, history: [] });
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -52,10 +60,14 @@ function shapeMeta(m: Record<string, unknown>): MetaSave | null {
   if (!Array.isArray(history) || !history.every(isRecord)) return null;
   const rm = settings.reducedMotion ?? null;
   if (rm !== null && typeof rm !== 'boolean') return null;
+  // Newer settings default when absent (a save from before session 27).
+  const hudScale = settings.hudScale === 1 ? 1 : 2;
+  const palette = settings.palette === 'colourblind' ? 'colourblind' : 'default';
+  const onboarded = settings.onboarded === true;
   return {
     version: META_VERSION,
     bankedOre,
-    settings: { reducedMotion: rm },
+    settings: { reducedMotion: rm, hudScale, palette, onboarded },
     history: history as MetaSave['history'],
   };
 }

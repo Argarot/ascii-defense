@@ -64,6 +64,13 @@ describe('the HUD as text', () => {
     await expect(term.toText()).toMatchFileSnapshot('__snapshots__/hud-tower.golden.txt');
   });
 
+  it('shows a first-run prompt in the column when one is set (session 27, WBS 4.23)', () => {
+    const term = new TextTerm({ cols: 32, rows: 60 });
+    const hud = new HudPanel(term, 10, 16);
+    hud.render(state({ selectedTower: null, prompt: 'HINT 1/3: select a ground tile, then click a tower button in the strip under the board.' }));
+    expect(term.toText()).toContain('HINT 1/3');
+  });
+
   it('shows the hovered build button\'s card before anything is bought (feedback item 1)', () => {
     const term = new TextTerm({ cols: 32, rows: 60 });
     const hud = new HudPanel(term, 10, 16);
