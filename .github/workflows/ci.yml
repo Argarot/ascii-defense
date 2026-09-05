@@ -54,6 +54,10 @@ jobs:
       - name: Content validation and linter
         run: node tools/validate-content.mjs
 
+      # The catalogue (docs/CATALOGUE.md) is rendered from content; a stale copy fails.
+      - name: Catalogue drift check
+        run: node tools/codex.mjs --check
+
       # Generated types must match the schemas in the same commit. Regenerate
       # and fail on any diff - committed types can never drift.
       - name: Content type drift check
