@@ -1,0 +1,210 @@
+/**
+ * The strip (session 24, WBS 4.27 - Daniil: "the bottom part of the screen
+ * can have additional UI"): a full-width panel UNDER the board at the HUD's
+ * 2x font. Three sections, left to right:
+ *
+ *   BUILD   one button per tower in the roster, drawn with the tower's OWN
+ *           sprite (the same art the board shows), full colour when the
+ *           player can afford it and grey when not - buttons, not labels.
+ *   WAVE    this wave as it stands (alive, by kind) and the next one, each
+ *           kind with its traits in a word, so "what is coming and what it
+ *           is good against" is on screen, not in a tooltip.
+ *   CORE    the vessel's card, ALWAYS: health, the relic slots with the
+ *           actives clickable, the draw button. The Core sits at the east
+ *           edge (PR 1); its abilities live here, right below it, not in a
+ *           card that only appears when the face is selected.
+ *
+ * Regions are click targets AND hover previews, as on the HUD: hovering a
+ * build button previews that tower's radius on the selected tile, hovering
+ * a slot writes its description.
+ */
+import type { TermSurface } from '@ascii-defense/render';
+import type { Sprite } from '@ascii-defense/content';
+import { role } from '../palette';
+import { spriteState } from '../board/BoardView';
+import { drawSpriteFrame } from '../board/sprites';
+import { CELL_H, CELL_W } from '../board/style';
+import type { HudAction, HudState } from './HudPanel';
+
+/** Rows the strip takes at the HUD's font scale; the board loses that much height (boardSize.ts). */
+export const STRIP_ROWS = 8;
+
+/** A trait, in a word the strip can afford (the rule lives in engine/sim/traits.ts). */
+const TRAIT_WORD: Record<string, string> = {
+  armoured: 'armoured',
+  shielded: 'shielded',
+  fast: 'fast',
+  swarm: 'swarm x3',
+};
+
+interface Region {
+  row: number;
+  x0: number;
+  x1: number;
+  action: HudAction;
+}
+
+const BUTTON_W = 15; // room for "Frost Emitter" under a centred 8-glyph sprite
+
+export class StripPanel {
+  private regions: Region[] = [];
+  private readonly sprites: Map<string, Sprite>;
+
+  constructor(
+    private term: TermSurface,
+    private glyphPxW: number,
+    private glyphPxH: number,
+    sprites: readonly Sprite[] = [],
+  ) {
+    this.sprites = new Map(sprites.map((s) => [s.id, s]));
+  }
+
+  actionAt(px: number, py: number): HudAction | null {
+    const gx = Math.floor(px / this.glyphPxW);
+    const gy = Math.floor(py / this.glyphPxH);
+    for (const r of this.regions) {
+      if (r.row === gy && gx >= r.x0 && gx < r.x1) return r.action;
+    }
+    return null;
+  }
+
+  render(s: HudState): void {
+    const term = this.term;
+    this.regions = [];
+    term.clear(role('ui.bg'));
+    const W = term.cols;
+    const H = term.rows;
+    const dim = role('ui.dim');
+    const text = role('ui.text');
+    const grid = role('ui.grid');
+    const accent = role('ui.accent');
+    const bg = role('ui.bg');
+
+    // ---- BUILD: the roster as sprite buttons -------------------------------
+    const roster = s.roster ?? [];
+    term.write(1, 0, 'BUILD', dim);
+    roster.forEach((t, i) => {
+      const x0 = 1 + i * BUTTON_W;
+      const usable = t.affordable && t.buildable;
+      const selected = t.id === s.selectedBuildId;
+      const plate = selected ? accent : usable ? grid : bg;
+      for (let r = 1; r < H; r++) for (let c = 0; c < BUTTON_W; c++) term.put(x0 + c, r, ' ', plate, plate);
+      const sp = this.sprites.get(t.id);
+      const sx = x0 + Math.floor((BUTTON_W - CELL_W) / 2);
+      if (sp) {
+        const frame = spriteState(sp, []);
+        drawSpriteFrame(term, sp, frame, sx, 1, usable ? { groundRole: 'tower.ground' } : { flatFg: 'ui.dim' });
+      } else {
+        term.write(sx, 3, t.id.slice(0, CELL_W), usable ? text : dim, plate);
+      }
+      const name = t.name.slice(0, BUTTON_W - 2);
+      term.write(x0 + 1, 1 + CELL_H, name, selected ? bg : usable ? text : dim, plate);
+      const cost = `$${t.cost}`;
+      term.write(x0 + BUTTON_W - 1 - cost.length, 2 + CELL_H, cost, selected ? bg : t.affordable ? text : role('enemy.fast'), plate);
+      for (let r = 1; r < H; r++) this.regions.push({ row: r, x0, x1: x0 + BUTTON_W, action: { kind: 'buildId', id: t.id } });
+    });
+    const buildW = 1 + roster.length * BUTTON_W + 1;
+    // The hint shares the title row: the buttons' bottom row is their cost.
+    if (s.buildTargetSelected) term.write(8, 0, 'click a button: builds on the selected tile'.slice(0, Math.max(0, buildW - 9)), dim);
+
+    // ---- WAVE: now and next, with traits -------------------------------------
+    const wx = buildW + 1;
+    const waveW = Math.max(28, Math.min(52, Math.floor((W - wx) * 0.55)));
+    const colW = Math.floor(waveW / 2);
+    const head = s.finalWave > 0 ? `WAVE ${s.wave}/${s.finalWave}` : `WAVE ${s.wave}`;
+    term.write(wx, 0, head, text);
+    if (s.nextWave && !s.nextWave.waiting && s.nextWaveIn > 0) term.write(wx + head.length + 2, 0, `next in ${s.nextWaveIn}s`, dim);
+    term.write(wx, 1, 'NOW', dim);
+    const now = s.waveNow ?? [];
+    if (now.length === 0) term.write(wx, 2, 'the road is empty', dim);
+    const KIND_W = 13;
+    now.slice(0, H - 2).forEach((k, i) => {
+      const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);
+      term.write(wx, 2 + i, line, text);
+      term.write(wx + KIND_W, 2 + i, k.traits.map((t) => TRAIT_WORD[t] ?? t).join(' ').slice(0, Math.max(0, colW - KIND_W - 1)), dim);
+    });
+    const nx = wx + colW;
+    if (s.nextWave) {
+      const nw = s.nextWave;
+      term.write(nx, 1, nw.boss ? `NEXT ${nw.wave} BOSS` : `NEXT ${nw.wave}`, nw.boss ? role('enemy.fast') : dim);
+      nw.kinds.slice(0, H - 2).forEach((k, i) => {
+        const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);
+        term.write(nx, 2 + i, line, text);
+        term.write(nx + KIND_W, 2 + i, (k.traits ?? []).map((t) => TRAIT_WORD[t] ?? t).join(' ').slice(0, Math.max(0, colW - KIND_W - 1)), dim);
+      });
+    } else {
+      term.write(nx, 1, 'NEXT', dim);
+      term.write(nx, 2, 'the last wave is out', dim);
+    }
+
+    // ---- CORE: the vessel, always ---------------------------------------------
+    const cx = wx + waveW + 2;
+    const cw = W - cx - 1;
+    const c = s.coreCard;
+    if (c && cw >= 20) {
+      term.write(cx, 0, 'THE CORE', role('terrain.core.lit'));
+      const frac = c.hpMax > 0 ? c.hp / c.hpMax : 0;
+      const hpCol = frac <= 0.25 ? role('enemy.fast') : role('terrain.core.mid');
+      const hpText = `hp ${c.hp}/${c.hpMax}`;
+      term.write(cx + 10, 0, hpText, hpCol);
+      term.write(cx, 1, '='.repeat(Math.max(0, Math.round(frac * (cw - 1)))), hpCol);
+      // Square slots, one row: the HUD's grid at 5x3, as many as fit.
+      const slotW = 5;
+      const slotH = 3;
+      const perRow = Math.max(1, Math.floor(cw / slotW));
+      c.slots.forEach((slot, i) => {
+        if (Math.floor(i / perRow) > 0 && 2 + slotH * 2 > H - 2) return; // no room for a second row
+        const x0 = cx + (i % perRow) * slotW;
+        const rowBase = 2 + Math.floor(i / perRow) * slotH;
+        const [fg, sbg] =
+          slot.state === 'empty'
+            ? [grid, bg]
+            : slot.state === 'ready'
+              ? [bg, accent]
+              : slot.state === 'cooling'
+                ? [dim, grid]
+                : slot.state === 'consumable'
+                  ? [bg, role('terrain.ore.lit')]
+                  : [text, grid]; // passive
+        for (let r = 0; r < slotH; r++)
+          for (let k = 0; k < slotW - 1; k++) term.put(x0 + k, rowBase + r, ' ', fg, sbg);
+        if (slot.state === 'empty') {
+          term.put(x0, rowBase, '┌', fg); term.put(x0 + 3, rowBase, '┐', fg);
+          term.put(x0, rowBase + 2, '└', fg); term.put(x0 + 3, rowBase + 2, '┘', fg);
+        } else {
+          term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, sbg);
+          if (slot.state === 'cooling') term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, sbg);
+          for (let r = 0; r < slotH; r++) this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
+        }
+      });
+      const drawRow = 2 + slotH;
+      const drawLabel = ` DRAW RELIC  ${c.drawCost} ore`;
+      const drawW = Math.min(cw, 24);
+      term.write(cx, drawRow, drawLabel.padEnd(drawW).slice(0, drawW), c.canDraw ? bg : dim, c.canDraw ? role('terrain.ore.lit') : grid);
+      if (c.canDraw) this.regions.push({ row: drawRow, x0: cx, x1: cx + drawW, action: { kind: 'coreDraw' } });
+      const hint = c.hoverDesc ?? 'hover a slot for details; click actives to fire';
+      const lines = this.wrap(hint, cw, 2);
+      lines.forEach((l, i) => term.write(cx, drawRow + 1 + i, l, c.hoverDesc ? text : dim));
+    }
+
+    term.flush();
+  }
+
+  private wrap(s: string, w: number, maxLines: number): string[] {
+    const lines: string[] = [];
+    let line = '';
+    for (const word of s.split(' ')) {
+      if (line !== '' && line.length + 1 + word.length > w) {
+        lines.push(line);
+        line = word;
+      } else line = line === '' ? word : line + ' ' + word;
+    }
+    if (line !== '') lines.push(line);
+    if (lines.length > maxLines) {
+      const head = lines.slice(0, maxLines - 1);
+      head.push(lines.slice(maxLines - 1).join(' ').slice(0, w));
+      return head;
+    }
+    return lines;
+  }
+}

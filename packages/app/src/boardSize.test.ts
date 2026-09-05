@@ -5,11 +5,11 @@ const G = { cellW: 8, cellH: 5, glyphPxW: 5, glyphPxH: 8, hudCols: 30, hudScale:
 
 describe('the board fits the screen (D24, option 1)', () => {
   it('a 1920x1080 desktop holds 7x5 tiles beside the HUD at a 40 px cell', () => {
-    expect(boardSlotsFor(1920, 1080, G)).toEqual({ w: 7, h: 5 });
+    expect(boardSlotsFor(1920, 1080, G)).toEqual({ w: 7, h: 4 }); // 5 before the strip took 132 px
   });
 
   it('a 1920x1200 screen gains a row; 2560x1440 gains columns', () => {
-    expect(boardSlotsFor(1920, 1200, G)).toEqual({ w: 7, h: 5 });
+    expect(boardSlotsFor(1920, 1200, G)).toEqual({ w: 7, h: 4 });
     expect(boardSlotsFor(2560, 1440, G)).toEqual({ w: 10, h: 6 }); // 11 before the Core strip took 40 px
   });
 

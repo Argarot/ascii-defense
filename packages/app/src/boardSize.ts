@@ -5,7 +5,8 @@
  *
  * 1920x1080 with a 40 px cell: (1920 - 300 - 24 - 40) / 200 = 7 tiles across
  * (the 40 is the Core strip past the east border, session 24),
- * (1080 - 70) / 200 = 5 down. The old fixed 12x7 board was 2400 px wide at
+ * (1080 - 70 - 132) / 200 = 4 down (the 132 is the strip under the board,
+ * session 24: eight HUD-scale rows and its margin). The old fixed 12x7 board was 2400 px wide at
  * this cell - it no longer fits any screen, which is why the size is
  * derived, not declared.
  */
@@ -26,6 +27,8 @@ export interface BoardSizeOptions {
 const CHROME_W = 24;
 /** Vertical chrome: page padding, the caption line, borders. */
 const CHROME_H = 70;
+/** The strip under the board (4.27): its rows at the HUD's scale. */
+export const STRIP_ROWS_RESERVED = 8;
 /** The generator is tuned between these; a tinier board would starve the
  *  carve of room for entries, a bigger one is the old 12x7 ceiling. */
 export const MIN_SLOTS = { w: 6, h: 4 } as const;
@@ -37,7 +40,8 @@ export function boardSlotsFor(viewportW: number, viewportH: number, o: BoardSize
   const hudPx = o.hudCols * o.glyphPxW * o.hudScale;
   const stripPx = CORE_STRIP * o.cellW * o.glyphPxW;
   const w = Math.floor((viewportW - hudPx - CHROME_W - stripPx) / tilePxW);
-  const h = Math.floor((viewportH - CHROME_H) / tilePxH);
+  const stripRowsPx = STRIP_ROWS_RESERVED * o.glyphPxH * o.hudScale + 4;
+  const h = Math.floor((viewportH - CHROME_H - stripRowsPx) / tilePxH);
   return {
     w: Math.max(MIN_SLOTS.w, Math.min(MAX_SLOTS.w, w)),
     h: Math.max(MIN_SLOTS.h, Math.min(MAX_SLOTS.h, h)),
