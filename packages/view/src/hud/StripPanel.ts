@@ -42,6 +42,10 @@ const TRAIT_WORD: Record<string, string> = {
   shielded: 'shielded',
   fast: 'fast',
   swarm: 'swarm x3',
+  'resists-kinetic': 'resists kinetic',
+  'resists-energy': 'resists energy',
+  'weak-kinetic': 'weak to kinetic',
+  'weak-energy': 'weak to energy',
 };
 /** The same trait as a two-glyph MARK for a narrow strip: the shield's brackets are the board's own. */
 const TRAIT_MARK: Record<string, string> = {
@@ -49,6 +53,10 @@ const TRAIT_MARK: Record<string, string> = {
   shielded: '()',
   fast: '>>',
   swarm: 'x3',
+  'resists-kinetic': 'K-',
+  'resists-energy': 'E-',
+  'weak-kinetic': 'K+',
+  'weak-energy': 'E+',
 };
 function traitText(traits: readonly string[], room: number): string {
   const words = traits.map((t) => TRAIT_WORD[t] ?? t).join(' ');

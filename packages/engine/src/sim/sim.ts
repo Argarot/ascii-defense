@@ -33,8 +33,7 @@ import {
   type RelicFold,
   type TowerDef,
   type LootTable,
-  type ProjectileSpec,
-} from './defs';
+  type ProjectileSpec, resistMul, type DamageType } from './defs';
 import type { ReplayAction, ReplayInput } from './replay';
 
 export const TICK_HZ = 20;
@@ -181,6 +180,10 @@ export interface CacheSpot {
   table: string;
   opened: boolean;
 }
+/** Damage types as shot codes (session 26): 0 untyped, 1 kinetic, 2 energy. */
+const TYPE_CODE: Record<string, number> = { none: 0, kinetic: 1, energy: 2 };
+const CODE_TYPE: (DamageType | undefined)[] = [undefined, 'kinetic', 'energy'];
+
 /** How far a piercing shot may hop to its next body (cells). */
 const PIERCE_REACH = 2.5;
 /** Scrap an opened cache pays when its rolled outcome cannot apply here. */
@@ -285,6 +288,8 @@ export class Sim {
   private readonly projPierce = new Int16Array(PROJ_CAP);
   private readonly projShieldMul = new Float32Array(PROJ_CAP);
   private readonly projIgnoreArmor = new Uint8Array(PROJ_CAP);
+  /** 0 untyped, 1 kinetic, 2 energy (session 26): the firing tower's damage type rides the shot. */
+  private readonly projType = new Uint8Array(PROJ_CAP);
   private freeProj: number[] = [];
   private projHigh = 0;
 
@@ -1484,7 +1489,7 @@ export class Sim {
       const cx = this.posX[cur];
       const cy = this.posY[cur];
       pts.push({ x: cx, y: cy });
-      this.applyDamage(cur, dmg, slowMulN, slowTicksN, towerIdx, eff.shieldMul, eff.ignoreArmor);
+      this.applyDamage(cur, dmg, slowMulN, slowTicksN, towerIdx, eff.shieldMul, eff.ignoreArmor, this.opts.towerDefs[tower.defIdx].damageType);
       hit.add(cur);
       dmg *= eff.chainFalloff;
       let best = -1;
@@ -1574,6 +1579,7 @@ export class Sim {
     this.projPierce[p] = this.projRadius[p] > 0 ? 0 : eff.pierceCount;
     this.projShieldMul[p] = eff.shieldMul;
     this.projIgnoreArmor[p] = eff.ignoreArmor ? 1 : 0;
+    this.projType[p] = TYPE_CODE[this.opts.towerDefs[tower.defIdx].damageType ?? 'none'];
     this.projAimX[p] = this.posX[target] + ox;
     this.projAimY[p] = this.posY[target] + oy;
     const dx = this.projAimX[p] - sx;
@@ -1690,16 +1696,20 @@ export class Sim {
 
   /** Armor blunts, shields burn first, slows apply, deaths pay bounties. */
   private damageEnemy(enemy: number, p: number): void {
-    this.applyDamage(enemy, this.projDamage[p], this.projSlowMul[p], this.projSlowTicks[p], this.projTowerIdx[p], this.projShieldMul[p], this.projIgnoreArmor[p] === 1);
+    this.applyDamage(enemy, this.projDamage[p], this.projSlowMul[p], this.projSlowTicks[p], this.projTowerIdx[p], this.projShieldMul[p], this.projIgnoreArmor[p] === 1, CODE_TYPE[this.projType[p]]);
   }
 
-  private applyDamage(enemy: number, raw: number, slowMulN: number, slowTicksN: number, towerIdx: number, shieldMul = 1, ignoreArmor = false): void {
+  private applyDamage(enemy: number, raw: number, slowMulN: number, slowTicksN: number, towerIdx: number, shieldMul = 1, ignoreArmor = false, type?: DamageType): void {
     if (!this.alive[enemy]) return;
     const def = this.opts.enemyDefs[this.enemyDefIdx[enemy]];
+    // Damage TYPES decide fights (PRD sec 8, session 26): the enemy's
+    // multiplier against the hit's type comes first - an immune body takes
+    // nothing, not the min-1 chip - then armour, then everything else.
+    const typed = raw * resistMul(def, type);
     // Zero-damage attacks are pure control (Frost's base): effects land,
     // health does not move, armor's min-1 rule only applies to real hits.
     // Railbore ignores armour outright.
-    let dmg = raw <= 0 ? 0 : Math.max(1, raw - (ignoreArmor ? 0 : (def.armor ?? 0)));
+    let dmg = typed <= 0 ? 0 : Math.max(1, typed - (ignoreArmor ? 0 : (def.armor ?? 0)));
     // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
     // relic that turns Frost from utility into a damage amplifier.
     if (dmg > 0 && this.slowTicks[enemy] > 0) dmg *= this.fold.slowedDamageMul;
@@ -1795,7 +1805,7 @@ export class Sim {
       if (dx * dx + dy * dy > r2) continue;
       // Brittle: this field's damage lands harder on anything already slowed.
       const dmg = this.slowTicks[i] > 0 ? eff.damage * eff.slowedBonusMul : eff.damage;
-      this.applyDamage(i, dmg, slowMul, slowTicks, towerIdx, eff.shieldMul, eff.ignoreArmor);
+      this.applyDamage(i, dmg, slowMul, slowTicks, towerIdx, eff.shieldMul, eff.ignoreArmor, this.opts.towerDefs[tower.defIdx].damageType);
     }
     this.emit({ kind: 'pulse', x: cx, y: cy, r: eff.range });
   }

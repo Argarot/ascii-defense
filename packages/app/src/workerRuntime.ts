@@ -39,7 +39,7 @@ import {
   type ReplayAction,
   type TileDef,
   type TowerDef,
- effectiveStats, } from '@ascii-defense/engine';
+ effectiveStats, DAMAGE_TYPES } from '@ascii-defense/engine';
 import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
 export interface WorkerRuntimeDeps {
@@ -222,6 +222,17 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     return (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();
   };
 
+  /** An enemy kind's traits plus its resistances as words the strip knows (session 26). */
+  function kindTraits(d: EnemyDef): string[] {
+    const out = [...(d.traits ?? [])];
+    for (const t of DAMAGE_TYPES) {
+      const m = d.resist?.[t];
+      if (m === undefined || m === 1) continue;
+      out.push(`${m < 1 ? 'resists' : 'weak'}-${t}`);
+    }
+    return out;
+  }
+
   function assemble(ui: UiState): FrameSnapshot {
     if (!sim || !map) throw new Error('no run to snapshot');
     const s = sim;
@@ -285,7 +296,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       next[hudHover.tier] = hudHover.option;
       effPreview = s.statsWith(infoTower, next);
     }
-    const toStats = (e: NonNullable<typeof eff>) => ({
+    const toStats = (e: NonNullable<typeof eff>, d?: { damageType?: string }) => ({
+      type: d?.damageType ?? '',
       dmg: Math.round(e.damage * 10) / 10,
       dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
       range: Math.round(e.range * 10) / 10,
@@ -337,14 +349,14 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     // tower's card in the column before anything is bought.
     const previewHover = hudHover?.kind === 'buildId' ? towerDefs.find((d) => d.id === hudHover.id) : undefined;
     const buildPreview = previewHover
-      ? { name: previewHover.name ?? previewHover.id, cost: previewHover.cost, desc: previewHover.desc ?? '', stats: toStats(effectiveStats(previewHover, [-1, -1, -1])) }
+      ? { name: previewHover.name ?? previewHover.id, cost: previewHover.cost, desc: previewHover.desc ?? '', stats: toStats(effectiveStats(previewHover, [-1, -1, -1]), previewHover) }
       : null;
     // The strip's NOW column: alive enemies by kind, with traits.
     const nowCounts = new Map<string, number>();
     for (let i = 0; i < s.posX.length; i++) if (s.alive[i]) nowCounts.set(s.enemyDefOf(i).id, (nowCounts.get(s.enemyDefOf(i).id) ?? 0) + 1);
     const waveNow = [...nowCounts].map(([id, count]) => {
       const d = enemyDefs.find((e) => e.id === id);
-      return { name: d?.name ?? id, count, traits: d?.traits ?? [] };
+      return { name: d?.name ?? id, count, traits: d ? kindTraits(d) : [] };
     });
 
     const cellDescribe = (() => {
@@ -397,7 +409,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             boss: p.boss,
             kinds: p.kinds.map((k) => {
               const d = enemyDefs.find((e) => e.id === k.id);
-              return { name: d?.name ?? k.id, count: k.count, traits: d?.traits ?? [] };
+              return { name: d?.name ?? k.id, count: k.count, traits: d ? kindTraits(d) : [] };
             }),
             canCall: s.canCallWave(),
             callBonus: s.callBonus(),
@@ -448,8 +460,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
               name: def.name ?? def.id,
               kills: infoTower.kills,
               deposit: def.production ? (s.depositAt(infoTower.cellX, infoTower.cellY) ?? { left: 0, initial: 1 }) : null,
-              stats: toStats(eff),
-              preview: effPreview ? toStats(effPreview) : null,
+              stats: toStats(eff, def),
+              preview: effPreview ? toStats(effPreview, def) : null,
               offVein: def.production !== undefined && (def.production.ore ?? 0) > 0 && s.cellAt(infoTower.cellX, infoTower.cellY) !== 'O',
               priority: infoTower.priority,
               choiceDesc: hudHover?.kind === 'choose' ? (def.tiers?.[hudHover.tier]?.choices[hudHover.option]?.desc ?? null) : null,

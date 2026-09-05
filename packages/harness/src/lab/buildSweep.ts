@@ -69,7 +69,24 @@ const RAILBORE: [number, number, number] = [0, 0, 0];
 const HAILSTORM: [number, number, number] = [0, 0, 1];
 
 interface Build { name: string; towers: TowerPlacement[]; content: LabContent; economy: LabSpec['economy'] }
+// Session 26: one type alone against the mixed build - the proof that no
+// single type clears the waves once resistances decide fights.
+const soloKinetic = (at: TowerPlacement['at']): TowerPlacement[] => [
+  { towerId: 'bolt', choices: RAILBORE, at }, { towerId: 'bolt', choices: RAILBORE, at }, { towerId: 'mortar', choices: [1, 1, 0], at },
+  { towerId: 'bolt', choices: RAILBORE, at }, { towerId: 'missile', choices: [0, 1, 0], at },
+];
+const soloEnergy = (at: TowerPlacement['at']): TowerPlacement[] => [
+  { towerId: 'tesla', choices: [0, 0, 0], at }, { towerId: 'frost', choices: [1, 0, 1], at }, { towerId: 'tesla', choices: [1, 0, 0], at },
+  { towerId: 'frost', choices: [1, 0, 1], at }, { towerId: 'tesla', choices: [0, 1, 1], at },
+];
+const bothTypes = (at: TowerPlacement['at']): TowerPlacement[] => [
+  { towerId: 'bolt', choices: RAILBORE, at }, { towerId: 'tesla', choices: [0, 0, 0], at }, { towerId: 'frost', choices: [1, 0, 1], at },
+  { towerId: 'mortar', choices: [1, 1, 0], at }, { towerId: 'bolt', choices: RAILBORE, at },
+];
 const BUILDS: Build[] = [
+  { name: 'choke, KINETIC only (3 Railbore + Mortar + Missiles), economy', towers: soloKinetic('choke'), content: baseContent, economy: { startingScrap: 100 } },
+  { name: 'choke, ENERGY only (3 Tesla + 2 Frost), economy', towers: soloEnergy('choke'), content: baseContent, economy: { startingScrap: 100 } },
+  { name: 'choke, BOTH types (2 Railbore + Tesla + Frost + Mortar), economy', towers: bothTypes('choke'), content: baseContent, economy: { startingScrap: 100 } },
   { name: 'choke, Railbore line + Frost + Mortar, economy', towers: mixed('choke', RAILBORE), content: baseContent, economy: { startingScrap: 100 } },
   { name: 'spread, same build, economy', towers: mixed('auto', RAILBORE), content: baseContent, economy: { startingScrap: 100 } },
   { name: 'choke, Hailstorm 60% line + Frost + Mortar, economy', towers: mixed('choke', HAILSTORM), content: baseContent, economy: { startingScrap: 100 } },

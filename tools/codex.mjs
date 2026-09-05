@@ -59,7 +59,7 @@ function towerRows() {
     const rate = t.attack === 'none' ? '' : n(TICK_HZ / t.fireEveryTicks, 2);
     const dps = t.attack === 'none' ? '' : n((dmg * TICK_HZ) / t.fireEveryTicks, 1);
     const prod = t.production ? `${t.production.ore} Ore / ${n(t.production.everyTicks / TICK_HZ)} s` : '';
-    return [`**${t.name ?? t.id}**`, t.id, t.cost, n(t.range), rate, dmg || '', dps, prod || towerShape(t), t.desc ?? ''];
+    return [`**${t.name ?? t.id}**`, t.id, t.cost, t.damageType ?? '', n(t.range), rate, dmg || '', dps, prod || towerShape(t), t.desc ?? ''];
   });
 }
 function tierRows(t) {
@@ -74,9 +74,10 @@ function tierRows(t) {
   return rows;
 }
 function enemyRows() {
+  const mul = (v) => (v === undefined || v === 1 ? '' : v === 0 ? 'immune' : `x${v}`);
   return enemies.map((e) => [
     `**${e.name ?? e.id}**`, e.id, e.hp, n(e.speed * TICK_HZ, 2), e.damage, e.bounty, e.minWave ?? 1, e.armor ?? '', e.shield ?? '',
-    (e.traits ?? []).join(', '),
+    mul(e.resist?.kinetic), mul(e.resist?.energy), (e.traits ?? []).join(', '),
   ]);
 }
 function relicRows() {
@@ -91,7 +92,7 @@ const SECTIONS = {
     [
       `${towers.length} towers in \`packages/content/assets/towers/roster.json\`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).`,
       '',
-      table(['Tower', 'id', 'Cost', 'Range', 'Rate', 'Damage', 'DPS', 'Shape / production', 'What it is'], towerRows()),
+      table(['Tower', 'id', 'Cost', 'Type', 'Range', 'Rate', 'Damage', 'DPS', 'Shape / production', 'What it is'], towerRows()),
       '',
       ...towers.flatMap((t) => [`#### ${t.name ?? t.id} - the tree`, '', table(['Tier', 'Choice', 'Cost', 'What it does', 'Data'], tierRows(t)), '']),
     ].join('\n'),
@@ -99,7 +100,9 @@ const SECTIONS = {
     [
       `${enemies.length} enemies in \`packages/content/assets/enemies/roster.json\`. Speed is cells per second; breach is the Core health lost when one arrives; "from wave" is the first wave that may roll it. Every enemy walks the road; there are no flyers (PRD §8).`,
       '',
-      table(['Enemy', 'id', 'HP', 'Speed', 'Breach', 'Bounty', 'From wave', 'Armour', 'Shield', 'Traits'], enemyRows()),
+      table(['Enemy', 'id', 'HP', 'Speed', 'Breach', 'Bounty', 'From wave', 'Armour', 'Shield', 'vs kinetic', 'vs energy', 'Traits'], enemyRows()),
+    '',
+    'Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.',
       '',
       '**Traits are rules** (`packages/engine/src/sim/traits.ts`):',
       '',

@@ -775,8 +775,12 @@ M1 ships six enemies across that matrix. Traits expand only once the small
 matrix is proven; a wide matrix is where balance bugs breed.
 
 **Damage types must decide fights** *(Daniil, 2026-08-16: "2-3 fully upgraded
-mortars absolutely demolish everything")*. Kinetic and Energy are specified but
-inert — nothing resists either, so no enemy poses a question and no tower is a
+mortars absolutely demolish everything")*. **Shipped 2026-09-05 (session
+26, WBS 2.8)**: every attacking tower deals kinetic (Bolt, Mortar, Missiles)
+or energy (Frost, Tesla); every enemy carries a multiplier per type (0.5
+resists, 1.5 weak, 0 immune, applied before armour); the card, the strip
+and the catalogue print it. Before that, Kinetic and Energy were specified but
+inert — nothing resisted either, so no enemy posed a question and no tower was a
 wrong answer. Resistance and immunity turn the composition of a wave into a
 demand for a composition of *towers*, which is the entire content of "every
 placement is a build decision". One tower type clearing every wave is precisely

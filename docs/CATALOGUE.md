@@ -11,14 +11,14 @@
 <!-- generated:towers -->
 6 towers in `packages/content/assets/towers/roster.json`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).
 
-| Tower | id | Cost | Range | Rate | Damage | DPS | Shape / production | What it is |
-|---|---|---|---|---|---|---|---|---|
-| **Bolt Turret** | bolt | 20 | 6 | 1.43 | 8 | 11.4 | homing shot | Homing single shots at a steady rate. The all-rounder; its tree picks a job. |
-| **Mortar** | mortar | 35 | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. |
-| **Refinery** | refinery | 30 | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. |
-| **Frost Emitter** | frost | 25 | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Control first, damage on a path. |
-| **Tesla Coil** | tesla | 40 | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. |
-| **Missile Rack** | missile | 50 | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. |
+| Tower | id | Cost | Type | Range | Rate | Damage | DPS | Shape / production | What it is |
+|---|---|---|---|---|---|---|---|---|---|
+| **Bolt Turret** | bolt | 20 | kinetic | 6 | 1.43 | 8 | 11.4 | homing shot | Homing single shots at a steady rate. The all-rounder; its tree picks a job. |
+| **Mortar** | mortar | 35 | kinetic | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. |
+| **Refinery** | refinery | 30 |  | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. |
+| **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Control first, damage on a path. |
+| **Tesla Coil** | tesla | 40 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. |
+| **Missile Rack** | missile | 50 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. |
 
 #### Bolt Turret - the tree
 
@@ -93,15 +93,17 @@
 <!-- generated:enemies -->
 7 enemies in `packages/content/assets/enemies/roster.json`. Speed is cells per second; breach is the Core health lost when one arrives; "from wave" is the first wave that may roll it. Every enemy walks the road; there are no flyers (PRD §8).
 
-| Enemy | id | HP | Speed | Breach | Bounty | From wave | Armour | Shield | Traits |
-|---|---|---|---|---|---|---|---|---|---|
-| **grunt** | grunt | 30 | 1.20 | 1 | 4 | 1 |  |  |  |
-| **skitter** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  | fast |
-| **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  | swarm, fast |
-| **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  | armoured |
-| **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 30 | shielded |
-| **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  |  |  |
-| **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  |  |
+| Enemy | id | HP | Speed | Breach | Bounty | From wave | Armour | Shield | vs kinetic | vs energy | Traits |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **grunt** | grunt | 30 | 1.20 | 1 | 4 | 1 |  |  |  |  |  |
+| **skitter** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  |  |  | fast |
+| **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  | x0.8 | x1.6 | swarm, fast |
+| **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  | x0.6 | x1.6 | armoured |
+| **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 30 | x1.4 | x0.6 | shielded |
+| **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  |  | x1.4 | x0.6 |  |
+| **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  | x0.8 | x1.2 |  |
+
+Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.
 
 **Traits are rules** (`packages/engine/src/sim/traits.ts`):
 

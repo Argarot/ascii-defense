@@ -27,6 +27,8 @@ export interface HudTierInfo {
 }
 
 export interface HudStats {
+  /** The damage type, '' for producers (session 26). */
+  type: string;
   dmg: number;
   dps: string;
   range: number;
@@ -342,6 +344,7 @@ export class HudPanel {
       const line = (label: string, v: number | string): void => { term.write(0, y++, `${label} ${v}`, role('ui.text')); };
       if (st.prod !== null) line('ore  ', st.prod);
       else {
+        if (st.type) line('type ', st.type);
         line('dmg  ', st.dmg);
         line('dps  ', st.dps);
         line('range', st.range);
@@ -496,6 +499,7 @@ export class HudPanel {
         stat('ore  ', t.stats.prod, t.preview ? t.preview.prod : null);
         if (t.offVein) term.write(0, y++, 'OFF VEIN - idle', role('enemy.fast'));
       } else {
+        if (t.stats.type) term.write(0, y++, `type  ${t.stats.type}`, role('ui.text'));
         stat('dmg  ', t.stats.dmg, t.preview ? t.preview.dmg : null);
         stat('dps  ', t.stats.dps, t.preview ? t.preview.dps : null);
         stat('range', t.stats.range, t.preview ? t.preview.range : null);
