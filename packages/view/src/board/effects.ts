@@ -138,8 +138,9 @@ export class EffectsLayer {
           for (let i = 1; i < e.pts.length; i++) this.add({ kind: 'spark', x: e.pts[i].x, y: e.pts[i].y, r: 0, start: e.tick, ttl: TTL.spark });
           break;
         case 'impact':
-          if (e.r > 0) this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.blast });
-          else this.add({ kind: 'spark', x: e.x, y: e.y, r: 0, start: e.tick, ttl: TTL.spark });
+          // A delayed impact is Splinter's second blast: the same spot, a beat later.
+          if (e.r > 0) this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick + (e.delay ?? 0), ttl: TTL.blast });
+          else this.add({ kind: 'spark', x: e.x, y: e.y, r: 0, start: e.tick + (e.delay ?? 0), ttl: TTL.spark });
           break;
         case 'death':
           this.add({ kind: 'death', x: e.x, y: e.y, r: 0, start: e.tick, ttl: TTL.death });

@@ -140,7 +140,8 @@ export interface RenderState {
    *  so each enemy type reads differently on the board, plus the readout
    *  state (WBS 2.14): shield bracket, health mark, slow tint. No tooltips -
    *  the enemy itself is the readout (PRD sec 8). */
-  enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean; k?: number; g?: number }[];
+  /** frozen and slows (distinct sources) draw as marks beside the walker (WBS 2.31). */
+  enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean; frozen?: boolean; slows?: number; k?: number; g?: number }[];
   /** Live towers, in cell coordinates, with their def id for per-type art and
    *  their committed choices for per-state art (sprite v2). */
   /** cooldown01 runs 1 (just fired) to 0 (ready); sinceFire is ticks since the last shot, -1 before the first (session 25). */
@@ -457,6 +458,14 @@ export class BoardView {
         term.put(left - 1, gy, '(', role('enemy.shell'));
         term.put(right + 1, gy, ')', role('enemy.shell'));
       }
+      // Every status shows on the body (PRD sec 8, WBS 2.31): a cold '~'
+      // per slow SOURCE stacked up the left side, a '*' when it stands
+      // frozen. The colour presents; the glyph carries it.
+      const marks = e.frozen ? ['*'] : Array.from({ length: Math.min(3, e.slows ?? (e.slowed ? 1 : 0)) }, () => '~');
+      marks.forEach((m, i) => {
+        const my = top - i;
+        if (my >= 0) term.put(left - 2, my, m, role(m === '*' ? 'ui.text' : 'tower.frost.ice_edge'));
+      });
       if (e.hp01 !== undefined && e.hp01 < 0.995) {
         // Glyph AND colour carry the bar (2.25, playtest 9): two braille
         // dots alone are too coarse, so the ramp is 4 glyph steps x 3

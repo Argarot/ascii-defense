@@ -34,7 +34,7 @@
       "id": "splinter",
       "name": "Splinter",
       "kind": "passive",
-      "desc": "Explosions detonate twice.",
+      "desc": "Explosions detonate twice: the same blast, resolved again a beat later - you will see both.",
       "effects": {
         "explodeTwice": true
       }

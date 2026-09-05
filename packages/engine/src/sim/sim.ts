@@ -136,7 +136,7 @@ export type SimEvent =
   | { kind: 'strike'; x: number; y: number; r: number } // the orbital: a column from the sky, then a blast of radius r (session 25)
   | { kind: 'arc'; pts: readonly { x: number; y: number }[] } // a chain: the tower's centre, then every body hit in order (session 25)
   | { kind: 'freeze'; ticks: number } // every enemy held for this long (Stasis, Flashbang)
-  | { kind: 'impact'; x: number; y: number; r: number } // r 0 = plain hit, >0 = blast radius
+  | { kind: 'impact'; x: number; y: number; r: number; delay?: number } // r 0 = plain hit, >0 = blast radius; delay = ticks before it shows (Splinter's second blast)
   | { kind: 'death'; x: number; y: number }
   | { kind: 'breach'; x: number; y: number; dmg: number }
   | { kind: 'build'; x: number; y: number }
@@ -180,6 +180,11 @@ export interface CacheSpot {
   table: string;
   opened: boolean;
 }
+/** Slow entries a body keeps at most; the longest survive. */
+const SLOW_ENTRY_CAP = 8;
+/** Ticks between Splinter's two blasts on screen (the damage lands at once). */
+const SPLINTER_DELAY = 3;
+
 /** Damage types as shot codes (session 26): 0 untyped, 1 kinetic, 2 energy. */
 const TYPE_CODE: Record<string, number> = { none: 0, kinetic: 1, energy: 2 };
 const CODE_TYPE: (DamageType | undefined)[] = [undefined, 'kinetic', 'energy'];
@@ -290,6 +295,15 @@ export class Sim {
   private readonly projIgnoreArmor = new Uint8Array(PROJ_CAP);
   /** 0 untyped, 1 kinetic, 2 energy (session 26): the firing tower's damage type rides the shot. */
   private readonly projType = new Uint8Array(PROJ_CAP);
+  /**
+   * Every slow on a body, WITH ITS SOURCE (PRD sec 8, WBS 2.31): a Frost
+   * field's and a Concussive shell's are two entries with one stacking
+   * rule - the coldest multiplier wins, the longest duration lasts - never
+   * one number overwriting the other. slowMul/slowTicks are the RESOLVED
+   * values and stay the hashed truth; a single source resolves exactly as
+   * before, so the golden did not move.
+   */
+  private readonly slowEntries: ({ mul: number; ticks: number; src: string }[] | undefined)[] = new Array(ENEMY_CAP);
   private freeProj: number[] = [];
   private projHigh = 0;
 
@@ -579,6 +593,50 @@ export class Sim {
    * 25): cooldown01 runs 1 (just fired) to 0 (ready); sinceFire is ticks
    * since the last shot, -1 before the first.
    */
+  /** The resolved slow from every live entry: the coldest wins, the longest lasts. */
+  private resolveSlows(i: number): void {
+    const list = this.slowEntries[i];
+    let mul = 1;
+    let ticks = 0;
+    if (list) {
+      for (const e of list) {
+        if (e.ticks <= 0) continue;
+        if (e.mul < mul) mul = e.mul;
+        if (e.ticks > ticks) ticks = e.ticks;
+      }
+    }
+    this.slowTicks[i] = ticks;
+    this.slowMul[i] = ticks > 0 ? mul : 1;
+  }
+
+  /** One tick off every entry; expired ones fall away; the resolved values follow. */
+  private tickSlows(i: number): void {
+    const list = this.slowEntries[i];
+    if (!list) {
+      this.slowTicks[i]--;
+      return;
+    }
+    for (const e of list) e.ticks--;
+    let w = 0;
+    for (const e of list) if (e.ticks > 0) list[w++] = e;
+    list.length = w;
+    this.resolveSlows(i);
+  }
+
+  /**
+   * What a body is under right now, for the view and the card (WBS 2.31):
+   * one entry per slow with its source, and 'frozen' when it stands still.
+   */
+  enemyStatuses(i: number): { kind: 'slow' | 'frozen'; src: string; mul: number; ticks: number }[] {
+    const out: { kind: 'slow' | 'frozen'; src: string; mul: number; ticks: number }[] = [];
+    if (this.tickCount < this.freezeUntil) out.push({ kind: 'frozen', src: 'relic', mul: 0, ticks: this.freezeUntil - this.tickCount });
+    for (const e of this.slowEntries[i] ?? []) {
+      if (e.ticks <= 0) continue;
+      out.push(e.mul === 0 ? { kind: 'frozen', src: e.src, mul: 0, ticks: e.ticks } : { kind: 'slow', src: e.src, mul: e.mul, ticks: e.ticks });
+    }
+    return out;
+  }
+
   /** The generation of an enemy slot: a recycled slot is a new body (the view's interpolation keys on it). */
   enemyGen(i: number): number {
     return this.gen[i];
@@ -1408,6 +1466,7 @@ export class Sim {
     this.shield[i] = def.shield ?? 0;
     this.slowTicks[i] = 0;
     this.slowMul[i] = 1;
+    this.slowEntries[i] = undefined;
     this.posX[i] = entry.x + 0.5;
     this.posY[i] = entry.y + 0.5;
     this.tgtX[i] = entry.x + 0.5;
@@ -1649,6 +1708,10 @@ export class Sim {
     // Splinter (relic): the explosion resolves twice.
     const blasts = this.projRadius[p] > 0 && this.fold.explodeTwice ? 2 : 1;
     for (let rep = 0; rep < blasts; rep++) {
+      // Splinter's second blast is DRAWN as a second blast (WBS 2.31: a
+      // rule the player cannot see is a presentation bug): the same spot,
+      // three ticks later on screen, resolved now.
+      if (rep === 1) this.emit({ kind: 'impact', x: ix, y: iy, r: this.projRadius[p], delay: SPLINTER_DELAY });
       for (let i = 0; i < this.enemyHigh; i++) {
         if (!this.alive[i]) continue;
         const dx = this.posX[i] - ix;
@@ -1726,8 +1789,12 @@ export class Sim {
     // them off in half the time.
     if (slowTicksN > 0 && !hasTrait(def, 'armoured')) {
       const ticks = hasTrait(def, 'fast') ? Math.ceil(slowTicksN * TRAIT_RULES.fast.slowDurationMul) : slowTicksN;
-      this.slowTicks[enemy] = Math.max(this.slowTicks[enemy], ticks);
-      this.slowMul[enemy] = slowMulN;
+      const tower = towerIdx >= 0 ? this.towers[towerIdx] : null;
+      const src = tower ? this.opts.towerDefs[tower.defIdx].id : 'relic';
+      const list = (this.slowEntries[enemy] ??= []);
+      list.push({ mul: slowMulN, ticks, src });
+      if (list.length > SLOW_ENTRY_CAP) list.sort((a, b) => b.ticks - a.ticks).length = SLOW_ENTRY_CAP;
+      this.resolveSlows(enemy);
     }
     if (this.hp[enemy] <= 0) {
       const overkill = -this.hp[enemy];
@@ -1833,8 +1900,8 @@ export class Sim {
         this.shield[i] = Math.min(shieldMax, this.shield[i] + shieldMax / SHIELD_REGEN_TICKS);
       }
       if (this.slowTicks[i] > 0) {
-        this.slowTicks[i]--;
         speed *= this.slowMul[i];
+        this.tickSlows(i);
       }
       const dx = this.tgtX[i] - this.posX[i];
       const dy = this.tgtY[i] - this.posY[i];

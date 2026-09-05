@@ -405,6 +405,45 @@ describe('towers and projectiles', () => {
     expect(checked).toBe(true);
   });
 
+  it('slows stack by source: the coldest wins, the longest lasts, and each falls away on its own clock (session 26)', () => {
+    const { cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    // A cold, short field and a warm, long one - on the same body.
+    const COLD: TowerDef = { id: 'frost', cost: 20, range: 8, fireEveryTicks: 1000, attack: 'pulse', projectile: { damage: 0, speed: 1, applyEffect: 'slow', slowMul: 0.4, slowTicks: 10 } };
+    const WARM: TowerDef = { id: 'mortar', cost: 20, range: 8, fireEveryTicks: 1000, attack: 'pulse', projectile: { damage: 0, speed: 1, applyEffect: 'slow', slowMul: 0.8, slowTicks: 30 } };
+    const parked: EnemyDef = { ...WALKER, hp: 10000, speed: 0.005 };
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [COLD, WARM] });
+    // Let the body spawn, then stand both fields beside it.
+    let body = -1;
+    for (let t = 0; t < 10 && body === -1; t++) {
+      sim.tick();
+      for (let i = 0; i < 64; i++) if (sim.alive[i]) { body = i; break; }
+    }
+    expect(body).toBeGreaterThanOrEqual(0);
+    const bx = Math.floor(sim.posX[body]);
+    const by = Math.floor(sim.posY[body]);
+    let built = 0;
+    for (let dy = -4; dy <= 4 && built < 2; dy++)
+      for (let dx = -4; dx <= 4 && built < 2; dx++) {
+        const x = bx + dx;
+        const y = by + dy;
+        if (x >= 0 && y >= 0 && x < cellsW && y < cellsH && sim.canBuildAt(x, y) && sim.buildTower(x, y, built === 0 ? 'frost' : 'mortar')) built++;
+      }
+    expect(built).toBe(2);
+    for (let t = 0; t < 3; t++) sim.tick();
+    expect(sim.slowTicks[body]).toBeGreaterThan(0);
+    const st = sim.enemyStatuses(body);
+    expect(st.map((e) => [e.kind, e.src])).toEqual(expect.arrayContaining([['slow', 'frost'], ['slow', 'mortar']]));
+    expect(Math.min(...st.map((e) => e.mul))).toBeCloseTo(0.4); // the coldest wins
+    expect(sim.slowTicks[body]).toBeGreaterThan(20); // the longest lasts
+    for (let t = 0; t < 12; t++) sim.tick(); // the cold one expires
+    const after = sim.enemyStatuses(body);
+    expect(after.map((e) => e.src)).toEqual(['mortar']);
+    expect(after[0].mul).toBeCloseTo(0.8); // the warm one stands alone
+    for (let t = 0; t < 30; t++) sim.tick();
+    expect(sim.slowTicks[body]).toBe(0);
+    expect(sim.enemyStatuses(body)).toEqual([]);
+  });
+
   it('damage types decide fights: a resisting body takes half, a weak one half again, an immune one nothing (session 26)', () => {
     const { map, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 3, spawnEveryTicks: 1 });
     const COIL: TowerDef = { id: 'bolt', cost: 20, range: 8, fireEveryTicks: 10, attack: 'pulse', damageType: 'energy', projectile: { damage: 10, speed: 1 } };
