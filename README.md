@@ -77,6 +77,12 @@ review found flat: the wave clock and the call button, boss waves, traits as
 real rules, stackability and escalating prices for relics, caches that open
 free onto loot tables, a dead zone for the Mortar with the range drawn as a
 filled disc, and every tower fork rebuilt as two roles instead of two numbers.
+**Session 25 (2026-09-05, evening)** gave every enemy, relic and the Core
+face a generated placeholder sprite, taught the sprite format kinds and
+attack sequences (every tower flashes, recoils and charges on screen),
+drew the orbital as a beam, added two towers — the Tesla Coil's chain arcs
+and the Missile Rack — and wrote [docs/CATALOGUE.md](docs/CATALOGUE.md),
+every tower, enemy and relic in one table.
 **Sessions 23–24 (2026-09-05)** moved the Core to the east edge as a
 three-cell face with one entrance (Daniil's redesign), filled the board with
 road on a carve that no longer fails any loadout, put a strip under the board
