@@ -6,8 +6,11 @@
  * what an id means.
  */
 import type { TermSurface } from '@ascii-defense/render';
+import type { Sprite } from '@ascii-defense/content';
 import { TILE_SIZE, tileRimMask, type CellType } from '@ascii-defense/engine';
 import { CELL_H, CELL_W, drawTerrainCell } from '../board/style';
+import { spriteState } from '../board/BoardView';
+import { drawSpriteFrame } from '../board/sprites';
 import { role } from '../palette';
 
 export interface MenuItem {
@@ -39,6 +42,14 @@ export interface MenuSpec {
   footer?: string;
   /** 0..1 breathing phase for the selected-item shimmer. */
   phase?: number;
+  /**
+   * The title page's HERO (4.28): a row of sprites drawn above the title at
+   * the screen's scale - the towers themselves, until the art agent's splash
+   * arrives. A page with a hero is a designed page, not a plate over a map.
+   */
+  hero?: readonly Sprite[];
+  /** A dim line in the screen's bottom-right corner (build, cell, version). */
+  caption?: string;
 }
 
 const TILE_GW = TILE_SIZE * CELL_W; // tile preview width in glyphs
@@ -85,14 +96,27 @@ export class MenuScreen {
       (spec.footer ?? '').length,
       stripW,
     );
-    const plateW = Math.min(W - 2, widest + 8);
+    const hero = spec.hero ?? [];
+    const heroH = hero.length > 0 ? CELL_H + 2 : 0;
+    const heroW = hero.length > 0 ? hero.length * (CELL_W + 2) - 2 : 0;
+    const plateW = Math.min(W - 2, Math.max(widest + 8, heroW + 8));
     const stripH = tileRows * (TILE_GH + 3);
-    const contentH = 4 + (spec.body?.length ?? 0) + stripH + spec.items.length * 2 + (spec.footer ? 2 : 0);
+    const contentH = heroH + 4 + (spec.body?.length ?? 0) + stripH + spec.items.length * 2 + (spec.footer ? 2 : 0);
     const y0 = Math.max(1, Math.floor((term.rows - contentH) / 2));
     const x0 = Math.floor((W - plateW) / 2);
     for (let y = y0 - 1; y < y0 + contentH + 1 && y < term.rows; y++)
       for (let x = x0 - 1; x <= x0 + plateW && x < W; x++) term.put(x, y, ' ', role('ui.text'), '#0a0f16');
     let y = y0;
+    if (hero.length > 0) {
+      // The towers stand in a row above the title, each on its own ground.
+      const hx0 = x0 + Math.floor((plateW - heroW) / 2);
+      hero.forEach((sp, i) => {
+        const gx = hx0 + i * (CELL_W + 2);
+        for (let r = 0; r < CELL_H; r++) for (let c = 0; c < CELL_W; c++) term.put(gx + c, y + r, ' ', role('tower.ground'), role('tower.ground'));
+        drawSpriteFrame(term, sp, spriteState(sp, []), gx, y);
+      });
+      y += heroH;
+    }
     term.write(x0 + Math.floor((plateW - spec.title.length) / 2), y, spec.title, role('ui.accent'));
     y += 2;
     for (const line of spec.body ?? []) {
@@ -152,6 +176,10 @@ export class MenuScreen {
     if (spec.footer) {
       const f = spec.footer.slice(0, plateW - 2);
       term.write(x0 + Math.floor((plateW - f.length) / 2), y, f, role('ui.dim'));
+    }
+    if (spec.caption) {
+      const c = spec.caption.slice(0, W - 2);
+      term.write(W - 1 - c.length, term.rows - 1, c, role('ui.dim'));
     }
   }
 

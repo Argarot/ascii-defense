@@ -115,6 +115,19 @@ async function main(): Promise<void> {
   modalTerm.canvas.style.position = 'absolute';
   modalTerm.canvas.style.left = '0';
   modalTerm.canvas.style.top = '0';
+  // The shell owns the whole screen (4.28, Daniil): the title, setup,
+  // loadout, how-to, settings and summary are PAGES on a terminal sized to
+  // the viewport, over everything. The pause overlay and the relic offer
+  // stay on the board's own modal: they are moments IN the run.
+  const screenCols = Math.max(60, Math.floor(window.innerWidth / (GLYPH_PX_W * UI_SCALE)));
+  const screenRows = Math.max(30, Math.floor(window.innerHeight / (GLYPH_PX_H * UI_SCALE)));
+  const screenTerm = new GLTerm(glyphs, { cols: screenCols, rows: screenRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, background: role('ui.bg') });
+  screenTerm.canvas.style.position = 'fixed';
+  screenTerm.canvas.style.left = '0';
+  screenTerm.canvas.style.top = '0';
+  screenTerm.canvas.style.zIndex = '20';
+  screenTerm.canvas.style.border = 'none';
+  const FULLSCREEN_MODES = new Set(['title', 'setup', 'loadout', 'howto', 'settings', 'summary']);
   const offerModal = new OfferModal();
   const menu = new MenuScreen();
 
@@ -143,7 +156,9 @@ async function main(): Promise<void> {
   // and the count comes from the same arithmetic the screen lays out with).
   // Reserved rows: title block 4, one body line, up to 4 item rows x2, a
   // footer 2.
-  const TILES_PER_PAGE = tileCapacity(Math.floor(boardCols / UI_SCALE), uiRows, 4 + 1 + 8 + 2);
+  // The loadout page lives on the fullscreen terminal now: it pages at
+  // what THAT screen can show.
+  const TILES_PER_PAGE = tileCapacity(screenCols, screenRows, 4 + 1 + 8 + 2);
   let loadoutPage = 0;
   // Delete mode (playtest 18): armed, clicking a MINTED tile removes it
   // permanently - the pool is the player's content, so pruning it is a
@@ -272,6 +287,7 @@ async function main(): Promise<void> {
   leftCol.appendChild(stripTerm.canvas);
   app.appendChild(leftCol);
   app.appendChild(hudTerm.canvas);
+  document.body.appendChild(screenTerm.canvas);
   const cap = document.createElement('div');
   cap.className = 'hud';
   cap.textContent = `spleen 5x8 \u2802 ${CELL_W}x${CELL_H} glyph cells \u2802 ${mapX}x${mapY} tiles \u2802 space pauses, 1-4 set speed, N calls the wave, Esc menus \u2802 `;
@@ -289,6 +305,8 @@ async function main(): Promise<void> {
       case 'title':
         return {
           title: 'ASCII DEFENSE',
+          hero: SPRITES,
+          caption: `spleen 5x8 \u2802 ${CELL_W}x${CELL_H} glyph cells \u2802 ${mapX}x${mapY} tiles`,
           body: [
             'the board is a press; the waves want it stopped',
             '',
@@ -615,12 +633,19 @@ async function main(): Promise<void> {
     if (action) onHudAction(action);
   });
 
+  screenTerm.canvas.addEventListener('click', (e) => {
+    if (!menuSpec() || !FULLSCREEN_MODES.has(mode)) return;
+    // Hit-test against the regions of the page actually ON SCREEN: a click
+    // that arrives before the next render would otherwise land on the
+    // previous page's rows (found by synthetic-click verification).
+    if (mode !== renderedMenuMode) return;
+    const id = menu.itemAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
+    if (id) menuAction(id);
+  });
   modalTerm.canvas.addEventListener('click', (e) => {
     const spec = menuSpec();
     if (spec) {
-      // Hit-test against the regions of the screen actually ON SCREEN: a
-      // click that arrives before the next render would otherwise land on
-      // the previous menu's rows (found by synthetic-click verification).
+      if (FULLSCREEN_MODES.has(mode)) return; // the fullscreen page owns these clicks
       if (mode !== renderedMenuMode) return;
       const id = menu.itemAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
       if (id) menuAction(id);
@@ -736,11 +761,19 @@ async function main(): Promise<void> {
       // behind fullscreen menus (playtest 12, item 4) - a menu is not a
       // moment to read tower stats, and the panel pulled the eye.
       const spec = menuSpec();
+      const fullscreen = spec !== null && FULLSCREEN_MODES.has(mode);
       hudTerm.canvas.style.visibility = spec && mode !== 'paused' ? 'hidden' : 'visible';
       stripTerm.canvas.style.visibility = spec && mode !== 'paused' ? 'hidden' : 'visible';
+      screenTerm.canvas.style.display = fullscreen ? '' : 'none';
       modalTerm.clear();
       renderedMenuMode = spec ? mode : null;
-      if (spec) {
+      if (fullscreen) {
+        screenTerm.clear();
+        menu.render(screenTerm, { ...spec, phase: animPhase });
+        screenTerm.flush();
+        modalTerm.flush();
+        modalTerm.canvas.style.display = '';
+      } else if (spec) {
         menu.render(modalTerm, { ...spec, phase: animPhase });
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
@@ -780,7 +813,9 @@ async function main(): Promise<void> {
     // calls, one level below the pixel hit-test. modalText shows what the
     // player would see (CONTRIBUTING: toText over screenshots).
     menu: (id: string): void => { menuAction(id); },
-    modalText: (): string => modalTerm.toText(),
+    // The page on screen: the fullscreen terminal for the shell's pages, the
+    // board's modal for the pause overlay and the offer.
+    modalText: (): string => (FULLSCREEN_MODES.has(mode) && menuSpec() ? screenTerm : modalTerm).toText(),
     setupState: (): { threat: number; loadout: string[]; genError: string | null } => ({ threat: setupThreat, loadout: [...setupLoadout], genError }),
   };
 }
