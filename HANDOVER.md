@@ -1,4 +1,4 @@
-# Handover — state as of 2026-09-04 (end of day; session 22: the geometry migration)
+# Handover — state as of 2026-09-05 (midday; session 23 shipped four PRs, session 24 proposed)
 
 > **Updated once per working day** (Daniil). State and seams only; sequencing
 > lives in the roadmap ledger, the checklist in the WBS, requests in the WBS
@@ -19,9 +19,17 @@ Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always).
 
 ## Where the project is
 
-**Session 22 (2026-09-04) shipped the geometry migration and Daniil's art
-pipeline, five PRs (#105–#109), decision D24.** Daniil played design round 1
-first and called its gate ("quite fun and quite challenging").
+**Session 23 (2026-09-05 morning) shipped four PRs (#111–#114):** retune 1
+(Hailstorm and Cluster to 60%); the playtest fixes — junction cells drawn by
+EFFECTIVE ports (an 'X' with north closed wears the T art), the range as
+three thin rings, the Bolt's own gold dash, the ramp a notch down; Daniil's
+art tooling tracked (`sprite-editor/`, `tools/art/`, `vendor/fonts/`);
+his thought dump sorted into the docs (PRD §4.3.1, §7.8, §13, §15.1, §18;
+WBS D25–D28, 2.30–2.34, 4.27–4.29, 5.6–5.8, 6.9–6.10, 7.8; ledger 23–38).
+Measured on 2026-09-04: five specials fail to generate on every small
+board. **Session 22 (2026-09-04)** shipped the geometry migration and the
+art pipeline (#105–#109, D24); Daniil played design round 1 and called its
+gate.
 
 1. **Sprite format v2 + the importer (#105):** a sprite is a map of `states`
    keyed by a string the view chooses — a tower's choice path (`""`, `"0"`,
@@ -95,27 +103,73 @@ on the board, which he has not yet played.
 - **`gh pr merge` only bare** (the classifier refuses it chained), and only
   after `gh pr checks` reports pass on the same SHA as `git rev-parse HEAD`.
 
-## Key seams for the next session
+## Next session, proposed — 24: the board and the screen
 
-- **Balance is now measured, not tuned.** `docs/lab/sweep-2026-09-04.md`
-  names the three losing forks and a first retune (Hailstorm and Cluster to
-  60% per shot, Cluster scatter 0.7). The sweep measures a tower solo; a
-  mixed-build sweep (a bolt line plus the frost variant) is what would judge
-  Absolute Zero fairly. `packages/harness/src/lab/sweep.ts` is where that
-  goes; `runLab` already accepts explicit placements.
-- **`view/board/style.ts` draws roads from `ROAD_SPRITE`** and everything else
-  from glyph pools. When Daniil's ground/rock/ore/Core/water sprites arrive
-  (same study format, one state per letter), the pool branch becomes the
-  fallback and the sprite branch generalises from "road letters" to "any
-  letter with a state". The importer needs one more input shape for them.
-- **Enemies** are `ENEMY_LOOK` glyphs in `BoardView.ts`; the sprite format
-  can carry them (states by enemy id, frames for a walk cycle) once drawn.
-- **`main.ts` still creates its terminals once.** Rebuilding them on `ready`
-  when the map's size differs would let any save resume anywhere; today the
-  save is refused instead.
-- **The naming session (D8) is next in the ledger (23)**, then damage types
-  (2.8) and attack shapes (4.10). The trait table (`engine/sim/traits.ts`) is
-  where resistances slot in.
+*(Daniil's rule, 2026-09-05: every shipped session ends with the next one
+proposed, and it must be a full day of visible progress. His "go" is
+enough; defaults are stated where he has not amended.)*
+
+**Theme.** The Core moves to the edge, the board fills, the empty screen
+works. It is next because every balance number, the lab, the difficulty
+curve and the bottom strip all sit on the board's shape, and the shape is
+about to change.
+
+1. **The Core at the edge** *(Daniil's redesign, 2026-09-05)*. The Core
+   tile is retired. The cell grid gains ONE extra row along the bottom
+   edge; a three-cell **Core face** sits in it under the road's last cell;
+   the strip's other cells are blank. The road tree roots at the slot above
+   the face (column drawn per seed from the middle third); **entries only
+   on the north, east and west borders**; the Core has exactly one
+   entrance; the per-entry floor still binds. `verifyMap`: one road cell
+   touches the face. Sim breach unchanged (Core cells are 'C'). View: the
+   face drawn in the current style until Daniil's sprite arrives; board
+   canvas one cell taller. Library: `core_*` tiles removed; the smith's
+   'C' brush retired. Seven sites assume height = slots × 5 (`main.ts`,
+   `workerRuntime.ts`, `BoardView.ts`, sim, verify); each moves to a
+   `cellsH` read from the map. Golden hash moves with the reason. Saves
+   are stamped (D15) — old ones refused with a sentence.
+2. **The board fills, lanes balanced** (2.30, D28 defaults): specials
+   placed first as fixed nodes; the tree grows from the root to **90%** of
+   land slots; every dead end is an entrance; every lane **at least 70% of
+   the longest** where the board allows. When constraints fight: tree >
+   specials > floor > balance > coverage. ARCHITECTURE §12 rewritten;
+   `tools/mapgen-sweep.mjs` permanent (fails, rerolls, coverage, balance
+   ratio per board × loadout × seed).
+3. **The bottom strip** (4.27): a third terminal, full width under the
+   board. The Core face's card (hp, relic slots, ACTIVES — moved out of the
+   HUD column, right under the face they belong to), this wave and the
+   next by type with each type's specialty, and **build buttons drawn
+   with the towers' own sprites** at board scale, full colour when
+   affordable, grey when not, with button chrome. `boardSize.ts` reserves
+   the strip; at 1080p that costs one tile row (7×4 plus the Core row).
+4. **Difficulty on the new boards** (item 4, properly): a mixed-build lab
+   (a Bolt line at the choke, a Frost, a Mortar, economy-driven) on the new
+   generator across boards and seeds; the ramp and the D18 offset retuned
+   from that table; Hailstorm judged at 60% vs 75% in the same run.
+5. **The full-screen shell** (4.28): a screen host that sizes every page
+   to the viewport; the title as a designed page with the menu; run setup,
+   loadout and summary as pages; the board as a page. Placeholder title art
+   until the art agent's splash. The Tile Smith stays on its own page this
+   session.
+6. **Boon colours and the contrast lint** (4.29, 2.32), riding along.
+
+**Gate — Daniil's playtest on the live build:** five-special loadouts
+generate every time on his screen; the Core face sits at the bottom with
+its actives under it; the strip shows the wave and the buttons; a Standard
+run with an ordinary build reaches wave 10+ and the shortest lane does not
+decide it.
+
+**His part:** the Core face sprite and button art from the art agent
+(placeholders until then); amendments to the D28 defaults if any; the
+playtest at the end.
+
+**Biggest risk:** one entrance makes the last two slots the whole game — a
+choke where five towers see everything. PR 4 measures exactly that (choke
+build vs spread build) before the numbers are set; if the choke wins by a
+mile, the answer is a longer shared tail or a min-range rule, not a quieter
+tower. **Expensive if wrong:** the Core's position is in every save, in the
+Core-adjacent relic, in the lab's placement heuristics and in the smith —
+PR 1 is where to argue, because moving it again costs PR 1 again.
 
 ## Standing open items
 
