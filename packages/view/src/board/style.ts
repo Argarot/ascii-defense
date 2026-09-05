@@ -48,6 +48,13 @@ export const POOLS = APPEARANCE.pools as Record<CellType, string>;
 const roadResult = validateSprite.check(roadJson);
 if (!roadResult.ok) throw new Error('road sprite failed validation: ' + roadResult.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
 export const ROAD_SPRITE = roadResult.value;
+/**
+ * Port mask -> the road letter with exactly those ports. The bridge is
+ * excluded: its union mask is the crossing's, but its art is its own.
+ */
+const PORT_LETTER: Partial<Record<number, CellType>> = {};
+for (const [letter, ports] of Object.entries(ROAD_PORTS) as [CellType, number][]) if (letter !== 'B') PORT_LETTER[ports] = letter;
+
 /** Which of a state's variations a cell shows: the mixing hash of its glyph origin, never dice. */
 export function roadVariation(gx0: number, gy0: number, count: number): number {
   return count <= 1 ? 0 : Math.floor(hash2(gx0, gy0, 41) * count) % count;
@@ -141,7 +148,18 @@ export function drawTerrainCell(
   // route graph can still close a side the letter leaves open (an 'X' at a
   // dead end, a port facing ground), and THAT side gets the hairline kerb
   // drawn over the sprite - the sim's verdict, not the letter's.
-  const roadState = rim !== 0 || ROAD_PORTS[kind] !== undefined ? ROAD_SPRITE.states[kind] : undefined;
+  // The state drawn is the cell's EFFECTIVE shape (session 23 - Daniil's
+  // playtest: "every T-junction has one cell with the wrong sprite"): the
+  // letter's ports minus the sides the route graph closes. The library's
+  // junction tiles carry an omni 'X' at the join and a minted tile's ports
+  // are 'X' too; drawn by letter they wore the crossing's art - no kerbs at
+  // all - with one braille line over it. Drawn by effective ports, an 'X'
+  // with north closed IS a T-junction and wears the T's art. The bridge
+  // keeps its own art (two strands, kerbs baked); a dead end (one port) has
+  // no letter and keeps the letter's art with the kerb drawn over it.
+  const ports = ROAD_PORTS[kind];
+  const drawn: CellType = ports === undefined || kind === 'B' ? kind : (PORT_LETTER[ports & ~rim & 15] ?? kind);
+  const roadState = ports !== undefined ? ROAD_SPRITE.states[drawn] : undefined;
   if (roadState) {
     const variations = [roadState, ...(roadState.variations ?? [])];
     const v = variations[roadVariation(gx0, gy0, variations.length)];
@@ -158,7 +176,7 @@ export function drawTerrainCell(
       }
     }
     // Sides the graph closes but the letter opens: kerb them over the art.
-    const unexpected = rim & (ROAD_PORTS[kind] ?? 0);
+    const unexpected = rim & (ROAD_PORTS[drawn] ?? 0);
     if (unexpected !== 0) {
       for (let y = 0; y < CELL_H; y++)
         for (let x = 0; x < CELL_W; x++) {

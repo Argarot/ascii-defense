@@ -149,7 +149,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         lootTables,
         finalWave: THREAT.finalWave,
         interWaveTicks: THREAT.waveSeconds * TICK_HZ,
-        difficulty: { hpLinear: 0.18, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
+        difficulty: { hpLinear: 0.15, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
       });
       if (resume) {
         // A save IS a replay (PRD sec 15.2): re-apply the input log at its
@@ -225,9 +225,12 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const speed = SPEEDS[speedIdx];
     const towers: { x: number; y: number; id: string; choices: readonly number[] }[] = [];
     for (const t of s.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: s.towerDef(t).id, choices: t.choices });
-    const projectiles: { x: number; y: number; vx: number; vy: number }[] = [];
+    const projectiles: { x: number; y: number; vx: number; vy: number; kind: string }[] = [];
     for (let i = 0; i < s.projX.length; i++) {
-      if (s.projAlive[i]) projectiles.push({ x: s.projX[i], y: s.projY[i], vx: s.projVX[i], vy: s.projVY[i] });
+      if (!s.projAlive[i]) continue;
+      // A sold tower's shots in flight keep flying; they just lose their look.
+      const owner = s.towers[s.projTowerIdx[i]];
+      projectiles.push({ x: s.projX[i], y: s.projY[i], vx: s.projVX[i], vy: s.projVY[i], kind: owner ? s.towerDef(owner).id : '' });
     }
     const enemies: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean }[] = [];
     for (let i = 0; i < s.posX.length; i++) {

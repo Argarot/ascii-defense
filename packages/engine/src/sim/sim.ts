@@ -267,7 +267,8 @@ export class Sim {
   readonly projAlive = new Uint8Array(PROJ_CAP);
   private readonly projTarget = new Int32Array(PROJ_CAP);
   private readonly projTargetGen = new Uint16Array(PROJ_CAP);
-  private readonly projTowerIdx = new Int16Array(PROJ_CAP);
+  /** The firing tower's index in `towers`; public like velocity - the view draws a shot in its tower's look. */
+  readonly projTowerIdx = new Int16Array(PROJ_CAP);
   private readonly projTtl = new Int16Array(PROJ_CAP);
   private readonly projDamage = new Float32Array(PROJ_CAP);
   private readonly projSpeed = new Float32Array(PROJ_CAP);

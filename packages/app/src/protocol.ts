@@ -22,8 +22,8 @@ export const BOARD_SLOTS = { w: 12, h: 7 } as const;
 /** `waveSeconds`: the wave clock, launch to launch (design round 1, item 10). */
 export const THREAT_LEVELS = [
   { name: 'Calm', entries: [2, 3] as const, pathBias: 12, finalWave: 15, hpGeometric: 1.05, waveSeconds: 55 },
-  { name: 'Standard', entries: [2, 5] as const, pathBias: 8, finalWave: 20, hpGeometric: 1.06, waveSeconds: 40 },
-  { name: 'Grim', entries: [3, 6] as const, pathBias: 5, finalWave: 25, hpGeometric: 1.08, waveSeconds: 30 },
+  { name: 'Standard', entries: [2, 5] as const, pathBias: 8, finalWave: 20, hpGeometric: 1.05, waveSeconds: 40 },
+  { name: 'Grim', entries: [3, 6] as const, pathBias: 5, finalWave: 25, hpGeometric: 1.07, waveSeconds: 30 },
 ] as const;
 
 /** What the run IS, for saving: determinism makes this the whole state.

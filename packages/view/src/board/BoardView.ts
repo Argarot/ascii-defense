@@ -63,6 +63,18 @@ const ENEMY_LOOK: Record<string, { glyph: string; roleName: string }> = {
   husk: { glyph: 'H', roleName: 'enemy.husk' },
 };
 
+/**
+ * What a shot looks like, by the tower that fired it (Daniil, session 23:
+ * the Bolt and the Mortar shared one '*' and read as the same weapon). A
+ * bolt is a short bright dash in the turret's own shaft colour; a shell is
+ * the heavy white burst it always was. Unknown kinds keep the shell.
+ */
+const PROJECTILE_LOOK: Record<string, { glyph: string; roleName: string }> = {
+  bolt: { glyph: '-', roleName: 'tower.bolt.bolt_shaft' },
+  mortar: { glyph: '*', roleName: 'tower.core' },
+};
+const PROJECTILE_DEFAULT = PROJECTILE_LOOK.mortar;
+
 const DESCRIBE: Record<CellType, string> = {
   G: 'ground \u2802 buildable',
   X: 'road crossroads \u2802 NEVER buildable',
@@ -131,7 +143,8 @@ export interface RenderState {
   towers?: readonly { x: number; y: number; id?: string; choices?: readonly number[] }[];
   /** Projectiles in flight, continuous cell units; per-tick velocity, when
    *  given, draws a short trail behind the head (WBS 4.1). */
-  projectiles?: readonly { x: number; y: number; vx?: number; vy?: number }[];
+  /** Shots in flight; `kind` is the firing tower's id, which picks the glyph. */
+  projectiles?: readonly { x: number; y: number; vx?: number; vy?: number; kind?: string }[];
   /** The hovered cell accepts a build right now (sim's verdict, not ours). */
   hoverBuildable?: boolean;
   /** Faint markers on tile corners - the map's seams, visible on demand. */
@@ -327,20 +340,23 @@ export class BoardView {
     // tint only the glyphs whose distance from the tower's center sits on
     // the radius, giving a near-true circle instead of a blocky area fill.
     if (state.range) {
-      // The range as a FILLED disc (Daniil, design round 1, item 2):
-      // concentric one-cell rings from the outer radius inward, each fainter
-      // than the one outside it, so the covered area reads as filled rather
-      // than as an outline. The dead zone inside minR gets no rings, sits
-      // darker, and wears a dark-red rim - the Mortar cannot lob at its own
-      // feet, and the board says so before the shell does. Same drawing
-      // for every tower: a Bolt is a full disc, a Mortar a disc with a hole.
+      // The range as THREE TOUCHING RINGS, one glyph row thin, stepping
+      // inward from the radius and fading as they go (Daniil, session 23,
+      // item 6 - the filled disc of design round 1 was not what he asked
+      // for). The outline says where the reach ends; the fade says which
+      // side is inside; the board under it stays readable. The dead zone
+      // is the same drawing mirrored: three rings stepping OUTWARD from
+      // minR and fading outward, in the same ink - the direction of the
+      // fade is the whole message, no second colour needed.
       const cx = state.range.x + 0.5;
       const cy = state.range.y + 0.5;
       const r = state.range.r;
       const minR = state.range.minR ?? 0;
-      // Band half-width in cell units: wide enough that every glyph row and
-      // column the circle crosses catches at least one tinted glyph.
-      const band = 0.22;
+      // One glyph row, in cells: the thinnest ring the grid can draw. Each
+      // glyph joins the ring nearest its distance, so the three rings touch.
+      const step = 1 / CELL_H;
+      const band = step / 2;
+      const RING_SHADE = [1.9, 1.45, 1.2] as const;
       const pulse = state.rangeIsPreview ? 0.9 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1) : 0;
       const minGx = Math.max(0, Math.floor((cx - r - 1) * CELL_W));
       const maxGx = Math.min(this.cellsW * CELL_W - 1, Math.ceil((cx + r + 1) * CELL_W));
@@ -354,17 +370,17 @@ export class BoardView {
           const dy = uy - cy;
           const d = Math.sqrt(dx * dx + dy * dy);
           if (d > r + band) continue;
-          if (Math.abs(d - r) <= band) {
-            // The outer rim: brightest, and it breathes for previews.
-            term.shade(gx, offsetY + gy, (state.rangeIsPreview ? 1.3 : 1.9) + pulse, 0.07);
-          } else if (d < minR - band) {
-            term.shade(gx, offsetY + gy, 0.55, 0.0); // the hole: darker
-          } else if (minR > 0 && Math.abs(d - minR) <= band) {
-            term.tint(gx, offsetY + gy, '#4a1418'); // the hole's rim
-          } else if (d < r) {
-            // Ring k counts inward from the rim; each is a step fainter.
-            const k = Math.floor(r - d);
-            term.shade(gx, offsetY + gy, Math.max(1.06, 1.5 - 0.12 * k) + pulse * 0.3, 0.03);
+          const outer = Math.round((r - d) / step); // 0 = the rim itself, counting inward
+          if (outer >= 0 && outer < RING_SHADE.length) {
+            const s = RING_SHADE[outer] * (state.rangeIsPreview ? 0.8 : 1);
+            term.shade(gx, offsetY + gy, s + (outer === 0 ? pulse : pulse * 0.3), 0.07 - 0.02 * outer);
+            continue;
+          }
+          if (minR <= 0 || d < minR - band) continue;
+          const inner = Math.round((d - minR) / step); // 0 = the dead zone's edge, counting outward
+          if (inner >= 0 && inner < RING_SHADE.length) {
+            const s = RING_SHADE[inner] * (state.rangeIsPreview ? 0.8 : 1);
+            term.shade(gx, offsetY + gy, s + pulse * 0.3, 0.07 - 0.02 * inner);
           }
         }
     }
@@ -425,7 +441,8 @@ export class BoardView {
           if (tx !== gx || ty !== gy) term.put(tx, ty, chr, role(rn));
         }
       }
-      term.put(gx, gy, '*', role('tower.core'));
+      const look = (p.kind && PROJECTILE_LOOK[p.kind]) || PROJECTILE_DEFAULT;
+      term.put(gx, gy, look.glyph, role(look.roleName));
     }
 
     // Boon ground: corner tint that stays visible when a tower stands on

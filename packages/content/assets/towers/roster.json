@@ -10,7 +10,7 @@
       "attack": "projectile",
       "projectile": {
         "damage": 8,
-        "speed": 0.5,
+        "speed": 0.8,
         "homing": true
       },
       "tiers": [
