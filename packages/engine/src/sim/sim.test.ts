@@ -405,6 +405,48 @@ describe('towers and projectiles', () => {
     expect(checked).toBe(true);
   });
 
+  it('the Core gives every tower its own gift on the cells touching the face; a Bastion lifts its neighbours (session 26, WBS 2.35)', () => {
+    const { map, cellsW, simOpts } = makeWorld(53, { maxSpawns: 0, startingScrap: 500 });
+    const GIFTED: TowerDef = { ...BOLT, coreBoon: { text: 'one more body', mods: { pierceCount: 1 } } };
+    const MINER: TowerDef = { ...REFINERY, coreBoon: { text: 'from nothing', flags: ['mineAnywhere'] } };
+    const BASTION: TowerDef = { id: 'bastion', cost: 40, range: 1.5, fireEveryTicks: 1, attack: 'none', aura: { damageMul: 1.15, rateMul: 1, rangeAdd: 0, reach: 1, productionMul: 1 }, tiers: [{ choices: [{ cost: 40, name: 'Command', mods: { auraDamage: 0.15 } }, { cost: 40, name: 'Logistics', mods: { auraRate: 0.15 } }] }] };
+    const sim = new Sim(53, { ...simOpts, towerDefs: [GIFTED, MINER, BASTION] });
+    // The column cells above and below the face touch it.
+    const faceX = map.board.width * TILE_SIZE;
+    const above = { x: faceX, y: map.coreFace[0].y - 1 };
+    const below = { x: faceX, y: map.coreFace[2].y + 1 };
+    expect(sim.isNearCore(above.x, above.y)).toBe(true);
+    expect(sim.isNearCore(0, 0)).toBe(false);
+    expect(sim.buildTower(above.x, above.y, 'bolt')).toBe(true);
+    const gifted = sim.towerAt(above.x, above.y)!;
+    expect(sim.stats(gifted).pierceCount).toBe(1);
+    expect(sim.stats(gifted).coreBoon).toBe(true);
+    // The same tower elsewhere has no pierce.
+    let far: { x: number; y: number } | null = null;
+    for (let y = 0; y < 5 && !far; y++) for (let x = 0; x < 5; x++) if (sim.canBuildAt(x, y) && !sim.isNearCore(x, y)) { far = { x, y }; break; }
+    expect(far).not.toBeNull();
+    expect(sim.buildTower(far!.x, far!.y, 'bolt')).toBe(true);
+    expect(sim.stats(sim.towerAt(far!.x, far!.y)!).pierceCount).toBe(0);
+    // A Refinery next to the face mines with no vein under it.
+    expect(sim.buildTower(below.x, below.y, 'refinery')).toBe(true);
+    const ore0 = sim.ore[0];
+    for (let t = 0; t < REFINERY.production!.everyTicks + 2; t++) sim.tick();
+    expect(sim.ore[0]).toBeGreaterThan(ore0);
+    // A Bastion beside the gifted Bolt lifts its damage by 15%, 30% with Command; two Bastions do not stack.
+    const base = sim.stats(gifted).damage;
+    const bx = above.x - 1;
+    const by = above.y;
+    expect(sim.buildTower(bx, by, 'bastion')).toBe(true);
+    expect(sim.stats(gifted).damage).toBeCloseTo(base * 1.15);
+    expect(sim.chooseTier(bx, by, 0, 0)).toBe(true);
+    expect(sim.stats(gifted).damage).toBeCloseTo(base * 1.3);
+    if (sim.canBuildAt(bx, by - 1)) {
+      expect(sim.buildTower(bx, by - 1, 'bastion')).toBe(true);
+      expect(sim.stats(gifted).damage).toBeCloseTo(base * 1.3);
+    }
+    expect(cellsW).toBeGreaterThan(0);
+  });
+
   it('a beam hits every body in its corridor, heats on a held lead, and turns on a replayed input (session 26, WBS 2.34)', () => {
     const { cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
     const LANCE: TowerDef = { id: 'laser', cost: 20, range: 6, fireEveryTicks: 2, attack: 'beam', damageType: 'energy', projectile: { damage: 10, speed: 1 }, beam: { width: 1, rampStep: 0.5, rampMax: 2 } };

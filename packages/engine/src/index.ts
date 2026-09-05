@@ -61,7 +61,8 @@ export { REPLAY_VERSION, contentHashOf, fnv1a, playReplay } from './sim/replay';
 export type { Replay, ReplayAction, ReplayInput } from './sim/replay';
 export { PRIORITIES, pickTarget } from './sim/targeting';
 export type { Priority, TargetCandidate } from './sim/targeting';
-export { canChoose, effectiveStats, foldRelics, EMPTY_FOLD, resistMul, DAMAGE_TYPES } from './sim/defs';
+export { canChoose, effectiveStats, foldRelics, EMPTY_FOLD, resistMul, DAMAGE_TYPES, applyCoreBoon } from './sim/defs';
+export type { CoreBoon } from './sim/defs';
 export type { DamageType } from './sim/defs';
 export type {
   EnemyDef,

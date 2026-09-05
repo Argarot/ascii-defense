@@ -58,7 +58,9 @@ describe('shipped combat rosters - cross-content sanity', () => {
       // roster.json is imported as a literal type here; widen to the schema shape.
       const prod = t.production as { ore?: number; scrap?: number } | undefined;
       const produces = prod !== undefined && ((prod.ore ?? 0) + (prod.scrap ?? 0)) > 0;
-      expect(attacks || produces, t.id).toBe(true);
+      // A support tower (session 26, the Bastion) earns its keep through its neighbours.
+      const supports = (t as { aura?: unknown }).aura !== undefined;
+      expect(attacks || produces || supports, t.id).toBe(true);
       // And an attacker without a projectile spec would crash the tower phase.
       if (t.attack !== 'none') expect(t.projectile, t.id).toBeDefined();
     }
@@ -80,12 +82,13 @@ import refinerySprite from '@ascii-defense/content/assets/sprites/refinery.json'
 import teslaSprite from '@ascii-defense/content/assets/sprites/tesla.json';
 import missileSprite from '@ascii-defense/content/assets/sprites/missile.json';
 import laserSprite from '@ascii-defense/content/assets/sprites/laser.json';
+import bastionSprite from '@ascii-defense/content/assets/sprites/bastion.json';
 import roadSprite from '@ascii-defense/content/assets/sprites/road_muted_cobble.json';
 import grid from '@ascii-defense/content/assets/grid.json';
 
 describe('imported sprites cover what the game can show', () => {
   // The four studies and the two session-25 placeholders (tools/placeholder-sprites.mjs).
-  const towerSprites = [boltSprite, mortarSprite, frostSprite, refinerySprite, teslaSprite, missileSprite, laserSprite];
+  const towerSprites = [boltSprite, mortarSprite, frostSprite, refinerySprite, teslaSprite, missileSprite, laserSprite, bastionSprite];
   // The 15 choice paths a three-tier either/or tree can reach.
   const PATHS = [''];
   for (const a of ['0', '1']) { PATHS.push(a); for (const b of ['0', '1']) { PATHS.push(a + b); for (const c of ['0', '1']) PATHS.push(a + b + c); } }

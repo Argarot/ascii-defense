@@ -9,17 +9,20 @@
 ## Towers *(generated)*
 
 <!-- generated:towers -->
-7 towers in `packages/content/assets/towers/roster.json`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).
+8 towers in `packages/content/assets/towers/roster.json`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).
 
-| Tower | id | Cost | Type | Range | Rate | Damage | DPS | Shape / production | What it is |
-|---|---|---|---|---|---|---|---|---|---|
-| **Bolt Turret** | bolt | 20 | kinetic | 6 | 1.43 | 8 | 11.4 | homing shot | Homing single shots at a steady rate. The all-rounder; its tree picks a job. |
-| **Mortar** | mortar | 35 | kinetic | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. |
-| **Refinery** | refinery | 30 |  | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. |
-| **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts. |
-| **Tesla Coil** | tesla | 40 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. |
-| **Missile Rack** | missile | 50 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. |
-| **Laser Lance** | laser | 45 | energy | 6 | 6.67 | 3 | 20 | beam: a corridor 1 wide down its facing, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces, through every body on it; the damage climbs while it holds one. Rotate it with R. |
+| Tower | id | Cost | Type | Range | Rate | Damage | DPS | Shape / production | What it is | Next to the Core |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Bolt Turret** | bolt | 20 | kinetic | 6 | 1.43 | 8 | 11.4 | homing shot | Homing single shots at a steady rate. The all-rounder; its tree picks a job. | every shot passes into one more body. |
+| **Mortar** | mortar | 35 | kinetic | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. | no dead zone - it can hit its own feet. |
+| **Refinery** | refinery | 30 |  | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. | mines from nothing - 1 Ore a cycle with no vein, forever. |
+| **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts. | every third pulse freezes the field solid. |
+| **Tesla Coil** | tesla | 40 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. | every arc hits two more bodies. |
+| **Missile Rack** | missile | 50 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. | two missiles per launch. |
+| **Laser Lance** | laser | 45 | energy | 6 | 6.67 | 3 | 20 | beam: a corridor 1 wide down its facing, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces, through every body on it; the damage climbs while it holds one. Rotate it with R. | the heat climbs one multiple higher. |
+| **Bastion** | bastion | 40 |  | 1.5 |  |  |  | aura: neighbours within 1 cell(s) hit x1.15 | Shoots nothing. Every tower touching it hits harder; its tree makes the ring wider and the gift bigger. | the aura reaches one cell further. |
+
+The two ground cells touching the Core face (and the border cells beside it) are the precious ground of PRD §4.5: a tower there gets the gift in the last column, folded like a tier.
 
 #### Bolt Turret - the tree
 
@@ -97,6 +100,17 @@
 | T2 | **Capacitor** | 90 | +2 damage per pulse, cold or hot. Steady output. | damage +2 |
 | T3 | **Cutter** | 180 | Every pulse at 150%. The answer to a column standing in the beam. | damageMul +1.5 |
 | T3 | **Sweep** | 180 | Every second the lance turns toward the facing with the most bodies in reach. Heat resets on the turn. | unlocks sweep |
+
+#### Bastion - the tree
+
+| Tier | Choice | Cost | What it does | Data |
+|---|---|---|---|---|
+| T1 | **Command** | 40 | Neighbours hit for 30% more instead of 15%. | auraDamage +0.15 |
+| T1 | **Logistics** | 40 | Neighbours fire 15% faster, and producers cycle 15% faster. | auraRate +0.15, auraProduction +0.15 |
+| T2 | **Reach** | 80 | The ring grows to two cells: twenty-four neighbours instead of eight. | auraReach +1 |
+| T2 | **Hardpoint** | 80 | Neighbours gain +1 range. | auraRange +1 |
+| T3 | **Warlord** | 160 | Neighbours hit for 30% more on top of everything. | auraDamage +0.3 |
+| T3 | **Quartermaster** | 160 | Neighbouring producers cycle 50% faster; neighbours gain +1 range. | auraProduction +0.5, auraRange +1 |
 
 <!-- /generated -->
 

@@ -7,6 +7,12 @@
       "short": "Bolt",
       "desc": "Homing single shots at a steady rate. The all-rounder; its tree picks a job.",
       "damageType": "kinetic",
+      "coreBoon": {
+        "text": "Next to the Core: every shot passes into one more body.",
+        "mods": {
+          "pierceCount": 1
+        }
+      },
       "cost": 20,
       "range": 6,
       "fireEveryTicks": 14,
@@ -88,6 +94,12 @@
       "name": "Mortar",
       "desc": "Lobs a shell at a place and blasts what stands there. Cannot hit its own feet.",
       "damageType": "kinetic",
+      "coreBoon": {
+        "text": "Next to the Core: no dead zone - it can hit its own feet.",
+        "flags": [
+          "noDeadZone"
+        ]
+      },
       "cost": 35,
       "range": 7,
       "minRange": 2.5,
@@ -175,6 +187,12 @@
       "id": "refinery",
       "name": "Refinery",
       "desc": "Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything.",
+      "coreBoon": {
+        "text": "Next to the Core: mines from nothing - 1 Ore a cycle with no vein, forever.",
+        "flags": [
+          "mineAnywhere"
+        ]
+      },
       "cost": 30,
       "range": 0.5,
       "fireEveryTicks": 1,
@@ -251,6 +269,12 @@
       "short": "Frost",
       "desc": "A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts.",
       "damageType": "energy",
+      "coreBoon": {
+        "text": "Next to the Core: every third pulse freezes the field solid.",
+        "mods": {
+          "freezeEvery": 3
+        }
+      },
       "cost": 25,
       "range": 3.5,
       "fireEveryTicks": 24,
@@ -332,6 +356,12 @@
       "short": "Tesla",
       "desc": "An arc that jumps body to body through a pack. Short reach, answers crowds.",
       "damageType": "energy",
+      "coreBoon": {
+        "text": "Next to the Core: every arc hits two more bodies.",
+        "mods": {
+          "chainCount": 2
+        }
+      },
       "cost": 40,
       "range": 4,
       "fireEveryTicks": 20,
@@ -417,6 +447,12 @@
       "short": "Missiles",
       "desc": "Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone.",
       "damageType": "kinetic",
+      "coreBoon": {
+        "text": "Next to the Core: two missiles per launch.",
+        "mods": {
+          "shots": 1
+        }
+      },
       "cost": 50,
       "range": 9,
       "minRange": 2,
@@ -504,6 +540,12 @@
       "short": "Laser",
       "desc": "A beam down the road it faces, through every body on it; the damage climbs while it holds one. Rotate it with R.",
       "damageType": "energy",
+      "coreBoon": {
+        "text": "Next to the Core: the heat climbs one multiple higher.",
+        "mods": {
+          "beamRampMax": 1
+        }
+      },
       "cost": 45,
       "range": 6,
       "fireEveryTicks": 3,
@@ -573,6 +615,93 @@
               "cost": 180,
               "desc": "Every second the lance turns toward the facing with the most bodies in reach. Heat resets on the turn.",
               "unlocks": "sweep"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bastion",
+      "name": "Bastion",
+      "short": "Bastion",
+      "desc": "Shoots nothing. Every tower touching it hits harder; its tree makes the ring wider and the gift bigger.",
+      "coreBoon": {
+        "text": "Next to the Core: the aura reaches one cell further.",
+        "mods": {
+          "auraReach": 1
+        }
+      },
+      "cost": 40,
+      "range": 1.5,
+      "fireEveryTicks": 1,
+      "attack": "none",
+      "aura": {
+        "damageMul": 1.15,
+        "rateMul": 1,
+        "rangeAdd": 0,
+        "reach": 1,
+        "productionMul": 1
+      },
+      "tiers": [
+        {
+          "choices": [
+            {
+              "name": "Command",
+              "cost": 40,
+              "desc": "Neighbours hit for 30% more instead of 15%.",
+              "mods": {
+                "auraDamage": 0.15
+              }
+            },
+            {
+              "name": "Logistics",
+              "cost": 40,
+              "desc": "Neighbours fire 15% faster, and producers cycle 15% faster.",
+              "mods": {
+                "auraRate": 0.15,
+                "auraProduction": 0.15
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Reach",
+              "cost": 80,
+              "desc": "The ring grows to two cells: twenty-four neighbours instead of eight.",
+              "mods": {
+                "auraReach": 1
+              }
+            },
+            {
+              "name": "Hardpoint",
+              "cost": 80,
+              "desc": "Neighbours gain +1 range.",
+              "mods": {
+                "auraRange": 1
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Warlord",
+              "cost": 160,
+              "desc": "Neighbours hit for 30% more on top of everything.",
+              "mods": {
+                "auraDamage": 0.3
+              }
+            },
+            {
+              "name": "Quartermaster",
+              "cost": 160,
+              "desc": "Neighbouring producers cycle 50% faster; neighbours gain +1 range.",
+              "mods": {
+                "auraProduction": 0.5,
+                "auraRange": 1
+              }
             }
           ]
         }

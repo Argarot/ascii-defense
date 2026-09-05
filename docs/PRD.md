@@ -340,6 +340,15 @@ the build-breaking power spike that makes a roguelite a roguelite. Four buys
 that each add a percentage have nothing to combine. See §7 for what replaced
 it, and §14 for the full rejection.)*
 
+**The gifts, shipped 2026-09-05 (session 26, WBS 2.35)** — a tower on a
+cell touching the Core face gets its own boon, folded like a tier and
+printed on its card: Bolt, every shot passes into one more body · Mortar,
+no dead zone · Refinery, mines from nothing (1 Ore a cycle, forever) ·
+Frost, every third pulse freezes · Tesla, two more bodies per arc ·
+Missiles, two per launch · Laser, the heat climbs one multiple higher ·
+Bastion, the aura reaches one cell further. The Loadbearing relic's flat
+triple range still exists beside them; retiring it is Daniil's call.
+
 ### 4.6 Caches and prospecting — the map as a source of power
 
 *(Caches reworked in design round 1, 2026-09-03 — D21. The first design
@@ -455,6 +464,7 @@ M1 ships the first four. Target is **8 towers + the Core**, not 14.
 | Tesla Coil | chain arcs, short range *(session 25)* | Long Arc (reach) / Twin Coil (throughput) | Forked (more bodies) / Grounding (slow on the chain) | Overload (damage) / Conductor (swarms) | shipped 2026-09-05 |
 | Missile Rack | homing explosive, long range, dead zone *(session 25)* | Warhead (damage) / Seeker (reach, rate) | Salvo (two missiles) / Fragmentation (blast) | Bunker Buster (armour) / Barrage (three missiles) | shipped 2026-09-05 |
 | Laser Lance | a beam down the road it FACES, heat on a held target *(session 26, with facing §5.5)* | Focus (reach) / Wide Beam (corridor) | Overheat (hotter) / Capacitor (steady) | Cutter (columns) / Sweep (re-aims itself) | shipped 2026-09-05 |
+| Bastion | support aura, shoots nothing *(session 26)* | Command (harder) / Logistics (faster) | Reach (a wider ring) / Hardpoint (+range) | Warlord / Quartermaster | shipped 2026-09-05 — **eight towers** |
 
 *(Trees reworked in design round 1, 2026-09-03 — D23: every fork is two
 **roles** that answer different waves, never two numbers. Piercing answers a

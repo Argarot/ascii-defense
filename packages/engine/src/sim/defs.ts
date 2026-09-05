@@ -251,6 +251,27 @@ export interface StatMods {
   beamWidth?: number;
   /** Beam towers: additional multiplier at full heat (base 2 = double while it holds one target). */
   beamRampMax?: number;
+  // ---- support towers (session 26, the Bastion): what the AURA adds to neighbours ----
+  /** Additive to the aura's damage multiplier (base from the def's aura). */
+  auraDamage?: number;
+  /** Additive to the aura's fire-rate multiplier. */
+  auraRate?: number;
+  /** Cells of range the aura adds to neighbours. */
+  auraRange?: number;
+  /** Additional cells of reach (base 1 = the eight neighbours). */
+  auraReach?: number;
+  /** Additive to the aura's production-rate multiplier for neighbouring producers. */
+  auraProduction?: number;
+}
+
+/** A tower's unique gift when it stands next to the Core (PRD sec 4.5, WBS 2.35). */
+export interface CoreBoon {
+  /** One line for the card and the catalogue. */
+  text: string;
+  /** Additive stat mods, folded after the tree. */
+  mods?: StatMods;
+  /** Rules that are not numbers. */
+  flags?: readonly ('noDeadZone' | 'mineAnywhere')[];
 }
 
 export interface ChoiceDef {
@@ -298,6 +319,15 @@ export interface TowerDef {
    * `rampStep` per fire up to `rampMax` times the damage.
    */
   beam?: { width: number; rampStep: number; rampMax: number };
+  /**
+   * Support towers (session 26, the Bastion): every tower within `reach`
+   * cells (chebyshev) gets these; several supporters do not stack - the
+   * strongest of each kind applies. A supporter's own aura never folds
+   * into itself.
+   */
+  aura?: { damageMul: number; rateMul: number; rangeAdd: number; reach: number; productionMul: number };
+  /** The unique boon next to the Core (PRD sec 4.5): every tower has one. */
+  coreBoon?: CoreBoon;
   production?: ProductionSpec;
   /** 3 tiers x 2 exclusive choices = 14 tower variants (Daniil's redesign). */
   tiers?: readonly TowerTierDef[];
@@ -343,6 +373,14 @@ export interface EffectiveStats {
   beamRampMax: number;
   /** Sweep (the Laser's tier 3): the beam re-faces toward the most bodies every second. */
   sweep: boolean;
+  /** Support towers: what the aura gives (1/0 when the tower has none). */
+  auraDamageMul: number;
+  auraRateMul: number;
+  auraRangeAdd: number;
+  auraReach: number;
+  auraProdMul: number;
+  /** Set by the sim when the tower stands next to the Core and its boon applied. */
+  coreBoon: boolean;
 }
 
 /**
@@ -382,6 +420,12 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     beamRampStep: def.beam?.rampStep ?? 0,
     beamRampMax: def.beam?.rampMax ?? 1,
     sweep: false,
+    auraDamageMul: def.aura?.damageMul ?? 1,
+    auraRateMul: def.aura?.rateMul ?? 1,
+    auraRangeAdd: def.aura?.rangeAdd ?? 0,
+    auraReach: def.aura?.reach ?? 0,
+    auraProdMul: def.aura?.productionMul ?? 1,
+    coreBoon: false,
   };
   let damageMul = 1;
   def.tiers?.forEach((tierDef, ti) => {
@@ -404,6 +448,11 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     out.chainReach += m.chainReach ?? 0;
     out.beamWidth += m.beamWidth ?? 0;
     out.beamRampMax += m.beamRampMax ?? 0;
+    out.auraDamageMul += m.auraDamage ?? 0;
+    out.auraRateMul += m.auraRate ?? 0;
+    out.auraRangeAdd += m.auraRange ?? 0;
+    out.auraReach += m.auraReach ?? 0;
+    out.auraProdMul += m.auraProduction ?? 0;
     out.damage += m.damage ?? 0;
     out.range += m.range ?? 0;
     out.minRange += m.minRange ?? 0;
@@ -422,4 +471,41 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
   // A producer can be upgraded faster, never into a per-tick firehose.
   if (def.production) out.productionEveryTicks = Math.max(10, out.productionEveryTicks);
   return out;
+}
+
+/**
+ * Fold a tower's Core boon (PRD sec 4.5) onto folded stats: the same
+ * additive rules as a tier choice, plus the flag rules. Called by the sim
+ * only for a tower standing next to the Core.
+ */
+export function applyCoreBoon(out: EffectiveStats, boon: CoreBoon): void {
+  const m = boon.mods ?? {};
+  out.damage = out.damage * (m.damageMul ?? 1) + (m.damage ?? 0);
+  out.range += m.range ?? 0;
+  out.minRange += m.minRange ?? 0;
+  out.fireEveryTicks = Math.max(2, out.fireEveryTicks + (m.fireEveryTicks ?? 0));
+  out.explodeRadius += m.explodeRadius ?? 0;
+  out.slowTicks += m.slowTicks ?? 0;
+  out.slowMul = Math.max(0, Math.min(1, out.slowMul + (m.slowMul ?? 0)));
+  out.production += m.production ?? 0;
+  out.productionEveryTicks += m.productionEveryTicks ?? 0;
+  out.shots = Math.max(1, out.shots + (m.shots ?? 0));
+  out.spread += m.spread ?? 0;
+  out.pierceCount += m.pierceCount ?? 0;
+  out.shieldMul += m.shieldMul ?? 0;
+  out.slowedBonusMul += m.slowedBonusMul ?? 0;
+  out.freezeEvery += m.freezeEvery ?? 0;
+  out.chainCount += m.chainCount ?? 0;
+  out.chainReach += m.chainReach ?? 0;
+  out.beamWidth += m.beamWidth ?? 0;
+  out.beamRampMax += m.beamRampMax ?? 0;
+  out.auraDamageMul += m.auraDamage ?? 0;
+  out.auraRateMul += m.auraRate ?? 0;
+  out.auraRangeAdd += m.auraRange ?? 0;
+  out.auraReach += m.auraReach ?? 0;
+  out.auraProdMul += m.auraProduction ?? 0;
+  for (const flag of boon.flags ?? []) {
+    if (flag === 'noDeadZone') out.minRange = 0;
+  }
+  out.coreBoon = true;
 }
