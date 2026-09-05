@@ -256,6 +256,8 @@ describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
     for (let i = 0; i < 64; i++) if (sim.alive[i]) { ex = Math.floor(sim.posX[i]); ey = Math.floor(sim.posY[i]); break; }
     expect(sim.fireActive('orbital', ex, ey)).toBe(true);
     expect(sim.aliveCount()).toBeLessThan(alive);
+    // The view draws the strike from its own event (session 25), not a pulse.
+    expect(sim.events.some((e) => e.kind === 'strike' && e.r === 3)).toBe(true);
     expect(sim.fireActive('orbital', ex, ey)).toBe(false); // cooling down
     for (let t = 0; t < 101; t++) sim.tick();
     expect(sim.fireActive('orbital', ex, ey)).toBe(true); // recharged
@@ -285,6 +287,7 @@ describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
     const posBefore: number[] = [];
     for (let i = 0; i < 64; i++) if (sim.alive[i]) posBefore.push(sim.posX[i], sim.posY[i]);
     expect(sim.fireActive('stasis')).toBe(true);
+    expect(sim.events.some((e) => e.kind === 'freeze' && e.ticks === 50)).toBe(true);
     for (let t = 0; t < 49; t++) sim.tick();
     const posAfter: number[] = [];
     for (let i = 0; i < 64; i++) if (sim.alive[i]) posAfter.push(sim.posX[i], sim.posY[i]);

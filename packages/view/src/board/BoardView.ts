@@ -24,7 +24,7 @@ import type { Sprite } from '@ascii-defense/content';
 import { role } from '../palette';
 import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, drawStripCell, drawTerrainCell, drawVoidCell } from './style';
-import { drawSpriteFrame, idleFrame } from './sprites';
+import { attackLook, drawSpriteFrame, idleFrame } from './sprites';
 
 export { CELL_W, CELL_H } from './style';
 
@@ -142,7 +142,8 @@ export interface RenderState {
   enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean }[];
   /** Live towers, in cell coordinates, with their def id for per-type art and
    *  their committed choices for per-state art (sprite v2). */
-  towers?: readonly { x: number; y: number; id?: string; choices?: readonly number[] }[];
+  /** cooldown01 runs 1 (just fired) to 0 (ready); sinceFire is ticks since the last shot, -1 before the first (session 25). */
+  towers?: readonly { x: number; y: number; id?: string; choices?: readonly number[]; cooldown01?: number; sinceFire?: number }[];
   /** Projectiles in flight, continuous cell units; per-tick velocity, when
    *  given, draws a short trail behind the head (WBS 4.1). */
   /** Shots in flight; `kind` is the firing tower's id, which picks the glyph. */
@@ -337,23 +338,17 @@ export class BoardView {
             ? (Math.floor((state.animMs ?? 0) / (sp.frameMs ?? 600)) + t.x * 7 + t.y * 13) % cycle.length
             : 0;
         const frame = cycle[fi];
-        const rows = Math.min(CELL_H, frame.art.length);
-        for (let r = 0; r < rows; r++) {
-          const artRow = [...frame.art[r]];
-          const inkRow = [...frame.ink[r]];
-          const bgRow = frame.bgInk ? [...frame.bgInk[r]] : null;
-          const cols = Math.min(CELL_W, artRow.length);
-          for (let c = 0; c < cols; c++) {
-            const chr = artRow[c];
-            const inkRole = sp.inkMap[inkRow[c]];
-            if (chr === ' ' || inkRole === null || inkRole === undefined || !term.has(chr)) continue;
-            const rn = inkRole === 'PATH' ? 'tower.core' : inkRole;
-            // A per-glyph background (bgInk) is the sprite's own; without one
-            // the tower stands on its ground role.
-            const bgRole = bgRow ? sp.inkMap[bgRow[c]] : undefined;
-            const bg = bgRole === null || bgRole === undefined || bgRole === 'PATH' ? role('tower.ground') : role(bgRole);
-            term.put(gx0 + c, gy0 + r, chr, role(rn), bg);
-          }
+        // The ATTACK look (session 25): the tower's own fire/cool/charge
+        // sequences at this moment of its cycle, or the derived placeholder;
+        // idle when neither applies. Reduced motion keeps the idle frame.
+        const look = isReducedMotion() ? null : attackLook(sp, st, frame, t.sinceFire ?? -1, t.cooldown01 ?? 0);
+        if (look) {
+          // The cell is repainted under a recoil so the vacated row is ground, not the previous frame.
+          if (look.dy) for (let c = 0; c < CELL_W; c++) term.put(gx0 + c, gy0, ' ', role('tower.ground'), role('tower.ground'));
+          drawSpriteFrame(term, sp, look.frame, gx0, gy0 + (look.dy ?? 0), { flatFg: look.flatFg, clipRows: CELL_H - (look.dy ?? 0) });
+          if (look.overlay && gy0 + look.overlay.y >= 0) term.put(gx0 + look.overlay.x, gy0 + look.overlay.y, look.overlay.ch, role(look.overlay.role));
+        } else {
+          drawSpriteFrame(term, sp, frame, gx0, gy0);
         }
       } else {
         for (let r = 0; r < CELL_H; r++)
