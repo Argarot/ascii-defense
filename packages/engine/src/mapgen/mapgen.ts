@@ -57,6 +57,10 @@ export interface MapGenOptions {
    * were CHOSEN, exactly once each.
    */
   specials?: readonly string[];
+  /** Share of slots the road should cover (D28; default COVERAGE_TARGET). */
+  coverage?: number;
+  /** Shortest lane over longest, at least (D28; default LANE_BAND). */
+  laneBand?: number;
 }
 
 export interface CellRef {
@@ -140,6 +144,10 @@ export interface GeneratedMap {
    * board clamp bound the target (the floor is then best-effort).
    */
   pathFloorCells: number;
+  /** Share of slots carrying road, as the carve achieved it (D28; verifyMap holds the map to it). */
+  coverage: number;
+  /** The lane band the carve achieved: LANE_BAND when the shortest lane is within it of the longest, else 0. */
+  laneBand: number;
 }
 
 /** Roadless slots farther than this (in slots) from the road stay void. */
@@ -321,7 +329,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   const plan = carveRoads(
     rng,
     { hasRoad: (k) => index.road.has(k) },
-    { width, height, entries: opts.entries, targetPathCells: opts.targetPathCells, roadSpecials },
+    { width, height, entries: opts.entries, targetPathCells: opts.targetPathCells, roadSpecials, coverage: opts.coverage, laneBand: opts.laneBand },
   );
   const { rootK, roadEdges, secondSegment, forced } = plan;
   const entryCells = plan.entries;
@@ -433,9 +441,12 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         }
         continue;
       }
-      // Reach vs greed (PRD sec 4.1): ore is rare near the road, likelier
-      // (but never common - nodes are a find, not a floor) farther out.
-      const oreChance = 0.04 + 0.1 * (dist[k] - 1);
+      // The board fills (D28, session 24): a map keeps three or four filler
+      // slots, so each one carries real odds of ore - or most maps would
+      // have none. Ore is still a bias, not a guarantee (D12): a 7x5 board
+      // rolls ore-less about one time in ten; rock prospecting and
+      // authored specials are the other two sources.
+      const oreChance = 0.5;
       const pool =
         index.filler.ore.length > 0 && rng.chance(oreChance)
           ? index.filler.ore
@@ -558,6 +569,8 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     boons,
     voidShareTarget,
     pathFloorCells: plan.floorCells,
+    coverage: plan.coverage,
+    laneBand: plan.laneBand,
   };
 
   // The spec's one-place check (ARCHITECTURE sec 12): every invariant,

@@ -189,7 +189,13 @@ describe('replay (WBS 1.4.8)', () => {
     // road tree roots at the east border, and the cell grid is one column
     // wider. Same rules, different world; round-trip replay still proves
     // bit-identical.
-    expect(sim.hashState()).toBe(423829641);
+    // 423829641 -> 622218226 on 2026-09-05 (session 24, PR 2, the board
+    // fills): the carve is v4 - specials first, walks planned to one lane
+    // length, entries emergent until the board is nine tenths road. The
+    // golden map changed again; the sim did not. Round-trip replay still
+    // proves bit-identical. (622218226 -> 1486502285 within the same PR:
+    // the walk's weighting changed while the carve was tuned on the sweep.)
+    expect(sim.hashState()).toBe(1486502285);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

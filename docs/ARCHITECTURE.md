@@ -311,6 +311,22 @@ actually walk.
   loops — loops are bloat the enemies ignore (Daniil, playtest 15). Road
   specials anchor: one arm per separate road on the tile joins the tree,
   every other arm exits the board as a new entry.
+- **The board fills** *(session 24, D28 — Daniil, 2026-09-04/05)*. Specials
+  are placed FIRST, as fixed nodes; then walks are added — the threat's
+  roll of them, and more while road covers less than `COVERAGE_TARGET`
+  (0.9) of the slots. **Every dead end is an entrance**: a walk ends only at
+  a north, west or south border (the east border is the Core's side).
+  Entry count is therefore emergent, never below the roll. The carve
+  REPORTS the coverage it reached (`GeneratedMap.coverage`) and
+  `verifyMap` holds the map to that report, never to the target: a board
+  that cannot fill says so rather than failing.
+- **Lanes are balanced** *(D28)*. Every walk is planned to one lane length
+  L* — the cell floor, or the board's fair share per lane when that is
+  longer — wandering until it has 85% of L* and out by 120%. The plan
+  reports `laneBand` = `LANE_BAND` (0.7) when the shortest lane is at
+  least that share of the longest, else 0; `verifyMap` checks the cell
+  lanes against the report. When rules fight the order is **tree >
+  specials > floor > balance > coverage**.
 - **Path length is denominated in road CELLS, per entry, as a minimum.**
   Every entry's realized route to the Core is at least the threat's cell
   target, clamped to what the board can hold. Conversion at carve time uses
@@ -338,7 +354,9 @@ actually walk.
   may leave land *beyond* `ORE_REACH` — the distance rule is
   one-directional (void never near the road), not a ban on far land.
 - **All land within `ORE_REACH` of the road fills** — a slot at road
-  distance 1..3 always carries a tile.
+  distance 1..3 always carries a tile. On a filled board (D28) that is
+  every slot the road left, and each filler slot carries even odds of ore
+  (the reach-vs-greed gradient had nothing left to grade).
 - **Ore is a bias, not a guarantee** (Daniil, 2026-08-19: floor removed).
   Fill odds lean heavily toward some ore per map; a rare ore-less map is
   legal. The only guaranteed ore is authored ore on a chosen special

@@ -525,18 +525,21 @@ describe('design round 1 (2026-09-03): stackability, escalating costs, the new k
     const run = (toll: boolean): number => {
       const sim = new Sim(61, { ...simOpts, towerDefs: [HARMLESS] });
       if (toll) grant2(sim, 'toll');
-      const spot = nthGround(cells, cellsW, cellsH, 0);
-      // A spot touching the road: the first ground cell with a road neighbour.
-      let pick = spot;
-      outer: for (let y = 0; y < cellsH; y++)
+      // A spot touching the road NEAREST THE CORE (session 24: one entrance,
+      // so every enemy walks past it and pays the toll).
+      let core = { x: cellsW - 1, y: Math.floor(cellsH / 2) };
+      for (let y = 0; y < cellsH; y++) for (let x = 0; x < cellsW; x++) if (cells[y * cellsW + x] === 'C') core = { x, y };
+      let pick: { x: number; y: number } | null = null;
+      let bestD = Infinity;
+      for (let y = 0; y < cellsH; y++)
         for (let x = 0; x < cellsW; x++) {
           if (cells[y * cellsW + x] !== 'G') continue;
-          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-            const c = cells[(y + dy) * cellsW + (x + dx)];
-            if (c === 'X') { pick = { x, y }; break outer; }
-          }
+          const touches = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => cells[(y + dy) * cellsW + (x + dx)] === 'X');
+          const d = Math.abs(x - core.x) + Math.abs(y - core.y);
+          if (touches && d < bestD) { bestD = d; pick = { x, y }; }
         }
-      expect(sim.buildTower(pick.x, pick.y, 'bolt')).toBe(true);
+      expect(pick).not.toBeNull();
+      expect(sim.buildTower(pick!.x, pick!.y, 'bolt')).toBe(true);
       for (let t = 0; t < 1500; t++) sim.tick();
       return sim.scrap;
     };
