@@ -1,5 +1,5 @@
- BUILD                                                                             WAVE 4/20  next in 17s                                THE CORE  hp 41/50
-   .-#-.        M                        ┌       ┐ ┌       ┐ ┌       ┐ ┌       ┐   NOW                       NEXT 5 BOSS                 ==========================================================================================================================
+ BUILD                                                                             WAVE 4/20  next in 17s                                THE CORE - relics and actives
+   .-#-.        M                        ┌       ┐ ┌       ┐ ┌       ┐ ┌       ┐   NOW                       NEXT 5 BOSS
   |[o]|==>     //                                                                  3 skitter   fast          9 grunt                     \||/           ┌  ┐ ┌  ┐
      ||)      '//     frost     refinery                                           1 shellback shielded      2 brute     armoured         ||   SW   FB
      ||       //                                                                                                                          **        12  └  ┘ └  ┘

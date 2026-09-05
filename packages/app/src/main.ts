@@ -12,7 +12,7 @@ import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
 import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef } from '@ascii-defense/engine';
-import { loadMintedTiles, removeMintedTile } from './mintedTiles';
+import { loadMintedProblems, loadMintedTiles, removeMintedTile } from './mintedTiles';
 import {
   BoardView,
   EffectsLayer,
@@ -360,6 +360,7 @@ async function main(): Promise<void> {
         // strip, and picking tiles deserves the whole surface. The pool is
         // minted tiles plus the shipped specials, PAGED (playtest 18).
         const minted = loadMintedTiles();
+        const problems = loadMintedProblems();
         const pool = [...minted, ...shippedSpecials];
         const pages = Math.max(1, Math.ceil(pool.length / TILES_PER_PAGE));
         const page = Math.min(loadoutPage, pages - 1);
@@ -372,6 +373,9 @@ async function main(): Promise<void> {
               : pool.length > 0
                 ? `load up to ${LOADOUT_SLOTS} special tiles - a loaded tile is GUARANTEED on the map`
                 : 'no special tiles yet - the tile smith mints them',
+            // Tiles the pool holds but cannot offer, and why - never silent.
+            ...problems.slice(0, 4).map((p) => `not offered: ${p.id} - ${p.problem}`),
+            ...(problems.length > 4 ? [`and ${problems.length - 4} more - fix them in the tile smith`] : []),
           ],
           tiles: shown.map((t) => ({ id: t.id, cells: t.cells, selected: setupLoadout.includes(t.id) })),
           items: [
@@ -634,7 +638,10 @@ async function main(): Promise<void> {
     if (action.kind === 'rotate' && selected) rotateSelected();
     if (action.kind === 'choose' && selected) act({ k: 'choose', x: selected.x, y: selected.y, tier: action.tier, option: action.option });
     if (action.kind === 'relic') {
-      const slot = snap.hud.core?.slots[action.index];
+      // The strip's card is always there; the column's only when the face is
+      // selected - reading the column alone left a targeted active unarmed
+      // (feedback 2026-09-06, item 2).
+      const slot = (snap.hud.coreCard ?? snap.hud.core)?.slots[action.index];
       if (slot?.state === 'ready' && slot.targeted && slot.id) targeting = slot.id;
       else act({ k: 'slot', index: action.index });
     }
