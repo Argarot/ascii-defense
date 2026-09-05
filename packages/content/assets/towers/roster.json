@@ -249,7 +249,7 @@
       "id": "frost",
       "name": "Frost Emitter",
       "short": "Frost",
-      "desc": "A cold field around it slows everything inside. Control first, damage on a path.",
+      "desc": "A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts.",
       "damageType": "energy",
       "cost": 25,
       "range": 3.5,

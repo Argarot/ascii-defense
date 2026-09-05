@@ -48,6 +48,7 @@ const POOL: RelicDef[] = [
   { id: 'flashfreeze', name: 'Flash Freeze', kind: 'consumable', desc: '', effects: { freezeTicks: 30 } },
   { id: 'orbital', name: 'Orbital', kind: 'active', desc: '', cooldownTicks: 100, effects: { orbitalDamage: 400, orbitalRadius: 3 } },
   { id: 'stasis', name: 'Stasis', kind: 'active', desc: '', cooldownTicks: 100, effects: { freezeTicks: 50 } },
+  { id: 'splinter', name: 'Splinter', kind: 'passive', desc: '', effects: { explodeTwice: true } },
   { id: 'deep_vein', name: 'Deep Vein', kind: 'active', desc: '', cooldownTicks: 100, effects: { productionMul: 5, boostTicks: 200 } },
 ];
 
@@ -276,6 +277,20 @@ describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
     expect(sim.relicCooldowns[1]).toBeGreaterThan(0);
     // Both cooling: now it genuinely refuses.
     expect(sim.fireActive('stasis')).toBe(false);
+  });
+
+  it('splinter: the second blast is its own impact event, a beat later on screen (session 26)', () => {
+    const { simOpts } = makeWorld(41, { spawnEveryTicks: 2, maxSpawns: 8 });
+    const MORTAR: TowerDef = { id: 'bolt', cost: 20, range: 8, fireEveryTicks: 10, projectile: { damage: 6, speed: 0.7, homing: false, explosive: true, explodeRadius: 1 } };
+    const sim = new Sim(41, { ...simOpts, towerDefs: [MORTAR, REFINERY] });
+    grant(sim, 'splinter');
+    for (let y = 0; y < simOpts.cellsH && sim.towers.length === 0; y++)
+      for (let x = 0; x < simOpts.cellsW; x++) if (sim.canBuildAt(x, y) && sim.buildTower(x, y, 'bolt')) break;
+    for (let t = 0; t < 300; t++) sim.tick();
+    const impacts = sim.events.filter((e) => e.kind === 'impact' && e.r > 0);
+    expect(impacts.length).toBeGreaterThan(1);
+    const delayed = impacts.filter((e) => e.kind === 'impact' && e.delay === 3);
+    expect(delayed.length).toBe(impacts.length / 2);
   });
 
   it('stasis: enemies freeze, towers keep firing', () => {

@@ -16,7 +16,7 @@
 | **Bolt Turret** | bolt | 20 | kinetic | 6 | 1.43 | 8 | 11.4 | homing shot | Homing single shots at a steady rate. The all-rounder; its tree picks a job. |
 | **Mortar** | mortar | 35 | kinetic | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. |
 | **Refinery** | refinery | 30 |  | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. |
-| **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Control first, damage on a path. |
+| **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts. |
 | **Tesla Coil** | tesla | 40 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. |
 | **Missile Rack** | missile | 50 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. |
 
@@ -105,6 +105,8 @@
 
 Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.
 
+Statuses show on the body (PRD §8): a cold ~ per slow source beside the walker, a * when frozen, brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.
+
 **Traits are rules** (`packages/engine/src/sim/traits.ts`):
 
 | Trait | Rule |
@@ -125,7 +127,7 @@ Damage types decide fights (PRD §8): a tower hits with its type, an enemy multi
 | **Overflow** | overflow | passive |  |  | Overkill damage chains to the nearest enemy. Chain kills chain again. | overkillCarry true |
 | **Frostbite** | frostbite | passive | yes |  | Slowed enemies take +50% damage from everything. Stacks. | slowedDamageMul 1.5 |
 | **Tithe** | tithe | passive | yes |  | Every kill refunds 2 Scrap. Stacks. | killRefundScrap 2 |
-| **Splinter** | splinter | passive |  |  | Explosions detonate twice. | explodeTwice true |
+| **Splinter** | splinter | passive |  |  | Explosions detonate twice: the same blast, resolved again a beat later - you will see both. | explodeTwice true |
 | **Vein Tap** | vein_tap | passive |  |  | You may build on rock. | buildOnRock true |
 | **Loadbearing** | loadbearing | passive |  |  | Towers touching the Core block get triple range. | coreAdjacentRangeMul 3 |
 | **Second Wind** | second_wind | passive |  |  | The Core mends 2 health every time a wave launches. | coreHealPerWave 2 |

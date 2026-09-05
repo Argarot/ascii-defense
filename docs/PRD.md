@@ -792,7 +792,10 @@ one and the player watches it break; status effects and remaining health read of
 marks beside the glyph rather than out of a tooltip.
 
 **Every status is visible, and every source is tracked** *(Daniil,
-2026-09-05)*. A slowed enemy shows it; a burning one shows it; a shielded
+2026-09-05; shipped 2026-09-05, session 26, WBS 2.31: slows are entries
+with a source, resolved by "the coldest wins, the longest lasts"; a cold
+mark per source and a frozen mark stand beside the walker; Splinter's
+second blast is drawn a beat after the first)*. A slowed enemy shows it; a burning one shows it; a shielded
 one already does. Behind the mark, the sim keeps each effect with its
 source — a slow from a Frost field and a slow from a Concussive shell are
 two entries with two rules for how they stack, not one number overwritten.
