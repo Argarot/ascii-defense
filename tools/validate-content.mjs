@@ -46,6 +46,8 @@ const GLYPHS = new Set(ATLAS.codepoints);
 const ajv = new Ajv({ allErrors: true, strictTypes: false });
 const compiled = new Map();
 const findings = [];
+/** Advisory: printed, never fatal (see the contrast rule in lintSprite). */
+const warnings = [];
 
 function schemaFor(relPath) {
   for (const [prefix, schema] of Object.entries(SCHEMA_FOR)) {
@@ -114,6 +116,50 @@ function lintSprite(relPath, sprite, palette, grid) {
       findings.push(`${relPath}: inkMap '${key}' names role '${role}', absent from palette`);
     }
   }
+  // Contrast (WBS 2.32, from the road-sprite investigation of 2026-09-04):
+  // a frame whose every glyph sits within CONTRAST_FLOOR luminance points of
+  // its own background reads as a flat cell on screen - the cobble study's
+  // crossing tier shipped that way. A WARNING today, because that study is
+  // Daniil's to regenerate; promote to a finding once it is.
+  if (palette) {
+    const lum = (hex) => {
+      const p = (i) => parseInt(hex.slice(i, i + 2), 16);
+      return 0.2126 * p(1) + 0.7152 * p(3) + 0.0722 * p(5);
+    };
+    const CONTRAST_FLOOR = 30;
+    const checkFrame = (label, f) => {
+      if (!f.bgInk) return; // no per-glyph background: the ground role decides, not the sprite
+      let glyphs = 0;
+      let best = 0;
+      f.art.forEach((row, y) => {
+        const chars = [...row];
+        const inks = [...f.ink[y]];
+        const bgs = [...f.bgInk[y]];
+        chars.forEach((ch, x) => {
+          if (ch === ' ') return;
+          const fgRole = sprite.inkMap[inks[x]];
+          const bgRole = sprite.inkMap[bgs[x]];
+          const fg = fgRole && fgRole !== 'PATH' ? palette.roles[fgRole] : null;
+          const bg = bgRole && bgRole !== 'PATH' ? palette.roles[bgRole] : null;
+          if (!fg || !bg) return;
+          glyphs++;
+          best = Math.max(best, Math.abs(lum(fg) - lum(bg)));
+        });
+      });
+      if (glyphs > 0 && best < CONTRAST_FLOOR) {
+        warnings.push(`${relPath}: ${label} - every glyph within ${CONTRAST_FLOOR} luminance points of its background (max ${best.toFixed(0)}); it will read as a flat cell`);
+      }
+    };
+    for (const [key, st] of Object.entries(sprite.states)) {
+      const label = `state '${key}'`;
+      checkFrame(label, st);
+      (st.frames ?? []).forEach((f, i) => checkFrame(`${label} frame ${i + 1}`, f));
+      (st.variations ?? []).forEach((v, i) => {
+        checkFrame(`${label} variation ${i + 1}`, v);
+        (v.frames ?? []).forEach((f, j) => checkFrame(`${label} variation ${i + 1} frame ${j + 1}`, f));
+      });
+    }
+  }
 }
 
 // ---- walk ------------------------------------------------------------------
@@ -143,6 +189,10 @@ for (const [relPath, doc] of docs) {
   }
 }
 
+if (warnings.length) {
+  console.warn(`content validation: ${warnings.length} warning(s)`);
+  for (const w of warnings) console.warn('  ' + w);
+}
 if (findings.length) {
   console.error(`content validation: ${findings.length} finding(s)`);
   for (const f of findings) console.error('  ' + f);
