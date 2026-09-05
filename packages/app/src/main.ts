@@ -29,12 +29,13 @@ import {
   setReducedMotion,
   StripPanel,
   STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock } from '@ascii-defense/view';
-import type { CellRef, HudAction, HudState, RenderState } from '@ascii-defense/view';
-import { validateSprite } from '@ascii-defense/content';
+import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
+import { validateSprite, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import { THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 import { META_KEY, RUN_KEY, loadMetaFrom, loadRunFrom, saveMetaTo, type MetaSave } from './persistence';
 import { boardSlotsFor } from './boardSize';
+import { CODEX } from './generated/codex';
 
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
   if (!r.ok) throw new Error(`${what} failed validation: ` + r.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
@@ -146,6 +147,13 @@ async function main(): Promise<void> {
   type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary';
   let mode: Mode = 'title';
   let settingsFrom: Mode = 'title';
+  // The how-to is the CODEX (session 27): sections of pages rendered from
+  // the same generated facts as docs/CATALOGUE.md; reachable from the
+  // title and from pause, and it returns where it came from.
+  let howtoFrom: Mode = 'title';
+  type CodexSection = 'basics' | 'towers' | 'enemies' | 'relics';
+  let codexSection: CodexSection = 'basics';
+  let codexPage = 0;
   let wipeArmed = false;
   // Run setup state (2.21): the threat is picked, the loadout assembled, and
   // START commits both. Loadout entries are minted-tile ids; 3 slots for now
@@ -387,22 +395,7 @@ async function main(): Promise<void> {
         };
       }
       case 'howto':
-        return {
-          title: 'HOW TO PLAY',
-          body: [
-            'enemies march the road toward the Core;',
-            'if it falls, the run ends.',
-            '',
-            'click ground, then a tower in the panel',
-            'to build. towers upgrade in either/or',
-            'tiers. refineries on gold veins mine Ore.',
-            'every 3rd wave offers a relic - rules,',
-            'not numbers. rock hides ore and caches;',
-            'prospecting opens it. hold to the final',
-            'wave and THE CORE STANDS.',
-          ],
-          items: [{ id: 'back', label: 'BACK' }],
-        };
+        return codexSpec();
       case 'settings':
         return {
           title: 'SETTINGS',
@@ -425,6 +418,7 @@ async function main(): Promise<void> {
           items: [
             { id: 'resume', label: 'RESUME' },
             { id: 'copycode', label: 'COPY RUN CODE' },
+            { id: 'howto', label: 'HOW TO PLAY' },
             { id: 'settings', label: 'SETTINGS' },
             { id: 'abandon', label: 'SAVE & EXIT TO TITLE' },
           ],
@@ -474,10 +468,94 @@ async function main(): Promise<void> {
     URL.revokeObjectURL(a.href);
   };
 
+  /** Wrap a sentence to the codex plate's width. */
+  const wrapLine = (s: string, w = 64): string[] => {
+    const out: string[] = [];
+    let line = '';
+    for (const word of s.split(' ')) {
+      if (word === '') continue;
+      if (line !== '' && line.length + 1 + word.length > w) { out.push(line); line = word; }
+      else line = line === '' ? word : line + ' ' + word;
+    }
+    if (line !== '') out.push(line);
+    return out;
+  };
+  /** The codex pages (session 27): basics, then one tower, enemy or relic per page with its sprite as the hero. */
+  const codexSpec = (): MenuSpec => {
+    const sections: { id: CodexSection; label: string; count: number }[] = [
+      { id: 'basics', label: 'BASICS', count: 1 },
+      { id: 'towers', label: `TOWERS ${CODEX.towers.length}`, count: CODEX.towers.length },
+      { id: 'enemies', label: `ENEMIES ${CODEX.enemies.length}`, count: CODEX.enemies.length },
+      { id: 'relics', label: `RELICS ${CODEX.relics.length}`, count: CODEX.relics.length },
+    ];
+    const count = sections.find((s) => s.id === codexSection)!.count;
+    const page = Math.min(codexPage, count - 1);
+    let title = 'HOW TO PLAY';
+    let hero: Sprite[] = [];
+    let body: string[] = [];
+    if (codexSection === 'basics') {
+      body = [
+        'enemies march the road toward the Core at the east edge; if it falls, the run ends.',
+        'select ground, then a tower in the strip under the board, to build. hover a button for its card.',
+        'towers upgrade in either/or tiers - each fork is two jobs, never two numbers.',
+        'refineries on gold veins mine Ore; every 3rd wave offers a relic - rules, not numbers.',
+        'rock hides ore and caches; prospecting opens it. R turns a laser. N calls the next wave.',
+        ...CODEX.rules,
+        'hold to the final wave and THE CORE STANDS.',
+      ].flatMap((l) => wrapLine(l));
+    } else if (codexSection === 'towers') {
+      const t = CODEX.towers[page];
+      title = `${t.name.toUpperCase()}  ${page + 1}/${count}`;
+      const sp = SPRITES.find((s) => s.id === t.id);
+      hero = sp ? [sp] : [];
+      body = [
+        ...wrapLine(t.desc),
+        [t.type ? `type ${t.type}` : '', `cost $${t.cost}`, `range ${t.range}`, t.rate ? `rate ${t.rate}/s` : '', t.dmg ? `dmg ${t.dmg}` : '', t.dps ? `dps ${t.dps}` : ''].filter(Boolean).join('  \u2802  '),
+        ...wrapLine(t.shape),
+        '',
+        ...t.tiers.flatMap((tier, i) => [`T${i + 1}  ${tier[0].name} ($${tier[0].cost})  /  ${tier[1].name} ($${tier[1].cost})`, ...wrapLine('  ' + tier[0].desc), ...wrapLine('  ' + tier[1].desc)]),
+        '',
+        ...wrapLine(`next to the Core: ${t.coreBoon}`),
+      ];
+    } else if (codexSection === 'enemies') {
+      const e = CODEX.enemies[page];
+      title = `${e.name.toUpperCase()}  ${page + 1}/${count}`;
+      const sp = SPRITES.find((s) => s.id === `enemy_${e.id}`);
+      hero = sp ? [sp] : [];
+      body = [
+        [`hp ${e.hp}`, `speed ${e.speed} cells/s`, `breach ${e.breach}`, `bounty ${e.bounty}`, `from wave ${e.fromWave}`].join('  \u2802  '),
+        [e.armour ? `armour ${e.armour}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type at x1',
+        ...e.traits.flatMap((t) => wrapLine(t)),
+      ];
+    } else {
+      const r = CODEX.relics[page];
+      title = `${r.name.toUpperCase()}  ${page + 1}/${count}`;
+      const sp = SPRITES.find((s) => s.id === `relic_${r.id}`);
+      hero = sp ? [sp] : [];
+      body = [[r.kind, r.stacks ? 'stacks' : '', r.recharge ? `recharges in ${r.recharge}` : ''].filter(Boolean).join('  \u2802  '), ...wrapLine(r.desc)];
+    }
+    return {
+      title,
+      hero,
+      body,
+      items: [
+        ...(count > 1 ? [{ id: 'page:prev', label: '< PREV', disabled: page === 0 }, { id: 'page:next', label: 'NEXT >', disabled: page === count - 1 }] : []),
+        ...sections.map((s) => ({ id: `sec:${s.id}`, label: s.label, selected: s.id === codexSection })),
+        { id: 'back', label: 'BACK' },
+      ],
+      footer: 'the same facts as docs/CATALOGUE.md',
+    };
+  };
+
   const menuAction = (id: string): void => {
     if (id !== 'wipe') wipeArmed = false;
     if (id.startsWith('threat:')) {
       setupThreat = Number(id.slice('threat:'.length));
+      return;
+    }
+    if (id.startsWith('sec:')) {
+      codexSection = id.slice('sec:'.length) as CodexSection;
+      codexPage = 0;
       return;
     }
     if (id.startsWith('tile:')) {
@@ -509,9 +587,11 @@ async function main(): Promise<void> {
         loadoutDeleteArmed = !loadoutDeleteArmed;
         break;
       case 'page:prev':
+        if (mode === 'howto') { codexPage = Math.max(0, codexPage - 1); break; }
         loadoutPage = Math.max(0, loadoutPage - 1);
         break;
       case 'page:next':
+        if (mode === 'howto') { codexPage = codexPage + 1; break; } // clamped at render
         loadoutPage = loadoutPage + 1; // clamped against the pool at render
         break;
       case 'start': {
@@ -529,8 +609,8 @@ async function main(): Promise<void> {
         break;
       }
       case 'settings': settingsFrom = mode; mode = 'settings'; break;
-      case 'howto': mode = 'howto'; break;
-      case 'back': mode = mode === 'settings' ? settingsFrom : mode === 'loadout' ? 'setup' : 'title'; break;
+      case 'howto': howtoFrom = mode; codexSection = 'basics'; codexPage = 0; mode = 'howto'; break;
+      case 'back': mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : 'title'; break;
       case 'motion': {
         const v = !isReducedMotion();
         setReducedMotion(v);
@@ -700,7 +780,7 @@ async function main(): Promise<void> {
     if (mode !== 'playing') {
       if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup' || mode === 'loadout')) {
         const leavingPause = mode === 'paused';
-        mode = mode === 'settings' ? settingsFrom : mode === 'loadout' ? 'setup' : leavingPause ? 'playing' : 'title';
+        mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : leavingPause ? 'playing' : 'title';
         if (leavingPause) send({ t: 'speed', idx: mirroredSpeed });
       }
       return;
