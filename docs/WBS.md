@@ -19,6 +19,10 @@ Conventions:
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
+| D25 | **Towers larger than one cell** — Daniil wants to brainstorm them (2026-09-05). PRD §5.1's one-cell footprint is load-bearing for occupancy, placement and upgrades; a multi-cell tower is either a footprint rule (which cells, which anchor, what blocks) or a visual-only size like 4.14. Decide before the new towers (25) are built | before session 25 | Daniil + dev |
+| D26 | **Passives are not relics** — separate the permanent modifier layer from found objects, with many more passive slots (Daniil, 2026-09-05; PRD §7.8). Reference for feel: Tower Dominion's doctrines, explicitly not to be copied. Shape, slot count, acquisition (tree? drops? both?) all open | before session 26 | Daniil |
+| D27 | **Monetization and accounts** — intent recorded (PRD §18): Stone Story's model, lighter; nothing pay-to-win. Needs an identity story that §16 rules out today. No build work depends on it; decide before beta hardening | before session 37 | Daniil |
+| D28 | **The filled board's rules** (PRD §4.3.1): coverage target (~90%?), the leaf rule (every dead end is an entrance — forced by "no dead-end spurs" once the board fills), entries emergent within the threat's range, lane balance band (within what fraction of the longest?). The dev's draft is in the roadmap row 23; Daniil's amendments before the carve is rewritten | before 2.30 starts | Daniil |
 | D1 | ~~Buildable density~~ **RESOLVED 2026-08-15**: the map generator controls ground amount/placement directly; density is a generation knob tuned as data (PRD §4.4) | — | closed |
 | D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |
 | D3 | ~~Material language~~ **CLOSED 2026-08-16 as obsolete.** "Which glyphs mean metal vs stone" was a question from when we expected hand-authored art at volume. The live remnant is narrower — *what compositional rule makes 14 tower variants legible* (V11) — and it is not answerable in the abstract; it moves into the art session as a concrete question with sprites in front of us | — | closed |
@@ -85,6 +89,25 @@ toggle; click a minted tile to remove it permanently; shipped tiles
 untouchable), verified live end-to-end. If a tile the rules accept still
 LOOKS like a loop to him, that is spec input — his export would show the
 shape class.
+
+**Round 22 (the 8×5 playtest, 2026-09-04 evening and 05 morning):** 1 "wrong
+road sprites" → PR #112 (a defect: junction cells drew the crossing's art by
+letter; now drawn by effective ports) · 2 the half-empty screen → 4.27 (the
+bottom strip: wave composition with specialties, actives, build buttons with
+the towers' sprites, grey when unaffordable) · 3 mapgen struggles with custom
+tiles + balance lane lengths → 2.30 + D28 (measured: five specials fail 30/30
+on every small board) · 4 dial the ramp down → PR #112 (a notch; re-measured
+after 2.30) · 5 Bolt projectile → PR #112 (a gold dash) · 6 range as three
+thin rings → PR #112 · untracked art tooling → PR #113 · **the thought dump**:
+full-screen shell → 4.28 · animation pass 2 and attack animations → 6.9 ·
+more towers (tesla, laser, AoE, support, missiles) → 5.1 amended · rotation
+→ 2.34 · single-use nukes → 5.6 · ability graphics → 6.10 · passives vs
+relics → D26 + 5.8 · rarity with power → 5.7 · relic sprites → 6.7 ·
+replace/remove/combine → 5.7 · boon colours + corner glyphs → 4.29 · damage
+types illegible → 2.8 (restated in PRD §8) · statuses visible + effect
+sources + Splinter's second blast → 2.31 · multi-cell towers → D25 ·
+monetization → D27 + 7.8.
+
 
 **Round 20 (playtest 18, 2026-08-19):** "special assets used more than once
 and unselected — double bends everywhere"→CONFIRMED with numbers: twin_bend,
@@ -437,6 +460,11 @@ scheduled** — it joins 2.21 in session 19, since both rework the tile format.
 - [x] 2.28 **Session 21 (2026-09-03): the audit, the hygiene round, design round 1** *(PRs #98–#103)*. A fresh-eyes audit of every package (engine; view/render/app; content/harness/tools/CI) and a design review of the game as a player. **Hygiene (#98):** seven live defects — blank Latin-1 glyphs in the atlas made every HUD separator invisible (atlas fixed at the root, a harness test scans UI source against the font); stale snapshot across `ready` (double-banked ore); meta saves versioned by the run format (banked ore reset on v2→v3); `?threat=abc` crash; `sellTower` unbounded; empty-wave-1 roster crash; "press R" lie. **Design round 1** — Daniil's eleven items with his amendments, decisions **D17–D23**: (1) pacing — launch-to-launch wave clock, CALL NEXT WAVE with a Scrap bonus, wave 1 waits for the call, next-wave preview, boss waves every 5th and final, the `L` offset live, traits as rules (#99); (2) relics — `stackable` per relic, escalating draw/reroll prices from 50 Ore, pool 10→16 with the first consumables (#100); (3) caches from prospected rock and bosses, opened free, contents from **loot tables** as content (#101, 2.22 half-shipped); (4) minimum range and the range drawn as a filled disc with its hole (#102); (5) every tower fork reworked into two roles, nine new engine knobs (#103). **Gate (open, Daniil's):** a Standard run with the eleven items gone; a 14-variant lab sweep with no path winning every wave (the sweep is not yet written).
 - [x] 2.29 **Geometry migration: 8×5-glyph cells** *(approved 2026-09-03, option 1; SHIPPED 2026-09-04, session 22, PRs #105–#109, D24)*. Sprite format v2 (states by choice path or cell letter, frames, variations, bgInk) and `tools/import-sprites.mjs` for Daniil's generator studies (four tower colour rules ported; roads mapped by `ROAD_ORDER`) → the view net (`TermSurface`/`TextTerm`, golden-text tests for terrain, board, HUD) → the flip (cell from `grid.json`, board from the viewport, three literals gone, `tileCapacity` paging) → roads from sprites (variation by position hash, graph kerbs over art) → the variant sweep (`tools/sweep.mjs`, `docs/lab/sweep-2026-09-04.md`). **Not done:** ground/rock/ore/Core/water sprites (his art), enemy sprites, terminals rebuilt per run, the retune the sweep proposes. Original plan text follows. Cells become 8×5 glyphs = 40×40 px (spleen 5×8), square. Tiles stay 5×5 cells; the board shrinks to fit the viewport (≈8×5 tiles beside the HUD at 1920 wide), `BOARD_SLOTS` becomes viewport-derived. Order: commit `tools/art` (ignore `out/`, `__pycache__`; `*.xp binary`; decide `vendor/fonts`); a lint that a sprite's `cell` equals the view's cell (today a mismatch crashes); flip `CELL_W/H` and fix the three row/column literals (bridge deck rows, cache/entry markers, fallback art); name the 2× HUD scale once; board size; expanded placeholder sprites until Daniil's JSON sprites arrive, then the importer; retune the glyph-aspect constants (ring bands, blast band, beach depth, terrain mark density); lab re-sweep and threat retune for the smaller board. `SAVE_VERSION` and the golden hash move.
 
+- [ ] 2.30 **The board fills** *(Daniil, 2026-09-04/05; PRD §4.3.1; decision D28)*. The carve rewritten for the viewport-sized board: specials placed first as fixed nodes; the tree grows from the Core to a coverage target drawn on the map stream (~90% of land slots); every dead end is an entrance (leaves only on the border; entry count emergent within the threat's range; the per-entry floor still binds); **lane lengths balanced** to within a band of the longest where the board allows; void near zero. The spec moves in ARCHITECTURE §12 with the code, `verifyMap` gains the coverage, leaf and balance rules, and the 2026-09-04 mapgen probe (boards × loadouts × seeds: fails and rerolls) becomes a permanent sweep under `tools/`. **Measured before**: one special always fits; five fail 30/30 on 7×5, 7×4 and 6×4; three shipped specials need up to 46 rerolls at 6×4. **What it makes expensive if wrong**: lane lengths roughly double, and the D18 offset scales enemy health with them — difficulty must be re-measured on the new boards after, never before (a mixed-build lab, not the solo sweep).
+- [ ] 2.31 **Statuses visible, every effect source tracked, every rule printed** *(Daniil, 2026-09-05; PRD §8)*. Per-enemy status marks (slowed, burning, frozen…) beside the glyph; the sim keeps each effect with its source and a stacking rule per pair (Frost slow + Concussive slow is the named case); the Splinter relic's second blast is drawn and its damage explained on the card. Rides with 2.8 damage types in session 25.
+- [ ] 2.32 **Sprite contrast lint** *(session 23, from the road-sprite investigation)*. A sprite state whose glyphs sit under a luminance floor against their own backgrounds fails `validate-content`. The cobble study's X and B tiers shipped at ~6% contrast and read as flat cells; the lint would have said so at import.
+- [ ] 2.34 **Tower facing** *(Daniil, 2026-09-05; PRD §5.5)*. A direction as tower state for line-shaped attacks (the laser): set on build, rotated on demand, saved and replayed as a choice. Radial towers show none. Prerequisite for 5.1's laser; built with 4.10 in session 25.
+
 ### Technical-debt register *(fresh-eyes audit, 2026-09-03 — "everything else later", Daniil)*
 
 Verified findings not yet fixed, most material first. Each is a candidate for a hygiene round; none is a rule change.
@@ -506,16 +534,24 @@ withdrawn before it got an entry (PRD §14). Do not reuse any of these numbers.
 - [ ] 4.24 **Accessibility** (PRD §15.4): colourblind palette values, full keyboard operation, reduced motion honoured by the effects engine, HUD text scale.
 - [x] 4.25 *(session 17)* **World motion rides sim time, UI motion rides the wall clock** *(Daniil, playtest 8; session 17)*. Session 16 put terrain drift, water and tower idles on raw wall-clock `performance.now()`, so the world keeps ambling at 8× and keeps moving while paused — while the effects layer, in the same session, was deliberately tick-anchored on the argument that "an honest pause shows a stopped world". Both halves cannot be right. Fix: world ambient advances on a speed-scaled accumulator (freezes at pause, 8× at 8×); telegraph breathing and preview pulses stay on the wall clock, because the interface is not part of the world (PRD §13).
 
+- [ ] 4.27 **The bottom strip** *(Daniil, 2026-09-04/05; PRD §13)*. The band under the board becomes the second panel: this wave and the next by enemy type with each type's specialty in a phrase; the active abilities; **build buttons drawn with the towers' own sprites** — full colour when affordable, grey when not, and shaped like buttons. The HUD column keeps vitals, the selection card and upgrades. Layout derived from the viewport like the board (`boardSize.ts` grows a strip height).
+- [ ] 4.28 **The shell owns the whole screen** *(Daniil, 2026-09-05; PRD §15.1)*. A full-screen title/loading page with the menu, sized to the viewport, not a plate over the board; the screen stack (4.15) becomes a screen SYSTEM whose pages — smith, tech tree, settings, summary, the board itself — share sizing, chrome and input. The Tile Smith moves in from its own HTML page.
+- [ ] 4.29 **Boon ground wears its colour** *(Daniil, 2026-09-05; PRD §4.7)*. One background per boon type; corner glyphs on an EMPTY boon cell so the eye finds it; background only once built over. Mixed boon ground (two effects, one cell) wanted, rule undecided — propose one with the sprite in front of us.
+
 **M4 gate: a stranger opens the link, starts a run from a menu, loses, reads why,
 and starts another — with progress surviving a reload.**
 
 ## M5 — Content completeness
 
-- [ ] 5.1 Towers to **8** (Acid Sprayer, Arc Coil, Bastion, Rail Lance — PRD §5.3), each with a full tier tree and a distinct attack shape.
+- [ ] 5.1 Towers to **8+**, each with a full tier tree and a distinct attack shape. *(Amended 2026-09-05 from Daniil's list, PRD §5.3: a **tesla** tower with electric arcs; a **laser** through every enemy on a line of road, which needs facing (2.34); a **short-range area** tower; a **support** tower buffing its neighbours; a **missile battery** — several homing projectiles, very expensive. The earlier names are superseded; the real names wait for D8.)*
 - [ ] 5.2 Enemies to **~14**, covering the trait matrix and both damage types with real resistances.
 - [ ] 5.3 Relics to **~40**, weighted by rarity, with fusion recipes that make sense.
 - [ ] 5.4 Tile pool to **~100+** via generation (2.15) plus authored specials.
 - [ ] 5.5 Threat levels as data — the generator knobs bound into named difficulties.
+
+- [ ] 5.6 **Single-use, high-damage relics** *(Daniil, 2026-09-05; PRD §7.8)*: a nuke or its kin in the consumable tier — one moment that turns a wave; loot-table weighted so it is a find, not a plan.
+- [ ] 5.7 **Rarity with power, and relics you can replace, remove and combine** *(Daniil, 2026-09-05; PRD §7.6, §7.8)*: rare means stronger; a held relic can be dropped or swapped; combining makes §7.6's fusion concrete (recipes as content).
+- [ ] 5.8 **The passive layer** *(D26; PRD §7.8)*: permanent modifiers separated from relics, with many more slots. Built after D26 is decided.
 
 **M5 gate: two runs do not resemble each other.**
 
@@ -533,6 +569,9 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 6.7 **Relic art at board-glyph scale** (PRD §13) *(Daniil, 2026-08-17)*: relics drawn as sprites in the *board's* 5×8 font rather than the HUD's 2× font — the smaller cell buys the detail that makes a relic read as an object. Needs the HUD to host a board-scale sub-surface. *(The **square slots** half is cheap and rides 2.13 in session 17; only the art waits for the pass.)*
 - [ ] 6.8 **Smoothness via spatial phase** (PRD §13) *(Daniil, 2026-08-17)*: waves that travel across ground and water — each glyph's phase offset by its position — plus finer effect interpolation. **Explicitly not** "redraw less": the full board redraw is already well under a millisecond, so partial redraw optimises the wrong quantity. Recorded so a future session does not spend itself on the intuitive-but-wrong mechanism.
 
+- [ ] 6.9 **Animation engine, second pass** *(Daniil, 2026-09-05; PRD §13)*: enemies and projectiles interpolated between ticks (20 Hz sim, 60 Hz picture); idle cycles of many frames; **per-tower attack animations** — charge, shot, cooldown — as named sequences in the sprite format keyed to `Sim.events`, authored in the sprite editor. The frame model from 4.1 grows sequences; nothing in the sim changes.
+- [ ] 6.10 **Ability graphics** *(Daniil, 2026-09-05)*: actives drawn as what they are — the orbital laser a wide bright beam from the top of the screen — through the effects layer.
+
 **M6 gate: the board reads as a place, not a diagram.**
 
 ## M7 — Meta progression, full
@@ -544,6 +583,8 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 7.5 Tile Smith as an in-game meta feature (PRD §11) — the authorship endgame. **Features price the tile** (richer nodes cost more to mint), so the tool and the shop share one pricing function. Now also owns the **loadout slot economy** *(Daniil, 2026-08-17)*: the number of special-tile slots a run may carry is a tree upgrade, locked slots render as locked rather than hidden, and the minted-tile collection persists. The slot *mechanic* ships in session 19 (2.21) with a fixed count and everything unlocked; this is the economy on top.
 - [ ] 7.7 **The tile shop** (PRD §11.1, resolves D9): special tiles bought with meta-currency; the pool becomes a **multiset of owned copies** rather than a set, so generation may place at most what you own; tier-N ore nodes purchased with tier-(N-1) ore. Appearance likelihood is a calibration knob, not a constant.
 - [ ] 7.6 Tech tree stage 3, Potency — **optional**, and the trigger for `seeds × meta tiers` in CI.
+
+- [ ] 7.8 **Monetization — the door stays open** *(D27; PRD §18)*: no build work; a checklist that nothing in persistence, identity or content licensing forecloses a Stone-Story-style paid layer later.
 
 **M7 gate: finishing a run visibly changes the next one.**
 

@@ -193,6 +193,34 @@ The generator only produces maps; it never checks them. Whether a map is
 *interesting* is a content question (which tiles are in the pool) and a knob
 question (§4.4), not a validity question.
 
+### 4.3.1 The board fills *(Daniil, 2026-09-04 and 05 — the 8×5 playtest)*
+
+The 8×5 cell put a 7×5 board on a 1080p screen (§3, D24), and the carve
+above was written for 12×7: a tree capped at 55% of the slots, and specials
+that must each wander their spare arms to the border. Measured on
+2026-09-04: one special always fits; **five specials fail on every seed of
+every small board**, and three shipped specials need up to 46 rerolls at
+6×4. Daniil's direction, which replaces steps 2 and 4b above:
+
+- **Every tile counts now; nearly every tile carries road.** The tree grows
+  from the Core until it covers about nine slots in ten; the one or two it
+  leaves out are the build islands and the ore. Void all but disappears.
+- **Specials are placed first, as fixed nodes.** Their arms are edges the
+  tree must use; the tree grows through them. Anchorage stops being a
+  search that can fail.
+- **Entrances are where the road ends up**, not a starting instruction: a
+  dead end may only lie on the border, and every one of them is an entry.
+  The count is emergent within the threat's range, and the per-entry floor
+  still binds.
+- **Lanes are balanced.** A short lane that runs almost straight into the
+  Core is far harder than the same enemies on a long one; where the board
+  allows, every entry's route length sits within a band of the longest.
+  The floor is a minimum; this is the ceiling's partner.
+
+The tree, one route per entry, specials exactly once in their authored
+shape, and "every carved shape has a tile" all survive unchanged. The spec
+lives in ARCHITECTURE §12 and moves with the rework (WBS 2.30).
+
 ### 4.8 Basic and special tiles — agency over the map *(Daniil, 2026-08-17)*
 
 The pivot cut player tile-laying *during* a run (§14) because it converged on a
@@ -250,6 +278,11 @@ Difficulty is shaped by the generator's knobs, not by authoring levels:
   divide.
 - **Longer paths → easier.** More time on the road is more time under fire.
   The difficulty model already offsets road length sub-linearly (§9's `L`).
+- **Uneven lanes → unfair, not hard** *(Daniil, 2026-09-05)*. A lane that
+  reaches the Core in a third of the others' length is where runs die, and
+  not for an interesting reason. The generator balances lane lengths where
+  the board allows (§4.3.1); the offset in §9 is then measured against a
+  mean that means something.
 - **Terrain mix** — buildable ground near the road, ore far from it, rock in
   the way — tunes how comfortable a map is, and comes from the tile pool.
 
@@ -344,13 +377,23 @@ already spoken for.
 Same family as ore and caches: the map, not a shop, decides what this run’s good
 decisions are (pillar 1).
 
+**Each boon wears its own colour** *(Daniil, 2026-09-05)*: a range platform,
+a heat sink and a power tap are three different backgrounds, not one, so the
+map reads what it offers before the inspector says it. An **empty** boon cell
+also shows corner glyphs so the eye finds the cell it belongs to; once a
+tower stands on it only the background survives. Mixed boon ground (one cell,
+two effects) is wanted but its rule is undecided (WBS 4.29).
+
 ## 5. Towers
 
 ### 5.1 Footprint
 
 A tower occupies **exactly one cell** and never changes size. This kills, by
 construction, every "can I fit this here" and "can I upgrade this" failure mode
-we previously designed mitigations for.
+we previously designed mitigations for. *(Under reconsideration, 2026-09-05:
+Daniil wants to brainstorm towers larger than one cell. Open decision D25 —
+the footprint rule stands until it is resolved, because every placement,
+occupancy and upgrade path assumes it.)*
 
 ### 5.2 Upgrade tiers (replaced crosspathing, 2026-08-15)
 
@@ -420,6 +463,16 @@ prospecting (§4.6) so the Refinery is how you *find* veins as well as work
 them. Mining Scrap off-vein survives only as a relic (§7.4) — a rule that gets
 broken, not a rule that ships broken.
 
+**The roster grows** *(Daniil, 2026-09-05)*. Beyond the four shipped, the
+towers he wants, each with a shape no other has (§5.5): a **tesla** tower
+that throws electric arcs (cyan, line-heavy glyphs); a **laser** that fires
+in a straight line through every enemy on a run of road, which needs the
+tower to **face** a direction (§5.5); a **short-range area** tower; a
+**support** tower that improves the towers around it; and a **missile
+battery**, the Mortar's logical successor — several homing projectiles, very
+expensive to build. Names wait for D8; the earlier list (Acid Sprayer, Arc
+Coil, Bastion, Rail Lance) maps onto this one and is superseded by it.
+
 ### 5.4 What a tower tells you
 
 Every tower shows a **full stat block** — damage, rate, DPS, range, area, effect
@@ -470,6 +523,12 @@ target dies mid-flight must never evaporate: an unguided shell lands where it
 was aimed, and a homing shot re-acquires. Deleting a paid-for shot because the
 world moved is both a visual lie and a silent, invisible damage nerf that no
 stat block can explain.
+
+**Facing** *(Daniil, 2026-09-05)*. A shape that is a line needs a direction.
+A tower that fires along a line gets a facing the player sets — rotate on
+build and on demand — and the sim treats the facing as part of the tower's
+state, saved and replayed like any other choice. Radial towers have no
+facing and never show one.
 
 ## 6. Economy
 
@@ -660,6 +719,23 @@ rarity weighting (§7.6) and a weighted outcome list are the same machinery, and
 building them twice is how two subtly different weighting rules end up in one
 codebase.
 
+### 7.8 Passives, rarity with teeth, and the relic as an object *(Daniil, 2026-09-05)*
+
+- **Passives are not relics.** A permanent modifier and a found object with
+  a cooldown are different things and should not compete for the same
+  slots. Passives get far more slots than relics do. The shape is open (D26):
+  Tower Dominion's doctrines are the reference for what a passive layer
+  feels like, and explicitly not the thing to copy.
+- **Rarity means power.** D5 weights the pool by rarity; the second half is
+  that a rare relic is actually stronger, not merely scarcer.
+- **Single-use, high-damage relics** — a nuke, or something like it — belong
+  in the consumable tier: one moment that turns a wave.
+- **A relic is drawn, not abbreviated.** Two letters in a box is the
+  placeholder; every relic gets its own sprite (§13, 6.7).
+- **A held relic can be replaced or removed**, and relics can be **combined**
+  into stronger ones (§7.6's fusion, made concrete) — a full row of slots is
+  a decision to make, never a wall.
+
 ## 8. Enemies
 
 Start narrow: **two damage types** (Kinetic, Energy) and **four traits** —
@@ -686,6 +762,21 @@ the failure that rule exists to prevent.
 around the glyph and destroyed separately from the body, so any enemy may carry
 one and the player watches it break; status effects and remaining health read off
 marks beside the glyph rather than out of a tooltip.
+
+**Every status is visible, and every source is tracked** *(Daniil,
+2026-09-05)*. A slowed enemy shows it; a burning one shows it; a shielded
+one already does. Behind the mark, the sim keeps each effect with its
+source — a slow from a Frost field and a slow from a Concussive shell are
+two entries with two rules for how they stack, not one number overwritten.
+**And every rule prints**: the Splinter relic says "explosions detonate
+twice" and the sim resolves a blast twice, but nothing on screen shows the
+second blast or explains the damage. A rule the player cannot see or read is
+a bug in the presentation, whatever the code does.
+
+**Which tower answers which enemy must be legible.** Damage types exist and
+are inert (above); until resistances land, the roster reads as six glyphs
+with different health. The answer is the same as the rule: resistances that
+decide fights, and a card that says so in one line.
 
 ## 9. Difficulty: calibrated, not derived
 
@@ -896,6 +987,23 @@ variants, duration scaled by importance. The **subcell coordinate system they
 need ships in M1**, because retrofitting it would mean rewriting movement,
 collision and rendering.
 
+**Motion, second pass** *(Daniil, 2026-09-05)*. The renderer redraws the
+whole board every frame in under a millisecond, so the ceiling on smoothness
+is authoring and interpolation, not the engine. Today it works and reads as
+"retro and choppy". The second pass: enemies and projectiles interpolated
+between ticks so a 20 Hz simulation shows as a 60 Hz picture; idle cycles of
+many frames, not two; and **per-tower attack animations** — the charge, the
+shot, the cooldown where it matters — keyed to the sim's events, in the
+sprite format, authored in Daniil's editor. Abilities get the same
+treatment: the orbital laser is a wide bright beam from the top of the
+screen, not a flash on a cell.
+
+**The bottom of the screen works too** *(Daniil, 2026-09-05)*. The board no
+longer fills the viewport; the strip beneath it becomes the second panel:
+the wave — composition by type, with each enemy's specialty — the active
+abilities, and **build buttons drawn with the towers' own sprites**, full
+colour when affordable and grey when not, that look like buttons.
+
 ## 14. Deliberately rejected
 
 Recorded so they are not re-proposed:
@@ -1007,6 +1115,13 @@ that starts caching state is how save bugs are born.
 wave, what you built, which relics you took, how much Ore you banked. It is the
 moment that either produces another run or ends the session.
 
+**The shell owns the whole screen** *(Daniil, 2026-09-05)*. The title is a
+designed full-screen page — a loading screen with the menu — not a plate over
+the tiled board at the board's size. It is the root of a **screen system**:
+the Tile Smith, the tech tree, settings and the summary are pages of the
+same system, sized to the viewport, so none of them is a one-off. The board
+becomes one of those pages rather than the page everything else floats over.
+
 ### 15.2 Persistence
 
 Two kinds of state, deliberately kept apart:
@@ -1115,3 +1230,12 @@ project:
 - 60 fps at full board; WebGL2 absence handled honestly
 - no known crash and no known save-corruption path
 - licences and attribution correct (Apache-2.0; spleen BSD-2-Clause)
+
+## 18. Monetization — intent, not design *(Daniil, 2026-09-05)*
+
+Daniil is seriously considering monetizing the game eventually, on the Stone
+Story RPG model and less aggressively than that: small things that make the
+game more fun and less grindy, never pay-to-win. Recorded so that nothing
+built now closes the door — accounts and cloud saves are "out of scope" in
+§16 today, and a paid layer needs some identity story. Open decision D27;
+nothing in the beta plan depends on it.
