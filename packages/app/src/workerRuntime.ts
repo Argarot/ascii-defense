@@ -322,6 +322,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const roster = towerDefs.map((d) => ({
       id: d.id,
       name: d.name ?? d.id,
+      short: d.short,
       cost: d.cost,
       affordable: s.canAfford(d.id),
       buildable: selected ? s.canBuildDefAt(selected.x, selected.y, d.id) : true,

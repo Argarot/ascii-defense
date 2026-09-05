@@ -259,8 +259,9 @@ export class BoardView {
 
         if (kind === null && cx >= this.opts.mapX * TILE_SIZE) {
           // The Core strip (session 24): the column past the east border
-          // that holds the Core face. Not land, not water - the wall the
-          // road ends at. Drawn flat so the face is the only thing in it.
+          // that holds the Core face. Since session 25 mapCells fills it
+          // with ground, so this is the wall only for a grid that left it
+          // empty (a test's hand-built map).
           drawStripCell(term, gx0, gy0);
           continue;
         }

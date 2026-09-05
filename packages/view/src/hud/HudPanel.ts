@@ -80,7 +80,7 @@ export interface HudState {
    */
   nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number; traits?: readonly string[] }[]; canCall: boolean; callBonus: number; waiting: boolean } | null;
   /** The strip (4.27): every tower in the roster, whether the player can pay and whether it fits the selected tile. */
-  roster?: readonly { id: string; name: string; cost: number; affordable: boolean; buildable: boolean }[];
+  roster?: readonly { id: string; name: string; short?: string; cost: number; affordable: boolean; buildable: boolean }[];
   /** The strip: alive enemies by kind, with each kind's traits. */
   waveNow?: readonly { name: string; count: number; traits: readonly string[] }[];
   /** The strip: the Core card, ALWAYS (the HUD column's copy shows only when the face is selected). */

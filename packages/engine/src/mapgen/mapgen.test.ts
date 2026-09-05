@@ -115,6 +115,24 @@ describe('map generation v2 - trees, void, spread', () => {
     }
   });
 
+  it('the Core column is ground around the face: buildable, never road (session 25)', () => {
+    for (const opts of CASES) {
+      const map = generateMap(createRng(11).stream('map'), LIB, opts);
+      const cells = mapCells(map, LIB);
+      const tileW = map.board.width * TILE_SIZE;
+      let ground = 0;
+      for (let y = 0; y < map.cellsH; y++) {
+        const c = cells[y * map.cellsW + tileW];
+        if (c === 'G') ground++;
+        else expect(c).toBe('C');
+      }
+      expect(ground).toBe(map.cellsH - 3);
+      // The two cells touching the face are ground: the precious ones (PRD sec 4.5).
+      expect(cells[(map.coreFace[0].y - 1) * map.cellsW + tileW]).toBe('G');
+      expect(cells[(map.coreFace[2].y + 1) * map.cellsW + tileW]).toBe('G');
+    }
+  });
+
   it('every entry reaches the Core on foot (cell-level BFS)', () => {
     for (const opts of CASES) {
       for (let seed = 1; seed <= 5; seed++) {

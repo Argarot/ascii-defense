@@ -4,6 +4,7 @@
     {
       "id": "bolt",
       "name": "Bolt Turret",
+      "short": "Bolt",
       "cost": 20,
       "range": 6,
       "fireEveryTicks": 14,
@@ -242,6 +243,7 @@
     {
       "id": "frost",
       "name": "Frost Emitter",
+      "short": "Frost",
       "cost": 25,
       "range": 3.5,
       "fireEveryTicks": 24,

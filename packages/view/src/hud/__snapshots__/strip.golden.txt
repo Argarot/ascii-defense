@@ -1,8 +1,8 @@
- BUILD  click a button: builds on the selected tile            WAVE 4/20  next in 17s                        THE CORE  hp 41/50
-     .-#-.             M                                       NOW                   NEXT 5 BOSS             ===========================
-    |[o]|==>          //                                       3 skitter    fast     9 grunt                                ┌  ┐ ┌  ┐
-       ||)           '//          frost          refinery      1 shellback  shielded 2 brute      armoured    OR   SW   FB
-       ||            //                                                                                                 12  └  ┘ └  ┘
-     /_||_\         /__\                                                                                      DRAW RELIC  50 ore
-  Bolt Turret    Mortar         Frost Emitter  Refinery                                                      hover a slot for details; click
-            $20            $35            $25            $60                                                 actives to fire
+ BUILD  click a button: builds on the selected tile                                WAVE 4/20  next in 17s             THE CORE  hp 41/50
+   .-#-.        M                        ┌       ┐ ┌       ┐ ┌       ┐ ┌       ┐   NOW             NEXT 5 BOSS        ====================
+  |[o]|==>     //                                                                  3 skitter   >>  9 grunt                           ┌  ┐ ┌  ┐
+     ||)      '//     frost     refinery                                           1 shellback ()  2 brute     ##      OR   SW   FB
+     ||       //                                                                                                                 12  └  ┘ └  ┘
+   /_||_\    /__\                                                                                                      DRAW RELIC  50 ore
+  Bolt     >Mortar    Frost     Refinery                                                                              hover a slot for details;
+       $20       $35       $25       $60 └       ┘ └       ┘ └       ┘ └       ┘                                      click actives to fire
