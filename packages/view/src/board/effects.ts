@@ -55,6 +55,53 @@ function mixHex(h1: string, h2: string, t01: number): string {
   return '#' + c(1) + c(3) + c(5);
 }
 
+/** How far (in glyph rows) an arc may bow away from the straight line. */
+const ARC_BOW = 2.5;
+
+/**
+ * The glyph cells of one continuous line from (x0, y0) to (x1, y1) in
+ * glyph units (feedback 2026-09-05 item 4: "a continuous line, which can
+ * curve"): a walk along the longer axis, one cell per step, with a
+ * perpendicular BOW that is zero at both ends (a half sine, `bow` rows at
+ * its peak) and a small crackle from the hash. Every consecutive pair of
+ * cells is 8-adjacent, so the glyphs join into one stroke; when the curve
+ * asks for a bigger jump the walk fills the cells between.
+ */
+export function arcPath(x0: number, y0: number, x1: number, y1: number, bow: number, crackleSeed: number): [number, number][] {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const steps = Math.max(1, Math.round(Math.max(Math.abs(dx), Math.abs(dy) * (CELL_W / CELL_H))));
+  // The perpendicular in glyph space (rows are taller than columns, so
+  // the bow is scaled to look like a curve, not a lean).
+  const len = Math.hypot(dx, dy) || 1;
+  const px = -dy / len;
+  const py = dx / len;
+  const out: [number, number][] = [];
+  let last: [number, number] | null = null;
+  for (let s = 0; s <= steps; s++) {
+    const t = s / steps;
+    const arch = Math.sin(Math.PI * t) * bow;
+    const crackle = crackleSeed === 0 ? 0 : (hash2(s, crackleSeed, 11) - 0.5) * 0.9;
+    const off = arch + crackle * Math.sin(Math.PI * t);
+    const gx = Math.round(x0 + dx * t + px * off * (CELL_W / CELL_H));
+    const gy = Math.round(y0 + dy * t + py * off);
+    if (last) {
+      // Fill so every pair of cells touches (8-adjacency).
+      let fx: number = last[0];
+      let fy: number = last[1];
+      while (Math.abs(gx - fx) > 1 || Math.abs(gy - fy) > 1) {
+        fx += Math.sign(gx - fx);
+        fy += Math.sign(gy - fy);
+        out.push([fx, fy]);
+      }
+      if (fx === gx && fy === gy) continue;
+    }
+    out.push([gx, gy]);
+    last = [gx, gy];
+  }
+  return out;
+}
+
 export class EffectsLayer {
   private effects: Effect[] = [];
   private lastSeq = -1;
@@ -290,25 +337,16 @@ export class EffectsLayer {
     const pts = e.pts ?? [];
     if (still && age01 > 0.3) return;
     const fg = mixHex(role('tower.tesla.arc'), role('fx.smoke'), still ? 0 : age01);
-    const jitterSeed = Math.floor(age01 * 4) + 3;
     for (let i = 1; i < pts.length; i++) {
-      const x0 = pts[i - 1].x * CELL_W;
-      const y0 = pts[i - 1].y * CELL_H;
-      const x1 = pts[i].x * CELL_W;
-      const y1 = pts[i].y * CELL_H;
-      const steps = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
-      for (let s = 1; s < steps; s++) {
-        const t = s / steps;
-        const gx = Math.floor(x0 + (x1 - x0) * t);
-        let gy = Math.floor(y0 + (y1 - y0) * t);
-        if (!still) {
-          const j = hash2(gx, gy, jitterSeed);
-          if (j < 0.25) gy -= 1;
-          else if (j > 0.75) gy += 1;
-        }
-        const dx = x1 - x0;
-        const dy = (y1 - y0) * (CELL_W / CELL_H);
-        const ch = Math.abs(dx) > 2 * Math.abs(dy) ? '-' : Math.abs(dy) > 2 * Math.abs(dx) ? '|' : dx * dy > 0 ? '\\' : '/';
+      const cells = arcPath(pts[i - 1].x * CELL_W, pts[i - 1].y * CELL_H, pts[i].x * CELL_W, pts[i].y * CELL_H, still ? 0 : (hash2(i, e.start, 5) - 0.5) * 2 * ARC_BOW, still ? 0 : Math.floor(age01 * 4));
+      // From the cell after the source to the body itself: the stroke
+      // reaches what it hits, and the next segment starts there.
+      for (let k = 1; k < cells.length; k++) {
+        const [gx, gy] = cells[k];
+        const [nx, ny] = cells[Math.min(k + 1, cells.length - 1)];
+        const dx = nx - gx;
+        const dy = ny - gy;
+        const ch = dy === 0 ? '-' : dx === 0 ? '|' : dx * dy > 0 ? '\\' : '/';
         if (gx >= 0 && gy >= 0 && gx < term.cols && gy < term.rows) term.put(gx, gy, ch, fg);
       }
     }

@@ -176,7 +176,10 @@ for (const [id, t] of Object.entries(TOWERS)) {
   for (const a of [0, 1]) for (const b of [0, 1]) for (const c of [0, 1]) keysOf.push([a, b, c]);
   for (const choices of keysOf) {
     const [base, ...rest] = t.frames.map((rows) => frame(keys, apply(rows, choices), t.roleOf));
-    states[choices.join('')] = { ...base, frames: rest };
+    // Placeholder sequences, the importer's rule (a twinkle, not a jump).
+    const alt = rest[0] ?? base;
+    const sequences = { fire: [{ ...alt, ms: 100 }], cool: [{ ...base, ms: 150 }], charge: [{ ...alt, ms: 100 }, { ...base, ms: 100 }] };
+    states[choices.join('')] = { ...base, frames: rest, sequences };
   }
   write(id, { id, kind: 'tower', cell: [8, 5], frameMs: 720, source: SOURCE, states, inkMap: keys.inkMap });
 }
