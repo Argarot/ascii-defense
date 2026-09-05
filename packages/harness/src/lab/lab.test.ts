@@ -59,6 +59,12 @@ describe('the balance lab (session 12 gate)', () => {
     };
     const report = runLab(spec, content);
     const bolt = content.towerDefs.find((d) => d.id === 'bolt')!;
+    // The instruments (session 27): 'adjacent' touches the last tower; 'inline' aims a laser along road.
+    const inst = runLab({ seed: 4242, map: SMALL, towers: [{ towerId: 'bolt', choices: [-1, -1, -1], at: 'choke' }, { towerId: 'bastion', choices: [-1, -1, -1], at: 'adjacent' }, { towerId: 'laser', choices: [-1, -1, -1], at: 'inline' }], relicIds: [], maxWaves: 2 }, content);
+    const [first, bastion, laser] = inst.towersPlaced;
+    expect(Math.max(Math.abs(bastion.x - first.x), Math.abs(bastion.y - first.y))).toBe(1);
+    expect(laser).toBeDefined();
+    expect(Object.values(inst.killsByDef).reduce((a, c) => a + c, 0)).toBeGreaterThanOrEqual(0);
     const eff = effectiveStats(bolt, [0, 1, 1]);
     const placedStats = report.towersPlaced.map((p) => ({ x: p.x, y: p.y, dps: (eff.damage / eff.fireEveryTicks) * 20, range: eff.range }));
     const pred = predict(spec, content, placedStats, 40);

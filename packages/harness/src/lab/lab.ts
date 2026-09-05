@@ -39,8 +39,12 @@ export interface TowerPlacement {
   /** 'auto': best road coverage anywhere. 'core': best coverage among cells
    *  adjacent to the Core block (how a Loadbearing build actually plays).
    *  'choke' (session 24): best coverage among cells beside the road's last
-   *  CHOKE_REACH cells before the Core - the shared tail every lane walks. */
-  at: 'auto' | 'core' | 'choke' | { x: number; y: number };
+   *  CHOKE_REACH cells before the Core - the shared tail every lane walks.
+   *  'adjacent' (session 27): best coverage among the cells touching the
+   *  LAST tower placed - how a Bastion is actually used. 'inline' (session
+   *  27): the cell and facing whose straight corridor covers the most road
+   *  - how a Laser is actually aimed; the tower is turned to that facing. */
+  at: 'auto' | 'core' | 'choke' | 'adjacent' | 'inline' | { x: number; y: number };
 }
 
 /** Road cells within this many cells of the Core (by route) are the choke. */
@@ -82,6 +86,8 @@ export interface LabReport {
   waves: WaveRow[];
   L: number;
   towersPlaced: { towerId: string; x: number; y: number }[];
+  /** Kills per enemy id over the run (session 27): a crowd role shows here, not on the death wave. */
+  killsByDef: Record<string, number>;
 }
 
 export interface LabContent {
@@ -125,9 +131,52 @@ function coverage(cells: readonly (CellType | null)[], W: number, H: number, x: 
   return n;
 }
 
+/**
+ * The straight corridor a beam would cover from (x, y) facing f (the sim's
+ * own rule, mirrored): cross to the road, run along it while it keeps
+ * straight, stop where it turns or ends. Returns the road cells covered.
+ */
+function corridorRoad(cells: readonly (CellType | null)[], W: number, H: number, x: number, y: number, f: number, cap: number): number {
+  const DX = [0, 1, 0, -1];
+  const DY = [-1, 0, 1, 0];
+  let road = 0;
+  let onRoad = false;
+  for (let k = 1; k <= cap; k++) {
+    const nx = x + DX[f] * k;
+    const ny = y + DY[f] * k;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H) break;
+    const c = cells[ny * W + nx];
+    const isR = c !== null && isRoad(c);
+    if (onRoad && !isR) break;
+    if (isR) { onRoad = true; road++; }
+  }
+  return road;
+}
+
+/** The cell and facing whose corridor covers the most road (ties: first in scan order). */
+function inlineSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, cap: number): { x: number; y: number; facing: number } | null {
+  let best: { x: number; y: number; facing: number } | null = null;
+  let bestRoad = 0;
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      if (!sim.canBuildDefAt(x, y, towerId)) continue;
+      for (let f = 0; f < 4; f++) {
+        const road = corridorRoad(cells, W, H, x, y, f, cap);
+        if (road > bestRoad) { bestRoad = road; best = { x, y, facing: f }; }
+      }
+    }
+  return best;
+}
+
 /** Greedy best-coverage placement, the way a player actually builds. */
-function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, range: number, where: 'auto' | 'core' | 'choke' = 'auto'): { x: number; y: number } | null {
+function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, range: number, where: 'auto' | 'core' | 'choke' | 'adjacent' = 'auto', last?: { x: number; y: number }): { x: number; y: number } | null {
   const allowed = new Set<number>();
+  if (where === 'adjacent' && last) {
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) allowed.add((last.y + dy) * W + (last.x + dx));
+  } else if (where === 'adjacent') {
+    where = 'choke'; // nothing placed yet: the first tower goes where a first tower goes
+  }
   if (where === 'core') {
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++) {
@@ -199,11 +248,19 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     const def = content.towerDefs.find((d) => d.id === p.towerId);
     if (!def) throw new Error(`unknown tower '${p.towerId}'`);
     if (spec.economy && !sim.canAfford(p.towerId)) return false;
-    const spot =
-      typeof p.at === 'string'
-        ? (autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range, p.at) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range))
-        : p.at;
+    let facing: number | null = null;
+    let spot: { x: number; y: number } | null;
+    if (p.at === 'inline') {
+      const inl = inlineSpot(sim, cells, cellsW, cellsH, p.towerId, Math.ceil(def.range));
+      if (inl) { spot = inl; facing = inl.facing; }
+      else spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range, 'choke');
+    } else if (typeof p.at === 'string') {
+      spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range, p.at, placed[placed.length - 1]) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range);
+    } else {
+      spot = p.at;
+    }
     if (!spot || !sim.buildTower(spot.x, spot.y, p.towerId)) throw new Error(`cannot place ${p.towerId}`);
+    if (facing !== null) sim.setFacing(spot.x, spot.y, facing);
     placed.push({ towerId: p.towerId, x: spot.x, y: spot.y });
     return true;
   };
@@ -280,12 +337,15 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     });
   }
 
+  const killsByDef: Record<string, number> = {};
+  content.enemyDefs.forEach((d, i) => { if ((sim.killsByDef[i] ?? 0) > 0) killsByDef[d.id] = sim.killsByDef[i]; });
   return {
     result: sim.status === 'lost' ? 'died' : 'survived',
     deathWave: sim.status === 'lost' ? lastWave : null,
     waves,
     L: sim.flow.L,
     towersPlaced: placed,
+    killsByDef,
   };
 }
 

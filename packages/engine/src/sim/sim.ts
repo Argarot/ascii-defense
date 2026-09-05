@@ -320,6 +320,8 @@ export class Sim {
    */
   /** Bodies spawned per enemy def, for the run's story (session 27). Never hashed. */
   readonly spawnedByDef: number[] = [];
+  /** Kills per enemy def, for the lab's per-kind reading (session 27). Never hashed. */
+  readonly killsByDef: number[] = [];
   private readonly slowEntries: ({ mul: number; ticks: number; src: string }[] | undefined)[] = new Array(ENEMY_CAP);
   /**
    * Burns (session 27, the Laser's Sear): damage per tick with a source,
@@ -2020,6 +2022,7 @@ export class Sim {
       this.freeEnemies.push(enemy);
       this.emit({ kind: 'death', x: this.posX[enemy], y: this.posY[enemy] });
       this.kills++;
+      this.killsByDef[this.enemyDefIdx[enemy]] = (this.killsByDef[this.enemyDefIdx[enemy]] ?? 0) + 1;
       // Bounty Board (relic) multiplies boss bounty only; rounded so Scrap
       // stays integral (the state hash truncates its lanes to integers).
       this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1)) + this.fold.killRefundScrap; // Tithe
