@@ -1,183 +1,162 @@
-# Handover — state as of 2026-09-05 (midday; session 23 shipped four PRs, session 24 proposed)
+# Handover — state as of 2026-09-05 (end of day; sessions 23 and 24 shipped eleven PRs)
 
 > **Updated once per working day** (Daniil). State and seams only; sequencing
 > lives in the roadmap ledger, the checklist in the WBS, requests in the WBS
 > request index. Anything restated here is a drift surface.
 
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
-[docs/PRD.md](docs/PRD.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-(§12 is the generation spec) → [docs/ASSETS.md](docs/ASSETS.md) — **§1 and §3
-are today's: the 8×5 cell and sprite format v2** → [docs/WBS.md](docs/WBS.md)
-(decision **D24**, the debt register) → this file → the roadmap ledger's next
-open row. The gitignored `POSTMORTEM.md` holds collaboration findings — **read
-its last three sections before writing any code today.** End every working
-day with the `wrap-session` skill.
+[docs/PRD.md](docs/PRD.md) — **§4.3.1 and §4.5 are today's: the board fills,
+the Core at the east edge** → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+(§12 is the generation spec, tiers 0–2 rewritten today) →
+[docs/ASSETS.md](docs/ASSETS.md) → [docs/WBS.md](docs/WBS.md) (D25–D28, the
+debt register, the request index's round 22) → this file → the roadmap
+ledger's next open row. The gitignored `POSTMORTEM.md` holds collaboration
+findings — **read its last three sections before writing any code today.**
+End every working day with the `wrap-session` skill, whose "next-session
+plan" section is a contract (Daniil, 2026-09-05).
 
 Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always).
-**Since today the caption under the board reads `8x5 glyph cells ⠂ NxM tiles`**
-— a caption without that is the old build.
+**Since today the title is a full-screen page with the four towers as a hero
+row; a run shows the Core face at the right edge and a strip under the
+board** — a build without those is the old one.
 
 ## Where the project is
 
-**Session 23 (2026-09-05 morning) shipped four PRs (#111–#114):** retune 1
-(Hailstorm and Cluster to 60%); the playtest fixes — junction cells drawn by
-EFFECTIVE ports (an 'X' with north closed wears the T art), the range as
-three thin rings, the Bolt's own gold dash, the ramp a notch down; Daniil's
-art tooling tracked (`sprite-editor/`, `tools/art/`, `vendor/fonts/`);
-his thought dump sorted into the docs (PRD §4.3.1, §7.8, §13, §15.1, §18;
-WBS D25–D28, 2.30–2.34, 4.27–4.29, 5.6–5.8, 6.9–6.10, 7.8; ledger 23–38).
-Measured on 2026-09-04: five specials fail to generate on every small
-board. **Session 22 (2026-09-04)** shipped the geometry migration and the
-art pipeline (#105–#109, D24); Daniil played design round 1 and called its
-gate.
+**2026-09-05 shipped eleven PRs (#111–#121) in two sessions.**
 
-1. **Sprite format v2 + the importer (#105):** a sprite is a map of `states`
-   keyed by a string the view chooses — a tower's choice path (`""`, `"0"`,
-   `"01"`, `"010"`; 15 keys for a 3-tier tree) or a terrain cell letter —
-   with `frames` (animation), `variations` (static alternates picked by
-   position hash) and `bgInk`. `content/assets/grid.json` declares the cell
-   content is authored for; the linter refuses any sprite whose cell differs,
-   and checks every glyph against the shipped atlas. `tools/import-sprites.mjs`
-   turns Daniil's generator studies (`sources/sprites/*.json`, committed with
-   their `generate_*.py`) into content: the four tower colour RULES are ported
-   from the generators and every glyph painted; 69 tower + 17 road palette
-   roles. Re-import after a study changes; an unknown rule fails, never guesses.
-2. **The view net (#106):** `render` exports `TermSurface` (what the view
-   draws on) and `TextTerm` (arrays); every view class is typed to it. Golden
-   text tests for terrain cells, the board and the HUD; the goldens changed
-   in #107 and #108 in exactly the way each intended.
-3. **The flip (#107):** the cell is **8×5 glyphs = 40×40 px**, read from
-   grid.json; the board is **sized to the viewport** (`app/boardSize.ts`,
-   7×5 tiles at 1920×1080, clamped 6×4…12×7) and rides `init`; a saved run
-   continues only on a screen that fits its map. The three 5×3 literals are
-   gone; `UI_SCALE`/`HUD_COLS` named once; the loadout picker pages at
-   `tileCapacity()`.
-4. **Roads from sprites (#108):** every road letter draws from the cobble
-   sprite, one of four variations per cell by position hash; the route
-   graph's kerb is drawn over the art only where it closes a side the letter
-   leaves open.
-5. **The variant sweep (#109):** `node tools/sweep.mjs`; tables in
-   `docs/lab/sweep-2026-09-04.md`. The smaller board is not harder across
-   the board (no threat retune needed); **three forks fail the design-round-1
-   gate as measured**: Hailstorm vs Railbore, Cluster vs Concussive,
-   Absolute Zero vs Shatterfield (the last a solo-measurement artefact). A
-   retune is proposed there, not applied.
+Session 23 (morning, #111–#115): retune 1 (Hailstorm and Cluster to 60%);
+the playtest fixes — junction cells drawn by their EFFECTIVE ports, the
+range as three thin rings, the Bolt's gold dash, the ramp a notch down; the
+art tooling tracked; the thought dump sorted into the docs (PRD §4.3.1, §7.8,
+§13, §15.1, §18; WBS D25–D28 and 2.30–2.37, 4.27–4.29, 5.6–5.8, 6.9–6.10,
+7.8); the next-session rule written into the wrap skill.
 
-**Not built:** ground, rock, ore, Core and water sprites (Daniil draws them
-later; glyph pools cover them at the larger cell, untuned); the tower
-studies' state names predate the D23 tree rework (he will rename visuals);
-enemies are still single glyphs.
+Session 24 (afternoon, #116–#121), on Daniil's "go make what you've outlined":
 
-**Gates:** design round 1 — **passed by Daniil's play** except the sweep's
-three failing forks, which are his retune call; 2.27 (loadout-heavy runs) —
-still his; session 22 — the deployed build at 8×5 with his towers and roads
-on the board, which he has not yet played.
+1. **The Core at the east edge (#116, his redesign).** No tile carries the
+   Core. The cell grid is the slots plus one column on the east; a
+   three-cell **Core face** stands in it where the road arrives; the road
+   tree roots at the east-border slot in front of it; exactly one entrance;
+   entries only north, west, south. `mapCells()` is the grid a run plays
+   on. `GENERATOR_VERSION` 2; old saves refused with a sentence.
+2. **The board fills (#117, carve v4, D28).** Specials first as fixed
+   nodes; walks planned to one lane length; entries emergent until road
+   covers ~0.9 of the slots; the carve REPORTS coverage and the lane band
+   and `verifyMap` holds the map to the report. `tools/mapgen-sweep.mjs`:
+   32 board×loadout cells × 30 seeds, zero failures, zero rerolls (five
+   specials on 7×5 failed 30/30 the day before).
+3. **The bottom strip (#118, 4.27).** Under the board: the roster as
+   sprite buttons (grey when unaffordable), this wave and the next by kind
+   with traits, the Core card with its actives — always. 1080p is **7×4
+   tiles plus the Core column** now.
+4. **The build sweep (#119).** The lab has an economy and a choke
+   placement; `tools/build-sweep.mjs`. A five-tower choke build reaches
+   wave 19–23 on the 1080p boards against a final wave of 20: **no
+   further retune**; Hailstorm is a role problem (WBS 2.37).
+5. **Boon colours + the contrast lint (#120).** One background per boon
+   type, corner glyphs on empty boon cells; the linter warns per sprite
+   frame under 30 luminance points of contrast — it names the cobble
+   study's X tier and nothing else.
+6. **The shell owns the whole screen (#121, 4.28).** A viewport-sized
+   terminal carries the title, setup, loadout, how-to, settings, summary;
+   the title is a designed page with the towers as its hero; pause and
+   the relic offer stay on the board.
+
+**Not built, by design:** the Core face sprite and button art (the art
+agent's; the face wears the Core pool glyphs); the Tile Smith is still its
+own page; mixed boon ground; enemy sprites; the `X`/`B` road tiers are still
+flat until Daniil regenerates the study (the linter says so on every run).
+
+**Gates:** session 24 — **Daniil's playtest of the deployed build**: five
+special loadouts generate every time; the Core face at the right with its
+actives under the board; the strip in use; a Standard run reaches wave 10+.
+2.27 — still his.
 
 ## Fresh-context warnings (beyond CONTRIBUTING)
 
-- **Sprites are generated, never hand-edited.** `content/assets/sprites/*.json`
-  come from `node tools/import-sprites.mjs`; edit the study under
-  `sources/sprites/` (or its generator) and re-import. A hand edit is lost on
-  the next import.
-- **The cell lives in `grid.json` only.** Do not write 8 or 5 or 40 anywhere;
-  read `CELL_W`/`CELL_H`/`GLYPH_PX_W`/`GLYPH_PX_H` from the view. The linter
-  fails any sprite that disagrees with the file.
-- **The board is per session, from the viewport.** `BOARD_SLOTS` (12×7) is
-  only the worker's default for tests and the lab. A save whose map is
-  another size is refused on this screen with a sentence — rebuilding the
-  terminals per run is in the debt register, not done.
-- **Tile previews are 40×25 glyphs at the 2× UI scale** (400×400 px each):
-  the loadout picker shows about three per page on a 1920-wide screen. A
-  1× preview surface is the fix and is in the register.
-- **The browser pane starves `requestAnimationFrame` while hidden**; front the
-  tab, `resize_window` to ~1900 wide, and read `hudText()` after a real wait.
-  Screenshots work fronted. Reset the viewport with the desktop preset.
-- **Heredocs through the Bash tool keep breaking on quoting** (backticks,
-  regex escapes). Scratchpad `.mjs` scripts with anchored replacements that
-  abort on a missing anchor were the only reliable multi-file edit path;
-  the Edit tool for one-line fixes. Two of today's scripts aborted mid-file
-  because an anchor was indented differently than remembered — read the
-  line first.
-- **PR bodies are written after the gate prints, from its output.** One
-  commit message today said 222 tests when the run printed 220.
-- **`gh pr merge` only bare** (the classifier refuses it chained), and only
-  after `gh pr checks` reports pass on the same SHA as `git rev-parse HEAD`.
+- **The Core is a face in the strip column, not a tile.** `map.coreFace`,
+  `map.cellsW/cellsH`, `mapCells(map, lib)`. A library with a `C` tile is
+  refused by generation. Sim, flow, view and lab all read the grid from the
+  map; nothing computes `slots × 5` for height or width any more except
+  `boardSize.ts`, which adds the column and the strip explicitly.
+- **The carve reports, the verifier holds.** `coverage` and `laneBand` on the
+  map are what the carve achieved; a board that cannot fill or balance says
+  so and passes. Do not "fix" a low band by forcing it — that is what made
+  yesterday's carve fail. Priority when rules fight: tree > specials >
+  floor > balance > coverage.
+- **Entries are many now** (8–12 on a 7×5 board). Every spare arm of a
+  special is one. If a playtest says "too many fronts", the knobs are
+  `COVERAGE_TARGET`, `MAX_LANE_SHARE` and `EXTRA_WALKS` in `carve.ts`, and
+  the sweep is the ruler.
+- **Tower tests pick spots by ROAD distance to the Core** (one entrance:
+  every enemy passes them). A test that assumes "the first road-adjacent
+  ground cell in scan order is on the lane" is wrong on a filled board.
+- **Patch scripts use a function replacer** (`s.replace(a, () => b)`): a
+  `$$` in a replacement string is eaten by `String.replace`. It cost the
+  HUD its dollar sign for an hour.
+- **The browser pane cannot show `term.shade`** in its downscaled
+  screenshots and cannot read the GL framebuffer; a vitest probe that
+  draws through the view into a PNG with the atlas bitmaps is the proof
+  for view changes. `__ad.modalText()` reads the page on screen.
+- **`gh pr merge` may fail to fast-forward local main** when the art
+  agent's files are locked; `git update-ref refs/heads/main origin/main`
+  + `git reset` + a targeted checkout of the changed paths recovers it.
 
-## Next session, proposed — 24: the board and the screen
+## Next session, proposed — 25: Motion
 
-*(Daniil's rule, 2026-09-05: every shipped session ends with the next one
-proposed, and it must be a full day of visible progress. His "go" is
-enough; defaults are stated where he has not amended.)*
+*(Daniil's rule: every shipped session ends with the next one proposed, a
+full day on one theme. His "go" is enough.)*
 
-**Theme.** The Core moves to the edge, the board fills, the empty screen
-works. It is next because every balance number, the lab, the difficulty
-curve and the bottom strip all sit on the board's shape, and the shape is
-about to change.
+**Theme.** The board moves the way a 60 Hz picture of a 20 Hz world should,
+and every tower is animated as a thing that charges, fires and cools. It is
+next because every sprite the art agent draws from now on inherits the
+frame model, and the shell and strip that would show them exist now.
 
-1. **The Core at the edge** *(Daniil's redesign, 2026-09-05)*. The Core
-   tile is retired. The cell grid gains ONE extra row along the bottom
-   edge; a three-cell **Core face** sits in it under the road's last cell;
-   the strip's other cells are blank. The road tree roots at the slot above
-   the face (column drawn per seed from the middle third); **entries only
-   on the north, east and west borders**; the Core has exactly one
-   entrance; the per-entry floor still binds. `verifyMap`: one road cell
-   touches the face. Sim breach unchanged (Core cells are 'C'). View: the
-   face drawn in the current style until Daniil's sprite arrives; board
-   canvas one cell taller. Library: `core_*` tiles removed; the smith's
-   'C' brush retired. Seven sites assume height = slots × 5 (`main.ts`,
-   `workerRuntime.ts`, `BoardView.ts`, sim, verify); each moves to a
-   `cellsH` read from the map. Golden hash moves with the reason. Saves
-   are stamped (D15) — old ones refused with a sentence.
-2. **The board fills, lanes balanced** (2.30, D28 defaults): specials
-   placed first as fixed nodes; the tree grows from the root to **90%** of
-   land slots; every dead end is an entrance; every lane **at least 70% of
-   the longest** where the board allows. When constraints fight: tree >
-   specials > floor > balance > coverage. ARCHITECTURE §12 rewritten;
-   `tools/mapgen-sweep.mjs` permanent (fails, rerolls, coverage, balance
-   ratio per board × loadout × seed).
-3. **The bottom strip** (4.27): a third terminal, full width under the
-   board. The Core face's card (hp, relic slots, ACTIVES — moved out of the
-   HUD column, right under the face they belong to), this wave and the
-   next by type with each type's specialty, and **build buttons drawn
-   with the towers' own sprites** at board scale, full colour when
-   affordable, grey when not, with button chrome. `boardSize.ts` reserves
-   the strip; at 1080p that costs one tile row (7×4 plus the Core row).
-4. **Difficulty on the new boards** (item 4, properly): a mixed-build lab
-   (a Bolt line at the choke, a Frost, a Mortar, economy-driven) on the new
-   generator across boards and seeds; the ramp and the D18 offset retuned
-   from that table; Hailstorm judged at 60% vs 75% in the same run.
-5. **The full-screen shell** (4.28): a screen host that sizes every page
-   to the viewport; the title as a designed page with the menu; run setup,
-   loadout and summary as pages; the board as a page. Placeholder title art
-   until the art agent's splash. The Tile Smith stays on its own page this
-   session.
-6. **Boon colours and the contrast lint** (4.29, 2.32), riding along.
+1. **Interpolation** (6.9 first half): the view keeps the previous
+   snapshot and draws enemies and projectiles at positions interpolated by
+   the time since the last tick, on the world clock (freezes at pause,
+   scales at 4×). No sim change; the golden hash does not move. Proof: a
+   vitest probe rendering two frames between ticks, and the pane at 1×.
+2. **Sequences in the sprite format**: a state gains named sequences
+   (`idle`, `charge`, `fire`, `cool`) of frames with per-frame durations;
+   the importer reads them from the studies when present; the linter
+   checks every frame. `frames` stays as the idle sequence for old sprites.
+3. **Attack animations keyed to events**: the effects layer already
+   receives `Sim.events`; a tower's `fire` event plays its `fire` sequence
+   once, its cooldown plays `cool`, its target acquisition plays `charge`.
+   Placeholder sequences derived from the base art (a two-frame flash and
+   recoil) until the art agent's arrive, so the mechanism ships visibly.
+4. **Ability graphics** (6.10): the orbital laser as a bright column from
+   the top edge to the cell, through the effects layer; the frost field as
+   a ring pulse; on the world clock.
+5. **Relic sprites** (6.7): the strip's slots draw a sprite when the relic
+   has one, the two-letter tag otherwise; a placeholder set for the M1
+   relics in the current style.
+6. **The mixed-build lab** as the day's ruler for anything that touches
+   the sim (nothing should).
 
-**Gate — Daniil's playtest on the live build:** five-special loadouts
-generate every time on his screen; the Core face sits at the bottom with
-its actives under it; the strip shows the wave and the buttons; a Standard
-run with an ordinary build reaches wave 10+ and the shortest lane does not
-decide it.
+**Gate — Daniil's eye on the live build:** motion he cannot point at as
+choppy at 1× and 4×; a Bolt visibly charges, fires and cools; the orbital
+laser reads as a beam.
 
-**His part:** the Core face sprite and button art from the art agent
-(placeholders until then); amendments to the D28 defaults if any; the
-playtest at the end.
+**His part:** tower sequences and relic sprites from the art agent as they
+come (placeholders until then); the regenerated road study for `X`/`B`.
 
-**Biggest risk:** one entrance makes the last two slots the whole game — a
-choke where five towers see everything. PR 4 measures exactly that (choke
-build vs spread build) before the numbers are set; if the choke wins by a
-mile, the answer is a longer shared tail or a min-range rule, not a quieter
-tower. **Expensive if wrong:** the Core's position is in every save, in the
-Core-adjacent relic, in the lab's placement heuristics and in the smith —
-PR 1 is where to argue, because moving it again costs PR 1 again.
+**Biggest risk:** interpolation across a tick where an enemy dies or
+breaches, and across the bridge's strand change; both need "draw the last
+known position, never extrapolate" and a test each. **Expensive if wrong:**
+the sequence model is what every future sprite is authored against — PR 2
+is where to argue.
 
 ## Standing open items
 
-- The three losing forks (sweep) — Daniil's retune call.
-- Session 22 playtest of the deployed 8×5 build — his.
+- Daniil's playtest of the deployed 2026-09-05 build — his.
+- The road study's `X` and `B` tiers (flat stones) — his generator; the
+  linter warns until then.
+- The Core face sprite, button art, the splash — the art agent.
+- Hailstorm as a role (WBS 2.37) — the combat-identity session.
+- D25 multi-cell towers, D26 passives vs relics, D27 monetization — open.
 - 2.27 gate — his.
-- Missing terrain and enemy sprites — his art, then one importer input shape.
-- Technical-debt register (WBS) — grew by: terminals rebuilt per run, a 1×
-  preview surface for the picker, the lab's analytic model ignorant of
-  volleys/pierce/min range/the clock.
-- `tile_yn7vhz`, 4.12 V8/V9, shore-as-ore — unchanged.
+- Technical-debt register: terminals once per session; 2× tile previews;
+  the lab's analytic model; the lab gate tolerance at 8 (replaced by the
+  build sweep as the ruler); the strip cramped below 7 tiles wide.

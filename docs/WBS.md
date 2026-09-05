@@ -487,6 +487,9 @@ Verified findings not yet fixed, most material first. Each is a candidate for a 
 - **Terminals are created once per session** (`main.ts`): a save made for another board size is refused instead of the board being rebuilt on `ready`.
 - **The loadout picker draws tile previews at the 2× UI scale** (400×400 px each at 8×5): about three fit a page. A 1× preview surface inside the modal is the fix.
 - **The lab's analytic model** knows nothing of volleys, pierce, min range or the wave clock; only the headless runner and the sweep are trusted.
+- **The lab's gate tolerance sits at 8 waves** after two geometry changes; the build sweep (2.36) is the ruler now and the analytic gate should be retired or re-derived.
+- **Entries are many on a filled board** (8–12 on 7×5): a knob question (`COVERAGE_TARGET`, `MAX_LANE_SHARE`, `EXTRA_WALKS`) for Daniil's playtest, not a defect.
+- **The strip is cramped below seven tiles wide**: at 6×4 the wave columns truncate; a second row or a narrower button would fix it.
 - **Misc**: `role()` bypassed by ~16 colour literals in view; `loadRun()` parses the whole save every frame from `menuSpec()`; `pagehide` autosave cannot complete its worker round-trip; `towers[]` never recycles sold slots; `HudPanel.scroll` not re-clamped on render; Tile Smith Ctrl+Z hijacks text inputs; WIPE DATA leaves the minted pool; `clearMintedTiles`, `lanesJoin`, `streamFromState`, `FILL_RADIUS` dead; stale comments in `replay.ts`, `verify.ts`, `mapgen.ts` header; the lab's analytic model knows nothing of volleys, pierce, min range or the wave clock.
 
 ## M3 — Trustworthy difficulty *(sequenced after M4/M5: calibrating before the
