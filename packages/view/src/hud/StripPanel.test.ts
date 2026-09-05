@@ -18,8 +18,8 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: unknown[] }): 
   return r.value;
 }
 const SPRITES = [must(validateSprite.check(boltJson)), must(validateSprite.check(mortarJson)), must(validateSprite.check(orbitalJson))];
-/** A 7-tile board's strip: (7 * 5 + 1) * 8 glyphs / 2 = 144 columns. */
-const STRIP = { cols: 144, rows: STRIP_ROWS };
+/** A 7-tile board's strip at board scale: (7 * 5 + 1) * 8 = 288 columns, sixteen rows. */
+const STRIP = { cols: 288, rows: STRIP_ROWS };
 
 function state(over: Partial<HudState> = {}): HudState {
   return {
@@ -78,32 +78,33 @@ function state(over: Partial<HudState> = {}): HudState {
 describe('the strip as text', () => {
   it('renders the roster as sprite buttons, the wave now and next with traits, and the Core card', async () => {
     const term = new TextTerm(STRIP);
-    const strip = new StripPanel(term, 10, 16, SPRITES);
+    const strip = new StripPanel(term, 5, 8, SPRITES);
     strip.render(state());
     await expect(term.toText()).toMatchFileSnapshot('__snapshots__/strip.golden.txt');
   });
 
   it('every button, active slot and the draw plate is a click region; greyed towers still click (the sim refuses)', () => {
     const term = new TextTerm(STRIP);
-    const strip = new StripPanel(term, 10, 16, SPRITES);
+    const strip = new StripPanel(term, 5, 8, SPRITES);
     strip.render(state({ coreCard: { ...state().coreCard!, canDraw: true } }));
-    // The second button (mortar): 10 columns per button, any row below the title.
-    expect(strip.actionAt((1 + 10 + 3) * 10, 3 * 16)).toEqual({ kind: 'buildId', id: 'mortar' });
+    // The second button (mortar): 10 columns per button, any row of the button.
+    expect(strip.actionAt((1 + 10 + 3) * 5, 3 * 8)).toEqual({ kind: 'buildId', id: 'mortar' });
     // The greyed refinery is still a target - the click reaches the sim, which says no.
-    expect(strip.actionAt((1 + 30 + 3) * 10, 3 * 16)).toEqual({ kind: 'buildId', id: 'refinery' });
-    // A spare slot is room, not a button.
-    expect(strip.actionAt((1 + 50 + 3) * 10, 3 * 16)).toBeNull();
+    expect(strip.actionAt((1 + 30 + 3) * 5, 3 * 8)).toEqual({ kind: 'buildId', id: 'refinery' });
+    // A spare slot is room, not a button; the hint rows under the buttons are nothing.
+    expect(strip.actionAt((1 + 50 + 3) * 5, 3 * 8)).toBeNull();
+    expect(strip.actionAt((1 + 3) * 5, 10 * 8)).toBeNull();
     // A ready slot in the Core section is a relic action; an empty one is nothing.
     // The Orbital slot carries its sprite (session 25): the beam's '**' row.
     const text = term.toText().split('\n');
     const orRow = text.findIndex((l) => l.includes(' ** '));
     const orX = text[orRow].indexOf('**') - 1;
     expect(orX).toBeGreaterThan(0);
-    expect(strip.actionAt(orX * 10, orRow * 16)).toEqual({ kind: 'relic', index: 0 });
-    expect(strip.actionAt((orX + 5 * 3 + 1) * 10, orRow * 16)).toBeNull();
+    expect(strip.actionAt(orX * 5, orRow * 8)).toEqual({ kind: 'relic', index: 0 });
+    expect(strip.actionAt((orX + 5 * 3 + 1) * 5, orRow * 8)).toBeNull();
     // The draw plate, when affordable.
     const drawRow = text.findIndex((l) => l.includes('DRAW RELIC'));
     expect(drawRow).toBeGreaterThan(0);
-    expect(strip.actionAt((text[drawRow].indexOf('DRAW') + 1) * 10, drawRow * 16 + 1)).toEqual({ kind: 'coreDraw' });
+    expect(strip.actionAt((text[drawRow].indexOf('DRAW') + 1) * 5, drawRow * 8 + 1)).toEqual({ kind: 'coreDraw' });
   });
 });

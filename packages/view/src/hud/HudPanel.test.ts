@@ -64,6 +64,17 @@ describe('the HUD as text', () => {
     await expect(term.toText()).toMatchFileSnapshot('__snapshots__/hud-tower.golden.txt');
   });
 
+  it('shows the hovered build button\'s card before anything is bought (feedback item 1)', () => {
+    const term = new TextTerm({ cols: 32, rows: 60 });
+    const hud = new HudPanel(term, 10, 16);
+    hud.render(state({ selectedTower: null, buildPreview: { name: 'Tesla Coil', cost: 40, desc: 'An arc that jumps body to body.', stats: { dmg: 9, dps: '9.0', range: 4, minRange: 0, shots: 1, pierce: 0, chain: 3, blast: 0, slow: 0, prod: null } } }));
+    const text = term.toText();
+    expect(text).toContain('Tesla Coil');
+    expect(text).toContain('$40');
+    expect(text).toContain('chain  3');
+    expect(text).toContain('An arc that jumps');
+  });
+
   it('the CALL button is a click region only while calling is allowed', () => {
     const term = new TextTerm(PANEL);
     const hud = new HudPanel(term, 10, 16);

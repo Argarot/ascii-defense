@@ -39,7 +39,7 @@ import {
   type ReplayAction,
   type TileDef,
   type TowerDef,
-} from '@ascii-defense/engine';
+ effectiveStats, } from '@ascii-defense/engine';
 import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
 export interface WorkerRuntimeDeps {
@@ -326,8 +326,17 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       short: d.short,
       cost: d.cost,
       affordable: s.canAfford(d.id),
-      buildable: selected ? s.canBuildDefAt(selected.x, selected.y, d.id) : true,
+      // Grey only for a location unbuildable FOR THIS TOWER (a Refinery off
+      // ore); a tile nothing can take (road, occupied) greys nobody -
+      // feedback item 5, 2026-09-05.
+      buildable: selected ? s.canBuildDefAt(selected.x, selected.y, d.id) || !s.canBuildAt(selected.x, selected.y) : true,
     }));
+    // The build preview (feedback item 1): hovering a button puts the
+    // tower's card in the column before anything is bought.
+    const previewHover = hudHover?.kind === 'buildId' ? towerDefs.find((d) => d.id === hudHover.id) : undefined;
+    const buildPreview = previewHover
+      ? { name: previewHover.name ?? previewHover.id, cost: previewHover.cost, desc: previewHover.desc ?? '', stats: toStats(effectiveStats(previewHover, [-1, -1, -1])) }
+      : null;
     // The strip's NOW column: alive enemies by kind, with traits.
     const nowCounts = new Map<string, number>();
     for (let i = 0; i < s.posX.length; i++) if (s.alive[i]) nowCounts.set(s.enemyDefOf(i).id, (nowCounts.get(s.enemyDefOf(i).id) ?? 0) + 1);
@@ -431,6 +440,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
               })(),
             }
           : null,
+        buildPreview,
         selectedTower: infoTower && def && eff
           ? {
               name: def.name ?? def.id,

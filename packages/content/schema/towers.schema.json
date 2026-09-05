@@ -37,6 +37,10 @@
             "type": "string",
             "maxLength": 9
           },
+          "desc": {
+            "description": "One sentence for the build card and the catalogue: what it is and what it answers.",
+            "type": "string"
+          },
           "cost": {
             "type": "number",
             "minimum": 0

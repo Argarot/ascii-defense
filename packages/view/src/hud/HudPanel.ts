@@ -100,6 +100,8 @@ export interface HudState {
   selectedBuild: number;
   buildTargetSelected: boolean;
   selectedTower: HudTowerInfo | null;
+  /** The hovered build button's tower, before it is bought (feedback item 1, 2026-09-05). */
+  buildPreview?: { name: string; cost: number; desc: string; stats: HudStats } | null;
   /** The Core card, when a Core cell is selected. */
   core: HudCoreInfo | null;
   /** The cache card, when an unopened cache is selected (PRD sec 4.6): its source. */
@@ -326,6 +328,31 @@ export class HudPanel {
       term.write(0, y++, 'select an empty tile to', role('ui.dim'));
       term.write(0, y++, 'build on it', role('ui.dim'));
       y += 2;
+    }
+
+    // ---- the build preview: the hovered button's card ------------------------
+    if (s.buildPreview) {
+      const p = s.buildPreview;
+      term.write(0, y++, '-'.repeat(W), role('ui.grid'));
+      term.write(0, y, p.name, role('ui.accent'));
+      const costText = `$${p.cost}`;
+      term.write(W - costText.length, y++, costText, role('ui.text'));
+      for (const line of this.wrapText(p.desc, W).slice(0, 3)) term.write(0, y++, line, role('ui.dim'));
+      const st = p.stats;
+      const line = (label: string, v: number | string): void => { term.write(0, y++, `${label} ${v}`, role('ui.text')); };
+      if (st.prod !== null) line('ore  ', st.prod);
+      else {
+        line('dmg  ', st.dmg);
+        line('dps  ', st.dps);
+        line('range', st.range);
+        if (st.minRange > 0) line('dead ', st.minRange);
+        if (st.blast > 0) line('blast', st.blast);
+        if (st.shots > 1) line('shots', st.shots);
+        if (st.pierce > 0) line('pierce', st.pierce);
+        if (st.chain > 0) line('chain ', st.chain);
+        if (st.slow > 0) line('slow ', `${st.slow}t`);
+      }
+      y++;
     }
 
     // ---- selection ---------------------------------------------------------
@@ -572,6 +599,18 @@ export class HudPanel {
   }
 
   /** The help footer and the flush - the one exit every branch takes. */
+  private wrapText(s: string, w: number): string[] {
+    const lines: string[] = [];
+    let line = '';
+    for (const word of s.split(' ')) {
+      if (word === '') continue;
+      if (line !== '' && line.length + 1 + word.length > w) { lines.push(line); line = word; }
+      else line = line === '' ? word : line + ' ' + word;
+    }
+    if (line !== '') lines.push(line);
+    return lines;
+  }
+
   private finish(term: { rows: number; write: (x: number, y: number, s: string, fg: string, bg?: string) => void; flush: () => void }, _s: HudState): void {
     void _s;
     const help = ['space pause \u2802 1-4 speed', 'F/L/C/W priority \u2802 X sell', 'G seams \u2802 Esc menu'];

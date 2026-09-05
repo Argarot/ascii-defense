@@ -1,8 +1,15 @@
- BUILD  click a button: builds on the selected tile                                WAVE 4/20  next in 17s             THE CORE  hp 41/50
-   .-#-.        M                        ┌       ┐ ┌       ┐ ┌       ┐ ┌       ┐   NOW             NEXT 5 BOSS        ====================
-  |[o]|==>     //                                                                  3 skitter   >>  9 grunt            \||/           ┌  ┐ ┌  ┐
-     ||)      '//     frost     refinery                                           1 shellback ()  2 brute     ##      ||   SW   FB
-     ||       //                                                                                                       **        12  └  ┘ └  ┘
-   /_||_\    /__\                                                                                                      DRAW RELIC  50 ore
-  Bolt     >Mortar    Frost     Refinery                                                                              hover a slot for details;
-       $20       $35       $25       $60 └       ┘ └       ┘ └       ┘ └       ┘                                      click actives to fire
+ BUILD                                                                             WAVE 4/20  next in 17s                                THE CORE  hp 41/50
+   .-#-.        M                        ┌       ┐ ┌       ┐ ┌       ┐ ┌       ┐   NOW                       NEXT 5 BOSS                 ==========================================================================================================================
+  |[o]|==>     //                                                                  3 skitter   fast          9 grunt                     \||/           ┌  ┐ ┌  ┐
+     ||)      '//     frost     refinery                                           1 shellback shielded      2 brute     armoured         ||   SW   FB
+     ||       //                                                                                                                          **        12  └  ┘ └  ┘
+   /_||_\    /__\                                                                                                                         DRAW RELIC  50 ore
+  Bolt     >Mortar    Frost     Refinery                                                                                                 hover a slot for details; click actives to fire
+       $20       $35       $25       $60 └       ┘ └       ┘ └       ┘ └       ┘
+
+ click a button: builds on the selected tile
+ hover a button: its card in the column
+ grey: not enough scrap, or not for that tile
+
+
+
