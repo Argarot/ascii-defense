@@ -77,6 +77,13 @@ review found flat: the wave clock and the call button, boss waves, traits as
 real rules, stackability and escalating prices for relics, caches that open
 free onto loot tables, a dead zone for the Mortar with the range drawn as a
 filled disc, and every tower fork rebuilt as two roles instead of two numbers.
+**Session 26 (2026-09-05, late night)** answered six feedback items (the
+strip at board scale, a build preview card, subtle attack sequences in
+every sprite, a curving continuous arc, interpolated movement) and gave the
+game its combat identity: kinetic and energy damage with resistances,
+statuses with sources, tower facing and the Laser Lance, the Bastion's
+aura and a unique gift for every tower next to the Core — **eight
+towers**.
 **Session 25 (2026-09-05, evening)** gave every enemy, relic and the Core
 face a generated placeholder sprite, taught the sprite format kinds and
 attack sequences (every tower flashes, recoils and charges on screen),
