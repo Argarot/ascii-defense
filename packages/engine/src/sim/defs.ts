@@ -231,6 +231,10 @@ export interface StatMods {
   slowedBonusMul?: number;
   /** Pulse towers: every Nth pulse freezes instead of slowing. */
   freezeEvery?: number;
+  /** Chain towers (session 25): additional bodies an arc jumps to. */
+  chainCount?: number;
+  /** Chain towers: additional cells a hop may span. */
+  chainReach?: number;
 }
 
 export interface ChoiceDef {
@@ -261,10 +265,12 @@ export interface TowerDef {
   /** Cells: the dead zone - nothing closer is ever targeted (design round 1, item 2). */
   minRange?: number;
   fireEveryTicks: number;
-  /** 'projectile' fires shots; 'pulse' hits everything in range on cooldown; 'none' never attacks (producers). */
-  attack?: 'projectile' | 'pulse' | 'none';
-  /** Absent on attack:'none' producers (Refinery). */
+  /** 'projectile' fires shots; 'pulse' hits everything in range on cooldown; 'chain' arcs through bodies (session 25); 'none' never attacks (producers). */
+  attack?: 'projectile' | 'pulse' | 'chain' | 'none';
+  /** Absent on attack:'none' producers (Refinery). For 'chain' the damage is the first hop's; speed is unused. */
   projectile?: ProjectileSpec;
+  /** Chain towers (session 25): the arc hits `count` bodies, each within `reach` cells of the last, at `falloff` of the previous hop's damage. */
+  chain?: { count: number; reach: number; falloff: number };
   production?: ProductionSpec;
   /** 3 tiers x 2 exclusive choices = 14 tower variants (Daniil's redesign). */
   tiers?: readonly TowerTierDef[];
@@ -300,6 +306,10 @@ export interface EffectiveStats {
   freezeEvery: number;
   /** Hits ignore armour (Railbore). */
   ignoreArmor: boolean;
+  /** Chain towers (session 25): bodies per arc, cells per hop, damage kept per hop. */
+  chainCount: number;
+  chainReach: number;
+  chainFalloff: number;
 }
 
 /**
@@ -332,6 +342,9 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     slowedBonusMul: 1,
     freezeEvery: 0,
     ignoreArmor: false,
+    chainCount: def.chain?.count ?? 0,
+    chainReach: def.chain?.reach ?? 0,
+    chainFalloff: def.chain?.falloff ?? 1,
   };
   let damageMul = 1;
   def.tiers?.forEach((tierDef, ti) => {
@@ -349,6 +362,8 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     out.shieldMul += m.shieldMul ?? 0;
     out.slowedBonusMul += m.slowedBonusMul ?? 0;
     out.freezeEvery += m.freezeEvery ?? 0;
+    out.chainCount += m.chainCount ?? 0;
+    out.chainReach += m.chainReach ?? 0;
     out.damage += m.damage ?? 0;
     out.range += m.range ?? 0;
     out.minRange += m.minRange ?? 0;

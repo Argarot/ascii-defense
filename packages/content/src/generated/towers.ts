@@ -23,6 +23,14 @@ export interface TowerRoster {
        * Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.
        */
       minRange?: number;
+      /**
+       * attack:chain only (session 25, the Tesla Coil): the arc hits count bodies, each within reach cells of the last, at falloff of the previous hop's damage.
+       */
+      chain?: {
+        count: number;
+        reach: number;
+        falloff: number;
+      };
       fireEveryTicks: number;
       /**
        * Required for attacking towers; absent on attack:none producers (Refinery).
@@ -67,7 +75,7 @@ export interface TowerRoster {
       /**
        * projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).
        */
-      attack?: 'projectile' | 'pulse' | 'none';
+      attack?: 'projectile' | 'pulse' | 'chain' | 'none';
       /**
        * Resource yield per cycle (Refinery). Ore counts only while the tower stands on an ore cell - engine rule, PRD sec 5.3. scrap is reserved shape for the foundry relic (PRD sec 7.4); no shipped tower uses it.
        */
@@ -149,6 +157,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -212,6 +228,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -283,6 +307,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -346,6 +378,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -417,6 +457,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -480,6 +528,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -503,6 +559,14 @@ export interface TowerRoster {
        * Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.
        */
       minRange?: number;
+      /**
+       * attack:chain only (session 25, the Tesla Coil): the arc hits count bodies, each within reach cells of the last, at falloff of the previous hop's damage.
+       */
+      chain?: {
+        count: number;
+        reach: number;
+        falloff: number;
+      };
       fireEveryTicks: number;
       /**
        * Required for attacking towers; absent on attack:none producers (Refinery).
@@ -547,7 +611,7 @@ export interface TowerRoster {
       /**
        * projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).
        */
-      attack?: 'projectile' | 'pulse' | 'none';
+      attack?: 'projectile' | 'pulse' | 'chain' | 'none';
       /**
        * Resource yield per cycle (Refinery). Ore counts only while the tower stands on an ore cell - engine rule, PRD sec 5.3. scrap is reserved shape for the foundry relic (PRD sec 7.4); no shipped tower uses it.
        */
@@ -629,6 +693,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -692,6 +764,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -763,6 +843,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -826,6 +914,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -897,6 +993,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -960,6 +1064,14 @@ export interface TowerRoster {
                  * Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.
                  */
                 freezeEvery?: number;
+                /**
+                 * Chain towers: additional bodies per arc.
+                 */
+                chainCount?: number;
+                /**
+                 * Chain towers: additional cells a hop may span.
+                 */
+                chainReach?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
@@ -1025,6 +1137,31 @@ export const towersSchema = {
             "description": "Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.",
             "type": "number",
             "minimum": 0
+          },
+          "chain": {
+            "description": "attack:chain only (session 25, the Tesla Coil): the arc hits count bodies, each within reach cells of the last, at falloff of the previous hop's damage.",
+            "type": "object",
+            "required": [
+              "count",
+              "reach",
+              "falloff"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "reach": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "falloff": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
           },
           "fireEveryTicks": {
             "type": "integer",
@@ -1102,6 +1239,7 @@ export const towersSchema = {
             "enum": [
               "projectile",
               "pulse",
+              "chain",
               "none"
             ],
             "default": "projectile"
@@ -1232,6 +1370,14 @@ export const towersSchema = {
                             "description": "Pulse towers: every Nth pulse applies a full freeze (speed 0) instead of the slow. 0 = never.",
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "chainCount": {
+                            "description": "Chain towers: additional bodies per arc.",
+                            "type": "integer"
+                          },
+                          "chainReach": {
+                            "description": "Chain towers: additional cells a hop may span.",
+                            "type": "number"
                           }
                         }
                       },

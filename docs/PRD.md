@@ -452,6 +452,8 @@ M1 ships the first four. Target is **8 towers + the Core**, not 14.
 | Mortar | area, dead zone | Shaped Charge (the few) / Wide Burst (the many) | Long Barrel (sit back) / Short Fuse (sit close) | Concussive (control) / Cluster (saturation) | M1 |
 | Frost Emitter | slow field | Deep Chill (slow path) / Ice Shards (damage path) | Wide Field / Brittle | Absolute Zero / Shatterfield | M1 |
 | Refinery | economy (§6) | Wide Bore (more now) / Deep Bore (more in the end) | Survey / Automation | Mother Lode / Deep Shaft | M1 |
+| Tesla Coil | chain arcs, short range *(session 25)* | Long Arc (reach) / Twin Coil (throughput) | Forked (more bodies) / Grounding (slow on the chain) | Overload (damage) / Conductor (swarms) | shipped 2026-09-05 |
+| Missile Rack | homing explosive, long range, dead zone *(session 25)* | Warhead (damage) / Seeker (reach, rate) | Salvo (two missiles) / Fragmentation (blast) | Bunker Buster (armour) / Barrage (three missiles) | shipped 2026-09-05 |
 
 *(Trees reworked in design round 1, 2026-09-03 — D23: every fork is two
 **roles** that answer different waves, never two numbers. Piercing answers a

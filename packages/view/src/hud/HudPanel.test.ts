@@ -36,8 +36,8 @@ function state(over: Partial<HudState> = {}): HudState {
       name: 'Bolt Turret',
       kills: 12,
       deposit: null,
-      stats: { dmg: 8, dps: '11.4', range: 6, minRange: 0, shots: 1, pierce: 0, blast: 0, slow: 0, prod: null },
-      preview: { dmg: 8, dps: '11.4', range: 8.5, minRange: 0, shots: 1, pierce: 0, blast: 0, slow: 0, prod: null },
+      stats: { dmg: 8, dps: '11.4', range: 6, minRange: 0, shots: 1, pierce: 0, chain: 0, blast: 0, slow: 0, prod: null },
+      preview: { dmg: 8, dps: '11.4', range: 8.5, minRange: 0, shots: 1, pierce: 0, chain: 0, blast: 0, slow: 0, prod: null },
       offVein: false,
       priority: 'first',
       tiers: [

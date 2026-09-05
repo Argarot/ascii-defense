@@ -36,6 +36,8 @@ export interface HudStats {
   shots: number;
   /** Enemies a shot passes into after its target. */
   pierce: number;
+  /** Bodies an arc hits (chain towers, session 25); 0 otherwise. */
+  chain: number;
   slow: number;
   /** Blast radius in cells; 0 for non-explosive shots (WBS 2.19). */
   blast: number;
@@ -485,6 +487,9 @@ export class HudPanel {
         }
         if (t.stats.pierce > 0 || (t.preview && t.preview.pierce > 0)) {
           stat('pierce', t.stats.pierce, t.preview ? t.preview.pierce : null);
+        }
+        if (t.stats.chain > 0 || (t.preview && t.preview.chain > 0)) {
+          stat('chain ', t.stats.chain, t.preview ? t.preview.chain : null);
         }
         if (t.stats.slow > 0 || (t.preview && t.preview.slow > 0)) {
           stat('slow ', `${t.stats.slow}t`, t.preview ? `${t.preview.slow}t` : null);
