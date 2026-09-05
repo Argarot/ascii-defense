@@ -77,8 +77,18 @@ function validate(relPath, doc) {
 
 function lintSprite(relPath, sprite, palette, grid) {
   const [w, h] = sprite.cell;
-  if (grid && (w !== grid.cell[0] || h !== grid.cell[1])) {
+  // The cell rule per KIND (session 25; ASSETS.md sec 3): board-sized art
+  // equals grid.json; an enemy is a small walker; a relic is a slot icon.
+  const kind = sprite.kind ?? 'tower';
+  if (kind === 'enemy') {
+    if (w < 1 || w > 5 || h < 1 || h > 3) findings.push(`${relPath}: enemy cell [${w}, ${h}] is outside 1x1..5x3 - a walker must fit on the road`);
+  } else if (kind === 'relic') {
+    if (w !== 4 || h !== 3) findings.push(`${relPath}: relic cell [${w}, ${h}] is not 4x3 - the inventory slot's interior`);
+  } else if (grid && (w !== grid.cell[0] || h !== grid.cell[1])) {
     findings.push(`${relPath}: cell [${w}, ${h}] does not match grid.json [${grid.cell}] - the view would index past its art`);
+  }
+  if (kind === 'face') {
+    for (const k of ['top', 'mid', 'bot']) if (!sprite.states[k]) findings.push(`${relPath}: a face sprite needs state '${k}'`);
   }
   // Every grid - base, each idle frame, each variation and ITS frames -
   // obeys the same dimension and key rules; a frame model that let frame 2
@@ -110,6 +120,7 @@ function lintSprite(relPath, sprite, palette, grid) {
       lintFrame(`${label} variation ${i + 1}`, v);
       (v.frames ?? []).forEach((f, j) => lintFrame(`${label} variation ${i + 1} frame ${j + 1}`, f));
     });
+    for (const [seq, frames] of Object.entries(st.sequences ?? {})) frames.forEach((f, i) => lintFrame(`${label} ${seq} ${i + 1}`, f));
   }
   for (const [key, role] of Object.entries(sprite.inkMap)) {
     if (role !== null && role !== 'PATH' && palette && !(role in palette.roles)) {
@@ -154,6 +165,7 @@ function lintSprite(relPath, sprite, palette, grid) {
       const label = `state '${key}'`;
       checkFrame(label, st);
       (st.frames ?? []).forEach((f, i) => checkFrame(`${label} frame ${i + 1}`, f));
+      for (const [seq, frames] of Object.entries(st.sequences ?? {})) frames.forEach((f, i) => checkFrame(`${label} ${seq} ${i + 1}`, f));
       (st.variations ?? []).forEach((v, i) => {
         checkFrame(`${label} variation ${i + 1}`, v);
         (v.frames ?? []).forEach((f, j) => checkFrame(`${label} variation ${i + 1} frame ${j + 1}`, f));

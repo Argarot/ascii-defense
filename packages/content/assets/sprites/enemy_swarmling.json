@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "enemy_swarmling",
+  "kind": "enemy",
+  "cell": [
+    2,
+    1
+  ],
+  "frameMs": 360,
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "m "
+      ],
+      "ink": [
+        "a."
+      ],
+      "frames": [
+        {
+          "art": [
+            " m"
+          ],
+          "ink": [
+            ".a"
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "enemy.swarm"
+  }
+}

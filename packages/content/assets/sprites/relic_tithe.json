@@ -1,0 +1,28 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "relic_tithe",
+  "kind": "relic",
+  "cell": [
+    4,
+    3
+  ],
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        " $$ ",
+        "$  $",
+        " $$ "
+      ],
+      "ink": [
+        ".aa.",
+        "a..a",
+        ".aa."
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "relic.gold"
+  }
+}

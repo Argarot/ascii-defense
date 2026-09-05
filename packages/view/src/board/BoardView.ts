@@ -24,6 +24,7 @@ import type { Sprite } from '@ascii-defense/content';
 import { role } from '../palette';
 import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, drawStripCell, drawTerrainCell, drawVoidCell } from './style';
+import { drawSpriteFrame, idleFrame } from './sprites';
 
 export { CELL_W, CELL_H } from './style';
 
@@ -280,6 +281,21 @@ export class BoardView {
           continue;
         }
 
+        // The Core FACE from its sprite when content has one (session 25):
+        // the three stacked cells are the states top, mid, bot, found by
+        // counting the face cells above this one in the column.
+        const face = kind === 'C' ? this.sprites.get('core_face') : undefined;
+        if (face) {
+          let above = 0;
+          for (let y = cy - 1; y >= 0 && this.cells[y * this.cellsW + cx] === 'C'; y--) above++;
+          const st = face.states[above === 0 ? 'top' : above === 1 ? 'mid' : 'bot'];
+          if (st) {
+            const dark = role('terrain.core.dark');
+            for (let y = 0; y < CELL_H; y++) for (let x = 0; x < CELL_W; x++) term.put(gx0 + x, gy0 + y, ' ', dark, hovered ? '#2a3a4d' : dark);
+            drawSpriteFrame(term, face, idleFrame(face, st, state.animMs ?? 0, above), gx0, gy0, { groundRole: 'terrain.core.dark' });
+            continue;
+          }
+        }
         // Buildable-and-hovered glows green: the sim said yes, the view shows
         // it. Ordinary hover stays neutral blue-grey.
         const hoverBg = hovered ? (state.hoverBuildable ? '#17402f' : '#2a3a4d') : undefined;
@@ -418,14 +434,32 @@ export class BoardView {
     // bracket around the glyph (destroyed separately from the body), damage
     // is a braille mark above, a slow is a cold tint underneath.
     const HP_RAMP = ['⡀', '⡄', '⡆', '⡇']; // ⡀⡄⡆⡇ - quarters of a life
+    let walker = 0;
     for (const e of state.enemies ?? []) {
       const gx = Math.floor(e.x * CELL_W);
       const gy = offsetY + Math.floor(e.y * CELL_H);
-      const look = (e.id && ENEMY_LOOK[e.id]) || ENEMY_LOOK.grunt;
-      term.put(gx, gy, look.glyph, role(look.roleName), e.slowed ? '#16303c' : undefined);
+      // A walker with a sprite (session 25, kind 'enemy') is drawn CENTRED
+      // on its position, feet on the position row, transparent over the
+      // road; a slow tints the glyphs' ground cold. Without one, the
+      // single-glyph look stands.
+      const sp = e.id ? this.sprites.get(`enemy_${e.id}`) : undefined;
+      let left = gx;
+      let right = gx;
+      let top = gy;
+      if (sp) {
+        const [w, h] = sp.cell;
+        left = gx - Math.floor(w / 2);
+        right = left + w - 1;
+        top = gy - (h - 1);
+        const frame = idleFrame(sp, sp.states[''], state.animMs ?? 0, walker++);
+        drawSpriteFrame(term, sp, frame, left, top, e.slowed ? { groundRole: 'status.slowed' } : { transparent: true });
+      } else {
+        const look = (e.id && ENEMY_LOOK[e.id]) || ENEMY_LOOK.grunt;
+        term.put(gx, gy, look.glyph, role(look.roleName), e.slowed ? '#16303c' : undefined);
+      }
       if (e.shielded) {
-        term.put(gx - 1, gy, '(', role('enemy.shell'));
-        term.put(gx + 1, gy, ')', role('enemy.shell'));
+        term.put(left - 1, gy, '(', role('enemy.shell'));
+        term.put(right + 1, gy, ')', role('enemy.shell'));
       }
       if (e.hp01 !== undefined && e.hp01 < 0.995) {
         // Glyph AND colour carry the bar (2.25, playtest 9): two braille
@@ -434,9 +468,9 @@ export class BoardView {
         // branches on it (invariant 10).
         const pip = HP_RAMP[Math.max(0, Math.min(3, Math.floor(e.hp01 * 4)))];
         const col = e.hp01 < 0.3 ? role('enemy.fast') : e.hp01 < 0.65 ? role('terrain.ore.mid') : role('ui.accent');
-        // Top-row enemies flip the pip below the glyph - off-board clipping
+        // Top-row enemies flip the pip below the sprite - off-board clipping
         // was why "not all enemies show health bars" (playtest 10).
-        term.put(gx, gy > 0 ? gy - 1 : gy + 1, pip, col);
+        term.put(gx, top > 0 ? top - 1 : gy + 1, pip, col);
       }
     }
 

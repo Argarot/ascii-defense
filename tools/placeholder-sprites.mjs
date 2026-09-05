@@ -1,0 +1,142 @@
+#!/usr/bin/env node
+/**
+ * Placeholder sprites (session 25, 2026-09-05, Daniil: "you generate the
+ * sprites that are not there yet, to the best of your ability... what you
+ * make will be reworked by another agent").
+ *
+ *   node tools/placeholder-sprites.mjs
+ *
+ * Writes sprite-format-v2 files under packages/content/assets/sprites/ for
+ * everything that has no study yet - the seven enemies, the sixteen relics,
+ * the Core face - and adds the palette roles they name. Deterministic and
+ * idempotent: the art lives HERE, in the same glyph-and-rule spirit as the
+ * studies (a base grid, a second idle frame, one colour rule per glyph
+ * class), so the art agent replaces a file by dropping a study into
+ * sources/sprites/ and giving tools/import-sprites.mjs its rule; the
+ * `source` field says which files are still placeholders.
+ *
+ * Kinds and cells (ASSETS.md sec 3):
+ *   enemy  up to 5x3 glyphs, drawn centred on the walker's position
+ *   relic  4x3 - the inventory slot's interior in the strip and the column
+ *   face   8x5, three states (top, mid, bot) for the Core's three cells
+ */
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const OUT = join(ROOT, 'packages', 'content', 'assets', 'sprites');
+const PALETTE = join(ROOT, 'packages', 'content', 'assets', 'palette.json');
+const SOURCE = 'tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)';
+
+const palette = JSON.parse(readFileSync(PALETTE, 'utf8'));
+const ROLES = {
+  'enemy.limb': '#8593a0',
+  'enemy.boss': '#ff6a3d',
+  'status.slowed': '#16303c',
+  'relic.gold': '#e6c55a',
+  'relic.copper': '#d4884a',
+  'relic.ice': '#7fd8ff',
+  'relic.blood': '#e2573f',
+  'relic.stone': '#9aa5ad',
+  'relic.steel': '#c9d6df',
+  'relic.moss': '#7dc96b',
+  'relic.void': '#b48cff',
+  'relic.sand': '#d8c48a',
+};
+for (const [k, v] of Object.entries(ROLES)) palette.roles[k] ??= v;
+palette.roles = Object.fromEntries(Object.entries(palette.roles).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+writeFileSync(PALETTE, JSON.stringify(palette, null, 2) + '\n');
+
+/**
+ * Build one frame: `rows` is the art; `roleOf(ch, x, y)` names the
+ * foreground role for a glyph (null = transparent); `bgOf` the background
+ * role or null for none. Ink keys are allocated per sprite through `keys`.
+ */
+function makeKeys() {
+  const map = { '.': null };
+  const byRole = new Map([[null, '.']]);
+  let next = 'a'.charCodeAt(0);
+  return {
+    key(role) {
+      if (byRole.has(role)) return byRole.get(role);
+      const k = String.fromCharCode(next++);
+      map[k] = role;
+      byRole.set(role, k);
+      return k;
+    },
+    inkMap: map,
+  };
+}
+function frame(keys, rows, roleOf, bgOf = null) {
+  const art = rows;
+  const ink = rows.map((row, y) => [...row].map((ch, x) => (ch === ' ' ? '.' : keys.key(roleOf(ch, x, y)))).join(''));
+  const out = { art, ink };
+  if (bgOf) out.bgInk = rows.map((row, y) => [...row].map((ch, x) => (ch === ' ' ? '.' : keys.key(bgOf(ch, x, y)))).join(''));
+  return out;
+}
+function write(id, sprite) {
+  writeFileSync(join(OUT, `${id}.json`), JSON.stringify({ $schema: '../../schema/sprite.schema.json', ...sprite }, null, 2) + '\n');
+  console.log('wrote', `${id}.json`);
+}
+
+// ---- enemies: a body glyph class in the enemy's own colour, limbs in grey ---
+// Two frames = a walk cycle. Cells are small: a walker never covers the road.
+const ENEMIES = {
+  grunt: { role: 'enemy.eye', body: '@', cell: [3, 2], frames: [['(@)', '/ \\'], ['(@)', '\\ /']] },
+  skitter: { role: 'enemy.fast', body: 'x', cell: [3, 2], frames: [['-x-', "' '"], ['~x~', '. .']] },
+  swarmling: { role: 'enemy.swarm', body: 'm', cell: [2, 1], frames: [['m '], [' m']] },
+  brute: { role: 'enemy.brute', body: 'B#', cell: [4, 3], frames: [['[##]', '|BB|', '/  \\'], ['[##]', '|BB|', '|  |']] },
+  shell: { role: 'enemy.shell', body: 'S', cell: [3, 2], frames: [['(S)', '\\_/'], ['(S)', '/_\\']] },
+  husk: { role: 'enemy.husk', body: 'H', cell: [4, 3], frames: [['/HH\\', '|..|', '|__|'], ['/HH\\', '|. |', '|__|']] },
+  juggernaut: { role: 'enemy.boss', body: 'J#=', cell: [5, 3], frames: [['[=J=]', '|###|', '/___\\'], ['[=J=]', '|#.#|', '/___\\']] },
+};
+for (const [id, e] of Object.entries(ENEMIES)) {
+  const keys = makeKeys();
+  const roleOf = (ch) => (e.body.includes(ch) ? e.role : 'enemy.limb');
+  const [base, ...rest] = e.frames.map((rows) => frame(keys, rows, roleOf));
+  write(`enemy_${id}`, { id: `enemy_${id}`, kind: 'enemy', cell: e.cell, frameMs: 360, source: SOURCE, states: { '': { ...base, frames: rest } }, inkMap: keys.inkMap });
+}
+
+// ---- relics: a 4x3 icon, one colour each, a dimmer second class for the frame --
+const RELICS = {
+  overflow: { role: 'relic.copper', rows: ['o->o', '   |', '   o'], dim: '->|' },
+  frostbite: { role: 'relic.ice', rows: [' \\|/', ' -*-', ' /|\\'], dim: '\\|/-' },
+  tithe: { role: 'relic.gold', rows: [' $$ ', '$  $', ' $$ '] },
+  splinter: { role: 'relic.blood', rows: ['*\\/*', ' ** ', '*/\\*'], dim: '\\/' },
+  vein_tap: { role: 'relic.stone', rows: [' /\\ ', '#||#', '####'], dim: '#' },
+  loadbearing: { role: 'relic.steel', rows: ['/==\\', '|  |', '|__|'], dim: '/\\|' },
+  second_wind: { role: 'relic.moss', rows: [' .. ', '(++)', " '' "], dim: ".()'" },
+  quarry: { role: 'relic.stone', rows: ['/\\/\\', '####', '####'], dim: '#' },
+  toll: { role: 'relic.gold', rows: ['|--|', '|$$|', '|  |'], dim: '|-' },
+  bounty_board: { role: 'relic.gold', rows: ['+--+', '|$?|', '+--+'], dim: '+-|' },
+  orbital: { role: 'relic.void', rows: ['\\||/', ' || ', ' ** '], dim: '\\/' },
+  stasis: { role: 'relic.ice', rows: ['/--\\', '|::|', '\\--/'], dim: '/\\-|' },
+  deep_vein: { role: 'relic.copper', rows: ['\\oo/', ' ## ', '/##\\'], dim: '\\/' },
+  sandbags: { role: 'relic.sand', rows: ['(__)', '(__)', '(__)'], dim: '()' },
+  flashbang: { role: 'ui.text', rows: [' \\|/', '-()-', ' /|\\'], dim: '()' },
+  ore_pocket: { role: 'terrain.ore.lit', rows: [' /\\ ', '/oo\\', '\\__/'], dim: '/\\_' },
+};
+for (const [id, r] of Object.entries(RELICS)) {
+  const keys = makeKeys();
+  const roleOf = (ch) => (r.dim && r.dim.includes(ch) ? 'ui.dim' : r.role);
+  write(`relic_${id}`, { id: `relic_${id}`, kind: 'relic', cell: [4, 3], source: SOURCE, states: { '': frame(keys, r.rows, roleOf) }, inkMap: keys.inkMap });
+}
+
+// ---- the Core face: three stacked cells; the road arrives at the middle one's west edge --
+{
+  const keys = makeKeys();
+  const lit = 'terrain.core.lit';
+  const mid = 'terrain.core.mid';
+  const dark = 'terrain.core.dark';
+  const roleOf = (ch) => ('.:'.includes(ch) ? mid : '#=()'.includes(ch) ? lit : mid);
+  const bgOf = () => dark;
+  const top = [['  .--.  ', ' /    \\ ', '|  ..  |', '| :..: |', '|______|'], ['  .--.  ', ' /    \\ ', '|  ..  |', '| .::. |', '|______|']];
+  const midRows = [['|      |', '| /--\\ |', '<=(  )=|', '| \\--/ |', '|      |'], ['|      |', '| /--\\ |', '<=(..)=|', '| \\--/ |', '|      |']];
+  const bot = [['|      |', '| |##| |', '| |##| |', '/______\\', '""""""""'], ['|      |', '| |##| |', '| |#=| |', '/______\\', '""""""""']];
+  const state = (frames) => {
+    const [base, ...rest] = frames.map((rows) => frame(keys, rows, roleOf, bgOf));
+    return { ...base, frames: rest };
+  };
+  write('core_face', { id: 'core_face', kind: 'face', cell: [8, 5], frameMs: 900, source: SOURCE, states: { top: state(top), mid: state(midRows), bot: state(bot) }, inkMap: keys.inkMap });
+}

@@ -78,7 +78,7 @@ dimensions, so the editor UI will also render at 5×8. Cramped but workable.
 
 Commit `.xp` sources alongside the generated JSON so art stays editable.
 
-## 3. Sprite format (v2, session 22 — 2026-09-04)
+## 3. Sprite format (v2, session 22 — 2026-09-04; kinds and sequences session 25)
 
 Art is a grid of glyphs plus parallel grids of **ink keys** naming colour
 roles. A sprite is a map of **states**, keyed by a string the view chooses:
@@ -87,6 +87,18 @@ roles. A sprite is a map of **states**, keyed by a string the view chooses:
   (option index per tier, in tier order). Fifteen keys cover a three-tier
   either/or tree; the view falls back to the longest authored prefix.
 - **terrain**: the cell letter (`"|"`, `"L"`, `"B"` …).
+- **the Core face** (`kind: "face"`): `"top"`, `"mid"`, `"bot"` — the three
+  stacked cells past the east border; the road arrives at the middle one.
+- **enemies** (`kind: "enemy"`) and **relics** (`kind: "relic"`): `""` alone.
+
+**`kind` decides the cell rule** *(session 25)*. Towers, terrain and the
+face are board cells (`cell` equals grid.json). An **enemy** is a small
+walker, at most 5×3, drawn centred on its position with its feet on the
+position row, transparent over the road (a slow tints its ground cold); the
+sprite id is `enemy_<roster id>`. A **relic** is exactly 4×3, the inventory
+slot's interior in the strip and the column; the id is `relic_<pool id>`.
+The view looks sprites up by those ids and falls back to the old
+single-glyph look or the two-letter tag when none exists.
 
 ```jsonc
 {
@@ -120,6 +132,14 @@ roles. A sprite is a map of **states**, keyed by a string the view chooses:
 - **`variations`** are static alternates of a state (roads have four). The
   view picks one per board position with the mixing hash — same cell, same
   look forever, no randomness spent.
+- **`sequences`** *(session 25)* are event-keyed animations on a state:
+  `charge`, `fire`, `cool`, `hit` — each a list of frames with an optional
+  per-frame `ms`, played ONCE from the first on the **world clock** (a
+  paused world holds the frame), then the idle cycle resumes. A tower
+  without them gets a placeholder the view derives from its base art (a
+  flash and a recoil), so the mechanism is visible before the art arrives.
+  **This is the model every future sprite is authored against**: a study
+  that wants its own attack animation ships these four lists.
 
 ### Where sprites come from: `sources/sprites/` and the importer
 
@@ -138,6 +158,15 @@ generator's `ROAD_ORDER` and its `frames` become `variations`.
 
 Re-import after a study changes and the diff is the change. A study with a new
 rule fails to import until the rule is ported — never guessed.
+
+**Placeholders** *(session 25)*: `node tools/placeholder-sprites.mjs` writes
+the sprites nobody has drawn yet — the seven enemies, the sixteen relics,
+the Core face — from art that lives in the script (a base grid, a second
+idle frame, one colour rule per glyph class, the studies' own spirit). Their
+`source` field says so. The art agent replaces one by dropping a study into
+`sources/sprites/` and giving the importer its rule; the generator then
+stops writing that id. The palette roles they name (`enemy.limb`,
+`enemy.boss`, `relic.*`, `status.slowed`) are added by the generator.
 
 Terrain that has no sprite yet (ground, rock, ore, Core, water) is a
 **weighted glyph pool per cell type** plus three colours (lit, mid, dark),

@@ -15,9 +15,22 @@ export interface DrawSpriteOptions {
   flatFg?: string;
   /** Background for glyphs without a bgInk; default the tower's ground. */
   groundRole?: string;
+  /**
+   * Glyphs without a bgInk keep whatever is under them (session 25): a
+   * walker on the road, an icon on its slot's plate. A sprite's own bgInk
+   * still paints.
+   */
+  transparent?: boolean;
 }
 
-export function drawSpriteFrame(term: TermSurface, sp: Sprite, frame: SpriteFrame, gx0: number, gy0: number, opts: DrawSpriteOptions = {}): void {
+/**
+ * Draw one frame at a glyph position. Bounds are the frame's own art (an
+ * enemy is 3x2, a relic 4x3), never past the board cell.
+ */
+/** What a sprite needs from a surface: put, and ideally the font's has(). A scrolled proxy without has() draws every glyph. */
+export type SpriteSurface = Pick<TermSurface, 'put'> & { has?: (ch: string) => boolean };
+
+export function drawSpriteFrame(term: SpriteSurface, sp: Sprite, frame: SpriteFrame, gx0: number, gy0: number, opts: DrawSpriteOptions = {}): void {
   const ground = role(opts.groundRole ?? 'tower.ground');
   const rows = Math.min(CELL_H, frame.art.length);
   for (let r = 0; r < rows; r++) {
@@ -28,11 +41,19 @@ export function drawSpriteFrame(term: TermSurface, sp: Sprite, frame: SpriteFram
     for (let c = 0; c < cols; c++) {
       const chr = artRow[c];
       const inkRole = sp.inkMap[inkRow[c]];
-      if (chr === ' ' || inkRole === null || inkRole === undefined || !term.has(chr)) continue;
+      if (chr === ' ' || inkRole === null || inkRole === undefined || (term.has && !term.has(chr))) continue;
       const rn = inkRole === 'PATH' ? 'tower.core' : inkRole;
       const bgRole = bgRow ? sp.inkMap[bgRow[c]] : undefined;
-      const bg = opts.flatFg ? undefined : bgRole === null || bgRole === undefined || bgRole === 'PATH' ? ground : role(bgRole);
+      const ownBg = bgRole === null || bgRole === undefined || bgRole === 'PATH' ? undefined : role(bgRole);
+      const bg = opts.flatFg ? undefined : ownBg ?? (opts.transparent ? undefined : ground);
       term.put(gx0 + c, gy0 + r, chr, opts.flatFg ? role(opts.flatFg) : role(rn), bg);
     }
   }
+}
+
+/** The idle frame of a state at a wall-clock time, phase-offset by `salt` so a crowd is out of step. */
+export function idleFrame(sp: Sprite, st: Sprite['states'][string], animMs: number, salt = 0): SpriteFrame {
+  const cycle = [st, ...(st.frames ?? [])];
+  if (cycle.length === 1) return st;
+  return cycle[(Math.floor(animMs / (sp.frameMs ?? 600)) + salt) % cycle.length];
 }
