@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Defense Sprite Editor</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">[+]</span>
+        <span>ASCII Defense</span>
+        <strong>Sprite Editor</strong>
+      </div>
+      <div class="file-actions">
+        <button id="newButton" title="Create a blank Sprite v2">New</button>
+        <button id="openButton" class="primary">Open JSON</button>
+        <select id="exampleSelect" aria-label="Open bundled sprite">
+          <option value="">Bundled sprites...</option>
+          <option value="bolt">Bolt</option>
+          <option value="mortar">Mortar</option>
+          <option value="frost">Frost</option>
+          <option value="refinery">Refinery</option>
+          <option value="road_muted_cobble">Roads</option>
+        </select>
+        <button id="referenceButton" title="Supply a colour reference for a legacy tower study">Tower reference</button>
+        <button id="saveButton" disabled>Download v2 JSON</button>
+        <button id="palettePatchButton" class="hidden">Download palette patch</button>
+      </div>
+      <div class="history-actions">
+        <button id="undoButton" disabled title="Undo (Ctrl+Z)">Undo</button>
+        <button id="redoButton" disabled title="Redo (Ctrl+Y)">Redo</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar states-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">Sprite</span>
+            <h1 id="spriteTitle">No sprite open</h1>
+          </div>
+          <span id="dirtyBadge" class="badge hidden">Edited</span>
+        </div>
+
+        <div id="dropPrompt" class="drop-prompt">
+          <span class="drop-icon">{ }</span>
+          <strong>Drop a sprite JSON here</strong>
+          <span>Sprite v2, tower study, or road study</span>
+        </div>
+
+        <section id="stateSection" class="hidden">
+          <div class="section-title-row">
+            <h2>States</h2>
+            <div class="mini-actions">
+              <button id="addStateButton" title="Add state">+</button>
+              <button id="duplicateStateButton" title="Duplicate state">Copy</button>
+            </div>
+          </div>
+          <div id="stateList" class="state-list"></div>
+          <div class="state-actions">
+            <button id="renameStateButton">Rename</button>
+            <button id="deleteStateButton" class="danger">Delete</button>
+          </div>
+
+          <div class="section-title-row timeline-title">
+            <h2>Versions</h2>
+            <span id="versionSummary" class="muted"></span>
+          </div>
+          <div class="stepper">
+            <button id="previousVariationButton" aria-label="Previous variation">&lt;</button>
+            <select id="variationSelect" aria-label="Variation"></select>
+            <button id="nextVariationButton" aria-label="Next variation">&gt;</button>
+          </div>
+          <div class="row-actions">
+            <button id="addVariationButton">+ Variation</button>
+            <button id="deleteVariationButton" class="danger">Delete</button>
+          </div>
+
+          <div class="section-title-row timeline-title">
+            <h2>Animation</h2>
+            <label class="timing-field">ms <input id="frameMsInput" type="number" min="60" step="10"></label>
+          </div>
+          <div class="stepper">
+            <button id="previousFrameButton" aria-label="Previous frame">&lt;</button>
+            <select id="frameSelect" aria-label="Animation frame"></select>
+            <button id="nextFrameButton" aria-label="Next frame">&gt;</button>
+          </div>
+          <div class="row-actions">
+            <button id="playButton">Play</button>
+            <button id="addFrameButton">+ Frame</button>
+            <button id="deleteFrameButton" class="danger">Delete</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="stage-panel">
+        <div class="stage-toolbar">
+          <div class="tool-group" role="toolbar" aria-label="Paint tools">
+            <button class="tool active" data-tool="pencil" title="Pencil (1)">Pencil</button>
+            <button class="tool" data-tool="eraser" title="Erase (2)">Erase</button>
+            <button class="tool" data-tool="fill" title="Flood fill (3)">Fill</button>
+            <button class="tool" data-tool="eyedropper" title="Eyedropper (4); right-click or Alt-click also picks">Eyedropper</button>
+            <button class="tool" data-tool="rectangle" title="Rectangle (5)">Rect</button>
+            <button class="tool" data-tool="select" title="Select for copy/paste (6)">Select</button>
+            <button class="tool" data-tool="brush" title="Colour brush (7)">Colour brush</button>
+          </div>
+          <div class="view-group">
+            <select id="viewMode" aria-label="Canvas view mode">
+              <option value="edit">Edit</option>
+              <option value="tile">Tile preview</option>
+              <option value="composite">Composite preview</option>
+            </select>
+            <button id="compareButton" title="Compare previous and next animation frames">Compare frames</button>
+            <label><input id="gridCheckbox" type="checkbox" checked> Grid</label>
+            <label>Zoom <input id="zoomInput" type="range" min="3" max="18" value="10"></label>
+            <span id="zoomLabel">10x</span>
+          </div>
+        </div>
+
+        <div id="previewToolbar" class="preview-toolbar hidden">
+          <label>Across <input id="tileColsInput" type="number" min="1" max="8" value="3"></label>
+          <label>Down <input id="tileRowsInput" type="number" min="1" max="8" value="3"></label>
+          <label><input id="cycleVariationsCheckbox" type="checkbox" checked> Cycle versions</label>
+          <span id="compositeControls" class="composite-controls hidden">
+            <button id="loadCompanionButton">Load layer JSON</button>
+            <select id="companionExampleSelect" aria-label="Load bundled layer">
+              <option value="">Bundled layer...</option>
+              <option value="bolt">Bolt</option>
+              <option value="mortar">Mortar</option>
+              <option value="frost">Frost</option>
+              <option value="refinery">Refinery</option>
+              <option value="road_muted_cobble">Roads</option>
+            </select>
+            <select id="companionStateSelect" aria-label="Layer state"></select>
+            <select id="companionVariationSelect" aria-label="Layer version"></select>
+            <select id="companionLayerSelect" aria-label="Layer order">
+              <option value="under">Layer underneath</option>
+              <option value="over">Layer on top</option>
+            </select>
+            <button id="clearCompanionButton">Clear layer</button>
+            <span id="companionLabel" class="muted">No layer loaded</span>
+          </span>
+        </div>
+
+        <div id="canvasShell" class="canvas-shell empty">
+          <canvas id="spriteCanvas" aria-label="Sprite painting canvas"></canvas>
+          <div id="canvasEmpty" class="canvas-empty">
+            <span>8 x 5 glyph cells</span>
+            <strong>Open JSON to begin</strong>
+          </div>
+          <div id="compareDock" class="compare-dock hidden">
+            <button class="frame-preview" data-frame-offset="-1">
+              <span>Previous</span>
+              <canvas id="previousFrameCanvas" width="120" height="120"></canvas>
+            </button>
+            <div class="frame-preview current">
+              <span>Current</span>
+              <canvas id="currentFrameCanvas" width="120" height="120"></canvas>
+            </div>
+            <button class="frame-preview" data-frame-offset="1">
+              <span>Next</span>
+              <canvas id="nextFrameCanvas" width="120" height="120"></canvas>
+            </button>
+          </div>
+        </div>
+
+        <div class="statusbar">
+          <span id="cellStatus">Cell --, --</span>
+          <span id="selectionStatus">No selection</span>
+          <span class="spacer"></span>
+          <button id="validateButton" disabled>Validate</button>
+          <span id="validationPill" class="validation-pill idle">Not checked</span>
+        </div>
+        <div id="validationPanel" class="validation-panel hidden"></div>
+      </section>
+
+      <aside class="sidebar inspector-panel">
+        <section>
+          <div class="section-title-row">
+            <h2>Apply</h2>
+            <span class="muted">REXPaint-style channels</span>
+          </div>
+          <div class="apply-grid">
+            <label><input id="applyGlyph" type="checkbox" checked> Glyph</label>
+            <label><input id="applyForeground" type="checkbox" checked> Fore</label>
+            <label><input id="applyBackground" type="checkbox" checked> Back</label>
+          </div>
+        </section>
+
+        <section class="role-section">
+          <div class="section-title-row">
+            <h2>Colour roles</h2>
+            <button id="loadPaletteButton" class="micro-button">Load palette</button>
+          </div>
+          <label class="field-label" for="foregroundSelect">Foreground</label>
+          <div class="role-row">
+            <span id="foregroundSwatch" class="swatch"></span>
+            <select id="foregroundSelect"></select>
+            <code id="foregroundKey">-</code>
+          </div>
+          <label class="field-label" for="backgroundSelect">Background</label>
+          <div class="role-row">
+            <span id="backgroundSwatch" class="swatch transparent"></span>
+            <select id="backgroundSelect"></select>
+            <code id="backgroundKey">.</code>
+          </div>
+        </section>
+
+        <section class="colour-lab-section">
+          <div class="section-title-row">
+            <h2>Colour lab</h2>
+            <span class="muted">Custom palette roles</span>
+          </div>
+          <div class="colour-slots">
+            <button id="colourSlotA" class="colour-slot active"><span></span>A</button>
+            <button id="colourSlotB" class="colour-slot"><span></span>B</button>
+            <input id="colourHexInput" type="text" value="#d8e1eb" maxlength="7" aria-label="Selected colour hex value">
+          </div>
+          <canvas id="colourWheel" width="220" height="220" aria-label="Hue and saturation colour wheel"></canvas>
+          <label class="value-slider">Value <input id="colourValueInput" type="range" min="0" max="100" value="88"><span id="colourValueLabel">88%</span></label>
+          <div class="colour-assign-row">
+            <button id="useForegroundButton">Use as Fore</button>
+            <button id="useBackgroundButton">Use as Back</button>
+          </div>
+          <div class="brush-controls">
+            <label>Brush size <input id="brushSizeInput" type="range" min="1" max="8" value="3"><span id="brushSizeLabel">3</span></label>
+            <label>Shape
+              <select id="brushShapeSelect">
+                <option value="circle">Circle</option>
+                <option value="square">Square</option>
+              </select>
+            </label>
+            <label>Paint
+              <select id="brushModeSelect">
+                <option value="solid">Solid A</option>
+                <option value="linear">Gradient A to B</option>
+                <option value="radial">Fade A to B</option>
+              </select>
+            </label>
+            <label>Direction
+              <select id="brushDirectionSelect">
+                <option value="horizontal">Left to right</option>
+                <option value="vertical">Top to bottom</option>
+                <option value="diagonal">Diagonal</option>
+              </select>
+            </label>
+          </div>
+          <p class="colour-note">After painting a custom colour, use Download palette patch too. Sprite v2 stores role names, not hex values.</p>
+        </section>
+
+        <section class="glyph-section">
+          <div class="section-title-row">
+            <h2>Glyphs</h2>
+            <div class="mini-actions">
+              <span id="glyphCount" class="muted">0</span>
+              <button id="loadGlyphsetButton" class="micro-button">Load atlas</button>
+            </div>
+          </div>
+          <div class="selected-glyph">
+            <canvas id="selectedGlyphCanvas" width="70" height="70"></canvas>
+            <div>
+              <strong id="selectedGlyphCharacter">-</strong>
+              <code id="selectedGlyphCode">No atlas</code>
+            </div>
+          </div>
+          <div class="glyph-filters">
+            <input id="glyphSearch" type="search" placeholder="Character or U+2800">
+            <select id="glyphRange">
+              <option value="all">All ranges</option>
+              <option value="ascii">ASCII</option>
+              <option value="braille">Braille</option>
+              <option value="box">Box drawing</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="glyph-browser">
+            <canvas id="glyphCanvas" aria-label="Glyph palette"></canvas>
+          </div>
+        </section>
+
+        <section class="shortcuts">
+          <details>
+            <summary>Keyboard shortcuts</summary>
+            <dl>
+              <dt>1-6</dt><dd>Tools</dd>
+              <dt>7</dt><dd>Colour brush</dd>
+              <dt>Right-click</dt><dd>Eyedropper</dd>
+              <dt>[ / ]</dt><dd>Previous / next version</dd>
+              <dt>, / .</dt><dd>Previous / next frame</dd>
+              <dt>Space</dt><dd>Play animation</dd>
+              <dt>Ctrl+C/V</dt><dd>Copy / paste selection</dd>
+              <dt>Ctrl+Z/Y</dt><dd>Undo / redo</dd>
+              <dt>Ctrl+S</dt><dd>Download JSON</dd>
+            </dl>
+          </details>
+        </section>
+      </aside>
+    </main>
+
+    <input id="fileInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="referenceInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="paletteInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="glyphsetInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="companionInput" class="hidden" type="file" accept="application/json,.json">
+    <div id="toast" class="toast hidden" role="status"></div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
