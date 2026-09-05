@@ -83,7 +83,18 @@ const bothTypes = (at: TowerPlacement['at']): TowerPlacement[] => [
   { towerId: 'bolt', choices: RAILBORE, at }, { towerId: 'tesla', choices: [0, 0, 0], at }, { towerId: 'frost', choices: [1, 0, 1], at },
   { towerId: 'mortar', choices: [1, 1, 0], at }, { towerId: 'bolt', choices: RAILBORE, at },
 ];
+// Session 26 PR 5: every tower in a pair with a partner it should want.
+const pair = (at: TowerPlacement['at'], a: TowerPlacement, b: TowerPlacement, rest: TowerPlacement[]): TowerPlacement[] => [a, b, ...rest].map((t) => ({ ...t, at }));
+const P = (towerId: string, choices: [number, number, number]): TowerPlacement => ({ towerId, choices, at: 'choke' });
+const EIGHT: [string, TowerPlacement[]][] = [
+  ['Laser line + Frost (Focus, Overheat, Cutter)', pair('choke', P('laser', [0, 0, 0]), P('frost', [1, 0, 1]), [P('laser', [0, 0, 0]), P('laser', [1, 1, 0]), P('bolt', RAILBORE)])],
+  ['Missiles + Bastion + Railbore', pair('choke', P('missile', [0, 1, 0]), P('bastion', [0, 0, 0]), [P('bolt', RAILBORE), P('missile', [1, 0, 1]), P('bolt', RAILBORE)])],
+  ['Tesla + Bastion + Frost', pair('choke', P('tesla', [0, 0, 0]), P('bastion', [0, 1, 0]), [P('frost', [1, 0, 1]), P('tesla', [1, 1, 0]), P('tesla', [0, 0, 1])])],
+  ['Hailstorm (close quarters) line + Frost + Mortar', mixed('choke', HAILSTORM)],
+  ['Bastion + four Railbores', pair('choke', P('bastion', [0, 1, 0]), P('bolt', RAILBORE), [P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE)])],
+];
 const BUILDS: Build[] = [
+  ...EIGHT.map(([name, towers]) => ({ name: `choke, ${name}, economy`, towers, content: baseContent, economy: { startingScrap: 100 } })),
   { name: 'choke, KINETIC only (3 Railbore + Mortar + Missiles), economy', towers: soloKinetic('choke'), content: baseContent, economy: { startingScrap: 100 } },
   { name: 'choke, ENERGY only (3 Tesla + 2 Frost), economy', towers: soloEnergy('choke'), content: baseContent, economy: { startingScrap: 100 } },
   { name: 'choke, BOTH types (2 Railbore + Tesla + Frost + Mortar), economy', towers: bothTypes('choke'), content: baseContent, economy: { startingScrap: 100 } },
@@ -92,6 +103,7 @@ const BUILDS: Build[] = [
   { name: 'choke, Hailstorm 60% line + Frost + Mortar, economy', towers: mixed('choke', HAILSTORM), content: baseContent, economy: { startingScrap: 100 } },
   { name: 'choke, Hailstorm 75% line + Frost + Mortar, economy', towers: mixed('choke', HAILSTORM), content: withHailstorm(0.75), economy: { startingScrap: 100 } },
   { name: 'choke, same build, unlimited scrap (capability)', towers: mixed('choke', RAILBORE), content: baseContent, economy: undefined },
+  { name: 'choke, Hailstorm (close quarters) line + Frost + Mortar, unlimited scrap (capability)', towers: mixed('choke', HAILSTORM), content: baseContent, economy: undefined },
 ];
 
 console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
