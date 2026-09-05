@@ -28,7 +28,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock } from '@ascii-defense/view';
+  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
 import { validateSprite, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -53,8 +53,8 @@ const ASSET_V = '6';
 const load = <T>(p: string): Promise<T> =>
   fetch(`${BASE}assets/${p}?v=${ASSET_V}`).then((r) => r.json() as Promise<T>);
 
-/** The HUD and the menus draw at this integer multiple of the font (crisp). */
-const UI_SCALE = 2;
+/** The HUD and the menus draw at this integer multiple of the font (crisp); a setting since session 27, read once at boot. */
+const UI_SCALE: number = loadMetaFrom(localStorage).meta.settings.hudScale;
 /** The HUD's width in its own glyph columns. */
 const HUD_COLS = 30;
 
@@ -143,6 +143,7 @@ async function main(): Promise<void> {
   const runLoad = loadRunForThisScreen();
   let saveProblem = metaProblem ?? runLoad.problem;
   if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
+  setPaletteSet(meta.settings.palette);
 
   type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary';
   let mode: Mode = 'title';
@@ -183,7 +184,7 @@ async function main(): Promise<void> {
   // 'ready', never on send - a failed init can no longer strand the player
   // in a phantom of the previous run.
   let pendingStart = false;
-  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; seed: number } | null = null;
+  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; seed: number; story?: FrameSnapshot['story'] } | null = null;
   let summaryBanked = false;
 
   let hover: CellRef | null = null;
@@ -399,9 +400,17 @@ async function main(): Promise<void> {
       case 'settings':
         return {
           title: 'SETTINGS',
-          body: ['saves live in this browser; export moves them'],
+          body: [
+            'saves live in this browser; export moves them',
+            '',
+            'keys: space pause  \u2802  1-4 speed  \u2802  N next wave  \u2802  R rotate a laser',
+            'X sell  \u2802  G grid  \u2802  Esc back  \u2802  1/2/3 pick a relic',
+          ],
           items: [
             { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
+            { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
+            { id: 'palette', label: 'PALETTE', note: meta.settings.palette === 'colourblind' ? 'COLOURBLIND' : 'DEFAULT' },
+            { id: 'hints', label: 'FIRST-RUN HINTS', note: meta.settings.onboarded ? 'seen - click to show again' : 'ON' },
             { id: 'export', label: 'EXPORT SAVES' },
             { id: 'import', label: 'IMPORT SAVES' },
             { id: 'wipe', label: wipeArmed ? 'CLICK AGAIN TO WIPE' : 'WIPE DATA' },
@@ -432,8 +441,17 @@ async function main(): Promise<void> {
                 `run code ${runCode(summary.seed)}`,
                 `kills ${summary.kills}`,
                 `ore banked +${summary.oreBanked} (total ${meta.bankedOre})`,
+                // The run's story (session 27): who killed, who came, what was held.
+                ...(summary.story
+                  ? [
+                      '',
+                      summary.story.killsByTower.length ? 'kills by tower: ' + summary.story.killsByTower.slice(0, 6).map((k) => `${k.name} ${k.kills}`).join(' \u2802 ') : 'no tower killed anything',
+                      summary.story.met.length ? 'you met: ' + summary.story.met.map((m) => `${m.count} ${m.name}`).join(', ') : '',
+                      summary.story.relics.length ? 'relics held: ' + summary.story.relics.join(', ') : 'no relics held',
+                      '',
+                    ].filter((l, i, a) => l !== '' || a[i - 1] !== '')
+                  : []),
                 'banked ore will buy the workshop tree between runs (not built yet)',
-                ...(snap ? [`relics held ${snap.hud.relicCount}`] : []),
               ],
               items: [
                 { id: 'again', label: summary.won ? 'GO AGAIN' : 'TRY AGAIN' },
@@ -615,6 +633,24 @@ async function main(): Promise<void> {
         const v = !isReducedMotion();
         setReducedMotion(v);
         meta.settings.reducedMotion = v;
+        saveMeta(meta);
+        break;
+      }
+      case 'scale': {
+        // Every terminal is sized at boot; the honest switch is a reload.
+        meta.settings.hudScale = meta.settings.hudScale === 2 ? 1 : 2;
+        saveMeta(meta);
+        location.reload();
+        break;
+      }
+      case 'palette': {
+        meta.settings.palette = meta.settings.palette === 'colourblind' ? 'default' : 'colourblind';
+        setPaletteSet(meta.settings.palette);
+        saveMeta(meta);
+        break;
+      }
+      case 'hints': {
+        meta.settings.onboarded = !meta.settings.onboarded;
         saveMeta(meta);
         break;
       }
@@ -836,7 +872,7 @@ async function main(): Promise<void> {
       // The run ended while playing: bank once, then the summary owns the eye.
       if (snap.status !== 'running' && (mode === 'playing' || mode === 'paused') && !summaryBanked) {
         summaryBanked = true;
-        summary = { won: snap.status === 'won', wave: snap.hud.wave, kills: snap.hud.kills, oreBanked: snap.hud.ore, seed };
+        summary = { won: snap.status === 'won', wave: snap.hud.wave, kills: snap.hud.kills, oreBanked: snap.hud.ore, seed, story: snap.story };
         meta.bankedOre += snap.hud.ore;
         meta.history.push({ seed, threat: THREAT_LEVELS[threatIdx].name, wave: snap.hud.wave, status: snap.status, kills: snap.hud.kills });
         if (meta.history.length > 50) meta.history.shift();
@@ -864,8 +900,19 @@ async function main(): Promise<void> {
         effects.ingest(snap!.events);
         effects.draw(t, pair ? renderTick : snap!.tick);
       });
+      // The first run's prompts (WBS 4.23): one at a time, until the third
+      // wave is out - then the meta save remembers.
+      let prompt = '';
+      if (!meta.settings.onboarded && inGame()) {
+        const towersBuilt = snap.board.towers?.length ?? 0;
+        if (towersBuilt === 0) prompt = 'HINT 1/3: select a ground tile, then click a tower button in the strip under the board. hover a button for its card.';
+        else if (snap.hud.wave === 0) prompt = 'HINT 2/3: press N or click CALL WAVE to send the first wave. space pauses; 1-4 set the speed.';
+        else if (snap.hud.wave < 3) prompt = 'HINT 3/3: every third wave offers a relic. rock hides ore and caches - select rock to prospect it. the two cells beside the Core face give every tower a gift.';
+        else { meta.settings.onboarded = true; saveMeta(meta); }
+      }
       const hudState: HudState = {
         ...snap.hud,
+        prompt,
         phase: animPhase,
         inspector: view.describeCell(selected ?? hover) + snap.hud.inspector,
         selectedBuild: snap.hud.palette.findIndex((p) => p.id === selectedBuildId),

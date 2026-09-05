@@ -318,6 +318,8 @@ export class Sim {
    * values and stay the hashed truth; a single source resolves exactly as
    * before, so the golden did not move.
    */
+  /** Bodies spawned per enemy def, for the run's story (session 27). Never hashed. */
+  readonly spawnedByDef: number[] = [];
   private readonly slowEntries: ({ mul: number; ticks: number; src: string }[] | undefined)[] = new Array(ENEMY_CAP);
   /**
    * Burns (session 27, the Laser's Sear): damage per tick with a source,
@@ -1575,6 +1577,7 @@ export class Sim {
     this.alive[i] = 1;
     this.gen[i]++;
     this.spawned++;
+    this.spawnedByDef[defIdx] = (this.spawnedByDef[defIdx] ?? 0) + 1;
     this.enemyDefIdx[i] = defIdx;
     // Waves scale hp by the difficulty data. Trickle mode stays flat for tests.
     const hpScale = this.mode === 'waves' ? waveHpScale(this.difficulty, Math.max(1, this.wave)) * this.lengthMul : 1;

@@ -106,6 +106,8 @@ export interface HudState {
   selectedBuild: number;
   buildTargetSelected: boolean;
   selectedTower: HudTowerInfo | null;
+  /** A first-run prompt (session 27, WBS 4.23): shown in accent where the hint sits; '' or absent = none. */
+  prompt?: string;
   /** The hovered build button's tower, before it is bought (feedback item 1, 2026-09-05). */
   buildPreview?: { name: string; cost: number; desc: string; stats: HudStats; coreBoon?: string | null } | null;
   /** The Core card, when a Core cell is selected. */
@@ -335,6 +337,12 @@ export class HudPanel {
       term.write(0, y++, 'select an empty tile to', role('ui.dim'));
       term.write(0, y++, 'build on it', role('ui.dim'));
       y += 2;
+    }
+    if (s.prompt) {
+      // The first run explains itself (WBS 4.23): one prompt at a time, in
+      // accent, until the meta save says the player has seen them.
+      for (const line of this.wrapText(s.prompt, W).slice(0, 4)) term.write(0, y++, line, role('ui.accent'));
+      y++;
     }
 
     // ---- the build preview: the hovered button's card ------------------------
