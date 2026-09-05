@@ -542,6 +542,14 @@ export interface Mods {
    * Support towers: additive to the aura's production-rate multiplier.
    */
   auraProduction?: number;
+  /**
+   * A burn on every body hit: damage per tick (session 27, the Laser's Sear).
+   */
+  burnDps?: number;
+  /**
+   * A burn on every body hit: ticks it lasts.
+   */
+  burnTicks?: number;
 }
 
 /** The schema itself, for runtime validation. Same source as the type above. */
@@ -985,6 +993,14 @@ export const towersSchema = {
         "auraProduction": {
           "description": "Support towers: additive to the aura's production-rate multiplier.",
           "type": "number"
+        },
+        "burnDps": {
+          "description": "A burn on every body hit: damage per tick (session 27, the Laser's Sear).",
+          "type": "number"
+        },
+        "burnTicks": {
+          "description": "A burn on every body hit: ticks it lasts.",
+          "type": "integer"
         }
       }
     }

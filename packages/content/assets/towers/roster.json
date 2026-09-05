@@ -538,7 +538,7 @@
       "id": "laser",
       "name": "Laser Lance",
       "short": "Laser",
-      "desc": "A beam down the road it faces, through every body on it; the damage climbs while it holds one. Rotate it with R.",
+      "desc": "A beam down the road it faces, to where the road turns, through every body on it; the damage climbs while it holds one. R rotates it.",
       "damageType": "energy",
       "coreBoon": {
         "text": "Next to the Core: the heat climbs one multiple higher.",
@@ -547,7 +547,7 @@
         }
       },
       "cost": 45,
-      "range": 6,
+      "range": 12,
       "fireEveryTicks": 3,
       "attack": "beam",
       "projectile": {
@@ -563,19 +563,20 @@
         {
           "choices": [
             {
-              "name": "Focus",
+              "name": "Capacitor",
               "cost": 45,
-              "desc": "Reach: +3 cells of corridor. A longer run of road under the beam.",
+              "desc": "+2 damage per pulse, cold or hot. The damage path starts steady.",
               "mods": {
-                "range": 3
+                "damage": 2
               }
             },
             {
-              "name": "Wide Beam",
+              "name": "Chill",
               "cost": 45,
-              "desc": "A corridor two cells wide instead of one. Catches the lane beside the road.",
+              "desc": "Every body in the beam moves at 70% while it stands in it. The control path starts cold.",
               "mods": {
-                "beamWidth": 1
+                "slowMul": -0.3,
+                "slowTicks": 8
               }
             }
           ]
@@ -583,19 +584,20 @@
         {
           "choices": [
             {
-              "name": "Overheat",
+              "name": "Fast Cycle",
               "cost": 90,
-              "desc": "Heat climbs to triple damage instead of double. Hold the lead longer, hit harder.",
+              "desc": "A pulse every 2 ticks instead of 3: half again the output.",
               "mods": {
-                "beamRampMax": 1
+                "fireEveryTicks": -1
               }
             },
             {
-              "name": "Capacitor",
+              "name": "Sear",
               "cost": 90,
-              "desc": "+2 damage per pulse, cold or hot. Steady output.",
+              "desc": "Bodies leave the beam burning: 2 a tick for a second. The beam keeps hurting after they pass.",
               "mods": {
-                "damage": 2
+                "burnDps": 2,
+                "burnTicks": 20
               }
             }
           ]
@@ -605,16 +607,21 @@
             {
               "name": "Cutter",
               "cost": 180,
-              "desc": "Every pulse at 150%. The answer to a column standing in the beam.",
+              "desc": "Every pulse at 150% and the heat climbs one multiple higher. The answer to a column standing in the beam.",
               "mods": {
-                "damageMul": 1.5
+                "damageMul": 1.5,
+                "beamRampMax": 1
               }
             },
             {
-              "name": "Sweep",
+              "name": "Deep Sear",
               "cost": 180,
-              "desc": "Every second the lance turns toward the facing with the most bodies in reach. Heat resets on the turn.",
-              "unlocks": "sweep"
+              "desc": "The burn doubles and lasts two seconds; the chill deepens to 50%. Nothing walks out of this beam unmarked.",
+              "mods": {
+                "burnDps": 2,
+                "burnTicks": 20,
+                "slowMul": -0.2
+              }
             }
           ]
         }

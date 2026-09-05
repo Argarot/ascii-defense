@@ -405,6 +405,29 @@ describe('towers and projectiles', () => {
     expect(checked).toBe(true);
   });
 
+  it('a burn lands its damage every tick with its source and falls away on its own clock (session 27)', () => {
+    const { cellsW, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const SEAR: TowerDef = { id: 'laser', cost: 20, range: 12, fireEveryTicks: 1000, attack: 'beam', damageType: 'energy', projectile: { damage: 1, speed: 1 }, beam: { width: 1, rampStep: 0, rampMax: 1 }, tiers: [{ choices: [{ cost: 0, name: 'Sear', mods: { burnDps: 2, burnTicks: 5 } }, { cost: 0, name: 'x' }] }] };
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [SEAR] });
+    let body = -1;
+    for (let t = 0; t < 10 && body === -1; t++) { sim.tick(); for (let i = 0; i < 64; i++) if (sim.alive[i]) { body = i; break; } }
+    const bx = Math.floor(sim.posX[body]);
+    const by = Math.floor(sim.posY[body]);
+    let at: { x: number; y: number } | null = null;
+    for (let d = 1; d <= 5 && !at; d++) if (bx - d >= 0 && sim.canBuildAt(bx - d, by) && sim.buildTower(bx - d, by, 'laser')) at = { x: bx - d, y: by };
+    if (!at) for (let d = 1; d <= 5 && !at; d++) if (bx + d < cellsW && sim.canBuildAt(bx + d, by) && sim.buildTower(bx + d, by, 'laser')) at = { x: bx + d, y: by };
+    expect(at).not.toBeNull();
+    expect(sim.chooseTier(at!.x, at!.y, 0, 0)).toBe(true);
+    sim.setFacing(at!.x, at!.y, at!.x < bx ? 1 : 3);
+    const hp0 = sim.hp[body];
+    sim.tick(); // one pulse: 1 damage, and a burn lit
+    expect(sim.enemyStatuses(body).some((s) => s.kind === 'burn' && s.src === 'laser')).toBe(true);
+    for (let t = 0; t < 5; t++) sim.tick(); // five ticks of burn at 2
+    expect(hp0 - sim.hp[body]).toBeCloseTo(11, 5);
+    expect(sim.enemyStatuses(body).some((s) => s.kind === 'burn')).toBe(false);
+  });
+
   it('the Core gives every tower its own gift on the cells touching the face; a Bastion lifts its neighbours (session 26, WBS 2.35)', () => {
     const { map, cellsW, simOpts } = makeWorld(53, { maxSpawns: 0, startingScrap: 500 });
     const GIFTED: TowerDef = { ...BOLT, coreBoon: { text: 'one more body', mods: { pierceCount: 1 } } };
@@ -473,6 +496,9 @@ describe('towers and projectiles', () => {
     for (let t = 0; t < 8; t++) sim.tick();
     // Four fires at 10 x heat 1, 1.5, 2, 2 = 65.
     expect(hp0 - sim.hp[body]).toBeCloseTo(65, 5);
+    // The beam's reported reach ends where the road turns or the cap says.
+    const beamEv = sim.events.find((e) => e.kind === 'beam');
+    expect(beamEv && beamEv.kind === 'beam' ? Math.abs(beamEv.x1 - beamEv.x0) + Math.abs(beamEv.y1 - beamEv.y0) : 0).toBeLessThanOrEqual(6);
     expect(sim.events.some((e) => e.kind === 'beam' && e.heat === 2)).toBe(true);
     // Turned away: nothing in the corridor, the heat cools, no more damage.
     expect(sim.setFacing(at!.x, at!.y, (toward + 2) % 4)).toBe(true);

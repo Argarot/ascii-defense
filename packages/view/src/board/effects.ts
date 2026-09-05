@@ -369,21 +369,39 @@ export class EffectsLayer {
    * at its cold colour.
    */
   private drawLance(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    // Reworked 2026-09-06 (Daniil): BACKGROUND colour only, so the walkers
+    // in it stay readable - three glyphs wide, the centre line the beam,
+    // the two beside it an afterglow of lower luminance and a slightly
+    // different shade. It PULSES: bright at the fire, decaying over the
+    // ticks to the next, so a firing lance throbs rather than sits lit.
+    // Whiter as the heat climbs. Reduced motion: the cold centre, no throb.
     const x1 = e.x1 ?? e.x;
     const y1 = e.y1 ?? e.y;
     const horizontal = Math.abs(x1 - e.x) >= Math.abs(y1 - e.y);
-    const heat01 = still ? 0 : Math.max(0, Math.min(1, ((e.heat ?? 1) - 1)));
-    const fg = mixHex(role('tower.laser.beam'), role('fx.flash'), heat01 * (1 - age01 * 0.3));
+    const heat01 = still ? 0 : Math.max(0, Math.min(1, (e.heat ?? 1) - 1));
+    const pulse = still ? 0.6 : 1 - age01 * 0.7;
+    const beam = mixHex(role('tower.laser.beam'), role('fx.flash'), heat01 * 0.6);
+    const dark = role('terrain.road.dark');
+    const centre = mixHex(dark, beam, 0.75 * pulse);
+    const glow = mixHex(dark, role('tower.laser.lens'), 0.35 * pulse);
     const gx0 = Math.floor(e.x * CELL_W);
     const gy0 = Math.floor(e.y * CELL_H);
     const gx1 = Math.floor(x1 * CELL_W);
     const gy1 = Math.floor(y1 * CELL_H);
     if (horizontal) {
       const step = gx1 >= gx0 ? 1 : -1;
-      for (let gx = gx0 + step * Math.ceil(CELL_W / 2); gx !== gx1 + step; gx += step) if (gx >= 0 && gx < term.cols) term.put(gx, gy0, '=', fg);
+      for (let gx = gx0 + step * Math.ceil(CELL_W / 2); gx !== gx1 + step; gx += step) {
+        if (gx < 0 || gx >= term.cols) continue;
+        term.tint(gx, gy0, centre);
+        if (!still) { if (gy0 > 0) term.tint(gx, gy0 - 1, glow); if (gy0 + 1 < term.rows) term.tint(gx, gy0 + 1, glow); }
+      }
     } else {
       const step = gy1 >= gy0 ? 1 : -1;
-      for (let gy = gy0 + step * Math.ceil(CELL_H / 2); gy !== gy1 + step; gy += step) if (gy >= 0 && gy < term.rows) term.put(gx0, gy, '|', fg);
+      for (let gy = gy0 + step * Math.ceil(CELL_H / 2); gy !== gy1 + step; gy += step) {
+        if (gy < 0 || gy >= term.rows) continue;
+        term.tint(gx0, gy, centre);
+        if (!still) { if (gx0 > 0) term.tint(gx0 - 1, gy, glow); if (gx0 + 1 < term.cols) term.tint(gx0 + 1, gy, glow); }
+      }
     }
   }
 
