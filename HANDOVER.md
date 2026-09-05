@@ -94,10 +94,12 @@ Orbital firing; the summary telling a story. 2.27 — his.
   trust the screenshot. Heredocs through Bash break on backslashes:
   scratch `.mjs` through the Write tool, function replacers.
 
-## Next session, proposed — 28: Relics II
+## Next session, proposed — 28 (ledger row 27): Relics II
 
 *(The ledger's next row; Daniil has not amended it. His "go" is enough;
-D26 has defaults below.)*
+D26 has defaults below. Sessions and ledger rows are numbered apart —
+the row is the theme's place in the plan, the session is the day it was
+built; `tools/doc-drift.mjs` holds the two together.)*
 
 **Theme.** The found power gets its second layer: passives separate from
 relics with far more slots, rarity that means power, the ways to replace,

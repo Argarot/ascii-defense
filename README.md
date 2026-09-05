@@ -3,12 +3,13 @@
 A roguelite tower defense that runs in the browser and draws everything —
 terrain, towers, enemies, UI — as characters on a grid.
 
-**The game generates the battlefield; you defend the Core.** Roads are carved
-outward from a Core at the middle of the map to the board edges, and every road
-end is a front the enemy marches in from. You place towers beside those roads,
-commit each one to an either/or upgrade path, collect rule-breaking relics, and
-try to hold **wave 20** — every run ends in victory or death, and coasting is
-death.
+**The game generates the battlefield; you defend the Core.** The Core stands
+at the board's east edge; roads are carved from it across the board until
+nine tenths of the land is road, and every road end on the other three
+sides is a front the enemy marches in from. You place eight kinds of tower
+beside those roads, commit each one to an either/or upgrade path, collect
+rule-breaking relics, and try to hold **wave 20** — every run ends in
+victory or death, and coasting is death.
 
 ▶ **[Play the current build](https://argarot.github.io/ascii-defense/)** ·
 ▶ **[Tile Smith](https://argarot.github.io/ascii-defense/tilesmith.html)**
