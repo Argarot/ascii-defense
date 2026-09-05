@@ -119,6 +119,18 @@ HANDOVER) · 1 green build button → 4.32 · 2 room for more towers, and
 towers this session → 4.32 + 5.1 (Tesla, Missiles) · 3 the Core column as
 buildable ground → 4.32 + 2.35 (the two precious cells exist now).
 
+**Round 25 (the 2026-09-05 late build, 2026-09-06):** 1 the Laser
+overwrites the walkers, must be a 3-wide background beam that pulses and
+reaches the road's turn, the tree reworked (control vs damage, Sweep
+gone) → PR #139 · 2 the Orbital Lance does nothing on click → PR #138
+(the strip read the column's card) · 3 the Core's hp in the strip is
+redundant → PR #138 · 4 "still choppy; Stone Story or Cogmind is the
+bar" → PR #140 (the render clock) + the brainstorm in the 2026-09-06
+report → 6.11 · 5 minted tiles from another device not selectable → PR
+#138 (listed with the reason, never hidden) · "first a manual for the
+sprite editor agent" → `docs/ART-AGENT.md` + the painted-study importer
+(PR #138).
+
 **Round 24 (the 2026-09-05 evening build, late night):** 1 hovering a
 build button shows the tower's stats → PR #129 (the build preview card) ·
 2 the shooting animation "jumps" → PR #130 (placeholder sequences in every
@@ -513,7 +525,9 @@ Verified findings not yet fixed, most material first. Each is a candidate for a 
 - **The lab's gate tolerance sits at 8 waves** after two geometry changes; the build sweep (2.36) is the ruler now and the analytic gate should be retired or re-derived.
 - **Entries are many on a filled board** (8–12 on 7×5): a knob question (`COVERAGE_TARGET`, `MAX_LANE_SHARE`, `EXTRA_WALKS`) for Daniil's playtest, not a defect.
 - **The strip is cramped below seven tiles wide**: at 6×4 the wave columns truncate; a second row or a narrower button would fix it.
-- **The lab cannot place a Bastion next to anything or aim a Laser**, and it measures survival only — a crowd role, an aura and a corridor are invisible to it. Three instruments: "adjacent to the last tower" placement, "aimed along the road" placement, a per-wave-type reading (kills per scrap on swarm waves). Session 27 PR 6.
+- **The 'inline' lab placement has no distance term**: the cell with the most road under a Laser's corridor can be far from the choke, so the first laser watches an empty run (`docs/lab/build-sweep-2026-09-06-instruments.md`). Session 28's sweep PR.
+- **The Tile Smith is still its own page**, not a spec on the shell's terminal (session 27 had no room).
+- **Full keyboard operation** (4.24's second half): the menus take clicks; the board takes keys for speed, sell, rotate, grid, the wave.
 - **The Loadbearing relic's flat triple range** stands beside the Core gifts (2.35); retiring it is Daniil's call.
 - **The Laser wears an arrow** for its facing; a per-facing art slot in the sprite format waits for the art agent's need.
 - **The offer modal shows relics as text** while their icons exist (6.7); the card should draw the icon.
@@ -564,8 +578,8 @@ withdrawn before it got an entry (PRD §14). Do not reuse any of these numbers.
 - [x] 4.20 *(session 18)* **Persistence** (PRD §15.2): meta state (Ore, unlocks, history, settings) in localStorage; run state as seed + input log (**a save IS a replay**). Schema versioned, migrate-or-say-so, never wipe silently.
 - [x] 4.21 *(session 18)* **Save export / import** — a file. Cheap, moves progress between machines, and gives us reproducible bug reports for free.
 - [~] 4.22 *(session 18: reduced motion, export/import, two-click wipe)* **Settings screen**. Remaining for session 22: colourblind palette, text scale, keybinds.
-- [ ] 4.23 **Onboarding** (PRD §15.3): contextual first-encounter prompts, a How-to-play screen, gentle opening waves. No forced tutorial.
-- [ ] 4.24 **Accessibility** (PRD §15.4): colourblind palette values, full keyboard operation, reduced motion honoured by the effects engine, HUD text scale.
+- [x] 4.23 *(session 27, PR #142: three first-run prompts in the column - build, call the wave, relics and prospecting - until the third wave is out; the meta save remembers; settings show them again. PR #141: HOW TO PLAY is the codex - every tower, enemy and relic on pages from the catalogue's source)* **Onboarding** (PRD §15.3): contextual first-encounter prompts, a How-to-play screen, gentle opening waves. No forced tutorial.
+- [~] 4.24 *(session 27, PR #142: the colourblind palette as a role override set - enemy kinds, boon types, the hp pip apart without red and green; HUD text scale 1x/2x; the key list on the settings page. Full keyboard operation of the menus and the board remains)* **Accessibility** (PRD §15.4): colourblind palette values, full keyboard operation, reduced motion honoured by the effects engine, HUD text scale.
 - [x] 4.25 *(session 17)* **World motion rides sim time, UI motion rides the wall clock** *(Daniil, playtest 8; session 17)*. Session 16 put terrain drift, water and tower idles on raw wall-clock `performance.now()`, so the world keeps ambling at 8× and keeps moving while paused — while the effects layer, in the same session, was deliberately tick-anchored on the argument that "an honest pause shows a stopped world". Both halves cannot be right. Fix: world ambient advances on a speed-scaled accumulator (freezes at pause, 8× at 8×); telegraph breathing and preview pulses stay on the wall clock, because the interface is not part of the world (PRD §13).
 
 - [x] 4.30 *(session 25, PR #124)* **The catalogue** *(Daniil, 2026-09-05: "a table of all relics and what they do, all enemies and their abilities, so I can see what we have without playing")*: `docs/CATALOGUE.md` rendered from content by `tools/codex.mjs` between markers (towers with trees and DPS, enemies with traits as rules, relics), CI fails on a stale copy; the PROPOSED tables outside the markers are his request queue.
@@ -607,6 +621,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 6.8 **Smoothness via spatial phase** (PRD §13) *(Daniil, 2026-08-17)*: waves that travel across ground and water — each glyph's phase offset by its position — plus finer effect interpolation. **Explicitly not** "redraw less": the full board redraw is already well under a millisecond, so partial redraw optimises the wrong quantity. Recorded so a future session does not spend itself on the intuitive-but-wrong mechanism.
 
 - [x] 6.9 *(session 25 PRs #125–#126 sequences and the attack look; session 26 PR #130 placeholder sequences in every sprite and a subtle fallback; PR #131 **positional interpolation** between snapshots on the world clock, never ahead of the sim — Daniil's go after the feedback)* **Animation engine, second pass** *(Daniil, 2026-09-05; PRD §13)*: enemies and projectiles interpolated between ticks (20 Hz sim, 60 Hz picture); idle cycles of many frames; **per-tower attack animations** — charge, shot, cooldown — as named sequences in the sprite format keyed to `Sim.events`, authored in the sprite editor. The frame model from 4.1 grows sequences; nothing in the sim changes.
+- [ ] 6.11 **Smoothness, the remaining levers** *(from Daniil's round 25, item 4; the render clock is in)*. What Stone Story and Cogmind have that this does not, in order of cost: (a) **many-frame sprites at a fast cadence** — every placeholder has two frames at 360–900 ms; four to eight at 120–200 ms is the art agent's job (the brief says so); (b) **a particle layer on the world clock** — sparks, motes and trails as many small glyphs each moving one cell per frame at 60 Hz, instead of tick-anchored effects with a few glyphs; (c) **sub-glyph movement is impossible** in a glyph grid, so a walker steps a glyph at a time — at 0.06 cells/tick that is one step every two ticks horizontally and every four vertically; a faster world (more cells per second) or larger walkers reads smoother, and the vertical step (8 px) is the coarser of the two; (d) **the wall-clock idle cycle phase-offset** is right; the strip and HUD redraw every frame already. A session's worth, mostly (a) and (b).
 - [x] 6.10 *(session 25, PR #126: the orbital as a column of light from the top edge then its blast (`strike` event); a freeze frosts the board's edges (`freeze` event); the Tesla's arcs (`arc`, #127))* **Ability graphics** *(Daniil, 2026-09-05)*: actives drawn as what they are — the orbital laser a wide bright beam from the top of the screen — through the effects layer.
 
 **M6 gate: the board reads as a place, not a diagram.**

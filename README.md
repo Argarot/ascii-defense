@@ -77,6 +77,13 @@ review found flat: the wave clock and the call button, boss waves, traits as
 real rules, stackability and escalating prices for relics, caches that open
 free onto loot tables, a dead zone for the Mortar with the range drawn as a
 filled disc, and every tower fork rebuilt as two roles instead of two numbers.
+**Session 27 (2026-09-06)** wrote the art agent's brief
+([docs/ART-AGENT.md](docs/ART-AGENT.md)) and the painted-study importer
+behind it, reworked the Laser into a pulsing background beam that reaches
+the road's turn, gave the picture a render clock, turned HOW TO PLAY into
+the codex (every tower, enemy and relic on pages with its sprite), added
+settings that persist, a summary that tells the run's story, first-run
+prompts, and the lab's three instruments.
 **Session 26 (2026-09-05, late night)** answered six feedback items (the
 strip at board scale, a build preview card, subtle attack sequences in
 every sprite, a curving continuous arc, interpolated movement) and gave the
