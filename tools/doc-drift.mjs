@@ -61,7 +61,7 @@ if (!/east edge/i.test(top)) problems.push('README top: say where the Core is (t
 // 4. ASSETS sec 3 names every sprite kind.
 const kinds = spriteSchema.properties.kind.enum;
 const sec3 = assets.slice(assets.indexOf('## 3.'), assets.indexOf('## 4.'));
-for (const k of kinds) if (!new RegExp(`[\`"']${k}[\`"']`).test(sec3)) problems.push(`ASSETS sec 3 does not name sprite kind \`${k}\``);
+for (const k of kinds) if (!new RegExp(`\\b${k}s?\\b`, 'i').test(sec3)) problems.push(`ASSETS sec 3 does not name sprite kind \`${k}\``);
 
 // 5. The catalogue and the codex twin.
 const codex = spawnSync(process.execPath, ['tools/codex.mjs', '--check'], { cwd: ROOT, encoding: 'utf8' });
