@@ -238,8 +238,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const s = sim;
     const { hover, selected, hudHover } = ui;
     const speed = SPEEDS[speedIdx];
-    const towers: { x: number; y: number; id: string; choices: readonly number[]; cooldown01: number; sinceFire: number }[] = [];
-    for (const t of s.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: s.towerDef(t).id, choices: t.choices, ...s.firePhase(t) });
+    const towers: { x: number; y: number; id: string; choices: readonly number[]; cooldown01: number; sinceFire: number; facing?: number }[] = [];
+    for (const t of s.towers) if (t) towers.push({ x: t.cellX, y: t.cellY, id: s.towerDef(t).id, choices: t.choices, ...s.firePhase(t), ...(s.towerDef(t).attack === 'beam' ? { facing: t.facing } : {}) });
     // k (and g for walkers) are stable identities across snapshots: the
     // main thread interpolates a body between its last two positions (6.9).
     const projectiles: { x: number; y: number; vx: number; vy: number; kind: string; k: number }[] = [];
@@ -286,7 +286,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const range = aimRelic && hover
       ? { x: hover.x, y: hover.y, r: aimRelic.effects?.orbitalRadius ?? 1 }
       : selTower
-        ? { x: selTower.cellX, y: selTower.cellY, r: s.stats(selTower).range, minR: s.stats(selTower).minRange }
+        ? { x: selTower.cellX, y: selTower.cellY, r: s.stats(selTower).range, minR: s.stats(selTower).minRange, ...(s.towerDef(selTower).attack === 'beam' ? { beam: { dir: selTower.facing, w: s.stats(selTower).beamWidth } } : {}) }
         : buildTarget && selected && previewDef
           ? { x: selected.x, y: selected.y, r: previewDef.range, minR: previewDef.minRange ?? 0 }
           : null;
@@ -468,6 +468,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
               preview: effPreview ? toStats(effPreview, def) : null,
               offVein: def.production !== undefined && (def.production.ore ?? 0) > 0 && s.cellAt(infoTower.cellX, infoTower.cellY) !== 'O',
               priority: infoTower.priority,
+              facing: def.attack === 'beam' ? infoTower.facing : null,
               choiceDesc: hudHover?.kind === 'choose' ? (def.tiers?.[hudHover.tier]?.choices[hudHover.option]?.desc ?? null) : null,
               tiers: (def.tiers ?? []).map((tierDef, ti) => ({
                 choices: tierDef.choices.map((c, ci) => {
@@ -510,6 +511,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       case 'sell': s.sellTower(a.x, a.y); break;
       case 'choose': s.chooseTier(a.x, a.y, a.tier, a.option); break;
       case 'priority': s.setPriority(a.x, a.y, a.value as 'first'); break;
+      case 'facing': s.setFacing(a.x, a.y, a.value); break;
       case 'pickRelic': if (s.pickRelic(a.option)) syncOfferPause(); break;
       case 'rerollOffer': s.rerollOffer(); break;
       case 'buyRelic': s.buyRelic(); break;

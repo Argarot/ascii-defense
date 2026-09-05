@@ -497,6 +497,86 @@
           ]
         }
       ]
+    },
+    {
+      "id": "laser",
+      "name": "Laser Lance",
+      "short": "Laser",
+      "desc": "A beam down the road it faces, through every body on it; the damage climbs while it holds one. Rotate it with R.",
+      "damageType": "energy",
+      "cost": 45,
+      "range": 6,
+      "fireEveryTicks": 3,
+      "attack": "beam",
+      "projectile": {
+        "damage": 3,
+        "speed": 1
+      },
+      "beam": {
+        "width": 1,
+        "rampStep": 0.1,
+        "rampMax": 2
+      },
+      "tiers": [
+        {
+          "choices": [
+            {
+              "name": "Focus",
+              "cost": 45,
+              "desc": "Reach: +3 cells of corridor. A longer run of road under the beam.",
+              "mods": {
+                "range": 3
+              }
+            },
+            {
+              "name": "Wide Beam",
+              "cost": 45,
+              "desc": "A corridor two cells wide instead of one. Catches the lane beside the road.",
+              "mods": {
+                "beamWidth": 1
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Overheat",
+              "cost": 90,
+              "desc": "Heat climbs to triple damage instead of double. Hold the lead longer, hit harder.",
+              "mods": {
+                "beamRampMax": 1
+              }
+            },
+            {
+              "name": "Capacitor",
+              "cost": 90,
+              "desc": "+2 damage per pulse, cold or hot. Steady output.",
+              "mods": {
+                "damage": 2
+              }
+            }
+          ]
+        },
+        {
+          "choices": [
+            {
+              "name": "Cutter",
+              "cost": 180,
+              "desc": "Every pulse at 150%. The answer to a column standing in the beam.",
+              "mods": {
+                "damageMul": 1.5
+              }
+            },
+            {
+              "name": "Sweep",
+              "cost": 180,
+              "desc": "Every second the lance turns toward the facing with the most bodies in reach. Heat resets on the turn.",
+              "unlocks": "sweep"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

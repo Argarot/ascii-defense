@@ -21,6 +21,7 @@ export type ReplayAction =
   | { t: 'build'; x: number; y: number; defId: string }
   | { t: 'choose'; x: number; y: number; tier: number; option: number }
   | { t: 'priority'; x: number; y: number; priority: Priority }
+  | { t: 'facing'; x: number; y: number; facing: number } // 0 n, 1 e, 2 s, 3 w (session 26, WBS 2.34)
   | { t: 'sell'; x: number; y: number }
   // ---- reserved for Phase 6 (WBS 1.6) - see module doc ----
   // Design round 1: caches are OPENED (free), never claimed for Scrap.

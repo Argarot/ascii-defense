@@ -18,7 +18,7 @@ import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, hash2 } from './style';
 
 interface Effect {
-  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'beam' | 'frost' | 'arc';
+  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'beam' | 'frost' | 'arc' | 'lance';
   x: number; // continuous cell units, same space the sim speaks
   y: number;
   r: number;
@@ -26,6 +26,10 @@ interface Effect {
   ttl: number; // lifetime in sim ticks
   /** The arc's points: the tower's centre, then every body hit (session 25). */
   pts?: readonly { x: number; y: number }[];
+  /** A lance's far end and heat (session 26). */
+  x1?: number;
+  y1?: number;
+  heat?: number;
 }
 
 /** Enough for the busiest wave; past this the oldest eye candy yields. */
@@ -41,6 +45,7 @@ const TTL: Record<Effect['kind'], number> = {
   beam: 8,
   frost: 40, // overridden per event by the freeze's own length
   arc: 4,
+  lance: 3, // one fire every three ticks: the line never blinks
 };
 /** The beam's fall before its blast opens, in ticks. */
 const BEAM_FALL = 3;
@@ -133,6 +138,9 @@ export class EffectsLayer {
         case 'freeze':
           this.add({ kind: 'frost', x: 0, y: 0, r: 0, start: e.tick, ttl: Math.max(1, e.ticks) });
           break;
+        case 'beam':
+          this.add({ kind: 'lance', x: e.x0, y: e.y0, r: e.w, start: e.tick, ttl: TTL.lance, x1: e.x1, y1: e.y1, heat: e.heat });
+          break;
         case 'arc':
           this.add({ kind: 'arc', x: e.pts[0]?.x ?? 0, y: e.pts[0]?.y ?? 0, r: 0, start: e.tick, ttl: TTL.arc, pts: e.pts });
           for (let i = 1; i < e.pts.length; i++) this.add({ kind: 'spark', x: e.pts[i].x, y: e.pts[i].y, r: 0, start: e.tick, ttl: TTL.spark });
@@ -189,6 +197,7 @@ export class EffectsLayer {
         case 'beam': this.drawBeam(term, e, age01, still); break;
         case 'frost': this.drawFrost(term, e, age01, still); break;
         case 'arc': this.drawArc(term, e, age01, still); break;
+        case 'lance': this.drawLance(term, e, age01, still); break;
       }
     }
   }
@@ -350,6 +359,31 @@ export class EffectsLayer {
         const ch = dy === 0 ? '-' : dx === 0 ? '|' : dx * dy > 0 ? '\\' : '/';
         if (gx >= 0 && gy >= 0 && gx < term.cols && gy < term.rows) term.put(gx, gy, ch, fg);
       }
+    }
+  }
+
+  /**
+   * The Laser Lance's beam (session 26): a straight line of light down the
+   * corridor from the tower's edge to its far end, '=' along a row, '|'
+   * down a column, whiter as the heat climbs. Reduced motion: the same line
+   * at its cold colour.
+   */
+  private drawLance(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    const x1 = e.x1 ?? e.x;
+    const y1 = e.y1 ?? e.y;
+    const horizontal = Math.abs(x1 - e.x) >= Math.abs(y1 - e.y);
+    const heat01 = still ? 0 : Math.max(0, Math.min(1, ((e.heat ?? 1) - 1)));
+    const fg = mixHex(role('tower.laser.beam'), role('fx.flash'), heat01 * (1 - age01 * 0.3));
+    const gx0 = Math.floor(e.x * CELL_W);
+    const gy0 = Math.floor(e.y * CELL_H);
+    const gx1 = Math.floor(x1 * CELL_W);
+    const gy1 = Math.floor(y1 * CELL_H);
+    if (horizontal) {
+      const step = gx1 >= gx0 ? 1 : -1;
+      for (let gx = gx0 + step * Math.ceil(CELL_W / 2); gx !== gx1 + step; gx += step) if (gx >= 0 && gx < term.cols) term.put(gx, gy0, '=', fg);
+    } else {
+      const step = gy1 >= gy0 ? 1 : -1;
+      for (let gy = gy0 + step * Math.ceil(CELL_H / 2); gy !== gy1 + step; gy += step) if (gy >= 0 && gy < term.rows) term.put(gx0, gy, '|', fg);
     }
   }
 

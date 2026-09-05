@@ -145,7 +145,7 @@ export interface RenderState {
   /** Live towers, in cell coordinates, with their def id for per-type art and
    *  their committed choices for per-state art (sprite v2). */
   /** cooldown01 runs 1 (just fired) to 0 (ready); sinceFire is ticks since the last shot, -1 before the first (session 25). */
-  towers?: readonly { x: number; y: number; id?: string; choices?: readonly number[]; cooldown01?: number; sinceFire?: number }[];
+  towers?: readonly { x: number; y: number; id?: string; choices?: readonly number[]; cooldown01?: number; sinceFire?: number; facing?: number }[];
   /** Projectiles in flight, continuous cell units; per-tick velocity, when
    *  given, draws a short trail behind the head (WBS 4.1). */
   /** Shots in flight; `kind` is the firing tower's id, which picks the glyph. */
@@ -155,7 +155,8 @@ export interface RenderState {
   /** Faint markers on tile corners - the map's seams, visible on demand. */
   showGrid?: boolean;
   /** Range overlay for the selected tower, in cell units; minR = the dead zone. */
-  range?: { x: number; y: number; r: number; minR?: number } | null;
+  /** beam: a line-shaped tower's corridor (dir 0 n, 1 e, 2 s, 3 w; w cells wide) drawn instead of the rings (WBS 2.34). */
+  range?: { x: number; y: number; r: number; minR?: number; beam?: { dir: number; w: number } } | null;
   /** The range shown is a pre-build preview: pulse it. */
   rangeIsPreview?: boolean;
   /** Entries the NEXT wave attacks from - telegraphed with blinking '!' markers. */
@@ -352,6 +353,14 @@ export class BoardView {
         } else {
           drawSpriteFrame(term, sp, frame, gx0, gy0);
         }
+        // A line-shaped tower wears its facing as an arrow on the cell's
+        // edge (WBS 2.34) until the art agent draws it per facing.
+        if (t.facing !== undefined) {
+          const ARROW = ['^', '>', 'v', '<'] as const;
+          const ax = t.facing === 1 ? CELL_W - 1 : t.facing === 3 ? 0 : Math.floor(CELL_W / 2);
+          const ay = t.facing === 0 ? 0 : t.facing === 2 ? CELL_H - 1 : Math.floor(CELL_H / 2);
+          term.put(gx0 + ax, gy0 + ay, ARROW[t.facing], role('tower.laser.lens'));
+        }
       } else {
         for (let r = 0; r < CELL_H; r++)
           for (let c = 0; c < CELL_W; c++) {
@@ -365,7 +374,24 @@ export class BoardView {
     // Range OUTLINE for the selected tower, at glyph (subcell) resolution:
     // tint only the glyphs whose distance from the tower's center sits on
     // the radius, giving a near-true circle instead of a blocky area fill.
-    if (state.range) {
+    if (state.range?.beam) {
+      // A CORRIDOR instead of rings (WBS 2.34): the cells the beam covers
+      // down the facing, shaded, with the far end brighter.
+      const { dir, w } = state.range.beam;
+      const half = Math.max(0.5, w / 2);
+      const dx = [0, 1, 0, -1][dir];
+      const dy = [-1, 0, 1, 0][dir];
+      const pulse = state.rangeIsPreview ? 0.6 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1) : 0;
+      for (let k = 1; k <= state.range.r; k++) {
+        for (let side = -Math.ceil(half - 0.5); side <= Math.ceil(half - 0.5); side++) {
+          const cx = state.range.x + dx * k + (dx === 0 ? side : 0);
+          const cy = state.range.y + dy * k + (dy === 0 ? side : 0);
+          if (cx < 0 || cy < 0 || cx >= this.cellsW || cy >= this.cellsH) continue;
+          const s = 1.25 + 0.4 * (k / state.range.r) + pulse;
+          for (let gy = 0; gy < CELL_H; gy++) for (let gx = 0; gx < CELL_W; gx++) term.shade(cx * CELL_W + gx, offsetY + cy * CELL_H + gy, s, 0.06);
+        }
+      }
+    } else if (state.range) {
       // The range as THREE TOUCHING RINGS, one glyph row thin, stepping
       // inward from the radius and fading as they go (Daniil, session 23,
       // item 6 - the filled disc of design round 1 was not what he asked
