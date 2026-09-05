@@ -35,7 +35,7 @@ const content: LabContent = {
 };
 
 /** Standard, as protocol.ts ships it. */
-const STANDARD: DifficultySpec = { hpLinear: 0.18, hpGeometric: 1.06, countBase: 6, countLinear: 4, countGeometric: 1 };
+const STANDARD: DifficultySpec = { hpLinear: 0.15, hpGeometric: 1.05, countBase: 6, countLinear: 4, countGeometric: 1 };
 const MAX_WAVES = 40;
 const BOARDS = [{ w: 12, h: 7 }, { w: 7, h: 5 }];
 const PATHS: [number, number, number][] = [];

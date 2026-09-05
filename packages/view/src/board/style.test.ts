@@ -77,14 +77,33 @@ describe('roads are sprites (session 22): one state per letter, a variation per 
     expect(roadVariation(24, 15, 4)).toBe(roadVariation(24, 15, 4));
   });
 
-  it("a side the route graph closes but the letter opens gets a kerb over the art (an 'X' at a dead end)", () => {
+  it("a road cell draws its EFFECTIVE shape: an 'X' whose north the graph closes wears the T-junction's art", () => {
+    // The library's junction tiles put an omni 'X' at the join (Daniil's
+    // playtest, session 23: "every T-junction has one wrong cell"). The
+    // route graph knows which side is ground; the art must too.
+    const x = new TextTerm({ cols: CELL_W, rows: CELL_H });
+    drawTerrainCell(x, 'X', 0, 0, { rim: 1 });
+    const t = new TextTerm({ cols: CELL_W, rows: CELL_H });
+    drawTerrainCell(t, 'T', 0, 0, { rim: 0 });
+    expect(x.toText()).toBe(t.toText());
+    for (let y = 0; y < CELL_H; y++) for (let x0 = 0; x0 < CELL_W; x0++) expect(x.fgAt(x0, y) + x.bgAt(x0, y)).toBe(t.fgAt(x0, y) + t.bgAt(x0, y));
+    // Two sides closed: a bend. East and south closed on an 'X' is a 'J'.
+    const j = new TextTerm({ cols: CELL_W, rows: CELL_H });
+    drawTerrainCell(j, 'X', 0, 0, { rim: 2 | 4 });
+    const jPlain = new TextTerm({ cols: CELL_W, rows: CELL_H });
+    drawTerrainCell(jPlain, 'J', 0, 0, { rim: 0 });
+    expect(j.toText()).toBe(jPlain.toText());
+  });
+
+  it('a dead end has no letter: the art stays, and the closed sides get a kerb over it', () => {
     const open = new TextTerm({ cols: CELL_W, rows: CELL_H });
     drawTerrainCell(open, 'X', 0, 0, { rim: 0 });
-    const closedNorth = new TextTerm({ cols: CELL_W, rows: CELL_H });
-    drawTerrainCell(closedNorth, 'X', 0, 0, { rim: 1 });
-    // The top row changed to braille hairlines; the rest is the same art.
-    for (let x = 0; x < CELL_W; x++) expect(closedNorth.glyphAt(x, 0).codePointAt(0)! & 0xff00).toBe(0x2800);
-    for (let y = 1; y < CELL_H; y++) for (let x = 0; x < CELL_W; x++) expect(closedNorth.glyphAt(x, y)).toBe(open.glyphAt(x, y));
+    const deadEnd = new TextTerm({ cols: CELL_W, rows: CELL_H });
+    drawTerrainCell(deadEnd, 'X', 0, 0, { rim: 1 | 2 | 4 }); // only west open
+    for (let x = 0; x < CELL_W; x++) expect(deadEnd.glyphAt(x, 0).codePointAt(0)! & 0xff00).toBe(0x2800);
+    for (let x = 0; x < CELL_W; x++) expect(deadEnd.glyphAt(x, CELL_H - 1).codePointAt(0)! & 0xff00).toBe(0x2800);
+    for (let y = 0; y < CELL_H; y++) expect(deadEnd.glyphAt(CELL_W - 1, y).codePointAt(0)! & 0xff00).toBe(0x2800);
+    for (let y = 1; y < CELL_H - 1; y++) for (let x = 0; x < CELL_W - 1; x++) expect(deadEnd.glyphAt(x, y)).toBe(open.glyphAt(x, y));
     // A '|' already closes east and west in its art: the rim adds nothing there.
     const bar = new TextTerm({ cols: CELL_W, rows: CELL_H });
     drawTerrainCell(bar, '|', 0, 0, { rim: 10 });
