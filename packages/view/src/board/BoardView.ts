@@ -12,7 +12,8 @@
 import {
   TILE_SIZE,
   TileLibrary,
-  resolveCells,
+  mapCells,
+  CORE_STRIP,
   slotAt,
   type Board,
   type CellType,
@@ -22,7 +23,7 @@ import type { TermSurface } from '@ascii-defense/render';
 import type { Sprite } from '@ascii-defense/content';
 import { role } from '../palette';
 import { isReducedMotion } from '../motion';
-import { CELL_H, CELL_W, drawTerrainCell, drawVoidCell } from './style';
+import { CELL_H, CELL_W, drawStripCell, drawTerrainCell, drawVoidCell } from './style';
 
 export { CELL_W, CELL_H } from './style';
 
@@ -193,7 +194,8 @@ export class BoardView {
     private lib: TileLibrary,
     private opts: BoardViewOptions,
   ) {
-    this.cellsW = opts.mapX * TILE_SIZE;
+    // The board's tiles plus the Core strip past the east border (session 24).
+    this.cellsW = opts.mapX * TILE_SIZE + CORE_STRIP;
     this.cellsH = opts.mapY * TILE_SIZE;
     this.sprites = new Map((opts.sprites ?? []).map((s) => [s.id, s]));
   }
@@ -211,7 +213,10 @@ export class BoardView {
   setMap(map: GeneratedMap): void {
     this.appliedChanges = 0;
     this.board = map.board;
-    this.cells = resolveCells(this.board, this.lib);
+    if (map.cellsW !== this.cellsW || map.cellsH !== this.cellsH) {
+      throw new Error(`map cell grid ${map.cellsW}x${map.cellsH} does not fit this view (${this.cellsW}x${this.cellsH})`);
+    }
+    this.cells = mapCells(map, this.lib);
   }
 
   cellType(ref: CellRef): CellType | null {
@@ -252,6 +257,13 @@ export class BoardView {
         const gx0 = cx * CELL_W;
         const gy0 = offsetY + cy * CELL_H;
 
+        if (kind === null && cx >= this.opts.mapX * TILE_SIZE) {
+          // The Core strip (session 24): the column past the east border
+          // that holds the Core face. Not land, not water - the wall the
+          // road ends at. Drawn flat so the face is the only thing in it.
+          drawStripCell(term, gx0, gy0);
+          continue;
+        }
         if (kind === null) {
           // Void is WATER (PRD sec 13): unclaimed land reads as a surface,
           // not a hole. Hover still answers so the edge is discoverable.

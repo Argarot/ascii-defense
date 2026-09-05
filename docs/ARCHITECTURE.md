@@ -282,7 +282,15 @@ actually walk.
   All map randomness is spent on the map stream at generation; nothing about
   the map rolls dice mid-run. Whole-map retries advance the same stream, so
   a seed still names exactly one map.
-- **One Core**, within 1 slot of the board center on each axis.
+- **The Core is a FACE past the east border, not a tile** *(session 24,
+  Daniil's redesign, 2026-09-05)*. The cell grid is the board's slots plus
+  `CORE_STRIP` (1) extra column on the east; three stacked 'C' cells stand
+  in it, centred on the root slot's east port. Exactly one road cell feeds
+  the face (the Core's one entrance); the root slot is an ordinary road tile
+  on the east border whose east port runs off the board into the face; no
+  tile in the library carries 'C'. The root's row is drawn from the middle
+  third of the board. Entries never sit on the east border. `mapCells()`
+  is the grid a run plays on; `resolveCells()` alone is the tile grid.
 - **The pool is basics plus the chosen loadout, nothing else.** Two owners:
   the caller builds each run's library as shipped basics + the selected
   specials (an unloaded special is not in the library at all); the generator

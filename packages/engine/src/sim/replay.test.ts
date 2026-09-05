@@ -11,19 +11,14 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
 import { TILE_SIZE } from '../tiles/tile';
-import { TileLibrary, resolveCells } from '../tiles/board';
-import { generateMap } from '../mapgen/mapgen';
+import { TileLibrary } from '../tiles/board';
+import { mapCells, generateMap } from '../mapgen/mapgen';
 import { Sim, type SimOptions } from './sim';
 import { contentHashOf, playReplay, REPLAY_VERSION, type Replay } from './replay';
 import type { EnemyDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
-  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGXGG') },
-  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_t', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_x', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGXGG') },
   { id: 'straight', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGGGG', 'GGGGG') },
   { id: 'corner', cells: g('GGGGG', 'GGGGG', 'XXXGG', 'GGXGG', 'GGXGG') },
   { id: 'tee', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGXGG', 'GGXGG') },
@@ -62,11 +57,11 @@ function makeGoldenSim(): { sim: Sim; enemyDefs: EnemyDef[]; towerDefs: TowerDef
   const towerDefs = [BOLT, REFINERY];
   const opts = { width: 10, height: 6, entries: 3, targetPathCells: 40 };
   const map = generateMap(createRng(GOLDEN_SEED).stream('map'), LIB, opts);
-  const cells = resolveCells(map.board, LIB);
+  const cells = mapCells(map, LIB);
   const simOpts: SimOptions = {
     cells,
-    cellsW: opts.width * TILE_SIZE,
-    cellsH: opts.height * TILE_SIZE,
+    cellsW: map.cellsW,
+    cellsH: map.cellsH,
     map,
     enemyDefs,
     towerDefs,
@@ -188,7 +183,13 @@ describe('replay (WBS 1.4.8)', () => {
     // shield multiplier, armour-ignoring) are hashed; volleys and slows now
     // read the folded stats. No behaviour change on this run's untiered
     // bolts; round-trip replay still proves bit-identical.
-    expect(sim.hashState()).toBe(304351235);
+    // 304351235 -> 423829641 on 2026-09-05 (session 24, PR 1, the Core at
+    // the edge): the golden map itself changed - the Core is a three-cell
+    // face past the east border instead of a tile near the centre, the
+    // road tree roots at the east border, and the cell grid is one column
+    // wider. Same rules, different world; round-trip replay still proves
+    // bit-identical.
+    expect(sim.hashState()).toBe(423829641);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

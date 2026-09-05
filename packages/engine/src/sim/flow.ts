@@ -63,6 +63,11 @@ export function stepAllowed(
   const a = cells[y * width + x];
   const b = cells[ny * width + nx];
   if (a === null || b === null || !isRouteCell(a) || !isRouteCell(b)) return false;
+  // The Core welds any route cell that faces it (session 24: the face sits
+  // in the strip past the east border, so the boundary rule below - which
+  // looks for a road continuing INWARD beyond the seam - has nothing to
+  // find there; the Core IS the end of the road).
+  if (a === 'C' || b === 'C') return roadsConnect(a, b, Math.sign(nx - x), Math.sign(ny - y));
 
   const tx = Math.floor(x / TILE_SIZE);
   const ty = Math.floor(y / TILE_SIZE);

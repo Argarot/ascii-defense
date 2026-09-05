@@ -67,8 +67,11 @@ describe('the balance lab (session 12 gate)', () => {
     // The model ignores overkill and contention (optimistic) and slow
     // (pessimistic). Tolerance widened 5 to 7 when generated tiles made
     // roads wigglier: longer in-tile exposure grows exactly the term the
-    // no-contention assumption is optimistic about.
-    expect(Math.abs(pred.deathWave! - report.deathWave!)).toBeLessThanOrEqual(7);
+    // no-contention assumption is optimistic about. Widened 7 to 8 with the
+    // Core at the edge (session 24): every lane now shares the tail past
+    // the root, so towers there see every enemy and contention grows again.
+    // The mixed-build lab (session 24, PR 4) is the ruler that replaces this.
+    expect(Math.abs(pred.deathWave! - report.deathWave!)).toBeLessThanOrEqual(8);
   });
 
   it('a stronger build strictly outlives a weaker one under the same curve', () => {

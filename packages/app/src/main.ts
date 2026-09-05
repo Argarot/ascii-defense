@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a } from '@ascii-defense/engine';
+import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef } from '@ascii-defense/engine';
 import { loadMintedTiles, removeMintedTile } from './mintedTiles';
 import {
@@ -93,7 +93,8 @@ async function main(): Promise<void> {
     }
     return r;
   };
-  const boardCols = mapX * TILE_SIZE * CELL_W;
+  // The board's cells plus the Core strip past the east border (session 24).
+  const boardCols = (mapX * TILE_SIZE + CORE_STRIP) * CELL_W;
   const boardRows = mapY * TILE_SIZE * CELL_H;
   const term = new GLTerm(glyphs, { cols: boardCols, rows: boardRows, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
   const view = new BoardView(term, lib, { mapX, mapY, glyphPxW: GLYPH_PX_W, glyphPxH: GLYPH_PX_H, sprites: SPRITES });

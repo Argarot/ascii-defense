@@ -5,20 +5,15 @@
  */
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng/rng';
-import { TILE_SIZE } from '../tiles/tile';
-import { TileLibrary, resolveCells } from '../tiles/board';
-import { generateMap } from '../mapgen/mapgen';
+
+import { TileLibrary } from '../tiles/board';
+import { mapCells, generateMap } from '../mapgen/mapgen';
 import { OFFER_EVERY_WAVES, Sim, type SimOptions } from './sim';
 import type { LootTable } from './defs';
 import type { EnemyDef, RelicDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
-  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGXGG') },
-  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_t', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_x', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGXGG') },
   { id: 'straight', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGGGG', 'GGGGG') },
   { id: 'corner', cells: g('GGGGG', 'GGGGG', 'XXXGG', 'GGXGG', 'GGXGG') },
   { id: 'tee', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGXGG', 'GGXGG') },
@@ -65,9 +60,9 @@ const TABLES: LootTable[] = [
 function makeWorld(seed: number, extra: Partial<SimOptions> = {}) {
   const opts = { width: 10, height: 6, entries: 3, targetPathCells: 40 };
   const map = generateMap(createRng(seed).stream('map'), LIB, { ...opts, relicPoolSize: POOL.length });
-  const cellsW = opts.width * TILE_SIZE;
-  const cellsH = opts.height * TILE_SIZE;
-  const cells = resolveCells(map.board, LIB);
+  const cellsW = map.cellsW;
+  const cellsH = map.cellsH;
+  const cells = mapCells(map, LIB);
   const simOpts: SimOptions = {
     cells,
     cellsW,

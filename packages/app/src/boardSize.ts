@@ -3,12 +3,13 @@
  * a viewport holds beside the HUD, clamped to what the generator is tuned
  * for. Pure, so the arithmetic is tested; the app calls it once at boot.
  *
- * 1920x1080 with a 40 px cell: (1920 - 300 - 24) / 200 = 7 tiles across,
+ * 1920x1080 with a 40 px cell: (1920 - 300 - 24 - 40) / 200 = 7 tiles across
+ * (the 40 is the Core strip past the east border, session 24),
  * (1080 - 70) / 200 = 5 down. The old fixed 12x7 board was 2400 px wide at
  * this cell - it no longer fits any screen, which is why the size is
  * derived, not declared.
  */
-import { TILE_SIZE } from '@ascii-defense/engine';
+import { CORE_STRIP, TILE_SIZE } from '@ascii-defense/engine';
 
 export interface BoardSizeOptions {
   /** Glyphs per cell (grid.json) and pixels per glyph (the font). */
@@ -34,7 +35,8 @@ export function boardSlotsFor(viewportW: number, viewportH: number, o: BoardSize
   const tilePxW = TILE_SIZE * o.cellW * o.glyphPxW;
   const tilePxH = TILE_SIZE * o.cellH * o.glyphPxH;
   const hudPx = o.hudCols * o.glyphPxW * o.hudScale;
-  const w = Math.floor((viewportW - hudPx - CHROME_W) / tilePxW);
+  const stripPx = CORE_STRIP * o.cellW * o.glyphPxW;
+  const w = Math.floor((viewportW - hudPx - CHROME_W - stripPx) / tilePxW);
   const h = Math.floor((viewportH - CHROME_H) / tilePxH);
   return {
     w: Math.max(MIN_SLOTS.w, Math.min(MAX_SLOTS.w, w)),

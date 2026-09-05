@@ -2,18 +2,13 @@
 import { createRng } from '../rng/rng';
 import { TILE_SIZE, deriveConnectors, validateTileCells } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt, type Board } from '../tiles/board';
-import { FILL_RADIUS, ORE_REACH, ROCK_CACHE_MAX, VOID_SHARE_CAP, generateMap } from './mapgen';
+import { FILL_RADIUS, ORE_REACH, ROCK_CACHE_MAX, VOID_SHARE_CAP, generateMap, mapCells } from './mapgen';
 import { computeFlowField } from '../sim/flow';
 
 // The same tile shapes the shipped library provides, inline so engine tests
 // stay hermetic (engine may not import content).
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
-  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGXGG') },
-  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_t', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_x', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGXGG') },
   { id: 'straight', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGGGG', 'GGGGG') },
   { id: 'corner', cells: g('GGGGG', 'GGGGG', 'XXXGG', 'GGXGG', 'GGXGG') },
   { id: 'tee', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGXGG', 'GGXGG') },
@@ -122,9 +117,9 @@ describe('map generation v2 - trees, void, spread', () => {
     for (const opts of CASES) {
       for (let seed = 1; seed <= 5; seed++) {
         const map = generateMap(createRng(seed * 7).stream('map'), LIB, opts);
-        const cells = resolveCells(map.board, LIB);
-        const W = opts.width * TILE_SIZE;
-        const H = opts.height * TILE_SIZE;
+        const cells = mapCells(map, LIB);
+        const W = map.cellsW;
+        const H = map.cellsH;
 
         expect(cells[map.core.y * W + map.core.x]).toBe('C');
         const route = new Set<number>();
@@ -302,9 +297,9 @@ describe('lane tiles vs the generator (session 14)', () => {
     ]);
     for (let seed = 1; seed <= 20; seed++) {
       const map = generateMap(createRng(seed * 11).stream('map'), withLanes, { width: 8, height: 5, entries: 3, targetPathCells: 40 });
-      const cells = resolveCells(map.board, withLanes);
+      const cells = mapCells(map, withLanes);
       // The real assertion: every entry reaches the Core through the graph.
-      const flow = computeFlowField(cells, 8 * TILE_SIZE, 5 * TILE_SIZE, map.entries);
+      const flow = computeFlowField(cells, map.cellsW, map.cellsH, map.entries);
       expect(flow.L).toBeGreaterThan(0);
     }
   });
@@ -371,7 +366,7 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
       // The authored vein keeps its author's numbers - 777 is unrollable.
       expect(map.deposits.some((d) => d.amount === 777)).toBe(true);
       // And the map still routes.
-      const flow = computeFlowField(resolveCells(map.board, libWith()), OPTS.width * TILE_SIZE, OPTS.height * TILE_SIZE, map.entries);
+      const flow = computeFlowField(mapCells(map, libWith()), map.cellsW, map.cellsH, map.entries);
       expect(flow.L).toBeGreaterThan(0);
     }
   });
@@ -414,7 +409,7 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
       const { nodes, edges } = roadGraph(map.board, JUNCTIONS, opts.width, opts.height);
       expect(edges.length, `seed ${seed * 3}`).toBe(nodes.size - 1);
       // Every entry routes to the Core.
-      const flow = computeFlowField(resolveCells(map.board, JUNCTIONS), 8 * TILE_SIZE, 5 * TILE_SIZE, map.entries);
+      const flow = computeFlowField(mapCells(map, JUNCTIONS), map.cellsW, map.cellsH, map.entries);
       expect(flow.L).toBeGreaterThan(0);
     }
   });
@@ -430,7 +425,7 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
       });
       const placed = map.board.slots.filter(Boolean).map((p) => p!.tileId);
       expect(placed.filter((p) => p === 'sp_bridge').length).toBe(1);
-      const flow = computeFlowField(resolveCells(map.board, WITH_BRIDGE), 8 * TILE_SIZE, 5 * TILE_SIZE, map.entries);
+      const flow = computeFlowField(mapCells(map, WITH_BRIDGE), map.cellsW, map.cellsH, map.entries);
       expect(flow.L).toBeGreaterThan(0);
     }
   });
@@ -451,8 +446,8 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
     for (const opts of cases) {
       for (let seed = 1; seed <= 8; seed++) {
         const map = generateMap(createRng(seed * 19).stream('map'), JUNCTION, opts);
-        const W = opts.width * TILE_SIZE;
-        const flow = computeFlowField(resolveCells(map.board, JUNCTION), W, opts.height * TILE_SIZE, map.entries);
+        const W = map.cellsW;
+        const flow = computeFlowField(mapCells(map, JUNCTION), W, map.cellsH, map.entries);
         for (const e of map.entries) {
           expect(
             flow.dist[e.y * W + e.x],

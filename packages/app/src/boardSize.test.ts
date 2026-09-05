@@ -10,7 +10,7 @@ describe('the board fits the screen (D24, option 1)', () => {
 
   it('a 1920x1200 screen gains a row; 2560x1440 gains columns', () => {
     expect(boardSlotsFor(1920, 1200, G)).toEqual({ w: 7, h: 5 });
-    expect(boardSlotsFor(2560, 1440, G)).toEqual({ w: 11, h: 6 });
+    expect(boardSlotsFor(2560, 1440, G)).toEqual({ w: 10, h: 6 }); // 11 before the Core strip took 40 px
   });
 
   it('never below the generator floor, never above the old 12x7 ceiling', () => {

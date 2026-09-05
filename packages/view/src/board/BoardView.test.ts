@@ -16,10 +16,6 @@ import { EffectsLayer } from './effects';
 
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
-  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGXGG') },
-  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_t', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
   { id: 'straight', cells: g('GGGGG', 'GGGGG', '-----', 'GGGGG', 'GGGGG') },
   { id: 'corner', cells: g('GGGGG', 'GGGGG', '--7GG', 'GG|GG', 'GG|GG') },
   { id: 'tee', cells: g('GGGGG', 'GGGGG', '--T--', 'GG|GG', 'GG|GG') },

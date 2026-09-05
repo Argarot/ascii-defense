@@ -30,7 +30,7 @@ describe('shipped tile library', () => {
     const board = growBoard(createRng(4242).stream('map'), lib, {
       width: 14,
       height: 7,
-      startTileId: 'core_l',
+      startTileId: 'straight',
       maxTiles: 98,
     });
     const laid = board.slots.filter(Boolean).length;

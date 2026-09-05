@@ -1,13 +1,16 @@
 ﻿/**
  * Map generation (PRD sec 4.3). Carve first, tile second:
  *
- *   1. place the Core slot near the board center
+ *   1. the ROOT slot sits on the east border; the Core is a three-cell FACE
+ *      in an extra cell column past that border (session 24, Daniil), fed by
+ *      the root's east port - the Core's only entrance. No tile carries the
+ *      Core any more.
  *   2. carve a road TREE: self-avoiding walks that never re-enter existing
  *      road, so every entry has exactly one route to the Core and no other
  *      road exists (no loops, by construction). The first walk leaves the
- *      Core; later walks branch off a random existing road slot. Each walk is
+ *      root; later walks branch off a random existing road slot. Each walk is
  *      assigned a compass sector so the tree spreads across the whole board
- *      instead of clumping in one half.
+ *      instead of clumping in one half. Entries never sit on the east border.
  *   3. every walked slot gets a tile whose DERIVED connector signature
  *      matches the carved topology - picked from the pool by signature
  *   4. slots within FILL_RADIUS of the road get roadless terrain (ore
@@ -21,6 +24,7 @@
 import type { RngStream } from '../rng/rng';
 import { EDGES, TILE_SIZE, partitionKey, rotatePoint, tilePartition, type Edge, type Rotation } from './../tiles/tile';
 import { TileLibrary, createBoard, place, resolveCells, slotAt, type Board } from '../tiles/board';
+import type { CellType } from '../grid/cells';
 import { EDGE_DELTA, carveRoads, sigKey, type RoadSpecialSpec } from './carve';
 import { verifyMap } from './verify';
 
@@ -107,8 +111,13 @@ export interface GeneratedMap {
   board: Board;
   /** Road cells at the board edge where enemies enter, in cell coordinates. */
   entries: CellRef[];
-  /** Center of the Core tile, in cell coordinates. */
+  /** The middle cell of the Core FACE, in cell coordinates (session 24: the Core is not a tile). */
   core: CellRef;
+  /** The Core's three cells, in the extra column past the east border, top to bottom. */
+  coreFace: CellRef[];
+  /** The cell grid's size: the board's slots times TILE_SIZE, plus CORE_STRIP columns. */
+  cellsW: number;
+  cellsH: number;
   /**
    * ALWAYS EMPTY since design round 1 (2026-09-03): caches are no longer
    * scattered at generation - they come out of prospected rock (rare,
@@ -148,7 +157,27 @@ export const ORE_REACH = 3;
  * A code from another version is refused loudly, never silently
  * regenerated into a different map.
  */
-export const GENERATOR_VERSION = 1;
+export const GENERATOR_VERSION = 2; // 2: the Core at the east edge (session 24)
+/**
+ * Extra cell columns past the east border that hold the Core FACE (session
+ * 24, Daniil): the board's slots stay TILE_SIZE-square, and the Core lives
+ * in this strip - not in a tile, not in a slot.
+ */
+export const CORE_STRIP = 1;
+
+/**
+ * The cell grid a run actually plays on: the board's tiles resolved, plus
+ * the Core strip - null except the face. THE way to get cells from a map;
+ * resolveCells alone is the tile grid without the Core.
+ */
+export function mapCells(map: GeneratedMap, lib: TileLibrary): (CellType | null)[] {
+  const tileW = map.board.width * TILE_SIZE;
+  const tiles = resolveCells(map.board, lib);
+  const out: (CellType | null)[] = new Array(map.cellsW * map.cellsH).fill(null);
+  for (let y = 0; y < map.cellsH; y++) for (let x = 0; x < tileW; x++) out[y * map.cellsW + x] = tiles[y * tileW + x];
+  for (const c of map.coreFace) out[c.y * map.cellsW + c.x] = 'C';
+  return out;
+}
 /**
  * Support ceiling of the void-share curve (D14): the target share is drawn
  * as VOID_SHARE_CAP * roll^2 - heavily biased low, impossible beyond the
@@ -191,11 +220,9 @@ function indexLibrary(
   exclude?: ReadonlySet<string>,
 ): {
   road: Map<string, { tileId: string; rotation: Rotation; weight: number }[]>;
-  core: Map<string, { tileId: string; rotation: Rotation; weight: number }[]>;
   filler: { plain: { tileId: string; weight: number }[]; ore: { tileId: string; weight: number }[] };
 } {
   const road = new Map<string, { tileId: string; rotation: Rotation; weight: number }[]>();
-  const core = new Map<string, { tileId: string; rotation: Rotation; weight: number }[]>();
   const filler = { plain: [] as { tileId: string; weight: number }[], ore: [] as { tileId: string; weight: number }[] };
 
   for (const id of lib.ids()) {
@@ -221,11 +248,10 @@ function indexLibrary(
       // and never onto a single-path slot (session 14's boot crash).
       const key = hasRoad ? partitionKey(tilePartition(cells)) : sigKey(edges);
       if (hasCore) {
-        // The Core's crossings must interconnect (all roads reach it).
-        if (tilePartition(cells).length > 1) continue;
-        const list = core.get(sigKey(edges)) ?? [];
-        list.push({ tileId: id, rotation, weight });
-        core.set(sigKey(edges), list);
+        // Session 24: the Core is a FACE past the east border, never a tile.
+        // A library still carrying core tiles is stale, and saying so beats
+        // dealing one onto a road slot.
+        throw new Error(`tile '${id}' carries the Core - the Core is not a tile since session 24; remove it from the library`);
       } else if (hasRoad) {
         const list = road.get(key) ?? [];
         list.push({ tileId: id, rotation, weight });
@@ -236,7 +262,7 @@ function indexLibrary(
       }
     }
   }
-  return { road, core, filler };
+  return { road, filler };
 }
 
 export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOptions): GeneratedMap {
@@ -294,13 +320,12 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   // ---- the road plan (carve.ts owns every road-topology rule) -------------
   const plan = carveRoads(
     rng,
-    { hasRoad: (k) => index.road.has(k), hasCore: (k) => index.core.has(k) },
+    { hasRoad: (k) => index.road.has(k) },
     { width, height, entries: opts.entries, targetPathCells: opts.targetPathCells, roadSpecials },
   );
-  const { coreK, roadEdges, secondSegment, forced } = plan;
+  const { rootK, roadEdges, secondSegment, forced } = plan;
   const entryCells = plan.entries;
-  const coreX = coreK % width;
-  const coreY = Math.floor(coreK / width);
+  const rootY = Math.floor(rootK / width);
 
   let board = createBoard(width, height);
   for (const [k, edges] of roadEdges) {
@@ -312,16 +337,13 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       continue;
     }
     const second = secondSegment.get(k);
-    const key =
-      k === coreK
-        ? sigKey(edges)
-        : second
-          ? partitionKey([[...edges] as Edge[], [...second] as Edge[]])
-          : partitionKey([[...edges] as Edge[]]);
-    const pool = (k === coreK ? index.core : index.road).get(key);
+    // The root slot is an ordinary road tile whose east port runs off the
+    // board into the Core face - the same shape an entry tile has.
+    const key = second ? partitionKey([[...edges] as Edge[], [...second] as Edge[]]) : partitionKey([[...edges] as Edge[]]);
+    const pool = index.road.get(key);
     if (!pool || pool.length === 0) {
       throw new Error(
-        `tile pool has no ${k === coreK ? 'core' : 'road'} tile for '${key}' - ` +
+        `tile pool has no road tile for '${key}' - ` +
           'the generator needs every routed shape (see content/assets/tiles/library.json)',
       );
     }
@@ -518,10 +540,18 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
     }
   }
 
+  // The Core FACE: three cells in the strip past the east border, centred
+  // on the root's east port. The middle cell is `core`, for everything that
+  // wants one point (the lab, the offset, the tests).
+  const faceX = width * TILE_SIZE;
+  const faceY = rootY * TILE_SIZE + CENTER;
   const map: GeneratedMap = {
     board,
     entries: entryCells,
-    core: { x: coreX * TILE_SIZE + CENTER, y: coreY * TILE_SIZE + CENTER },
+    core: { x: faceX, y: faceY },
+    coreFace: [{ x: faceX, y: faceY - 1 }, { x: faceX, y: faceY }, { x: faceX, y: faceY + 1 }],
+    cellsW: width * TILE_SIZE + CORE_STRIP,
+    cellsH: height * TILE_SIZE,
     caches,
     rockContents,
     deposits,

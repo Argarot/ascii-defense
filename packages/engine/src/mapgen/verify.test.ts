@@ -16,11 +16,6 @@ import { verifyMap } from './verify';
 const g = (...rows: string[]): string[] => rows;
 // The same hermetic shapes mapgen.test.ts uses (engine may not import content).
 const BASE_TILES = [
-  { id: 'core_end', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_l', cells: g('GGGGG', 'GCCCG', 'GCCCX', 'GCCCG', 'GGXGG') },
-  { id: 'core_i', cells: g('GGGGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_t', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGGGG') },
-  { id: 'core_x', cells: g('GGXGG', 'GCCCG', 'XCCCX', 'GCCCG', 'GGXGG') },
   { id: 'straight', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGGGG', 'GGGGG') },
   { id: 'corner', cells: g('GGGGG', 'GGGGG', 'XXXGG', 'GGXGG', 'GGXGG') },
   { id: 'tee', cells: g('GGGGG', 'GGGGG', 'XXXXX', 'GGXGG', 'GGXGG') },
@@ -117,8 +112,8 @@ describe('verifyMap: the current generator against the spec (the baseline)', () 
       board = place(board, 'corner', rot!, w.x, w.y);
     }
     const loopMap = {
-      board, entries: [], core: { x: 0, y: 0 }, caches: [], rockContents: [], deposits: [], boons: [],
-      voidShareTarget: 1, pathFloorCells: 0,
+      board, entries: [], core: { x: 0, y: 0 }, coreFace: [], cellsW: 2 * 5 + 1, cellsH: 2 * 5,
+      caches: [], rockContents: [], deposits: [], boons: [], voidShareTarget: 1, pathFloorCells: 0,
     };
     const issues = verifyMap(loopMap, LIB, {});
     expect(issues.some((i) => i.rule === 'tier1/road-tree')).toBe(true);
@@ -131,11 +126,14 @@ describe('regression: loops on generated maps (playtest 2026-08-19, seed 633440)
     // back into its north exit - every cell routes, the flow field is happy,
     // and there are two ways from the ring to the Core. The literal law
     // (exactly one route) must say no.
+    // Session 24: the Core is a face past the east border; the root is a
+    // crossroads on that border whose east port feeds it, and the ring
+    // hangs off the crossroads' north and west ports.
     const wanted: { tile: string; x: number; y: number; conn: Record<string, boolean> }[] = [
-      { tile: 'core_x', x: 1, y: 1, conn: { n: true, e: true, s: true, w: true } },
-      { tile: 'corner', x: 2, y: 1, conn: { n: true, e: false, s: false, w: true } },
-      { tile: 'corner', x: 2, y: 0, conn: { n: false, e: false, s: true, w: true } },
+      { tile: 'cross', x: 2, y: 1, conn: { n: true, e: true, s: true, w: true } },
+      { tile: 'corner', x: 1, y: 1, conn: { n: true, e: true, s: false, w: false } },
       { tile: 'corner', x: 1, y: 0, conn: { n: false, e: true, s: true, w: false } },
+      { tile: 'corner', x: 2, y: 0, conn: { n: false, e: false, s: true, w: true } },
     ];
     let board = createBoard(3, 3);
     for (const w of wanted) {
@@ -146,9 +144,10 @@ describe('regression: loops on generated maps (playtest 2026-08-19, seed 633440)
       expect(rot, `no ${w.tile} rotation gives ${JSON.stringify(w.conn)}`).toBeDefined();
       board = place(board, w.tile, rot!, w.x, w.y);
     }
-    const core = { x: 1 * 5 + 2, y: 1 * 5 + 2 };
+    const core = { x: 3 * 5, y: 1 * 5 + 2 };
     const ringMap = {
-      board, entries: [], core, caches: [], rockContents: [], deposits: [], boons: [],
+      board, entries: [], core, coreFace: [{ x: core.x, y: core.y - 1 }, core, { x: core.x, y: core.y + 1 }],
+      cellsW: 3 * 5 + 1, cellsH: 3 * 5, caches: [], rockContents: [], deposits: [], boons: [],
       voidShareTarget: 1, pathFloorCells: 0,
     };
     const issues = verifyMap(ringMap, LIB, {});
