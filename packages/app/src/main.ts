@@ -45,7 +45,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 // tower sprites in roster order.
 const SPRITE_JSON = import.meta.glob('../../content/assets/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
 const SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
-const HERO = ['bolt', 'mortar', 'frost', 'refinery', 'tesla', 'missile'].map((id) => SPRITES.find((s) => s.id === id)).filter((s) => s !== undefined);
+const HERO = ['bolt', 'mortar', 'frost', 'refinery', 'tesla', 'missile', 'laser'].map((id) => SPRITES.find((s) => s.id === id)).filter((s) => s !== undefined);
 
 const BASE = import.meta.env.BASE_URL;
 const ASSET_V = '6';
@@ -610,6 +610,13 @@ async function main(): Promise<void> {
   hudTerm.canvas.addEventListener('mouseleave', () => { hudHover = null; });
   hudTerm.canvas.addEventListener('wheel', (e) => { hud.scrollBy(e.deltaY > 0 ? 2 : -2); e.preventDefault(); }, { passive: false });
   /** One handler for HUD-shaped actions, whichever panel raised them. */
+  /** Turn the selected line-shaped tower a quarter clockwise (WBS 2.34); the sim ignores it on radial towers. */
+  const rotateSelected = (): void => {
+    if (!selected || !snap) return;
+    const t = snap.board.towers?.find((tw) => tw.x === selected!.x && tw.y === selected!.y);
+    if (!t || t.facing === undefined) return;
+    act({ k: 'facing', x: selected.x, y: selected.y, value: (t.facing + 1) % 4 });
+  };
   const onHudAction = (action: HudAction): void => {
     if (!snap) return;
     if (action.kind === 'buildId') {
@@ -624,6 +631,7 @@ async function main(): Promise<void> {
       }
     }
     if (action.kind === 'priority' && selected) act({ k: 'priority', x: selected.x, y: selected.y, value: action.value });
+    if (action.kind === 'rotate' && selected) rotateSelected();
     if (action.kind === 'choose' && selected) act({ k: 'choose', x: selected.x, y: selected.y, tier: action.tier, option: action.option });
     if (action.kind === 'relic') {
       const slot = snap.hud.core?.slots[action.index];
@@ -712,6 +720,7 @@ async function main(): Promise<void> {
       send({ t: 'speed', idx: mirroredSpeed });
     }
     if (e.key === 'g' || e.key === 'G') showGrid = !showGrid;
+    if ((e.key === 'r' || e.key === 'R') && selected) rotateSelected();
     if (e.key === 'n' || e.key === 'N') act({ k: 'callWave' }); // the sim refuses when it may not
     if ((e.key === 'x' || e.key === 'X' || e.key === 'Delete') && selected) act({ k: 'sell', x: selected.x, y: selected.y });
     if (selected) {

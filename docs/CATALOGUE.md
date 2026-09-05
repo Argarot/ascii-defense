@@ -9,7 +9,7 @@
 ## Towers *(generated)*
 
 <!-- generated:towers -->
-6 towers in `packages/content/assets/towers/roster.json`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).
+7 towers in `packages/content/assets/towers/roster.json`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).
 
 | Tower | id | Cost | Type | Range | Rate | Damage | DPS | Shape / production | What it is |
 |---|---|---|---|---|---|---|---|---|---|
@@ -19,6 +19,7 @@
 | **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts. |
 | **Tesla Coil** | tesla | 40 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. |
 | **Missile Rack** | missile | 50 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. |
+| **Laser Lance** | laser | 45 | energy | 6 | 6.67 | 3 | 20 | beam: a corridor 1 wide down its facing, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces, through every body on it; the damage climbs while it holds one. Rotate it with R. |
 
 #### Bolt Turret - the tree
 
@@ -85,6 +86,17 @@
 | T2 | **Fragmentation** | 100 | Blast +0.6 cells at 85% damage. Wounds the many. | explodeRadius +0.6, damageMul +0.85 |
 | T3 | **Bunker Buster** | 200 | +40 damage, and armour does nothing against it. The answer to a Juggernaut. | damage +40, unlocks ignoreArmor |
 | T3 | **Barrage** | 200 | Three missiles per launch at 60% damage each. Saturation from range. | shots +2, damageMul +0.6, spread +0.8 |
+
+#### Laser Lance - the tree
+
+| Tier | Choice | Cost | What it does | Data |
+|---|---|---|---|---|
+| T1 | **Focus** | 45 | Reach: +3 cells of corridor. A longer run of road under the beam. | range +3 |
+| T1 | **Wide Beam** | 45 | A corridor two cells wide instead of one. Catches the lane beside the road. | beamWidth +1 |
+| T2 | **Overheat** | 90 | Heat climbs to triple damage instead of double. Hold the lead longer, hit harder. | beamRampMax +1 |
+| T2 | **Capacitor** | 90 | +2 damage per pulse, cold or hot. Steady output. | damage +2 |
+| T3 | **Cutter** | 180 | Every pulse at 150%. The answer to a column standing in the beam. | damageMul +1.5 |
+| T3 | **Sweep** | 180 | Every second the lance turns toward the facing with the most bodies in reach. Heat resets on the turn. | unlocks sweep |
 
 <!-- /generated -->
 

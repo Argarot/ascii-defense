@@ -54,6 +54,17 @@
             "type": "number",
             "minimum": 0
           },
+          "beam": {
+            "description": "attack:beam only (session 26, the Laser Lance; WBS 2.34): a corridor width cells wide down the tower's facing for range cells; every body in it takes the damage each fire; holding one lead target heats the beam by rampStep per fire up to rampMax times the damage.",
+            "type": "object",
+            "required": ["width", "rampStep", "rampMax"],
+            "additionalProperties": false,
+            "properties": {
+              "width": { "type": "number", "exclusiveMinimum": 0 },
+              "rampStep": { "type": "number", "minimum": 0 },
+              "rampMax": { "type": "number", "minimum": 1 }
+            }
+          },
           "chain": {
             "description": "attack:chain only (session 25, the Tesla Coil): the arc hits count bodies, each within reach cells of the last, at falloff of the previous hop's damage.",
             "type": "object",
@@ -146,6 +157,7 @@
               "projectile",
               "pulse",
               "chain",
+              "beam",
               "none"
             ],
             "default": "projectile"
@@ -284,6 +296,14 @@
                           "chainReach": {
                             "description": "Chain towers: additional cells a hop may span.",
                             "type": "number"
+                          },
+                          "beamWidth": {
+                            "description": "Beam towers: additional cells of corridor width.",
+                            "type": "number"
+                          },
+                          "beamRampMax": {
+                            "description": "Beam towers: additional multiplier at full heat.",
+                            "type": "number"
                           }
                         }
                       },
@@ -294,8 +314,9 @@
                           "surveyAuto",
                           "ignoreArmor",
                           "deepBore50",
-                          "deepBore100"
-                        ]
+                          "deepBore100",
+                            "sweep"
+                          ]
                       }
                     }
                   }

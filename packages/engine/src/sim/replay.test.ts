@@ -195,7 +195,12 @@ describe('replay (WBS 1.4.8)', () => {
     // golden map changed again; the sim did not. Round-trip replay still
     // proves bit-identical. (622218226 -> 1486502285 within the same PR:
     // the walk's weighting changed while the carve was tuned on the sweep.)
-    expect(sim.hashState()).toBe(1486502285);
+    // 1486502285 -> 3921408197 on 2026-09-05 (session 26, PR 3, tower
+    // facing): facing and beam heat joined the per-tower hash. The golden
+    // world and its rules did not change - every tower now carries two more
+    // hashed numbers (facing east, heat 1). Round-trip replay still proves
+    // bit-identical.
+    expect(sim.hashState()).toBe(3921408197);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

@@ -76,3 +76,4 @@ export type {
   RelicEffects,
   RelicFold,
 } from './sim/defs';
+export { FACING_DX, FACING_DY, FACING_NAME } from './sim/sim';

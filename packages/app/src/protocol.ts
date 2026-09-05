@@ -87,6 +87,7 @@ export type WorkerAction =
   | { k: 'sell'; x: number; y: number }
   | { k: 'choose'; x: number; y: number; tier: number; option: number }
   | { k: 'priority'; x: number; y: number; value: string }
+  | { k: 'facing'; x: number; y: number; value: number }
   | { k: 'pickRelic'; option: number }
   | { k: 'rerollOffer' }
   | { k: 'buyRelic' }

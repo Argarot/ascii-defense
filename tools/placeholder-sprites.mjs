@@ -144,6 +144,20 @@ const TOWERS = {
     ],
     roleOf: (ch) => ('*+@'.includes(ch) ? 'tower.tesla.core' : ch === '~' ? 'tower.tesla.arc' : ch === '=' || ch === '#' ? 'tower.tesla.copper' : 'tower.tesla.coil'),
   },
+  laser: {
+    roles: { 'tower.laser.body': '#c9d6df', 'tower.laser.lens': '#ff9a3d', 'tower.laser.beam': '#ffd27f', 'tower.laser.dark': '#506978' },
+    ground: 'tower.ground',
+    frames: [
+      ['  .==.  ', ' [|##|] ', '  |==|  ', '   ||   ', '|/_||_\\|'],
+      ['  .==.  ', ' [|++|] ', '  |==|  ', '   ||   ', '|/_||_\\|'],
+    ],
+    patches: [
+      [{ 0: ' .====. ' }, { 1: '[||##||]' }],
+      [{ 2: '  |##|  ' }, { 3: '  =||=  ' }],
+      [{ 1: ' [|XX|] ' }, { 0: ' <.==.> ' }],
+    ],
+    roleOf: (ch) => ('#+X'.includes(ch) ? 'tower.laser.lens' : ch === '=' ? 'tower.laser.beam' : '<>'.includes(ch) ? 'tower.laser.lens' : '_'.includes(ch) ? 'tower.laser.dark' : 'tower.laser.body'),
+  },
   missile: {
     roles: { 'tower.missile.tube': '#8a9a7a', 'tower.missile.warhead': '#e2573f', 'tower.missile.frame': '#9eb3bf', 'tower.missile.rack': '#506978' },
     ground: 'tower.ground',

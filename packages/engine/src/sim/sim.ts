@@ -17,7 +17,7 @@
  * and plain objects for towers (dozens, rich state) - ARCHITECTURE sec 7.
  */
 import { createRng, type Rng } from '../rng/rng';
-import { isBuildable, strandEntered, strandPorts, type CellType } from '../grid/cells';
+import { isBuildable, isRoad, strandEntered, strandPorts, type CellType } from '../grid/cells';
 import type { BoonRef, GeneratedMap, CellRef } from '../mapgen/mapgen';
 import { SHIELD_REGEN_DELAY, SHIELD_REGEN_TICKS, TRAIT_RULES, hasTrait } from './traits';
 import { computeFlowField, type FlowField } from './flow';
@@ -135,6 +135,7 @@ export type SimEvent =
   | { kind: 'pulse'; x: number; y: number; r: number }
   | { kind: 'strike'; x: number; y: number; r: number } // the orbital: a column from the sky, then a blast of radius r (session 25)
   | { kind: 'arc'; pts: readonly { x: number; y: number }[] } // a chain: the tower's centre, then every body hit in order (session 25)
+  | { kind: 'beam'; x0: number; y0: number; x1: number; y1: number; w: number; heat: number } // a lance firing down its corridor (session 26)
   | { kind: 'freeze'; ticks: number } // every enemy held for this long (Stasis, Flashbang)
   | { kind: 'impact'; x: number; y: number; r: number; delay?: number } // r 0 = plain hit, >0 = blast radius; delay = ticks before it shows (Splinter's second blast)
   | { kind: 'death'; x: number; y: number }
@@ -180,6 +181,13 @@ export interface CacheSpot {
   table: string;
   opened: boolean;
 }
+/** Facings (WBS 2.34): 0 north, 1 east, 2 south, 3 west - cell deltas. */
+export const FACING_DX = [0, 1, 0, -1] as const;
+export const FACING_DY = [-1, 0, 1, 0] as const;
+export const FACING_NAME = ['north', 'east', 'south', 'west'] as const;
+/** Ticks between a Sweep beam's re-aims. */
+const SWEEP_EVERY = 20;
+
 /** Slow entries a body keeps at most; the longest survive. */
 const SLOW_ENTRY_CAP = 8;
 /** Ticks between Splinter's two blasts on screen (the damage lands at once). */
@@ -223,6 +231,13 @@ export interface Tower {
   choices: [number, number, number];
   /** Tick of the last shot or pulse; -1 before the first. The view's attack animations key off it (session 25). Never hashed. */
   lastFire: number;
+  /** The direction a line-shaped attack points (WBS 2.34): 0 north, 1 east, 2 south, 3 west. Set on build, rotated on demand, replayed, hashed. */
+  facing: number;
+  /** A beam's heat: the damage multiplier it has climbed to on its held target (1 = cold). Hashed. */
+  heat: number;
+  /** The beam's held lead target (slot and generation); -1 when it has none. */
+  beamLead: number;
+  beamLeadGen: number;
 }
 
 export const SELL_REFUND = 0.7;
@@ -514,7 +529,10 @@ export class Sim {
     this.scrap -= def.cost;
     // Producers earn their first yield after one full cycle, not on placement.
     const prodCooldown = def.production ? effectiveStats(def, [-1, -1, -1]).productionEveryTicks : 0;
-    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1 });
+    // A line-shaped tower faces the direction with the most road in reach
+    // (deterministic: ties go north-first); anyone else faces east.
+    const facing = def.attack === 'beam' ? this.bestFacing(x, y, def.range) : 1;
+    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1, facing, heat: 1, beamLead: -1, beamLeadGen: 0 });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
     this.emit({ kind: 'build', x, y });
     this.inputs.push({ tick: this.tickCount, a: { t: 'build', x, y, defId } });
@@ -1066,6 +1084,33 @@ export class Sim {
     this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
   }
 
+  /** Turn a tower (WBS 2.34): a replayed input; radial towers accept it and ignore it. */
+  setFacing(x: number, y: number, facing: number): boolean {
+    if (this.status !== 'running') return false;
+    const t = this.towerAt(x, y);
+    if (!t || facing < 0 || facing > 3 || !Number.isInteger(facing)) return false;
+    t.facing = facing;
+    t.heat = 1;
+    t.beamLead = -1;
+    this.inputs.push({ tick: this.tickCount, a: { t: 'facing', x, y, facing } });
+    return true;
+  }
+
+  /** The facing with the most road cells within `range` along its corridor; ties north-first. */
+  private bestFacing(x: number, y: number, range: number): number {
+    let best = 1;
+    let bestRoad = -1;
+    for (let f = 0; f < 4; f++) {
+      let road = 0;
+      for (let k = 1; k <= Math.ceil(range); k++) {
+        const c = this.cellAt(x + FACING_DX[f] * k, y + FACING_DY[f] * k);
+        if (c !== null && isRoad(c)) road++;
+      }
+      if (road > bestRoad) { bestRoad = road; best = f; }
+    }
+    return best;
+  }
+
   setPriority(x: number, y: number, priority: Priority): boolean {
     if (this.status !== 'running') return false;
     const t = this.towerAt(x, y);
@@ -1121,6 +1166,7 @@ export class Sim {
       case 'build': return this.buildTower(a.x, a.y, a.defId);
       case 'choose': return this.chooseTier(a.x, a.y, a.tier, a.option);
       case 'priority': return this.setPriority(a.x, a.y, a.priority);
+      case 'facing': return this.setFacing(a.x, a.y, a.facing);
       case 'sell': return this.sellTower(a.x, a.y);
       case 'pickRelic': return this.pickRelic(a.option);
       case 'fireActive': return this.fireActive(a.relicId, a.x, a.y);
@@ -1203,6 +1249,7 @@ export class Sim {
       if (!t) { u32(0xdead); continue; }
       u32(t.cellX); u32(t.cellY); u32(t.defIdx); u32(t.cooldown); u32(t.prodCooldown); u32(t.kills); u32(t.pulses);
       u32(PRIORITIES.indexOf(t.priority));
+      u32(t.facing); u32(Math.round(t.heat * 1000)); // session 26: facing and heat are tower state
       for (const c of t.choices) u32(c + 1);
     }
     return h >>> 0;
@@ -1496,6 +1543,10 @@ export class Sim {
         this.emitPulse(ti, tower, eff);
         continue;
       }
+      if (def.attack === 'beam') {
+        this.beam(ti, tower, eff);
+        continue;
+      }
       const target = this.acquire(tower.cellX + 0.5, tower.cellY + 0.5, eff.range, tower.priority, eff.minRange);
       if (target === -1) continue;
       tower.cooldown = eff.fireEveryTicks;
@@ -1526,6 +1577,78 @@ export class Sim {
       });
     }
     return pickTarget(candidates, priority);
+  }
+
+  /**
+   * The beam (session 26, the Laser Lance): a corridor `beamWidth` cells
+   * wide down the tower's facing for `range` cells. Every body in it takes
+   * the damage each fire; the nearest is the LEAD, and holding the same
+   * lead fire after fire heats the beam by beamRampStep up to beamRampMax
+   * times the damage - the reward for pointing it well. No lead cools it
+   * to 1. With Sweep, every second the beam turns toward the facing with
+   * the most bodies in its corridor (ties north-first). No projectile; the
+   * view draws the beam from its event.
+   */
+  private beam(towerIdx: number, tower: Tower, eff: EffectiveStats): void {
+    const cx = tower.cellX + 0.5;
+    const cy = tower.cellY + 0.5;
+    if (eff.sweep && this.tickCount % SWEEP_EVERY === 0) {
+      let best = tower.facing;
+      let bestN = -1;
+      for (let f = 0; f < 4; f++) {
+        const n = this.bodiesInCorridor(cx, cy, f, eff.range, eff.beamWidth).length;
+        if (n > bestN) { bestN = n; best = f; }
+      }
+      if (best !== tower.facing) { tower.facing = best; tower.heat = 1; tower.beamLead = -1; }
+    }
+    const bodies = this.bodiesInCorridor(cx, cy, tower.facing, eff.range, eff.beamWidth);
+    if (bodies.length === 0) {
+      tower.heat = 1;
+      tower.beamLead = -1;
+      return;
+    }
+    tower.cooldown = eff.fireEveryTicks;
+    tower.lastFire = this.tickCount;
+    const lead = bodies[0].i;
+    if (lead === tower.beamLead && this.gen[lead] === tower.beamLeadGen) tower.heat = Math.min(eff.beamRampMax, tower.heat + eff.beamRampStep);
+    else { tower.heat = 1; tower.beamLead = lead; tower.beamLeadGen = this.gen[lead]; }
+    const slowMulN = eff.slowTicks > 0 && eff.slowMul < 1 ? eff.slowMul : 0;
+    const slowTicksN = eff.slowTicks > 0 && eff.slowMul < 1 ? eff.slowTicks : 0;
+    const type = this.opts.towerDefs[tower.defIdx].damageType;
+    for (const b of bodies) this.applyDamage(b.i, eff.damage * tower.heat, slowMulN, slowTicksN, towerIdx, eff.shieldMul, eff.ignoreArmor, type);
+    const len = Math.min(eff.range, this.corridorLength(tower.cellX, tower.cellY, tower.facing, eff.range));
+    this.emit({ kind: 'beam', x0: cx, y0: cy, x1: cx + FACING_DX[tower.facing] * len, y1: cy + FACING_DY[tower.facing] * len, w: eff.beamWidth, heat: tower.heat });
+  }
+
+  /** Living bodies inside a corridor, nearest first (ties by slot). */
+  private bodiesInCorridor(cx: number, cy: number, facing: number, range: number, width: number): { i: number; along: number }[] {
+    const fx = FACING_DX[facing];
+    const fy = FACING_DY[facing];
+    const half = Math.max(0.5, width / 2);
+    const out: { i: number; along: number }[] = [];
+    for (let i = 0; i < this.enemyHigh; i++) {
+      if (!this.alive[i]) continue;
+      const dx = this.posX[i] - cx;
+      const dy = this.posY[i] - cy;
+      const along = dx * fx + dy * fy;
+      const perp = Math.abs(dx * fy - dy * fx);
+      if (along <= 0 || along > range || perp > half) continue;
+      out.push({ i, along });
+    }
+    out.sort((a, b) => a.along - b.along || a.i - b.i);
+    return out;
+  }
+
+  /** Cells the corridor covers before it leaves the grid. */
+  private corridorLength(x: number, y: number, facing: number, range: number): number {
+    let k = 0;
+    while (k < range) {
+      const nx = x + FACING_DX[facing] * (k + 1);
+      const ny = y + FACING_DY[facing] * (k + 1);
+      if (nx < 0 || ny < 0 || nx >= this.opts.cellsW || ny >= this.opts.cellsH) break;
+      k++;
+    }
+    return k;
   }
 
   /**

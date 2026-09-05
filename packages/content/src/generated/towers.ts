@@ -28,6 +28,14 @@ export interface TowerRoster {
        */
       minRange?: number;
       /**
+       * attack:beam only (session 26, the Laser Lance; WBS 2.34): a corridor width cells wide down the tower's facing for range cells; every body in it takes the damage each fire; holding one lead target heats the beam by rampStep per fire up to rampMax times the damage.
+       */
+      beam?: {
+        width: number;
+        rampStep: number;
+        rampMax: number;
+      };
+      /**
        * attack:chain only (session 25, the Tesla Coil): the arc hits count bodies, each within reach cells of the last, at falloff of the previous hop's damage.
        */
       chain?: {
@@ -83,7 +91,7 @@ export interface TowerRoster {
       /**
        * projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).
        */
-      attack?: 'projectile' | 'pulse' | 'chain' | 'none';
+      attack?: 'projectile' | 'pulse' | 'chain' | 'beam' | 'none';
       /**
        * Resource yield per cycle (Refinery). Ore counts only while the tower stands on an ore cell - engine rule, PRD sec 5.3. scrap is reserved shape for the foundry relic (PRD sec 7.4); no shipped tower uses it.
        */
@@ -173,11 +181,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             },
             {
               name: string;
@@ -244,11 +260,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             }
           ];
         },
@@ -323,11 +347,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             },
             {
               name: string;
@@ -394,11 +426,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             }
           ];
         },
@@ -473,11 +513,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             },
             {
               name: string;
@@ -544,11 +592,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             }
           ];
         }
@@ -572,6 +628,14 @@ export interface TowerRoster {
        */
       minRange?: number;
       /**
+       * attack:beam only (session 26, the Laser Lance; WBS 2.34): a corridor width cells wide down the tower's facing for range cells; every body in it takes the damage each fire; holding one lead target heats the beam by rampStep per fire up to rampMax times the damage.
+       */
+      beam?: {
+        width: number;
+        rampStep: number;
+        rampMax: number;
+      };
+      /**
        * attack:chain only (session 25, the Tesla Coil): the arc hits count bodies, each within reach cells of the last, at falloff of the previous hop's damage.
        */
       chain?: {
@@ -627,7 +691,7 @@ export interface TowerRoster {
       /**
        * projectile fires shots; pulse hits everything in range on cooldown (no projectile); none never attacks (producers).
        */
-      attack?: 'projectile' | 'pulse' | 'chain' | 'none';
+      attack?: 'projectile' | 'pulse' | 'chain' | 'beam' | 'none';
       /**
        * Resource yield per cycle (Refinery). Ore counts only while the tower stands on an ore cell - engine rule, PRD sec 5.3. scrap is reserved shape for the foundry relic (PRD sec 7.4); no shipped tower uses it.
        */
@@ -717,11 +781,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             },
             {
               name: string;
@@ -788,11 +860,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             }
           ];
         },
@@ -867,11 +947,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             },
             {
               name: string;
@@ -938,11 +1026,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             }
           ];
         },
@@ -1017,11 +1113,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             },
             {
               name: string;
@@ -1088,11 +1192,19 @@ export interface TowerRoster {
                  * Chain towers: additional cells a hop may span.
                  */
                 chainReach?: number;
+                /**
+                 * Beam towers: additional cells of corridor width.
+                 */
+                beamWidth?: number;
+                /**
+                 * Beam towers: additional multiplier at full heat.
+                 */
+                beamRampMax?: number;
               };
               /**
                * Capability grant: surveySpeed accelerates all prospect jobs (stacking per tower); surveyAuto prospects nearby rock autonomously; ignoreArmor makes the tower's hits ignore armour; deepBore50 / deepBore100 grow the vein under the tower by 50% / 100% when chosen (one-time).
                */
-              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+              unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
             }
           ];
         }
@@ -1157,6 +1269,30 @@ export const towersSchema = {
             "description": "Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.",
             "type": "number",
             "minimum": 0
+          },
+          "beam": {
+            "description": "attack:beam only (session 26, the Laser Lance; WBS 2.34): a corridor width cells wide down the tower's facing for range cells; every body in it takes the damage each fire; holding one lead target heats the beam by rampStep per fire up to rampMax times the damage.",
+            "type": "object",
+            "required": [
+              "width",
+              "rampStep",
+              "rampMax"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "rampStep": {
+                "type": "number",
+                "minimum": 0
+              },
+              "rampMax": {
+                "type": "number",
+                "minimum": 1
+              }
+            }
           },
           "chain": {
             "description": "attack:chain only (session 25, the Tesla Coil): the arc hits count bodies, each within reach cells of the last, at falloff of the previous hop's damage.",
@@ -1267,6 +1403,7 @@ export const towersSchema = {
               "projectile",
               "pulse",
               "chain",
+              "beam",
               "none"
             ],
             "default": "projectile"
@@ -1405,6 +1542,14 @@ export const towersSchema = {
                           "chainReach": {
                             "description": "Chain towers: additional cells a hop may span.",
                             "type": "number"
+                          },
+                          "beamWidth": {
+                            "description": "Beam towers: additional cells of corridor width.",
+                            "type": "number"
+                          },
+                          "beamRampMax": {
+                            "description": "Beam towers: additional multiplier at full heat.",
+                            "type": "number"
                           }
                         }
                       },
@@ -1415,7 +1560,8 @@ export const towersSchema = {
                           "surveyAuto",
                           "ignoreArmor",
                           "deepBore50",
-                          "deepBore100"
+                          "deepBore100",
+                          "sweep"
                         ]
                       }
                     }

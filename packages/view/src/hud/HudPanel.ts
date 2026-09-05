@@ -12,7 +12,7 @@
 import type { TermSurface } from '@ascii-defense/render';
 import type { Sprite } from '@ascii-defense/content';
 import { drawSpriteFrame } from '../board/sprites';
-import { PRIORITIES, type Priority } from '@ascii-defense/engine';
+import { FACING_NAME, PRIORITIES, type Priority } from '@ascii-defense/engine';
 import { role } from '../palette';
 
 export interface HudChoiceInfo {
@@ -58,6 +58,8 @@ export interface HudTowerInfo {
   /** A producer standing off its ore vein - mining nothing (PRD sec 5.3). */
   offVein: boolean;
   priority: Priority;
+  /** A line-shaped tower's facing (0 n, 1 e, 2 s, 3 w); null for radial towers (WBS 2.34). */
+  facing?: number | null;
   tiers: readonly HudTierInfo[];
   /** The hovered choice's written sentence (2.10); null when nothing hovers. */
   choiceDesc?: string | null;
@@ -118,6 +120,7 @@ export interface HudState {
 
 export type HudAction =
   | { kind: 'priority'; value: Priority }
+  | { kind: 'rotate' }
   | { kind: 'build'; index: number }
   /** The strip's buttons name the tower, not a palette index (4.27). */
   | { kind: 'buildId'; id: string }
@@ -527,6 +530,14 @@ export class HudPanel {
         }
       }
       y++;
+      // A line-shaped tower shows where it points and turns on a click (or R).
+      if (t.facing !== null && t.facing !== undefined) {
+        term.write(0, y, `facing ${FACING_NAME[t.facing] ?? '?'}`, role('ui.text'));
+        const bw = 12;
+        this.button(W - bw, y, bw, 'ROTATE (R)', role('ui.bg'), role('ui.accent'));
+        this.regions.push({ row: y, x0: W - bw, x1: W, action: { kind: 'rotate' } });
+        y += 2;
+      }
       // Priorities are meaningless on a tower that never targets.
       if (t.stats.prod === null) {
         term.write(0, y++, 'priority', role('ui.dim'));

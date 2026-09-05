@@ -44,6 +44,7 @@ const table = (head, rows) =>
 function towerShape(t) {
   if (t.attack === 'none') return 'producer (no attack)';
   if (t.attack === 'pulse') return 'pulse: hits everything in range at once';
+  if (t.attack === 'beam') return `beam: a corridor ${n(t.beam?.width ?? 1)} wide down its facing, every body on it, heat to x${n(t.beam?.rampMax ?? 1)} on a held target (R rotates)`;
   if (t.attack === 'chain') return `chain: arcs to ${t.chain?.count ?? 1} bodies within ${n(t.chain?.reach ?? 1)} cells of each other, ${Math.round((t.chain?.falloff ?? 1) * 100)}% per hop`;
   const p = t.projectile ?? {};
   const bits = [];

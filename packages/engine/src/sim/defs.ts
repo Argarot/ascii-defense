@@ -247,6 +247,10 @@ export interface StatMods {
   chainCount?: number;
   /** Chain towers: additional cells a hop may span. */
   chainReach?: number;
+  /** Beam towers (session 26): additional cells of beam width. */
+  beamWidth?: number;
+  /** Beam towers: additional multiplier at full heat (base 2 = double while it holds one target). */
+  beamRampMax?: number;
 }
 
 export interface ChoiceDef {
@@ -258,7 +262,7 @@ export interface ChoiceDef {
   /** Capability grants (PRD sec 5.3): surveySpeed towers each speed EVERY
    *  prospect job (global, stacking); surveyAuto towers start free jobs on
    *  rock near themselves. Parallel choices, not one boolean. */
-  unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100';
+  unlocks?: 'surveySpeed' | 'surveyAuto' | 'ignoreArmor' | 'deepBore50' | 'deepBore100' | 'sweep';
 }
 
 /** One tier: an either/or, mutually exclusive choice (Tower Dominion style). */
@@ -282,11 +286,18 @@ export interface TowerDef {
   minRange?: number;
   fireEveryTicks: number;
   /** 'projectile' fires shots; 'pulse' hits everything in range on cooldown; 'chain' arcs through bodies (session 25); 'none' never attacks (producers). */
-  attack?: 'projectile' | 'pulse' | 'chain' | 'none';
+  attack?: 'projectile' | 'pulse' | 'chain' | 'beam' | 'none';
   /** Absent on attack:'none' producers (Refinery). For 'chain' the damage is the first hop's; speed is unused. */
   projectile?: ProjectileSpec;
   /** Chain towers (session 25): the arc hits `count` bodies, each within `reach` cells of the last, at `falloff` of the previous hop's damage. */
   chain?: { count: number; reach: number; falloff: number };
+  /**
+   * Beam towers (session 26, WBS 2.34): a corridor `width` cells wide down
+   * the tower's FACING for `range` cells; every body in it takes the
+   * damage each fire; holding one lead target heats the beam by
+   * `rampStep` per fire up to `rampMax` times the damage.
+   */
+  beam?: { width: number; rampStep: number; rampMax: number };
   production?: ProductionSpec;
   /** 3 tiers x 2 exclusive choices = 14 tower variants (Daniil's redesign). */
   tiers?: readonly TowerTierDef[];
@@ -326,6 +337,12 @@ export interface EffectiveStats {
   chainCount: number;
   chainReach: number;
   chainFalloff: number;
+  /** Beam towers (session 26): corridor width in cells, heat per fire, the ceiling. */
+  beamWidth: number;
+  beamRampStep: number;
+  beamRampMax: number;
+  /** Sweep (the Laser's tier 3): the beam re-faces toward the most bodies every second. */
+  sweep: boolean;
 }
 
 /**
@@ -361,6 +378,10 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     chainCount: def.chain?.count ?? 0,
     chainReach: def.chain?.reach ?? 0,
     chainFalloff: def.chain?.falloff ?? 1,
+    beamWidth: def.beam?.width ?? 0,
+    beamRampStep: def.beam?.rampStep ?? 0,
+    beamRampMax: def.beam?.rampMax ?? 1,
+    sweep: false,
   };
   let damageMul = 1;
   def.tiers?.forEach((tierDef, ti) => {
@@ -368,6 +389,7 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     if (pick === undefined || pick < 0) return;
     const choice = tierDef.choices[pick];
     if (choice?.unlocks === 'ignoreArmor') out.ignoreArmor = true;
+    if (choice?.unlocks === 'sweep') out.sweep = true;
     const m = choice?.mods;
     if (!m) return;
     damageMul *= m.damageMul ?? 1;
@@ -380,6 +402,8 @@ export function effectiveStats(def: TowerDef, choices: readonly number[]): Effec
     out.freezeEvery += m.freezeEvery ?? 0;
     out.chainCount += m.chainCount ?? 0;
     out.chainReach += m.chainReach ?? 0;
+    out.beamWidth += m.beamWidth ?? 0;
+    out.beamRampMax += m.beamRampMax ?? 0;
     out.damage += m.damage ?? 0;
     out.range += m.range ?? 0;
     out.minRange += m.minRange ?? 0;

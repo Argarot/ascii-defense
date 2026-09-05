@@ -405,6 +405,41 @@ describe('towers and projectiles', () => {
     expect(checked).toBe(true);
   });
 
+  it('a beam hits every body in its corridor, heats on a held lead, and turns on a replayed input (session 26, WBS 2.34)', () => {
+    const { cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const LANCE: TowerDef = { id: 'laser', cost: 20, range: 6, fireEveryTicks: 2, attack: 'beam', damageType: 'energy', projectile: { damage: 10, speed: 1 }, beam: { width: 1, rampStep: 0.5, rampMax: 2 } };
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [LANCE] });
+    let body = -1;
+    for (let t = 0; t < 10 && body === -1; t++) {
+      sim.tick();
+      for (let i = 0; i < 64; i++) if (sim.alive[i]) { body = i; break; }
+    }
+    expect(body).toBeGreaterThanOrEqual(0);
+    const bx = Math.floor(sim.posX[body]);
+    const by = Math.floor(sim.posY[body]);
+    // A tower on the body's row, west of it, within reach.
+    let at: { x: number; y: number } | null = null;
+    for (let d = 1; d <= 5 && !at; d++) if (bx - d >= 0 && sim.canBuildAt(bx - d, by) && sim.buildTower(bx - d, by, 'laser')) at = { x: bx - d, y: by };
+    if (!at) for (let d = 1; d <= 5 && !at; d++) if (bx + d < cellsW && sim.canBuildAt(bx + d, by) && sim.buildTower(bx + d, by, 'laser')) at = { x: bx + d, y: by };
+    expect(at).not.toBeNull();
+    // Face it along the row toward the body; the input is a replayed action.
+    const toward = at!.x < bx ? 1 : 3;
+    expect(sim.setFacing(at!.x, at!.y, toward)).toBe(true);
+    expect(sim.inputs.some((i) => i.a.t === 'facing' && i.a.facing === toward)).toBe(true);
+    const hp0 = sim.hp[body];
+    for (let t = 0; t < 8; t++) sim.tick();
+    // Four fires at 10 x heat 1, 1.5, 2, 2 = 65.
+    expect(hp0 - sim.hp[body]).toBeCloseTo(65, 5);
+    expect(sim.events.some((e) => e.kind === 'beam' && e.heat === 2)).toBe(true);
+    // Turned away: nothing in the corridor, the heat cools, no more damage.
+    expect(sim.setFacing(at!.x, at!.y, (toward + 2) % 4)).toBe(true);
+    const hp1 = sim.hp[body];
+    for (let t = 0; t < 8; t++) sim.tick();
+    expect(sim.hp[body]).toBe(hp1);
+    expect(cellsH).toBeGreaterThan(0);
+  });
+
   it('slows stack by source: the coldest wins, the longest lasts, and each falls away on its own clock (session 26)', () => {
     const { cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
     // A cold, short field and a warm, long one - on the same body.
