@@ -190,12 +190,9 @@ export class StripPanel {
     const cw = W - cx - 1;
     const c = s.coreCard;
     if (c && cw >= 20) {
-      term.write(cx, 0, 'THE CORE', role('terrain.core.lit'));
-      const frac = c.hpMax > 0 ? c.hp / c.hpMax : 0;
-      const hpCol = frac <= 0.25 ? role('enemy.fast') : role('terrain.core.mid');
-      const hpText = `hp ${c.hp}/${c.hpMax}`;
-      term.write(cx + 10, 0, hpText, hpCol);
-      term.write(cx, 1, '='.repeat(Math.max(0, Math.round(frac * (cw - 1)))), hpCol);
+      // The column already shows the Core's health; here the card is the
+      // slots and the actives only (feedback 2026-09-06, item 3).
+      term.write(cx, 0, 'THE CORE - relics and actives', role('terrain.core.lit'));
       // Square slots, one row: the HUD's grid at 5x3, as many as fit.
       const slotW = 5;
       const slotH = 3;

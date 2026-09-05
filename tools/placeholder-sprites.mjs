@@ -20,7 +20,7 @@
  *   relic  4x3 - the inventory slot's interior in the strip and the column
  *   face   8x5, three states (top, mid, bot) for the Core's three cells
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -75,7 +75,10 @@ function frame(keys, rows, roleOf, bgOf = null) {
   if (bgOf) out.bgInk = rows.map((row, y) => [...row].map((ch, x) => (ch === ' ' ? '.' : keys.key(bgOf(ch, x, y)))).join(''));
   return out;
 }
+const STUDIES = join(ROOT, 'sources', 'sprites');
 function write(id, sprite) {
+  // A painted study of this id (docs/ART-AGENT.md) owns the sprite now.
+  if (existsSync(join(STUDIES, `${id}.study.json`))) { console.log('skipped', `${id}.json`, '(a study exists)'); return; }
   writeFileSync(join(OUT, `${id}.json`), JSON.stringify({ $schema: '../../schema/sprite.schema.json', ...sprite }, null, 2) + '\n');
   console.log('wrote', `${id}.json`);
 }

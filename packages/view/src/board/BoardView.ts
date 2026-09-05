@@ -109,14 +109,31 @@ export interface CellRef {
  * resolves; '' must exist (the linter does not enforce that yet).
  */
 export function spriteState(sp: Sprite, choices: readonly number[]): Sprite['states'][string] {
+  return spriteStateFor(sp, choices).st;
+}
+
+const FACING_LETTER = ['n', 'e', 's', 'w'] as const;
+
+/**
+ * The state for choices AND a facing (session 27; docs/ART-AGENT.md sec 4):
+ * a key with '/n', '/e', '/s' or '/w' appended is preferred when the tower
+ * faces that way, at every prefix length; `faced` says whether one was
+ * found (the view draws an arrow otherwise).
+ */
+export function spriteStateFor(sp: Sprite, choices: readonly number[], facing?: number): { st: Sprite['states'][string]; faced: boolean } {
   let key = '';
   for (const c of choices) {
     if (c < 0) break;
     key += String(c);
   }
+  const letter = facing !== undefined ? FACING_LETTER[facing] : undefined;
   for (let k = key; ; k = k.slice(0, -1)) {
+    if (letter) {
+      const faced = sp.states[`${k}/${letter}`];
+      if (faced) return { st: faced, faced: true };
+    }
     const st = sp.states[k];
-    if (st) return st;
+    if (st) return { st, faced: false };
     if (k === '') throw new Error(`sprite '${sp.id}' has no base state ''`);
   }
 }
@@ -332,7 +349,7 @@ export class BoardView {
         // Sprite v2 (session 22): the state is keyed by the tower's committed
         // choices ('' base, '0', '01', '010'...), falling back to the longest
         // authored prefix so a sprite drawn for fewer tiers still shows.
-        const st = spriteState(sp, t.choices ?? []);
+        const { st, faced } = spriteStateFor(sp, t.choices ?? [], t.facing);
         const cycle = [st, ...(st.frames ?? [])];
         // Offset each tower's cycle by its position so a row of refineries
         // churns out of step instead of marching in lockstep.
@@ -355,7 +372,7 @@ export class BoardView {
         }
         // A line-shaped tower wears its facing as an arrow on the cell's
         // edge (WBS 2.34) until the art agent draws it per facing.
-        if (t.facing !== undefined) {
+        if (t.facing !== undefined && !faced) {
           const ARROW = ['^', '>', 'v', '<'] as const;
           const ax = t.facing === 1 ? CELL_W - 1 : t.facing === 3 ? 0 : Math.floor(CELL_W / 2);
           const ay = t.facing === 0 ? 0 : t.facing === 2 ? CELL_H - 1 : Math.floor(CELL_H / 2);

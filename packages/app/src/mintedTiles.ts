@@ -80,6 +80,33 @@ export function loadMintedTiles(): TileDef[] {
   }
 }
 
+/**
+ * Every stored tile the loader does NOT return, with why (session 27,
+ * feedback item 5: a pool minted under older rules on another device
+ * showed fewer tiles with no word). The loadout lists these greyed.
+ */
+export function loadMintedProblems(): { id: string; problem: string }[] {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [{ id: 'pool', problem: 'the stored pool is not a list' }];
+    const out: { id: string; problem: string }[] = [];
+    const seen = new Set<string>();
+    for (const t of parsed as TileDef[]) {
+      const errors = validateTile(t);
+      if (errors.length > 0) { out.push({ id: t.id ?? '?', problem: errors[0] }); continue; }
+      const key = canonKey(t.cells);
+      if (LIBRARY_FORMS.has(key)) { out.push({ id: t.id, problem: `same shape as basic tile '${LIBRARY_FORMS.get(key)}'` }); continue; }
+      if (seen.has(key)) { out.push({ id: t.id, problem: 'same shape as another minted tile' }); continue; }
+      seen.add(key);
+    }
+    return out;
+  } catch {
+    return [{ id: 'pool', problem: 'the stored pool could not be read' }];
+  }
+}
+
 export function addMintedTile(tile: TileDef): void {
   // Canonical IDENTITY (2.24): the same shape drawn sideways is the same
   // tile, so it replaces its rotation-twin instead of joining it as a

@@ -167,6 +167,15 @@ generator's `ROAD_ORDER` and its `frames` become `variations`.
 Re-import after a study changes and the diff is the change. A study with a new
 rule fails to import until the rule is ported — never guessed.
 
+**Painted studies** *(session 27; the art agent's shape, [ART-AGENT.md](ART-AGENT.md) §3)*:
+`sources/sprites/<id>.study.json` carries its own per-glyph inks and a
+named palette; the importer maps names to roles (`tower.<id>.<name>`,
+`enemy.<id>.<name>`, `relic.<id>.<name>`, `core.face.<name>`), checks the
+shape per kind and writes the sprite. A state key with `/n`, `/e`, `/s`
+or `/w` appended is a **facing variant** (the Laser); the view prefers it
+and draws an arrow only when none exists. A painted study of an id silences
+the placeholder generator for that id.
+
 **Placeholders** *(session 25)*: `node tools/placeholder-sprites.mjs` writes
 the sprites nobody has drawn yet — the seven enemies, the sixteen relics,
 the Core face — from art that lives in the script (a base grid, a second

@@ -396,6 +396,81 @@ const road = importRoads();
 writeFileSync(join(OUT, 'road_muted_cobble.json'), JSON.stringify(road, null, 2) + '\n');
 written.push(`road_muted_cobble: ${Object.keys(road.states).length} states x ${1 + (road.states['|'].variations?.length ?? 0)} variations`);
 // Palette: sorted for stable diffs, the file's own order otherwise untouched.
+// ---- painted studies (docs/ART-AGENT.md sec 3, shape B): any kind, no rule to port --------
+// sources/sprites/<id>.study.json carries its own per-glyph inks; the
+// importer only maps palette names to roles and checks the shape.
+const KIND_CELL = { tower: [CELL_W, CELL_H], terrain: [CELL_W, CELL_H], face: [CELL_W, CELL_H] };
+const TOWER_KEYS = [''];
+for (const a of ['0', '1']) { TOWER_KEYS.push(a); for (const b of ['0', '1']) { TOWER_KEYS.push(a + b); for (const c of ['0', '1']) TOWER_KEYS.push(a + b + c); } }
+function rolePrefix(kind, id) {
+  if (kind === 'tower') return `tower.${id}`;
+  if (kind === 'enemy') return `enemy.${id.replace(/^enemy_/, '')}`;
+  if (kind === 'relic') return `relic.${id.replace(/^relic_/, '')}`;
+  if (kind === 'face') return 'core.face';
+  return `terrain.${id}`;
+}
+function importPainted(file) {
+  const study = JSON.parse(readFileSync(join(SRC, file), 'utf8'));
+  const { id, kind = 'tower', cell, frameMs = 360, palette: P = {}, inks = {}, states } = study;
+  if (!id || !states) throw new Error(`${file}: a study needs id and states`);
+  const [w, h] = cell ?? KIND_CELL[kind] ?? [CELL_W, CELL_H];
+  if (KIND_CELL[kind] && (w !== CELL_W || h !== CELL_H)) throw new Error(`${file}: a ${kind} is ${CELL_W}x${CELL_H}, not ${w}x${h}`);
+  if (kind === 'enemy' && (w > 5 || h > 3)) throw new Error(`${file}: an enemy is at most 5x3`);
+  if (kind === 'relic' && (w !== 4 || h !== 3)) throw new Error(`${file}: a relic is 4x3`);
+  const prefix = rolePrefix(kind, id);
+  const inkMap = {};
+  for (const [key, name] of Object.entries(inks)) {
+    if (name === null) { inkMap[key] = null; continue; }
+    if (name.includes('.')) { if (!(name in roles)) throw new Error(`${file}: ink '${key}' names role '${name}', not in the palette`); inkMap[key] = name; continue; }
+    if (!(name in P)) throw new Error(`${file}: ink '${key}' names '${name}', not in the study's palette`);
+    const role = `${prefix}.${name}`;
+    roles[role] = P[name];
+    inkMap[key] = role;
+  }
+  inkMap['.'] ??= null;
+  const grid = (label, rows, keyed) => {
+    if (!Array.isArray(rows) || rows.length !== h) throw new Error(`${file}: ${label} has ${rows?.length} rows, cell is ${h}`);
+    rows.forEach((row, i) => {
+      if ([...row].length !== w) throw new Error(`${file}: ${label} row ${i} is ${[...row].length} wide, cell is ${w}`);
+      if (keyed) for (const ch of row) if (!(ch in inkMap)) throw new Error(`${file}: ${label} ink '${ch}' is not in inks`);
+    });
+    return rows;
+  };
+  const frame = (label, f) => {
+    const out = { art: grid(label + ' art', f.art, false), ink: grid(label + ' ink', f.ink, true) };
+    if (f.bg) out.bgInk = grid(label + ' bg', f.bg, true);
+    if (f.ms !== undefined) { if (!(f.ms >= 20)) throw new Error(`${file}: ${label} ms < 20`); out.ms = f.ms; }
+    return out;
+  };
+  const out = {};
+  for (const [key, st] of Object.entries(states)) {
+    const frames = st.frames ?? [];
+    if (frames.length === 0) throw new Error(`${file}: state '${key}' has no frames`);
+    const [base, ...rest] = frames.map((f, i) => frame(`state '${key}' frame ${i + 1}`, f));
+    const s = { art: base.art, ink: base.ink, ...(base.bgInk ? { bgInk: base.bgInk } : {}) };
+    if (rest.length) s.frames = rest.map((f) => { const g = { ...f }; delete g.ms; return g; });
+    if (st.sequences) {
+      s.sequences = {};
+      for (const [name, list] of Object.entries(st.sequences)) {
+        if (!['charge', 'fire', 'cool', 'hit'].includes(name)) throw new Error(`${file}: state '${key}' sequence '${name}' is not charge/fire/cool/hit`);
+        s.sequences[name] = list.map((f, i) => frame(`state '${key}' ${name} ${i + 1}`, f));
+      }
+    }
+    if (st.variations) s.variations = st.variations.map((v, i) => { const g = { ...frame(`state '${key}' variation ${i + 1}`, v) }; delete g.ms; return g; });
+    out[key] = s;
+  }
+  const bare = Object.keys(out).filter((k) => !k.includes('/'));
+  if (kind === 'tower') for (const k of TOWER_KEYS) if (!out[k]) throw new Error(`${file}: a tower needs state '${k}'`);
+  if (kind === 'face') for (const k of ['top', 'mid', 'bot']) if (!out[k]) throw new Error(`${file}: a face needs state '${k}'`);
+  if ((kind === 'enemy' || kind === 'relic') && !out['']) throw new Error(`${file}: a ${kind} needs state ''`);
+  for (const k of Object.keys(out)) if (k.includes('/') && !/\/[nesw]$/.test(k)) throw new Error(`${file}: state '${k}' - a facing key ends in /n, /e, /s or /w`);
+  if (!(frameMs >= 60)) throw new Error(`${file}: frameMs < 60`);
+  const sprite = { $schema: '../../schema/sprite.schema.json', id, ...(kind !== 'tower' ? { kind } : {}), cell: [w, h], frameMs, source: `sources/sprites/${file} via tools/import-sprites.mjs`, states: out, inkMap };
+  writeFileSync(join(OUT, `${id}.json`), JSON.stringify(sprite, null, 2) + '\n');
+  written.push(`${id} (painted ${kind}): ${bare.length} states`);
+}
+for (const f of readdirSync(SRC).filter((n) => n.endsWith('.study.json')).sort()) importPainted(f);
+
 writeFileSync(PALETTE, JSON.stringify(palette, null, 2) + '\n');
 console.log(written.join('\n'));
 console.log(`palette: ${Object.keys(roles).length} roles`);
