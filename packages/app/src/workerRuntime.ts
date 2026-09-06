@@ -355,6 +355,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           // Lit sets (session 28, PR 2): a line under the slots.
           sets: s.litSets().map((x) => `${x.name} (${x.tag} ${x.at})`),
           relicSlots: RELIC_SLOTS,
+          // Every pair that combines, for the Forge (feedback 2026-09-06 evening, item 4).
+          combines: held.flatMap((_, a) => s.combineTargets(a).map((t) => ({ a, b: t.with, result: t.result, resultRarity: t.resultRarity }))),
         };
     // The opened relic's card (session 28, PR 3): salvage, combine, and how often its rule fired.
     const relicCard = (() => {
