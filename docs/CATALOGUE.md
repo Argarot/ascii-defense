@@ -17,9 +17,9 @@
 | **Mortar** | mortar | 35 | kinetic | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. | no dead zone - it can hit its own feet. |
 | **Refinery** | refinery | 30 |  | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. | mines from nothing - 1 Ore a cycle with no vein, forever. |
 | **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts. | every third pulse freezes the field solid. |
-| **Tesla Coil** | tesla | 40 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. | every arc hits two more bodies. |
-| **Missile Rack** | missile | 50 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. | two missiles per launch. |
-| **Laser Lance** | laser | 45 | energy | the road | 1 | 20 | 20 | beam: down its facing to where the road turns, however far, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces to where the road turns, however far that is, through every body on it: a pulse a second, and the damage climbs while it holds one. R rotates it. | the heat climbs one multiple higher. |
+| **Tesla Coil** | tesla | 70 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. | every arc hits two more bodies. |
+| **Missile Rack** | missile | 85 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. | two missiles per launch. |
+| **Laser Lance** | laser | 110 | energy | the road | 1 | 20 | 20 | beam: down its facing to where the road turns, however far, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces to where the road turns, however far that is, through every body on it: a pulse a second, and the damage climbs while it holds one. R rotates it. | the heat climbs one multiple higher. |
 | **Bastion** | bastion | 40 |  | 1.5 |  |  |  | aura: neighbours within 1 cell(s) hit x1.15 | Shoots nothing. Every tower touching it hits harder; its tree makes the ring wider and the gift bigger. | the aura reaches one cell further. |
 
 The two ground cells touching the Core face (and the border cells beside it) are the precious ground of PRD §4.5: a tower there gets the gift in the last column, folded like a tier.
@@ -72,34 +72,34 @@ The two ground cells touching the Core face (and the border cells beside it) are
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Long Arc** | 40 | Reach: +1.5 range. The first arc finds bodies further out. | range +1.5 |
-| T1 | **Twin Coil** | 40 | Throughput: arcs every 12 ticks instead of 20. More arcs, the same bite. | fireEveryTicks -8 |
-| T2 | **Forked** | 80 | Every arc hits two more bodies. The answer to a column. | chainCount +2 |
-| T2 | **Grounding** | 80 | Bodies the arc touches slow to 60% for 15 ticks. Control on a chain. | slowMul -0.4, slowTicks +15 |
-| T3 | **Overload** | 160 | +16 damage on the first hop, and every hop after it. The answer to brutes. | damage +16 |
-| T3 | **Conductor** | 160 | Three more bodies per arc, hops span two more cells, at 80% damage. The answer to swarms. | chainCount +3, chainReach +2, damageMul +0.8 |
+| T1 | **Long Arc** | 60 | Reach: +1.5 range. The first arc finds bodies further out. | range +1.5 |
+| T1 | **Twin Coil** | 60 | Throughput: arcs every 12 ticks instead of 20. More arcs, the same bite. | fireEveryTicks -8 |
+| T2 | **Forked** | 120 | Every arc hits two more bodies. The answer to a column. | chainCount +2 |
+| T2 | **Grounding** | 120 | Bodies the arc touches slow to 60% for 15 ticks. Control on a chain. | slowMul -0.4, slowTicks +15 |
+| T3 | **Overload** | 240 | +16 damage on the first hop, and every hop after it. The answer to brutes. | damage +16 |
+| T3 | **Conductor** | 240 | Three more bodies per arc, hops span two more cells, at 80% damage. The answer to swarms. | chainCount +3, chainReach +2, damageMul +0.8 |
 
 #### Missile Rack - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Warhead** | 50 | +20 damage per missile. Kills the one it was sent for. | damage +20 |
-| T1 | **Seeker** | 50 | Reach: +2 range, and a missile every 50 ticks instead of 60. | range +2, fireEveryTicks -10 |
-| T2 | **Salvo** | 100 | Two missiles per launch at 75% damage, each homing on a different enemy when there is one. | shots +1, damageMul +0.75 |
-| T2 | **Fragmentation** | 100 | Blast +0.6 cells at 85% damage. Wounds the many. | explodeRadius +0.6, damageMul +0.85 |
-| T3 | **Bunker Buster** | 200 | +40 damage, and armour does nothing against it. The answer to a Juggernaut. | damage +40, unlocks ignoreArmor |
-| T3 | **Barrage** | 200 | Three missiles per launch at 60% damage each. Saturation from range. | shots +2, damageMul +0.6, spread +0.8 |
+| T1 | **Warhead** | 75 | +20 damage per missile. Kills the one it was sent for. | damage +20 |
+| T1 | **Seeker** | 75 | Reach: +2 range, and a missile every 50 ticks instead of 60. | range +2, fireEveryTicks -10 |
+| T2 | **Salvo** | 150 | Two missiles per launch at 75% damage, each homing on a different enemy when there is one. | shots +1, damageMul +0.75 |
+| T2 | **Fragmentation** | 150 | Blast +0.6 cells at 85% damage. Wounds the many. | explodeRadius +0.6, damageMul +0.85 |
+| T3 | **Bunker Buster** | 300 | +40 damage, and armour does nothing against it. The answer to a Juggernaut. | damage +40, unlocks ignoreArmor |
+| T3 | **Barrage** | 300 | Three missiles per launch at 60% damage each. Saturation from range. | shots +2, damageMul +0.6, spread +0.8 |
 
 #### Laser Lance - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Capacitor** | 45 | +14 damage per pulse, cold or hot. The damage path starts steady. | damage +14 |
-| T1 | **Chill** | 45 | Every body in the beam moves at 70% while it stands in it; a pulse a second keeps it cold. The control path starts cold. | slowMul -0.3, slowTicks +24 |
-| T2 | **Fast Cycle** | 90 | A pulse every 13 ticks instead of 20: half again the output. | fireEveryTicks -7 |
-| T2 | **Sear** | 90 | Bodies leave the beam burning: 2 a tick for a second. The beam keeps hurting after they pass. | burnDps +2, burnTicks +20 |
-| T3 | **Cutter** | 180 | Every pulse at 150% and the heat climbs one multiple higher. The answer to a column standing in the beam. | damageMul +1.5, beamRampMax +1 |
-| T3 | **Deep Sear** | 180 | The burn doubles and lasts two seconds; the chill deepens to 50%. Nothing walks out of this beam unmarked. | burnDps +2, burnTicks +20, slowMul -0.2 |
+| T1 | **Capacitor** | 90 | +14 damage per pulse, cold or hot. The damage path starts steady. | damage +14 |
+| T1 | **Chill** | 90 | Every body in the beam moves at 70% while it stands in it; a pulse a second keeps it cold. The control path starts cold. | slowMul -0.3, slowTicks +24 |
+| T2 | **Fast Cycle** | 180 | A pulse every 13 ticks instead of 20: half again the output. | fireEveryTicks -7 |
+| T2 | **Sear** | 180 | Bodies leave the beam burning: 2 a tick for a second. The beam keeps hurting after they pass. | burnDps +2, burnTicks +20 |
+| T3 | **Cutter** | 320 | Every pulse at 150% and the heat climbs one multiple higher. The answer to a column standing in the beam. | damageMul +1.5, beamRampMax +1 |
+| T3 | **Deep Sear** | 320 | The burn doubles and lasts two seconds; the chill deepens to 50%. Nothing walks out of this beam unmarked. | burnDps +2, burnTicks +20, slowMul -0.2 |
 
 #### Bastion - the tree
 

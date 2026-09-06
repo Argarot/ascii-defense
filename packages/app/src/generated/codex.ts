@@ -210,7 +210,7 @@ export const CODEX = {
       "id": "tesla",
       "name": "Tesla Coil",
       "type": "energy",
-      "cost": 40,
+      "cost": 70,
       "range": 4,
       "rate": "1",
       "dmg": 9,
@@ -222,36 +222,36 @@ export const CODEX = {
         [
           {
             "name": "Long Arc",
-            "cost": 40,
+            "cost": 60,
             "desc": "Reach: +1.5 range. The first arc finds bodies further out."
           },
           {
             "name": "Twin Coil",
-            "cost": 40,
+            "cost": 60,
             "desc": "Throughput: arcs every 12 ticks instead of 20. More arcs, the same bite."
           }
         ],
         [
           {
             "name": "Forked",
-            "cost": 80,
+            "cost": 120,
             "desc": "Every arc hits two more bodies. The answer to a column."
           },
           {
             "name": "Grounding",
-            "cost": 80,
+            "cost": 120,
             "desc": "Bodies the arc touches slow to 60% for 15 ticks. Control on a chain."
           }
         ],
         [
           {
             "name": "Overload",
-            "cost": 160,
+            "cost": 240,
             "desc": "+16 damage on the first hop, and every hop after it. The answer to brutes."
           },
           {
             "name": "Conductor",
-            "cost": 160,
+            "cost": 240,
             "desc": "Three more bodies per arc, hops span two more cells, at 80% damage. The answer to swarms."
           }
         ]
@@ -261,7 +261,7 @@ export const CODEX = {
       "id": "missile",
       "name": "Missile Rack",
       "type": "kinetic",
-      "cost": 50,
+      "cost": 85,
       "range": 9,
       "rate": "0.33",
       "dmg": 30,
@@ -273,36 +273,36 @@ export const CODEX = {
         [
           {
             "name": "Warhead",
-            "cost": 50,
+            "cost": 75,
             "desc": "+20 damage per missile. Kills the one it was sent for."
           },
           {
             "name": "Seeker",
-            "cost": 50,
+            "cost": 75,
             "desc": "Reach: +2 range, and a missile every 50 ticks instead of 60."
           }
         ],
         [
           {
             "name": "Salvo",
-            "cost": 100,
+            "cost": 150,
             "desc": "Two missiles per launch at 75% damage, each homing on a different enemy when there is one."
           },
           {
             "name": "Fragmentation",
-            "cost": 100,
+            "cost": 150,
             "desc": "Blast +0.6 cells at 85% damage. Wounds the many."
           }
         ],
         [
           {
             "name": "Bunker Buster",
-            "cost": 200,
+            "cost": 300,
             "desc": "+40 damage, and armour does nothing against it. The answer to a Juggernaut."
           },
           {
             "name": "Barrage",
-            "cost": 200,
+            "cost": 300,
             "desc": "Three missiles per launch at 60% damage each. Saturation from range."
           }
         ]
@@ -312,7 +312,7 @@ export const CODEX = {
       "id": "laser",
       "name": "Laser Lance",
       "type": "energy",
-      "cost": 45,
+      "cost": 110,
       "range": "the road, to its turn",
       "rate": "1",
       "dmg": 20,
@@ -324,36 +324,36 @@ export const CODEX = {
         [
           {
             "name": "Capacitor",
-            "cost": 45,
+            "cost": 90,
             "desc": "+14 damage per pulse, cold or hot. The damage path starts steady."
           },
           {
             "name": "Chill",
-            "cost": 45,
+            "cost": 90,
             "desc": "Every body in the beam moves at 70% while it stands in it; a pulse a second keeps it cold. The control path starts cold."
           }
         ],
         [
           {
             "name": "Fast Cycle",
-            "cost": 90,
+            "cost": 180,
             "desc": "A pulse every 13 ticks instead of 20: half again the output."
           },
           {
             "name": "Sear",
-            "cost": 90,
+            "cost": 180,
             "desc": "Bodies leave the beam burning: 2 a tick for a second. The beam keeps hurting after they pass."
           }
         ],
         [
           {
             "name": "Cutter",
-            "cost": 180,
+            "cost": 320,
             "desc": "Every pulse at 150% and the heat climbs one multiple higher. The answer to a column standing in the beam."
           },
           {
             "name": "Deep Sear",
-            "cost": 180,
+            "cost": 320,
             "desc": "The burn doubles and lasts two seconds; the chill deepens to 50%. Nothing walks out of this beam unmarked."
           }
         ]
