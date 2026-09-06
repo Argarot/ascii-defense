@@ -1041,6 +1041,15 @@ carries it, so rarity is an economic fact rather than a placement heuristic:
 *Where* a given tile lands barely matters; **how likely it is to appear is a
 knob**, and that knob is calibration input rather than a design constant.
 
+**Built 2026-09-06 (session 29, PR 4) - Ore by tier in the sim.** Three
+tiers (Daniil: "3 or 5" - three). A vein's tier is the tile's (`deposits[].tier`);
+the shipped specials `rich_vein` (two tier-2 veins) and `mother_lode` (one
+tier-3 vein) are what the workshop's ORE branch sells. **One Refinery mines
+every tier** (thought dump item 4): the ore lands in the purse of the
+vein's tier, and the cycle stretches with it - ×1.5 on tier 2, ×2 on tier
+3 (`ORE_TIER_CYCLE`). The HUD reads `ORE 12/3/0` once a higher tier is
+mined; the summary banks by tier; the tree's nodes cost the tier they name.
+
 This collapses what looked like three systems — ore tiers, the tile pool as
 progression, and Tile Smith as a meta feature — into one. The engine keeps only
 the shape: ore cells carry a tier, costs are expressed per tier.

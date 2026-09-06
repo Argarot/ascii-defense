@@ -263,7 +263,7 @@ async function main(): Promise<void> {
   // 'ready', never on send - a failed init can no longer strand the player
   // in a phantom of the previous run.
   let pendingStart = false;
-  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; seed: number; story?: FrameSnapshot['story']; /** The relic a win earned (session 29, PR 1), by name; null when nothing was left to earn. */ earned?: string | null } | null = null;
+  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; /** Ore banked by tier (session 29, PR 4). */ oreTiers: number[]; seed: number; story?: FrameSnapshot['story']; /** The relic a win earned (session 29, PR 1), by name; null when nothing was left to earn. */ earned?: string | null } | null = null;
   let summaryBanked = false;
 
   let hover: CellRef | null = null;
@@ -570,7 +570,7 @@ async function main(): Promise<void> {
                 `wave ${summary.wave} of ${finalWave > 0 ? finalWave : 'endless'} \u2802 seed ${summary.seed}`,
                 `run code ${runCode(summary.seed)}`,
                 `kills ${summary.kills}`,
-                `ore banked +${summary.oreBanked} (total ${meta.ore[0]})`,
+                `ore banked +${summary.oreBanked} (total ${meta.ore[0]})` + (summary.oreTiers.slice(1).some((o) => o > 0) ? ` \u2802 tier 2 +${summary.oreTiers[1]} (${meta.ore[1]}) \u2802 tier 3 +${summary.oreTiers[2]} (${meta.ore[2]})` : ''),
                 // A win earns a relic of the Threat's rarity (session 29, PR 1; PRD sec 19 item 3).
                 ...(summary.won ? [summary.earned ? `earned: ${summary.earned} - it joins the pool from the next run` : 'nothing left to earn at this threat - the workshop opens more branches'] : []),
                 // The run's story (session 27): who killed, who came, what was held.
@@ -1076,8 +1076,10 @@ async function main(): Promise<void> {
       // The run ended while playing: bank once, then the summary owns the eye.
       if (snap.status !== 'running' && (mode === 'playing' || mode === 'paused') && !summaryBanked) {
         summaryBanked = true;
-        summary = { won: snap.status === 'won', wave: snap.hud.wave, kills: snap.hud.kills, oreBanked: snap.hud.ore, seed, story: snap.story };
-        meta.ore[0] += snap.hud.ore;
+        const tiers = snap.hud.oreTiers ?? [snap.hud.ore];
+        summary = { won: snap.status === 'won', wave: snap.hud.wave, kills: snap.hud.kills, oreBanked: snap.hud.ore, oreTiers: [...tiers], seed, story: snap.story };
+        // Banked BY TIER (session 29, PR 4): a tier-2 vein pays into the tier-2 purse.
+        for (let i = 0; i < meta.ore.length; i++) meta.ore[i] += tiers[i] ?? 0;
         // What the run leaves behind for the tree (session 29, PR 1): the
         // rarities forged, the fusions found, and a win's relic.
         for (const f of snap.story?.forged ?? []) meta.forged[f.id] = Math.max(meta.forged[f.id] ?? 0, f.rarity);

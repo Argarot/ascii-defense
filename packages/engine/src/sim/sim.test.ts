@@ -1718,3 +1718,27 @@ describe('session 29, PR 1 - the tree as a run\'s identity', () => {
     expect([...sim.fusedThisRun]).toEqual(['permafrost_engine']);
   });
 });
+
+describe('session 29, PR 4 - Ore by tier', () => {
+  it('a Refinery on a tier-2 vein pays the tier-2 purse at half again the cycle; the purse has three tiers from the start', () => {
+    const { map, cells, simOpts, seed } = makeOreWorld(53, { maxSpawns: 0, startingScrap: 500 });
+    const vein = map.deposits[0];
+    const t1 = new Sim(seed, { ...simOpts, towerDefs: [REFINERY] });
+    expect(t1.ore).toEqual([0, 0, 0]);
+    expect(t1.buildTower(vein.x, vein.y, 'refinery')).toBe(true);
+    const cycle = REFINERY.production!.everyTicks;
+    for (let t = 0; t < cycle * 2 + 2; t++) t1.tick();
+    expect(t1.ore[0]).toBe(2);
+    expect(t1.ore[1]).toBe(0);
+    // The same vein at tier 2: the ore lands in the second purse, one cycle in the time tier 1 gave two.
+    const tiered = { ...map, deposits: map.deposits.map((d, i) => (i === 0 ? { ...d, tier: 2 as const } : d)) };
+    const t2 = new Sim(seed, { ...simOpts, map: tiered, cells, towerDefs: [REFINERY] });
+    expect(t2.buildTower(vein.x, vein.y, 'refinery')).toBe(true);
+    for (let t = 0; t < cycle * 2 + 2; t++) t2.tick();
+    expect(t2.ore[0]).toBe(0);
+    expect(t2.ore[1]).toBe(1);
+    for (let t = 0; t < cycle; t++) t2.tick();
+    expect(t2.ore[1]).toBe(2); // the second cycle at 1.5x: 40 + 60 = 100 < 3 * 40 + 2
+    expect(t2.depositAt(vein.x, vein.y)!.tier).toBe(2);
+  });
+});

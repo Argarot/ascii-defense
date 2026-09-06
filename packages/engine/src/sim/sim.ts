@@ -187,6 +187,13 @@ export const OFFER_EVERY_WAVES = 2;
 export const RELIC_SLOTS = 12;
 /** Ore comes in tiers (Daniil, 2026-09-06: "only ore, in tiers"); three of them, indexed 0..2 in every ore array. */
 export const ORE_TIERS = 3;
+/**
+ * One Refinery mines every tier, higher tiers slower (Daniil's item 4,
+ * 2026-09-06): the cycle on a tier-2 vein takes half again as long, on a
+ * tier-3 vein twice as long. A vein's tier comes from the tile that
+ * carries it (PRD sec 11.1: richer veins are tiles you buy).
+ */
+export const ORE_TIER_CYCLE: readonly number[] = [1, 1.5, 2];
 /** Ore a salvaged relic returns, by rarity (common, rare, epic). */
 export const SALVAGE_ORE: readonly number[] = [10, 20, 35];
 /**
@@ -402,7 +409,8 @@ export class Sim {
    * Ore, stored per tier (invariant 9) with one tier live in M1. Index 0 is
    * tier 1 - what Refineries mine and the Core will spend (PRD sec 6).
    */
-  readonly ore: number[] = [0];
+  /** Ore by tier, ORE_TIERS long (session 29, PR 4); tier 1 is what most of the game pays in. Hashed. */
+  readonly ore: number[] = Array.from({ length: ORE_TIERS }, () => 0);
   coreHp: number;
   coreHpMax: number; // Sandbags (consumable) raise it
   /** 'running' until the Core falls - or the final wave is held (D6). */
@@ -1924,7 +1932,9 @@ export class Sim {
       if (!foundry && (oreShare === 0 || !onVein) && scrapShare === 0) continue; // idle: timer holds
       if (--tower.prodCooldown > 0) continue;
       const eff = this.stats(tower);
-      tower.prodCooldown = eff.productionEveryTicks;
+      // The vein's tier stretches the cycle (item 4); the Core's gift and the Foundry pay at the base cycle.
+      const veinTier = this.cellAt(tower.cellX, tower.cellY) === 'O' ? Math.min(ORE_TIERS, this.depositTier.get(tower.cellY * this.opts.cellsW + tower.cellX) ?? 1) : 1;
+      tower.prodCooldown = Math.max(1, Math.round(eff.productionEveryTicks * ORE_TIER_CYCLE[veinTier - 1]));
       // Deep Vein (relic active): a timed multiplier on every yield.
       const boost = this.tickCount < this.prodBoostUntil ? this.prodBoostMul : 1;
       const yielded = eff.production * boost;
@@ -1941,8 +1951,8 @@ export class Sim {
         const k = tower.cellY * this.opts.cellsW + tower.cellX;
         const left = this.depositLeft.get(k) ?? 0;
         const mined = Math.min(left, Math.round((yielded * oreShare) / total));
-        const tier = this.depositTier.get(k) ?? 1;
-        this.ore[tier - 1] = (this.ore[tier - 1] ?? 0) + mined;
+        const tier = Math.min(ORE_TIERS, this.depositTier.get(k) ?? 1);
+        this.ore[tier - 1] += mined;
         this.depositLeft.set(k, left - mined);
         if (left - mined <= 0) {
           // The vein is spent: ordinary ground remains (PRD sec 6), and the

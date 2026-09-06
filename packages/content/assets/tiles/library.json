@@ -165,6 +165,52 @@
         "GG|GG",
         "GG|GG"
       ]
+    },
+    {
+      "id": "rich_vein",
+      "special": true,
+      "name": "rich vein",
+      "cells": [
+        "GGGGG",
+        "GRRGG",
+        "GOOGG",
+        "GRRGG",
+        "GGGGG"
+      ],
+      "deposits": [
+        {
+          "x": 1,
+          "y": 2,
+          "amount": 60,
+          "tier": 2
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "amount": 60,
+          "tier": 2
+        }
+      ]
+    },
+    {
+      "id": "mother_lode",
+      "special": true,
+      "name": "mother lode",
+      "cells": [
+        "GGGGG",
+        "GRRRG",
+        "GROGG",
+        "GRRGG",
+        "GGGGG"
+      ],
+      "deposits": [
+        {
+          "x": 2,
+          "y": 2,
+          "amount": 90,
+          "tier": 3
+        }
+      ]
     }
   ]
 }
