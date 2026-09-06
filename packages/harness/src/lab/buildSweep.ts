@@ -89,7 +89,8 @@ const P = (towerId: string, choices: [number, number, number]): TowerPlacement =
 // most road), a Bastion 'adjacent' (touching the last tower placed).
 const A = (towerId: string, choices: [number, number, number], at: TowerPlacement['at']): TowerPlacement => ({ towerId, choices, at });
 const EIGHT: [string, TowerPlacement[]][] = [
-  ['Laser line, aimed (Capacitor, Fast Cycle, Cutter) + Frost + Railbore', [A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline'), P('bolt', RAILBORE)]],
+  // A Railbore opens (2026-09-06 evening, the Laser at 110): a build that opens with an unaffordable tower places nothing.
+  ['Railbore, then a Laser line, aimed (Capacitor, Fast Cycle, Cutter) + Frost', [P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')]],
   ['Missiles + Bastion (adjacent) + Railbore', [P('missile', [0, 1, 0]), A('bastion', [0, 0, 0], 'adjacent'), P('bolt', RAILBORE), P('missile', [1, 0, 1]), P('bolt', RAILBORE)]],
   ['Tesla + Bastion (adjacent) + Frost', [P('tesla', [0, 0, 0]), A('bastion', [0, 1, 0], 'adjacent'), P('frost', [1, 0, 1]), P('tesla', [1, 1, 0]), P('tesla', [0, 0, 1])]],
   ['Hailstorm (close quarters) line + Frost + Mortar', mixed('choke', HAILSTORM)],
