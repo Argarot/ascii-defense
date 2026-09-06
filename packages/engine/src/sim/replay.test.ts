@@ -205,7 +205,11 @@ describe('replay (WBS 1.4.8)', () => {
     // passive offer joined the hash (three more lanes, all zero/empty in the
     // golden world - it has no passive pool). Round-trip replay still proves
     // bit-identical.
-    expect(sim.hashState()).toBe(1825542629);
+    // 1825542629 -> 3921408197 on 2026-09-06 evening: the passive layer folded
+    // back into the relic pool (Daniil: passives are relics) and its three
+    // lanes left the hash - the value is the pre-passive one again, which is
+    // the proof that nothing else moved.
+    expect(sim.hashState()).toBe(3921408197);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

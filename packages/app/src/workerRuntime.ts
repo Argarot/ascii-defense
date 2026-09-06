@@ -35,10 +35,8 @@ import {
   type GeneratedMap,
   type LootTable,
   type RelicDef,
-  type PassiveDef,
   type SetDef,
   type RecipeDef,
-  PASSIVE_SLOTS,
   RELIC_SLOTS,
   CHEST_WINDOW,
   RARITIES,
@@ -56,8 +54,6 @@ export interface WorkerRuntimeDeps {
   enemyDefs: readonly EnemyDef[];
   towerDefs: readonly TowerDef[];
   relicDefs: readonly RelicDef[];
-  /** The passive pool (session 28, PR 1). */
-  passiveDefs: readonly PassiveDef[];
   /** Set effects over tags (session 28, PR 2). */
   setDefs: readonly SetDef[];
   /** Duo recipes (session 28, PR 3). */
@@ -70,7 +66,7 @@ const SPEEDS = [0, 1, 2, 4, 8] as const;
 const MIN_SLOTS = 12;
 
 export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
-  const { post, basics, enemyDefs, towerDefs, relicDefs, passiveDefs, setDefs, recipeDefs, lootTables } = deps;
+  const { post, basics, enemyDefs, towerDefs, relicDefs, setDefs, recipeDefs, lootTables } = deps;
   const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs);
 
   // The current run - null until the first successful init. Everything here
@@ -163,7 +159,6 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         mode: 'waves',
         coreHp: 50,
         relicDefs,
-        passiveDefs,
         setDefs,
         recipeDefs,
         lootTables,
@@ -208,7 +203,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
 
   function syncOfferPause(): void {
     if (!sim) return;
-    const up = sim.offer !== null || sim.passiveOffer !== null;
+    const up = sim.offer !== null;
     if (up && !offerWasUp) {
       speedBeforeOffer = speedIdx === 0 ? 1 : speedIdx;
       speedIdx = 0;
@@ -354,14 +349,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           }),
           hoverDesc: (hudHover?.kind === 'relic' && held[hudHover.index])
             ? `${held[hudHover.index].def.name} (${RARITIES[held[hudHover.index].rarity]}) - ${relicDescAt(held[hudHover.index].def, held[hudHover.index].rarity)}`
-            : (hudHover?.kind === 'passive' && s.heldPassiveDefs()[hudHover.index])
-              ? `${s.heldPassiveDefs()[hudHover.index].name} - ${s.heldPassiveDefs()[hudHover.index].desc}`
-              : targeting ? 'click the map to aim, Esc cancels' : null,
+            : targeting ? 'click the map to aim, Esc cancels' : null,
           drawCost: s.drawCost(),
           canDraw: s.ore[0] >= s.drawCost(),
-          // The passive layer (session 28, PR 1): six slots, the held ones first.
-          passives: s.heldPassiveDefs().map((d) => ({ label: slotTag(d.name), name: d.name, id: d.id })),
-          passiveSlots: PASSIVE_SLOTS,
           // Lit sets (session 28, PR 2): a line under the slots.
           sets: s.litSets().map((x) => `${x.name} (${x.tag} ${x.at})`),
           relicSlots: RELIC_SLOTS,
@@ -429,7 +419,6 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
 
     const offer = s.offerDefs();
 
-    const passiveOffer = s.passiveOfferDefs();
     const THREAT = THREAT_LEVELS[threatIdx];
     return {
       board: {
@@ -547,7 +536,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             }
           : null,
       },
-      // A relic offer first; the passive offer stands behind it (both can be dealt on one wave).
+      // The relic offer (the passive layer folded into it 2026-09-06 evening).
       offer: offer
         ? {
             kind: 'relic' as const,
@@ -557,15 +546,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             reroll: { cost: s.rerollCost(), can: s.ore[0] >= s.rerollCost(), ore: s.ore[0] },
             full: s.heldRelics.length >= RELIC_SLOTS,
           }
-        : passiveOffer
-          ? {
-              kind: 'passive' as const,
-              title: s.heldPassives.length >= PASSIVE_SLOTS ? `WAVE ${s.passiveOfferWave} CLEARED - PASSIVES FULL: press 1-3, then click the one it replaces (S skips)` : `WAVE ${s.passiveOfferWave} CLEARED - CHOOSE A PASSIVE (${s.heldPassives.length + 1}/${PASSIVE_SLOTS})`,
-              cards: passiveOffer.map((d) => ({ name: d.name, kind: (d.tags ?? []).join(' ') || 'passive', desc: d.desc })),
-              wave: s.wave,
-              full: s.heldPassives.length >= PASSIVE_SLOTS,
-            }
-          : null,
+        : null,
       events: [...s.events],
       cellChanges: [...s.cellChanges],
       tick: s.tickCount,
@@ -586,7 +567,6 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       killsByTower: [...kills].map(([name, k]) => ({ name, kills: k })).sort((a, b) => b.kills - a.kills),
       met,
       relics: s.heldRelicInfo().map((h) => (h.rarity > 0 ? `${h.def.name} (${RARITIES[h.rarity]})` : h.def.name)),
-      passives: s.heldPassiveDefs().map((d) => d.name),
       relicUses: s.heldRelicInfo().filter((h) => h.uses > 0).map((h) => ({ name: h.def.name, uses: h.uses })).sort((a, b) => b.uses - a.uses),
     };
   }
@@ -601,7 +581,6 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       case 'priority': s.setPriority(a.x, a.y, a.value as 'first'); break;
       case 'facing': s.setFacing(a.x, a.y, a.value); break;
       case 'pickRelic': if (s.pickRelic(a.option, a.replace)) syncOfferPause(); break;
-      case 'pickPassive': if (s.pickPassive(a.option, a.replace)) syncOfferPause(); break;
       case 'skipOffer': if (s.skipOffer()) syncOfferPause(); break;
       case 'salvage': s.salvageRelic(a.index); break;
       case 'combine': s.combineRelics(a.a, a.b); break;
@@ -688,8 +667,6 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'surfaceChest': result = s.debugSurfaceChest(args[0] as number, args[1] as number); break; // not a recorded input
           case 'claimChest': result = s.claimChest(args[0] as number, args[1] as number); break;
           case 'lootLog': result = [...s.lootLog]; break;
-          case 'passives': result = { held: s.heldPassiveDefs().map((d) => d.id), offer: s.passiveOfferDefs()?.map((d) => d.id) ?? null }; break;
-          case 'pickPassive': result = s.pickPassive(args[0] as number); if (result) syncOfferPause(); break;
           case 'grant': result = s.debugGrantRelic(args[0] as string); break; // not a recorded input: replays diverge
           case 'fire': result = s.fireActive(args[0] as string, args[1] as number | undefined, args[2] as number | undefined); break;
           case 'hash': result = s.hashState(); break;

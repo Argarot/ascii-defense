@@ -28,7 +28,6 @@ export type ReplayAction =
   | { t: 'openCache'; x: number; y: number }
   | { t: 'prospect'; x: number; y: number }
   | { t: 'pickRelic'; option: number; replace?: number } // replace = the held index salvaged to make room (session 28, PR 3)
-  | { t: 'pickPassive'; option: number; replace?: number } // the passive layer (session 28, PR 1); replace as above
   | { t: 'skipOffer' } // decline the standing offer (session 28, PR 3)
   | { t: 'salvage'; index: number } // a held relic back for Ore (session 28, PR 3)
   | { t: 'combine'; a: number; b: number } // two held relics into one (session 28, PR 3)

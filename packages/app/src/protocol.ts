@@ -64,8 +64,8 @@ export interface FrameSnapshot {
   board: Omit<RenderState, 'phase' | 'animMs' | 'drift'>;
   /** HudState minus phase, same reason. */
   hud: Omit<HudState, 'phase'>;
-  /** A pick-1-of-3 standing over the board: a relic offer (with reroll) or a passive offer (session 28, PR 1). */
-  offer: { kind: 'relic' | 'passive'; title: string; cards: { name: string; kind: string; desc: string; rarity?: string }[]; wave: number; reroll?: { cost: number; can: boolean; ore: number }; /** Slots full: a pick must name the held one it replaces (session 28, PR 3). */ full: boolean } | null;
+  /** A pick-1-of-3 standing over the board: the relic offer, with reroll (the passive layer folded into it 2026-09-06 evening). */
+  offer: { kind: 'relic'; title: string; cards: { name: string; kind: string; desc: string; rarity?: string }[]; wave: number; reroll?: { cost: number; can: boolean; ore: number }; /** Slots full: a pick must name the held one it replaces (session 28, PR 3). */ full: boolean } | null;
   events: StampedSimEvent[];
   /** The sim's terrain mutations, cumulative - the view applies incrementally. */
   cellChanges: { x: number; y: number; t: string }[];
@@ -76,7 +76,7 @@ export interface FrameSnapshot {
   /** Current speed multiplier, for the main thread's world-ambient clock (4.25). */
   speed: number;
   /** The run's story, once it has ended (session 27): kills by tower, bodies met, relics held. */
-  story?: { killsByTower: { name: string; kills: number }[]; met: { name: string; count: number }[]; relics: string[]; passives: string[]; relicUses: { name: string; uses: number }[] };
+  story?: { killsByTower: { name: string; kills: number }[]; met: { name: string; count: number }[]; relics: string[]; relicUses: { name: string; uses: number }[] };
 }
 
 export type ToWorker =
@@ -94,7 +94,6 @@ export type WorkerAction =
   | { k: 'priority'; x: number; y: number; value: string }
   | { k: 'facing'; x: number; y: number; value: number }
   | { k: 'pickRelic'; option: number; replace?: number }
-  | { k: 'pickPassive'; option: number; replace?: number }
   | { k: 'skipOffer' }
   | { k: 'salvage'; index: number }
   | { k: 'combine'; a: number; b: number }

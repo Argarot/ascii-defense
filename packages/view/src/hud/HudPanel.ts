@@ -136,8 +136,6 @@ export type HudAction =
   | { kind: 'buildId'; id: string }
   | { kind: 'choose'; tier: number; option: number }
   | { kind: 'relic'; index: number }
-  /** A held passive's slot in the strip (session 28, PR 1): hover shows its card. */
-  | { kind: 'passive'; index: number }
   /** The opened relic's card (session 28, PR 3). */
   | { kind: 'salvage'; index: number }
   | { kind: 'combine'; a: number; b: number }
@@ -182,9 +180,6 @@ export interface HudCoreInfo {
   hp: number;
   hpMax: number;
   slots: readonly HudRelicSlot[];
-  /** The passive layer (session 28, PR 1): the held passives, and how many slots a run has. */
-  passives?: readonly { label: string; name: string; id: string }[];
-  passiveSlots?: number;
   /** Lit set effects (session 28, PR 2), as "Name (tag n)". */
   sets?: readonly string[];
   /** Relic slots a run holds (session 28, PR 3). */

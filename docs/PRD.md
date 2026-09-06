@@ -784,15 +784,16 @@ codebase.
 
 ### 7.8 Passives, rarity with teeth, and the relic as an object *(Daniil, 2026-09-05)*
 
-- **Passives are not relics.** A permanent modifier and a found object with
-  a cooldown are different things and should not compete for the same
-  slots. Passives get far more slots than relics do. **D26 decided
-  2026-09-06 (session 28, PR 1)**: a passive is a set of tower mods folded
-  into every tower like a tier, plus economy knobs; six slots a run; one
-  pick every second wave from three offered, until the slots are full;
-  content in `passives/pool.json`, fourteen to start, each tagged for the
-  set effects of PR 2. Tower Dominion's doctrines were the reference for
-  feel, not the shape.
+- **Passives ARE relics** *(Daniil, 2026-09-06 evening, reversing the
+  2026-09-05 line: "passives are also relics, not sure why you have
+  separated them... just relics, just some relics are passives")*. The
+  separate passive layer of session 28 PR 1 (six slots, its own offer,
+  its own row) was built and folded back the same day: its fourteen
+  entries are relics now (`effects.mods` folds tower mods into every
+  tower like a tier; `waveScrap`, `bountyMul` are relic knobs), they
+  salvage and combine like any relic, and the relic offer comes every
+  second wave so the pick rate the two layers had stays. Sets count over
+  relic tags. One pool, twelve slots.
 - **Rarity means power.** D5 weights the pool by rarity; the second half is
   that a rare relic is actually stronger, not merely scarcer.
 - **Single-use, high-damage relics** — a nuke, or something like it — belong

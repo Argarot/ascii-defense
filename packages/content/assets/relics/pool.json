@@ -907,6 +907,335 @@
       }
     },
     {
+      "id": "iron_sights",
+      "name": "Iron Sights",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "reach"
+      ],
+      "stackable": true,
+      "desc": "Every tower reaches one cell further.",
+      "effects": {
+        "mods": {
+          "range": 1
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every tower reaches a cell and a half further.",
+          "effects": {
+            "mods": {
+              "range": 1.5
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every tower reaches two cells further.",
+          "effects": {
+            "mods": {
+              "range": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "hot_loads",
+      "name": "Hot Loads",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
+      "stackable": true,
+      "desc": "Every hit does 15% more.",
+      "effects": {
+        "damageMul": 1.15
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every hit does 25% more.",
+          "effects": {
+            "damageMul": 1.25
+          }
+        },
+        "epic": {
+          "desc": "Every hit does 40% more.",
+          "effects": {
+            "damageMul": 1.4
+          }
+        }
+      }
+    },
+    {
+      "id": "quick_hands",
+      "name": "Quick Hands",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "rate"
+      ],
+      "stackable": true,
+      "desc": "Every tower cycles two ticks faster.",
+      "effects": {
+        "mods": {
+          "fireEveryTicks": -2
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every tower cycles three ticks faster.",
+          "effects": {
+            "mods": {
+              "fireEveryTicks": -3
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every tower cycles five ticks faster.",
+          "effects": {
+            "mods": {
+              "fireEveryTicks": -5
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "deep_cold",
+      "name": "Deep Cold",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "desc": "Every slow is 10% colder.",
+      "effects": {
+        "mods": {
+          "slowMul": -0.1
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every slow is 15% colder.",
+          "effects": {
+            "mods": {
+              "slowMul": -0.15
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every slow is 25% colder.",
+          "effects": {
+            "mods": {
+              "slowMul": -0.25
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "overclock",
+      "name": "Overclock",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "energy"
+      ],
+      "desc": "Every beam heats one multiple higher.",
+      "effects": {
+        "mods": {
+          "beamRampMax": 1
+        }
+      },
+      "tiers": {
+        "epic": {
+          "desc": "Every beam heats two multiples higher.",
+          "effects": {
+            "mods": {
+              "beamRampMax": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "wide_aura",
+      "name": "Wide Aura",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "support"
+      ],
+      "desc": "Every aura reaches one cell further.",
+      "effects": {
+        "mods": {
+          "auraReach": 1
+        }
+      },
+      "tiers": {
+        "epic": {
+          "desc": "Every aura reaches two cells further.",
+          "effects": {
+            "mods": {
+              "auraReach": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rich_seam",
+      "name": "Rich Seam",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Every refinery mines one more Ore a cycle.",
+      "effects": {
+        "mods": {
+          "production": 1
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every refinery mines two more Ore a cycle.",
+          "effects": {
+            "mods": {
+              "production": 2
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every refinery mines three more Ore a cycle.",
+          "effects": {
+            "mods": {
+              "production": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "war_chest",
+      "name": "War Chest",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "Ten Scrap at every wave launch.",
+      "effects": {
+        "waveScrap": 10
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Twenty Scrap at every wave launch.",
+          "effects": {
+            "waveScrap": 20
+          }
+        },
+        "epic": {
+          "desc": "Thirty-five Scrap at every wave launch.",
+          "effects": {
+            "waveScrap": 35
+          }
+        }
+      }
+    },
+    {
+      "id": "bounty_hunter",
+      "name": "Bounty Hunter",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Every bounty pays 25% more.",
+      "effects": {
+        "bountyMul": 1.25
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every bounty pays 50% more.",
+          "effects": {
+            "bountyMul": 1.5
+          }
+        },
+        "epic": {
+          "desc": "Every bounty pays double.",
+          "effects": {
+            "bountyMul": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "tempered_steel",
+      "name": "Tempered Steel",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "damage",
+        "reach"
+      ],
+      "desc": "Every hit does 10% more and every tower reaches half a cell further.",
+      "effects": {
+        "damageMul": 1.1,
+        "mods": {
+          "range": 0.5
+        }
+      },
+      "tiers": {
+        "epic": {
+          "desc": "Every hit does 20% more and every tower reaches a cell further.",
+          "effects": {
+            "damageMul": 1.2,
+            "mods": {
+              "range": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "shield_breaker",
+      "name": "Shield Breaker",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "kinetic",
+        "energy"
+      ],
+      "desc": "Every hit does half again to shields.",
+      "effects": {
+        "mods": {
+          "shieldMul": 0.5
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every hit does double to shields.",
+          "effects": {
+            "mods": {
+              "shieldMul": 1
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every hit does triple to shields.",
+          "effects": {
+            "mods": {
+              "shieldMul": 2
+            }
+          }
+        }
+      }
+    },
+    {
       "id": "permafrost_engine",
       "name": "Permafrost Engine",
       "kind": "passive",

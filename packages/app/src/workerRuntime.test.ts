@@ -48,7 +48,6 @@ function makeRt() {
     basics: BASICS,
     enemyDefs: [WALKER],
     towerDefs: [BOLT],
-    passiveDefs: [],
     setDefs: [],
     recipeDefs: [],
     relicDefs: POOL,
