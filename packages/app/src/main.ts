@@ -466,7 +466,7 @@ async function main(): Promise<void> {
             { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
             { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
             { id: 'palette', label: 'PALETTE', note: meta.settings.palette === 'colourblind' ? 'COLOURBLIND' : 'DEFAULT' },
-            { id: 'sprites', label: 'SPRITE PACK', note: `${(meta.settings.spriteSet ?? 'shipped').toUpperCase()} - click to switch (reloads)` },
+            { id: 'sprites', label: 'SPRITE PACK', note: `${(meta.settings.spriteSet ?? 'shipped').toUpperCase()} (reloads)` },
             { id: 'hints', label: 'FIRST-RUN HINTS', note: meta.settings.onboarded ? 'seen - click to show again' : 'ON' },
             { id: 'export', label: 'EXPORT SAVES' },
             { id: 'import', label: 'IMPORT SAVES' },
