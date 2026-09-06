@@ -1050,6 +1050,17 @@ vein's tier, and the cycle stretches with it - ×1.5 on tier 2, ×2 on tier
 3 (`ORE_TIER_CYCLE`). The HUD reads `ORE 12/3/0` once a higher tier is
 mined; the summary banks by tier; the tree's nodes cost the tier they name.
 
+**Built 2026-09-06 (session 29, PR 5) - the tile shop and the Smith's door.**
+Every shipped special carries a `price` (Ore of one tier; a tile with a
+tier-N vein costs tier-(N-1) Ore, as above); the workshop's TILES page shows
+the ones the tree has opened as previews and a click buys ONE copy - the
+generator guarantees a chosen id once, so the multiset of copies waits for a
+generator that places copies (a knob, not a rule). The loadout pool is the
+minted tiles plus the shipped specials **owned**; a shipped special is no
+longer free. **The Tile Smith opens only once every tile the workshop can
+sell is owned** (Daniil, answer 6): until then the caption under the board
+says what opens it and the link is gone.
+
 This collapses what looked like three systems — ore tiers, the tile pool as
 progression, and Tile Smith as a meta feature — into one. The engine keeps only
 the shape: ore cells carry a tier, costs are expressed per tier.

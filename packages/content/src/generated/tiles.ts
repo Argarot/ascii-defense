@@ -27,6 +27,13 @@ export interface TileLibrary {
        */
       special?: boolean;
       /**
+       * What the workshop charges for one copy (PRD sec 11.1; session 29, PR 5): Ore of one tier. A tile carrying a tier-N vein is bought with tier-(N-1) Ore. A special without a price is not for sale (a minted tile is always owned).
+       */
+      price?: {
+        tier: number;
+        ore: number;
+      };
+      /**
        * Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.
        */
       deposits?: {
@@ -61,6 +68,13 @@ export interface TileLibrary {
        * A SPECIAL tile (2.21, extended 2026-08-19): selectable in the loadout, guaranteed on the map when chosen, never rolled from the random pools. Shipped tiles whose roads touch without merging, or carry two disconnected road segments, carry this flag.
        */
       special?: boolean;
+      /**
+       * What the workshop charges for one copy (PRD sec 11.1; session 29, PR 5): Ore of one tier. A tile carrying a tier-N vein is bought with tier-(N-1) Ore. A special without a price is not for sale (a minted tile is always owned).
+       */
+      price?: {
+        tier: number;
+        ore: number;
+      };
       /**
        * Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.
        */
@@ -133,6 +147,26 @@ export const tilesSchema = {
           "special": {
             "description": "A SPECIAL tile (2.21, extended 2026-08-19): selectable in the loadout, guaranteed on the map when chosen, never rolled from the random pools. Shipped tiles whose roads touch without merging, or carry two disconnected road segments, carry this flag.",
             "type": "boolean"
+          },
+          "price": {
+            "description": "What the workshop charges for one copy (PRD sec 11.1; session 29, PR 5): Ore of one tier. A tile carrying a tier-N vein is bought with tier-(N-1) Ore. A special without a price is not for sale (a minted tile is always owned).",
+            "type": "object",
+            "required": [
+              "tier",
+              "ore"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "tier": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              },
+              "ore": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
           },
           "deposits": {
             "description": "Authored ore veins (2.18): richness placed by the tile's author, overriding the generator's dice for these cells. Must sit on O cells.",

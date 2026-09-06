@@ -83,5 +83,5 @@ export type {
 export { FACING_DX, FACING_DY, FACING_NAME } from './sim/sim';
 export { ORE_TIERS } from './sim/sim';
 // The meta tree (session 29, PR 1): what banked Ore buys between runs, resolved for the shell, the worker and the lab.
-export { resolveUnlocks, whyNot, buyNode, relicForWin, branchNodes, ALL_UNLOCKS, EMPTY_META } from './meta/tree';
-export type { TreeDef, TreeNode, TreeGrant, MetaState, Unlocked } from './meta/tree';
+export { resolveUnlocks, whyNot, buyNode, relicForWin, branchNodes, whyNotTile, buyTile, everyShopTile, smithOpen, ALL_UNLOCKS, EMPTY_META } from './meta/tree';
+export type { TreeDef, TreeNode, TreeGrant, MetaState, Unlocked, ShopTile } from './meta/tree';
