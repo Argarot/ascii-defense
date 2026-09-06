@@ -30,6 +30,8 @@
     "relic.steel": "#c9d6df",
     "relic.stone": "#9aa5ad",
     "relic.void": "#b48cff",
+    "status.burning": "#5a2612",
+    "status.frozen": "#2c5a70",
     "status.slowed": "#16303c",
     "terrain.core.dark": "#0d2b26",
     "terrain.core.lit": "#a8fff2",

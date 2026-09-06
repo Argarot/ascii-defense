@@ -110,7 +110,7 @@ const SECTIONS = {
     '',
     'Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.',
       '',
-      'Statuses show on the body (PRD §8): a cold ~ per slow source beside the walker, a * when frozen, brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.',
+      'Statuses show on the body (PRD §8) as the ground under the walker: cold when slowed, ember when burning, ice when frozen, ember over cold when both hold; brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.',
     '',
     '**Traits are rules** (`packages/engine/src/sim/traits.ts`):',
       '',
@@ -231,7 +231,7 @@ function codexTs() {
     rules: [
       'Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.',
       'Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla, Laser.',
-      'Slows from different sources stack by one rule: the coldest wins, the longest lasts. A cold ~ per source shows beside the walker; * frozen; ! burning; ( ) a live shield.',
+      'Slows from different sources stack by one rule: the coldest wins, the longest lasts. The ground under a walker says its status: cold slowed, ember burning, ice frozen, ember over cold for both; ( ) a live shield.',
       'The two ground cells touching the Core face are precious: every tower has a unique gift there, printed on its card.',
     ],
   };

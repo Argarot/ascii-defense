@@ -653,7 +653,7 @@ export const CODEX = {
   "rules": [
     "Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.",
     "Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla, Laser.",
-    "Slows from different sources stack by one rule: the coldest wins, the longest lasts. A cold ~ per source shows beside the walker; * frozen; ! burning; ( ) a live shield.",
+    "Slows from different sources stack by one rule: the coldest wins, the longest lasts. The ground under a walker says its status: cold slowed, ember burning, ice frozen, ember over cold for both; ( ) a live shield.",
     "The two ground cells touching the Core face are precious: every tower has a unique gift there, printed on its card."
   ]
 } as const;

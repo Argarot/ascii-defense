@@ -799,14 +799,18 @@ the failure that rule exists to prevent.
 
 **Traits show on the enemy, not in a legend.** A shield is drawn as a bracket
 around the glyph and destroyed separately from the body, so any enemy may carry
-one and the player watches it break; status effects and remaining health read off
-marks beside the glyph rather than out of a tooltip.
+one and the player watches it break; remaining health reads off a mark beside
+the glyph, and every status is the GROUND under the walker (Daniil,
+2026-09-06: "visualize with background colour, not additional glyph") -
+never out of a tooltip.
 
 **Every status is visible, and every source is tracked** *(Daniil,
 2026-09-05; shipped 2026-09-05, session 26, WBS 2.31: slows are entries
-with a source, resolved by "the coldest wins, the longest lasts"; a cold
-mark per source and a frozen mark stand beside the walker; Splinter's
-second blast is drawn a beat after the first)*. A slowed enemy shows it; a burning one shows it; a shielded
+with a source, resolved by "the coldest wins, the longest lasts"; Splinter's
+second blast is drawn a beat after the first. 2026-09-06: the per-source
+marks beside the walker became the walker's ground - cold for a slow,
+ember for a burn, ice for a freeze, ember over cold when a burn and a
+slow both hold)*. A slowed enemy shows it; a burning one shows it; a shielded
 one already does. Behind the mark, the sim keeps each effect with its
 source — a slow from a Frost field and a slow from a Concussive shell are
 two entries with two rules for how they stack, not one number overwritten.

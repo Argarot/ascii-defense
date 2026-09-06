@@ -76,6 +76,51 @@ describe('the board as text', () => {
     await expect(term.toText()).toMatchFileSnapshot('__snapshots__/board.golden.txt');
   });
 
+  it('a status is the ground under the walker: cold, ember, ice, and split when a burn and a slow both hold (2026-09-06, item 2)', () => {
+    const { term, view } = world();
+    const base = (extra: Record<string, unknown>): RenderState => ({
+      hover: null, selected: null, towers: [], caches: [], boons: [], animMs: 0, drift: 0, phase: 0,
+      enemies: [{ x: 3.5, y: 2.5, id: 'grunt', hp01: 1, ...extra }],
+    });
+    // Every cell whose ground differs from the plain walker's render: the status, wherever the board put the sprite.
+    const grounds = (extra: Record<string, unknown>): { x: number; y: number; bg: string }[] => {
+      view.render(base({}));
+      const plain: string[][] = [];
+      for (let y = 0; y < term.rows; y++) { plain.push([]); for (let x = 0; x < term.cols; x++) plain[y].push(term.bgAt(x, y)); }
+      view.render(base(extra));
+      const out: { x: number; y: number; bg: string }[] = [];
+      for (let y = 0; y < term.rows; y++) for (let x = 0; x < term.cols; x++) if (term.bgAt(x, y) !== plain[y][x]) out.push({ x, y, bg: term.bgAt(x, y) });
+      return out;
+    };
+    const cold = grounds({ slowed: true });
+    const ember = grounds({ burning: true });
+    const ice = grounds({ frozen: true });
+    expect(cold.length).toBeGreaterThan(0);
+    expect(new Set(cold.map((c) => c.bg)).size).toBe(1);
+    expect(ember[0].bg).not.toBe(cold[0].bg);
+    expect(ice[0].bg).not.toBe(cold[0].bg);
+    expect(ice[0].bg).not.toBe(ember[0].bg);
+    // Under the walker only: the grunt is 3x2, so the painted cells sit within three columns and two rows.
+    const xs = cold.map((c) => c.x);
+    const ys = cold.map((c) => c.y);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThanOrEqual(2);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThanOrEqual(1);
+    // Burn and slow together: ember on the head row, cold on the feet row.
+    const both = grounds({ burning: true, slowed: true });
+    const headRow = Math.min(...both.map((c) => c.y));
+    const feetRow = Math.max(...both.map((c) => c.y));
+    expect(feetRow).toBe(headRow + 1);
+    expect(both.filter((c) => c.y === headRow).every((c) => c.bg === ember[0].bg)).toBe(true);
+    expect(both.filter((c) => c.y === feetRow).every((c) => c.bg === cold[0].bg)).toBe(true);
+    // No glyph marks beside the body any more: the columns left of the walker read the same with and without statuses.
+    view.render(base({}));
+    const plainRows = term.toText().split('\n');
+    view.render(base({ burning: true, slowed: true, slows: 2, frozen: false }));
+    const statusRows = term.toText().split('\n');
+    const x0 = Math.min(...xs);
+    for (const gy of [headRow, feetRow]) expect(statusRows[gy].slice(x0 - 3, x0)).toBe(plainRows[gy].slice(x0 - 3, x0));
+  });
+
   it('a tower sprite lands at its cell and its state follows its choices', () => {
     const { cells, W, H, term, view } = world();
     const a = firstGround(cells, W, H, 0);

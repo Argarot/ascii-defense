@@ -157,7 +157,7 @@ export interface RenderState {
    *  so each enemy type reads differently on the board, plus the readout
    *  state (WBS 2.14): shield bracket, health mark, slow tint. No tooltips -
    *  the enemy itself is the readout (PRD sec 8). */
-  /** frozen and slows (distinct sources) draw as marks beside the walker (WBS 2.31). */
+  /** frozen, burning and slows (distinct sources) colour the ground under the walker (WBS 2.31; 2026-09-06, item 2: colour, not glyphs). */
   enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean; frozen?: boolean; burning?: boolean; slows?: number; k?: number; g?: number }[];
   /** Live towers, in cell coordinates, with their def id for per-type art and
    *  their committed choices for per-state art (sprite v2). */
@@ -201,6 +201,24 @@ export interface RenderState {
   animMs?: number;
   /** Terrain drift step - a slowly advancing integer; 0 = static ground. */
   drift?: number;
+}
+
+/**
+ * The ground under a walker per row, by its statuses (2026-09-06, item 2):
+ * frozen paints every row ice; a burn and a slow together split the body,
+ * ember on top and cold below; one alone paints every row; none is null
+ * (the walker stays transparent over the road).
+ */
+export function statusGround(e: { slowed?: boolean; frozen?: boolean; burning?: boolean; slows?: number }, rows: number): (string | null)[] | null {
+  const slowed = !!e.slowed || (e.slows ?? 0) > 0;
+  if (e.frozen) return Array.from({ length: rows }, () => 'status.frozen');
+  if (e.burning && slowed) {
+    const top = Math.ceil(rows / 2);
+    return Array.from({ length: rows }, (_, r) => (r < top ? 'status.burning' : 'status.slowed'));
+  }
+  if (e.burning) return Array.from({ length: rows }, () => 'status.burning');
+  if (slowed) return Array.from({ length: rows }, () => 'status.slowed');
+  return null;
 }
 
 export class BoardView {
@@ -472,7 +490,10 @@ export class BoardView {
     // instead of snapping cell to cell. Each enemy type has its own look,
     // and the enemy IS its readout (2.14, PRD sec 8): a live shield is a
     // bracket around the glyph (destroyed separately from the body), damage
-    // is a braille mark above, a slow is a cold tint underneath.
+    // is a braille mark above, and every STATUS is the ground under the
+    // walker (Daniil, 2026-09-06: "background colour, not additional
+    // glyph"): cold for a slow, ember for a burn, ice for a freeze - and
+    // when a burn and a slow both hold, the top rows ember, the rest cold.
     const HP_RAMP = ['⡀', '⡄', '⡆', '⡇']; // ⡀⡄⡆⡇ - quarters of a life
     let walker = 0;
     for (const e of state.enemies ?? []) {
@@ -492,24 +513,17 @@ export class BoardView {
         right = left + w - 1;
         top = gy - (h - 1);
         const frame = idleFrame(sp, sp.states[''], state.animMs ?? 0, walker++);
-        drawSpriteFrame(term, sp, frame, left, top, e.slowed ? { groundRole: 'status.slowed' } : { transparent: true });
+        const ground = statusGround(e, h);
+        drawSpriteFrame(term, sp, frame, left, top, ground ? { rowGround: ground } : { transparent: true });
       } else {
         const look = (e.id && ENEMY_LOOK[e.id]) || ENEMY_LOOK.grunt;
-        term.put(gx, gy, look.glyph, role(look.roleName), e.slowed ? '#16303c' : undefined);
+        const ground = statusGround(e, 1);
+        term.put(gx, gy, look.glyph, role(look.roleName), ground?.[0] ? role(ground[0]) : undefined);
       }
       if (e.shielded) {
         term.put(left - 1, gy, '(', role('enemy.shell'));
         term.put(right + 1, gy, ')', role('enemy.shell'));
       }
-      // Every status shows on the body (PRD sec 8, WBS 2.31): a cold '~'
-      // per slow SOURCE stacked up the left side, a '*' when it stands
-      // frozen. The colour presents; the glyph carries it.
-      const marks = e.frozen ? ['*'] : Array.from({ length: Math.min(3, e.slows ?? (e.slowed ? 1 : 0)) }, () => '~');
-      if (e.burning) marks.push('!');
-      marks.forEach((m, i) => {
-        const my = top - i;
-        if (my >= 0) term.put(left - 2, my, m, role(m === '*' ? 'ui.text' : m === '!' ? 'fx.ember' : 'tower.frost.ice_edge'));
-      });
       if (e.hp01 !== undefined && e.hp01 < 0.995) {
         // Glyph AND colour carry the bar (2.25, playtest 9): two braille
         // dots alone are too coarse, so the ramp is 4 glyph steps x 3

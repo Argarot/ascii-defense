@@ -23,6 +23,12 @@ export interface DrawSpriteOptions {
   transparent?: boolean;
   /** Draw at most this many rows (a recoil that must not spill into the cell below). */
   clipRows?: number;
+  /**
+   * A ground role PER ROW for glyphs without a bgInk (2026-09-06, item 2:
+   * a status is the colour under the walker, not a glyph beside it). A
+   * null row stays transparent. Wins over groundRole and transparent.
+   */
+  rowGround?: readonly (string | null)[];
 }
 
 /**
@@ -47,7 +53,8 @@ export function drawSpriteFrame(term: SpriteSurface, sp: Sprite, frame: SpriteFr
       const rn = inkRole === 'PATH' ? 'tower.core' : inkRole;
       const bgRole = bgRow ? sp.inkMap[bgRow[c]] : undefined;
       const ownBg = bgRole === null || bgRole === undefined || bgRole === 'PATH' ? undefined : role(bgRole);
-      const bg = opts.flatFg ? undefined : ownBg ?? (opts.transparent ? undefined : ground);
+      const rowBg = opts.rowGround ? (opts.rowGround[r] ? role(opts.rowGround[r] as string) : undefined) : undefined;
+      const bg = opts.flatFg ? undefined : ownBg ?? (opts.rowGround ? rowBg : opts.transparent ? undefined : ground);
       term.put(gx0 + c, gy0 + r, chr, opts.flatFg ? role(opts.flatFg) : role(rn), bg);
     }
   }
