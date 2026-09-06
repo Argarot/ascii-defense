@@ -102,7 +102,11 @@ async function main(): Promise<void> {
   const effects = new EffectsLayer();
   // UI surfaces at UI_SCALE: the same pixel height as the board, so the
   // modal covers it exactly (the old /2 rounding left an 8 px gap).
-  const uiRows = Math.floor(boardRows / UI_SCALE);
+  // The column runs the whole left column's height - board AND strip - so
+  // nothing under it is blank (feedback 2026-09-06, item 3). The modal
+  // keeps the board's height: it covers the board, not the strip.
+  const uiRows = Math.floor((boardRows + STRIP_ROWS) / UI_SCALE);
+  const modalRows = Math.floor(boardRows / UI_SCALE);
   const hudTerm = new GLTerm(glyphs, { cols: HUD_COLS, rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, background: role('ui.bg') });
   const hud = new HudPanel(hudTerm, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE, SPRITES);
   // The strip (4.27): a full-width panel under the board at the HUD's
@@ -112,6 +116,9 @@ async function main(): Promise<void> {
   const stripTerm = new GLTerm(glyphs, { cols: boardCols, rows: STRIP_ROWS, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
   const strip = new StripPanel(stripTerm, GLYPH_PX_W, GLYPH_PX_H, SPRITES);
   let stripHover: HudAction | null = null;
+  /** What the last copy button put on the clipboard, shown on the button for a moment (feedback 2026-09-06). */
+  let lastCopied: 'code' | 'seed' | null = null;
+  const copyLabel = (what: 'code' | 'seed', label: string): string => (lastCopied === what ? `${label} - COPIED` : label);
   // The opened held relic (session 28, PR 3) and a pick waiting for the slot it replaces.
   let selectedRelic: number | null = null;
   let pendingReplace: { kind: 'relic' | 'passive'; option: number } | null = null;
@@ -121,7 +128,7 @@ async function main(): Promise<void> {
   // arrive in. The ring keeps the last few snapshots for that.
   const clock = new RenderClock<FrameSnapshot>();
   let worldMs = 0;
-  const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: uiRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, transparent: true });
+  const modalTerm = new GLTerm(glyphs, { cols: Math.floor(boardCols / UI_SCALE), rows: modalRows, cellPx: GLYPH_PX_W * UI_SCALE, cellPxH: GLYPH_PX_H * UI_SCALE, transparent: true });
   modalTerm.canvas.style.position = 'absolute';
   modalTerm.canvas.style.left = '0';
   modalTerm.canvas.style.top = '0';
@@ -429,7 +436,8 @@ async function main(): Promise<void> {
           ],
           items: [
             { id: 'resume', label: 'RESUME' },
-            { id: 'copycode', label: 'COPY RUN CODE' },
+            { id: 'copycode', label: copyLabel('code', 'COPY RUN CODE') },
+            { id: 'copyseed', label: copyLabel('seed', `COPY SEED ${seed}`) },
             { id: 'howto', label: 'HOW TO PLAY' },
             { id: 'settings', label: 'SETTINGS' },
             { id: 'abandon', label: 'SAVE & EXIT TO TITLE' },
@@ -460,7 +468,8 @@ async function main(): Promise<void> {
               ],
               items: [
                 { id: 'again', label: summary.won ? 'GO AGAIN' : 'TRY AGAIN' },
-                { id: 'copycode', label: 'COPY RUN CODE' },
+                { id: 'copycode', label: copyLabel('code', 'COPY RUN CODE') },
+                { id: 'copyseed', label: copyLabel('seed', `COPY SEED ${summary.seed}`) },
                 { id: 'title', label: 'TITLE' },
               ],
               footer: 'the next run starts where this one taught you',
@@ -708,10 +717,15 @@ async function main(): Promise<void> {
         location.reload();
         break;
       }
-      case 'copycode': {
-        // Fire-and-forget: display is the contract, the clipboard a courtesy.
-        const code = mode === 'summary' && summary ? runCode(summary.seed) : runCode(seed);
-        void navigator.clipboard?.writeText(code).catch(() => { /* display remains */ });
+      case 'copycode':
+      case 'copyseed': {
+        // Display is the contract, the clipboard a courtesy - but a courtesy
+        // that says when it happened (feedback 2026-09-06: "make it possible
+        // to copy those numbers from there").
+        const forSeed = mode === 'summary' && summary ? summary.seed : seed;
+        const text = id === 'copycode' ? runCode(forSeed) : String(forSeed);
+        const what = id === 'copycode' ? 'code' : 'seed';
+        void navigator.clipboard?.writeText(text).then(() => { lastCopied = what; setTimeout(() => { if (lastCopied === what) lastCopied = null; }, 2500); }).catch(() => { /* display remains */ });
         break;
       }
       case 'resume': mode = 'playing'; send({ t: 'speed', idx: 0 }); send({ t: 'speed', idx: mirroredSpeed }); break;
@@ -742,6 +756,7 @@ async function main(): Promise<void> {
       return;
     }
     selected = same(cell, selected) ? null : cell;
+    selectedRelic = null; // the relic card follows the eye (feedback 2026-09-06, item 2)
   });
 
   hudTerm.canvas.addEventListener('mousemove', (e) => { hudHover = hud.actionAt(e.offsetX, e.offsetY); });
@@ -893,6 +908,7 @@ async function main(): Promise<void> {
     }
     if (e.key === 'Escape') {
       if (targeting) { targeting = null; return; }
+      if (selectedRelic !== null) { selectedRelic = null; return; }
       if (selected) { selected = null; return; }
       // The pause SCREEN pauses the WORLD - a menu over a running sim would
       // be the hidden-tab lie in reverse.
