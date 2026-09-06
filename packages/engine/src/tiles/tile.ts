@@ -53,6 +53,8 @@ export interface TileDef {
   /** Authored overlays (2.18): deposits sit on ore cells, boons on ground. */
   deposits?: TileDeposit[];
   boons?: TileBoon[];
+  /** The workshop's price for one copy (PRD sec 11.1; session 29, PR 5): Ore of one tier. Absent = not for sale. */
+  price?: { tier: number; ore: number };
 }
 
 export type Edge = 'n' | 'e' | 's' | 'w';

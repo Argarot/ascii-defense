@@ -175,3 +175,49 @@ export function relicForWin(tree: TreeDef, meta: MetaState, relicDefs: readonly 
 export function branchNodes(tree: TreeDef, branch: TreeNode['branch']): TreeNode[] {
   return tree.nodes.filter((n) => n.branch === branch);
 }
+
+/** A tile the workshop may sell: its id and its price. */
+export interface ShopTile {
+  id: string;
+  price?: { tier: number; ore: number };
+}
+
+/**
+ * Why a tile cannot be bought now, or null (PRD sec 11.1; session 29, PR 5).
+ * One copy each: the generator guarantees a chosen id once, so a second
+ * copy would buy nothing (the multiset of sec 11.1 waits for a generator
+ * that places copies).
+ */
+export function whyNotTile(unlocked: Unlocked, owned: Readonly<Record<string, number>>, ore: readonly number[], tile: ShopTile): string | null {
+  if (!tile.price) return 'not for sale';
+  if ((owned[tile.id] ?? 0) > 0) return 'owned';
+  if (!unlocked.tiles.has(tile.id)) return 'the tree has not opened it';
+  const have = ore[tile.price.tier - 1] ?? 0;
+  if (have < tile.price.ore) return `needs ${tile.price.ore} tier-${tile.price.tier} ore (have ${have})`;
+  return null;
+}
+
+/** Buy one copy: the new owned record and the Ore left, or null when whyNotTile says no. Pure - the caller saves. */
+export function buyTile(unlocked: Unlocked, owned: Readonly<Record<string, number>>, ore: readonly number[], tile: ShopTile): { owned: Record<string, number>; ore: number[] } | null {
+  if (whyNotTile(unlocked, owned, ore, tile) !== null) return null;
+  const next = [...ore];
+  next[tile.price!.tier - 1] -= tile.price!.ore;
+  return { owned: { ...owned, [tile.id]: (owned[tile.id] ?? 0) + 1 }, ore: next };
+}
+
+/** Every tile the tree can ever sell - the base's and every node's. */
+export function everyShopTile(tree: TreeDef): string[] {
+  const ids = new Set<string>(tree.base.tiles ?? []);
+  for (const n of tree.nodes) for (const t of n.grants.tiles ?? []) ids.add(t);
+  return [...ids];
+}
+
+/**
+ * The Tile Smith opens only once every purchasable tile is owned (Daniil,
+ * answer 6, 2026-09-06): the authorship endgame comes after the pool.
+ */
+export function smithOpen(tree: TreeDef, owned: Readonly<Record<string, number>>): { open: boolean; owned: number; total: number } {
+  const all = everyShopTile(tree);
+  const have = all.filter((id) => (owned[id] ?? 0) > 0).length;
+  return { open: all.length > 0 && have === all.length, owned: have, total: all.length };
+}

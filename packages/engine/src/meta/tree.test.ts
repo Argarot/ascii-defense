@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_UNLOCKS, EMPTY_META, buyNode, relicForWin, resolveUnlocks, whyNot, type TreeDef } from './tree';
+import { ALL_UNLOCKS, EMPTY_META, buyNode, buyTile, everyShopTile, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
 
 const TREE: TreeDef = {
-  base: { towers: ['bolt'], relics: ['tithe'], relicSlots: 6, threat: 1, tileSlots: 1, oreTier: 1 },
+  base: { towers: ['bolt'], relics: ['tithe'], relicSlots: 6, threat: 1, tileSlots: 1, oreTier: 1, tiles: ['twin'] },
   nodes: [
     { id: 'tesla', name: 'Tesla', branch: 'arsenal', desc: '', cost: { tier: 1, ore: 40 }, grants: { towers: ['tesla'] } },
     { id: 'laser', name: 'Laser', branch: 'arsenal', desc: '', cost: { tier: 1, ore: 80 }, requires: ['tesla'], grants: { towers: ['laser'] } },
     { id: 'cold', name: 'Cold', branch: 'reliquary', desc: '', cost: { tier: 1, ore: 30 }, grants: { relicTags: ['cold'] } },
     { id: 'slots', name: 'Slots', branch: 'capacity', desc: '', cost: { tier: 2, ore: 30 }, grants: { relicSlots: 2 } },
     { id: 'grim', name: 'Grim', branch: 'threat', desc: '', cost: { tier: 1, ore: 80 }, grants: { threat: 2, endless: true } },
+    { id: 'ore2', name: 'Rich', branch: 'ore', desc: '', cost: { tier: 1, ore: 10 }, grants: { oreTier: 2, tiles: ['rich'] } },
   ],
 };
 const RELICS = [
@@ -81,5 +82,27 @@ describe('the meta tree (session 29, PR 1)', () => {
     expect(relicForWin(TREE, won, RELICS, 2, 5)).toBeNull();
     // A locked branch earns nothing (kindling is energy).
     expect(relicForWin(TREE, { ...EMPTY_META, unlocks: [] }, RELICS, 1, 5)).toBeNull();
+  });
+});
+
+describe('the tile shop and the Smith\'s door (session 29, PR 5)', () => {
+  const TWIN = { id: 'twin', price: { tier: 1, ore: 25 } };
+  const RICH = { id: 'rich', price: { tier: 1, ore: 60 } };
+  const FREE = { id: 'minted_thing' };
+
+  it('a tile is bought once, in its tier, only once the tree opened it; the Smith opens when every tile is owned', () => {
+    const base = resolveUnlocks(TREE, EMPTY_META, RELICS);
+    expect(whyNotTile(base, {}, [10, 0, 0], TWIN)).toMatch(/needs 25 tier-1 ore/);
+    expect(whyNotTile(base, {}, [100, 0, 0], RICH)).toBe('the tree has not opened it');
+    expect(whyNotTile(base, {}, [100, 0, 0], FREE)).toBe('not for sale');
+    const b = buyTile(base, {}, [30, 0, 0], TWIN);
+    expect(b).toEqual({ owned: { twin: 1 }, ore: [5, 0, 0] });
+    expect(whyNotTile(base, b!.owned, [100, 0, 0], TWIN)).toBe('owned');
+    expect(buyTile(base, b!.owned, [100, 0, 0], TWIN)).toBeNull();
+    expect(everyShopTile(TREE).sort()).toEqual(['rich', 'twin']);
+    expect(smithOpen(TREE, b!.owned)).toEqual({ open: false, owned: 1, total: 2 });
+    const opened = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['ore2'] }, RELICS);
+    const c = buyTile(opened, b!.owned, [60, 0, 0], RICH)!;
+    expect(smithOpen(TREE, c.owned)).toEqual({ open: true, owned: 2, total: 2 });
   });
 });

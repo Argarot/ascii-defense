@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes } from '@ascii-defense/engine';
+import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, smithOpen } from '@ascii-defense/engine';
 import type { TreeNode } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
 import { loadMintedProblems, loadMintedTiles, removeMintedTile } from './mintedTiles';
@@ -213,14 +213,18 @@ async function main(): Promise<void> {
   type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary' | 'workshop' | 'history';
   // The workshop (session 29, PR 2; PRD sec 11): the tree's branches as
   // pages, banked Ore as the currency, a node bought with one click.
-  let workshopBranch: TreeNode['branch'] = 'arsenal';
-  const BRANCHES: { id: TreeNode['branch']; label: string }[] = [
+  type WorkshopPage = TreeNode['branch'] | 'tiles';
+  let workshopBranch: WorkshopPage = 'arsenal';
+  const BRANCHES: { id: WorkshopPage; label: string }[] = [
     { id: 'arsenal', label: 'ARSENAL' },
     { id: 'reliquary', label: 'RELIQUARY' },
     { id: 'capacity', label: 'CAPACITY' },
     { id: 'threat', label: 'THREAT' },
     { id: 'ore', label: 'ORE' },
+    { id: 'tiles', label: 'TILES' },
   ];
+  /** The loadout pool (PRD sec 11.1; session 29, PR 5): minted tiles are always owned; a shipped special only once bought. */
+  const ownedSpecials = (): TileDef[] => shippedSpecials.filter((t) => (meta.owned[t.id] ?? 0) > 0);
   /** What the tree has granted, resolved from the meta save as it is NOW (the page after a purchase reads the purchase). */
   const unlockedNow = () => resolveUnlocks(TREE, meta, RELIC_POOL);
   let setupEndless = false;
@@ -392,11 +396,23 @@ async function main(): Promise<void> {
   const cap = document.createElement('div');
   cap.className = 'hud';
   cap.textContent = `spleen 5x8 \u2802 ${CELL_W}x${CELL_H} glyph cells \u2802 ${mapX}x${mapY} tiles \u2802 space pauses, 1-4 set speed, N calls the wave, Esc menus \u2802 `;
+  // The Tile Smith's door (Daniil, answer 6, 2026-09-06): the link appears
+  // only once every tile the workshop sells is owned; until then the caption
+  // says what opens it.
   const smithLink = document.createElement('a');
   smithLink.href = 'tilesmith.html';
   smithLink.textContent = 'tile smith ->';
   smithLink.style.color = '#4cc9f0';
+  const smithLocked = document.createElement('span');
+  smithLocked.style.color = '#4b5a6a';
   cap.appendChild(smithLink);
+  cap.appendChild(smithLocked);
+  const smithDoor = (): void => {
+    const s = smithOpen(TREE, meta.owned);
+    smithLink.style.display = s.open ? '' : 'none';
+    smithLocked.textContent = s.open ? '' : `tile smith: locked - own every workshop tile to open it (${s.owned}/${s.total})`;
+  };
+  smithDoor();
   leftCol.appendChild(cap);
 
   // ---- screens -------------------------------------------------------------
@@ -451,7 +467,7 @@ async function main(): Promise<void> {
         // minted tiles plus the shipped specials, PAGED (playtest 18).
         const minted = loadMintedTiles();
         const problems = loadMintedProblems();
-        const pool = [...minted, ...shippedSpecials];
+        const pool = [...minted, ...ownedSpecials()];
         const pages = Math.max(1, Math.ceil(pool.length / TILES_PER_PAGE));
         const page = Math.min(loadoutPage, pages - 1);
         const shown = pool.slice(page * TILES_PER_PAGE, (page + 1) * TILES_PER_PAGE);
@@ -462,7 +478,7 @@ async function main(): Promise<void> {
               ? 'click a MINTED tile to remove it permanently (shipped tiles stay)'
               : pool.length > 0
                 ? `load up to ${loadoutSlots()} special tiles - a loaded tile is GUARANTEED on the map`
-                : 'no special tiles yet - the tile smith mints them',
+                : 'no special tiles yet - the workshop sells them, the tile smith mints them',
             // Tiles the pool holds but cannot offer, and why - never silent.
             ...problems.slice(0, 4).map((p) => `not offered: ${p.id} - ${p.problem}`),
             ...(problems.length > 4 ? [`and ${problems.length - 4} more - fix them in the tile smith`] : []),
@@ -490,8 +506,34 @@ async function main(): Promise<void> {
         // nodes as rows - the price or the reason it cannot be bought on the
         // right, BOUGHT when it was. The body carries each node's sentence.
         const u = unlockedNow();
-        const nodes = branchNodes(TREE, workshopBranch);
         const ore = meta.ore;
+        if (workshopBranch === 'tiles') {
+          // The tile shop (PRD sec 11.1; session 29, PR 5): the specials the
+          // tree has opened, SEEN as previews (sec 4.8), one copy each; a
+          // click buys. The Smith's door opens when every one is owned.
+          const forSale = shippedSpecials.filter((t) => t.price);
+          const smith = smithOpen(TREE, meta.owned);
+          return {
+            title: 'WORKSHOP - TILES',
+            body: [
+              `banked ore: ${ore[0]} tier 1 \u2802 ${ore[1]} tier 2 \u2802 ${ore[2]} tier 3`,
+              'a bought tile joins the loadout pool; a loaded tile is guaranteed on the map',
+              smith.open ? 'every tile is yours: THE TILE SMITH IS OPEN (the link under the board)' : `the tile smith opens when every tile is owned (${smith.owned}/${smith.total})`,
+              '',
+              ...forSale.map((t) => {
+                const why = whyNotTile(u, meta.owned, ore, t);
+                return `${t.name ?? t.id}: ${why === null ? `BUY - ${t.price!.ore} tier-${t.price!.tier} ore - click the tile` : why === 'owned' ? 'OWNED' : why}`;
+              }),
+            ],
+            tiles: forSale.map((t) => ({ id: t.id, cells: t.cells, selected: (meta.owned[t.id] ?? 0) > 0 })),
+            items: [
+              ...BRANCHES.map((b) => ({ id: `br:${b.id}`, label: b.label, selected: b.id === workshopBranch, note: b.id === 'tiles' ? `${smith.owned}/${smith.total}` : `${branchNodes(TREE, b.id).filter((n) => meta.unlocks.includes(n.id)).length}/${branchNodes(TREE, b.id).length}` })),
+              { id: 'back', label: 'BACK' },
+            ],
+            footer: 'a framed tile is owned; a tile carrying a tier-N vein costs tier-(N-1) ore',
+          };
+        }
+        const nodes = branchNodes(TREE, workshopBranch);
         return {
           title: 'WORKSHOP',
           body: [
@@ -501,7 +543,7 @@ async function main(): Promise<void> {
             ...nodes.flatMap((n) => wrapLine(`${n.name}: ${n.desc}`, Math.min(90, screenCols - 12))),
           ],
           items: [
-            ...BRANCHES.map((b) => ({ id: `br:${b.id}`, label: b.label, selected: b.id === workshopBranch, note: `${branchNodes(TREE, b.id).filter((n) => meta.unlocks.includes(n.id)).length}/${branchNodes(TREE, b.id).length}` })),
+            ...BRANCHES.map((b) => ({ id: `br:${b.id}`, label: b.label, selected: b.id === workshopBranch, note: b.id === 'tiles' ? `${smithOpen(TREE, meta.owned).owned}/${smithOpen(TREE, meta.owned).total}` : `${branchNodes(TREE, b.id).filter((n) => meta.unlocks.includes(n.id)).length}/${branchNodes(TREE, b.id).length}` })),
             ...nodes.map((n) => {
               const why = whyNot(TREE, meta, meta.ore, n.id);
               const bought = meta.unlocks.includes(n.id);
@@ -718,7 +760,19 @@ async function main(): Promise<void> {
       return;
     }
     if (id.startsWith('br:')) {
-      workshopBranch = id.slice('br:'.length) as TreeNode['branch'];
+      workshopBranch = id.slice('br:'.length) as WorkshopPage;
+      return;
+    }
+    if (id.startsWith('tile:') && mode === 'workshop') {
+      // A purchase (session 29, PR 5): pure in the engine, saved here; the Smith's door follows.
+      const t = shippedSpecials.find((x) => x.id === id.slice('tile:'.length));
+      const bought = t ? buyTile(unlockedNow(), meta.owned, meta.ore, t) : null;
+      if (bought) {
+        meta.owned = bought.owned;
+        meta.ore = bought.ore;
+        saveMeta(meta);
+        smithDoor();
+      }
       return;
     }
     if (id.startsWith('node:')) {
@@ -773,7 +827,7 @@ async function main(): Promise<void> {
         loadoutPage = loadoutPage + 1; // clamped against the pool at render
         break;
       case 'start': {
-        const pool = [...loadMintedTiles(), ...shippedSpecials];
+        const pool = [...loadMintedTiles(), ...ownedSpecials()];
         const defs = setupLoadout
           .map((tid) => pool.find((t) => t.id === tid))
           .filter((t): t is NonNullable<typeof t> => t !== undefined);
@@ -1201,6 +1255,8 @@ async function main(): Promise<void> {
     buy: (id: string): boolean => { const b = buyNode(TREE, meta, meta.ore, id); if (b) { meta.unlocks = [...b.meta.unlocks]; meta.ore = b.ore; saveMeta(meta); } return b !== null; },
     unlocked: () => { const u = unlockedNow(); return { towers: [...u.towers], relics: u.relics.size, relicSlots: u.relicSlots, threatMax: u.threatMax, tileSlots: u.tileSlots, endless: u.endless, everything: u.everything }; },
     bank: (ore: number[]): void => { meta.ore = [...ore]; saveMeta(meta); },
+    buyTile: (id: string): boolean => { const t = shippedSpecials.find((x) => x.id === id); const b = t ? buyTile(unlockedNow(), meta.owned, meta.ore, t) : null; if (b) { meta.owned = b.owned; meta.ore = b.ore; saveMeta(meta); smithDoor(); } return b !== null; },
+    smith: () => ({ ...smithOpen(TREE, meta.owned), linkShown: smithLink.style.display !== 'none', caption: smithLocked.textContent }),
     relicsHeld: () => debug('relicsHeld'),
     salvage: (index: number) => debug('salvage', index),
     combine: (a: number, b: number) => debug('combine', a, b),
