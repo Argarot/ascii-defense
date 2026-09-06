@@ -193,7 +193,7 @@ export class StripPanel {
     if (c && cw >= 20) {
       // The column already shows the Core's health; here the card is the
       // slots and the actives only (feedback 2026-09-06, item 3).
-      term.write(cx, 0, `THE CORE - relics and actives ${c.slots.filter((x) => x.state !== 'empty').length}/${c.relicSlots ?? c.slots.length} - click one for its card`.slice(0, cw), role('terrain.core.lit'));
+      term.write(cx, 0, `THE CORE - relics and actives ${c.slots.filter((x) => x.state !== 'empty' && x.state !== 'locked').length}/${c.relicSlots ?? c.slots.length} - click one for its card`.slice(0, cw), role('terrain.core.lit'));
       // Square slots, one row: the HUD's grid at 5x3, as many as fit.
       const slotW = 5;
       const slotH = 3;
@@ -203,7 +203,7 @@ export class StripPanel {
         const x0 = cx + (i % perRow) * slotW;
         const rowBase = 2 + Math.floor(i / perRow) * slotH;
         const [fg, sbg] =
-          slot.state === 'empty'
+          slot.state === 'empty' || slot.state === 'locked'
             ? [grid, bg]
             : slot.state === 'ready'
               ? [bg, accent]
@@ -217,6 +217,9 @@ export class StripPanel {
         if (slot.state === 'empty') {
           term.put(x0, rowBase, '┌', fg); term.put(x0 + 3, rowBase, '┐', fg);
           term.put(x0, rowBase + 2, '└', fg); term.put(x0 + 3, rowBase + 2, '┘', fg);
+        } else if (slot.state === 'locked') {
+          // A slot the tree has not granted yet (session 29, PR 1): a dim cross, no frame - the ladder is visible.
+          term.put(x0 + 1, rowBase + 1, 'x', dim); term.put(x0 + 2, rowBase + 1, 'x', dim);
         } else {
           const rsp = slot.id ? this.sprites.get(`relic_${slot.id}`) : undefined;
           if (rsp) drawSpriteFrame(term, rsp, rsp.states[''], x0, rowBase, slot.state === 'cooling' ? { flatFg: 'ui.dim' } : { transparent: true });

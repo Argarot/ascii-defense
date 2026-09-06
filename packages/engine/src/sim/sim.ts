@@ -87,6 +87,15 @@ export interface SimOptions {
   difficulty?: DifficultySpec;
   /** Hold this wave and the run is WON (D6). 0 = endless (tests, demos). */
   finalWave?: number;
+  /** Relic slots the Core holds (session 29, PR 1: the tree grows it from six); RELIC_SLOTS when absent. */
+  relicSlots?: number;
+  /**
+   * Relic id -> the highest rarity it was ever forged to (session 29, PR 1;
+   * Daniil's item 2: tiers unlock by forging). With caps given the offer
+   * never deals a rarity above max(base, forged); absent = no cap (tests,
+   * the lab, a save from before the tree).
+   */
+  relicCaps?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -176,6 +185,8 @@ export const EVENT_CAP = 256;
 export const OFFER_EVERY_WAVES = 2;
 /** Relic slots a run holds (session 28, PR 3): a full row is a decision - replace, salvage or combine - never a wall. */
 export const RELIC_SLOTS = 12;
+/** Ore comes in tiers (Daniil, 2026-09-06: "only ore, in tiers"); three of them, indexed 0..2 in every ore array. */
+export const ORE_TIERS = 3;
 /** Ore a salvaged relic returns, by rarity (common, rare, epic). */
 export const SALVAGE_ORE: readonly number[] = [10, 20, 35];
 /**
@@ -414,6 +425,12 @@ export class Sim {
   /** The rarity of each held relic and of each offered card (0 common, 1 rare, 2 epic; session 28, PR 2). Hashed. */
   readonly heldRarity: number[] = [];
   offerRarity: number[] = [];
+  /** Relic id -> the highest rarity forged THIS run by same-kind combines (session 29, PR 1); the meta save records it. Not hashed. */
+  readonly forgedThisRun = new Map<string, number>();
+  /** Fusion results reached this run (recipes), for the codex's discoveries. Not hashed. */
+  readonly fusedThisRun = new Set<string>();
+  /** Slots the Core holds this run (the tree's number, or RELIC_SLOTS). */
+  readonly relicSlots: number;
   /** Per held relic: how often its rule fired and the tick it last did (session 28, PR 3; presentation, not hashed). */
   readonly heldUses: number[] = [];
   readonly heldLastUse: number[] = [];
@@ -522,6 +539,7 @@ export class Sim {
     this.interWaveTicks = opts.interWaveTicks ?? 800; // 40 s launch-to-launch (design round 1)
     this.difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
     this.finalWave = opts.finalWave ?? 0;
+    this.relicSlots = opts.relicSlots ?? RELIC_SLOTS;
     this.waveTimer = (opts.firstWaveWaits ?? true) ? -1 : Math.min(this.interWaveTicks, 60);
     this.occupancy = new Uint16Array(opts.cellsW * opts.cellsH);
     this.cellsMut = opts.cells.slice();
@@ -983,6 +1001,8 @@ export class Sim {
     const sameKind = defs[this.heldRelics[a]].id === target.resultId;
     if (sameKind) {
       this.heldRarity[a] = this.heldRarity[a] + 1;
+      const fid = defs[this.heldRelics[a]].id;
+      this.forgedThisRun.set(fid, Math.max(this.forgedThisRun.get(fid) ?? 0, this.heldRarity[a]));
       this.spliceHeld(b);
     } else {
       const di = defs.findIndex((d) => d.id === target.resultId);
@@ -992,6 +1012,7 @@ export class Sim {
       this.spliceHeld(hi);
       this.spliceHeld(lo);
       this.pushHeld(di, rarity);
+      this.fusedThisRun.add(defs[di].id);
     }
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'combine', a, b } });
@@ -1020,7 +1041,11 @@ export class Sim {
     const epic = 10 + Math.floor(this.wave / 2);
     const roll = this.rng.stream('relics').int(0, common + rare + epic - 1);
     const rolled = roll < common ? 0 : roll < common + rare ? 1 : 2;
-    return Math.max(base, rolled);
+    // Tiers unlock by forging (session 29, PR 1; item 2): with caps given, a
+    // rarity above the base is dealt only once this relic was forged to it.
+    const caps = this.opts.relicCaps;
+    const cap = caps ? Math.max(base, caps[def.id] ?? 0) : RARITIES.length - 1;
+    return Math.max(base, Math.min(cap, rolled));
   }
 
   /** Held relic effects at their rarity, by held index. */
@@ -1085,7 +1110,7 @@ export class Sim {
   pickRelic(option: number, replace?: number): boolean {
     if (this.status !== 'running') return false;
     if (!this.offer || option < 0 || option >= this.offer.length) return false;
-    if (this.heldRelics.length >= RELIC_SLOTS) {
+    if (this.heldRelics.length >= this.relicSlots) {
       if (replace === undefined || replace < 0 || replace >= this.heldRelics.length) return false;
       this.ore[0] += this.salvageOre(replace);
       this.spliceHeld(replace);

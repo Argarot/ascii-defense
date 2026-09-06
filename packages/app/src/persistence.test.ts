@@ -18,7 +18,7 @@ describe('meta save', () => {
     const s = store({ [META_KEY]: JSON.stringify({ version: 2, bankedOre: 2896, settings: { reducedMotion: true }, history: [{ seed: 1, threat: 'Calm', wave: 14, status: 'lost', kills: 300 }] }) });
     const { meta, problem } = loadMetaFrom(s);
     expect(problem).toBeNull();
-    expect(meta.bankedOre).toBe(2896);
+    expect(meta.ore).toEqual([2896, 0, 0]);
     expect(meta.history).toHaveLength(1);
     expect(meta.settings.reducedMotion).toBe(true);
     expect(meta.version).toBe(META_VERSION);
@@ -27,7 +27,7 @@ describe('meta save', () => {
   it('loads v1 and v3 the same way', () => {
     for (const v of [1, 3]) {
       const s = store({ [META_KEY]: JSON.stringify({ version: v, bankedOre: 7, settings: { reducedMotion: null }, history: [] }) });
-      expect(loadMetaFrom(s)).toEqual({ meta: { ...defaultMeta(), bankedOre: 7 }, problem: null });
+      expect(loadMetaFrom(s)).toEqual({ meta: { ...defaultMeta(), ore: [7, 0, 0] }, problem: null });
     }
   });
 
@@ -37,7 +37,7 @@ describe('meta save', () => {
       const { meta, problem } = loadMetaFrom(store({ [META_KEY]: raw }));
       // Whatever the problem, the caller can always push to history.
       expect(Array.isArray(meta.history), raw).toBe(true);
-      expect(typeof meta.bankedOre, raw).toBe('number');
+      expect(Array.isArray(meta.ore), raw).toBe(true);
       if (raw !== '{"version":3}') expect(problem, raw).not.toBeNull();
     }
   });
@@ -57,18 +57,44 @@ describe('meta save', () => {
 
   it('saveMeta stamps META_VERSION, independent of SAVE_VERSION', () => {
     const s = store();
-    saveMetaTo(s, { ...defaultMeta(), version: 1, bankedOre: 3 });
-    const written = JSON.parse(s.map.get(META_KEY)!) as { version: number; bankedOre: number };
+    saveMetaTo(s, { ...defaultMeta(), version: 1, ore: [3, 0, 0] });
+    const written = JSON.parse(s.map.get(META_KEY)!) as { version: number; ore: number[] };
     expect(written.version).toBe(META_VERSION);
-    expect(written.bankedOre).toBe(3);
+    expect(written.ore).toEqual([3, 0, 0]);
+  });
+
+  it('v4 (session 29, PR 1): Ore by tier and the tree state load; a short ore array pads; wrong shapes are problems', () => {
+    const s = store({ [META_KEY]: JSON.stringify({ version: 4, ore: [5, 2], unlocks: ['tesla'], earned: ['kindling'], forged: { tithe: 1 }, owned: { twin_bend: 2 }, discovered: ['bunker'], settings: { reducedMotion: null }, history: [] }) });
+    const { meta, problem } = loadMetaFrom(s);
+    expect(problem).toBeNull();
+    expect(meta.ore).toEqual([5, 2, 0]);
+    expect(meta.unlocks).toEqual(['tesla']);
+    expect(meta.earned).toEqual(['kindling']);
+    expect(meta.forged).toEqual({ tithe: 1 });
+    expect(meta.owned).toEqual({ twin_bend: 2 });
+    expect(meta.discovered).toEqual(['bunker']);
+    for (const bad of ['{"version":4,"ore":"x"}', '{"version":4,"unlocks":[1]}', '{"version":4,"forged":{"a":"b"}}']) {
+      expect(loadMetaFrom(store({ [META_KEY]: bad })).problem, bad).not.toBeNull();
+    }
   });
 });
 
 describe('run save', () => {
-  const run = { version: SAVE_VERSION, seed: 5, threatIdx: 1, tick: 10, inputs: [], contentHash: 1, loadout: [], map: { board: {} } };
+  const run = { version: SAVE_VERSION, seed: 5, threatIdx: 1, tick: 10, inputs: [], contentHash: 1, loadout: [], map: { board: {} }, meta: { unlocks: [], earned: [], forged: {} } };
 
   it('loads a current-version run', () => {
     expect(loadRunFrom(store({ [RUN_KEY]: JSON.stringify(run) })).run?.seed).toBe(5);
+  });
+
+  it('a v4 save (before the tree) resumes with everything unlocked (session 29, PR 1)', () => {
+    const v4: Record<string, unknown> = { ...run };
+    delete v4.meta;
+    const r = loadRunFrom(store({ [RUN_KEY]: JSON.stringify({ ...v4, version: 4 }) }));
+    expect(r.problem).toBeNull();
+    expect(r.run?.meta.unlocks).toEqual(['*']);
+    expect(r.run?.version).toBe(SAVE_VERSION);
+    // A v5 save without its meta is corrupt, not a resume.
+    expect(loadRunFrom(store({ [RUN_KEY]: JSON.stringify(v4) })).problem).toMatch(/corrupt/);
   });
 
   it('refuses pre-rebuild saves and future versions with a sentence', () => {

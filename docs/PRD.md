@@ -994,6 +994,27 @@ themselves are run-local (§7.5); what persists is *which of them the game may
 offer you*. That gives the tech tree a job that grows with the content library
 instead of competing with it, and it means new relics are pure content forever.
 
+**Built 2026-09-06 (session 29, PR 1) - the tree as content and as a run's
+identity.** `packages/content/assets/tree/nodes.json` (tree.schema.json) is
+the tree: a **base** grant (Bolt, Mortar, Frost, Refinery; the sixteen
+original relics; six relic slots; Calm and Standard; one tile slot) and
+twenty-four nodes in five branches - *arsenal* (the other four towers, the
+Laser behind the Tesla), *reliquary* (a node per relic TAG: every common of
+the tag joins the pool; its rare and epic ones are **earned by wins** -
+Standard earns a rare, Grim an epic, Calm earns Ore only; Daniil's item 3
+reconciled), *capacity* (relic slots to twelve, tile slots to five),
+*threat* (Grim, then Endless), *ore* (tier-2 and tier-3 vein tiles, the
+tile pool). Costs are Ore of ONE tier each (answer 3); higher nodes want
+rarer Ore. **Tiers unlock by forging** (item 2): the meta save records the
+highest rarity each relic was forged to and the offer never deals above it.
+The tree owns the pool and the capacity, never the power (sec 7.5):
+`resolveUnlocks` yields one object the shell, the worker and the lab read.
+**A run's identity carries its tree state** (sec 12): the run save (v5) and
+the run code hold the nodes, the earned relics and the forged caps the run
+started under, so a resume and a replay see the same towers, pool and
+slots. The meta save (v4) banks Ore **by tier**. The workshop page that
+sells the nodes is PR 2 of the same session.
+
 ### 11.1 The tile pool is the ore economy *(Daniil, 2026-08-16 — resolves D9)*
 
 Ore tiers do not need a distribution rule in the generator. **They are tiles you

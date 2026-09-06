@@ -1,0 +1,42 @@
+{
+  "$schema": "../../schema/tree.schema.json",
+  "base": {
+    "towers": ["bolt", "mortar", "frost", "refinery"],
+    "relics": ["overflow", "frostbite", "tithe", "splinter", "vein_tap", "loadbearing", "second_wind", "quarry", "toll", "bounty_board", "orbital", "stasis", "deep_vein", "sandbags", "flashbang", "ore_pocket"],
+    "relicSlots": 6,
+    "threat": 1,
+    "tileSlots": 1,
+    "oreTier": 1,
+    "tiles": ["twin_bend", "gen_ns_3"]
+  },
+  "nodes": [
+    { "id": "tesla", "name": "Tesla Coil", "branch": "arsenal", "desc": "The coil joins the strip: chain arcs through a crowd, energy damage.", "cost": { "tier": 1, "ore": 40 }, "grants": { "towers": ["tesla"] } },
+    { "id": "bastion", "name": "Bastion", "branch": "arsenal", "desc": "The supporter joins the strip: the four towers in its plus hit harder.", "cost": { "tier": 1, "ore": 40 }, "grants": { "towers": ["bastion"] } },
+    { "id": "missile", "name": "Missile Rack", "branch": "arsenal", "desc": "Homing explosive shells, the Mortar's successor.", "cost": { "tier": 1, "ore": 50 }, "grants": { "towers": ["missile"] } },
+    { "id": "laser", "name": "Laser Lance", "branch": "arsenal", "desc": "A beam down the road to its turn, heat that climbs on a held target.", "cost": { "tier": 1, "ore": 80 }, "requires": ["tesla"], "grants": { "towers": ["laser"] } },
+
+    { "id": "branch_damage", "name": "Damage branch", "branch": "reliquary", "desc": "Every common relic of the damage tag may be offered; its rare and epic ones are earned by wins.", "cost": { "tier": 1, "ore": 30 }, "grants": { "relicTags": ["damage"] } },
+    { "id": "branch_cold", "name": "Cold branch", "branch": "reliquary", "desc": "Every common relic of the cold tag may be offered; its rare and epic ones are earned by wins.", "cost": { "tier": 1, "ore": 30 }, "grants": { "relicTags": ["cold"] } },
+    { "id": "branch_economy", "name": "Economy branch", "branch": "reliquary", "desc": "Every common relic of the economy tag may be offered; its rare and epic ones are earned by wins.", "cost": { "tier": 1, "ore": 30 }, "grants": { "relicTags": ["economy"] } },
+    { "id": "branch_core", "name": "Core branch", "branch": "reliquary", "desc": "Every common relic of the core tag may be offered; its rare and epic ones are earned by wins.", "cost": { "tier": 1, "ore": 30 }, "grants": { "relicTags": ["core"] } },
+    { "id": "branch_kinetic", "name": "Kinetic branch", "branch": "reliquary", "desc": "The kinetic tag's relics join the pool.", "cost": { "tier": 1, "ore": 30 }, "requires": ["branch_damage"], "grants": { "relicTags": ["kinetic"] } },
+    { "id": "branch_energy", "name": "Energy branch", "branch": "reliquary", "desc": "The energy tag's relics join the pool.", "cost": { "tier": 1, "ore": 30 }, "requires": ["branch_damage"], "grants": { "relicTags": ["energy"] } },
+    { "id": "branch_reach", "name": "Reach branch", "branch": "reliquary", "desc": "The reach tag's relics join the pool.", "cost": { "tier": 1, "ore": 40 }, "grants": { "relicTags": ["reach"] } },
+    { "id": "branch_rate", "name": "Rate branch", "branch": "reliquary", "desc": "The rate tag's relics join the pool.", "cost": { "tier": 1, "ore": 40 }, "grants": { "relicTags": ["rate"] } },
+    { "id": "branch_support", "name": "Support branch", "branch": "reliquary", "desc": "The support tag's relics join the pool - a Bastion's friends.", "cost": { "tier": 1, "ore": 40 }, "requires": ["bastion"], "grants": { "relicTags": ["support"] } },
+
+    { "id": "slots_8", "name": "Two more slots", "branch": "capacity", "desc": "The Core holds eight relics.", "cost": { "tier": 1, "ore": 60 }, "grants": { "relicSlots": 2 } },
+    { "id": "slots_10", "name": "Two more slots", "branch": "capacity", "desc": "The Core holds ten relics.", "cost": { "tier": 2, "ore": 30 }, "requires": ["slots_8"], "grants": { "relicSlots": 2 } },
+    { "id": "slots_12", "name": "Two more slots", "branch": "capacity", "desc": "The Core holds twelve relics.", "cost": { "tier": 2, "ore": 60 }, "requires": ["slots_10"], "grants": { "relicSlots": 2 } },
+    { "id": "loadout_2", "name": "Second tile slot", "branch": "capacity", "desc": "A loadout carries two special tiles.", "cost": { "tier": 1, "ore": 50 }, "grants": { "tileSlots": 1 } },
+    { "id": "loadout_3", "name": "Third tile slot", "branch": "capacity", "desc": "A loadout carries three special tiles.", "cost": { "tier": 2, "ore": 40 }, "requires": ["loadout_2"], "grants": { "tileSlots": 1 } },
+    { "id": "loadout_5", "name": "Five tile slots", "branch": "capacity", "desc": "A loadout carries five special tiles.", "cost": { "tier": 3, "ore": 30 }, "requires": ["loadout_3"], "grants": { "tileSlots": 2 } },
+
+    { "id": "grim", "name": "Grim", "branch": "threat", "desc": "The third Threat opens: more fronts, shorter roads, twenty-five waves.", "cost": { "tier": 1, "ore": 80 }, "grants": { "threat": 2 } },
+    { "id": "endless", "name": "Endless", "branch": "threat", "desc": "A run that never ends by wave: the ramp goes on until the Core falls.", "cost": { "tier": 3, "ore": 60 }, "requires": ["grim"], "grants": { "endless": true } },
+
+    { "id": "ore_t2", "name": "Rich veins", "branch": "ore", "desc": "The workshop sells tiles carrying tier-2 veins; a Refinery on one mines tier-2 Ore, slower.", "cost": { "tier": 1, "ore": 100 }, "grants": { "oreTier": 2, "tiles": ["rich_vein"] } },
+    { "id": "ore_t3", "name": "Mother lodes", "branch": "ore", "desc": "The workshop sells tiles carrying tier-3 veins; the rarest Ore, the slowest to mine.", "cost": { "tier": 2, "ore": 80 }, "requires": ["ore_t2"], "grants": { "oreTier": 3, "tiles": ["mother_lode"] } },
+    { "id": "tiles_all", "name": "The tile pool", "branch": "ore", "desc": "Every shipped special tile is for sale in the workshop.", "cost": { "tier": 1, "ore": 40 }, "grants": { "tiles": ["gen_ns_2", "gen_ne_1", "gen_ne_4"] } }
+  ]
+}

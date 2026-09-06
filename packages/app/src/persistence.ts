@@ -10,6 +10,7 @@
  * the meta shape had not changed at all. META_VERSION moves only when the
  * META shape moves.
  */
+import { ALL_UNLOCKS, ORE_TIERS } from '@ascii-defense/engine';
 import { SAVE_VERSION, type RunSave } from './protocol';
 
 export const META_KEY = 'ascii-defense.meta.v1';
@@ -19,8 +20,14 @@ export const RUN_KEY = 'ascii-defense.run.v1';
  * Meta format version. 1, 2 and 3 all carry the same shape (2 and 3 were
  * SAVE_VERSION stamps leaking in); every one of them loads as-is.
  */
-export const META_VERSION = 3;
-const META_COMPATIBLE = new Set([1, 2, 3]);
+/**
+ * v4 (session 29, PR 1, the meta tree): banked Ore becomes Ore BY TIER
+ * (`ore`, three numbers; the old `bankedOre` migrates into tier 1), and the
+ * save gains the tree state - nodes bought, relics earned by wins, the
+ * rarity each relic was forged to, tiles owned, fusions discovered.
+ */
+export const META_VERSION = 4;
+const META_COMPATIBLE = new Set([1, 2, 3, 4]);
 
 /** The minimal store surface: localStorage, or a Map-backed fake in tests. */
 export interface KeyStore {
@@ -30,7 +37,18 @@ export interface KeyStore {
 
 export interface MetaSave {
   version: number;
-  bankedOre: number;
+  /** Banked Ore by tier, ORE_TIERS long (session 29, PR 1): the tree's currency. */
+  ore: number[];
+  /** Tree node ids bought. */
+  unlocks: string[];
+  /** Relic ids earned by wins (PRD sec 19 item 3). */
+  earned: string[];
+  /** Relic id -> highest rarity ever forged to (item 2): the pool deals a tier only once forged. */
+  forged: Record<string, number>;
+  /** Special tile id -> copies owned (PRD sec 11.1); minted tiles are always owned. */
+  owned: Record<string, number>;
+  /** Fusion results reached at least once, for the codex (item 23). */
+  discovered: string[];
   settings: {
     reducedMotion: boolean | null; // null = follow the OS
     /** The HUD's and menus' font multiple; 1 or 2 (session 27). Applied at boot. */
@@ -45,7 +63,7 @@ export interface MetaSave {
   history: { seed: number; threat: string; wave: number; status: string; kills: number }[];
 }
 
-export const defaultMeta = (): MetaSave => ({ version: META_VERSION, bankedOre: 0, settings: { reducedMotion: null, hudScale: 2, palette: 'default', spriteSet: 'current', onboarded: false }, history: [] });
+export const defaultMeta = (): MetaSave => ({ version: META_VERSION, ore: Array.from({ length: ORE_TIERS }, () => 0), unlocks: [], earned: [], forged: {}, owned: {}, discovered: [], settings: { reducedMotion: null, hudScale: 2, palette: 'default', spriteSet: 'current', onboarded: false }, history: [] });
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -54,11 +72,25 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'obj
  * `meta.history.push` and kill the frame loop. Fields are checked one by
  * one; a field of the wrong shape makes the whole blob a reported problem.
  */
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string');
+const isNumRecord = (v: unknown): v is Record<string, number> => isRecord(v) && Object.values(v).every(isNum);
+
 function shapeMeta(m: Record<string, unknown>): MetaSave | null {
+  // v1-v3 banked one number; v4 banks by tier. Either shape loads; the old number is tier 1.
   const bankedOre = m.bankedOre ?? 0;
+  if (!isNum(bankedOre)) return null;
+  const oreRaw = m.ore ?? [bankedOre, 0, 0];
+  if (!Array.isArray(oreRaw) || !oreRaw.every(isNum)) return null;
+  const ore = Array.from({ length: ORE_TIERS }, (_, i) => (oreRaw[i] as number | undefined) ?? 0);
+  const unlocks = m.unlocks ?? [];
+  const earned = m.earned ?? [];
+  const discovered = m.discovered ?? [];
+  const forged = m.forged ?? {};
+  const owned = m.owned ?? {};
+  if (!isStrings(unlocks) || !isStrings(earned) || !isStrings(discovered) || !isNumRecord(forged) || !isNumRecord(owned)) return null;
   const history = m.history ?? [];
   const settings = isRecord(m.settings) ? m.settings : { reducedMotion: null };
-  if (typeof bankedOre !== 'number' || !Number.isFinite(bankedOre)) return null;
   if (!Array.isArray(history) || !history.every(isRecord)) return null;
   const rm = settings.reducedMotion ?? null;
   if (rm !== null && typeof rm !== 'boolean') return null;
@@ -69,7 +101,12 @@ function shapeMeta(m: Record<string, unknown>): MetaSave | null {
   const spriteSet = settings.spriteSet === 'previous' ? 'previous' : 'current'; // 'shipped'/'reworked' of one evening both mean the current pack now
   return {
     version: META_VERSION,
-    bankedOre,
+    ore,
+    unlocks,
+    earned,
+    forged,
+    owned,
+    discovered,
     settings: { reducedMotion: rm, hudScale, palette, spriteSet, onboarded },
     history: history as MetaSave['history'],
   };
@@ -112,10 +149,12 @@ export function loadRunFrom(store: KeyStore): { run: RunSave | null; problem: st
     // v1/v2 saves carry no map; across the generator rebuild their seed
     // would regenerate a DIFFERENT map and the input log would replay onto
     // the wrong cells - refused with a sentence, never silently corrupted.
-    if (r.version < SAVE_VERSION) return { run: null, problem: 'run save predates the generator rebuild - it cannot continue' };
-    if (r.version !== SAVE_VERSION) return { run: null, problem: `run save is version ${r.version}, this build reads ${SAVE_VERSION} - it cannot continue` };
-    if (!looksLikeRun(r)) return corrupt;
-    return { run: r as unknown as RunSave, problem: null };
+    if (r.version < 4) return { run: null, problem: 'run save predates the generator rebuild - it cannot continue' };
+    // v4 -> v5 (session 29, PR 1): the world before the tree had everything; the save keeps it.
+    const v5 = r.version === 4 ? { ...r, version: 5, meta: { unlocks: [ALL_UNLOCKS], earned: [], forged: {} } } : r;
+    if (v5.version !== SAVE_VERSION) return { run: null, problem: `run save is version ${v5.version}, this build reads ${SAVE_VERSION} - it cannot continue` };
+    if (!looksLikeRun(v5) || !isRecord(v5.meta) || !isStrings(v5.meta.unlocks)) return corrupt;
+    return { run: v5 as unknown as RunSave, problem: null };
   } catch {
     return corrupt;
   }
