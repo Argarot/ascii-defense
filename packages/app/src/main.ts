@@ -1099,6 +1099,7 @@ async function main(): Promise<void> {
     uses: () => debug('uses'),
     chests: () => debug('chests'),
     surfaceChest: (x: number, y: number) => debug('surfaceChest', x, y),
+    killAll: () => debug('killAll'),
     claimChest: (x: number, y: number) => debug('claimChest', x, y),
     lootLog: () => debug('lootLog'),
     openRelic: (index: number | null): void => { selectedRelic = index; },

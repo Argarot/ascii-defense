@@ -281,7 +281,13 @@ tenths road and carry no water on 17 of 18 measured seeds, so "the void"
 of this section barely exists any more. Until Daniil decides whether the
 generator should leave water, a board with no water gives the chests
 their second home on **unprospected rock** - likewise off every route and
-unbuildable, so the invariant above holds either way.
+unbuildable, so the invariant above holds either way. **Amended 2026-09-06
+(session 29, PR 0; thought dump item 12)** - Daniil: on unoccupied ground
+too, rock was a bug. A chest's homes are water and **empty ground** (no
+tower, no unopened cache); a chest on ground holds its cell for its window
+(no build under it) and gives it back when claimed or sunk. The off-route
+half of the invariant stands; the off-buildable half is now "not while it
+stands".
 
 ### 4.4 Map parameters are the difficulty dial
 
@@ -357,8 +363,25 @@ printed on its card: Bolt, every shot passes into one more body · Mortar,
 no dead zone · Refinery, mines from nothing (1 Ore a cycle, forever) ·
 Frost, every third pulse freezes · Tesla, two more bodies per arc ·
 Missiles, two per launch · Laser, the heat climbs one multiple higher ·
-Bastion, the aura reaches one cell further. The Loadbearing relic's flat
-triple range still exists beside them; retiring it is Daniil's call.
+Bastion, the plus reaches one cell further. The Loadbearing relic still
+exists beside them at **half again the range** (session 29, PR 0; it was
+triple - Daniil: "absurd"); retiring it is Daniil's call.
+
+**The Bastion's reach is a plus** *(session 29, PR 0; thought dump items 8
+and 9)*: the cells straight out from it, one each way at base (four
+towers), two with Reach (eight), never the diagonals. The board previews
+the plus, the card says "reach a plus, N each way", and the reach takes no
+modifier but the Bastion's own tree and gift - a range relic or a boon
+under it changes nothing, so the drawing never says more than the rule.
+Daniil asked for "a plus" and did not pick between four and eight when the
+reply asked; four is his words taken literally, and eight is one constant
+if he wants the old ring back.
+
+**The build preview folds every modifier** *(session 29, PR 0; item 10)*:
+hovering a build button with a buildable cell selected shows the tower as
+it WOULD be there - the Core's gift, a neighbouring Bastion, relic mods,
+the boon under the cell - through the same fold the live card reads, so
+the numbers never jump on build.
 
 ### 4.6 Caches and prospecting — the map as a source of power
 
@@ -475,7 +498,7 @@ M1 ships the first four. Target is **8 towers + the Core**, not 14.
 | Tesla Coil | chain arcs, short range *(session 25)* | Long Arc (reach) / Twin Coil (throughput) | Forked (more bodies) / Grounding (slow on the chain) | Overload (damage) / Conductor (swarms) | shipped 2026-09-05 |
 | Missile Rack | homing explosive, long range, dead zone *(session 25)* | Warhead (damage) / Seeker (reach, rate) | Salvo (two missiles) / Fragmentation (blast) | Bunker Buster (armour) / Barrage (three missiles) | shipped 2026-09-05 |
 | Laser Lance | a beam down the road it FACES to where the road turns, heat on a held target *(session 26; reworked 2026-09-06 on Daniil's feedback)* | Capacitor (damage) / Chill (control) | Fast Cycle / Sear (a burn) | Cutter / Deep Sear | shipped 2026-09-05, reworked 09-06 |
-| Bastion | support aura, shoots nothing *(session 26)* | Command (harder) / Logistics (faster) | Reach (a wider ring) / Hardpoint (+range) | Warlord / Quartermaster | shipped 2026-09-05 — **eight towers** |
+| Bastion | support aura in a plus, shoots nothing *(session 26; the plus since session 29, PR 0)* | Command (harder) / Logistics (faster) | Reach (longer arms) / Hardpoint (+range) | Warlord / Quartermaster | shipped 2026-09-05 — **eight towers** |
 
 *(Trees reworked in design round 1, 2026-09-03 — D23: every fork is two
 **roles** that answer different waves, never two numbers. Piercing answers a
@@ -694,7 +717,7 @@ number:
 | **Tithe** | passive | every kill refunds Scrap; compounds with fire-rate builds |
 | **Splinter** | passive | mortar explosions trigger twice |
 | **Vein Tap** | passive | you may build on rock |
-| **Loadbearing** | passive | towers adjacent to the Core get greatly extended range |
+| **Loadbearing** | passive | towers adjacent to the Core get half again their range *(was triple until session 29, PR 0)* |
 | **Foundry** | consumable | a Refinery off the vein produces Scrap — the §5.3 rule, broken by an item rather than shipped as a path |
 | **Deep Vein** | active | refineries produce at a huge multiple for a short window |
 | **Orbital** | active | massive damage anywhere on the board, long cooldown |
@@ -1342,24 +1365,24 @@ one line; his answer moves the row.
 | 4 | One Refinery mines every ore tier; higher tiers mine slower | **Accepted** — a per-tier cycle multiplier; Deep Bore / Deep Shaft keep growing the vein | 9.4 · row 29 (with ore tiers) |
 | 5 | Core-adjacency boons become **global powerups** (a Laser by the Core doubles the Orbital and halves its cooldown) | **Accepted** — §4.5's gifts move from "this tower's stats" to "a run-wide rule per tower kind" | 9.5 · row 31 balance |
 | 6 | Ignore-armour is too strong and always the pick | **Accepted as a balance reading** — the sweep against armoured waves decides the number | 9.6 · row 31 |
-| 7 | Loadbearing's triple range is absurd; +50% or so | **Accepted** — `coreAdjacentRangeMul` 3 → 1.5 in the fix bundle | 9.7 · PR 0 of session 29 |
-| 8 | The Bastion's reach takes no modifier but its own | **Accepted** — the aura reach reads its own tree and gift only | 9.8 · PR 0 |
-| 9 | The Bastion's reach previews as a **plus** of four cells, like the Laser's corridor | **Debated in one line**: today the aura reaches the eight touching cells; the plus is a rule change to four. Preview follows the rule; Daniil picks four or eight | 9.9 · PR 0 |
-| 10 | The build preview shows **every** modifier (boons, relics, an adjacent Bastion) so numbers never jump on build | **Accepted** — the preview folds a hypothetical tower at the selected cell through foldStats | 9.10 · PR 0 |
-| 11 | The Frost animation is harsh and epilepsy-inducing with many towers; mute it, or mute with distance | **Accepted** — the pulse ring fades with radius and its strength caps per frame | 9.11 · PR 0 |
-| 12 | Void chests on **unoccupied ground** too, not rock | **Accepted** — water and ground; the rock fallback of §4.9 goes | 9.12 · PR 0 |
+| 7 | Loadbearing's triple range is absurd; +50% or so | **Shipped** (session 29, PR 0) — `coreAdjacentRangeMul` 3 → 1.5 | 9.7 · PR 0 of session 29 |
+| 8 | The Bastion's reach takes no modifier but its own | **Shipped** (session 29, PR 0) — the Bastion's range IS its reach; relic and boon range do nothing to it (§4.5) | 9.8 · PR 0 |
+| 9 | The Bastion's reach previews as a **plus** of four cells, like the Laser's corridor | **Shipped as four** (session 29, PR 0): the aura is a plus - straight out, never the diagonal - and the preview draws it. His "a plus" taken literally; eight is one constant if he wants the ring back (§4.5) | 9.9 · PR 0 |
+| 10 | The build preview shows **every** modifier (boons, relics, an adjacent Bastion) so numbers never jump on build | **Shipped** (session 29, PR 0) — `previewStats` folds a ghost tower at the selected cell; the card and the range preview read it (§4.5) | 9.10 · PR 0 |
+| 11 | The Frost animation is harsh and epilepsy-inducing with many towers; mute it, or mute with distance | **Shipped** (session 29, PR 0) — the pulse ring fades with radius (bright at the tower, near nothing at the reach) and its peak is under half what it was | 9.11 · PR 0 |
+| 12 | Void chests on **unoccupied ground** too, not rock | **Shipped** (session 29, PR 0) — water and empty ground; a chest holds its cell while it stands (§4.9) | 9.12 · PR 0 |
 | 13 | Chests need a bigger, finer sprite, coloured by rarity | **Accepted** — the chest rolls its rarity when it surfaces; a 'chest' sprite kind for the art agent | 9.13 · art brief; row 29 |
 | 14 | Relic sprites one layer larger for a rarity frame (the approved icons plus a ring) | **Accepted** — relic cell 4×3 → 6×5 with the frame in the outer ring; strip and Forge plates follow | 9.14 · art brief; row 30 |
 | 15 | A **codex** menu with detailed entries for everything, locked entries shown as locked, reachable from every menu including mid-run | **Accepted** — HOW TO PLAY becomes the codex, reads the unlock set, opens from pause | 9.15 · row 29 |
 | 16 | Consumable: place **boon ground** on an empty ground cell | **Accepted** — boons already come from caches; the difficulty cost is the same as a cache boon | 9.16 · row 31 content |
 | 17 | Consumable: **god mode** for one tower, +100% to everything for a while, with an epic animation | **Accepted** — a timed per-tower multiplier and a sprite sequence | 9.17 · row 31 |
-| 18 | The relic offer only after the wave is **cleared**, never on "next wave" | **Accepted** — dealt when the board is quiet; a call before that waits | 9.18 · PR 0 |
+| 18 | The relic offer only after the wave is **cleared**, never on "next wave" | **Shipped** (session 29, PR 0) — dealt only when the board is quiet; a call over living bodies carries the debt to the next quiet | 9.18 · PR 0 |
 | 19 | Actives and passives should look different in the slot | **Accepted** — a plate shape per kind (a button plate for actives), same icons | 9.19 · row 30 |
 | 20 | **Neutral structures** on the map, Tower-Dominion style, for the empty ground | **Debated** — the reply argues no: boon ground, caches and chests are the ground's business; the empty share is a generator knob; the Tile Smith's placeables (his own answer 6) author structures without a new kind | open |
 | 21 | **Merging four identical towers** into one big one; or a Bastion with four identical neighbours | **Debated** — merging is D25 (a 2×2 footprint through occupancy, targeting, art at 16×10); the reply proposes a **formation bonus** for four of a kind around a Bastion as the same feel at content cost | open (D25) |
 | 22 | **Endless mode** as the last unlock in the tree | **Accepted** — waves past 20 on the same curve; the harness already runs to 40 | 9.22 · row 29 (a node) |
 | 23 | **Fusing different relics**, tracked in the codex as discoveries | **Accepted** — five recipes exist; more come with the codex's "discovered" list in the meta save | 9.23 · row 29 |
-| 24 | **Piercing** should be a small local hit on bodies in the same cell, not a jump across lanes | **Accepted as a fix** — pierce continues into bodies within half a cell of the impact | 9.24 · PR 0 |
+| 24 | **Piercing** should be a small local hit on bodies in the same cell, not a jump across lanes | **Shipped** (session 29, PR 0) — pierce continues only into bodies within half a cell of the impact (was 2.5 cells) | 9.24 · PR 0 |
 | 25 | Mortar and Missile explosions and projectiles must look different | **Accepted** — per-tower projectile and blast looks | 9.25 · art brief; row 30 |
 | 26 | The Laser's slow path is redundant unless slows from different sources **stack multiplicatively** (never reaching 100%) | **Debated** — the reply proposes multiplicative stacking with a **floor** (a body never below 25% speed) and the sweep as the ruler; today's rule is coldest-wins (2026-09-05) | open · row 31 |
 | 27 | A Laser path could change the beam's colour | **Accepted** — the beam role per path | 9.27 · row 30 |

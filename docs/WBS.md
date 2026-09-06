@@ -667,24 +667,24 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 9.4 **One Refinery, every ore tier**: a per-tier cycle multiplier (slower for higher tiers).
 - [ ] 9.5 **Core gifts as global powerups** (§4.5 rework): a tower kind beside the Core changes a run-wide rule (Laser: the Orbital doubles and recharges faster).
 - [ ] 9.6 Ignore-armour reads too strong: a balance reading against armoured waves, then the number.
-- [ ] 9.7 Loadbearing ×3 → ×1.5 *(PR 0)*.
-- [ ] 9.8 The Bastion's reach takes no modifier but its own *(PR 0)*.
-- [ ] 9.9 The Bastion's reach preview as a plus; **four or eight** cells is his call *(PR 0)*.
-- [ ] 9.10 The build preview folds every modifier at the selected cell *(PR 0)*.
-- [ ] 9.11 The Frost pulse muted and fading with radius *(PR 0)*.
-- [ ] 9.12 Void chests surface on water and ground, not rock *(PR 0)*.
+- [x] 9.7 *(session 29, PR #167)* Loadbearing ×3 → ×1.5.
+- [x] 9.8 *(session 29, PR #167)* The Bastion's reach takes no modifier but its own: its range IS its reach.
+- [x] 9.9 *(session 29, PR #167: shipped as FOUR - his "a plus" taken literally; eight is one constant)* The Bastion's reach as a plus, previewed as one.
+- [x] 9.10 *(session 29, PR #167: previewStats)* The build preview folds every modifier at the selected cell.
+- [x] 9.11 *(session 29, PR #167)* The pulse muted and fading with radius.
+- [x] 9.12 *(session 29, PR #167; a chest holds its cell while it stands)* Void chests surface on water and empty ground, not rock.
 - [ ] 9.13 A chest sprite kind, bigger, coloured by a rolled rarity.
 - [ ] 9.14 Relic sprites 6×5: the icon plus a rarity ring; strip and Forge plates follow.
 - [ ] 9.15 **The codex**: every entry, locked ones shown locked, from every menu and from pause; reads the unlock set.
 - [ ] 9.16 Consumable: place boon ground on an empty ground cell.
 - [ ] 9.17 Consumable: god mode for one tower (a timed +100% to everything) with an epic sequence.
-- [ ] 9.18 The relic offer only when the board is quiet; a call before that waits *(PR 0)*.
+- [x] 9.18 *(session 29, PR #167)* The relic offer only when the board is quiet; a call over living bodies carries the debt to the next quiet.
 - [ ] 9.19 Actives and passives look different in the slot (a plate shape per kind).
 - [ ] 9.20 Neutral structures - **debated, open** (the reply argues the Tile Smith's placeables and boon ground already own this).
 - [ ] 9.21 Merging four identical towers - **debated, open** (D25; the reply proposes a formation bonus around a Bastion instead).
 - [ ] 9.22 Endless mode as the tree's last unlock.
 - [ ] 9.23 More recipes; fusions discovered are recorded in the meta save and listed in the codex.
-- [ ] 9.24 Pierce continues into bodies within half a cell of the impact, never across lanes *(PR 0)*.
+- [x] 9.24 *(session 29, PR #167: PIERCE_REACH 0.5)* Pierce continues into bodies within half a cell of the impact, never across lanes.
 - [ ] 9.25 Per-tower projectile and blast looks (Mortar vs Missile).
 - [ ] 9.26 Slows stacking multiplicatively with a floor - **debated, open**; the sweep decides.
 - [ ] 9.27 A Laser path changes the beam's colour.

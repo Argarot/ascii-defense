@@ -104,9 +104,9 @@
       "tags": [
         "reach"
       ],
-      "desc": "Towers touching the Core block get triple range.",
+      "desc": "Towers touching the Core block get half again their range.",
       "effects": {
-        "coreAdjacentRangeMul": 3
+        "coreAdjacentRangeMul": 1.5
       }
     },
     {

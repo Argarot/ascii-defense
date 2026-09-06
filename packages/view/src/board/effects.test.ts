@@ -132,3 +132,27 @@ describe('the effects layer', () => {
     expect(rows.some((r, y) => (y < 2 || y >= rows.length - 2) && r.includes('*'))).toBe(true);
   });
 });
+
+describe('the tower pulse (session 29, PR 0, item 11)', () => {
+  it('is muted and fades with radius: bright near the tower, near nothing at its reach, never a flash', () => {
+    const lum = (hex: string): number => (parseInt(hex.slice(1, 3), 16) * 0.2126 + parseInt(hex.slice(3, 5), 16) * 0.7152 + parseInt(hex.slice(5, 7), 16) * 0.0722);
+    const ground = '#404040';
+    const ringAt = (age01: number): number => {
+      const term = new TextTerm({ cols: 12 * CELL_W, rows: 12 * CELL_H });
+      term.clear(ground);
+      const fx = new EffectsLayer();
+      fx.ingest([{ kind: 'pulse', x: 6, y: 6, r: 4, seq: 0, tick: 100 } as StampedSimEvent]);
+      fx.draw(term, 100 + age01 * 10);
+      // The ring stands at r * age01 from the centre; read the glyph on its east point.
+      return lum(term.bgAt(Math.floor((6 + 4 * age01) * CELL_W), Math.floor(6 * CELL_H)));
+    };
+    const untouched = lum(ground);
+    const near = ringAt(0.25);
+    const far = ringAt(0.9);
+    expect(near).toBeGreaterThan(far);
+    expect(far).toBeGreaterThanOrEqual(untouched);
+    // The lift near the tower stays under 1.7x the ground: a glow, not the 2.4x flash of before.
+    expect(near).toBeLessThan(untouched * 1.7);
+    expect(near).toBeGreaterThan(untouched * 1.2);
+  });
+});

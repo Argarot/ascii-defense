@@ -219,7 +219,10 @@ const TYPE_CODE: Record<string, number> = { none: 0, kinetic: 1, energy: 2 };
 const CODE_TYPE: (DamageType | undefined)[] = [undefined, 'kinetic', 'energy'];
 
 /** How far a piercing shot may hop to its next body (cells). */
-const PIERCE_REACH = 2.5;
+// Pierce reaches into bodies within HALF A CELL of the impact (Daniil,
+// 2026-09-06 thought dump item 24: "a small local hit on bodies in the
+// same cell, not a jump across lanes"); at 2.5 cells a bolt hopped lanes.
+const PIERCE_REACH = 0.5;
 /** Scrap an opened cache pays when its rolled outcome cannot apply here. */
 const LOOT_FALLBACK_SCRAP = 60;
 /** Scrap price of prospecting a rock cell (PRD sec 4.6). */
@@ -266,6 +269,19 @@ export interface Tower {
 }
 
 export const SELL_REFUND = 0.7;
+
+/**
+ * A supporter's reach is a PLUS (2026-09-06 thought dump, items 8 and 9):
+ * the cells straight out from it, `reach` each way - four at reach 1,
+ * eight at reach 2 - never the diagonals. The board previews the same plus.
+ */
+export function inPlus(sx: number, sy: number, tx: number, ty: number, reach: number): boolean {
+  const dx = Math.abs(sx - tx);
+  const dy = Math.abs(sy - ty);
+  if (dx !== 0 && dy !== 0) return false;
+  const d = dx + dy;
+  return d >= 1 && d <= reach;
+}
 
 const ENEMY_CAP = 1024;
 const PROJ_CAP = 2048;
@@ -549,7 +565,8 @@ export class Sim {
   canBuildAt(x: number, y: number): boolean {
     if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return false;
     const t = this.cellsMut[y * this.opts.cellsW + x];
-    return t !== null && isBuildable(t) && this.occupancy[y * this.opts.cellsW + x] === 0;
+    // A standing chest holds its ground for its window (item 12: chests surface on ground too).
+    return t !== null && isBuildable(t) && this.occupancy[y * this.opts.cellsW + x] === 0 && !this.voidChests.some((c) => c.x === x && c.y === y);
   }
 
   canAfford(defId: string): boolean {
@@ -583,6 +600,8 @@ export class Sim {
     // An unclaimed cache blocks building outright: the claim card is the only
     // interaction (Daniil - a tower on a cache would just be sold back).
     if (this.cacheAt(x, y) !== null) return false;
+    // A standing chest holds its cell the same way (session 29, PR 0, item 12).
+    if (this.chestAt(x, y) !== null) return false;
     const minesOre = (def.production?.ore ?? 0) > 0;
     // Refineries live on veins - except next to the Core, where the mineAnywhere gift lets one stand on plain ground (PRD sec 4.5).
     if (minesOre) return cell === 'O' || (cell === 'G' && def.coreBoon?.flags?.includes('mineAnywhere') === true && this.nearCore[y * this.opts.cellsW + x] === 1);
@@ -663,6 +682,20 @@ export class Sim {
    */
   statsWith(t: Tower, choices: readonly number[]): EffectiveStats {
     return this.foldStats({ ...t, choices: [...choices] as [number, number, number] });
+  }
+
+  /**
+   * What a tower WOULD read if built at (x, y) now, untiered, through the
+   * whole fold - the Core's gift, a neighbouring Bastion, relic mods, the
+   * boon under the cell (2026-09-06 thought dump item 10: the preview shows
+   * every modifier, so the numbers never jump on build). Null for an
+   * unknown tower; the caller decides whether the cell is buildable.
+   */
+  previewStats(defId: string, x: number, y: number): EffectiveStats | null {
+    const defIdx = this.opts.towerDefs.findIndex((d) => d.id === defId);
+    if (defIdx === -1) return null;
+    const ghost: Tower = { cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown: 0, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1, facing: 1, heat: 1, beamLead: -1, beamLeadGen: 0 };
+    return this.foldStats(ghost);
   }
 
   /** The boon under (x, y), or null (PRD sec 4.7) - dealt or cache-made. */
@@ -804,7 +837,7 @@ export class Sim {
       if (!sdef.aura) continue;
       const se = effectiveStats(sdef, s.choices);
       if (sdef.coreBoon && this.nearCore[s.cellY * this.opts.cellsW + s.cellX]) applyCoreBoon(se, sdef.coreBoon);
-      if (Math.max(Math.abs(s.cellX - t.cellX), Math.abs(s.cellY - t.cellY)) > se.auraReach) continue;
+      if (!inPlus(s.cellX, s.cellY, t.cellX, t.cellY, se.auraReach)) continue;
       auraDmg = Math.max(auraDmg, se.auraDamageMul);
       auraRate = Math.max(auraRate, se.auraRateMul);
       auraRange = Math.max(auraRange, se.auraRangeAdd);
@@ -840,6 +873,9 @@ export class Sim {
       out.damage *= e.damageMul;
       out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / e.rateMul));
     }
+    // A supporter's reach takes no modifier but its own tree and gift (item
+    // 8): its range IS the plus, so the ring never says more than the aura does.
+    if (def.aura) { out.range = out.auraReach; out.minRange = 0; }
     return out;
   }
 
@@ -1068,6 +1104,13 @@ export class Sim {
    * input, so a replay of a run that used it diverges - never call it
    * from the game. Returns false for an unknown id.
    */
+  /** Debug (never a recorded input): every living body dies now, through the ordinary damage path - the board goes quiet on demand. */
+  debugKillAll(): number {
+    let n = 0;
+    for (let i = 0; i < this.enemyHigh; i++) if (this.alive[i]) { this.applyDamage(i, 1e9, 0, 0, -1, 1, true); n++; }
+    return n;
+  }
+
   debugGrantRelic(relicId: string): boolean {
     const defs = this.opts.relicDefs ?? [];
     const di = defs.findIndex((d) => d.id === relicId);
@@ -1200,11 +1243,11 @@ export class Sim {
   // ---- void chests (PRD sec 4.9; session 28, PR 5) ---------------------------
 
   /**
-   * Every CHEST_EVERY ticks the water may surface a chest (one roll on the
-   * loot stream, one in two), on a random water cell, for CHEST_WINDOW
-   * ticks; at most CHEST_MAX stand at once. Sunk chests leave without a
-   * trace. Water is never on a route and never buildable, so a chest can
-   * touch neither.
+   * Every CHEST_EVERY ticks the void may surface a chest (one roll on the
+   * loot stream, one in two), on a random home cell - water or empty
+   * ground (chestHomes) - for CHEST_WINDOW ticks; at most CHEST_MAX stand
+   * at once. Sunk chests leave without a trace. A chest never stands on a
+   * route.
    */
   private chestPhase(): void {
     for (let i = this.voidChests.length - 1; i >= 0; i--) if (this.voidChests[i].until <= this.tickCount) this.voidChests.splice(i, 1);
@@ -1224,17 +1267,22 @@ export class Sim {
   }
 
   /**
-   * Where a chest may surface: water, and - on a board with no water at
-   * all - unprospected rock, which is likewise off every route and
-   * unbuildable. Measured 2026-09-06: the session-24 boards are nine tenths
-   * road and carry no water on 17 of 18 seeds, so water alone would leave
-   * the chests with nowhere to be (PRD sec 4.9's amendment, for Daniil).
+   * Where a chest may surface: water, and empty ground - a ground cell with
+   * no tower and no unopened cache on it (Daniil, 2026-09-06 thought dump
+   * item 12: "on unoccupied ground too, not rock"; the rock fallback of the
+   * morning is gone). A chest on ground holds its cell for its window
+   * (canBuildAt says no) and gives it back when claimed or sunk.
    */
   private chestHomes(): number[] {
-    if (this.voidCells.length > 0) return this.voidCells;
-    const rocks: number[] = [];
-    for (let k = 0; k < this.cellsMut.length; k++) if (this.cellsMut[k] === 'R' && !this.prospectJobs.has(k)) rocks.push(k);
-    return rocks;
+    const homes: number[] = [...this.voidCells];
+    for (let k = 0; k < this.cellsMut.length; k++) {
+      if (this.cellsMut[k] !== 'G' || this.occupancy[k] !== 0) continue;
+      const x = k % this.opts.cellsW;
+      const y = Math.floor(k / this.opts.cellsW);
+      if (this.caches.some((c) => !c.opened && c.x === x && c.y === y)) continue;
+      homes.push(k);
+    }
+    return homes;
   }
 
   chestAt(x: number, y: number): { x: number; y: number; until: number } | null {
@@ -1501,17 +1549,21 @@ export class Sim {
   }
 
   /**
-   * Every OFFER_EVERY_WAVES-th completed wave puts up a pick-1-of-3 from the
-   * pool, minus what is already held (no duplicates - stacking comes from
-   * COMBINATIONS, not copies). Draws on the 'relics' stream, so map, waves
+   * Every OFFER_EVERY_WAVES-th wave puts up a pick-1-of-3 from the pool,
+   * minus what is already held (no duplicates - stacking comes from
+   * COMBINATIONS, not copies), ONLY once the board is quiet - never on a
+   * "next wave" call (item 18). Draws on the 'relics' stream, so map, waves
    * and combat draws are untouched by the relic layer existing.
    */
-  private maybeOffer(atLaunch: boolean): void {
+  private maybeOffer(): void {
     const defs = this.opts.relicDefs;
     if (!defs || this.offer !== null) return;
-    if (this.wave === 0 || this.wave % OFFER_EVERY_WAVES !== 0 || this.offerWave === this.wave) return;
-    void atLaunch; // both call sites share the rule; the flag documents intent
-    this.offerWave = this.wave;
+    // The newest offer wave launched so far is owed until dealt; it is dealt
+    // once, at the first quiet after it - however many waves were called
+    // over the debt (2026-09-06 thought dump item 18).
+    const owed = this.wave - (this.wave % OFFER_EVERY_WAVES);
+    if (owed === 0 || owed <= this.offerWave) return;
+    this.offerWave = owed;
     const pool = this.unheldPool();
     if (pool.length === 0) return;
     this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
@@ -1935,9 +1987,6 @@ export class Sim {
 
   /** The next wave starts NOW: by the clock or by the player's call. */
   private launchWave(): void {
-    // An offer owed by the wave just ending is dealt at the latest here, so
-    // a straggler can never withhold it (D4 cadence, item 10's clock).
-    this.maybeOffer(true);
     this.wave++;
     // War Chest (relic): Scrap at every launch; Masonry (set): the Core mends.
     if (this.econFold.waveScrap > 0) { this.scrap += this.econFold.waveScrap; this.noteRelicUse('waveScrap'); }
@@ -1959,8 +2008,10 @@ export class Sim {
       this.status = 'won';
       return;
     }
-    // A cleared offer wave deals its offer as soon as the board is quiet.
-    if (this.spawnQueue.length === 0 && this.aliveCount() === 0) this.maybeOffer(false);
+    // An offer is dealt ONLY when the board is quiet (2026-09-06 thought dump
+    // item 18: "only after the wave is cleared, never on next wave"); a call
+    // before that carries the debt over to the next quiet moment.
+    if (this.spawnQueue.length === 0 && this.aliveCount() === 0) this.maybeOffer();
     // The clock runs from the previous launch, whoever is still walking.
     if (this.waveTimer > 0 && --this.waveTimer === 0) this.launchWave();
     if (this.spawnQueue.length > 0 && --this.intraTimer <= 0) {

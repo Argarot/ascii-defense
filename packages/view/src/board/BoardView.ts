@@ -173,7 +173,8 @@ export interface RenderState {
   showGrid?: boolean;
   /** Range overlay for the selected tower, in cell units; minR = the dead zone. */
   /** beam: a line-shaped tower's corridor (dir 0 n, 1 e, 2 s, 3 w; w cells wide) drawn instead of the rings (WBS 2.34). */
-  range?: { x: number; y: number; r: number; minR?: number; beam?: { dir: number; w: number } } | null;
+  /** plus: a supporter's reach - the cells straight out from it, r each way - drawn instead of the rings (2026-09-06, items 8 and 9). */
+  range?: { x: number; y: number; r: number; minR?: number; beam?: { dir: number; w: number }; plus?: boolean } | null;
   /** The range shown is a pre-build preview: pulse it. */
   rangeIsPreview?: boolean;
   /** Entries the NEXT wave attacks from - telegraphed with blinking '!' markers. */
@@ -411,7 +412,22 @@ export class BoardView {
     // Range OUTLINE for the selected tower, at glyph (subcell) resolution:
     // tint only the glyphs whose distance from the tower's center sits on
     // the radius, giving a near-true circle instead of a blocky area fill.
-    if (state.range?.beam) {
+    if (state.range?.plus) {
+      // A PLUS instead of rings: the four arms a supporter reaches down, whole
+      // cells, the near ones brighter - the same drawing the aura rule uses.
+      const pulse = state.rangeIsPreview ? 0.6 * Math.abs(((state.phase ?? 0) * 2) % 2 - 1) : 0;
+      for (let dir = 0; dir < 4; dir++) {
+        const dx = [0, 1, 0, -1][dir];
+        const dy = [-1, 0, 1, 0][dir];
+        for (let k = 1; k <= state.range.r; k++) {
+          const cx = state.range.x + dx * k;
+          const cy = state.range.y + dy * k;
+          if (cx < 0 || cy < 0 || cx >= this.cellsW || cy >= this.cellsH) continue;
+          const s = 1.55 - 0.25 * ((k - 1) / Math.max(1, state.range.r)) + pulse;
+          for (let gy = 0; gy < CELL_H; gy++) for (let gx = 0; gx < CELL_W; gx++) term.shade(cx * CELL_W + gx, offsetY + cy * CELL_H + gy, s, 0.06);
+        }
+      }
+    } else if (state.range?.beam) {
       // A CORRIDOR instead of rings (WBS 2.34): the cells the beam covers
       // down the facing, shaded, with the far end brighter.
       const { dir, w } = state.range.beam;
