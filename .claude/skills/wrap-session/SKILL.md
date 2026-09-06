@@ -21,10 +21,23 @@ files — that is how drift starts.
 - **The branch check is a gate, not a print**: `test "$(git branch
   --show-current)" != main || exit 1` before any commit (a failed compound
   command stranded a wrap commit on local main on 2026-09-06).
+- **The test gate is vitest's exit code, never a grep's**: `npx vitest run
+  > log 2>&1; test $? -eq 0` before any commit (a red suite went up in a
+  PR on 2026-09-06 behind `| grep Tests`).
+- **The merge gate is three things**: `gh pr checks N --watch` exits 0,
+  `gh pr checks N | grep -q pending` is false, and the PR's head SHA equals
+  the branch tip. "No fail line" is not "pass" (a pending line got through
+  on 2026-09-06).
+- **This working tree is shared with the art agent.** `git add` by explicit
+  path only, and `git diff <file>` before adding any file it might touch —
+  PR 5 of session 28 shipped two of its uncommitted hunks. Never `stash`,
+  `checkout .` or `reset --hard`.
 - Live deployment sanity: load the site cache-busted (`?cb=<sha>`), confirm
   the new bundle name, and exercise one shipped feature through the `__ad`
-  debug handle. Screenshots fail in the hidden pane; verify UI claims with
-  `gl.readPixels` after a synchronous draw, text claims with `hudText()`.
+  debug handle. **Motion claims carry the drawn-frame count from
+  `__ad.fx()` under a hand-driven `__ad.frame(now)` loop** — the hidden
+  pane fires no animation frames, so a probe that waits for them proves
+  nothing (motion v2 shipped with every effect dead, 2026-09-06).
 
 ## 2. Docs, in dependency order
 
@@ -105,6 +118,11 @@ names:
 - the biggest risk and what it makes expensive later if built wrong.
 
 The ledger row and this section say the same thing; the reply repeats it.
+
+**Before writing the PR list**: if the plan cites a PRD section older than
+the last map-generator change, check that section's nouns against a
+generated board (`demoMap` in the lab, or `__ad.cellAt` in the pane). PRD
+§4.9's "unclaimed water" met a board with no water on 2026-09-06.
 
 ## Hard rules carried from eleven postmortem sessions
 
