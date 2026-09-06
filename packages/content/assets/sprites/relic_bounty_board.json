@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_bounty_board.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        "+--+",
-        "|$?|",
-        "+--+"
+        "┌──┐",
+        "│⡜!│",
+        "└┬┬┘"
       ],
       "ink": [
-        "aaaa",
-        "abba",
-        "aaaa"
+        "hhmm",
+        "a0aa",
+        "laal"
+      ],
+      "bgInk": [
+        "....",
+        ".d..",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            "┌──┐",
+            "│⠞!│",
+            "└┬┬┘"
+          ],
+          "ink": [
+            "hhmm",
+            "a1aa",
+            "laal"
+          ],
+          "bgInk": [
+            "....",
+            ".d..",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌──┐",
+            "│⠶!│",
+            "└┬┬┘"
+          ],
+          "ink": [
+            "hhmm",
+            "a2aa",
+            "laal"
+          ],
+          "bgInk": [
+            "....",
+            ".d..",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌──┐",
+            "│⠳!│",
+            "└┬┬┘"
+          ],
+          "ink": [
+            "hhmm",
+            "a3aa",
+            "laal"
+          ],
+          "bgInk": [
+            "....",
+            ".d..",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌──┐",
+            "│⢣!│",
+            "└┬┬┘"
+          ],
+          "ink": [
+            "hhmm",
+            "a4aa",
+            "laal"
+          ],
+          "bgInk": [
+            "....",
+            ".d..",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.bounty_board.review3_pulse_0",
+    "1": "relic.bounty_board.review3_pulse_1",
+    "2": "relic.bounty_board.review3_pulse_2",
+    "3": "relic.bounty_board.review3_pulse_3",
+    "4": "relic.bounty_board.review3_pulse_4",
     ".": null,
-    "a": "ui.dim",
-    "b": "relic.gold"
+    "h": "relic.bounty_board.review3_steel_high",
+    "m": "relic.bounty_board.review3_steel_mid",
+    "l": "relic.bounty_board.review3_steel_low",
+    "a": "relic.bounty_board.review3_accent",
+    "b": "relic.bounty_board.review3_accent_dim",
+    "w": "relic.bounty_board.review3_lens_high",
+    "d": "relic.bounty_board.review3_recess",
+    "f": "relic.bounty_board.review3_exhaust",
+    "g": "relic.bounty_board.review3_warm_metal",
+    "t": "relic.bounty_board.review3_body",
+    "u": "relic.bounty_board.review3_coolant"
   }
 }

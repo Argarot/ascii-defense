@@ -1,0 +1,29 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "relic_deep_vein",
+  "kind": "relic",
+  "cell": [
+    4,
+    3
+  ],
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "\\oo/",
+        " ## ",
+        "/##\\"
+      ],
+      "ink": [
+        "abba",
+        ".bb.",
+        "abba"
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "ui.dim",
+    "b": "relic.copper"
+  }
+}

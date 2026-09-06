@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_quarry.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        "/\\/\\",
-        "####",
-        "####"
+        " /⠋ ",
+        "/┬─ ",
+        " │  "
       ],
       "ink": [
-        "aaaa",
-        "bbbb",
-        "bbbb"
+        ".a0.",
+        "aam.",
+        ".a.."
+      ],
+      "bgInk": [
+        "..d.",
+        "....",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            " /⠙ ",
+            "/┬─ ",
+            " │  "
+          ],
+          "ink": [
+            ".a1.",
+            "aam.",
+            ".a.."
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " /⠚ ",
+            "/┬─ ",
+            " │  "
+          ],
+          "ink": [
+            ".a2.",
+            "aam.",
+            ".a.."
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " /⢤ ",
+            "/┬─ ",
+            " │  "
+          ],
+          "ink": [
+            ".a3.",
+            "aam.",
+            ".a.."
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " /⡤ ",
+            "/┬─ ",
+            " │  "
+          ],
+          "ink": [
+            ".a4.",
+            "aam.",
+            ".a.."
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.quarry.review3_pulse_0",
+    "1": "relic.quarry.review3_pulse_1",
+    "2": "relic.quarry.review3_pulse_2",
+    "3": "relic.quarry.review3_pulse_3",
+    "4": "relic.quarry.review3_pulse_4",
     ".": null,
-    "a": "relic.stone",
-    "b": "ui.dim"
+    "h": "relic.quarry.review3_steel_high",
+    "m": "relic.quarry.review3_steel_mid",
+    "l": "relic.quarry.review3_steel_low",
+    "a": "relic.quarry.review3_accent",
+    "b": "relic.quarry.review3_accent_dim",
+    "w": "relic.quarry.review3_lens_high",
+    "d": "relic.quarry.review3_recess",
+    "f": "relic.quarry.review3_exhaust",
+    "g": "relic.quarry.review3_warm_metal",
+    "t": "relic.quarry.review3_body",
+    "u": "relic.quarry.review3_coolant"
   }
 }

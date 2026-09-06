@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_frostbite.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
         " \\|/",
-        " -*-",
+        "-⠋*⠚",
         " /|\\"
       ],
       "ink": [
-        ".aaa",
-        ".aba",
-        ".aaa"
+        ".ama",
+        "a0ab",
+        ".ala"
+      ],
+      "bgInk": [
+        "....",
+        "....",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            " \\|/",
+            "-⠙*⢤",
+            " /|\\"
+          ],
+          "ink": [
+            ".ama",
+            "a1ab",
+            ".ala"
+          ],
+          "bgInk": [
+            "....",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " \\|/",
+            "-⠚*⡤",
+            " /|\\"
+          ],
+          "ink": [
+            ".ama",
+            "a2ab",
+            ".ala"
+          ],
+          "bgInk": [
+            "....",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " \\|/",
+            "-⢤*⠋",
+            " /|\\"
+          ],
+          "ink": [
+            ".ama",
+            "a3ab",
+            ".ala"
+          ],
+          "bgInk": [
+            "....",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " \\|/",
+            "-⡤*⠙",
+            " /|\\"
+          ],
+          "ink": [
+            ".ama",
+            "a4ab",
+            ".ala"
+          ],
+          "bgInk": [
+            "....",
+            "....",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.frostbite.review3_pulse_0",
+    "1": "relic.frostbite.review3_pulse_1",
+    "2": "relic.frostbite.review3_pulse_2",
+    "3": "relic.frostbite.review3_pulse_3",
+    "4": "relic.frostbite.review3_pulse_4",
     ".": null,
-    "a": "ui.dim",
-    "b": "relic.ice"
+    "h": "relic.frostbite.review3_steel_high",
+    "m": "relic.frostbite.review3_steel_mid",
+    "l": "relic.frostbite.review3_steel_low",
+    "a": "relic.frostbite.review3_accent",
+    "b": "relic.frostbite.review3_accent_dim",
+    "w": "relic.frostbite.review3_lens_high",
+    "d": "relic.frostbite.review3_recess",
+    "f": "relic.frostbite.review3_exhaust",
+    "g": "relic.frostbite.review3_warm_metal",
+    "t": "relic.frostbite.review3_body",
+    "u": "relic.frostbite.review3_coolant"
   }
 }

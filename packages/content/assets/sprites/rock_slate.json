@@ -1,0 +1,227 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "rock_slate",
+  "kind": "terrain",
+  "cell": [
+    8,
+    5
+  ],
+  "frameMs": 200,
+  "source": "sources/sprites/approved-pack/studies/rock_slate.study.json; imported and assembled by package.py",
+  "states": {
+    "R0": {
+      "art": [
+        " ⠂_/⠉\\  ",
+        " /⣒⣒/⡱⠄ ",
+        "⠈\\__/⠃ .",
+        "  ⠄ /⠉⡱ ",
+        "⠂.  ⠉⠤⠃⠄"
+      ],
+      "ink": [
+        ".dhrhr..",
+        ".rrrrcd.",
+        "drhhrc.d",
+        "..d.rhc.",
+        "dd..hccd"
+      ],
+      "bgInk": [
+        "........",
+        "..bb....",
+        "........",
+        "........",
+        "........"
+      ]
+    },
+    "R1": {
+      "art": [
+        "_/⠉⡱ ⠂ .",
+        "⠒⠤⠃ ./⠉\\",
+        " . /⣒⣒/⡱",
+        "⠄⡜⣒__/⠃ ",
+        " ⠉⠤⠃ .⠂ "
+      ],
+      "ink": [
+        "hrhc.d.d",
+        "dcc.drhr",
+        ".d.rrrrc",
+        "dcrhhrc.",
+        ".hcc.dd."
+      ],
+      "bgInk": [
+        "........",
+        "........",
+        "....bb..",
+        "..b.....",
+        "........"
+      ]
+    },
+    "R2": {
+      "art": [
+        "⠂ ./⠉⠉\\ ",
+        " /⣒⣒/⣒⡱⠄",
+        "⠈\\_/__⠃ ",
+        " .⠄  ⠂ .",
+        "/⠉⡱ ⠁ ⠄ "
+      ],
+      "ink": [
+        "d.drhhr.",
+        ".rrrrrcd",
+        "drhrhhc.",
+        ".dd..d.d",
+        "rhc.d.d."
+      ],
+      "bgInk": [
+        "........",
+        "..bb.b..",
+        "........",
+        "........",
+        "........"
+      ]
+    },
+    "R3": {
+      "art": [
+        " .⠄ /⠉⡱⠂",
+        "⠁_  ⠉⠤⠃ ",
+        "/⣒/⠉\\ .⠄",
+        "\\_/⣒/⡱⠂ ",
+        " .⠉⠤⠃ ⠄ "
+      ],
+      "ink": [
+        ".dd.rhcd",
+        "dh..hcc.",
+        "rrrhr.dd",
+        "rhrrrcd.",
+        ".dhcc.d."
+      ],
+      "bgInk": [
+        "........",
+        "........",
+        ".b......",
+        "...b....",
+        "........"
+      ]
+    },
+    "R4": {
+      "art": [
+        " ⠄/⠉⠉⡱ .",
+        " /⣒__/⠃⠂",
+        "⠈⠉⠤⠃ .⠄ ",
+        " ⠂ _/⠉\\ ",
+        " . /⣒/⡱⠄"
+      ],
+      "ink": [
+        ".drhhc.d",
+        ".rrhhrcd",
+        "dhcc.dd.",
+        ".d.hrhr.",
+        ".d.rrrcd"
+      ],
+      "bgInk": [
+        "........",
+        "..b.....",
+        "........",
+        "........",
+        "....b..."
+      ]
+    },
+    "R5": {
+      "art": [
+        ". /⠉⡱ ⠄ ",
+        "⠂ ⠉⠤⠃ .⠈",
+        " _/⠉⠉\\ ⠂",
+        "/⣒⣒/⣒⡱ .",
+        "⠉⠤/⣀⠤⠃⠄ "
+      ],
+      "ink": [
+        "d.rhc.d.",
+        "d.hcc.dd",
+        ".hrhhr.d",
+        "rrrrrc.d",
+        "hcrcccd."
+      ],
+      "bgInk": [
+        "........",
+        "........",
+        "........",
+        ".bb.b...",
+        "........"
+      ]
+    },
+    "R6": {
+      "art": [
+        "⠉⠤⠃ ⠂ .⠄",
+        " . /⠉⡱  ",
+        "⠂ /⣒/⡱ ⠈",
+        " /⣒/⣒⡱ .",
+        "⠈\\_/⠤⠃⠄ "
+      ],
+      "ink": [
+        "hcc.d.dd",
+        ".d.rhc..",
+        "d.rrrc.d",
+        ".rrrrc.d",
+        "drhrccd."
+      ],
+      "bgInk": [
+        "........",
+        "........",
+        "...b....",
+        "..b.b...",
+        "........"
+      ]
+    },
+    "R7": {
+      "art": [
+        " ⠂./⠉\\ ⠄",
+        " /⣒/⣒⡱ .",
+        "⠈\\_/⠤⠃⠂ ",
+        " .⠄ /⠉⡱ ",
+        "⠂ ⠁ ⠉⠤⠃ "
+      ],
+      "ink": [
+        ".ddrhr.d",
+        ".rrrrc.d",
+        "drhrccd.",
+        ".dd.rhc.",
+        "d.d.hcc."
+      ],
+      "bgInk": [
+        "........",
+        "..b.b...",
+        "........",
+        "........",
+        "........"
+      ]
+    }
+  },
+  "inkMap": {
+    "0": "terrain.rock_slate.dust_shine_0",
+    "1": "terrain.rock_slate.dust_shine_1",
+    "2": "terrain.rock_slate.dust_shine_2",
+    "3": "terrain.rock_slate.dust_shine_3",
+    "4": "terrain.rock_slate.dust_shine_4",
+    ".": null,
+    "s": "terrain.rock_slate.soil",
+    "d": "terrain.rock_slate.dust",
+    "r": "terrain.rock_slate.slate",
+    "h": "terrain.rock_slate.facet",
+    "c": "terrain.rock_slate.cleft",
+    "o": "terrain.rock_slate.ore",
+    "m": "terrain.rock_slate.mineral",
+    "w": "terrain.rock_slate.wall",
+    "j": "terrain.rock_slate.mortar",
+    "t": "terrain.rock_slate.steel",
+    "b": "terrain.rock_slate.shadow",
+    "l": "terrain.rock_slate.lamp",
+    "A": "terrain.rock_slate.ore_shine_0",
+    "B": "terrain.rock_slate.ore_shine_1",
+    "C": "terrain.rock_slate.ore_shine_2",
+    "D": "terrain.rock_slate.ore_shine_3",
+    "E": "terrain.rock_slate.ore_shine_4",
+    "F": "terrain.rock_slate.lamp_breathe_0",
+    "G": "terrain.rock_slate.lamp_breathe_1",
+    "H": "terrain.rock_slate.lamp_breathe_2",
+    "I": "terrain.rock_slate.lamp_breathe_3",
+    "J": "terrain.rock_slate.lamp_breathe_4"
+  }
+}

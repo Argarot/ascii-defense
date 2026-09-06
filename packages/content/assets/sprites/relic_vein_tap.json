@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_vein_tap.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        " /\\ ",
-        "#||#",
-        "####"
+        " ┬─┐",
+        "/⠁#│",
+        " ┴┴┘"
       ],
       "ink": [
-        ".aa.",
-        "baab",
-        "bbbb"
+        ".amm",
+        "a0aa",
+        ".lll"
+      ],
+      "bgInk": [
+        "....",
+        ".d..",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            " ┬─┐",
+            "/⠃#│",
+            " ┴┴┘"
+          ],
+          "ink": [
+            ".amm",
+            "a1aa",
+            ".lll"
+          ],
+          "bgInk": [
+            "....",
+            ".d..",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " ┬─┐",
+            "/⠆#│",
+            " ┴┴┘"
+          ],
+          "ink": [
+            ".amm",
+            "a2aa",
+            ".lll"
+          ],
+          "bgInk": [
+            "....",
+            ".d..",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " ┬─┐",
+            "/⠤#│",
+            " ┴┴┘"
+          ],
+          "ink": [
+            ".amm",
+            "a3aa",
+            ".lll"
+          ],
+          "bgInk": [
+            "....",
+            ".d..",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " ┬─┐",
+            "/⡀#│",
+            " ┴┴┘"
+          ],
+          "ink": [
+            ".amm",
+            "a4aa",
+            ".lll"
+          ],
+          "bgInk": [
+            "....",
+            ".d..",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.vein_tap.review3_pulse_0",
+    "1": "relic.vein_tap.review3_pulse_1",
+    "2": "relic.vein_tap.review3_pulse_2",
+    "3": "relic.vein_tap.review3_pulse_3",
+    "4": "relic.vein_tap.review3_pulse_4",
     ".": null,
-    "a": "relic.stone",
-    "b": "ui.dim"
+    "h": "relic.vein_tap.review3_steel_high",
+    "m": "relic.vein_tap.review3_steel_mid",
+    "l": "relic.vein_tap.review3_steel_low",
+    "a": "relic.vein_tap.review3_accent",
+    "b": "relic.vein_tap.review3_accent_dim",
+    "w": "relic.vein_tap.review3_lens_high",
+    "d": "relic.vein_tap.review3_recess",
+    "f": "relic.vein_tap.review3_exhaust",
+    "g": "relic.vein_tap.review3_warm_metal",
+    "t": "relic.vein_tap.review3_body",
+    "u": "relic.vein_tap.review3_coolant"
   }
 }

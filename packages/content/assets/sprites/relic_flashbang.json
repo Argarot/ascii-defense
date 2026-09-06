@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_flashbang.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        " \\|/",
-        "-()-",
-        " /|\\"
+        " _⠋ ",
+        "[!|]",
+        "\\__/"
       ],
       "ink": [
-        ".aaa",
-        "abba",
-        ".aaa"
+        ".a0.",
+        "tamt",
+        "aaaa"
+      ],
+      "bgInk": [
+        "..d.",
+        "....",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            " _⠙ ",
+            "[!|]",
+            "\\__/"
+          ],
+          "ink": [
+            ".a1.",
+            "tamt",
+            "aaaa"
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " _⠚ ",
+            "[!|]",
+            "\\__/"
+          ],
+          "ink": [
+            ".a2.",
+            "tamt",
+            "aaaa"
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " _⢤ ",
+            "[!|]",
+            "\\__/"
+          ],
+          "ink": [
+            ".a3.",
+            "tamt",
+            "aaaa"
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " _⡤ ",
+            "[!|]",
+            "\\__/"
+          ],
+          "ink": [
+            ".a4.",
+            "tamt",
+            "aaaa"
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.flashbang.review3_pulse_0",
+    "1": "relic.flashbang.review3_pulse_1",
+    "2": "relic.flashbang.review3_pulse_2",
+    "3": "relic.flashbang.review3_pulse_3",
+    "4": "relic.flashbang.review3_pulse_4",
     ".": null,
-    "a": "ui.text",
-    "b": "ui.dim"
+    "h": "relic.flashbang.review3_steel_high",
+    "m": "relic.flashbang.review3_steel_mid",
+    "l": "relic.flashbang.review3_steel_low",
+    "a": "relic.flashbang.review3_accent",
+    "b": "relic.flashbang.review3_accent_dim",
+    "w": "relic.flashbang.review3_lens_high",
+    "d": "relic.flashbang.review3_recess",
+    "f": "relic.flashbang.review3_exhaust",
+    "g": "relic.flashbang.review3_warm_metal",
+    "t": "relic.flashbang.review3_body",
+    "u": "relic.flashbang.review3_coolant"
   }
 }

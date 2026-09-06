@@ -34,11 +34,10 @@ describe('the attack look', () => {
     const charge = attackLook(BOLT, bare, st, 20, CHARGE_SHARE / 2);
     expect(charge?.overlay?.role).toBe('fx.ember');
   });
-  it('every imported tower sprite carries placeholder sequences: fire is the alt idle frame, briefly', () => {
-    expect(st.sequences?.fire?.[0].art).toEqual(st.frames?.[0].art);
-    expect(st.sequences?.fire?.[0].ms).toBe(100);
-    expect(attackLook(BOLT, st, st, 0, 1)?.frame.art).toEqual(st.frames?.[0].art);
-    expect(attackLook(BOLT, st, st, 3, 0.9)?.frame.art).toEqual(st.art); // 150 ms: cool = the base
+  it('every shipped tower sprite carries a fire sequence with durations, and the attack look plays it (the approved pack authors its own)', () => {
+    expect(st.sequences?.fire?.length ?? 0).toBeGreaterThanOrEqual(1);
+    expect(st.sequences?.fire?.[0].ms ?? 0).toBeGreaterThan(0);
+    expect(attackLook(BOLT, st, st, 0, 1)?.frame.art).toEqual(st.sequences?.fire?.[0].art);
   });
   it('plays authored sequences by their own durations, fire then cool, then charge by progress', () => {
     const f = (tag: string, ms: number) => ({ art: [tag.padEnd(8)] as [string], ink: ['a'.repeat(8)] as [string], ms });

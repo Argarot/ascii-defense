@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schema/recipes.schema.json",
+  "recipes": [
+    {
+      "a": "frostbite",
+      "b": "stasis",
+      "result": "permafrost_engine",
+      "desc": "Cold made permanent: slowed enemies take triple."
+    },
+    {
+      "a": "toll",
+      "b": "tithe",
+      "result": "tollbooth",
+      "desc": "Every kill and every step pays."
+    },
+    {
+      "a": "sandbags",
+      "b": "second_wind",
+      "result": "bunker",
+      "desc": "The Core mends 8 a wave."
+    },
+    {
+      "a": "quarry",
+      "b": "deep_vein",
+      "result": "quarry_master",
+      "desc": "Ten times production on demand."
+    },
+    {
+      "a": "orbital",
+      "b": "flashbang",
+      "result": "doomsday",
+      "desc": "The strike that also freezes the board."
+    }
+  ]
+}

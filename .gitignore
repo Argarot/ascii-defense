@@ -28,3 +28,15 @@ REXPaint-v*/
 out/
 __pycache__/
 *.pyc
+
+# The art agent's review galleries, previews and generator output stay on disk, out of the repo (2026-09-06).
+# Its STUDIES are art inputs and stay tracked (sources/sprites/*.study.json, sources/sprites/approved-pack/studies/).
+sources/sprites/*-review/
+sources/sprites/approved-pack/*
+!sources/sprites/approved-pack/studies/
+!sources/sprites/approved-pack/manifest.json
+packages/content/assets-reworked/
+# Locked leftovers of the pack that could not be deleted on disk (the art agent's tooling holds them); never imported.
+packages/content/assets/passives/
+packages/content/assets/AGENTS.md
+packages/content/assets/README.md

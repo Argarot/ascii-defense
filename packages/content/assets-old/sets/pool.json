@@ -1,0 +1,168 @@
+{
+  "$schema": "../../schema/sets.schema.json",
+  "sets": [
+    {
+      "tag": "damage",
+      "at": 2,
+      "name": "Sharpened",
+      "desc": "Two of damage: every hit does 5% more.",
+      "mods": {
+        "damageMul": 1.05
+      }
+    },
+    {
+      "tag": "damage",
+      "at": 3,
+      "name": "Honed",
+      "desc": "Three of damage: every hit does 12% more.",
+      "mods": {
+        "damageMul": 1.12
+      }
+    },
+    {
+      "tag": "rate",
+      "at": 2,
+      "name": "Oiled",
+      "desc": "Two of rate: every tower cycles a tick faster.",
+      "mods": {
+        "fireEveryTicks": -1
+      }
+    },
+    {
+      "tag": "rate",
+      "at": 3,
+      "name": "Overwound",
+      "desc": "Three of rate: every tower cycles three ticks faster.",
+      "mods": {
+        "fireEveryTicks": -3
+      }
+    },
+    {
+      "tag": "reach",
+      "at": 2,
+      "name": "Spotter",
+      "desc": "Two of reach: every tower reaches half a cell further.",
+      "mods": {
+        "range": 0.5
+      }
+    },
+    {
+      "tag": "reach",
+      "at": 3,
+      "name": "Watchtower",
+      "desc": "Three of reach: every tower reaches a cell and a half further.",
+      "mods": {
+        "range": 1.5
+      }
+    },
+    {
+      "tag": "cold",
+      "at": 2,
+      "name": "Frost Line",
+      "desc": "Two of cold: every slow is 5% colder.",
+      "mods": {
+        "slowMul": -0.05
+      }
+    },
+    {
+      "tag": "cold",
+      "at": 3,
+      "name": "Permafrost",
+      "desc": "Three of cold: every slow lasts half a second longer.",
+      "mods": {
+        "slowTicks": 10
+      }
+    },
+    {
+      "tag": "kinetic",
+      "at": 2,
+      "name": "Hardened",
+      "desc": "Two of kinetic: every shot passes into one more body.",
+      "mods": {
+        "pierceCount": 1
+      }
+    },
+    {
+      "tag": "kinetic",
+      "at": 3,
+      "name": "Depleted",
+      "desc": "Three of kinetic: every hit does 2 more.",
+      "mods": {
+        "damage": 2
+      }
+    },
+    {
+      "tag": "energy",
+      "at": 2,
+      "name": "Conductive",
+      "desc": "Two of energy: every arc reaches half a cell further.",
+      "mods": {
+        "chainReach": 0.5
+      }
+    },
+    {
+      "tag": "energy",
+      "at": 3,
+      "name": "Superheated",
+      "desc": "Three of energy: every hit leaves a burn of 1 a tick.",
+      "mods": {
+        "burnDps": 1
+      }
+    },
+    {
+      "tag": "support",
+      "at": 2,
+      "name": "Rally",
+      "desc": "Two of support: every aura reaches a cell further.",
+      "mods": {
+        "auraReach": 1
+      }
+    },
+    {
+      "tag": "support",
+      "at": 3,
+      "name": "Banner",
+      "desc": "Three of support: every hit does 5% more and every tower reaches half a cell further.",
+      "mods": {
+        "damageMul": 1.05,
+        "range": 0.5
+      }
+    },
+    {
+      "tag": "economy",
+      "at": 2,
+      "name": "Ledger",
+      "desc": "Two of economy: 5 Scrap at every wave launch.",
+      "econ": {
+        "waveScrap": 5
+      }
+    },
+    {
+      "tag": "economy",
+      "at": 3,
+      "name": "Treasury",
+      "desc": "Three of economy: every bounty pays 15% more.",
+      "econ": {
+        "bountyMul": 1.15
+      }
+    },
+    {
+      "tag": "core",
+      "at": 2,
+      "name": "Masonry",
+      "desc": "Two of core: the Core mends 1 health every wave.",
+      "econ": {
+        "coreHealPerWave": 1
+      }
+    },
+    {
+      "tag": "core",
+      "at": 3,
+      "name": "Citadel",
+      "desc": "Three of core: the Core mends 3 health every wave.",
+      "econ": {
+        "coreHealPerWave": 3
+      }
+    }
+  ]
+}

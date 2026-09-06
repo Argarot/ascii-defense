@@ -45,23 +45,25 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 // Core face - one glob, validated at boot. The title's hero row is the
 // tower sprites in roster order.
 const SPRITE_JSON = import.meta.glob('../../content/assets/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
-// The art agent's reworked pack lives beside the shipped assets (2026-09-06
-// evening, Daniil: "try the new sprites"); a setting picks the pack at boot.
-// Missing folder = empty globs = the shipped pack.
-const REWORKED_JSON = import.meta.glob('../../content/assets-reworked/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
-const REWORKED_PALETTE = import.meta.glob('../../content/assets-reworked/palette.json', { eager: true, import: 'default' }) as Record<string, { roles?: Record<string, string> }>;
-const SPRITE_SET: 'shipped' | 'reworked' = loadMetaFrom(localStorage).meta.settings.spriteSet ?? 'shipped';
-const SHIPPED_SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
-const REWORKED_SPRITES = SPRITE_SET === 'reworked' ? Object.values(REWORKED_JSON).map((s) => must(validateSprite.check(s), `reworked sprite ${(s as { id?: string }).id ?? '?'}`)) : [];
-// The reworked pack first, the shipped one for anything it lacks.
-const SPRITES = SPRITE_SET === 'reworked' && REWORKED_SPRITES.length > 0
-  ? [...REWORKED_SPRITES, ...SHIPPED_SPRITES.filter((s) => !REWORKED_SPRITES.some((r) => r.id === s.id))]
-  : SHIPPED_SPRITES;
-if (SPRITE_SET === 'reworked') {
-  const pal = Object.values(REWORKED_PALETTE)[0]?.roles;
+// The previous pack lives beside the current one (2026-09-06 evening: the
+// approved pack became assets/, the old assets became assets-old/, and a
+// setting picks either at boot for comparison). A missing folder is an
+// empty glob: the current pack.
+const PREVIOUS_JSON = import.meta.glob('../../content/assets-old/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
+const PREVIOUS_PALETTE = import.meta.glob('../../content/assets-old/palette.json', { eager: true, import: 'default' }) as Record<string, { roles?: Record<string, string> }>;
+const SPRITE_SET: 'current' | 'previous' = loadMetaFrom(localStorage).meta.settings.spriteSet ?? 'current';
+const CURRENT_SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
+const PREVIOUS_SPRITES = SPRITE_SET === 'previous' ? Object.values(PREVIOUS_JSON).map((s) => must(validateSprite.check(s), `previous sprite ${(s as { id?: string }).id ?? '?'}`)) : [];
+// The previous pack first, the current one for anything it lacks.
+const SPRITES = SPRITE_SET === 'previous' && PREVIOUS_SPRITES.length > 0
+  ? [...PREVIOUS_SPRITES, ...CURRENT_SPRITES.filter((s) => !PREVIOUS_SPRITES.some((r) => r.id === s.id))]
+  : CURRENT_SPRITES;
+if (SPRITE_SET === 'previous' && PREVIOUS_SPRITES.length > 0) {
+  const pal = Object.values(PREVIOUS_PALETTE)[0]?.roles;
   if (pal) setPaletteRoles(pal);
+  // The previous pack has no authored terrain: the board falls back to its hashed texture.
   const pack: TerrainSpritePack = {};
-  for (const s of REWORKED_SPRITES) { if (s.id === 'ground_slate') pack.G = s; if (s.id === 'rock_slate') pack.R = s; if (s.id === 'ore_slate') pack.O = s; }
+  for (const s of PREVIOUS_SPRITES) { if (s.id === 'ground_slate') pack.G = s; if (s.id === 'rock_slate') pack.R = s; if (s.id === 'ore_slate') pack.O = s; }
   setTerrainPack(pack);
 }
 const HERO = ['bolt', 'mortar', 'frost', 'refinery', 'tesla', 'missile', 'laser', 'bastion'].map((id) => SPRITES.find((s) => s.id === id)).filter((s) => s !== undefined);
@@ -466,7 +468,7 @@ async function main(): Promise<void> {
             { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
             { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
             { id: 'palette', label: 'PALETTE', note: meta.settings.palette === 'colourblind' ? 'COLOURBLIND' : 'DEFAULT' },
-            { id: 'sprites', label: 'SPRITE PACK', note: `${(meta.settings.spriteSet ?? 'shipped').toUpperCase()} (reloads)` },
+            { id: 'sprites', label: 'SPRITE PACK', note: `${(meta.settings.spriteSet ?? 'current').toUpperCase()} (reloads)` },
             { id: 'hints', label: 'FIRST-RUN HINTS', note: meta.settings.onboarded ? 'seen - click to show again' : 'ON' },
             { id: 'export', label: 'EXPORT SAVES' },
             { id: 'import', label: 'IMPORT SAVES' },
@@ -713,7 +715,7 @@ async function main(): Promise<void> {
         break;
       }
       case 'sprites': {
-        meta.settings.spriteSet = (meta.settings.spriteSet ?? 'shipped') === 'reworked' ? 'shipped' : 'reworked';
+        meta.settings.spriteSet = (meta.settings.spriteSet ?? 'current') === 'previous' ? 'current' : 'previous';
         saveMeta(meta);
         location.reload();
         break;
@@ -1104,7 +1106,7 @@ async function main(): Promise<void> {
     forgePick: (index: number): void => forgeAct({ kind: 'held', index }),
     forgeCombine: (): void => forgeAct({ kind: 'combine' }),
     forgeState: () => forgeState(),
-    spriteSet: (): { set: string; sprites: number; reworked: number; terrain: boolean } => ({ set: SPRITE_SET, sprites: SPRITES.length, reworked: REWORKED_SPRITES.length, terrain: REWORKED_SPRITES.some((s) => s.id === 'ground_slate') }),
+    spriteSet: (): { set: string; sprites: number; previous: number; terrain: boolean } => ({ set: SPRITE_SET, sprites: SPRITES.length, previous: PREVIOUS_SPRITES.length, terrain: SPRITES.some((s) => s.id === 'ground_slate') }),
     sets: () => debug('sets'),
     // Debug-only: a relic by id outside any offer (replays diverge), and an active fired at a cell.
     grant: (id: string) => debug('grant', id),

@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_second_wind.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        " .. ",
-        "(++)",
-        " '' "
+        " +⠋ ",
+        "[||]",
+        " \\/ "
       ],
       "ink": [
-        ".aa.",
-        "abba",
+        ".a0.",
+        "thmt",
         ".aa."
+      ],
+      "bgInk": [
+        "..d.",
+        "....",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            " +⠙ ",
+            "[||]",
+            " \\/ "
+          ],
+          "ink": [
+            ".a1.",
+            "thmt",
+            ".aa."
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " +⠚ ",
+            "[||]",
+            " \\/ "
+          ],
+          "ink": [
+            ".a2.",
+            "thmt",
+            ".aa."
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " +⢤ ",
+            "[||]",
+            " \\/ "
+          ],
+          "ink": [
+            ".a3.",
+            "thmt",
+            ".aa."
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            " +⡤ ",
+            "[||]",
+            " \\/ "
+          ],
+          "ink": [
+            ".a4.",
+            "thmt",
+            ".aa."
+          ],
+          "bgInk": [
+            "..d.",
+            "....",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.second_wind.review3_pulse_0",
+    "1": "relic.second_wind.review3_pulse_1",
+    "2": "relic.second_wind.review3_pulse_2",
+    "3": "relic.second_wind.review3_pulse_3",
+    "4": "relic.second_wind.review3_pulse_4",
     ".": null,
-    "a": "ui.dim",
-    "b": "relic.moss"
+    "h": "relic.second_wind.review3_steel_high",
+    "m": "relic.second_wind.review3_steel_mid",
+    "l": "relic.second_wind.review3_steel_low",
+    "a": "relic.second_wind.review3_accent",
+    "b": "relic.second_wind.review3_accent_dim",
+    "w": "relic.second_wind.review3_lens_high",
+    "d": "relic.second_wind.review3_recess",
+    "f": "relic.second_wind.review3_exhaust",
+    "g": "relic.second_wind.review3_warm_metal",
+    "t": "relic.second_wind.review3_body",
+    "u": "relic.second_wind.review3_coolant"
   }
 }

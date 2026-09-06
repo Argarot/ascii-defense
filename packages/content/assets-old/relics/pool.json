@@ -1,0 +1,1319 @@
+{
+  "$schema": "../../schema/relics.schema.json",
+  "relics": [
+    {
+      "id": "overflow",
+      "name": "Overflow",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "damage"
+      ],
+      "desc": "Overkill damage chains to the nearest enemy. Chain kills chain again.",
+      "effects": {
+        "overkillCarry": true
+      }
+    },
+    {
+      "id": "frostbite",
+      "name": "Frostbite",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "stackable": true,
+      "desc": "Slowed enemies take +50% damage from everything. Stacks.",
+      "effects": {
+        "slowedDamageMul": 1.5
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Slowed enemies take +75% from everything.",
+          "effects": {
+            "slowedDamageMul": 1.75
+          }
+        },
+        "epic": {
+          "desc": "Slowed enemies take double from everything.",
+          "effects": {
+            "slowedDamageMul": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "tithe",
+      "name": "Tithe",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "Every kill refunds 2 Scrap. Stacks.",
+      "effects": {
+        "killRefundScrap": 2
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every kill refunds 3 Scrap.",
+          "effects": {
+            "killRefundScrap": 3
+          }
+        },
+        "epic": {
+          "desc": "Every kill refunds 5 Scrap.",
+          "effects": {
+            "killRefundScrap": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "splinter",
+      "name": "Splinter",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "damage"
+      ],
+      "desc": "Explosions detonate twice: the same blast, resolved again a beat later - you will see both.",
+      "effects": {
+        "explodeTwice": true
+      }
+    },
+    {
+      "id": "vein_tap",
+      "name": "Vein Tap",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "core"
+      ],
+      "desc": "You may build on rock.",
+      "effects": {
+        "buildOnRock": true
+      }
+    },
+    {
+      "id": "loadbearing",
+      "name": "Loadbearing",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "reach"
+      ],
+      "desc": "Towers touching the Core block get triple range.",
+      "effects": {
+        "coreAdjacentRangeMul": 3
+      }
+    },
+    {
+      "id": "second_wind",
+      "name": "Second Wind",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "desc": "The Core mends 2 health every time a wave launches.",
+      "effects": {
+        "coreHealPerWave": 2
+      },
+      "tiers": {
+        "rare": {
+          "desc": "The Core mends 4 health every wave.",
+          "effects": {
+            "coreHealPerWave": 4
+          }
+        },
+        "epic": {
+          "desc": "The Core mends 6 health every wave.",
+          "effects": {
+            "coreHealPerWave": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "quarry",
+      "name": "Quarry",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Rock breaks three times faster - every prospect job, everywhere.",
+      "effects": {
+        "prospectSpeedMul": 3
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Prospecting runs four times as fast.",
+          "effects": {
+            "prospectSpeedMul": 4
+          }
+        },
+        "epic": {
+          "desc": "Prospecting runs six times as fast.",
+          "effects": {
+            "prospectSpeedMul": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "toll",
+      "name": "Toll",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "Every enemy pays 1 Scrap for each cell it walks beside a tower. Stacks.",
+      "effects": {
+        "tollScrap": 1
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every enemy that passes a tower pays 2 Scrap.",
+          "effects": {
+            "tollScrap": 2
+          }
+        },
+        "epic": {
+          "desc": "Every enemy that passes a tower pays 3 Scrap.",
+          "effects": {
+            "tollScrap": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "bounty_board",
+      "name": "Bounty Board",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Bosses pay half again as much Scrap.",
+      "effects": {
+        "bossBountyMul": 1.5
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Boss bounties pay double.",
+          "effects": {
+            "bossBountyMul": 2
+          }
+        },
+        "epic": {
+          "desc": "Boss bounties pay triple.",
+          "effects": {
+            "bossBountyMul": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "orbital",
+      "name": "Orbital Lance",
+      "kind": "active",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
+      "stackable": true,
+      "desc": "Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly. A second copy is a second charge.",
+      "cooldownTicks": 1800,
+      "effects": {
+        "orbitalDamage": 400,
+        "orbitalRadius": 3
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Strike anywhere: 550 damage in a 3.5-cell blast. Recharges slowly.",
+          "effects": {
+            "orbitalDamage": 550,
+            "orbitalRadius": 3.5
+          }
+        },
+        "epic": {
+          "desc": "Strike anywhere: 800 damage in a 4-cell blast. Recharges slowly.",
+          "effects": {
+            "orbitalDamage": 800,
+            "orbitalRadius": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "stasis",
+      "name": "Stasis Field",
+      "kind": "active",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "stackable": true,
+      "desc": "Freeze every enemy for 4 seconds. Towers keep firing. A second copy is a second charge.",
+      "cooldownTicks": 2400,
+      "effects": {
+        "freezeTicks": 80
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Freeze every enemy for 6 seconds. Towers keep firing.",
+          "effects": {
+            "freezeTicks": 120
+          }
+        },
+        "epic": {
+          "desc": "Freeze every enemy for 8 seconds. Towers keep firing.",
+          "effects": {
+            "freezeTicks": 160
+          }
+        }
+      }
+    },
+    {
+      "id": "deep_vein",
+      "name": "Deep Vein",
+      "kind": "active",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "Refineries produce five-fold for 20 seconds. A second copy is a second charge.",
+      "cooldownTicks": 2400,
+      "effects": {
+        "productionMul": 5,
+        "boostTicks": 400
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Refineries produce at six times for 30 seconds.",
+          "effects": {
+            "productionMul": 6,
+            "boostTicks": 600
+          }
+        },
+        "epic": {
+          "desc": "Refineries produce at eight times for 40 seconds.",
+          "effects": {
+            "productionMul": 8,
+            "boostTicks": 800
+          }
+        }
+      }
+    },
+    {
+      "id": "sandbags",
+      "name": "Sandbags",
+      "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "stackable": true,
+      "desc": "Use: the Core gains 15 health, and 15 to its maximum. One use.",
+      "effects": {
+        "coreHpAdd": 15
+      },
+      "tiers": {
+        "rare": {
+          "desc": "The Core gains 25 max health, once.",
+          "effects": {
+            "coreHpAdd": 25
+          }
+        },
+        "epic": {
+          "desc": "The Core gains 40 max health, once.",
+          "effects": {
+            "coreHpAdd": 40
+          }
+        }
+      }
+    },
+    {
+      "id": "flashbang",
+      "name": "Flashbang",
+      "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "stackable": true,
+      "desc": "Use: every enemy freezes for 2 seconds. One use.",
+      "effects": {
+        "freezeTicks": 40
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Freeze every enemy for 3 seconds, once.",
+          "effects": {
+            "freezeTicks": 60
+          }
+        },
+        "epic": {
+          "desc": "Freeze every enemy for 4 seconds, once.",
+          "effects": {
+            "freezeTicks": 80
+          }
+        }
+      }
+    },
+    {
+      "id": "ore_pocket",
+      "name": "Ore Pocket",
+      "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "Use: 20 Ore, right now. One use.",
+      "effects": {
+        "oreAdd": 20
+      },
+      "tiers": {
+        "rare": {
+          "desc": "35 Ore, once.",
+          "effects": {
+            "oreAdd": 35
+          }
+        },
+        "epic": {
+          "desc": "60 Ore, once.",
+          "effects": {
+            "oreAdd": 60
+          }
+        }
+      }
+    },
+    {
+      "id": "ricochet",
+      "name": "Ricochet",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage",
+        "kinetic"
+      ],
+      "desc": "A killing hit carries half of itself to the nearest body within two cells.",
+      "effects": {
+        "killChainMul": 0.5
+      },
+      "tiers": {
+        "rare": {
+          "desc": "A killing hit carries 70% of itself to the nearest body within two cells.",
+          "effects": {
+            "killChainMul": 0.7
+          }
+        },
+        "epic": {
+          "desc": "A killing hit carries itself whole to the nearest body within two cells.",
+          "effects": {
+            "killChainMul": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "cold_snap",
+      "name": "Cold Snap",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "desc": "A slowed or frozen body that dies chills everything within a cell and a half for a second.",
+      "effects": {
+        "deathChillTicks": 20
+      },
+      "tiers": {
+        "rare": {
+          "desc": "...for a second and a half.",
+          "effects": {
+            "deathChillTicks": 30
+          }
+        },
+        "epic": {
+          "desc": "...for two seconds.",
+          "effects": {
+            "deathChillTicks": 40
+          }
+        }
+      }
+    },
+    {
+      "id": "kindling",
+      "name": "Kindling",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "energy",
+        "damage"
+      ],
+      "desc": "A burning body that dies passes its burn to everything within a cell and a half.",
+      "effects": {
+        "deathSpreadBurn": true
+      }
+    },
+    {
+      "id": "salvage_rights",
+      "name": "Salvage Rights",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Sold towers refund 85% instead of 70%.",
+      "effects": {
+        "sellRefundBonus": 0.15
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Sold towers refund in full.",
+          "effects": {
+            "sellRefundBonus": 0.3
+          }
+        },
+        "epic": {
+          "desc": "Sold towers refund in full.",
+          "effects": {
+            "sellRefundBonus": 0.3
+          }
+        }
+      }
+    },
+    {
+      "id": "bulk_order",
+      "name": "Bulk Order",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "Every tower costs 10% less.",
+      "effects": {
+        "buildCostMul": 0.9
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every tower costs 15% less.",
+          "effects": {
+            "buildCostMul": 0.85
+          }
+        },
+        "epic": {
+          "desc": "Every tower costs 25% less.",
+          "effects": {
+            "buildCostMul": 0.75
+          }
+        }
+      }
+    },
+    {
+      "id": "cheap_upgrades",
+      "name": "Cheap Upgrades",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "Every tier choice costs 15% less.",
+      "effects": {
+        "tierCostMul": 0.85
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every tier choice costs 25% less.",
+          "effects": {
+            "tierCostMul": 0.75
+          }
+        },
+        "epic": {
+          "desc": "Every tier choice costs 40% less.",
+          "effects": {
+            "tierCostMul": 0.6
+          }
+        }
+      }
+    },
+    {
+      "id": "wide_net",
+      "name": "Wide Net",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "kinetic"
+      ],
+      "stackable": true,
+      "desc": "Every shot passes into one more body.",
+      "effects": {
+        "pierceAdd": 1
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every shot passes into two more bodies.",
+          "effects": {
+            "pierceAdd": 2
+          }
+        },
+        "epic": {
+          "desc": "Every shot passes into three more bodies.",
+          "effects": {
+            "pierceAdd": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "grounding_rod",
+      "name": "Grounding Rod",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "energy"
+      ],
+      "stackable": true,
+      "desc": "Every arc jumps to one more body.",
+      "effects": {
+        "chainAdd": 1
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every arc jumps to two more bodies.",
+          "effects": {
+            "chainAdd": 2
+          }
+        },
+        "epic": {
+          "desc": "Every arc jumps to three more bodies.",
+          "effects": {
+            "chainAdd": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "long_fuse",
+      "name": "Long Fuse",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage",
+        "kinetic"
+      ],
+      "stackable": true,
+      "desc": "Every blast reaches half a cell further.",
+      "effects": {
+        "blastAdd": 0.5
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every blast reaches a cell further.",
+          "effects": {
+            "blastAdd": 1
+          }
+        },
+        "epic": {
+          "desc": "Every blast reaches a cell and a half further.",
+          "effects": {
+            "blastAdd": 1.5
+          }
+        }
+      }
+    },
+    {
+      "id": "sniper_nest",
+      "name": "Sniper Nest",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "damage",
+        "core"
+      ],
+      "desc": "Towers touching the Core face hit for half again.",
+      "effects": {
+        "coreAdjacentDamageMul": 1.5
+      },
+      "tiers": {
+        "epic": {
+          "desc": "Towers touching the Core face hit for double.",
+          "effects": {
+            "coreAdjacentDamageMul": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "bloodstone",
+      "name": "Bloodstone",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "desc": "Every tenth kill mends the Core by 1.",
+      "effects": {
+        "killHealEvery": 10
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every seventh kill mends the Core by 1.",
+          "effects": {
+            "killHealEvery": 7
+          }
+        },
+        "epic": {
+          "desc": "Every fifth kill mends the Core by 1.",
+          "effects": {
+            "killHealEvery": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "rush_bonus",
+      "name": "Rush Bonus",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy",
+        "rate"
+      ],
+      "desc": "Calling a wave early pays double the clock bonus.",
+      "effects": {
+        "callBonusMul": 2
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Calling a wave early pays triple the clock bonus.",
+          "effects": {
+            "callBonusMul": 3
+          }
+        },
+        "epic": {
+          "desc": "Calling a wave early pays four times the clock bonus.",
+          "effects": {
+            "callBonusMul": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "scavenger",
+      "name": "Scavenger",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Caches pay double Scrap.",
+      "effects": {
+        "lootScrapMul": 2
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Caches pay triple Scrap.",
+          "effects": {
+            "lootScrapMul": 3
+          }
+        },
+        "epic": {
+          "desc": "Caches pay four times the Scrap.",
+          "effects": {
+            "lootScrapMul": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "prospectors_eye",
+      "name": "Prospector's Eye",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Prospecting rock costs nothing.",
+      "effects": {
+        "prospectFree": true
+      }
+    },
+    {
+      "id": "iron_will",
+      "name": "Iron Will",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "stackable": true,
+      "desc": "Every breach costs the Core 1 less.",
+      "effects": {
+        "breachReduce": 1
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every breach costs the Core 2 less.",
+          "effects": {
+            "breachReduce": 2
+          }
+        },
+        "epic": {
+          "desc": "Every breach costs the Core 3 less.",
+          "effects": {
+            "breachReduce": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "frost_nova",
+      "name": "Frost Nova",
+      "kind": "active",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "stackable": true,
+      "desc": "Every enemy on the board moves at half speed for 4 seconds. Recharges in a minute.",
+      "cooldownTicks": 1200,
+      "effects": {
+        "slowAllMul": 0.5,
+        "slowAllTicks": 80
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every enemy moves at 40% for 6 seconds.",
+          "effects": {
+            "slowAllMul": 0.4,
+            "slowAllTicks": 120
+          }
+        },
+        "epic": {
+          "desc": "Every enemy moves at 30% for 8 seconds.",
+          "effects": {
+            "slowAllMul": 0.3,
+            "slowAllTicks": 160
+          }
+        }
+      }
+    },
+    {
+      "id": "scrap_rain",
+      "name": "Scrap Rain",
+      "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "80 Scrap, once.",
+      "effects": {
+        "scrapAdd": 80
+      },
+      "tiers": {
+        "rare": {
+          "desc": "140 Scrap, once.",
+          "effects": {
+            "scrapAdd": 140
+          }
+        },
+        "epic": {
+          "desc": "220 Scrap, once.",
+          "effects": {
+            "scrapAdd": 220
+          }
+        }
+      }
+    },
+    {
+      "id": "emergency_repair",
+      "name": "Emergency Repair",
+      "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "stackable": true,
+      "desc": "The Core mends 20 now.",
+      "effects": {
+        "coreHealNow": 20
+      },
+      "tiers": {
+        "rare": {
+          "desc": "The Core mends 35 now.",
+          "effects": {
+            "coreHealNow": 35
+          }
+        },
+        "epic": {
+          "desc": "The Core mends 50 now.",
+          "effects": {
+            "coreHealNow": 50
+          }
+        }
+      }
+    },
+    {
+      "id": "foundry",
+      "name": "Foundry",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "economy"
+      ],
+      "desc": "A Refinery standing off any vein produces its yield as Scrap instead. The PRD's rule, broken by a relic.",
+      "effects": {
+        "refineryScrapOffVein": true
+      }
+    },
+    {
+      "id": "thick_walls",
+      "name": "Thick Walls",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "stackable": true,
+      "desc": "The Core holds 10 more while this is held.",
+      "effects": {
+        "coreHpMaxAdd": 10
+      },
+      "tiers": {
+        "rare": {
+          "desc": "The Core holds 20 more while this is held.",
+          "effects": {
+            "coreHpMaxAdd": 20
+          }
+        },
+        "epic": {
+          "desc": "The Core holds 35 more while this is held.",
+          "effects": {
+            "coreHpMaxAdd": 35
+          }
+        }
+      }
+    },
+    {
+      "id": "iron_sights",
+      "name": "Iron Sights",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "reach"
+      ],
+      "stackable": true,
+      "desc": "Every tower reaches one cell further.",
+      "effects": {
+        "mods": {
+          "range": 1
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every tower reaches a cell and a half further.",
+          "effects": {
+            "mods": {
+              "range": 1.5
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every tower reaches two cells further.",
+          "effects": {
+            "mods": {
+              "range": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "hot_loads",
+      "name": "Hot Loads",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
+      "stackable": true,
+      "desc": "Every hit does 15% more.",
+      "effects": {
+        "damageMul": 1.15
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every hit does 25% more.",
+          "effects": {
+            "damageMul": 1.25
+          }
+        },
+        "epic": {
+          "desc": "Every hit does 40% more.",
+          "effects": {
+            "damageMul": 1.4
+          }
+        }
+      }
+    },
+    {
+      "id": "quick_hands",
+      "name": "Quick Hands",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "rate"
+      ],
+      "stackable": true,
+      "desc": "Every tower cycles two ticks faster.",
+      "effects": {
+        "mods": {
+          "fireEveryTicks": -2
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every tower cycles three ticks faster.",
+          "effects": {
+            "mods": {
+              "fireEveryTicks": -3
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every tower cycles five ticks faster.",
+          "effects": {
+            "mods": {
+              "fireEveryTicks": -5
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "deep_cold",
+      "name": "Deep Cold",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "desc": "Every slow is 10% colder.",
+      "effects": {
+        "mods": {
+          "slowMul": -0.1
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every slow is 15% colder.",
+          "effects": {
+            "mods": {
+              "slowMul": -0.15
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every slow is 25% colder.",
+          "effects": {
+            "mods": {
+              "slowMul": -0.25
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "overclock",
+      "name": "Overclock",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "energy"
+      ],
+      "desc": "Every beam heats one multiple higher.",
+      "effects": {
+        "mods": {
+          "beamRampMax": 1
+        }
+      },
+      "tiers": {
+        "epic": {
+          "desc": "Every beam heats two multiples higher.",
+          "effects": {
+            "mods": {
+              "beamRampMax": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "wide_aura",
+      "name": "Wide Aura",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "support"
+      ],
+      "desc": "Every aura reaches one cell further.",
+      "effects": {
+        "mods": {
+          "auraReach": 1
+        }
+      },
+      "tiers": {
+        "epic": {
+          "desc": "Every aura reaches two cells further.",
+          "effects": {
+            "mods": {
+              "auraReach": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rich_seam",
+      "name": "Rich Seam",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Every refinery mines one more Ore a cycle.",
+      "effects": {
+        "mods": {
+          "production": 1
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every refinery mines two more Ore a cycle.",
+          "effects": {
+            "mods": {
+              "production": 2
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every refinery mines three more Ore a cycle.",
+          "effects": {
+            "mods": {
+              "production": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "war_chest",
+      "name": "War Chest",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "desc": "Ten Scrap at every wave launch.",
+      "effects": {
+        "waveScrap": 10
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Twenty Scrap at every wave launch.",
+          "effects": {
+            "waveScrap": 20
+          }
+        },
+        "epic": {
+          "desc": "Thirty-five Scrap at every wave launch.",
+          "effects": {
+            "waveScrap": 35
+          }
+        }
+      }
+    },
+    {
+      "id": "bounty_hunter",
+      "name": "Bounty Hunter",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "desc": "Every bounty pays 25% more.",
+      "effects": {
+        "bountyMul": 1.25
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every bounty pays 50% more.",
+          "effects": {
+            "bountyMul": 1.5
+          }
+        },
+        "epic": {
+          "desc": "Every bounty pays double.",
+          "effects": {
+            "bountyMul": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "tempered_steel",
+      "name": "Tempered Steel",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "damage",
+        "reach"
+      ],
+      "desc": "Every hit does 10% more and every tower reaches half a cell further.",
+      "effects": {
+        "damageMul": 1.1,
+        "mods": {
+          "range": 0.5
+        }
+      },
+      "tiers": {
+        "epic": {
+          "desc": "Every hit does 20% more and every tower reaches a cell further.",
+          "effects": {
+            "damageMul": 1.2,
+            "mods": {
+              "range": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "shield_breaker",
+      "name": "Shield Breaker",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "kinetic",
+        "energy"
+      ],
+      "desc": "Every hit does half again to shields.",
+      "effects": {
+        "mods": {
+          "shieldMul": 0.5
+        }
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every hit does double to shields.",
+          "effects": {
+            "mods": {
+              "shieldMul": 1
+            }
+          }
+        },
+        "epic": {
+          "desc": "Every hit does triple to shields.",
+          "effects": {
+            "mods": {
+              "shieldMul": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "permafrost_engine",
+      "name": "Permafrost Engine",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "cold",
+        "damage"
+      ],
+      "fusionOnly": true,
+      "desc": "Slowed enemies take triple from everything. Frostbite and Stasis, fused.",
+      "effects": {
+        "slowedDamageMul": 3
+      }
+    },
+    {
+      "id": "tollbooth",
+      "name": "Tollbooth",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "economy"
+      ],
+      "fusionOnly": true,
+      "desc": "Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused.",
+      "effects": {
+        "killRefundScrap": 5,
+        "tollScrap": 3
+      }
+    },
+    {
+      "id": "bunker",
+      "name": "Bunker",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "core"
+      ],
+      "fusionOnly": true,
+      "desc": "The Core mends 8 health every wave. Sandbags and Second Wind, fused.",
+      "effects": {
+        "coreHealPerWave": 8
+      }
+    },
+    {
+      "id": "quarry_master",
+      "name": "Quarry Master",
+      "kind": "active",
+      "rarity": "epic",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "fusionOnly": true,
+      "desc": "Refineries produce at ten times for 40 seconds. Quarry and Deep Vein, fused.",
+      "cooldownTicks": 1800,
+      "effects": {
+        "productionMul": 10,
+        "boostTicks": 800
+      }
+    },
+    {
+      "id": "doomsday",
+      "name": "Doomsday",
+      "kind": "active",
+      "rarity": "epic",
+      "tags": [
+        "damage",
+        "cold"
+      ],
+      "stackable": true,
+      "fusionOnly": true,
+      "desc": "Strike anywhere: 900 damage in a 4-cell blast, and every enemy freezes for 2 seconds. Orbital Lance and Flashbang, fused.",
+      "cooldownTicks": 1800,
+      "effects": {
+        "orbitalDamage": 900,
+        "orbitalRadius": 4,
+        "freezeTicks": 40
+      }
+    }
+  ]
+}

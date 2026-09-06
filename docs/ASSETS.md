@@ -78,6 +78,19 @@ dimensions, so the editor UI will also render at 5×8. Cramped but workable.
 
 Commit `.xp` sources alongside the generated JSON so art stays editable.
 
+## 2b. The two packs *(2026-09-06 evening)*
+
+`packages/content/assets/` is the game's content: the **approved sprite
+pack** (the art agent's 61 sprites, its palette - a superset of the old
+roles - and ground, rock and ore terrain) beside the gameplay JSON.
+`packages/content/assets-old/` keeps the previous sprites and palette;
+SETTINGS → SPRITE PACK → PREVIOUS draws with them for comparison. The art
+agent delivers a new pack into `packages/content/assets-reworked/` (ignored
+by git); the dev moves its `sprites/` and `palette.json` into `assets/`
+and its studies into `sources/sprites/approved-pack/studies/`. Gameplay
+JSON never comes from a pack. `tools/placeholder-sprites.mjs` skips any
+sprite whose `source` is not its own, so approved art is never overwritten.
+
 ## 3. Sprite format (v2, session 22 — 2026-09-04; kinds and sequences session 25)
 
 Art is a grid of glyphs plus parallel grids of **ink keys** naming colour

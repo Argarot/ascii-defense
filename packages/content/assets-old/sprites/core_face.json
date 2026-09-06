@@ -1,0 +1,163 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "core_face",
+  "kind": "face",
+  "cell": [
+    8,
+    5
+  ],
+  "frameMs": 900,
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "top": {
+      "art": [
+        "  .--.  ",
+        " /    \\ ",
+        "|  ..  |",
+        "| :..: |",
+        "|______|"
+      ],
+      "ink": [
+        "..aaaa..",
+        ".a....a.",
+        "a..aa..a",
+        "a.aaaa.a",
+        "aaaaaaaa"
+      ],
+      "bgInk": [
+        "..bbbb..",
+        ".b....b.",
+        "b..bb..b",
+        "b.bbbb.b",
+        "bbbbbbbb"
+      ],
+      "frames": [
+        {
+          "art": [
+            "  .--.  ",
+            " /    \\ ",
+            "|  ..  |",
+            "| .::. |",
+            "|______|"
+          ],
+          "ink": [
+            "..aaaa..",
+            ".a....a.",
+            "a..aa..a",
+            "a.aaaa.a",
+            "aaaaaaaa"
+          ],
+          "bgInk": [
+            "..bbbb..",
+            ".b....b.",
+            "b..bb..b",
+            "b.bbbb.b",
+            "bbbbbbbb"
+          ]
+        }
+      ]
+    },
+    "mid": {
+      "art": [
+        "|      |",
+        "| /--\\ |",
+        "<=(  )=|",
+        "| \\--/ |",
+        "|      |"
+      ],
+      "ink": [
+        "a......a",
+        "a.aaaa.a",
+        "acc..cca",
+        "a.aaaa.a",
+        "a......a"
+      ],
+      "bgInk": [
+        "b......b",
+        "b.bbbb.b",
+        "bbb..bbb",
+        "b.bbbb.b",
+        "b......b"
+      ],
+      "frames": [
+        {
+          "art": [
+            "|      |",
+            "| /--\\ |",
+            "<=(..)=|",
+            "| \\--/ |",
+            "|      |"
+          ],
+          "ink": [
+            "a......a",
+            "a.aaaa.a",
+            "accaacca",
+            "a.aaaa.a",
+            "a......a"
+          ],
+          "bgInk": [
+            "b......b",
+            "b.bbbb.b",
+            "bbbbbbbb",
+            "b.bbbb.b",
+            "b......b"
+          ]
+        }
+      ]
+    },
+    "bot": {
+      "art": [
+        "|      |",
+        "| |##| |",
+        "| |##| |",
+        "/______\\",
+        "\"\"\"\"\"\"\"\""
+      ],
+      "ink": [
+        "a......a",
+        "a.acca.a",
+        "a.acca.a",
+        "aaaaaaaa",
+        "aaaaaaaa"
+      ],
+      "bgInk": [
+        "b......b",
+        "b.bbbb.b",
+        "b.bbbb.b",
+        "bbbbbbbb",
+        "bbbbbbbb"
+      ],
+      "frames": [
+        {
+          "art": [
+            "|      |",
+            "| |##| |",
+            "| |#=| |",
+            "/______\\",
+            "\"\"\"\"\"\"\"\""
+          ],
+          "ink": [
+            "a......a",
+            "a.acca.a",
+            "a.acca.a",
+            "aaaaaaaa",
+            "aaaaaaaa"
+          ],
+          "bgInk": [
+            "b......b",
+            "b.bbbb.b",
+            "b.bbbb.b",
+            "bbbbbbbb",
+            "bbbbbbbb"
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "terrain.core.mid",
+    "b": "terrain.core.dark",
+    "c": "terrain.core.lit"
+  }
+}

@@ -6,158 +6,390 @@
     8,
     5
   ],
-  "frameMs": 900,
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 200,
+  "source": "sources/sprites/approved-pack/studies/core_face.study.json; imported and assembled by package.py",
   "states": {
     "top": {
       "art": [
-        "  .--.  ",
-        " /    \\ ",
-        "|  ..  |",
-        "| :..: |",
-        "|______|"
+        "  ┌┐ ┌┐ ",
+        " ┌┘└─┘└─",
+        " │⣶⠒⣶⠒⣶⠒",
+        "/├─┬─┬─┬",
+        "⡜│[C]│:│"
       ],
       "ink": [
-        "..aaaa..",
-        ".a....a.",
-        "a..aa..a",
-        "a.aaaa.a",
-        "aaaaaaaa"
+        "..ww.ww.",
+        ".ttttttt",
+        ".wjjjjjj",
+        "wwwwwwww",
+        "wwkFkwjw"
       ],
       "bgInk": [
-        "..bbbb..",
-        ".b....b.",
-        "b..bb..b",
-        "b.bbbb.b",
-        "bbbbbbbb"
+        "..bb.bb.",
+        "..bbbbbb",
+        "..bbbbbb",
+        "..bbbbbb",
+        "..bbbbbb"
       ],
       "frames": [
         {
           "art": [
-            "  .--.  ",
-            " /    \\ ",
-            "|  ..  |",
-            "| .::. |",
-            "|______|"
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
           ],
           "ink": [
-            "..aaaa..",
-            ".a....a.",
-            "a..aa..a",
-            "a.aaaa.a",
-            "aaaaaaaa"
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkGkwjw"
           ],
           "bgInk": [
-            "..bbbb..",
-            ".b....b.",
-            "b..bb..b",
-            "b.bbbb.b",
-            "bbbbbbbb"
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
+          ],
+          "ink": [
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkHkwjw"
+          ],
+          "bgInk": [
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
+          ],
+          "ink": [
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkIkwjw"
+          ],
+          "bgInk": [
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
+          ],
+          "ink": [
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkJkwjw"
+          ],
+          "bgInk": [
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
           ]
         }
       ]
     },
     "mid": {
       "art": [
-        "|      |",
-        "| /--\\ |",
-        "<=(  )=|",
-        "| \\--/ |",
-        "|      |"
+        "│└┬┴─┴─┴",
+        "├o┤/⠉⠉⠉⠉",
+        "───=|||=",
+        "├o┤\\____",
+        "│┌┴┬─┬─┬"
       ],
       "ink": [
-        "a......a",
-        "a.aaaa.a",
-        "acc..cca",
-        "a.aaaa.a",
-        "a......a"
+        "wwwwwwww",
+        "wFwttttt",
+        "wwwwGGGw",
+        "wFwttttt",
+        "wwwwwwww"
       ],
       "bgInk": [
-        "b......b",
-        "b.bbbb.b",
-        "bbb..bbb",
-        "b.bbbb.b",
-        "b......b"
+        "..bbbbbb",
+        "..bbbbbb",
+        "..bbbbbb",
+        "..bbbbbb",
+        "..bbbbbb"
       ],
       "frames": [
         {
           "art": [
-            "|      |",
-            "| /--\\ |",
-            "<=(..)=|",
-            "| \\--/ |",
-            "|      |"
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
           ],
           "ink": [
-            "a......a",
-            "a.aaaa.a",
-            "accaacca",
-            "a.aaaa.a",
-            "a......a"
+            "wwwwwwww",
+            "wGwttttt",
+            "wwwwHHHw",
+            "wGwttttt",
+            "wwwwwwww"
           ],
           "bgInk": [
-            "b......b",
-            "b.bbbb.b",
-            "bbbbbbbb",
-            "b.bbbb.b",
-            "b......b"
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
+          ],
+          "ink": [
+            "wwwwwwww",
+            "wHwttttt",
+            "wwwwIIIw",
+            "wHwttttt",
+            "wwwwwwww"
+          ],
+          "bgInk": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
+          ],
+          "ink": [
+            "wwwwwwww",
+            "wIwttttt",
+            "wwwwJJJw",
+            "wIwttttt",
+            "wwwwwwww"
+          ],
+          "bgInk": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
+          ],
+          "ink": [
+            "wwwwwwww",
+            "wJwttttt",
+            "wwwwFFFw",
+            "wJwttttt",
+            "wwwwwwww"
+          ],
+          "bgInk": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
           ]
         }
       ]
     },
     "bot": {
       "art": [
-        "|      |",
-        "| |##| |",
-        "| |##| |",
-        "/______\\",
-        "\"\"\"\"\"\"\"\""
+        "⢣│⠿│o│:│",
+        "\\├─┴─┴─┴",
+        " │⣒⣒/⣒⣒/",
+        " └┬─┴─┬─",
+        "  ⠉⠤⣀⣀⣀⣀"
       ],
       "ink": [
-        "a......a",
-        "a.acca.a",
-        "a.acca.a",
-        "aaaaaaaa",
-        "aaaaaaaa"
+        "wwjwFwjw",
+        "wwwwwwww",
+        ".wjjwjjw",
+        ".wwwwwww",
+        "..wjjjjj"
       ],
       "bgInk": [
-        "b......b",
-        "b.bbbb.b",
-        "b.bbbb.b",
-        "bbbbbbbb",
-        "bbbbbbbb"
+        "..bbbbbb",
+        "..bbbbbb",
+        "..bbbbbb",
+        "..bbbbbb",
+        "..bbbbbb"
       ],
       "frames": [
         {
           "art": [
-            "|      |",
-            "| |##| |",
-            "| |#=| |",
-            "/______\\",
-            "\"\"\"\"\"\"\"\""
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
           ],
           "ink": [
-            "a......a",
-            "a.acca.a",
-            "a.acca.a",
-            "aaaaaaaa",
-            "aaaaaaaa"
+            "wwjwGwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
           ],
           "bgInk": [
-            "b......b",
-            "b.bbbb.b",
-            "b.bbbb.b",
-            "bbbbbbbb",
-            "bbbbbbbb"
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
+          ],
+          "ink": [
+            "wwjwHwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
+          ],
+          "bgInk": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
+          ],
+          "ink": [
+            "wwjwIwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
+          ],
+          "bgInk": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
+          ],
+          "ink": [
+            "wwjwJwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
+          ],
+          "bgInk": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
           ]
         }
       ]
     }
   },
   "inkMap": {
+    "0": "core.face.dust_shine_0",
+    "1": "core.face.dust_shine_1",
+    "2": "core.face.dust_shine_2",
+    "3": "core.face.dust_shine_3",
+    "4": "core.face.dust_shine_4",
     ".": null,
-    "a": "terrain.core.mid",
-    "b": "terrain.core.dark",
-    "c": "terrain.core.lit"
+    "s": "core.face.soil",
+    "d": "core.face.dust",
+    "r": "core.face.slate",
+    "h": "core.face.facet",
+    "c": "core.face.cleft",
+    "o": "core.face.ore",
+    "m": "core.face.mineral",
+    "w": "core.face.wall",
+    "j": "core.face.mortar",
+    "t": "core.face.steel",
+    "b": "core.face.shadow",
+    "l": "core.face.lamp",
+    "A": "core.face.ore_shine_0",
+    "B": "core.face.ore_shine_1",
+    "C": "core.face.ore_shine_2",
+    "D": "core.face.ore_shine_3",
+    "E": "core.face.ore_shine_4",
+    "F": "core.face.lamp_breathe_0",
+    "G": "core.face.lamp_breathe_1",
+    "H": "core.face.lamp_breathe_2",
+    "I": "core.face.lamp_breathe_3",
+    "J": "core.face.lamp_breathe_4",
+    "k": "core.face.crest"
   }
 }

@@ -1,0 +1,103 @@
+{
+  "$schema": "../../schema/enemies.schema.json",
+  "enemies": [
+    {
+      "id": "grunt",
+      "name": "grunt",
+      "hp": 30,
+      "speed": 0.06,
+      "damage": 1,
+      "bounty": 4
+    },
+    {
+      "id": "skitter",
+      "name": "skitter",
+      "hp": 12,
+      "speed": 0.12,
+      "damage": 1,
+      "bounty": 3,
+      "minWave": 2,
+      "traits": [
+        "fast"
+      ]
+    },
+    {
+      "id": "swarmling",
+      "name": "swarmling",
+      "hp": 6,
+      "speed": 0.14,
+      "damage": 1,
+      "bounty": 1,
+      "minWave": 3,
+      "traits": [
+        "swarm",
+        "fast"
+      ],
+      "resist": {
+        "kinetic": 0.8,
+        "energy": 1.6
+      }
+    },
+    {
+      "id": "brute",
+      "name": "brute",
+      "hp": 90,
+      "speed": 0.045,
+      "damage": 3,
+      "bounty": 8,
+      "minWave": 4,
+      "armor": 3,
+      "traits": [
+        "armoured"
+      ],
+      "resist": {
+        "kinetic": 0.6,
+        "energy": 1.6
+      }
+    },
+    {
+      "id": "shell",
+      "name": "shellback",
+      "hp": 25,
+      "speed": 0.06,
+      "damage": 2,
+      "bounty": 7,
+      "minWave": 5,
+      "shield": 30,
+      "traits": [
+        "shielded"
+      ],
+      "resist": {
+        "kinetic": 1.4,
+        "energy": 0.6
+      }
+    },
+    {
+      "id": "husk",
+      "name": "husk",
+      "hp": 160,
+      "speed": 0.035,
+      "damage": 5,
+      "bounty": 12,
+      "minWave": 6,
+      "resist": {
+        "kinetic": 1.4,
+        "energy": 0.6
+      }
+    },
+    {
+      "id": "juggernaut",
+      "name": "Juggernaut",
+      "hp": 400,
+      "speed": 0.03,
+      "damage": 12,
+      "bounty": 20,
+      "armor": 6,
+      "minWave": 10,
+      "resist": {
+        "kinetic": 0.8,
+        "energy": 1.2
+      }
+    }
+  ]
+}

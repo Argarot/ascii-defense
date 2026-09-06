@@ -1,11 +1,13 @@
 {
   "$schema": "../../schema/sprite.schema.json",
   "id": "road_muted_cobble",
+  "kind": "terrain",
   "cell": [
     8,
     5
   ],
-  "source": "sources/sprites/ascii-defense-complete-road-sprites-31.json via tools/import-sprites.mjs",
+  "frameMs": 200,
+  "source": "sources/sprites/approved-pack/studies/road_slate_review.study.json; imported and assembled by package.py",
   "states": {
     "3": {
       "art": [
@@ -1137,22 +1139,23 @@
     }
   },
   "inkMap": {
-    "0": "terrain.road.cobble.bg0",
-    "1": "terrain.road.cobble.bg1",
-    "2": "terrain.road.cobble.bg2",
-    "3": "terrain.road.cobble.bg3",
-    "4": "terrain.road.cobble.bg4",
-    "a": "terrain.road.cobble.ink0",
-    "b": "terrain.road.cobble.ink1",
-    "c": "terrain.road.cobble.ink2",
-    "d": "terrain.road.cobble.ink3",
-    "e": "terrain.road.cobble.ink4",
-    "f": "terrain.road.cobble.ink5",
-    "g": "terrain.road.cobble.ink6",
-    "h": "terrain.road.cobble.ink7",
-    "E": "terrain.road.cobble.edge",
-    "R": "terrain.road.cobble.rail",
-    "D": "terrain.road.cobble.deck",
-    "U": "terrain.road.cobble.under"
+    "0": "terrain.road_slate_review.road_0",
+    "1": "terrain.road_slate_review.road_1",
+    "2": "terrain.road_slate_review.road_2",
+    "3": "terrain.road_slate_review.road_3",
+    "4": "terrain.road_slate_review.road_4",
+    ".": null,
+    "a": "terrain.road_slate_review.road_a",
+    "b": "terrain.road_slate_review.road_b",
+    "c": "terrain.road_slate_review.road_c",
+    "d": "terrain.road_slate_review.road_d",
+    "e": "terrain.road_slate_review.road_e",
+    "f": "terrain.road_slate_review.road_f",
+    "g": "terrain.road_slate_review.road_g",
+    "h": "terrain.road_slate_review.road_h",
+    "E": "terrain.road_slate_review.road_E",
+    "R": "terrain.road_slate_review.road_R",
+    "D": "terrain.road_slate_review.road_D",
+    "U": "terrain.road_slate_review.road_U"
   }
 }

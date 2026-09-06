@@ -93,7 +93,7 @@ describe('imported sprites cover what the game can show', () => {
   const PATHS = [''];
   for (const a of ['0', '1']) { PATHS.push(a); for (const b of ['0', '1']) { PATHS.push(a + b); for (const c of ['0', '1']) PATHS.push(a + b + c); } }
 
-  it('every tower in the roster has a sprite with all 15 states, two idle frames each, at the grid cell', () => {
+  it('every tower in the roster has a sprite with all 15 states, at least two idle frames each, at the grid cell', () => {
     for (const t of towers.towers) {
       const sp = towerSprites.find((s) => s.id === t.id);
       expect(sp, `sprite for ${t.id}`).toBeDefined();
@@ -101,7 +101,7 @@ describe('imported sprites cover what the game can show', () => {
       for (const p of PATHS) {
         const st = (sp!.states as Record<string, { art: string[]; frames?: unknown[] }>)[p];
         expect(st, `${t.id} state '${p}'`).toBeDefined();
-        expect(st.frames?.length, `${t.id} state '${p}' frames`).toBe(1);
+        expect(st.frames?.length ?? 0, `${t.id} state '${p}' frames`).toBeGreaterThanOrEqual(1); // the approved pack has four, the placeholders one
       }
     }
   });
