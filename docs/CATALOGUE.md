@@ -131,7 +131,7 @@ The two ground cells touching the Core face (and the border cells beside it) are
 
 Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.
 
-Statuses show on the body (PRD §8): a cold ~ per slow source beside the walker, a * when frozen, brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.
+Statuses show on the body (PRD §8) as the ground under the walker: cold when slowed, ember when burning, ice when frozen, ember over cold when both hold; brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.
 
 **Traits are rules** (`packages/engine/src/sim/traits.ts`):
 

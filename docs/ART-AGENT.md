@@ -33,7 +33,7 @@ code's linter wins: run it.)*
 |---|---|---|---|
 | `tower` | 8×5 | 15 keys: `""`, `"0"`, `"1"`, `"00"`, `"01"`, `"10"`, `"11"`, `"000"` … `"111"` — the tower's committed choices per tier, in tier order (0 = the first choice, 1 = the second) | the board cell, and the strip's build button (the `""` state) and the title's hero row |
 | `terrain` | 8×5 | one key per road letter (done: the cobble road study) | the board |
-| `enemy` | **at most 5 wide × 3 tall** (a grunt is 3×2, a swarmling 2×1, a juggernaut 5×3) | `""` | centred on the walker's position, its feet on the position row, transparent over the road; marks (health, a shield's brackets, a slow's `~`) are drawn beside it by the game |
+| `enemy` | **at most 5 wide × 3 tall** (a grunt is 3×2, a swarmling 2×1, a juggernaut 5×3) | `""` | centred on the walker's position, its feet on the position row, transparent over the road; marks (health, a shield's brackets) are drawn beside it by the game, and a STATUS is the ground painted under it (cold, ember, ice) - so leave some transparent cells for the ground to show |
 | `relic` | **exactly 4×3** | `""` | the inventory slot in the strip and the column, over the slot's plate |
 | `face` | 8×5 | `"top"`, `"mid"`, `"bot"` — the Core's three stacked cells at the board's east edge; the road arrives at the middle one's WEST edge | the board |
 

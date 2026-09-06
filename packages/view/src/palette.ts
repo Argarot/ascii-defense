@@ -36,6 +36,10 @@ const OVERRIDE_SETS: Record<string, Record<string, string>> = {
     'boon.rate': '#f2e94e',
     'ui.accent': '#5fb0ff',
     'terrain.ore.mid': '#f2e94e',
+    // The three status grounds apart by hue AND luminance (2026-09-06, item 2).
+    'status.slowed': '#1b3a5c',
+    'status.burning': '#5c2e00',
+    'status.frozen': '#5a5f8a',
   },
 };
 let overrides: Record<string, string> = {};
