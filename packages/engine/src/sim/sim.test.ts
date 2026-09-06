@@ -1671,3 +1671,50 @@ describe('session 29, PR 0 - the fix bundle of the 2026-09-06 thought dump', () 
     expect(struck(false)).toBe(1);
   });
 });
+
+describe('session 29, PR 1 - the tree as a run\'s identity', () => {
+  const RELICS: RelicDef[] = [
+    { id: 'tithe', name: 'Tithe', kind: 'passive', rarity: 'common', tags: ['economy'], stackable: true, desc: '+2', effects: { killRefundScrap: 2 }, tiers: { rare: { effects: { killRefundScrap: 3 } }, epic: { effects: { killRefundScrap: 5 } } } },
+    { id: 'frostbite', name: 'Frostbite', kind: 'passive', rarity: 'common', tags: ['cold'], desc: '', effects: { slowedDamageMul: 1.5 } },
+    { id: 'stasis', name: 'Stasis', kind: 'active', rarity: 'common', tags: ['cold'], desc: '', cooldownTicks: 100, effects: { freezeTicks: 80 } },
+    { id: 'permafrost_engine', name: 'Permafrost Engine', kind: 'passive', rarity: 'epic', tags: ['cold', 'damage'], fusionOnly: true, desc: '', effects: { slowedDamageMul: 3 } },
+  ];
+  const RECIPES: RecipeDef[] = [{ a: 'frostbite', b: 'stasis', result: 'permafrost_engine', desc: 'fused' }];
+
+  it('relicSlots caps the row; relicCaps caps the rarity dealt until forged; forging and fusing are recorded for the meta save', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 0, spawnEveryTicks: 1000 });
+    // Four slots: the fifth pick needs a replacement.
+    const four = new Sim(53, { ...simOpts, relicDefs: RELICS, recipeDefs: RECIPES, relicSlots: 4 });
+    expect(four.relicSlots).toBe(4);
+    for (let i = 0; i < 4; i++) expect(four.debugGrantRelic('tithe')).toBe(true);
+    four.offer = [0];
+    four.offerRarity = [0];
+    expect(four.pickRelic(0)).toBe(false);
+    expect(four.pickRelic(0, 0)).toBe(true);
+    expect(four.heldRelics.length).toBe(4);
+    // Caps: with an empty forged record every deal is the base rarity; forged to rare, rare may come.
+    const roll = (caps: Record<string, number> | undefined, wave: number): Set<number> => {
+      const seen = new Set<number>();
+      for (let seed = 1; seed < 40; seed++) {
+        const sim = new Sim(seed, { ...simOpts, relicDefs: RELICS, relicCaps: caps });
+        (sim as unknown as { wave: number }).wave = wave;
+        seen.add((sim as unknown as { rollRarity(d: RelicDef): number }).rollRarity(RELICS[0]));
+      }
+      return seen;
+    };
+    expect([...roll({}, 30)]).toEqual([0]);
+    expect(Math.max(...roll({ tithe: 1 }, 30))).toBe(1);
+    expect(Math.max(...roll({ tithe: 2 }, 30))).toBe(2);
+    expect(Math.max(...roll(undefined, 30))).toBe(2); // no caps given: the old behaviour
+    // Forging two Tithes records rare; fusing records the recipe's result.
+    const sim = new Sim(53, { ...simOpts, relicDefs: RELICS, recipeDefs: RECIPES });
+    expect(sim.debugGrantRelic('tithe')).toBe(true);
+    expect(sim.debugGrantRelic('tithe')).toBe(true);
+    expect(sim.combineRelics(0, 1)).toBe(true);
+    expect(sim.forgedThisRun.get('tithe')).toBe(1);
+    expect(sim.debugGrantRelic('frostbite')).toBe(true);
+    expect(sim.debugGrantRelic('stasis')).toBe(true);
+    expect(sim.combineRelics(1, 2)).toBe(true);
+    expect([...sim.fusedThisRun]).toEqual(['permafrost_engine']);
+  });
+});

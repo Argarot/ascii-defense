@@ -18,8 +18,9 @@ import { towersSchema, type TowerRoster } from './generated/towers';
 import { terrainSchema, type TerrainAppearance } from './generated/terrain';
 import { lootSchema, type LootTables } from './generated/loot';
 import { gridSchema, type Grid } from './generated/grid';
+import { treeSchema, type TechTree } from './generated/tree';
 
-export type { Palette, Sprite, EnemyRoster, TowerRoster, RelicPool, SetPool, RecipePool, TerrainAppearance, LootTables, Grid };
+export type { Palette, Sprite, EnemyRoster, TowerRoster, RelicPool, SetPool, RecipePool, TerrainAppearance, LootTables, Grid, TechTree };
 
 export interface ContentError {
   /** JSON path into the document, e.g. "/roles/ui.bg". */
@@ -59,3 +60,4 @@ export const validateRecipes: Validator<RecipePool> = wrap<RecipePool>(ajv.compi
 export const validateTerrain: Validator<TerrainAppearance> = wrap<TerrainAppearance>(ajv.compile(terrainSchema));
 export const validateLoot: Validator<LootTables> = wrap<LootTables>(ajv.compile(lootSchema));
 export const validateGrid: Validator<Grid> = wrap<Grid>(ajv.compile(gridSchema));
+export const validateTree: Validator<TechTree> = wrap<TechTree>(ajv.compile(treeSchema));

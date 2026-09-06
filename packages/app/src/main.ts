@@ -10,8 +10,8 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a } from '@ascii-defense/engine';
-import type { GeneratedMap, TileDef } from '@ascii-defense/engine';
+import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES } from '@ascii-defense/engine';
+import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
 import { loadMintedProblems, loadMintedTiles, removeMintedTile } from './mintedTiles';
 import {
   BoardView,
@@ -30,8 +30,10 @@ import {
   StripPanel,
   STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
-import { validateSprite, type Sprite } from '@ascii-defense/content';
+import { validateSprite, validateTree, validateRelics, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
+import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
+import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import { THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 import { META_KEY, RUN_KEY, loadMetaFrom, loadRunFrom, saveMetaTo, type MetaSave } from './persistence';
 import { boardSlotsFor } from './boardSize';
@@ -44,6 +46,9 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 // Every sprite content ships (session 25): towers, enemies, relics, the
 // Core face - one glob, validated at boot. The title's hero row is the
 // tower sprites in roster order.
+// The meta tree and the relic pool (session 29, PR 1): the shell reads them to bank a win's relic and to name what is locked.
+const TREE = must(validateTree.check(treeJson), 'tree');
+const RELIC_POOL = must(validateRelics.check(relicsJson), 'relics').relics;
 const SPRITE_JSON = import.meta.glob('../../content/assets/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
 // The previous pack lives beside the current one (2026-09-06 evening: the
 // approved pack became assets/, the old assets became assets-old/, and a
@@ -242,7 +247,7 @@ async function main(): Promise<void> {
   // 'ready', never on send - a failed init can no longer strand the player
   // in a phantom of the previous run.
   let pendingStart = false;
-  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; seed: number; story?: FrameSnapshot['story'] } | null = null;
+  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; seed: number; story?: FrameSnapshot['story']; /** The relic a win earned (session 29, PR 1), by name; null when nothing was left to earn. */ earned?: string | null } | null = null;
   let summaryBanked = false;
 
   let hover: CellRef | null = null;
@@ -325,17 +330,22 @@ async function main(): Promise<void> {
   };
 
   let lastLoadout: TileDef[] = [];
+  // The tree state a new run starts under (session 29, PR 1): a copy, so the
+  // run's identity is fixed at its start whatever the workshop sells later.
+  const metaForRun = (): MetaState => ({ unlocks: [...meta.unlocks], earned: [...meta.earned], forged: { ...meta.forged } });
+  let lastMeta: MetaState = metaForRun();
   const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave, loadout?: TileDef[]): void => {
     threatIdx = tIdx;
     lastLoadout = resume?.loadout ?? loadout ?? [];
-    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout, board: { w: mapX, h: mapY } });
+    lastMeta = resume?.meta ?? metaForRun();
+    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout, board: { w: mapX, h: mapY }, meta: lastMeta });
     pendingStart = true; // 'playing' begins on 'ready', not on send
     mirroredSpeed = 1;
   };
 
   // Boot: an attract-mode run simmers behind the title (paused = board only).
   const urlSeed = Number(new URLSearchParams(location.search).get('seed'));
-  send({ t: 'init', seed: Number.isInteger(urlSeed) && urlSeed > 0 ? urlSeed : Date.now() % 1_000_000, threatIdx, board: { w: mapX, h: mapY } });
+  send({ t: 'init', seed: Number.isInteger(urlSeed) && urlSeed > 0 ? urlSeed : Date.now() % 1_000_000, threatIdx, board: { w: mapX, h: mapY }, meta: lastMeta });
   send({ t: 'speed', idx: 0 });
 
   // ---- autosave (PRD sec 15.2): every few seconds and on the way out -------
@@ -386,7 +396,7 @@ async function main(): Promise<void> {
             'the board is a press; the waves want it stopped',
             '',
             ...(saveProblem ? [`! ${saveProblem}`] : []),
-            meta.bankedOre > 0 ? `banked ore ${meta.bankedOre}` : '',
+            meta.ore.some((o) => o > 0) ? `banked ore ${meta.ore[0]}${meta.ore[1] > 0 || meta.ore[2] > 0 ? ` \u2802 tier 2: ${meta.ore[1]} \u2802 tier 3: ${meta.ore[2]}` : ''}` : '',
           ].filter((l, i, a) => l !== '' || a[i - 1] !== ''),
           items: [
             { id: 'new', label: 'NEW RUN' },
@@ -500,7 +510,9 @@ async function main(): Promise<void> {
                 `wave ${summary.wave} of ${finalWave} \u2802 seed ${summary.seed}`,
                 `run code ${runCode(summary.seed)}`,
                 `kills ${summary.kills}`,
-                `ore banked +${summary.oreBanked} (total ${meta.bankedOre})`,
+                `ore banked +${summary.oreBanked} (total ${meta.ore[0]})`,
+                // A win earns a relic of the Threat's rarity (session 29, PR 1; PRD sec 19 item 3).
+                ...(summary.won ? [summary.earned ? `earned: ${summary.earned} - it joins the pool from the next run` : 'nothing left to earn at this threat - the workshop opens more branches'] : []),
                 // The run's story (session 27): who killed, who came, what was held.
                 ...(summary.story
                   ? [
@@ -512,7 +524,7 @@ async function main(): Promise<void> {
                       '',
                     ].filter((l, i, a) => l !== '' || a[i - 1] !== '')
                   : []),
-                'banked ore will buy the workshop tree between runs (not built yet)',
+                'banked ore buys the workshop tree between runs',
               ],
               items: [
                 { id: 'again', label: summary.won ? 'GO AGAIN' : 'TRY AGAIN' },
@@ -529,15 +541,18 @@ async function main(): Promise<void> {
   };
 
   // The run code (D15): a compact displayed identity - generator version,
-  // seed, threat, and a loadout fingerprint (ids + cells, since the pool
-  // can change). Display-only for now; when paste-to-replay ships, a code
-  // from another generator version is refused loudly, never silently
-  // regenerated into a different map.
+  // seed, threat, a loadout fingerprint (ids + cells, since the pool can
+  // change) and, since session 29 PR 1, a fingerprint of the tree state the
+  // run started under (the pool, the slots and the caps are part of what
+  // the run IS; PRD sec 12). Display-only for now; when paste-to-replay
+  // ships, a code from another generator version is refused loudly, never
+  // silently regenerated into a different map.
   const runCode = (forSeed: number): string => {
     const l = lastLoadout.length > 0
       ? fnv1a(lastLoadout.map((t) => `${t.id}:${t.cells.join('/')}`).join('|')).toString(36)
       : '0';
-    return `AD${GENERATOR_VERSION}-${forSeed.toString(36)}-${threatIdx}-${l}`.toUpperCase();
+    const m = fnv1a([...lastMeta.unlocks].sort().join(',') + '|' + [...lastMeta.earned].sort().join(',') + '|' + Object.entries(lastMeta.forged).sort().map(([k, v]) => `${k}=${v}`).join(',')).toString(36);
+    return `AD${GENERATOR_VERSION}-${forSeed.toString(36)}-${threatIdx}-${l}-${m}`.toUpperCase();
   };
 
   const download = (name: string, text: string): void => {
@@ -985,7 +1000,17 @@ async function main(): Promise<void> {
       if (snap.status !== 'running' && (mode === 'playing' || mode === 'paused') && !summaryBanked) {
         summaryBanked = true;
         summary = { won: snap.status === 'won', wave: snap.hud.wave, kills: snap.hud.kills, oreBanked: snap.hud.ore, seed, story: snap.story };
-        meta.bankedOre += snap.hud.ore;
+        meta.ore[0] += snap.hud.ore;
+        // What the run leaves behind for the tree (session 29, PR 1): the
+        // rarities forged, the fusions found, and a win's relic.
+        for (const f of snap.story?.forged ?? []) meta.forged[f.id] = Math.max(meta.forged[f.id] ?? 0, f.rarity);
+        for (const id of snap.story?.fused ?? []) if (!meta.discovered.includes(id)) meta.discovered.push(id);
+        if (snap.status === 'won') {
+          const id = relicForWin(TREE, lastMeta, RELIC_POOL, threatIdx, seed);
+          if (id && !meta.earned.includes(id)) meta.earned.push(id);
+          const def = id ? RELIC_POOL.find((r) => r.id === id) : undefined;
+          summary.earned = def ? `${def.name} (${RARITIES.indexOf(def.rarity) >= 0 ? def.rarity : 'common'})` : null;
+        }
         meta.history.push({ seed, threat: THREAT_LEVELS[threatIdx].name, wave: snap.hud.wave, status: snap.status, kills: snap.hud.kills });
         if (meta.history.length > 50) meta.history.shift();
         saveMeta(meta);
@@ -1091,6 +1116,8 @@ async function main(): Promise<void> {
     offer: () => debug('offer'),
     pick: (option: number) => debug('pick', option),
     relics: () => debug('relics'),
+    pool: () => debug('pool'), // the run's relic pool as the tree dealt it (session 29, PR 1)
+    meta: (): MetaSave => meta,
     relicsHeld: () => debug('relicsHeld'),
     salvage: (index: number) => debug('salvage', index),
     combine: (a: number, b: number) => debug('combine', a, b),
@@ -1121,6 +1148,7 @@ async function main(): Promise<void> {
     replay: () => debug('replay'),
     hudText: (): string => hudTerm.toText(),
     boardText: (): string => term.toText(),
+    stripText: (): string => stripTerm.toText(),
     select: (x: number, y: number): void => { selected = { x, y }; },
     mode: (m?: Mode): Mode => { if (m) mode = m; return mode; },
     motion: (reduced: boolean): void => { setReducedMotion(reduced); },

@@ -7,7 +7,7 @@
  * no live objects - so the view can never reach into sim memory again. The
  * failure mode this shape prevents: a screen caching sim state (PRD sec 15.1).
  */
-import type { CellRef, GeneratedMap, ReplayInput, StampedSimEvent, TileDef } from '@ascii-defense/engine';
+import type { CellRef, GeneratedMap, ReplayInput, StampedSimEvent, TileDef , MetaState } from '@ascii-defense/engine';
 import type { HudState, RenderState } from '@ascii-defense/view';
 
 /**
@@ -34,6 +34,13 @@ export interface RunSave {
   version: number;
   seed: number;
   threatIdx: number;
+  /**
+   * The run's meta identity (v5, session 29, PR 1): the tree state the
+   * run was started under - it filters the towers and the relic pool, sets
+   * the slots and caps the rarities dealt, so a resume and a replay see
+   * the same world. A v4 save migrates with the everything sentinel.
+   */
+  meta: MetaState;
   tick: number;
   inputs: ReplayInput[];
   contentHash: number;
@@ -76,11 +83,11 @@ export interface FrameSnapshot {
   /** Current speed multiplier, for the main thread's world-ambient clock (4.25). */
   speed: number;
   /** The run's story, once it has ended (session 27): kills by tower, bodies met, relics held. */
-  story?: { killsByTower: { name: string; kills: number }[]; met: { name: string; count: number }[]; relics: string[]; relicUses: { name: string; uses: number }[] };
+  story?: { killsByTower: { name: string; kills: number }[]; met: { name: string; count: number }[]; relics: string[]; relicUses: { name: string; uses: number }[]; /** Forged-to rarities and fusions reached, for the meta save (session 29, PR 1). */ forged: { id: string; rarity: number }[]; fused: string[] };
 }
 
 export type ToWorker =
-  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave; board?: { w: number; h: number } }
+  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave; board?: { w: number; h: number }; /** The tree state for a NEW run (session 29, PR 1); absent = everything (tests). A resume carries its own. */ meta?: MetaState }
   | { t: 'frame'; ui: UiState }
   | { t: 'speed'; idx: number }
   | { t: 'action'; a: WorkerAction }
@@ -122,5 +129,8 @@ export type FromWorker =
  * v4 (design round 1, 2026-09-03): the map's rock contents lost their pool
  * index, caches moved into the sim (openCache replaced claimCache in the
  * input log). A v3 save would replay a claim the sim no longer knows.
+ * v5 (session 29, PR 1): RunSave carries the run's meta identity (the tree
+ * state); a v4 save migrates with the everything sentinel, since the world
+ * before the tree had everything.
  */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;

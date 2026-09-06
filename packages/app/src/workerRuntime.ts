@@ -37,13 +37,16 @@ import {
   type RelicDef,
   type SetDef,
   type RecipeDef,
-  RELIC_SLOTS,
   CHEST_WINDOW,
   RARITIES,
   relicDescAt,
   type ReplayAction,
   type TileDef,
   type TowerDef,
+  type TreeDef,
+  type MetaState,
+  ALL_UNLOCKS,
+  resolveUnlocks,
  effectiveStats, DAMAGE_TYPES } from '@ascii-defense/engine';
 import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
@@ -59,6 +62,8 @@ export interface WorkerRuntimeDeps {
   /** Duo recipes (session 28, PR 3). */
   recipeDefs: readonly RecipeDef[];
   lootTables: readonly LootTable[];
+  /** The meta tree (session 29, PR 1): a run's towers, relic pool and slots come from its resolution. */
+  tree: TreeDef;
 }
 
 const TICK_MS = 1000 / TICK_HZ;
@@ -66,7 +71,12 @@ const SPEEDS = [0, 1, 2, 4, 8] as const;
 const MIN_SLOTS = 12;
 
 export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
-  const { post, basics, enemyDefs, towerDefs, relicDefs, setDefs, recipeDefs, lootTables } = deps;
+  const { post, basics, enemyDefs, towerDefs, relicDefs, setDefs, recipeDefs, lootTables, tree } = deps;
+  /** The tree state the current run was started under; everything when none was given (tests, the lab). */
+  let runMeta: MetaState = { unlocks: [ALL_UNLOCKS], earned: [], forged: {} };
+  /** The run's towers and relic pool: the content filtered by the tree (session 29, PR 1). */
+  let runTowers: readonly TowerDef[] = towerDefs;
+  let runRelics: readonly RelicDef[] = relicDefs;
   const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs);
 
   // The current run - null until the first successful init. Everything here
@@ -83,8 +93,17 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   let acc = 0;
   let lastBeat = 0;
 
-  function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave, board?: { w: number; h: number }): void {
+  function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave, board?: { w: number; h: number }, meta?: MetaState): void {
     try {
+      // The tree decides the world (session 29, PR 1): which towers the strip
+      // offers, which relics the pool deals, how many slots, which rarities.
+      // A resume keeps the meta it was saved with; a new run takes the
+      // shell's; neither given means everything (tests, the lab).
+      const nextMeta: MetaState = resume?.meta ?? meta ?? { unlocks: [ALL_UNLOCKS], earned: [], forged: {} };
+      const unlocked = resolveUnlocks(tree, nextMeta, relicDefs);
+      const nextTowers = towerDefs.filter((d) => unlocked.towers.has(d.id));
+      const nextRelics = relicDefs.filter((d) => unlocked.relics.has(d.id));
+      if (nextTowers.length === 0) { post({ t: 'genError', message: 'the tree grants no tower - the base set is empty' }); return; }
       // The board is the caller's (viewport-derived, D24) or the default; a
       // resumed save is exactly its map's size, whatever the screen is now.
       // (A save without a map is refused further down; it must not throw here.)
@@ -155,10 +174,12 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         cellsH: nextMap.cellsH,
         map: nextMap,
         enemyDefs,
-        towerDefs,
+        towerDefs: nextTowers,
         mode: 'waves',
         coreHp: 50,
-        relicDefs,
+        relicDefs: nextRelics,
+        relicSlots: unlocked.relicSlots,
+        relicCaps: nextMeta.forged,
         setDefs,
         recipeDefs,
         lootTables,
@@ -186,6 +207,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       sim = nextSim;
       map = nextMap;
       loadout = nextLoadout;
+      runMeta = nextMeta;
+      runTowers = nextTowers;
+      runRelics = nextRelics;
       seed = resume ? resume.seed : nextSeed;
       threatIdx = nextThreatIdx;
       offerWasUp = false;
@@ -286,16 +310,16 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
 
     const paletteDefs = () => {
       if (selected && s.canBuildAt(selected.x, selected.y)) {
-        return towerDefs.filter((d) => s.canBuildDefAt(selected.x, selected.y, d.id));
+        return runTowers.filter((d) => s.canBuildDefAt(selected.x, selected.y, d.id));
       }
-      return towerDefs;
+      return runTowers;
     };
     const palette = paletteDefs();
     const selTower = selected ? s.towerAt(selected.x, selected.y) : null;
     const buildTarget = selected !== null && s.canBuildAt(selected.x, selected.y);
     const previewDef =
-      (hudHover?.kind === 'build' ? palette[hudHover.index] : hudHover?.kind === 'buildId' ? towerDefs.find((d) => d.id === hudHover.id) : undefined) ?? palette[0];
-    const aimRelic = targeting !== null ? relicDefs.find((r) => r.id === targeting) : undefined;
+      (hudHover?.kind === 'build' ? palette[hudHover.index] : hudHover?.kind === 'buildId' ? runTowers.find((d) => d.id === hudHover.id) : undefined) ?? palette[0];
+    const aimRelic = targeting !== null ? runRelics.find((r) => r.id === targeting) : undefined;
     // The tower the selected cell WOULD hold, every modifier folded (2026-09-06 item 10).
     const ghost = buildTarget && selected && previewDef ? s.previewStats(previewDef.id, selected.x, selected.y) : null;
     const range = aimRelic && hover
@@ -344,7 +368,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           hpMax: s.coreHpMax,
           slots: Array.from({ length: Math.max(MIN_SLOTS, held.length) }, (_, i) => {
             const h = held[i];
-            if (!h) return { label: '', name: '', state: 'empty' as const, cooldownSec: 0 };
+            // Slots the tree has not granted yet are drawn LOCKED (session 29, PR 1) - a visible ladder.
+            if (!h) return { label: '', name: '', state: i >= s.relicSlots ? ('locked' as const) : ('empty' as const), cooldownSec: 0 };
             const state = h.def.kind === 'active' ? (h.cooldown > 0 ? ('cooling' as const) : ('ready' as const)) : h.def.kind === 'consumable' ? ('consumable' as const) : ('passive' as const);
             // id + targeted let the MAIN thread own aim-mode arming: the
             // worker only mirrors `targeting` back per frame, so the two
@@ -358,7 +383,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           canDraw: s.ore[0] >= s.drawCost(),
           // Lit sets (session 28, PR 2): a line under the slots.
           sets: s.litSets().map((x) => `${x.name} (${x.tag} ${x.at})`),
-          relicSlots: RELIC_SLOTS,
+          relicSlots: s.relicSlots,
           // Every pair that combines, for the Forge (feedback 2026-09-06 evening, item 4).
           combines: held.flatMap((_, a) => s.combineTargets(a).map((t) => ({ a, b: t.with, result: t.result, resultRarity: t.resultRarity }))),
         };
@@ -382,7 +407,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const coreInfo = selected && s.cellAt(selected.x, selected.y) === 'C' ? coreCard : null;
     // The strip's roster: every tower, with affordability and whether it
     // fits the selected tile (a Refinery wants a vein).
-    const roster = towerDefs.map((d) => ({
+    const roster = runTowers.map((d) => ({
       id: d.id,
       name: d.name ?? d.id,
       short: d.short,
@@ -395,7 +420,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     }));
     // The build preview (feedback item 1): hovering a button puts the
     // tower's card in the column before anything is bought.
-    const previewHover = hudHover?.kind === 'buildId' ? towerDefs.find((d) => d.id === hudHover.id) : undefined;
+    const previewHover = hudHover?.kind === 'buildId' ? runTowers.find((d) => d.id === hudHover.id) : undefined;
     const buildPreview = previewHover
       ? {
           name: previewHover.name ?? previewHover.id,
@@ -547,11 +572,11 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       offer: offer
         ? {
             kind: 'relic' as const,
-            title: s.heldRelics.length >= RELIC_SLOTS ? `WAVE ${s.offerWave} CLEARED - RELICS FULL: press 1-3, then click the one it replaces (S skips)` : `WAVE ${s.offerWave} CLEARED - CHOOSE A RELIC`,
+            title: s.heldRelics.length >= s.relicSlots ? `WAVE ${s.offerWave} CLEARED - RELICS FULL: press 1-3, then click the one it replaces (S skips)` : `WAVE ${s.offerWave} CLEARED - CHOOSE A RELIC`,
             cards: offer.map((d, i) => ({ name: d.name, kind: `${d.kind} - ${(d.tags ?? []).join(' ')}`, desc: relicDescAt(d, s.offerRarity[i] ?? 0), rarity: RARITIES[s.offerRarity[i] ?? 0] })),
             wave: s.wave,
             reroll: { cost: s.rerollCost(), can: s.ore[0] >= s.rerollCost(), ore: s.ore[0] },
-            full: s.heldRelics.length >= RELIC_SLOTS,
+            full: s.heldRelics.length >= s.relicSlots,
           }
         : null,
       events: [...s.events],
@@ -574,6 +599,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       killsByTower: [...kills].map(([name, k]) => ({ name, kills: k })).sort((a, b) => b.kills - a.kills),
       met,
       relics: s.heldRelicInfo().map((h) => (h.rarity > 0 ? `${h.def.name} (${RARITIES[h.rarity]})` : h.def.name)),
+      forged: [...s.forgedThisRun].map(([id, rarity]) => ({ id, rarity })),
+      fused: [...s.fusedThisRun],
       relicUses: s.heldRelicInfo().filter((h) => h.uses > 0).map((h) => ({ name: h.def.name, uses: h.uses })).sort((a, b) => b.uses - a.uses),
     };
   }
@@ -614,7 +641,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   function handle(m: ToWorker): void {
     switch (m.t) {
       case 'init':
-        newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume, m.board);
+        newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume, m.board, m.meta);
         break;
       case 'frame': {
         if (!sim) break; // no run yet: nothing to serve, and never a lie
@@ -641,6 +668,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             inputs: [...sim.inputs],
             contentHash: CONTENT_HASH,
             loadout,
+            meta: runMeta, // the tree state the run was started under (session 29, PR 1)
             map, // D15: the save carries the map; resume never regenerates
           },
         });
@@ -663,6 +691,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'offer': result = s.offerDefs()?.map((d) => d.id) ?? null; break;
           case 'pick': result = s.pickRelic(args[0]); if (result) syncOfferPause(); break;
           case 'relics': result = s.heldRelicInfo().map((h) => h.def.id); break;
+          case 'pool': result = runRelics.map((r) => r.id); break; // the run's relic pool, as the tree dealt it (session 29, PR 1)
           case 'relicsHeld': result = s.heldRelicInfo().map((h) => ({ id: h.def.id, rarity: RARITIES[h.rarity] })); break;
           case 'sets': result = s.litSets().map((x) => x.name); break;
           case 'salvage': result = s.salvageRelic(args[0] as number); break;

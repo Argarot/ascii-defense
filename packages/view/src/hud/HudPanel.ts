@@ -156,7 +156,8 @@ export interface HudRelicSlot {
   /** Two-letter tag, '' when empty. */
   label: string;
   name: string;
-  state: 'empty' | 'passive' | 'ready' | 'cooling' | 'consumable';
+  /** 'locked': a slot the meta tree has not granted yet (session 29, PR 1). */
+  state: 'empty' | 'passive' | 'ready' | 'cooling' | 'consumable' | 'locked';
   /** Seconds until an active is ready again; 0 otherwise. */
   cooldownSec: number;
   /** Relic id + whether firing needs a board-click aim (main-thread arming). */

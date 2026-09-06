@@ -39,6 +39,7 @@ const SCHEMA_FOR = {
   'terrain/': 'terrain.schema.json',
   'loot/': 'loot.schema.json',
   'grid.json': 'grid.schema.json',
+  'tree/': 'tree.schema.json',
 };
 
 /** The shipped font, so a glyph that would draw as nothing fails here. */
