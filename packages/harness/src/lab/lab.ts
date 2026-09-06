@@ -136,12 +136,12 @@ function coverage(cells: readonly (CellType | null)[], W: number, H: number, x: 
  * own rule, mirrored): cross to the road, run along it while it keeps
  * straight, stop where it turns or ends. Returns the road cells covered.
  */
-function corridorRoad(cells: readonly (CellType | null)[], W: number, H: number, x: number, y: number, f: number, cap: number): number {
+function corridorRoad(cells: readonly (CellType | null)[], W: number, H: number, x: number, y: number, f: number): number {
   const DX = [0, 1, 0, -1];
   const DY = [-1, 0, 1, 0];
   let road = 0;
   let onRoad = false;
-  for (let k = 1; k <= cap; k++) {
+  for (let k = 1; k <= W + H; k++) {
     const nx = x + DX[f] * k;
     const ny = y + DY[f] * k;
     if (nx < 0 || ny < 0 || nx >= W || ny >= H) break;
@@ -153,15 +153,18 @@ function corridorRoad(cells: readonly (CellType | null)[], W: number, H: number,
   return road;
 }
 
+/** A beam has no range; placed by a coverage instrument other than 'inline' it is placed as a gun of this range would be. */
+const BEAM_AS_GUN_RANGE = 6;
+
 /** The cell and facing whose corridor covers the most road (ties: first in scan order). */
-function inlineSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, cap: number): { x: number; y: number; facing: number } | null {
+function inlineSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string): { x: number; y: number; facing: number } | null {
   let best: { x: number; y: number; facing: number } | null = null;
   let bestRoad = 0;
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       if (!sim.canBuildDefAt(x, y, towerId)) continue;
       for (let f = 0; f < 4; f++) {
-        const road = corridorRoad(cells, W, H, x, y, f, cap);
+        const road = corridorRoad(cells, W, H, x, y, f);
         if (road > bestRoad) { bestRoad = road; best = { x, y, facing: f }; }
       }
     }
@@ -251,11 +254,11 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     let facing: number | null = null;
     let spot: { x: number; y: number } | null;
     if (p.at === 'inline') {
-      const inl = inlineSpot(sim, cells, cellsW, cellsH, p.towerId, Math.ceil(def.range));
+      const inl = inlineSpot(sim, cells, cellsW, cellsH, p.towerId);
       if (inl) { spot = inl; facing = inl.facing; }
-      else spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range, 'choke');
+      else spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, 'choke');
     } else if (typeof p.at === 'string') {
-      spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range, p.at, placed[placed.length - 1]) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range);
+      spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, p.at, placed[placed.length - 1]) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE);
     } else {
       spot = p.at;
     }

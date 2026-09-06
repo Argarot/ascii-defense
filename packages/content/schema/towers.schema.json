@@ -20,7 +20,6 @@
         "required": [
           "id",
           "cost",
-          "range",
           "fireEveryTicks"
         ],
         "additionalProperties": false,
@@ -46,6 +45,7 @@
             "minimum": 0
           },
           "range": {
+            "description": "Cells. Required unless attack is 'beam' - a beam reaches to the road's turn and carries no range (tools/validate-content.mjs holds both ways).",
             "type": "number",
             "exclusiveMinimum": 0
           },

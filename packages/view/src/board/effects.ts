@@ -50,7 +50,7 @@ const TTL: Record<Effect['kind'], number> = {
   beam: 8,
   frost: 40, // overridden per event by the freeze's own length
   arc: 4,
-  lance: 3, // one fire every three ticks: the line never blinks
+  lance: 20, // the fallback; a lance's pulse lasts until its next fire (the event says how long)
 };
 /** The beam's fall before its blast opens, in ticks. */
 const BEAM_FALL = 3;
@@ -150,7 +150,7 @@ export class EffectsLayer {
           this.add({ kind: 'frost', x: 0, y: 0, r: 0, start: e.tick, ttl: Math.max(1, e.ticks) });
           break;
         case 'beam':
-          this.add({ kind: 'lance', x: e.x0, y: e.y0, r: e.w, start: e.tick, ttl: TTL.lance, x1: e.x1, y1: e.y1, heat: e.heat });
+          this.add({ kind: 'lance', x: e.x0, y: e.y0, r: e.w, start: e.tick, ttl: Math.max(2, e.every ?? TTL.lance), x1: e.x1, y1: e.y1, heat: e.heat });
           break;
         case 'arc':
           this.add({ kind: 'arc', x: e.pts[0]?.x ?? 0, y: e.pts[0]?.y ?? 0, r: 0, start: e.tick, ttl: TTL.arc, pts: e.pts });
@@ -398,46 +398,62 @@ export class EffectsLayer {
   }
 
   /**
-   * The Laser Lance's beam (session 26): a straight line of light down the
-   * corridor from the tower's edge to its far end, '=' along a row, '|'
-   * down a column, whiter as the heat climbs. Reduced motion: the same line
-   * at its cold colour.
+   * The Laser Lance's pulse (session 26; reworked 2026-09-06 twice on
+   * Daniil's feedback). BACKGROUND colour only, three glyphs wide, so the
+   * walkers in it stay readable. A pulse a second (items 3 and 4), and
+   * the pulse has a SHAPE: a bright front runs from the lens to the
+   * road's turn in the first tenth, the beam holds and shimmers glyph by
+   * glyph, then the centre cools fast and the afterglow lingers. Hotter
+   * toward the tower, whiter with heat, a splash where it meets the
+   * turn. Reduced motion: the cold centre, held, no front, no shimmer.
    */
   private drawLance(term: TermSurface, e: Effect, age01: number, still: boolean): void {
-    // Reworked 2026-09-06 (Daniil): BACKGROUND colour only, so the walkers
-    // in it stay readable - three glyphs wide, the centre line the beam,
-    // the two beside it an afterglow of lower luminance and a slightly
-    // different shade. It PULSES: bright at the fire, decaying over the
-    // ticks to the next, so a firing lance throbs rather than sits lit.
-    // Whiter as the heat climbs. Reduced motion: the cold centre, no throb.
     const x1 = e.x1 ?? e.x;
     const y1 = e.y1 ?? e.y;
     const horizontal = Math.abs(x1 - e.x) >= Math.abs(y1 - e.y);
     const heat01 = still ? 0 : Math.max(0, Math.min(1, (e.heat ?? 1) - 1));
-    const pulse = still ? 0.6 : 1 - age01 * 0.7;
     const beam = mixHex(role('tower.laser.beam'), role('fx.flash'), heat01 * 0.6);
     const dark = role('terrain.road.dark');
-    const centre = mixHex(dark, beam, 0.75 * pulse);
-    const glow = mixHex(dark, role('tower.laser.lens'), 0.35 * pulse);
+    const lens = role('tower.laser.lens');
+    // The envelope: STRIKE (the front runs out), HOLD, then the decay -
+    // the centre falls as a square, the glow as a line, so the glow
+    // outlives the beam.
+    const STRIKE = 0.1;
+    const HOLD = 0.4;
+    const front01 = still ? 1 : Math.min(1, age01 / STRIKE);
+    const decay = age01 < HOLD ? 1 : 1 - (age01 - HOLD) / (1 - HOLD);
+    const centreEnv = still ? 0.6 : decay * decay;
+    const glowEnv = still ? 0.5 : decay;
     const gx0 = Math.floor(e.x * CELL_W);
     const gy0 = Math.floor(e.y * CELL_H);
     const gx1 = Math.floor(x1 * CELL_W);
     const gy1 = Math.floor(y1 * CELL_H);
+    const flickerBeat = Math.floor(age01 * e.ttl * 2); // twice a tick
+    const cells: [number, number][] = [];
     if (horizontal) {
       const step = gx1 >= gx0 ? 1 : -1;
-      for (let gx = gx0 + step * Math.ceil(CELL_W / 2); gx !== gx1 + step; gx += step) {
-        if (gx < 0 || gx >= term.cols) continue;
-        term.tint(gx, gy0, centre);
-        if (!still) { if (gy0 > 0) term.tint(gx, gy0 - 1, glow); if (gy0 + 1 < term.rows) term.tint(gx, gy0 + 1, glow); }
-      }
+      for (let gx = gx0 + step * Math.ceil(CELL_W / 2); gx !== gx1 + step; gx += step) if (gx >= 0 && gx < term.cols) cells.push([gx, gy0]);
     } else {
       const step = gy1 >= gy0 ? 1 : -1;
-      for (let gy = gy0 + step * Math.ceil(CELL_H / 2); gy !== gy1 + step; gy += step) {
-        if (gy < 0 || gy >= term.rows) continue;
-        term.tint(gx0, gy, centre);
-        if (!still) { if (gx0 > 0) term.tint(gx0 - 1, gy, glow); if (gx0 + 1 < term.cols) term.tint(gx0 + 1, gy, glow); }
-      }
+      for (let gy = gy0 + step * Math.ceil(CELL_H / 2); gy !== gy1 + step; gy += step) if (gy >= 0 && gy < term.rows) cells.push([gx0, gy]);
     }
+    const n = Math.max(1, cells.length - 1);
+    cells.forEach(([gx, gy], k) => {
+      const along01 = k / n;
+      if (along01 > front01) return; // the front has not reached this glyph yet
+      const falloff = 1 - 0.25 * along01;
+      const shimmer = still ? 1 : 0.85 + 0.3 * hash2(k, flickerBeat, 23);
+      const atFront = !still && age01 < STRIKE && along01 > front01 - 0.12;
+      const atTurn = !still && age01 < HOLD + 0.15 && k >= cells.length - 2;
+      let centre = mixHex(dark, beam, Math.min(1, 0.8 * centreEnv * falloff * shimmer));
+      if (atFront || atTurn) centre = mixHex(centre, role('fx.flash'), 0.5);
+      term.tint(gx, gy, centre);
+      if (!still) {
+        const glow = mixHex(dark, lens, Math.min(1, 0.38 * glowEnv * falloff));
+        if (horizontal) { if (gy > 0) term.tint(gx, gy - 1, glow); if (gy + 1 < term.rows) term.tint(gx, gy + 1, glow); }
+        else { if (gx > 0) term.tint(gx - 1, gy, glow); if (gx + 1 < term.cols) term.tint(gx + 1, gy, glow); }
+      }
+    });
   }
 
   private drawDust(term: TermSurface, e: Effect, age01: number, still: boolean): void {

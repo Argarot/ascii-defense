@@ -313,31 +313,31 @@ export const CODEX = {
       "name": "Laser Lance",
       "type": "energy",
       "cost": 45,
-      "range": 12,
-      "rate": "6.67",
-      "dmg": 3,
+      "range": "the road, to its turn",
+      "rate": "1",
+      "dmg": 20,
       "dps": "20",
-      "shape": "beam: down its facing to where the road turns (at most 12 cells), every body on it, heat to x2 on a held target (R rotates)",
-      "desc": "A beam down the road it faces, to where the road turns, through every body on it; the damage climbs while it holds one. R rotates it.",
+      "shape": "beam: down its facing to where the road turns, however far, every body on it, heat to x2 on a held target (R rotates)",
+      "desc": "A beam down the road it faces to where the road turns, however far that is, through every body on it: a pulse a second, and the damage climbs while it holds one. R rotates it.",
       "coreBoon": "the heat climbs one multiple higher.",
       "tiers": [
         [
           {
             "name": "Capacitor",
             "cost": 45,
-            "desc": "+2 damage per pulse, cold or hot. The damage path starts steady."
+            "desc": "+14 damage per pulse, cold or hot. The damage path starts steady."
           },
           {
             "name": "Chill",
             "cost": 45,
-            "desc": "Every body in the beam moves at 70% while it stands in it. The control path starts cold."
+            "desc": "Every body in the beam moves at 70% while it stands in it; a pulse a second keeps it cold. The control path starts cold."
           }
         ],
         [
           {
             "name": "Fast Cycle",
             "cost": 90,
-            "desc": "A pulse every 2 ticks instead of 3: half again the output."
+            "desc": "A pulse every 13 ticks instead of 20: half again the output."
           },
           {
             "name": "Sear",

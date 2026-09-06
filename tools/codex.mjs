@@ -47,7 +47,7 @@ function towerShape(t) {
   if (t.attack === 'none' && t.aura) return `aura: neighbours within ${t.aura.reach} cell(s) hit x${n(t.aura.damageMul, 2)}`;
   if (t.attack === 'none') return 'producer (no attack)';
   if (t.attack === 'pulse') return 'pulse: hits everything in range at once';
-  if (t.attack === 'beam') return `beam: down its facing to where the road turns (at most ${n(t.range)} cells), every body on it, heat to x${n(t.beam?.rampMax ?? 1)} on a held target (R rotates)`;
+  if (t.attack === 'beam') return `beam: down its facing to where the road turns, however far, every body on it, heat to x${n(t.beam?.rampMax ?? 1)} on a held target (R rotates)`;
   if (t.attack === 'chain') return `chain: arcs to ${t.chain?.count ?? 1} bodies within ${n(t.chain?.reach ?? 1)} cells of each other, ${Math.round((t.chain?.falloff ?? 1) * 100)}% per hop`;
   const p = t.projectile ?? {};
   const bits = [];
@@ -63,7 +63,7 @@ function towerRows() {
     const rate = t.attack === 'none' ? '' : n(TICK_HZ / t.fireEveryTicks, 2);
     const dps = t.attack === 'none' ? '' : n((dmg * TICK_HZ) / t.fireEveryTicks, 1);
     const prod = t.production ? `${t.production.ore} Ore / ${n(t.production.everyTicks / TICK_HZ)} s` : '';
-    return [`**${t.name ?? t.id}**`, t.id, t.cost, t.damageType ?? '', n(t.range), rate, dmg || '', dps, prod || towerShape(t), t.desc ?? '', (t.coreBoon?.text ?? '').replace(/^Next to the Core: /, '')];
+    return [`**${t.name ?? t.id}**`, t.id, t.cost, t.damageType ?? '', t.attack === 'beam' ? 'the road' : n(t.range), rate, dmg || '', dps, prod || towerShape(t), t.desc ?? '', (t.coreBoon?.text ?? '').replace(/^Next to the Core: /, '')];
   });
 }
 function tierRows(t) {
@@ -94,7 +94,7 @@ function relicRows() {
 const SECTIONS = {
   towers: () =>
     [
-      `${towers.length} towers in \`packages/content/assets/towers/roster.json\`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint).`,
+      `${towers.length} towers in \`packages/content/assets/towers/roster.json\`. Rate is shots per second; DPS is base damage times rate; range is in cells (a cell is one tower's footprint); a beam's range is the road in front of it, to its turn.`,
       '',
       table(['Tower', 'id', 'Cost', 'Type', 'Range', 'Rate', 'Damage', 'DPS', 'Shape / production', 'What it is', 'Next to the Core'], towerRows()),
       '',
@@ -197,7 +197,7 @@ function codexTs() {
       name: t.name ?? t.id,
       type: t.damageType ?? '',
       cost: t.cost,
-      range: t.range,
+      range: t.attack === 'beam' ? 'the road, to its turn' : t.range,
       rate: t.attack === 'none' ? '' : n(TICK_HZ / t.fireEveryTicks, 2),
       dmg: t.projectile?.damage ?? 0,
       dps: t.attack === 'none' ? '' : n(((t.projectile?.damage ?? 0) * TICK_HZ) / t.fireEveryTicks, 1),

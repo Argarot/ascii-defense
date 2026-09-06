@@ -304,8 +304,8 @@ export interface TowerDef {
   /** What its hits are (session 26, WBS 2.8); absent = untyped, every enemy takes it at 1. */
   damageType?: DamageType;
   cost: number;
-  /** Cells. */
-  range: number;
+  /** Cells. Absent on beam towers: a beam's reach is the road to its turn, never a number (the linter holds both ways). */
+  range?: number;
   /** Cells: the dead zone - nothing closer is ever targeted (design round 1, item 2). */
   minRange?: number;
   fireEveryTicks: number;
@@ -317,9 +317,9 @@ export interface TowerDef {
   chain?: { count: number; reach: number; falloff: number };
   /**
    * Beam towers (session 26, WBS 2.34): a corridor `width` cells wide down
-   * the tower's FACING for `range` cells; every body in it takes the
-   * damage each fire; holding one lead target heats the beam by
-   * `rampStep` per fire up to `rampMax` times the damage.
+   * the tower's FACING to where the road turns (no range); every body in
+   * it takes the damage each fire; holding one lead target heats the beam
+   * by `rampStep` per fire up to `rampMax` times the damage.
    */
   beam?: { width: number; rampStep: number; rampMax: number };
   /**
@@ -404,7 +404,7 @@ export function canChoose(choices: readonly number[], tier: number): boolean {
 export function effectiveStats(def: TowerDef, choices: readonly number[]): EffectiveStats {
   const out: EffectiveStats = {
     damage: def.projectile?.damage ?? 0,
-    range: def.range,
+    range: def.range ?? 0,
     minRange: def.minRange ?? 0,
     fireEveryTicks: def.fireEveryTicks,
     explodeRadius: def.projectile?.explodeRadius ?? 0,

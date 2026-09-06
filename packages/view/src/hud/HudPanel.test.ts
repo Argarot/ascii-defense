@@ -36,8 +36,8 @@ function state(over: Partial<HudState> = {}): HudState {
       name: 'Bolt Turret',
       kills: 12,
       deposit: null,
-      stats: { type: 'kinetic', dmg: 8, dps: '11.4', range: 6, minRange: 0, shots: 1, pierce: 0, chain: 0, blast: 0, slow: 0, prod: null },
-      preview: { type: 'kinetic', dmg: 8, dps: '11.4', range: 8.5, minRange: 0, shots: 1, pierce: 0, chain: 0, blast: 0, slow: 0, prod: null },
+      stats: { type: 'kinetic', dmg: 8, dps: '11.4', range: 6, reach: null, minRange: 0, shots: 1, pierce: 0, chain: 0, blast: 0, slow: 0, prod: null },
+      preview: { type: 'kinetic', dmg: 8, dps: '11.4', range: 8.5, reach: null, minRange: 0, shots: 1, pierce: 0, chain: 0, blast: 0, slow: 0, prod: null },
       offVein: false,
       priority: 'first',
       tiers: [
@@ -74,7 +74,7 @@ describe('the HUD as text', () => {
   it('shows the hovered build button\'s card before anything is bought (feedback item 1)', () => {
     const term = new TextTerm({ cols: 32, rows: 60 });
     const hud = new HudPanel(term, 10, 16);
-    hud.render(state({ selectedTower: null, buildPreview: { name: 'Tesla Coil', cost: 40, desc: 'An arc that jumps body to body.', stats: { type: 'energy', dmg: 9, dps: '9.0', range: 4, minRange: 0, shots: 1, pierce: 0, chain: 3, blast: 0, slow: 0, prod: null } } }));
+    hud.render(state({ selectedTower: null, buildPreview: { name: 'Tesla Coil', cost: 40, desc: 'An arc that jumps body to body.', stats: { type: 'energy', dmg: 9, dps: '9.0', range: 4, reach: null, minRange: 0, shots: 1, pierce: 0, chain: 3, blast: 0, slow: 0, prod: null } } }));
     const text = term.toText();
     expect(text).toContain('Tesla Coil');
     expect(text).toContain('$40');

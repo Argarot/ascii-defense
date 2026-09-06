@@ -287,9 +287,12 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const range = aimRelic && hover
       ? { x: hover.x, y: hover.y, r: aimRelic.effects?.orbitalRadius ?? 1 }
       : selTower
-        ? { x: selTower.cellX, y: selTower.cellY, r: s.stats(selTower).range, minR: s.stats(selTower).minRange, ...(s.towerDef(selTower).attack === 'beam' ? { beam: { dir: selTower.facing, w: s.stats(selTower).beamWidth } } : {}) }
+        ? { x: selTower.cellX, y: selTower.cellY, r: s.towerDef(selTower).attack === 'beam' ? s.beamReach(selTower) : s.stats(selTower).range, minR: s.stats(selTower).minRange, ...(s.towerDef(selTower).attack === 'beam' ? { beam: { dir: selTower.facing, w: s.stats(selTower).beamWidth } } : {}) }
         : buildTarget && selected && previewDef
-          ? { x: selected.x, y: selected.y, r: previewDef.range, minR: previewDef.minRange ?? 0 }
+          ? previewDef.attack === 'beam'
+            // A beam's preview is the corridor it would fire down from this cell (2026-09-06, item 4).
+            ? { x: selected.x, y: selected.y, r: s.beamPreview(selected.x, selected.y).len, beam: { dir: s.beamPreview(selected.x, selected.y).dir, w: previewDef.beam?.width ?? 1 } }
+            : { x: selected.x, y: selected.y, r: previewDef.range ?? 0, minR: previewDef.minRange ?? 0 }
           : null;
     const hoverTower = hover ? s.towerAt(hover.x, hover.y) : null;
     const infoTower = selTower ?? hoverTower;
@@ -301,8 +304,10 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       next[hudHover.tier] = hudHover.option;
       effPreview = s.statsWith(infoTower, next);
     }
-    const toStats = (e: NonNullable<typeof eff>, d?: { damageType?: string }) => ({
+    const toStats = (e: NonNullable<typeof eff>, d?: { damageType?: string; attack?: string }) => ({
       type: d?.damageType ?? '',
+      // A beam has no range: its reach is the road to its turn (2026-09-06, item 4).
+      reach: d?.attack === 'beam' ? 'the road, to its turn' : null,
       dmg: Math.round(e.damage * 10) / 10,
       dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
       range: Math.round(e.range * 10) / 10,

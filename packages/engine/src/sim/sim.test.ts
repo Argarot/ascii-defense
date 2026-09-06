@@ -472,7 +472,7 @@ describe('towers and projectiles', () => {
 
   it('a beam hits every body in its corridor, heats on a held lead, and turns on a replayed input (session 26, WBS 2.34)', () => {
     const { cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
-    const LANCE: TowerDef = { id: 'laser', cost: 20, range: 6, fireEveryTicks: 2, attack: 'beam', damageType: 'energy', projectile: { damage: 10, speed: 1 }, beam: { width: 1, rampStep: 0.5, rampMax: 2 } };
+    const LANCE: TowerDef = { id: 'laser', cost: 20, fireEveryTicks: 2, attack: 'beam', damageType: 'energy', projectile: { damage: 10, speed: 1 }, beam: { width: 1, rampStep: 0.5, rampMax: 2 } };
     const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
     const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [LANCE] });
     let body = -1;
@@ -496,9 +496,14 @@ describe('towers and projectiles', () => {
     for (let t = 0; t < 8; t++) sim.tick();
     // Four fires at 10 x heat 1, 1.5, 2, 2 = 65.
     expect(hp0 - sim.hp[body]).toBeCloseTo(65, 5);
-    // The beam's reported reach ends where the road turns or the cap says.
+    // The beam has no range (2026-09-06, item 4): its reach is the road in
+    // front of it to the turn - at least the body's cell, at most the
+    // board - and the event says how long the pulse lasts.
     const beamEv = sim.events.find((e) => e.kind === 'beam');
-    expect(beamEv && beamEv.kind === 'beam' ? Math.abs(beamEv.x1 - beamEv.x0) + Math.abs(beamEv.y1 - beamEv.y0) : 0).toBeLessThanOrEqual(6);
+    const reach = beamEv && beamEv.kind === 'beam' ? Math.abs(beamEv.x1 - beamEv.x0) + Math.abs(beamEv.y1 - beamEv.y0) : 0;
+    expect(reach).toBeGreaterThanOrEqual(Math.abs(bx - at!.x));
+    expect(reach).toBeLessThanOrEqual(cellsW);
+    expect(beamEv && beamEv.kind === 'beam' ? beamEv.every : 0).toBe(2);
     expect(sim.events.some((e) => e.kind === 'beam' && e.heat === 2)).toBe(true);
     // Turned away: nothing in the corridor, the heat cools, no more damage.
     expect(sim.setFacing(at!.x, at!.y, (toward + 2) % 4)).toBe(true);

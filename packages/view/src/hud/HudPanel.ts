@@ -32,6 +32,8 @@ export interface HudStats {
   dmg: number;
   dps: string;
   range: number;
+  /** Beam towers: the words that stand where the range number would ("the road, to its turn"); null otherwise. */
+  reach: string | null;
   /** The dead zone in cells; 0 = none. Lower is better. */
   minRange: number;
   /** Projectiles per volley (1 = a single shot). */
@@ -361,7 +363,8 @@ export class HudPanel {
         if (st.type) line('type ', st.type);
         line('dmg  ', st.dmg);
         line('dps  ', st.dps);
-        line('range', st.range);
+        if (st.reach) line('reach', st.reach);
+        else line('range', st.range);
         if (st.minRange > 0) line('dead ', st.minRange);
         if (st.blast > 0) line('blast', st.blast);
         if (st.shots > 1) line('shots', st.shots);
@@ -517,7 +520,8 @@ export class HudPanel {
         if (t.stats.type) term.write(0, y++, `type  ${t.stats.type}`, role('ui.text'));
         stat('dmg  ', t.stats.dmg, t.preview ? t.preview.dmg : null);
         stat('dps  ', t.stats.dps, t.preview ? t.preview.dps : null);
-        stat('range', t.stats.range, t.preview ? t.preview.range : null);
+        if (t.stats.reach) term.write(0, y++, `reach ${t.stats.reach}`, role('ui.text'));
+        else stat('range', t.stats.range, t.preview ? t.preview.range : null);
         // The dead zone (design round 1): printed only when it exists, and
         // a SMALLER one is the upgrade.
         if (t.stats.minRange > 0 || (t.preview && t.preview.minRange > 0)) {

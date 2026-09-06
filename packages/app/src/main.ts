@@ -528,7 +528,7 @@ async function main(): Promise<void> {
       hero = sp ? [sp] : [];
       body = [
         ...wrapLine(t.desc),
-        [t.type ? `type ${t.type}` : '', `cost $${t.cost}`, `range ${t.range}`, t.rate ? `rate ${t.rate}/s` : '', t.dmg ? `dmg ${t.dmg}` : '', t.dps ? `dps ${t.dps}` : ''].filter(Boolean).join('  \u2802  '),
+        [t.type ? `type ${t.type}` : '', `cost $${t.cost}`, typeof t.range === 'number' ? `range ${t.range}` : `reach ${t.range}`, t.rate ? `rate ${t.rate}/s` : '', t.dmg ? `dmg ${t.dmg}` : '', t.dps ? `dps ${t.dps}` : ''].filter(Boolean).join('  \u2802  '),
         ...wrapLine(t.shape),
         '',
         ...t.tiers.flatMap((tier, i) => [`T${i + 1}  ${tier[0].name} ($${tier[0].cost})  /  ${tier[1].name} ($${tier[1].cost})`, ...wrapLine('  ' + tier[0].desc), ...wrapLine('  ' + tier[1].desc)]),

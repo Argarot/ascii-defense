@@ -75,6 +75,19 @@ function validate(relPath, doc) {
 
 // ---- linter rules beyond schemas -------------------------------------------
 
+/**
+ * Towers (2026-09-06, Daniil's item 4): a beam has NO range - it reaches
+ * to the road's turn however far that is - so the field is forbidden on
+ * attack 'beam' and required everywhere else. A number on a beam would
+ * be printed on a card and believed.
+ */
+function lintTowers(relPath, doc) {
+  for (const t of doc.towers ?? []) {
+    if (t.attack === 'beam' && t.range !== undefined) findings.push(`${relPath}: tower '${t.id}' is a beam and carries range ${t.range} - a beam reaches to the road's turn; remove the field`);
+    if (t.attack !== 'beam' && t.range === undefined) findings.push(`${relPath}: tower '${t.id}' has no range - only a beam goes without one`);
+  }
+}
+
 function lintSprite(relPath, sprite, palette, grid) {
   const [w, h] = sprite.cell;
   // The cell rule per KIND (session 25; ASSETS.md sec 3): board-sized art
@@ -199,6 +212,7 @@ for (const [relPath, doc] of docs) {
     spriteCount++;
     lintSprite(relPath, doc, palette, grid);
   }
+  if (schemaFor(relPath) === 'towers.schema.json') lintTowers(relPath, doc);
 }
 
 if (warnings.length) {
