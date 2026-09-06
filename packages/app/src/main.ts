@@ -970,6 +970,9 @@ async function main(): Promise<void> {
     offer: () => debug('offer'),
     pick: (option: number) => debug('pick', option),
     relics: () => debug('relics'),
+    // Debug-only: a relic by id outside any offer (replays diverge), and an active fired at a cell.
+    grant: (id: string) => debug('grant', id),
+    fire: (id: string, x?: number, y?: number) => debug('fire', id, x, y),
     hash: () => debug('hash'),
     events: () => debug('events'),
     // Effects held vs drawn last frame: the probe for "nothing renders" (feedback 2026-09-06, item 1).

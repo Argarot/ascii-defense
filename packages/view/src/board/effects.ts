@@ -18,7 +18,7 @@ import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, hash2 } from './style';
 
 interface Effect {
-  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'beam' | 'frost' | 'arc' | 'lance';
+  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'orbital' | 'frost' | 'arc' | 'lance';
   x: number; // continuous cell units, same space the sim speaks
   y: number;
   r: number;
@@ -47,13 +47,15 @@ const TTL: Record<Effect['kind'], number> = {
   death: 6,
   breach: 9,
   dust: 8,
-  beam: 8,
+  orbital: 24, // the column's whole life: fall, strike, fade
   frost: 40, // overridden per event by the freeze's own length
   arc: 4,
   lance: 20, // the fallback; a lance's pulse lasts until its next fire (the event says how long)
 };
-/** The beam's fall before its blast opens, in ticks. */
-const BEAM_FALL = 3;
+/** The orbital column's fall before its blast opens, in ticks. */
+const ORBITAL_FALL = 2;
+/** The second, smaller blast under the first: the site keeps exploding for a beat. */
+const ORBITAL_ECHO = 6;
 
 /** Linear mix of two #rrggbb colours - effects fade by colour, not alpha. */
 function mixHex(h1: string, h2: string, t01: number): string {
@@ -141,10 +143,12 @@ export class EffectsLayer {
           this.add({ kind: 'pulse', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.pulse });
           break;
         case 'strike':
-          // The orbital (6.10): a column from the top edge to the cell, then
-          // the blast of the kill radius opening where it lands.
-          this.add({ kind: 'beam', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.beam });
-          this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick + BEAM_FALL, ttl: TTL.blast });
+          // The orbital (6.10; reworked 2026-09-06, item 5): a column of
+          // light from the top edge to the cell, then the blast of the
+          // kill radius opening where it lands, and an echo under it.
+          this.add({ kind: 'orbital', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.orbital });
+          this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick + ORBITAL_FALL, ttl: TTL.blast });
+          this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r * 0.55, start: e.tick + ORBITAL_ECHO, ttl: TTL.blast });
           break;
         case 'freeze':
           this.add({ kind: 'frost', x: 0, y: 0, r: 0, start: e.tick, ttl: Math.max(1, e.ticks) });
@@ -229,7 +233,7 @@ export class EffectsLayer {
         case 'death': this.drawDeath(term, e, age01, still); break;
         case 'breach': this.drawBreach(term, e, age01, still); break;
         case 'dust': this.drawDust(term, e, age01, still); break;
-        case 'beam': this.drawBeam(term, e, age01, still); break;
+        case 'orbital': this.drawOrbital(term, e, age01, still); break;
         case 'frost': this.drawFrost(term, e, age01, still); break;
         case 'arc': this.drawArc(term, e, age01, still); break;
         case 'lance': this.drawLance(term, e, age01, still); break;
@@ -333,24 +337,61 @@ export class EffectsLayer {
       for (let x = 0; x < CELL_W; x++) term.tint(gx0 + x, gy0 + y, bg);
   }
 
-  /** Construction dust: a sparse settle around the cell. Skipped when still - the tower appearing is its own feedback. */
   /**
-   * The orbital's column: a line of light from the top edge down to the
-   * cell, three glyphs wide at its brightest, thinning and cooling as the
-   * blast takes over. Reduced motion: a single static column.
+   * The Orbital Lance (6.10; reworked 2026-09-06 on Daniil's item 5: "it
+   * needs to look epic - a powerful ability was used"). Like the laser,
+   * BACKGROUND colour, not glyphs: a near-white cyan core five glyphs
+   * wide (a cell) inside a cyan glow nine wide (near two cells), falling
+   * from the top edge to the cell in the first tenth, blinding through
+   * the strike, then the core narrows and cools while the glow lingers.
+   * The site whites out over the kill radius and the blasts (in ingest)
+   * open there. Reduced motion: a still, narrow column and the disc.
    */
-  private drawBeam(term: TermSurface, e: Effect, age01: number, still: boolean): void {
-    const gx = Math.floor(e.x * CELL_W);
+  private drawOrbital(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    const base = role('ui.bg');
+    const core = role('fx.orbital.core');
+    const glowCol = role('fx.orbital.glow');
+    const FALL = 0.08;
+    const STRIKE_END = 0.35;
+    const fall01 = still ? 1 : Math.min(1, age01 / FALL);
+    const decay = age01 < STRIKE_END ? 1 : 1 - (age01 - STRIKE_END) / (1 - STRIKE_END);
+    const coreEnv = still ? 0.5 : decay * decay;
+    const glowEnv = still ? 0.35 : decay;
+    const coreHalf = still ? 0 : Math.round(2 * decay);
+    const glowHalf = still ? 1 : 4;
+    const gxC = Math.floor(e.x * CELL_W);
     const gyEnd = Math.floor(e.y * CELL_H);
-    const bright = still ? 0.5 : 1 - age01;
-    const fg = mixHex(role('fx.smoke'), role('fx.flash'), bright);
-    const wide = !still && age01 < 0.45;
-    for (let gy = 0; gy <= gyEnd; gy++) {
-      term.put(gx, gy, age01 < 0.7 || still ? '|' : ':', fg);
-      if (wide) {
-        term.put(gx - 1, gy, hash2(gx - 1, gy, 7) < 0.6 ? '|' : ':', mixHex(role('fx.smoke'), role('fx.flash'), bright * 0.6));
-        term.put(gx + 1, gy, hash2(gx + 1, gy, 7) < 0.6 ? '|' : ':', mixHex(role('fx.smoke'), role('fx.flash'), bright * 0.6));
+    const bottom = Math.floor(gyEnd * fall01);
+    const beat = Math.floor(age01 * e.ttl * 2);
+    for (let gy = 0; gy <= bottom && gy < term.rows; gy++) {
+      const shimmer = still ? 1 : 0.9 + 0.2 * hash2(gy, beat, 29);
+      const head = !still && age01 < FALL && gy >= bottom - 2;
+      for (let dx = -glowHalf; dx <= glowHalf; dx++) {
+        const gx = gxC + dx;
+        if (gx < 0 || gx >= term.cols) continue;
+        const d = Math.abs(dx);
+        let bg: string;
+        if (d <= coreHalf) bg = mixHex(base, core, Math.min(1, 0.95 * coreEnv * shimmer));
+        else bg = mixHex(base, glowCol, Math.min(1, 0.6 * glowEnv * (1 - (d - coreHalf) / (glowHalf - coreHalf + 1))));
+        if (head) bg = mixHex(bg, role('fx.flash'), 0.5);
+        term.tint(gx, gy, bg);
       }
+    }
+    // The site: a disc of the kill radius, white at the strike, cooling.
+    if (age01 >= FALL || still) {
+      const minGx = Math.max(0, Math.floor((e.x - e.r) * CELL_W));
+      const maxGx = Math.min(term.cols - 1, Math.ceil((e.x + e.r) * CELL_W));
+      const minGy = Math.max(0, Math.floor((e.y - e.r) * CELL_H));
+      const maxGy = Math.min(term.rows - 1, Math.ceil((e.y + e.r) * CELL_H));
+      const env = still ? 0.4 : decay * decay;
+      for (let gy = minGy; gy <= maxGy; gy++)
+        for (let gx = minGx; gx <= maxGx; gx++) {
+          const ux = (gx + 0.5) / CELL_W - e.x;
+          const uy = (gy + 0.5) / CELL_H - e.y;
+          const dist = Math.sqrt(ux * ux + uy * uy);
+          if (dist > e.r) continue;
+          term.tint(gx, gy, mixHex(base, core, Math.min(1, 0.85 * env * (1 - 0.6 * (dist / e.r)))));
+        }
     }
   }
 
@@ -456,6 +497,7 @@ export class EffectsLayer {
     });
   }
 
+  /** Construction dust: a sparse settle around the cell. Skipped when still - the tower appearing is its own feedback. */
   private drawDust(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     if (still) return;
     const gx0 = Math.floor(e.x) * CELL_W;
