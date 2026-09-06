@@ -333,8 +333,7 @@ export class BoardView {
           if (st) {
             const dark = role('terrain.core.dark');
             for (let y = 0; y < CELL_H; y++) for (let x = 0; x < CELL_W; x++) term.put(gx0 + x, gy0 + y, ' ', dark, hovered ? '#2a3a4d' : dark);
-            const phase = face.inkMap.k === 'core.face.crest' ? 0 : above;
-            drawSpriteFrame(term, face, idleFrame(face, st, state.animMs ?? 0, phase), gx0, gy0, { groundRole: 'terrain.core.dark' });
+            drawSpriteFrame(term, face, idleFrame(face, st, state.animMs ?? 0, above), gx0, gy0, { groundRole: 'terrain.core.dark' });
             continue;
           }
         }
@@ -351,7 +350,6 @@ export class BoardView {
           litTop: shaded && north !== kind,
           shadowBottom: shaded && south !== kind,
           richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx) : undefined,
-          animMs: state.animMs,
           rim: state.routeAllowed ? ~state.routeAllowed[cy * this.cellsW + cx] & 15 : 0,
           // Ground and the Core breathe; rock, roads and ore hold still -
           // moving glyphs on a cell the player reads for data would lie.
