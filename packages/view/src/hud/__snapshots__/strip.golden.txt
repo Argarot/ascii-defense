@@ -3,7 +3,7 @@
   |[o]|==>     //                                                                  3 skitter   fast          9 grunt                     \||/           ┌  ┐ ┌  ┐
      ||)      '//     frost     refinery                                           1 shellback shielded      2 brute     armoured         ||   SW   FB
      ||       //                                                                                                                          **        12  └  ┘ └  ┘
-   /_||_\    /__\                                                                                                                         DRAW RELIC  50 ore
+   /_||_\    /__\                                                                                                                         DRAW RELIC  50 ore       FORGE
   Bolt     >Mortar    Frost     Refinery                                                                                                 hover a slot for details; click actives to fire
        $20       $35       $25       $60 └       ┘ └       ┘ └       ┘ └       ┘
 

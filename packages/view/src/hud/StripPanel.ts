@@ -235,6 +235,13 @@ export class StripPanel {
       const drawW = Math.min(cw, 24);
       term.write(cx, drawRow, drawLabel.padEnd(drawW).slice(0, drawW), c.canDraw ? bg : dim, c.canDraw ? role('terrain.ore.lit') : grid);
       if (c.canDraw) this.regions.push({ row: drawRow, x0: cx, x1: cx + drawW, action: { kind: 'coreDraw' } });
+      // The Forge (feedback 2026-09-06 evening, item 4): its own window for combining.
+      const forgeLabel = ' FORGE ';
+      const fx0 = cx + drawW + 1;
+      if (fx0 + forgeLabel.length <= cx + cw) {
+        term.write(fx0, drawRow, forgeLabel, bg, accent);
+        this.regions.push({ row: drawRow, x0: fx0, x1: fx0 + forgeLabel.length, action: { kind: 'forge' } });
+      }
       const hint = c.hoverDesc ?? 'hover a slot for details; click actives to fire';
       const lines = this.wrap(hint, cw, 2);
       lines.forEach((l, i) => term.write(cx, drawRow + 1 + i, l, c.hoverDesc ? text : dim));

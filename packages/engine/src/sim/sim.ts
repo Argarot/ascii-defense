@@ -914,21 +914,21 @@ export class Sim {
   }
 
   /** What `hi` can combine with: a same-id copy at the same rarity below epic (the next rarity), or a recipe partner (the result). */
-  combineTargets(hi: number): { with: number; result: string; resultId: string }[] {
+  combineTargets(hi: number): { with: number; result: string; resultId: string; resultRarity: string }[] {
     const defs = this.opts.relicDefs ?? [];
-    const out: { with: number; result: string; resultId: string }[] = [];
+    const out: { with: number; result: string; resultId: string; resultRarity: string }[] = [];
     if (hi < 0 || hi >= this.heldRelics.length) return out;
     const a = defs[this.heldRelics[hi]];
     for (let j = 0; j < this.heldRelics.length; j++) {
       if (j === hi) continue;
       const b = defs[this.heldRelics[j]];
       if (b.id === a.id && this.heldRarity[j] === this.heldRarity[hi] && this.heldRarity[hi] < 2) {
-        out.push({ with: j, result: `${a.name} (${RARITIES[this.heldRarity[hi] + 1]})`, resultId: a.id });
+        out.push({ with: j, result: a.name, resultId: a.id, resultRarity: RARITIES[this.heldRarity[hi] + 1] });
         continue;
       }
       const r = (this.opts.recipeDefs ?? []).find((x) => (x.a === a.id && x.b === b.id) || (x.a === b.id && x.b === a.id));
       const resultDef = r ? defs.find((d) => d.id === r.result) : undefined;
-      if (r && resultDef) out.push({ with: j, result: resultDef.name, resultId: resultDef.id });
+      if (r && resultDef) out.push({ with: j, result: resultDef.name, resultId: resultDef.id, resultRarity: RARITIES[Math.max(this.heldRarity[hi], this.heldRarity[j], RARITIES.indexOf(resultDef.rarity))] });
     }
     return out;
   }

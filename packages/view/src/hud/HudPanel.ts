@@ -140,6 +140,8 @@ export type HudAction =
   | { kind: 'salvage'; index: number }
   | { kind: 'combine'; a: number; b: number }
   | { kind: 'closeRelic' }
+  /** Open the Forge (feedback 2026-09-06 evening, item 4). */
+  | { kind: 'forge' }
   /** The offer modal's decline (session 28, PR 3). */
   | { kind: 'skipOffer' }
   | { kind: 'coreDraw' }
@@ -184,6 +186,8 @@ export interface HudCoreInfo {
   sets?: readonly string[];
   /** Relic slots a run holds (session 28, PR 3). */
   relicSlots?: number;
+  /** Every held pair that combines and what it makes (the Forge). */
+  combines?: readonly { a: number; b: number; result: string; resultRarity?: string }[];
   /** "Name - desc" of the hovered slot, or null. */
   hoverDesc: string | null;
   /** Ore price of a blind draw; the button greys when unaffordable or pool-dry. */
@@ -467,12 +471,12 @@ export class HudPanel {
       this.button(0, y, W - 2, `SALVAGE  +${c.salvageOre} ore`, role('ui.bg'), role('terrain.ore.lit'));
       this.regions.push({ row: y, x0: 0, x1: W - 2, action: { kind: 'salvage', index: c.index } });
       y += 2;
-      for (const t of c.combine.slice(0, 3)) {
-        this.button(0, y, W - 2, `COMBINE with ${t.withName} -> ${t.result}`.slice(0, W - 2), role('ui.bg'), role('ui.accent'));
-        this.regions.push({ row: y, x0: 0, x1: W - 2, action: { kind: 'combine', a: c.index, b: t.with } });
-        y += 2;
-      }
+      // Combining lives in the Forge (feedback 2026-09-06 evening, item 4); the card only says what is possible.
+      for (const t of c.combine.slice(0, 3)) for (const line of this.wrapText(`forge: with ${t.withName} -> ${t.result}`, W).slice(0, 2)) term.write(0, y++, line, role('ui.dim'));
       if (c.combine.length === 0) term.write(0, y++, 'nothing held combines with it: a second copy of the same rarity, or its recipe partner', role('ui.dim'));
+      this.button(0, y, W - 2, 'OPEN THE FORGE', role('ui.bg'), role('ui.accent'));
+      this.regions.push({ row: y, x0: 0, x1: W - 2, action: { kind: 'forge' } });
+      y += 2;
       this.button(0, y, 12, 'CLOSE', role('ui.bg'), role('ui.grid'));
       this.regions.push({ row: y, x0: 0, x1: 12, action: { kind: 'closeRelic' } });
       y += 2;

@@ -37,13 +37,15 @@ export interface MetaSave {
     hudScale: 1 | 2;
     /** 'default' or 'colourblind' - a role override set in the view (session 27, WBS 4.24). */
     palette: 'default' | 'colourblind';
+    /** Which sprite pack the game draws with (2026-09-06 evening): the shipped assets, or the art agent's reworked pack beside them. Read at boot. */
+    spriteSet: 'shipped' | 'reworked';
     /** The first-run prompts have been seen (session 27, WBS 4.23). */
     onboarded: boolean;
   };
   history: { seed: number; threat: string; wave: number; status: string; kills: number }[];
 }
 
-export const defaultMeta = (): MetaSave => ({ version: META_VERSION, bankedOre: 0, settings: { reducedMotion: null, hudScale: 2, palette: 'default', onboarded: false }, history: [] });
+export const defaultMeta = (): MetaSave => ({ version: META_VERSION, bankedOre: 0, settings: { reducedMotion: null, hudScale: 2, palette: 'default', spriteSet: 'shipped', onboarded: false }, history: [] });
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -64,10 +66,11 @@ function shapeMeta(m: Record<string, unknown>): MetaSave | null {
   const hudScale = settings.hudScale === 1 ? 1 : 2;
   const palette = settings.palette === 'colourblind' ? 'colourblind' : 'default';
   const onboarded = settings.onboarded === true;
+  const spriteSet = settings.spriteSet === 'reworked' ? 'reworked' : 'shipped';
   return {
     version: META_VERSION,
     bankedOre,
-    settings: { reducedMotion: rm, hudScale, palette, onboarded },
+    settings: { reducedMotion: rm, hudScale, palette, spriteSet, onboarded },
     history: history as MetaSave['history'],
   };
 }

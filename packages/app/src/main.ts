@@ -28,7 +28,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet } from '@ascii-defense/view';
+  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
 import { validateSprite, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -45,7 +45,25 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 // Core face - one glob, validated at boot. The title's hero row is the
 // tower sprites in roster order.
 const SPRITE_JSON = import.meta.glob('../../content/assets/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
-const SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
+// The art agent's reworked pack lives beside the shipped assets (2026-09-06
+// evening, Daniil: "try the new sprites"); a setting picks the pack at boot.
+// Missing folder = empty globs = the shipped pack.
+const REWORKED_JSON = import.meta.glob('../../content/assets-reworked/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
+const REWORKED_PALETTE = import.meta.glob('../../content/assets-reworked/palette.json', { eager: true, import: 'default' }) as Record<string, { roles?: Record<string, string> }>;
+const SPRITE_SET: 'shipped' | 'reworked' = loadMetaFrom(localStorage).meta.settings.spriteSet ?? 'shipped';
+const SHIPPED_SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
+const REWORKED_SPRITES = SPRITE_SET === 'reworked' ? Object.values(REWORKED_JSON).map((s) => must(validateSprite.check(s), `reworked sprite ${(s as { id?: string }).id ?? '?'}`)) : [];
+// The reworked pack first, the shipped one for anything it lacks.
+const SPRITES = SPRITE_SET === 'reworked' && REWORKED_SPRITES.length > 0
+  ? [...REWORKED_SPRITES, ...SHIPPED_SPRITES.filter((s) => !REWORKED_SPRITES.some((r) => r.id === s.id))]
+  : SHIPPED_SPRITES;
+if (SPRITE_SET === 'reworked') {
+  const pal = Object.values(REWORKED_PALETTE)[0]?.roles;
+  if (pal) setPaletteRoles(pal);
+  const pack: TerrainSpritePack = {};
+  for (const s of REWORKED_SPRITES) { if (s.id === 'ground_slate') pack.G = s; if (s.id === 'rock_slate') pack.R = s; if (s.id === 'ore_slate') pack.O = s; }
+  setTerrainPack(pack);
+}
 const HERO = ['bolt', 'mortar', 'frost', 'refinery', 'tesla', 'missile', 'laser', 'bastion'].map((id) => SPRITES.find((s) => s.id === id)).filter((s) => s !== undefined);
 
 const BASE = import.meta.env.BASE_URL;
@@ -146,6 +164,34 @@ async function main(): Promise<void> {
   screenTerm.canvas.style.border = 'none';
   const FULLSCREEN_MODES = new Set(['title', 'setup', 'loadout', 'howto', 'settings', 'summary']);
   const offerModal = new OfferModal();
+  // The Forge (feedback 2026-09-06 evening, item 4): its own window, two slots, one button.
+  const forgeModal = new ForgeModal(new Map(SPRITES.map((s) => [s.id, s])));
+  let forgeOpen = false;
+  let forgePicked: [number | null, number | null] = [null, null];
+  const forgeState = (): import('@ascii-defense/view').ForgeState | null => {
+    const card = snap?.hud.coreCard;
+    if (!card) return null;
+    const held = card.slots.map((sl, i) => ({ index: i, name: sl.name, kind: sl.state, rarity: sl.rarity, id: sl.id })).filter((h) => h.kind !== 'empty');
+    // A held index that vanished (salvaged, combined) leaves its slot.
+    const picked: [number | null, number | null] = [forgePicked[0] !== null && held.some((h) => h.index === forgePicked[0]) ? forgePicked[0] : null, forgePicked[1] !== null && held.some((h) => h.index === forgePicked[1]) ? forgePicked[1] : null];
+    const pair = picked[0] !== null && picked[1] !== null ? (card.combines ?? []).find((c) => c.a === picked[0] && c.b === picked[1]) : undefined;
+    return { held, picked, result: pair ? { name: pair.result, rarity: pair.resultRarity } : null };
+  };
+  const forgeAct = (a: import('@ascii-defense/view').ForgeAction): void => {
+    if (a.kind === 'close') { forgeOpen = false; forgePicked = [null, null]; return; }
+    if (a.kind === 'slot') { forgePicked[a.slot] = null; return; }
+    if (a.kind === 'held') {
+      if (forgePicked[0] === a.index) forgePicked[0] = null;
+      else if (forgePicked[1] === a.index) forgePicked[1] = null;
+      else if (forgePicked[0] === null) forgePicked[0] = a.index;
+      else forgePicked[1] = a.index;
+      return;
+    }
+    if (a.kind === 'combine') {
+      const st = forgeState();
+      if (st && st.result && st.picked[0] !== null && st.picked[1] !== null) { act({ k: 'combine', a: st.picked[0], b: st.picked[1] }); forgePicked = [null, null]; }
+    }
+  };
   const menu = new MenuScreen();
 
   // ---- state ---------------------------------------------------------------
@@ -420,6 +466,7 @@ async function main(): Promise<void> {
             { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
             { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
             { id: 'palette', label: 'PALETTE', note: meta.settings.palette === 'colourblind' ? 'COLOURBLIND' : 'DEFAULT' },
+            { id: 'sprites', label: 'SPRITE PACK', note: `${(meta.settings.spriteSet ?? 'shipped').toUpperCase()} (reloads)` },
             { id: 'hints', label: 'FIRST-RUN HINTS', note: meta.settings.onboarded ? 'seen - click to show again' : 'ON' },
             { id: 'export', label: 'EXPORT SAVES' },
             { id: 'import', label: 'IMPORT SAVES' },
@@ -665,6 +712,12 @@ async function main(): Promise<void> {
         location.reload();
         break;
       }
+      case 'sprites': {
+        meta.settings.spriteSet = (meta.settings.spriteSet ?? 'shipped') === 'reworked' ? 'shipped' : 'reworked';
+        saveMeta(meta);
+        location.reload();
+        break;
+      }
       case 'palette': {
         meta.settings.palette = meta.settings.palette === 'colourblind' ? 'default' : 'colourblind';
         setPaletteSet(meta.settings.palette);
@@ -789,6 +842,7 @@ async function main(): Promise<void> {
     if (action.kind === 'salvage') { act({ k: 'salvage', index: action.index }); selectedRelic = null; }
     if (action.kind === 'combine') { act({ k: 'combine', a: action.a, b: action.b }); selectedRelic = null; }
     if (action.kind === 'closeRelic') selectedRelic = null;
+    if (action.kind === 'forge') { forgeOpen = true; selectedRelic = null; }
     if (action.kind === 'skipOffer') { pendingReplace = null; act({ k: 'skipOffer' }); }
     if (action.kind === 'coreDraw') act({ k: 'buyRelic' });
     if (action.kind === 'openCache' && selected) act({ k: 'openCache', x: selected.x, y: selected.y });
@@ -833,6 +887,11 @@ async function main(): Promise<void> {
       if (id) menuAction(id);
       return;
     }
+    if (forgeOpen && !snap?.offer) {
+      const a = forgeModal.actionAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
+      if (a) forgeAct(a);
+      return;
+    }
     if (snap?.offer) {
       const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
       if (option === -1) { if (snap.offer.kind === 'relic') act({ k: 'rerollOffer' }); }
@@ -843,7 +902,7 @@ async function main(): Promise<void> {
   // The overlay canvas sits over the board; forward hover/board clicks when
   // no screen and no offer is up so it never becomes an invisible wall.
   modalTerm.canvas.style.pointerEvents = 'auto';
-  const overlayInert = (): boolean => menuSpec() === null && !snap?.offer;
+  const overlayInert = (): boolean => menuSpec() === null && !snap?.offer && !forgeOpen;
   modalTerm.canvas.addEventListener('mousemove', (e) => {
     if (overlayInert()) {
       const next = view.cellFromPixel(e.offsetX, e.offsetY);
@@ -895,6 +954,7 @@ async function main(): Promise<void> {
     }
     if (e.key === 'Escape') {
       if (targeting) { targeting = null; return; }
+      if (forgeOpen) { forgeOpen = false; forgePicked = [null, null]; return; }
       if (selectedRelic !== null) { selectedRelic = null; return; }
       if (selected) { selected = null; return; }
       // The pause SCREEN pauses the WORLD - a menu over a running sim would
@@ -998,6 +1058,11 @@ async function main(): Promise<void> {
         offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll, pendingReplace ? `TAKING CARD ${pendingReplace.option + 1} - click the held relic it replaces (S skips)` : snap.offer.title);
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
+      } else if (forgeOpen && inGame()) {
+        const st = forgeState();
+        if (st) forgeModal.render(modalTerm, st, animPhase);
+        modalTerm.flush();
+        modalTerm.canvas.style.display = '';
       } else {
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
@@ -1035,6 +1100,11 @@ async function main(): Promise<void> {
     claimChest: (x: number, y: number) => debug('claimChest', x, y),
     lootLog: () => debug('lootLog'),
     openRelic: (index: number | null): void => { selectedRelic = index; },
+    forge: (open?: boolean): boolean => { if (open !== undefined) { forgeOpen = open; if (!open) forgePicked = [null, null]; } return forgeOpen; },
+    forgePick: (index: number): void => forgeAct({ kind: 'held', index }),
+    forgeCombine: (): void => forgeAct({ kind: 'combine' }),
+    forgeState: () => forgeState(),
+    spriteSet: (): { set: string; sprites: number; reworked: number; terrain: boolean } => ({ set: SPRITE_SET, sprites: SPRITES.length, reworked: REWORKED_SPRITES.length, terrain: REWORKED_SPRITES.some((s) => s.id === 'ground_slate') }),
     sets: () => debug('sets'),
     // Debug-only: a relic by id outside any offer (replays diverge), and an active fired at a cell.
     grant: (id: string) => debug('grant', id),
