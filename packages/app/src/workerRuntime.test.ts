@@ -48,6 +48,7 @@ function makeRt() {
     basics: BASICS,
     enemyDefs: [WALKER],
     towerDefs: [BOLT],
+    passiveDefs: [],
     relicDefs: POOL,
     lootTables: [
       { id: 'rock_cache', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },

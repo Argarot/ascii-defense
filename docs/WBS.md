@@ -20,7 +20,7 @@ Conventions:
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
 | D25 | **Towers larger than one cell** — Daniil wants to brainstorm them (2026-09-05). PRD §5.1's one-cell footprint is load-bearing for occupancy, placement and upgrades; a multi-cell tower is either a footprint rule (which cells, which anchor, what blocks) or a visual-only size like 4.14. Decide before the new towers (25) are built | before session 25 | Daniil + dev |
-| D26 | **Passives are not relics** — separate the permanent modifier layer from found objects, with many more passive slots (Daniil, 2026-09-05; PRD §7.8). Reference for feel: Tower Dominion's doctrines, explicitly not to be copied. Shape, slot count, acquisition (tree? drops? both?) all open | before session 26 | Daniil |
+| ~~D26~~ | **Decided 2026-09-06 (defaults accepted)**: passives are tower mods on every tower plus econ knobs, six slots, a pick every second wave from three; built in session 28 PR 1 (PRD §7.8) | — | Daniil |
 | D27 | **Monetization and accounts** — intent recorded (PRD §18): Stone Story's model, lighter; nothing pay-to-win. Needs an identity story that §16 rules out today. No build work depends on it; decide before beta hardening | before session 37 | Daniil |
 | D28 | **The filled board's rules** (PRD §4.3.1): coverage target (~90%?), the leaf rule (every dead end is an entrance — forced by "no dead-end spurs" once the board fills), entries emergent within the threat's range, lane balance band (within what fraction of the longest?). **Daniil's amendment 2026-09-05: the Core moves to the EAST EDGE first** (a face past the border, one entrance, no spawns on that side — PRD §4.5, shipped as session 24 PR 1); the defaults he did not amend stand: 90% coverage, lanes ≥ 70% of the longest | ~~before 2.30 starts~~ resolved 2026-09-05 (go) | closed |
 | D1 | ~~Buildable density~~ **RESOLVED 2026-08-15**: the map generator controls ground amount/placement directly; density is a generation knob tuned as data (PRD §4.4) | — | closed |
@@ -604,7 +604,7 @@ and starts another — with progress surviving a reload.**
 
 - [ ] 5.6 **Single-use, high-damage relics** *(Daniil, 2026-09-05; PRD §7.8)*: a nuke or its kin in the consumable tier — one moment that turns a wave; loot-table weighted so it is a find, not a plan.
 - [ ] 5.7 **Rarity with power, and relics you can replace, remove and combine** *(Daniil, 2026-09-05; PRD §7.6, §7.8)*: rare means stronger; a held relic can be dropped or swapped; combining makes §7.6's fusion concrete (recipes as content).
-- [ ] 5.8 **The passive layer** *(D26; PRD §7.8)*: permanent modifiers separated from relics, with many more slots. Built after D26 is decided.
+- [~] 5.8 *(session 28, PR 1: the passive pool and schema, six slots, a pick every second wave from three, folded into every tower like a tier plus econ knobs; the offer modal shows both offers in turn; the strip's passive row; the codex section and how-to pages; the golden moved for the hashed passive state. Sprites, set effects and replacing a held passive follow in PR 2-3)* **The passive layer** *(D26; PRD §7.8)*: permanent modifiers separated from relics, with many more slots. Built after D26 is decided.
 
 **M5 gate: two runs do not resemble each other.**
 

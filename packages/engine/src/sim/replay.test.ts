@@ -200,7 +200,12 @@ describe('replay (WBS 1.4.8)', () => {
     // world and its rules did not change - every tower now carries two more
     // hashed numbers (facing east, heat 1). Round-trip replay still proves
     // bit-identical.
-    expect(sim.hashState()).toBe(3921408197);
+    // 3921408197 -> 1825542629 on 2026-09-06 (session 28, PR 1, the passive
+    // layer): the passive offer wave, the held passives and the standing
+    // passive offer joined the hash (three more lanes, all zero/empty in the
+    // golden world - it has no passive pool). Round-trip replay still proves
+    // bit-identical.
+    expect(sim.hashState()).toBe(1825542629);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

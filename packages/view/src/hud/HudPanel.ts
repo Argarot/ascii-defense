@@ -132,6 +132,8 @@ export type HudAction =
   | { kind: 'buildId'; id: string }
   | { kind: 'choose'; tier: number; option: number }
   | { kind: 'relic'; index: number }
+  /** A held passive's slot in the strip (session 28, PR 1): hover shows its card. */
+  | { kind: 'passive'; index: number }
   | { kind: 'coreDraw' }
   | { kind: 'openCache' }
   | { kind: 'prospect' }
@@ -154,6 +156,9 @@ export interface HudCoreInfo {
   hp: number;
   hpMax: number;
   slots: readonly HudRelicSlot[];
+  /** The passive layer (session 28, PR 1): the held passives, and how many slots a run has. */
+  passives?: readonly { label: string; name: string; id: string }[];
+  passiveSlots?: number;
   /** "Name - desc" of the hovered slot, or null. */
   hoverDesc: string | null;
   /** Ore price of a blind draw; the button greys when unaffordable or pool-dry. */

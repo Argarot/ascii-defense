@@ -650,6 +650,122 @@ export const CODEX = {
       "desc": "Use: 20 Ore, right now. One use."
     }
   ],
+  "passives": [
+    {
+      "id": "iron_sights",
+      "name": "Iron Sights",
+      "desc": "Every tower reaches one cell further.",
+      "tags": [
+        "reach"
+      ]
+    },
+    {
+      "id": "hot_loads",
+      "name": "Hot Loads",
+      "desc": "Every hit does 15% more.",
+      "tags": [
+        "damage"
+      ]
+    },
+    {
+      "id": "quick_hands",
+      "name": "Quick Hands",
+      "desc": "Every tower cycles two ticks faster.",
+      "tags": [
+        "rate"
+      ]
+    },
+    {
+      "id": "deep_cold",
+      "name": "Deep Cold",
+      "desc": "Every slow is 10% colder.",
+      "tags": [
+        "cold"
+      ]
+    },
+    {
+      "id": "piercing_rounds",
+      "name": "Piercing Rounds",
+      "desc": "Every shot passes into one more body.",
+      "tags": [
+        "kinetic"
+      ]
+    },
+    {
+      "id": "long_arc",
+      "name": "Long Arc",
+      "desc": "Every arc jumps to one more body.",
+      "tags": [
+        "energy"
+      ]
+    },
+    {
+      "id": "overclock",
+      "name": "Overclock",
+      "desc": "Every beam heats one multiple higher.",
+      "tags": [
+        "energy"
+      ]
+    },
+    {
+      "id": "wide_aura",
+      "name": "Wide Aura",
+      "desc": "Every aura reaches one cell further.",
+      "tags": [
+        "support"
+      ]
+    },
+    {
+      "id": "rich_seam",
+      "name": "Rich Seam",
+      "desc": "Every refinery mines one more Ore a cycle.",
+      "tags": [
+        "economy"
+      ]
+    },
+    {
+      "id": "war_chest",
+      "name": "War Chest",
+      "desc": "Ten Scrap at every wave launch.",
+      "tags": [
+        "economy"
+      ]
+    },
+    {
+      "id": "bounty_hunter",
+      "name": "Bounty Hunter",
+      "desc": "Every bounty pays 25% more.",
+      "tags": [
+        "economy"
+      ]
+    },
+    {
+      "id": "bulwark",
+      "name": "Bulwark",
+      "desc": "The Core holds ten more health.",
+      "tags": [
+        "core"
+      ]
+    },
+    {
+      "id": "tempered_steel",
+      "name": "Tempered Steel",
+      "desc": "Every hit does 10% more and every tower reaches half a cell further.",
+      "tags": [
+        "damage",
+        "reach"
+      ]
+    },
+    {
+      "id": "shield_breaker",
+      "name": "Shield Breaker",
+      "desc": "Every hit does half again to shields.",
+      "tags": [
+        "kinetic",
+        "energy"
+      ]
+    }
+  ],
   "rules": [
     "Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.",
     "Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla, Laser.",

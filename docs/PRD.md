@@ -758,9 +758,13 @@ codebase.
 
 - **Passives are not relics.** A permanent modifier and a found object with
   a cooldown are different things and should not compete for the same
-  slots. Passives get far more slots than relics do. The shape is open (D26):
-  Tower Dominion's doctrines are the reference for what a passive layer
-  feels like, and explicitly not the thing to copy.
+  slots. Passives get far more slots than relics do. **D26 decided
+  2026-09-06 (session 28, PR 1)**: a passive is a set of tower mods folded
+  into every tower like a tier, plus economy knobs; six slots a run; one
+  pick every second wave from three offered, until the slots are full;
+  content in `passives/pool.json`, fourteen to start, each tagged for the
+  set effects of PR 2. Tower Dominion's doctrines were the reference for
+  feel, not the shape.
 - **Rarity means power.** D5 weights the pool by rarity; the second half is
   that a rare relic is actually stronger, not merely scarcer.
 - **Single-use, high-damage relics** — a nuke, or something like it — belong

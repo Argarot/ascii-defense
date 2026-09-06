@@ -152,7 +152,7 @@ async function main(): Promise<void> {
   // the same generated facts as docs/CATALOGUE.md; reachable from the
   // title and from pause, and it returns where it came from.
   let howtoFrom: Mode = 'title';
-  type CodexSection = 'basics' | 'towers' | 'enemies' | 'relics';
+  type CodexSection = 'basics' | 'towers' | 'enemies' | 'relics' | 'passives';
   let codexSection: CodexSection = 'basics';
   let codexPage = 0;
   let wipeArmed = false;
@@ -448,6 +448,7 @@ async function main(): Promise<void> {
                       summary.story.killsByTower.length ? 'kills by tower: ' + summary.story.killsByTower.slice(0, 6).map((k) => `${k.name} ${k.kills}`).join(' \u2802 ') : 'no tower killed anything',
                       summary.story.met.length ? 'you met: ' + summary.story.met.map((m) => `${m.count} ${m.name}`).join(', ') : '',
                       summary.story.relics.length ? 'relics held: ' + summary.story.relics.join(', ') : 'no relics held',
+                      summary.story.passives.length ? 'passives: ' + summary.story.passives.join(', ') : 'no passives taken',
                       '',
                     ].filter((l, i, a) => l !== '' || a[i - 1] !== '')
                   : []),
@@ -505,6 +506,7 @@ async function main(): Promise<void> {
       { id: 'towers', label: `TOWERS ${CODEX.towers.length}`, count: CODEX.towers.length },
       { id: 'enemies', label: `ENEMIES ${CODEX.enemies.length}`, count: CODEX.enemies.length },
       { id: 'relics', label: `RELICS ${CODEX.relics.length}`, count: CODEX.relics.length },
+      { id: 'passives', label: `PASSIVES ${CODEX.passives.length}`, count: CODEX.passives.length },
     ];
     const count = sections.find((s) => s.id === codexSection)!.count;
     const page = Math.min(codexPage, count - 1);
@@ -516,7 +518,7 @@ async function main(): Promise<void> {
         'enemies march the road toward the Core at the east edge; if it falls, the run ends.',
         'select ground, then a tower in the strip under the board, to build. hover a button for its card.',
         'towers upgrade in either/or tiers - each fork is two jobs, never two numbers.',
-        'refineries on gold veins mine Ore; every 3rd wave offers a relic - rules, not numbers.',
+        'refineries on gold veins mine Ore; every 3rd wave offers a relic - rules, not numbers; every 2nd wave offers a passive - a permanent bonus on every tower, six slots a run.',
         'rock hides ore and caches; prospecting opens it. R turns a laser. N calls the next wave.',
         ...CODEX.rules,
         'hold to the final wave and THE CORE STANDS.',
@@ -545,6 +547,15 @@ async function main(): Promise<void> {
         [e.armour ? `armour ${e.armour}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type at x1',
         ...e.traits.flatMap((t) => wrapLine(t)),
       ];
+    } else if (codexSection === 'passives') {
+      const p = CODEX.passives[page];
+      title = `${p.name.toUpperCase()}  ${page + 1}/${count}`;
+      body = [
+        ...wrapLine(p.desc),
+        p.tags.length ? 'tags: ' + p.tags.join(', ') : '',
+        '',
+        ...wrapLine(`Passives are the permanent layer: six slots a run, a pick every second wave from three offered, and every one of them works on every tower. Relics are found; passives are chosen.`),
+      ].filter((l, i, a) => l !== '' || a[i - 1] !== '');
     } else {
       const r = CODEX.relics[page];
       title = `${r.name.toUpperCase()}  ${page + 1}/${count}`;
@@ -792,8 +803,8 @@ async function main(): Promise<void> {
     }
     if (snap?.offer) {
       const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
-      if (option === -1) act({ k: 'rerollOffer' });
-      else if (option !== null) act({ k: 'pickRelic', option });
+      if (option === -1) { if (snap.offer.kind === 'relic') act({ k: 'rerollOffer' }); }
+      else if (option !== null) act(snap.offer.kind === 'passive' ? { k: 'pickPassive', option } : { k: 'pickRelic', option });
     }
   });
   // The overlay canvas sits over the board; forward hover/board clicks when
@@ -822,7 +833,7 @@ async function main(): Promise<void> {
       return;
     }
     if (snap?.offer && (e.key === '1' || e.key === '2' || e.key === '3')) {
-      act({ k: 'pickRelic', option: Number(e.key) - 1 });
+      act(snap.offer.kind === 'passive' ? { k: 'pickPassive', option: Number(e.key) - 1 } : { k: 'pickRelic', option: Number(e.key) - 1 });
       return;
     }
     if (e.key === ' ') {
@@ -945,7 +956,7 @@ async function main(): Promise<void> {
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else if (snap.offer && inGame()) {
-        offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll);
+        offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll, snap.offer.title);
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else {
@@ -974,6 +985,8 @@ async function main(): Promise<void> {
     offer: () => debug('offer'),
     pick: (option: number) => debug('pick', option),
     relics: () => debug('relics'),
+    passives: () => debug('passives'),
+    pickPassive: (option: number) => debug('pickPassive', option),
     // Debug-only: a relic by id outside any offer (replays diverge), and an active fired at a cell.
     grant: (id: string) => debug('grant', id),
     fire: (id: string, x?: number, y?: number) => debug('fire', id, x, y),

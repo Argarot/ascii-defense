@@ -52,7 +52,7 @@ export type { VerifyIssue, VerifyMapOptions } from './mapgen/verify';
 
 export { computeFlowField } from './sim/flow';
 export type { FlowField } from './sim/flow';
-export { Sim, TICK_HZ, SELL_REFUND, OFFER_EVERY_WAVES, RELIC_DRAW_COST, OFFER_REROLL_COST, PROSPECT_COST, PROSPECT_TICKS, DEFAULT_DIFFICULTY, waveHpScale, waveCount } from './sim/sim';
+export { Sim, TICK_HZ, SELL_REFUND, OFFER_EVERY_WAVES, PASSIVE_OFFER_EVERY_WAVES, PASSIVE_SLOTS, RELIC_DRAW_COST, OFFER_REROLL_COST, PROSPECT_COST, PROSPECT_TICKS, DEFAULT_DIFFICULTY, waveHpScale, waveCount } from './sim/sim';
 export type { DifficultySpec, CacheSpot } from './sim/sim';
 export type { LootTable, LootOutcome, LootKind } from './sim/defs';
 export type { SimOptions, Tower, SimEvent, StampedSimEvent } from './sim/sim';
@@ -61,7 +61,7 @@ export { REPLAY_VERSION, contentHashOf, fnv1a, playReplay } from './sim/replay';
 export type { Replay, ReplayAction, ReplayInput } from './sim/replay';
 export { PRIORITIES, pickTarget } from './sim/targeting';
 export type { Priority, TargetCandidate } from './sim/targeting';
-export { canChoose, effectiveStats, foldRelics, EMPTY_FOLD, resistMul, DAMAGE_TYPES, applyCoreBoon } from './sim/defs';
+export { canChoose, effectiveStats, foldRelics, foldPassiveMods, EMPTY_FOLD, resistMul, DAMAGE_TYPES, applyCoreBoon } from './sim/defs';
 export type { CoreBoon } from './sim/defs';
 export type { DamageType } from './sim/defs';
 export type {
@@ -73,6 +73,7 @@ export type {
   StatMods,
   EffectiveStats,
   RelicDef,
+  PassiveDef,
   RelicKind,
   RelicEffects,
   RelicFold,
