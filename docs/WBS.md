@@ -119,6 +119,8 @@ HANDOVER) · 1 green build button → 4.32 · 2 room for more towers, and
 towers this session → 4.32 + 5.1 (Tesla, Missiles) · 3 the Core column as
 buildable ground → 4.32 + 2.35 (the two precious cells exist now).
 
+**Round 28 (the thought dump, 2026-09-06 late evening):** thirty-two items filed in PRD §19 with status and home; the WBS backlog §9 carries them by his numbering (9.1–9.32); the fixes (7, 8, 9, 10, 11, 12, 18, 24) are PR 0 of session 29; the meta-tree items (1 legendary, 2, 3, 4, 15, 22, 23) join row 29; presentation (14, 19, 25, 27, 30) is row 30; balance and content (5, 6, 16, 17, 26, 28, 29) row 31–32; the debates (1 uber, 9 four-or-eight, 20, 21, 26, 31, 32) wait for his answer.
+
 **Round 27 (the Relics II build, 2026-09-06 late evening):** 1 "passives are also relics ... just relics, just some relics are passives" → PR #161 (the layer folded back: eleven tower-mod relics, one pool, the offer every second wave; D26 reversed) · 2 the relic selection persists after clicking elsewhere → PR #159 · 3 the right HUD should go all the way down → PR #159 · 4 combining in its own window with two slots and a COMBINE button, like Stone Story → PR #163 (the Forge) · 5 the Laser is OP: much more expensive to build and upgrade, Tesla and Missile too → PR #160 (110/70/85, tiers at 1.5×; the Laser line 27.0 → 21.5, still first) · copy the run code and seed → PR #159 · "try the new sprites" → PR #163 (SPRITE PACK setting; 61 reworked sprites, their palette and terrain) · session 29: Enemies II declined ("bells and whistles"), the meta tree next after his description — ledger rows 29–32 reordered.
 
 **Round 26 (the 2026-09-06 build, 2026-09-06 evening; his order 1 >>> 3,4,5 > 2):** 1 "a lot of the animations broke - sometimes no projectiles/explosions/AOE/laser rendered at all, game speed seemed to matter" → PR #147 (motion v2 pruned every effect born behind the render clock; prune by expiry only, and every effect is painted at least once) · 2 statuses as background colour, not a glyph → PR #150 (the walker's ground: cold, ember, ice, split when two hold) · 3 the Laser fires much slower and its pulse is more than one flat colour → PR #148 (a pulse a second at the same dps; a front, a hold with shimmer, a decay) · 4 "it doesn't have a fixed range - to the bend regardless of length" → PR #148 (no range on a beam, held by the linter; the card says "reach the road, to its turn"; the build preview draws the corridor) · 5 the Orbital like the laser but two cells wide, near-white cyan, an explosion at the site → PR #149 · 6 "tesla attack animation is great" → kept · 7 (after the build) "when in pause, the screen fails to update my actions" → PR #151 (the board draws from the newest snapshot; walkers and shots from the bracket) · "yes to all defaults you gave, go make it" → session 28, PRs #152–#157. Readings for him: the aimed Laser line went 13.8 → 18.5, then 27.0 with the choke instrument (`docs/lab/build-sweep-2026-09-06-relics.md`), not retuned.
@@ -655,3 +657,39 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 8.7 Licences and attribution verified (Apache-2.0; spleen BSD-2-Clause).
 
 **M8 gate: the stable-beta bar in PRD §17.**
+
+
+## 9. The thought dump of 2026-09-06 *(Daniil; filed in PRD §19 with status - this is the checklist, by his numbering)*
+
+- [ ] 9.1 **Legendary rarity** (a fourth lane: common green, rare blue, epic purple, legendary gold; the roll's weights gain a lane; tiers gain `legendary`). The paid uber tier is D27, not this item.
+- [ ] 9.2 **Higher tiers unlock by forging**: the meta save records the tier a relic was forged to; the pool deals a tier only once forged.
+- [ ] 9.3 **Relics earned by wins**: difficulty (Threat) sets the rarity granted at a win; the tree gates branches and capacity; paid chests are §18's door.
+- [ ] 9.4 **One Refinery, every ore tier**: a per-tier cycle multiplier (slower for higher tiers).
+- [ ] 9.5 **Core gifts as global powerups** (§4.5 rework): a tower kind beside the Core changes a run-wide rule (Laser: the Orbital doubles and recharges faster).
+- [ ] 9.6 Ignore-armour reads too strong: a balance reading against armoured waves, then the number.
+- [ ] 9.7 Loadbearing ×3 → ×1.5 *(PR 0)*.
+- [ ] 9.8 The Bastion's reach takes no modifier but its own *(PR 0)*.
+- [ ] 9.9 The Bastion's reach preview as a plus; **four or eight** cells is his call *(PR 0)*.
+- [ ] 9.10 The build preview folds every modifier at the selected cell *(PR 0)*.
+- [ ] 9.11 The Frost pulse muted and fading with radius *(PR 0)*.
+- [ ] 9.12 Void chests surface on water and ground, not rock *(PR 0)*.
+- [ ] 9.13 A chest sprite kind, bigger, coloured by a rolled rarity.
+- [ ] 9.14 Relic sprites 6×5: the icon plus a rarity ring; strip and Forge plates follow.
+- [ ] 9.15 **The codex**: every entry, locked ones shown locked, from every menu and from pause; reads the unlock set.
+- [ ] 9.16 Consumable: place boon ground on an empty ground cell.
+- [ ] 9.17 Consumable: god mode for one tower (a timed +100% to everything) with an epic sequence.
+- [ ] 9.18 The relic offer only when the board is quiet; a call before that waits *(PR 0)*.
+- [ ] 9.19 Actives and passives look different in the slot (a plate shape per kind).
+- [ ] 9.20 Neutral structures - **debated, open** (the reply argues the Tile Smith's placeables and boon ground already own this).
+- [ ] 9.21 Merging four identical towers - **debated, open** (D25; the reply proposes a formation bonus around a Bastion instead).
+- [ ] 9.22 Endless mode as the tree's last unlock.
+- [ ] 9.23 More recipes; fusions discovered are recorded in the meta save and listed in the codex.
+- [ ] 9.24 Pierce continues into bodies within half a cell of the impact, never across lanes *(PR 0)*.
+- [ ] 9.25 Per-tower projectile and blast looks (Mortar vs Missile).
+- [ ] 9.26 Slows stacking multiplicatively with a floor - **debated, open**; the sweep decides.
+- [ ] 9.27 A Laser path changes the beam's colour.
+- [ ] 9.28 The burn ignores armour and stacks per source: the Laser's control path becomes the anti-armour path.
+- [ ] 9.29 Towers that exist only as relics (single-build).
+- [ ] 9.30 **The menus reworked** to Stone-Story quality: frames, ornament, animated titles, a design pass on every page.
+- [ ] 9.31 D28: where meta progression and money live (browser plus backend, a desktop wrapper, or both) - vendor facts checked before a plan.
+- [ ] 9.32 Frames per sprite vs procedural animation: an experiment sprite at 4/8/16 frames for his eye; the reply's recommendation is 4–8 authored frames plus procedural light.
