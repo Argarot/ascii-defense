@@ -887,14 +887,18 @@ async function main(): Promise<void> {
       // tick - never ahead of the sim; pause holds everything where it is.
       const renderTick = clock.renderTick(worldMs);
       const pair = clock.bracket(renderTick);
-      const shown = pair ? pair.b : snap;
+      // Everything that is not a walker or a shot comes from the NEWEST
+      // snapshot: towers, the selection, the range preview, cell changes.
+      // The bracketed snapshot is a tick behind by design and, while paused,
+      // stands still - a build made on pause was invisible until unpause
+      // (Daniil, 2026-09-06: 'the screen fails to update my actions').
       const board: RenderState = {
-        ...shown.board,
+        ...snap.board,
         phase: animPhase,
         animMs,
         drift,
-        enemies: pair ? interpolate(pair.a.board.enemies ?? [], pair.b.board.enemies ?? [], pair.alpha, WALKER_MAX_STEP) : shown.board.enemies,
-        projectiles: pair ? interpolate(pair.a.board.projectiles ?? [], pair.b.board.projectiles ?? [], pair.alpha, SHOT_MAX_STEP) : shown.board.projectiles,
+        enemies: pair ? interpolate(pair.a.board.enemies ?? [], pair.b.board.enemies ?? [], pair.alpha, WALKER_MAX_STEP) : snap.board.enemies,
+        projectiles: pair ? interpolate(pair.a.board.projectiles ?? [], pair.b.board.projectiles ?? [], pair.alpha, SHOT_MAX_STEP) : snap.board.projectiles,
       };
       view.render(board, (t) => {
         effects.ingest(snap!.events);
