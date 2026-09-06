@@ -22,7 +22,10 @@ export interface TowerRoster {
        */
       desc?: string;
       cost: number;
-      range: number;
+      /**
+       * Cells. Required unless attack is 'beam' - a beam reaches to the road's turn and carries no range (tools/validate-content.mjs holds both ways).
+       */
+      range?: number;
       /**
        * Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.
        */
@@ -244,7 +247,10 @@ export interface TowerRoster {
        */
       desc?: string;
       cost: number;
-      range: number;
+      /**
+       * Cells. Required unless attack is 'beam' - a beam reaches to the road's turn and carries no range (tools/validate-content.mjs holds both ways).
+       */
+      range?: number;
       /**
        * Cells. Enemies closer than this are never targeted - the dead zone (PRD sec 5.3, the Mortar). Absent = 0.
        */
@@ -575,7 +581,6 @@ export const towersSchema = {
         "required": [
           "id",
           "cost",
-          "range",
           "fireEveryTicks"
         ],
         "additionalProperties": false,
@@ -601,6 +606,7 @@ export const towersSchema = {
             "minimum": 0
           },
           "range": {
+            "description": "Cells. Required unless attack is 'beam' - a beam reaches to the road's turn and carries no range (tools/validate-content.mjs holds both ways).",
             "type": "number",
             "exclusiveMinimum": 0
           },

@@ -29,6 +29,34 @@ describe('arcPath', () => {
 });
 
 describe('the effects layer', () => {
+  it('a lance pulse has a shape: a front that runs out, a held beam brighter in the middle row, a centre that cools before its glow (2026-09-06, item 3)', () => {
+    const lum = (hex: string): number => (parseInt(hex.slice(1, 3), 16) * 0.2126 + parseInt(hex.slice(3, 5), 16) * 0.7152 + parseInt(hex.slice(5, 7), 16) * 0.0722);
+    const drawAt = (age01: number): TextTerm => {
+      const term = new TextTerm({ cols: 14 * CELL_W, rows: 4 * CELL_H });
+      const fx = new EffectsLayer();
+      fx.ingest([{ kind: 'beam', x0: 1.5, y0: 1.5, x1: 12.5, y1: 1.5, w: 1, heat: 1, every: 20, seq: 0, tick: 100 }]);
+      fx.draw(term, 100 + age01 * 20);
+      return term;
+    };
+    const row = Math.floor(1.5 * CELL_H);
+    const near = Math.floor(2.2 * CELL_W);
+    const far = Math.floor(12 * CELL_W);
+    const untouched = new TextTerm({ cols: 1, rows: 1 }).bgAt(0, 0);
+    // The strike: the front has left the lens but not reached the turn.
+    const strike = drawAt(0.03);
+    expect(strike.bgAt(near, row)).not.toBe(untouched);
+    expect(strike.bgAt(far, row)).toBe(untouched);
+    // The hold: the whole run lit, the middle row brighter than its afterglow rows.
+    const hold = drawAt(0.3);
+    expect(hold.bgAt(far, row)).not.toBe(untouched);
+    expect(lum(hold.bgAt(near, row))).toBeGreaterThan(lum(hold.bgAt(near, row - 1)));
+    expect(lum(hold.bgAt(near, row))).toBeGreaterThan(lum(hold.bgAt(near, row + 1)));
+    // The decay: the centre has cooled well below the hold; the glow still shows.
+    const late = drawAt(0.9);
+    expect(lum(late.bgAt(near, row))).toBeLessThan(lum(hold.bgAt(near, row)) * 0.6);
+    expect(late.bgAt(near, row - 1)).not.toBe(untouched);
+  });
+
   it('an effect born at the newest tick waits for the render clock instead of dying (feedback 2026-09-06, item 1)', () => {
     const fx = new EffectsLayer();
     fx.ingest([{ kind: 'impact', x: 3.5, y: 2.5, r: 0, seq: 0, tick: 10 }]);

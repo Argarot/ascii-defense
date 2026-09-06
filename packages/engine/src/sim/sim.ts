@@ -135,7 +135,7 @@ export type SimEvent =
   | { kind: 'pulse'; x: number; y: number; r: number }
   | { kind: 'strike'; x: number; y: number; r: number } // the orbital: a column from the sky, then a blast of radius r (session 25)
   | { kind: 'arc'; pts: readonly { x: number; y: number }[] } // a chain: the tower's centre, then every body hit in order (session 25)
-  | { kind: 'beam'; x0: number; y0: number; x1: number; y1: number; w: number; heat: number } // a lance firing down its corridor (session 26)
+  | { kind: 'beam'; x0: number; y0: number; x1: number; y1: number; w: number; heat: number; every: number } // a lance firing down its corridor (session 26); every = ticks to its next pulse, the view's pulse length
   | { kind: 'freeze'; ticks: number } // every enemy held for this long (Stasis, Flashbang)
   | { kind: 'impact'; x: number; y: number; r: number; delay?: number } // r 0 = plain hit, >0 = blast radius; delay = ticks before it shows (Splinter's second blast)
   | { kind: 'death'; x: number; y: number }
@@ -543,7 +543,7 @@ export class Sim {
     const prodCooldown = def.production ? effectiveStats(def, [-1, -1, -1]).productionEveryTicks : 0;
     // A line-shaped tower faces the direction with the most road in reach
     // (deterministic: ties go north-first); anyone else faces east.
-    const facing = def.attack === 'beam' ? this.bestFacing(x, y, def.range) : 1;
+    const facing = def.attack === 'beam' ? this.bestFacing(x, y) : 1;
     this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1, facing, heat: 1, beamLead: -1, beamLeadGen: 0 });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
     this.emit({ kind: 'build', x, y });
@@ -1167,19 +1167,31 @@ export class Sim {
     return true;
   }
 
-  /** The facing with the most road cells within `range` along its corridor; ties north-first. */
-  private bestFacing(x: number, y: number, range: number): number {
+  /** The facing whose corridor (to the road's turn) holds the most road cells; ties north-first. */
+  private bestFacing(x: number, y: number): number {
     let best = 1;
     let bestRoad = -1;
     for (let f = 0; f < 4; f++) {
       let road = 0;
-      for (let k = 1; k <= Math.ceil(range); k++) {
+      const len = this.corridorLength(x, y, f);
+      for (let k = 1; k <= len; k++) {
         const c = this.cellAt(x + FACING_DX[f] * k, y + FACING_DY[f] * k);
         if (c !== null && isRoad(c)) road++;
       }
       if (road > bestRoad) { bestRoad = road; best = f; }
     }
     return best;
+  }
+
+  /** A beam tower's reach in cells down its facing: the road, to its turn (the corridor the view previews). */
+  beamReach(t: Tower): number {
+    return this.corridorLength(t.cellX, t.cellY, t.facing);
+  }
+
+  /** What a beam built at (x, y) would face and how far it would reach - the build preview's corridor (2026-09-06, item 4). */
+  beamPreview(x: number, y: number): { dir: number; len: number } {
+    const dir = this.bestFacing(x, y);
+    return { dir, len: this.corridorLength(x, y, dir) };
   }
 
   setPriority(x: number, y: number, priority: Priority): boolean {
@@ -1674,14 +1686,16 @@ export class Sim {
       let best = tower.facing;
       let bestN = -1;
       for (let f = 0; f < 4; f++) {
-        const n = this.bodiesInCorridor(cx, cy, f, this.corridorLength(tower.cellX, tower.cellY, f, eff.range), eff.beamWidth).length;
+        const n = this.bodiesInCorridor(cx, cy, f, this.corridorLength(tower.cellX, tower.cellY, f), eff.beamWidth).length;
         if (n > bestN) { bestN = n; best = f; }
       }
       if (best !== tower.facing) { tower.facing = best; tower.heat = 1; tower.beamLead = -1; }
     }
-    // The beam reaches to the road's TURN (Daniil, 2026-09-06): its length
-    // is the straight run in front of it, never a number on a card.
-    const reach = this.corridorLength(tower.cellX, tower.cellY, tower.facing, eff.range);
+    // The beam reaches to the road's TURN (Daniil, 2026-09-06, twice: "it
+    // doesn't have a fixed range - all the way until the bend in the road,
+    // regardless of the length"): its length is the straight run in front
+    // of it, never a number on a card.
+    const reach = this.corridorLength(tower.cellX, tower.cellY, tower.facing);
     const bodies = this.bodiesInCorridor(cx, cy, tower.facing, reach, eff.beamWidth);
     if (bodies.length === 0) {
       tower.heat = 1;
@@ -1701,8 +1715,7 @@ export class Sim {
       this.applyDamage(b.i, eff.damage * tower.heat, slowMulN, slowTicksN, towerIdx, eff.shieldMul, eff.ignoreArmor, type);
       if (eff.burnDps > 0) this.applyBurn(b.i, eff.burnDps, eff.burnTicks, srcId, type);
     }
-    const len = this.corridorLength(tower.cellX, tower.cellY, tower.facing, eff.range);
-    this.emit({ kind: 'beam', x0: cx, y0: cy, x1: cx + FACING_DX[tower.facing] * len, y1: cy + FACING_DY[tower.facing] * len, w: eff.beamWidth, heat: tower.heat });
+    this.emit({ kind: 'beam', x0: cx, y0: cy, x1: cx + FACING_DX[tower.facing] * reach, y1: cy + FACING_DY[tower.facing] * reach, w: eff.beamWidth, heat: tower.heat, every: eff.fireEveryTicks });
   }
 
   /** Living bodies inside a corridor, nearest first (ties by slot). */
@@ -1729,13 +1742,14 @@ export class Sim {
    * of the road, so in a straight line"): the corridor crosses whatever
    * stands in front of the tower until it has found road, then runs along
    * the road while the road keeps going straight, and stops where the
-   * road turns or ends - or at `cap` cells, or the grid's edge. A beam
-   * that never meets road runs to the cap.
+   * road turns or ends - or at the grid's edge. No cap: a beam has no
+   * range (Daniil, 2026-09-06, item 4); a beam that never meets road runs
+   * to the edge.
    */
-  private corridorLength(x: number, y: number, facing: number, cap: number): number {
+  private corridorLength(x: number, y: number, facing: number): number {
     let k = 0;
     let onRoad = false;
-    while (k < cap) {
+    for (;;) {
       const nx = x + FACING_DX[facing] * (k + 1);
       const ny = y + FACING_DY[facing] * (k + 1);
       if (nx < 0 || ny < 0 || nx >= this.opts.cellsW || ny >= this.opts.cellsH) break;
