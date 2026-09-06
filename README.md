@@ -78,6 +78,16 @@ review found flat: the wave clock and the call button, boss waves, traits as
 real rules, stackability and escalating prices for relics, caches that open
 free onto loot tables, a dead zone for the Mortar with the range drawn as a
 filled disc, and every tower fork rebuilt as two roles instead of two numbers.
+**Session 28 (2026-09-06, evening)** built Relics II on Daniil's accepted
+defaults: a passive layer of six slots picked every second wave and
+folded into every tower; rarity with teeth (a wave-weighted roll on every
+draw, rare and epic copies with their own numbers), tags and set effects;
+replace, salvage and combine — two of a kind climb a rarity, five recipe
+pairs fuse; twenty more relics for forty-one; void chests claimed through
+one loot table; and a relic sweep that bounds the layer. The morning's
+feedback fixed the effects that died before the render clock reached
+them, statuses as the ground under the walker, a Laser with no range and
+a pulse a second, an Orbital column of light, and the paused board.
 **Session 27 (2026-09-06)** wrote the art agent's brief
 ([docs/ART-AGENT.md](docs/ART-AGENT.md)) and the painted-study importer
 behind it, reworked the Laser into a pulsing background beam that reaches
