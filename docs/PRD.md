@@ -270,7 +270,18 @@ Unclaimed water is currently scenery. **Chests surface on it occasionally and
 sink again after a short window** — a small, seeded, optional prize that gives
 the void a reason to be watched. Claiming one pays out through the loot-table
 layer (§7.7). It stays strictly off-route and off-buildable, so it can never
-touch connectivity or placement.
+touch connectivity or placement. **Built 2026-09-06 (session 28, PR 5)**:
+every fifteen seconds the water rolls once on the loot stream and one time
+in two a chest surfaces on a random water cell for twelve seconds, at most
+two at once; it blinks faster as it sinks; selecting it shows a CLAIM card
+and the claim pays through `void_chest` (Scrap 40%, Ore 30%, a
+consumable 18%, a relic 12%). The claim is a replayed input; the chests
+are hashed. **Found while building it**: the session-24 boards are nine
+tenths road and carry no water on 17 of 18 measured seeds, so "the void"
+of this section barely exists any more. Until Daniil decides whether the
+generator should leave water, a board with no water gives the chests
+their second home on **unprospected rock** - likewise off every route and
+unbuildable, so the invariant above holds either way.
 
 ### 4.4 Map parameters are the difficulty dial
 

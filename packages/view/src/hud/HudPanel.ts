@@ -118,6 +118,8 @@ export interface HudState {
   relicCard?: { index: number; name: string; rarity: string; kind: string; tags: readonly string[]; desc: string; uses: number; salvageOre: number; combine: readonly { with: number; withName: string; result: string }[] } | null;
   /** The cache card, when an unopened cache is selected (PRD sec 4.6): its source. */
   cache: { source: string } | null;
+  /** The chest card, when a surfaced void chest is selected (PRD sec 4.9): seconds before it sinks. */
+  chest?: { seconds: number; home: 'water' | 'rock' } | null;
   /** What the last opened cache gave, shown briefly; null otherwise. */
   loot: string | null;
   /** The prospect card, when a rock cell is selected. */
@@ -144,6 +146,8 @@ export type HudAction =
   | { kind: 'skipOffer' }
   | { kind: 'coreDraw' }
   | { kind: 'openCache' }
+  /** A void chest claimed while it stands (session 28, PR 5). */
+  | { kind: 'claimChest' }
   | { kind: 'prospect' }
   | { kind: 'callWave' };
 
@@ -415,6 +419,17 @@ export class HudPanel {
     } else if (s.gameOver) {
       term.write(0, y + 1, 'THE CORE HAS FALLEN', role('enemy.fast'));
       term.write(0, y + 3, 'the summary has the rest', role('ui.text'));
+    } else if (s.chest) {
+      // ---- the void chest (PRD sec 4.9; session 28, PR 5): claim it before it sinks ----
+      term.write(0, y++, 'VOID CHEST', role('terrain.ore.lit'));
+      term.write(0, y++, `sinks in ${s.chest.seconds}s`, s.chest.seconds <= 3 ? role('enemy.fast') : role('ui.dim'));
+      y++;
+      for (const line of this.wrap(`Surfaced on the ${s.chest.home}. Claiming it costs nothing but the click: Scrap, Ore, a consumable - now and then a relic.`, W, 5)) {
+        term.write(0, y++, line, role('ui.text'));
+      }
+      y++;
+      this.button(0, y, W - 6, 'CLAIM', role('ui.bg'), role('terrain.ore.lit'));
+      this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'claimChest' } });
     } else if (s.cache) {
       // ---- the claim card: replaces the build palette on a cache ----------
       term.write(0, y++, s.cache.source === 'boss_drop' ? 'BOSS CACHE' : 'CACHE', role('terrain.ore.lit'));

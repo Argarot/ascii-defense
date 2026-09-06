@@ -182,6 +182,8 @@ export interface RenderState {
   activeEntries?: readonly CellRef[];
   /** Unclaimed relic caches - drawn as a bright find on the terrain. */
   caches?: readonly CellRef[];
+  /** Void chests (session 28, PR 5): surfaced on water, with the share of their window left (1 = just surfaced). */
+  chests?: readonly { x: number; y: number; left01: number }[];
   /** Ore cells' remaining richness 0..1 - scales the gold-speck density. */
   oreRichness?: readonly { x: number; y: number; frac: number }[];
   /** The sim's route graph (FlowField.allowed): legal steps per cell. Kerbs
@@ -331,7 +333,8 @@ export class BoardView {
           if (st) {
             const dark = role('terrain.core.dark');
             for (let y = 0; y < CELL_H; y++) for (let x = 0; x < CELL_W; x++) term.put(gx0 + x, gy0 + y, ' ', dark, hovered ? '#2a3a4d' : dark);
-            drawSpriteFrame(term, face, idleFrame(face, st, state.animMs ?? 0, above), gx0, gy0, { groundRole: 'terrain.core.dark' });
+            const phase = face.inkMap.k === 'core.face.crest' ? 0 : above;
+            drawSpriteFrame(term, face, idleFrame(face, st, state.animMs ?? 0, phase), gx0, gy0, { groundRole: 'terrain.core.dark' });
             continue;
           }
         }
@@ -348,6 +351,7 @@ export class BoardView {
           litTop: shaded && north !== kind,
           shadowBottom: shaded && south !== kind,
           richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx) : undefined,
+          animMs: state.animMs,
           rim: state.routeAllowed ? ~state.routeAllowed[cy * this.cellsW + cx] & 15 : 0,
           // Ground and the Core breathe; rock, roads and ore hold still -
           // moving glyphs on a cell the player reads for data would lie.
@@ -583,6 +587,18 @@ export class BoardView {
       term.put(gx + MID_X - 1, gy + MID_Y, '[', role('terrain.ore.lit'));
       term.put(gx + MID_X, gy + MID_Y, '?', '#ffffff', '#5a4a12');
       term.put(gx + MID_X + 1, gy + MID_Y, ']', role('terrain.ore.lit'));
+    }
+
+    // Void chests (PRD sec 4.9): a plate on the water that blinks faster as
+    // it sinks - the void's one reason to be watched.
+    for (const c of state.chests ?? []) {
+      const gx = c.x * CELL_W;
+      const gy = offsetY + c.y * CELL_H;
+      const rate = c.left01 > 0.5 ? 1 : c.left01 > 0.25 ? 2 : 4;
+      const on = ((state.phase ?? 0) * rate) % 1 < 0.6;
+      term.put(gx + MID_X - 1, gy + MID_Y, '{', role('terrain.ore.lit'));
+      term.put(gx + MID_X, gy + MID_Y, on ? '$' : '~', on ? '#ffffff' : role('terrain.ore.lit'), on ? '#4a3a10' : undefined);
+      term.put(gx + MID_X + 1, gy + MID_Y, '}', role('terrain.ore.lit'));
     }
 
     // Entry markers, two honest states (Daniil: a blink at a quiet entry
