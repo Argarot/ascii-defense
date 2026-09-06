@@ -77,6 +77,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   /** The run's towers and relic pool: the content filtered by the tree (session 29, PR 1). */
   let runTowers: readonly TowerDef[] = towerDefs;
   let runRelics: readonly RelicDef[] = relicDefs;
+  /** Endless (session 29, PR 2): the run has no final wave. */
+  let runEndless = false;
+  let runFinalWave = 0;
   const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs);
 
   // The current run - null until the first successful init. Everything here
@@ -93,8 +96,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   let acc = 0;
   let lastBeat = 0;
 
-  function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave, board?: { w: number; h: number }, meta?: MetaState): void {
+  function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave, board?: { w: number; h: number }, meta?: MetaState, endless?: boolean): void {
     try {
+      const nextEndless = resume?.endless ?? endless ?? false;
       // The tree decides the world (session 29, PR 1): which towers the strip
       // offers, which relics the pool deals, how many slots, which rarities.
       // A resume keeps the meta it was saved with; a new run takes the
@@ -183,7 +187,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         setDefs,
         recipeDefs,
         lootTables,
-        finalWave: THREAT.finalWave,
+        finalWave: nextEndless ? 0 : THREAT.finalWave,
         interWaveTicks: THREAT.waveSeconds * TICK_HZ,
         difficulty: { hpLinear: 0.15, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
       });
@@ -210,13 +214,15 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       runMeta = nextMeta;
       runTowers = nextTowers;
       runRelics = nextRelics;
+      runEndless = nextEndless;
+      runFinalWave = nextEndless ? 0 : THREAT.finalWave;
       seed = resume ? resume.seed : nextSeed;
       threatIdx = nextThreatIdx;
       offerWasUp = false;
       targeting = null;
       acc = 0;
       speedIdx = resume ? 0 : 1; // resume paused: the player left, the world waits
-      post({ t: 'ready', seed, map, finalWave: THREAT.finalWave });
+      post({ t: 'ready', seed, map, finalWave: runFinalWave });
     } catch (e) {
       // The contract: init yields ready or genError, NEVER silence. This
       // catch is what kills the phantom resume - an escaped throw here used
@@ -451,7 +457,6 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
 
     const offer = s.offerDefs();
 
-    const THREAT = THREAT_LEVELS[threatIdx];
     return {
       board: {
         hover,
@@ -501,7 +506,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         })(),
         gameOver: s.status === 'lost',
         victory: s.status === 'won',
-        finalWave: THREAT.finalWave,
+        finalWave: runFinalWave,
         L: s.flow.L,
         seed,
         speedLabel: speed === 0 ? 'PAUSED' : `${speed}x`,
@@ -641,7 +646,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   function handle(m: ToWorker): void {
     switch (m.t) {
       case 'init':
-        newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume, m.board, m.meta);
+        newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume, m.board, m.meta, m.endless);
         break;
       case 'frame': {
         if (!sim) break; // no run yet: nothing to serve, and never a lie
@@ -669,6 +674,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             contentHash: CONTENT_HASH,
             loadout,
             meta: runMeta, // the tree state the run was started under (session 29, PR 1)
+            endless: runEndless,
             map, // D15: the save carries the map; resume never regenerates
           },
         });

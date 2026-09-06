@@ -10,7 +10,8 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES } from '@ascii-defense/engine';
+import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes } from '@ascii-defense/engine';
+import type { TreeNode } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
 import { loadMintedProblems, loadMintedTiles, removeMintedTile } from './mintedTiles';
 import {
@@ -49,6 +50,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 // The meta tree and the relic pool (session 29, PR 1): the shell reads them to bank a win's relic and to name what is locked.
 const TREE = must(validateTree.check(treeJson), 'tree');
 const RELIC_POOL = must(validateRelics.check(relicsJson), 'relics').relics;
+const TOWER_COUNT = TREE.base.towers!.length + TREE.nodes.reduce((n, x) => n + (x.grants.towers?.length ?? 0), 0);
 const SPRITE_JSON = import.meta.glob('../../content/assets/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
 // The previous pack lives beside the current one (2026-09-06 evening: the
 // approved pack became assets/, the old assets became assets-old/, and a
@@ -169,7 +171,7 @@ async function main(): Promise<void> {
   screenTerm.canvas.style.top = '0';
   screenTerm.canvas.style.zIndex = '20';
   screenTerm.canvas.style.border = 'none';
-  const FULLSCREEN_MODES = new Set(['title', 'setup', 'loadout', 'howto', 'settings', 'summary']);
+  const FULLSCREEN_MODES = new Set(['title', 'setup', 'loadout', 'howto', 'settings', 'summary', 'workshop', 'history']);
   const offerModal = new OfferModal();
   // The Forge (feedback 2026-09-06 evening, item 4): its own window, two slots, one button.
   const forgeModal = new ForgeModal(new Map(SPRITES.map((s) => [s.id, s])));
@@ -208,7 +210,20 @@ async function main(): Promise<void> {
   if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
   setPaletteSet(meta.settings.palette);
 
-  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary';
+  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary' | 'workshop' | 'history';
+  // The workshop (session 29, PR 2; PRD sec 11): the tree's branches as
+  // pages, banked Ore as the currency, a node bought with one click.
+  let workshopBranch: TreeNode['branch'] = 'arsenal';
+  const BRANCHES: { id: TreeNode['branch']; label: string }[] = [
+    { id: 'arsenal', label: 'ARSENAL' },
+    { id: 'reliquary', label: 'RELIQUARY' },
+    { id: 'capacity', label: 'CAPACITY' },
+    { id: 'threat', label: 'THREAT' },
+    { id: 'ore', label: 'ORE' },
+  ];
+  /** What the tree has granted, resolved from the meta save as it is NOW (the page after a purchase reads the purchase). */
+  const unlockedNow = () => resolveUnlocks(TREE, meta, RELIC_POOL);
+  let setupEndless = false;
   let mode: Mode = 'title';
   let settingsFrom: Mode = 'title';
   // The how-to is the CODEX (session 27): sections of pages rendered from
@@ -222,7 +237,8 @@ async function main(): Promise<void> {
   // Run setup state (2.21): the threat is picked, the loadout assembled, and
   // START commits both. Loadout entries are minted-tile ids; 3 slots for now
   // (the slot economy is 7.5).
-  const LOADOUT_SLOTS = 5;
+  // The loadout's slot count is the tree's (session 29, PR 2; PRD sec 11.1: slots are an upgrade).
+  const loadoutSlots = (): number => unlockedNow().tileSlots;
   // Shipped SPECIALS (playtest 2026-08-19): library tiles whose roads touch
   // without merging or split into two segments - selectable like minted
   // tiles, never rolled from the random pools.
@@ -334,11 +350,11 @@ async function main(): Promise<void> {
   // run's identity is fixed at its start whatever the workshop sells later.
   const metaForRun = (): MetaState => ({ unlocks: [...meta.unlocks], earned: [...meta.earned], forged: { ...meta.forged } });
   let lastMeta: MetaState = metaForRun();
-  const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave, loadout?: TileDef[]): void => {
+  const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave, loadout?: TileDef[], endless?: boolean): void => {
     threatIdx = tIdx;
     lastLoadout = resume?.loadout ?? loadout ?? [];
     lastMeta = resume?.meta ?? metaForRun();
-    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout, board: { w: mapX, h: mapY }, meta: lastMeta });
+    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout, board: { w: mapX, h: mapY }, meta: lastMeta, endless: resume?.endless ?? endless ?? false });
     pendingStart = true; // 'playing' begins on 'ready', not on send
     mirroredSpeed = 1;
   };
@@ -401,6 +417,7 @@ async function main(): Promise<void> {
           items: [
             { id: 'new', label: 'NEW RUN' },
             { id: 'continue', label: 'CONTINUE', disabled: runSave.run === null, note: runSave.run ? `wave-era tick ${runSave.run.tick}` : runSave.problem ? 'unreadable' : 'no save' },
+            { id: 'workshop', label: 'WORKSHOP', note: `${meta.unlocks.length}/${TREE.nodes.length} bought \u2802 ${meta.ore[0]} ore` },
             { id: 'settings', label: 'SETTINGS' },
             { id: 'howto', label: 'HOW TO PLAY' },
           ],
@@ -414,13 +431,16 @@ async function main(): Promise<void> {
             ...(genError ? ['', `! ${genError}`] : []),
           ],
           items: [
+            // Threats above the tree's grant are shown locked, never hidden (a visible ladder).
             ...THREAT_LEVELS.map((t, i) => ({
               id: `threat:${i}`,
               label: t.name.toUpperCase(),
-              note: `to wave ${t.finalWave}`,
+              note: i > unlockedNow().threatMax ? 'locked - the workshop opens it' : `to wave ${t.finalWave}`,
               selected: i === setupThreat,
+              disabled: i > unlockedNow().threatMax,
             })),
-            { id: 'loadout', label: 'LOADOUT', note: `${setupLoadout.length}/${LOADOUT_SLOTS} special(s) >` },
+            { id: 'loadout', label: 'LOADOUT', note: `${setupLoadout.length}/${loadoutSlots()} special(s) >` },
+            ...(unlockedNow().endless ? [{ id: 'endless', label: 'ENDLESS', note: setupEndless ? 'ON - no final wave, the ramp runs until the Core falls' : 'OFF', selected: setupEndless }] : []),
             { id: 'start', label: 'START RUN' },
             { id: 'back', label: 'BACK' },
           ],
@@ -441,7 +461,7 @@ async function main(): Promise<void> {
             loadoutDeleteArmed
               ? 'click a MINTED tile to remove it permanently (shipped tiles stay)'
               : pool.length > 0
-                ? `load up to ${LOADOUT_SLOTS} special tiles - a loaded tile is GUARANTEED on the map`
+                ? `load up to ${loadoutSlots()} special tiles - a loaded tile is GUARANTEED on the map`
                 : 'no special tiles yet - the tile smith mints them',
             // Tiles the pool holds but cannot offer, and why - never silent.
             ...problems.slice(0, 4).map((p) => `not offered: ${p.id} - ${p.problem}`),
@@ -460,11 +480,51 @@ async function main(): Promise<void> {
               : []),
             { id: 'back', label: 'DONE' },
           ],
-          footer: `${setupLoadout.length}/${LOADOUT_SLOTS} loaded` + (pages > 1 ? ` - page ${page + 1}/${pages}` : ''),
+          footer: `${setupLoadout.length}/${loadoutSlots()} loaded` + (pages > 1 ? ` - page ${page + 1}/${pages}` : ''),
         };
       }
       case 'howto':
         return codexSpec();
+      case 'workshop': {
+        // The tree as pages (session 29, PR 2): one branch at a time, its
+        // nodes as rows - the price or the reason it cannot be bought on the
+        // right, BOUGHT when it was. The body carries each node's sentence.
+        const u = unlockedNow();
+        const nodes = branchNodes(TREE, workshopBranch);
+        const ore = meta.ore;
+        return {
+          title: 'WORKSHOP',
+          body: [
+            `banked ore: ${ore[0]} tier 1 \u2802 ${ore[1]} tier 2 \u2802 ${ore[2]} tier 3`,
+            `towers ${u.towers.size}/${TOWER_COUNT} \u2802 relics in the pool ${u.relics.size}/${RELIC_POOL.length} \u2802 relic slots ${u.relicSlots} \u2802 tile slots ${u.tileSlots}`,
+            '',
+            ...nodes.flatMap((n) => wrapLine(`${n.name}: ${n.desc}`, Math.min(90, screenCols - 12))),
+          ],
+          items: [
+            ...BRANCHES.map((b) => ({ id: `br:${b.id}`, label: b.label, selected: b.id === workshopBranch, note: `${branchNodes(TREE, b.id).filter((n) => meta.unlocks.includes(n.id)).length}/${branchNodes(TREE, b.id).length}` })),
+            ...nodes.map((n) => {
+              const why = whyNot(TREE, meta, meta.ore, n.id);
+              const bought = meta.unlocks.includes(n.id);
+              return { id: `node:${n.id}`, label: `  ${n.name.toUpperCase()}`, note: bought ? 'BOUGHT' : why ?? `BUY - ${n.cost.ore} tier-${n.cost.tier} ore`, disabled: bought || why !== null };
+            }),
+            { id: 'history', label: 'RUN HISTORY', note: `${meta.history.length} runs` },
+            { id: 'back', label: 'BACK' },
+          ],
+          footer: 'a node is bought once; higher nodes want rarer ore; wins earn the rarer relics of an open branch',
+        };
+      }
+      case 'history': {
+        // Run history (WBS 7.3): the last runs, newest first.
+        const rows = [...meta.history].reverse().slice(0, 14);
+        return {
+          title: 'RUN HISTORY',
+          body: rows.length
+            ? rows.map((h) => `${h.status === 'won' ? 'WON ' : 'lost'}  ${h.threat.padEnd(8)}  wave ${String(h.wave).padStart(2)}  kills ${String(h.kills).padStart(4)}  seed ${h.seed}`)
+            : ['no runs yet'],
+          items: [{ id: 'back', label: 'BACK' }],
+          footer: `${meta.history.length} runs played \u2802 ${meta.history.filter((h) => h.status === 'won').length} won`,
+        };
+      }
       case 'settings':
         return {
           title: 'SETTINGS',
@@ -490,7 +550,7 @@ async function main(): Promise<void> {
         return {
           title: 'PAUSED',
           body: [
-            `wave ${snap?.hud.wave ?? 0} of ${finalWave} \u2802 seed ${seed}`,
+            `wave ${snap?.hud.wave ?? 0} of ${finalWave > 0 ? finalWave : 'endless'} \u2802 seed ${seed}`,
             `run code ${runCode(seed)}`,
           ],
           items: [
@@ -507,7 +567,7 @@ async function main(): Promise<void> {
           ? {
               title: summary.won ? 'THE CORE STANDS' : 'THE CORE HAS FALLEN',
               body: [
-                `wave ${summary.wave} of ${finalWave} \u2802 seed ${summary.seed}`,
+                `wave ${summary.wave} of ${finalWave > 0 ? finalWave : 'endless'} \u2802 seed ${summary.seed}`,
                 `run code ${runCode(summary.seed)}`,
                 `kills ${summary.kills}`,
                 `ore banked +${summary.oreBanked} (total ${meta.ore[0]})`,
@@ -657,6 +717,20 @@ async function main(): Promise<void> {
       setupThreat = Number(id.slice('threat:'.length));
       return;
     }
+    if (id.startsWith('br:')) {
+      workshopBranch = id.slice('br:'.length) as TreeNode['branch'];
+      return;
+    }
+    if (id.startsWith('node:')) {
+      // A purchase (session 29, PR 2): pure in the engine, saved here.
+      const bought = buyNode(TREE, meta, meta.ore, id.slice('node:'.length));
+      if (bought) {
+        meta.unlocks = [...bought.meta.unlocks];
+        meta.ore = bought.ore;
+        saveMeta(meta);
+      }
+      return;
+    }
     if (id.startsWith('sec:')) {
       codexSection = id.slice('sec:'.length) as CodexSection;
       codexPage = 0;
@@ -673,7 +747,7 @@ async function main(): Promise<void> {
         return;
       }
       if (setupLoadout.includes(tid)) setupLoadout = setupLoadout.filter((t) => t !== tid);
-      else if (setupLoadout.length < LOADOUT_SLOTS) setupLoadout = [...setupLoadout, tid];
+      else if (setupLoadout.length < loadoutSlots()) setupLoadout = [...setupLoadout, tid];
       return;
     }
     switch (id) {
@@ -704,7 +778,7 @@ async function main(): Promise<void> {
           .map((tid) => pool.find((t) => t.id === tid))
           .filter((t): t is NonNullable<typeof t> => t !== undefined);
         genError = null;
-        startRun(setupThreat, undefined, undefined, defs);
+        startRun(setupThreat, undefined, undefined, defs, setupEndless);
         break;
       }
       case 'continue': {
@@ -714,7 +788,10 @@ async function main(): Promise<void> {
       }
       case 'settings': settingsFrom = mode; mode = 'settings'; break;
       case 'howto': howtoFrom = mode; codexSection = 'basics'; codexPage = 0; mode = 'howto'; break;
-      case 'back': mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : 'title'; break;
+      case 'back': mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : mode === 'history' ? 'workshop' : 'title'; break;
+      case 'workshop': mode = 'workshop'; break;
+      case 'history': mode = 'history'; break;
+      case 'endless': setupEndless = !setupEndless; break;
       case 'motion': {
         const v = !isReducedMotion();
         setReducedMotion(v);
@@ -790,7 +867,7 @@ async function main(): Promise<void> {
       case 'abandon': void persistRun().then(() => { mode = 'title'; send({ t: 'speed', idx: 0 }); }); break;
       // GO AGAIN keeps the loadout: "the same run again" includes the tiles
       // it was set up with, not just the threat (playtest 12).
-      case 'again': startRun(threatIdx, undefined, undefined, lastLoadout); break;
+      case 'again': startRun(threatIdx, undefined, undefined, lastLoadout, setupEndless); break;
       case 'title': mode = 'title'; send({ t: 'speed', idx: 0 }); break;
     }
   };
@@ -1118,6 +1195,10 @@ async function main(): Promise<void> {
     relics: () => debug('relics'),
     pool: () => debug('pool'), // the run's relic pool as the tree dealt it (session 29, PR 1)
     meta: (): MetaSave => meta,
+    // The workshop, driven a level below the click (session 29, PR 2): buy a node, read what is unlocked.
+    buy: (id: string): boolean => { const b = buyNode(TREE, meta, meta.ore, id); if (b) { meta.unlocks = [...b.meta.unlocks]; meta.ore = b.ore; saveMeta(meta); } return b !== null; },
+    unlocked: () => { const u = unlockedNow(); return { towers: [...u.towers], relics: u.relics.size, relicSlots: u.relicSlots, threatMax: u.threatMax, tileSlots: u.tileSlots, endless: u.endless, everything: u.everything }; },
+    bank: (ore: number[]): void => { meta.ore = [...ore]; saveMeta(meta); },
     relicsHeld: () => debug('relicsHeld'),
     salvage: (index: number) => debug('salvage', index),
     combine: (a: number, b: number) => debug('combine', a, b),

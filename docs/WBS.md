@@ -636,13 +636,21 @@ is the same mistake as authoring sprites before the animation engine.)*
 
 - [ ] 7.1 Tech tree stage 2 — five disciplines, alternate tier-5s, capped economy nodes (PRD §11).
 - [ ] 7.2 Relic pool and tile pool unlocks wired to the tree.
-- [ ] 7.3 Run history and personal bests — the reason to open the game on day nine.
+- [ ] 7.3 Run history and personal bests — the reason to open the game on day nine. *(The history page shipped in session 29, PR #169 - 7.9.2; personal bests remain.)*
 - [ ] 7.4 Daily challenges (a fixed seed per day) and replay sharing — both nearly free given determinism.
 - [ ] 7.5 Tile Smith as an in-game meta feature (PRD §11) — the authorship endgame. **Features price the tile** (richer nodes cost more to mint), so the tool and the shop share one pricing function. Now also owns the **loadout slot economy** *(Daniil, 2026-08-17)*: the number of special-tile slots a run may carry is a tree upgrade, locked slots render as locked rather than hidden, and the minted-tile collection persists. The slot *mechanic* ships in session 19 (2.21) with a fixed count and everything unlocked; this is the economy on top.
 - [ ] 7.7 **The tile shop** (PRD §11.1, resolves D9): special tiles bought with meta-currency; the pool becomes a **multiset of owned copies** rather than a set, so generation may place at most what you own; tier-N ore nodes purchased with tier-(N-1) ore. Appearance likelihood is a calibration knob, not a constant.
 - [ ] 7.6 Tech tree stage 3, Potency — **optional**, and the trigger for `seeds × meta tiers` in CI.
 
 - [ ] 7.8 **Monetization — the door stays open** *(D27; PRD §18)*: no build work; a checklist that nothing in persistence, identity or content licensing forecloses a Stone-Story-style paid layer later.
+- **7.9 The tree, stage 1** *(session 29, 2026-09-06; Daniil's answers: a tree with branches, only Ore in tiers, ~5 runs to the towers, unlocks in the run code, the Tile Smith after every tile is bought; PRD §11 "Built")*:
+  - [x] 7.9.1 *(PR #168)* **The tree as content and identity**: `tree/nodes.json` (base + 24 nodes in five branches), `resolveUnlocks`, meta save v4 (Ore by tier, unlocks, earned, forged, owned, discovered), run save v5 (the run's meta), the run code's fifth segment, the worker's filtered towers and pool, relic slots and forging caps in the sim, wins earn relics.
+  - [x] 7.9.2 *(PR #169)* **The workshop page**: WORKSHOP on the title page; the branches as pages, a node a row with its price or its reason, BOUGHT once bought; RUN HISTORY (7.3's first half); the setup page shows locked Threats locked, the loadout's slot count is the tree's, ENDLESS at setup once bought (9.22).
+  - [ ] 7.9.3 **Ore tiers in the sim**: a Refinery credits the vein's tier (slower for higher tiers, 9.4); the HUD and the summary show Ore by tier; tier-2/3 vein tiles in the library.
+  - [ ] 7.9.4 **The tile shop and the Tile Smith gate**: shipped specials priced and bought as owned copies (7.7); the loadout offers owned tiles; the Tile Smith link opens when every purchasable tile is owned (answer 6).
+  - [ ] 7.9.5 **The lab at tree states**: `unlocks` in LabSpec; a sweep at base / mid / everything; the Ore-per-run reading that prices the nodes.
+  - [ ] 7.9.6 **The codex with locked entries** (9.15) and discovered fusions (9.23).
+  - [ ] 7.9.7 **Legendary** (9.1) - a fourth lane reached only by forging two epics.
 
 **M7 gate: finishing a run visibly changes the next one.**
 
