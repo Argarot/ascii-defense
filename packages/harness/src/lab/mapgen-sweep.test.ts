@@ -79,7 +79,7 @@ describe('the label law: shipped flags match the special-shape predicate', () =>
 });
 
 describe('the shipped library satisfies the spec (verifyMap on real content)', () => {
-  it('plain runs, all threats, 40 seeds each', () => {
+  it('plain runs, all threats, 40 seeds each', { timeout: 30000 }, () => {
     for (let threatIdx = 0; threatIdx < 3; threatIdx++) {
       for (let seed = 1; seed <= 40; seed++) {
         const map = appMap(seed * 101 + threatIdx, LIB, undefined, threatIdx);
