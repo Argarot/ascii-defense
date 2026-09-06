@@ -20,7 +20,6 @@
  */
 import {
   DEPOSIT_MAX,
-  PROSPECT_COST,
   PROSPECT_TICKS,
   REPLAY_VERSION,
   Sim,
@@ -390,7 +389,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       id: d.id,
       name: d.name ?? d.id,
       short: d.short,
-      cost: d.cost,
+      cost: s.towerCost(d),
       affordable: s.canAfford(d.id),
       // Grey only for a location unbuildable FOR THIS TOWER (a Refinery off
       // ore); a tile nothing can take (road, occupied) greys nobody -
@@ -488,7 +487,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         inspector: cellDescribe,
         palette: (buildTarget && !(selected && s.cacheAt(selected.x, selected.y)) ? palette : []).map((d) => ({
           name: d.name ?? d.id,
-          cost: d.cost,
+          cost: s.towerCost(d),
           affordable: s.canAfford(d.id),
           id: d.id,
         })),
@@ -507,8 +506,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         })(),
         rock: selected && s.cellAt(selected.x, selected.y) === 'R'
           ? {
-              cost: PROSPECT_COST,
-              affordable: s.scrap >= PROSPECT_COST,
+              cost: s.prospectCost(),
+              affordable: s.scrap >= s.prospectCost(),
               seconds: Math.ceil(PROSPECT_TICKS / s.prospectSpeed() / TICK_HZ),
               job: (() => {
                 const j = s.prospectJobAt(selected.x, selected.y);

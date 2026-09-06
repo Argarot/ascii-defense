@@ -746,6 +746,291 @@ export const CODEX = {
       "epic": "60 Ore, once."
     },
     {
+      "id": "ricochet",
+      "name": "Ricochet",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage",
+        "kinetic"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "A killing hit carries half of itself to the nearest body within two cells.",
+      "rare": "A killing hit carries 70% of itself to the nearest body within two cells.",
+      "epic": "A killing hit carries itself whole to the nearest body within two cells."
+    },
+    {
+      "id": "cold_snap",
+      "name": "Cold Snap",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "A slowed or frozen body that dies chills everything within a cell and a half for a second.",
+      "rare": "...for a second and a half.",
+      "epic": "...for two seconds."
+    },
+    {
+      "id": "kindling",
+      "name": "Kindling",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "energy",
+        "damage"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "A burning body that dies passes its burn to everything within a cell and a half.",
+      "rare": "",
+      "epic": ""
+    },
+    {
+      "id": "salvage_rights",
+      "name": "Salvage Rights",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Sold towers refund 85% instead of 70%.",
+      "rare": "Sold towers refund in full.",
+      "epic": "Sold towers refund in full."
+    },
+    {
+      "id": "bulk_order",
+      "name": "Bulk Order",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every tower costs 10% less.",
+      "rare": "Every tower costs 15% less.",
+      "epic": "Every tower costs 25% less."
+    },
+    {
+      "id": "cheap_upgrades",
+      "name": "Cheap Upgrades",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every tier choice costs 15% less.",
+      "rare": "Every tier choice costs 25% less.",
+      "epic": "Every tier choice costs 40% less."
+    },
+    {
+      "id": "wide_net",
+      "name": "Wide Net",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "kinetic"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every shot passes into one more body.",
+      "rare": "Every shot passes into two more bodies.",
+      "epic": "Every shot passes into three more bodies."
+    },
+    {
+      "id": "grounding_rod",
+      "name": "Grounding Rod",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "energy"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every arc jumps to one more body.",
+      "rare": "Every arc jumps to two more bodies.",
+      "epic": "Every arc jumps to three more bodies."
+    },
+    {
+      "id": "long_fuse",
+      "name": "Long Fuse",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage",
+        "kinetic"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every blast reaches half a cell further.",
+      "rare": "Every blast reaches a cell further.",
+      "epic": "Every blast reaches a cell and a half further."
+    },
+    {
+      "id": "sniper_nest",
+      "name": "Sniper Nest",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "damage",
+        "core"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Towers touching the Core face hit for half again.",
+      "rare": "",
+      "epic": "Towers touching the Core face hit for double."
+    },
+    {
+      "id": "bloodstone",
+      "name": "Bloodstone",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every tenth kill mends the Core by 1.",
+      "rare": "Every seventh kill mends the Core by 1.",
+      "epic": "Every fifth kill mends the Core by 1."
+    },
+    {
+      "id": "rush_bonus",
+      "name": "Rush Bonus",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy",
+        "rate"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Calling a wave early pays double the clock bonus.",
+      "rare": "Calling a wave early pays triple the clock bonus.",
+      "epic": "Calling a wave early pays four times the clock bonus."
+    },
+    {
+      "id": "scavenger",
+      "name": "Scavenger",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Caches pay double Scrap.",
+      "rare": "Caches pay triple Scrap.",
+      "epic": "Caches pay four times the Scrap."
+    },
+    {
+      "id": "prospectors_eye",
+      "name": "Prospector's Eye",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "economy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Prospecting rock costs nothing.",
+      "rare": "",
+      "epic": ""
+    },
+    {
+      "id": "iron_will",
+      "name": "Iron Will",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every breach costs the Core 1 less.",
+      "rare": "Every breach costs the Core 2 less.",
+      "epic": "Every breach costs the Core 3 less."
+    },
+    {
+      "id": "frost_nova",
+      "name": "Frost Nova",
+      "kind": "active",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "stacks": true,
+      "recharge": "60 s",
+      "desc": "Every enemy on the board moves at half speed for 4 seconds. Recharges in a minute.",
+      "rare": "Every enemy moves at 40% for 6 seconds.",
+      "epic": "Every enemy moves at 30% for 8 seconds."
+    },
+    {
+      "id": "scrap_rain",
+      "name": "Scrap Rain",
+      "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "80 Scrap, once.",
+      "rare": "140 Scrap, once.",
+      "epic": "220 Scrap, once."
+    },
+    {
+      "id": "emergency_repair",
+      "name": "Emergency Repair",
+      "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "The Core mends 20 now.",
+      "rare": "The Core mends 35 now.",
+      "epic": "The Core mends 50 now."
+    },
+    {
+      "id": "foundry",
+      "name": "Foundry",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "economy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "A Refinery standing off any vein produces its yield as Scrap instead. The PRD's rule, broken by a relic.",
+      "rare": "",
+      "epic": ""
+    },
+    {
+      "id": "thick_walls",
+      "name": "Thick Walls",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "The Core holds 10 more while this is held.",
+      "rare": "The Core holds 20 more while this is held.",
+      "epic": "The Core holds 35 more while this is held."
+    },
+    {
       "id": "permafrost_engine",
       "name": "Permafrost Engine",
       "kind": "passive",

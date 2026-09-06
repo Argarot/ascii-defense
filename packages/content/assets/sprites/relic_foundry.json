@@ -1,0 +1,29 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "relic_foundry",
+  "kind": "relic",
+  "cell": [
+    4,
+    3
+  ],
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "[==]",
+        "|##|",
+        "|__|"
+      ],
+      "ink": [
+        "aaaa",
+        "abba",
+        "aaaa"
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "ui.dim",
+    "b": "fx.ember"
+  }
+}

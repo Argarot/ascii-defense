@@ -146,7 +146,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 ## Relics *(generated)*
 
 <!-- generated:relics -->
-21 relics in `packages/content/assets/relics/pool.json`. Passives work while held; actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
+41 relics in `packages/content/assets/relics/pool.json`. Passives work while held; actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
 
 | Relic | id | Kind | Base rarity | Tags | Stacks | Recharge | What it does (common) | Data | Rare | Epic |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -166,6 +166,26 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | **Sandbags** | sandbags | consumable | common | core | yes |  | Use: the Core gains 15 health, and 15 to its maximum. One use. | coreHpAdd 15 | The Core gains 25 max health, once. [coreHpAdd 25] | The Core gains 40 max health, once. [coreHpAdd 40] |
 | **Flashbang** | flashbang | consumable | common | cold | yes |  | Use: every enemy freezes for 2 seconds. One use. | freezeTicks 40 | Freeze every enemy for 3 seconds, once. [freezeTicks 60] | Freeze every enemy for 4 seconds, once. [freezeTicks 80] |
 | **Ore Pocket** | ore_pocket | consumable | common | economy | yes |  | Use: 20 Ore, right now. One use. | oreAdd 20 | 35 Ore, once. [oreAdd 35] | 60 Ore, once. [oreAdd 60] |
+| **Ricochet** | ricochet | passive | common | damage kinetic |  |  | A killing hit carries half of itself to the nearest body within two cells. | killChainMul 0.5 | A killing hit carries 70% of itself to the nearest body within two cells. [killChainMul 0.7] | A killing hit carries itself whole to the nearest body within two cells. [killChainMul 1] |
+| **Cold Snap** | cold_snap | passive | common | cold |  |  | A slowed or frozen body that dies chills everything within a cell and a half for a second. | deathChillTicks 20 | ...for a second and a half. [deathChillTicks 30] | ...for two seconds. [deathChillTicks 40] |
+| **Kindling** | kindling | passive | rare | energy damage |  |  | A burning body that dies passes its burn to everything within a cell and a half. | deathSpreadBurn true | same | same |
+| **Salvage Rights** | salvage_rights | passive | common | economy |  |  | Sold towers refund 85% instead of 70%. | sellRefundBonus 0.15 | Sold towers refund in full. [sellRefundBonus 0.3] | Sold towers refund in full. [sellRefundBonus 0.3] |
+| **Bulk Order** | bulk_order | passive | common | economy | yes |  | Every tower costs 10% less. | buildCostMul 0.9 | Every tower costs 15% less. [buildCostMul 0.85] | Every tower costs 25% less. [buildCostMul 0.75] |
+| **Cheap Upgrades** | cheap_upgrades | passive | common | economy | yes |  | Every tier choice costs 15% less. | tierCostMul 0.85 | Every tier choice costs 25% less. [tierCostMul 0.75] | Every tier choice costs 40% less. [tierCostMul 0.6] |
+| **Wide Net** | wide_net | passive | common | kinetic | yes |  | Every shot passes into one more body. | pierceAdd 1 | Every shot passes into two more bodies. [pierceAdd 2] | Every shot passes into three more bodies. [pierceAdd 3] |
+| **Grounding Rod** | grounding_rod | passive | common | energy | yes |  | Every arc jumps to one more body. | chainAdd 1 | Every arc jumps to two more bodies. [chainAdd 2] | Every arc jumps to three more bodies. [chainAdd 3] |
+| **Long Fuse** | long_fuse | passive | common | damage kinetic | yes |  | Every blast reaches half a cell further. | blastAdd 0.5 | Every blast reaches a cell further. [blastAdd 1] | Every blast reaches a cell and a half further. [blastAdd 1.5] |
+| **Sniper Nest** | sniper_nest | passive | rare | damage core |  |  | Towers touching the Core face hit for half again. | coreAdjacentDamageMul 1.5 | same | Towers touching the Core face hit for double. [coreAdjacentDamageMul 2] |
+| **Bloodstone** | bloodstone | passive | common | core |  |  | Every tenth kill mends the Core by 1. | killHealEvery 10 | Every seventh kill mends the Core by 1. [killHealEvery 7] | Every fifth kill mends the Core by 1. [killHealEvery 5] |
+| **Rush Bonus** | rush_bonus | passive | common | economy rate |  |  | Calling a wave early pays double the clock bonus. | callBonusMul 2 | Calling a wave early pays triple the clock bonus. [callBonusMul 3] | Calling a wave early pays four times the clock bonus. [callBonusMul 4] |
+| **Scavenger** | scavenger | passive | common | economy |  |  | Caches pay double Scrap. | lootScrapMul 2 | Caches pay triple Scrap. [lootScrapMul 3] | Caches pay four times the Scrap. [lootScrapMul 4] |
+| **Prospector's Eye** | prospectors_eye | passive | rare | economy |  |  | Prospecting rock costs nothing. | prospectFree true | same | same |
+| **Iron Will** | iron_will | passive | common | core | yes |  | Every breach costs the Core 1 less. | breachReduce 1 | Every breach costs the Core 2 less. [breachReduce 2] | Every breach costs the Core 3 less. [breachReduce 3] |
+| **Frost Nova** | frost_nova | active | common | cold | yes | 60 s | Every enemy on the board moves at half speed for 4 seconds. Recharges in a minute. | slowAllMul 0.5, slowAllTicks 80 | Every enemy moves at 40% for 6 seconds. [slowAllMul 0.4, slowAllTicks 120] | Every enemy moves at 30% for 8 seconds. [slowAllMul 0.3, slowAllTicks 160] |
+| **Scrap Rain** | scrap_rain | consumable | common | economy | yes |  | 80 Scrap, once. | scrapAdd 80 | 140 Scrap, once. [scrapAdd 140] | 220 Scrap, once. [scrapAdd 220] |
+| **Emergency Repair** | emergency_repair | consumable | common | core | yes |  | The Core mends 20 now. | coreHealNow 20 | The Core mends 35 now. [coreHealNow 35] | The Core mends 50 now. [coreHealNow 50] |
+| **Foundry** | foundry | passive | rare | economy |  |  | A Refinery standing off any vein produces its yield as Scrap instead. The PRD's rule, broken by a relic. | refineryScrapOffVein true | same | same |
+| **Thick Walls** | thick_walls | passive | common | core | yes |  | The Core holds 10 more while this is held. | coreHpMaxAdd 10 | The Core holds 20 more while this is held. [coreHpMaxAdd 20] | The Core holds 35 more while this is held. [coreHpMaxAdd 35] |
 | **Permafrost Engine** | permafrost_engine | passive (fusion only) | epic | cold damage |  |  | Slowed enemies take triple from everything. Frostbite and Stasis, fused. | slowedDamageMul 3 | same | same |
 | **Tollbooth** | tollbooth | passive (fusion only) | epic | economy |  |  | Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused. | killRefundScrap 5, tollScrap 3 | same | same |
 | **Bunker** | bunker | passive (fusion only) | epic | core |  |  | The Core mends 8 health every wave. Sandbags and Second Wind, fused. | coreHealPerWave 8 | same | same |
@@ -265,4 +285,4 @@ Status is yours to keep or ignore.
 
 | Name | Kind | What it does | Status |
 |---|---|---|---|
-| Foundry | consumable | a Refinery off the vein produces Scrap | PRD §7.4, not in the pool |
+| *(add rows)* | | | |

@@ -188,6 +188,90 @@ export interface Effects {
    * Consumable: grants tier-1 Ore (Ore Pocket).
    */
   oreAdd?: number;
+  /**
+   * Passive: a kill by a tower deals this share of the killing hit to the nearest other body within 2 cells (Ricochet). Copies do not stack: the largest holds.
+   */
+  killChainMul?: number;
+  /**
+   * Passive: a slowed or frozen body that dies chills every body within 1.5 cells to 70% for this many ticks (Cold Snap). The largest holds.
+   */
+  deathChillTicks?: number;
+  /**
+   * Passive: a burning body that dies passes its strongest burn to every body within 1.5 cells (Kindling).
+   */
+  deathSpreadBurn?: boolean;
+  /**
+   * Passive: added to the 70% sell refund, capped at 100% (Salvage Rights).
+   */
+  sellRefundBonus?: number;
+  /**
+   * Passive: every tower costs this multiple (Bulk Order). Copies multiply.
+   */
+  buildCostMul?: number;
+  /**
+   * Passive: every tier choice costs this multiple (Cheap Upgrades). Copies multiply.
+   */
+  tierCostMul?: number;
+  /**
+   * Passive: every shot passes into this many more bodies (Wide Net).
+   */
+  pierceAdd?: number;
+  /**
+   * Passive: every arc jumps to this many more bodies (Grounding Rod).
+   */
+  chainAdd?: number;
+  /**
+   * Passive: every blast radius grows by this many cells - explosive shots only (Long Fuse).
+   */
+  blastAdd?: number;
+  /**
+   * Passive: towers touching the Core face hit for this multiple (Sniper Nest).
+   */
+  coreAdjacentDamageMul?: number;
+  /**
+   * Passive: every this many kills the Core mends 1 (Bloodstone). Copies take the smallest.
+   */
+  killHealEvery?: number;
+  /**
+   * Passive: calling a wave early pays this multiple of the clock bonus (Rush Bonus).
+   */
+  callBonusMul?: number;
+  /**
+   * Passive: Scrap from caches is multiplied (Scavenger).
+   */
+  lootScrapMul?: number;
+  /**
+   * Passive: prospecting rock costs nothing (Prospector's Eye).
+   */
+  prospectFree?: boolean;
+  /**
+   * Passive: every breach costs the Core this much less, never below 0 (Iron Will).
+   */
+  breachReduce?: number;
+  /**
+   * Active: every enemy on the board moves at this multiple for slowAllTicks (Frost Nova).
+   */
+  slowAllMul?: number;
+  /**
+   * Active: how long slowAllMul holds.
+   */
+  slowAllTicks?: number;
+  /**
+   * Consumable: grants this much Scrap (Scrap Rain).
+   */
+  scrapAdd?: number;
+  /**
+   * Consumable: the Core mends this much now, up to its maximum (Emergency Repair).
+   */
+  coreHealNow?: number;
+  /**
+   * Passive: a Refinery standing off any vein produces its yield as Scrap instead (Foundry; PRD sec 7.4).
+   */
+  refineryScrapOffVein?: boolean;
+  /**
+   * Passive: the Core holds this much more while the relic is held (Thick Walls).
+   */
+  coreHpMaxAdd?: number;
 }
 
 /** The schema itself, for runtime validation. Same source as the type above. */
@@ -421,6 +505,109 @@ export const relicsSchema = {
         },
         "oreAdd": {
           "description": "Consumable: grants tier-1 Ore (Ore Pocket).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "killChainMul": {
+          "description": "Passive: a kill by a tower deals this share of the killing hit to the nearest other body within 2 cells (Ricochet). Copies do not stack: the largest holds.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "deathChillTicks": {
+          "description": "Passive: a slowed or frozen body that dies chills every body within 1.5 cells to 70% for this many ticks (Cold Snap). The largest holds.",
+          "type": "number",
+          "minimum": 1
+        },
+        "deathSpreadBurn": {
+          "description": "Passive: a burning body that dies passes its strongest burn to every body within 1.5 cells (Kindling).",
+          "type": "boolean"
+        },
+        "sellRefundBonus": {
+          "description": "Passive: added to the 70% sell refund, capped at 100% (Salvage Rights).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "buildCostMul": {
+          "description": "Passive: every tower costs this multiple (Bulk Order). Copies multiply.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "tierCostMul": {
+          "description": "Passive: every tier choice costs this multiple (Cheap Upgrades). Copies multiply.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "pierceAdd": {
+          "description": "Passive: every shot passes into this many more bodies (Wide Net).",
+          "type": "number",
+          "minimum": 1
+        },
+        "chainAdd": {
+          "description": "Passive: every arc jumps to this many more bodies (Grounding Rod).",
+          "type": "number",
+          "minimum": 1
+        },
+        "blastAdd": {
+          "description": "Passive: every blast radius grows by this many cells - explosive shots only (Long Fuse).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "coreAdjacentDamageMul": {
+          "description": "Passive: towers touching the Core face hit for this multiple (Sniper Nest).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "killHealEvery": {
+          "description": "Passive: every this many kills the Core mends 1 (Bloodstone). Copies take the smallest.",
+          "type": "number",
+          "minimum": 1
+        },
+        "callBonusMul": {
+          "description": "Passive: calling a wave early pays this multiple of the clock bonus (Rush Bonus).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "lootScrapMul": {
+          "description": "Passive: Scrap from caches is multiplied (Scavenger).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "prospectFree": {
+          "description": "Passive: prospecting rock costs nothing (Prospector's Eye).",
+          "type": "boolean"
+        },
+        "breachReduce": {
+          "description": "Passive: every breach costs the Core this much less, never below 0 (Iron Will).",
+          "type": "number",
+          "minimum": 1
+        },
+        "slowAllMul": {
+          "description": "Active: every enemy on the board moves at this multiple for slowAllTicks (Frost Nova).",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "slowAllTicks": {
+          "description": "Active: how long slowAllMul holds.",
+          "type": "number",
+          "minimum": 1
+        },
+        "scrapAdd": {
+          "description": "Consumable: grants this much Scrap (Scrap Rain).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "coreHealNow": {
+          "description": "Consumable: the Core mends this much now, up to its maximum (Emergency Repair).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "refineryScrapOffVein": {
+          "description": "Passive: a Refinery standing off any vein produces its yield as Scrap instead (Foundry; PRD sec 7.4).",
+          "type": "boolean"
+        },
+        "coreHpMaxAdd": {
+          "description": "Passive: the Core holds this much more while the relic is held (Thick Walls).",
           "type": "number",
           "exclusiveMinimum": 0
         }

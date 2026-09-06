@@ -215,7 +215,7 @@ Status is yours to keep or ignore.
 
 | Name | Kind | What it does | Status |
 |---|---|---|---|
-| Foundry | consumable | a Refinery off the vein produces Scrap | PRD §7.4, not in the pool |
+| *(add rows)* | | | |
 `;
 
 function render(doc) {
