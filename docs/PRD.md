@@ -1325,3 +1325,46 @@ game more fun and less grindy, never pay-to-win. Recorded so that nothing
 built now closes the door — accounts and cloud saves are "out of scope" in
 §16 today, and a paid layer needs some identity story. Open decision D27;
 nothing in the beta plan depends on it.
+
+
+## 19. The thought dump of 2026-09-06 — filed *(Daniil, late evening)*
+
+Thirty-two items, absorbed here so nothing lives only in chat. Each row
+says what was asked, what is decided, where the work is tracked (WBS
+§9) and when (ledger row). "Debated" rows carry the reply's argument in
+one line; his answer moves the row.
+
+| # | The ask | Status | Where / when |
+|---|---|---|---|
+| 1 | A fourth rarity, **legendary**; colours common green, rare blue, epic purple, legendary gold; an **uber tier for money** with shifting rainbow colours, Stone-Story style | Legendary: **accepted** (a fifth lane in RARITIES, tiers gain `legendary`, the roll's weights gain a lane). Uber: **debated** — it is the pay-to-win §18 rules out; filed under D27 as intent, not built | 9.1 · row 29 (legendary), D27 (uber) |
+| 2 | The higher tier of a relic that has tiers is **unlocked by forging** the lower ones first; tierless relics unlock on their own | **Accepted** — the meta save records "forged to rare/epic/legendary" per relic; the pool deals a tier only once it was forged once (the tree still gates the relic itself) | 9.2 · row 29 |
+| 3 | New relics unlock by **beating the game** (difficulty sets the rarity) or through **paid chests**; once a category is exhausted, chests of that rarity | **Accepted with a reconciliation**: the tree unlocks branches (tags) and capacity; the relics inside a branch are earned by wins at a Threat level; paid chests are §18's door. Daniil to confirm the split | 9.3 · row 29 |
+| 4 | One Refinery mines every ore tier; higher tiers mine slower | **Accepted** — a per-tier cycle multiplier; Deep Bore / Deep Shaft keep growing the vein | 9.4 · row 29 (with ore tiers) |
+| 5 | Core-adjacency boons become **global powerups** (a Laser by the Core doubles the Orbital and halves its cooldown) | **Accepted** — §4.5's gifts move from "this tower's stats" to "a run-wide rule per tower kind" | 9.5 · row 31 balance |
+| 6 | Ignore-armour is too strong and always the pick | **Accepted as a balance reading** — the sweep against armoured waves decides the number | 9.6 · row 31 |
+| 7 | Loadbearing's triple range is absurd; +50% or so | **Accepted** — `coreAdjacentRangeMul` 3 → 1.5 in the fix bundle | 9.7 · PR 0 of session 29 |
+| 8 | The Bastion's reach takes no modifier but its own | **Accepted** — the aura reach reads its own tree and gift only | 9.8 · PR 0 |
+| 9 | The Bastion's reach previews as a **plus** of four cells, like the Laser's corridor | **Debated in one line**: today the aura reaches the eight touching cells; the plus is a rule change to four. Preview follows the rule; Daniil picks four or eight | 9.9 · PR 0 |
+| 10 | The build preview shows **every** modifier (boons, relics, an adjacent Bastion) so numbers never jump on build | **Accepted** — the preview folds a hypothetical tower at the selected cell through foldStats | 9.10 · PR 0 |
+| 11 | The Frost animation is harsh and epilepsy-inducing with many towers; mute it, or mute with distance | **Accepted** — the pulse ring fades with radius and its strength caps per frame | 9.11 · PR 0 |
+| 12 | Void chests on **unoccupied ground** too, not rock | **Accepted** — water and ground; the rock fallback of §4.9 goes | 9.12 · PR 0 |
+| 13 | Chests need a bigger, finer sprite, coloured by rarity | **Accepted** — the chest rolls its rarity when it surfaces; a 'chest' sprite kind for the art agent | 9.13 · art brief; row 29 |
+| 14 | Relic sprites one layer larger for a rarity frame (the approved icons plus a ring) | **Accepted** — relic cell 4×3 → 6×5 with the frame in the outer ring; strip and Forge plates follow | 9.14 · art brief; row 30 |
+| 15 | A **codex** menu with detailed entries for everything, locked entries shown as locked, reachable from every menu including mid-run | **Accepted** — HOW TO PLAY becomes the codex, reads the unlock set, opens from pause | 9.15 · row 29 |
+| 16 | Consumable: place **boon ground** on an empty ground cell | **Accepted** — boons already come from caches; the difficulty cost is the same as a cache boon | 9.16 · row 31 content |
+| 17 | Consumable: **god mode** for one tower, +100% to everything for a while, with an epic animation | **Accepted** — a timed per-tower multiplier and a sprite sequence | 9.17 · row 31 |
+| 18 | The relic offer only after the wave is **cleared**, never on "next wave" | **Accepted** — dealt when the board is quiet; a call before that waits | 9.18 · PR 0 |
+| 19 | Actives and passives should look different in the slot | **Accepted** — a plate shape per kind (a button plate for actives), same icons | 9.19 · row 30 |
+| 20 | **Neutral structures** on the map, Tower-Dominion style, for the empty ground | **Debated** — the reply argues no: boon ground, caches and chests are the ground's business; the empty share is a generator knob; the Tile Smith's placeables (his own answer 6) author structures without a new kind | open |
+| 21 | **Merging four identical towers** into one big one; or a Bastion with four identical neighbours | **Debated** — merging is D25 (a 2×2 footprint through occupancy, targeting, art at 16×10); the reply proposes a **formation bonus** for four of a kind around a Bastion as the same feel at content cost | open (D25) |
+| 22 | **Endless mode** as the last unlock in the tree | **Accepted** — waves past 20 on the same curve; the harness already runs to 40 | 9.22 · row 29 (a node) |
+| 23 | **Fusing different relics**, tracked in the codex as discoveries | **Accepted** — five recipes exist; more come with the codex's "discovered" list in the meta save | 9.23 · row 29 |
+| 24 | **Piercing** should be a small local hit on bodies in the same cell, not a jump across lanes | **Accepted as a fix** — pierce continues into bodies within half a cell of the impact | 9.24 · PR 0 |
+| 25 | Mortar and Missile explosions and projectiles must look different | **Accepted** — per-tower projectile and blast looks | 9.25 · art brief; row 30 |
+| 26 | The Laser's slow path is redundant unless slows from different sources **stack multiplicatively** (never reaching 100%) | **Debated** — the reply proposes multiplicative stacking with a **floor** (a body never below 25% speed) and the sweep as the ruler; today's rule is coldest-wins (2026-09-05) | open · row 31 |
+| 27 | A Laser path could change the beam's colour | **Accepted** — the beam role per path | 9.27 · row 30 |
+| 28 | Raw Laser damage always beats the burn; the burn needs a job | **Accepted** — the burn ignores armour and stacks per source: the control path is the anti-armour path | 9.28 · row 31 |
+| 29 | More towers, some only as **relics** (single-build towers) | **Accepted for later** — a relic that grants one copy of a unique tower; the tree can unlock them | 9.29 · row 32 content |
+| 30 | The menus need a real graphical rework, Stone-Story-quality | **Accepted** — a presentation session of its own, before the content push | 9.30 · row 30 |
+| 31 | How is meta progression tracked for a browser game; not-browser; monetization hardening | **Decision needed (D28)** — options in the reply: browser plus a light account backend, a desktop wrapper with a store's cloud saves and payments, or both; vendor facts to be checked before a plan | D28 · row 33 |
+| 32 | How many frames per sprite for smooth animation; or procedural animation | **Debated with a recommendation** — authored 4–8 frames for bodies at 100–150 ms, procedural for light and colour; an experiment sprite at 4/8/16 frames for his eye | 9.32 · art brief |

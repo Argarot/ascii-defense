@@ -91,7 +91,19 @@ list is written after it.)*
 nothing ("banked ore will buy the workshop tree between runs (not built
 yet)"); the tech tree turns it into the reason to play again.
 
-**The PRD's shape (§11, §7.5, §11.1), as a proposal:**
+**Daniil's answers (2026-09-06 late)**: a tree with branches; only Ore, in
+tiers; about five runs to the towers, many more to everything; unlocks
+in the run code; the Tile Smith after every tile is bought. On permanent
+stat power the reply argued for capacity and access instead (PRD §19
+carries the thought dump this came with). **The list:**
+
+0. **The fix bundle** (WBS 9.7–9.12, 9.18, 9.24): Loadbearing ×1.5; the
+   Bastion's reach takes no modifier but its own and previews as a plus
+   (four or eight — his call); the build preview folds every modifier;
+   the Frost pulse muted with radius; chests on water and ground; the
+   offer only when the board is quiet; pierce within half a cell.
+
+**The PRD's shape (§11, §7.5, §11.1), as the plan:**
 
 1. **The workshop page** in the shell: banked Ore, the tree, run history
    (WBS 7.3). Stage 1 nodes (~5): a starting relic, a tower unlock or
@@ -105,6 +117,10 @@ yet)"); the tech tree turns it into the reason to play again.
    (row 34's job, made possible now).
 5. **The Tile Smith folded into the shell** — Daniil's next theme after
    this one; the workshop page is where it will open from (§11.1).
+6. **The codex** (9.15): every entry, locked ones locked, from every
+   menu and from pause, reading the unlock set; fusions discovered (9.23).
+7. **Legendary, forging unlocks tiers, wins grant relics, endless as a
+   node** (9.1, 9.2, 9.3, 9.22); one Refinery for every ore tier (9.4).
 
 **Gate — his judgement:** finishing a run visibly changes the next one.
 
