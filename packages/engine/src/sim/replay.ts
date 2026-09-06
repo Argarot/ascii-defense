@@ -32,6 +32,7 @@ export type ReplayAction =
   | { t: 'skipOffer' } // decline the standing offer (session 28, PR 3)
   | { t: 'salvage'; index: number } // a held relic back for Ore (session 28, PR 3)
   | { t: 'combine'; a: number; b: number } // two held relics into one (session 28, PR 3)
+  | { t: 'claimChest'; x: number; y: number } // a void chest claimed while it stands (session 28, PR 5)
   | { t: 'buyRelic' }
   | { t: 'rerollOffer' }
   // relicId added 2026-08-16 while still reserved (multiple held actives need

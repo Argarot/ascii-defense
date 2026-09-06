@@ -32,6 +32,7 @@ const relics = read('relics/pool.json').relics;
 const passives = read('passives/pool.json').passives;
 const sets = read('sets/pool.json').sets;
 const recipes = read('recipes/pool.json').recipes;
+const lootTables = read('loot/tables.json').tables;
 const relicName = (id) => relics.find((r) => r.id === id)?.name ?? id;
 
 /** Mirror of engine/sim/traits.ts TRAIT_RULES, in words. */
@@ -137,6 +138,15 @@ const SECTIONS = {
       '',
       'Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wave - common 60 minus the wave (floor 30), rare 30, epic 10 plus half the wave - never below the relic\'s base rarity. A rare or epic copy has the numbers in its column; "same" means the rule does not scale (a boolean).',
     ].join('\n'),
+  loot: () =>
+    [
+      `${lootTables.length} loot tables in \`packages/content/assets/loot/tables.json\` (PRD §7.7). Every reward that is not a bounty or a wave's clock comes from one of these: a prospected rock's cache rolls \`rock_cache\`, a boss drops \`boss_drop\` where it dies, a void chest (PRD §4.9; session 28, PR 5) pays \`void_chest\`. A table is a weighted list rolled on the loot stream at claim time, so it rides the input log. "boon" turns the cell into boon ground (ground cells only; elsewhere it pays Scrap); "consumable" and "relic" draw from the unheld pool at a rolled rarity.`,
+      '',
+      ...lootTables.flatMap((t) => {
+        const total = t.outcomes.reduce((a, o) => a + o.weight, 0);
+        return [`#### ${t.id}`, '', table(['Outcome', 'Chance', 'Amount'], t.outcomes.map((o) => [o.kind, `${Math.round((o.weight / total) * 100)}%`, o.min !== undefined ? `${o.min}-${o.max}` : o.tier !== undefined ? `tier ${o.tier}` : ''])), ''];
+      }),
+    ].join('\n'),
   recipes: () =>
     [
       `${recipes.length} duo recipes in \`packages/content/assets/recipes/pool.json\` (session 28, PR 3; PRD §7.6 fusion). Two held relics, in either order, combine into the result at the higher of their rarities; the result is a relic marked "fusion only" above and never appears in an offer. Two of a KIND at the same rarity combine into the next rarity without a recipe. A held relic salvages for Ore: 10 common, 20 rare, 35 epic.`,
@@ -187,6 +197,11 @@ const TEMPLATE = `# Catalogue - what is in the game
 ## Recipes *(generated)*
 
 <!-- generated:recipes -->
+<!-- /generated -->
+
+## Loot *(generated)*
+
+<!-- generated:loot -->
 <!-- /generated -->
 
 ## PROPOSED - the request queue *(hand-edited, never touched by the generator)*
@@ -276,6 +291,7 @@ function codexTs() {
     })),
     sets: sets.map((s) => ({ name: s.name, tag: s.tag, at: s.at, desc: s.desc })),
     recipes: recipes.map((x) => ({ a: x.a, b: x.b, result: x.result, aName: relicName(x.a), bName: relicName(x.b), resultName: relicName(x.result), desc: x.desc })),
+    loot: lootTables.map((t) => { const total = t.outcomes.reduce((a, o) => a + o.weight, 0); return { id: t.id, outcomes: t.outcomes.map((o) => ({ kind: o.kind, pct: Math.round((o.weight / total) * 100), min: o.min ?? null, max: o.max ?? null })) }; }),
     passives: passives.map((p) => ({ id: p.id, name: p.name, desc: p.desc, tags: p.tags ?? [] })),
     rules: [
       'Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.',

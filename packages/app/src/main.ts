@@ -523,6 +523,7 @@ async function main(): Promise<void> {
         'select ground, then a tower in the strip under the board, to build. hover a button for its card.',
         'towers upgrade in either/or tiers - each fork is two jobs, never two numbers.',
         'refineries on gold veins mine Ore; every 3rd wave offers a relic - rules, not numbers; every 2nd wave offers a passive - a permanent bonus on every tower, six slots a run.',
+        'the water has business: a chest surfaces on it now and then and sinks after twelve seconds - select it and CLAIM. every reward in the game comes from one loot table, printed in the catalogue.',
         'a held relic is a decision: click it in the strip for its card - salvage it for Ore, or combine two of a kind into the next rarity, or two recipe partners into a fused relic. full slots ask which one a pick replaces; S skips an offer.',
         'rock hides ore and caches; prospecting opens it. R turns a laser. N calls the next wave.',
         ...CODEX.rules,
@@ -789,6 +790,7 @@ async function main(): Promise<void> {
     if (action.kind === 'skipOffer') { pendingReplace = null; act({ k: 'skipOffer' }); }
     if (action.kind === 'coreDraw') act({ k: 'buyRelic' });
     if (action.kind === 'openCache' && selected) act({ k: 'openCache', x: selected.x, y: selected.y });
+    if (action.kind === 'claimChest' && selected) act({ k: 'claimChest', x: selected.x, y: selected.y });
     if (action.kind === 'prospect' && selected) act({ k: 'prospect', x: selected.x, y: selected.y });
     if (action.kind === 'callWave') act({ k: 'callWave' });
   };
@@ -1026,6 +1028,10 @@ async function main(): Promise<void> {
     skipOffer: () => debug('skipOffer'),
     combineTargets: (index: number) => debug('combineTargets', index),
     uses: () => debug('uses'),
+    chests: () => debug('chests'),
+    surfaceChest: (x: number, y: number) => debug('surfaceChest', x, y),
+    claimChest: (x: number, y: number) => debug('claimChest', x, y),
+    lootLog: () => debug('lootLog'),
     openRelic: (index: number | null): void => { selectedRelic = index; },
     sets: () => debug('sets'),
     pickPassive: (option: number) => debug('pickPassive', option),

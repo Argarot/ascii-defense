@@ -1260,6 +1260,101 @@ export const CODEX = {
       "desc": "The strike that also freezes the board."
     }
   ],
+  "loot": [
+    {
+      "id": "rock_cache",
+      "outcomes": [
+        {
+          "kind": "scrap",
+          "pct": 35,
+          "min": 60,
+          "max": 120
+        },
+        {
+          "kind": "ore",
+          "pct": 25,
+          "min": 10,
+          "max": 30
+        },
+        {
+          "kind": "boon",
+          "pct": 20,
+          "min": null,
+          "max": null
+        },
+        {
+          "kind": "consumable",
+          "pct": 12,
+          "min": null,
+          "max": null
+        },
+        {
+          "kind": "relic",
+          "pct": 8,
+          "min": null,
+          "max": null
+        }
+      ]
+    },
+    {
+      "id": "boss_drop",
+      "outcomes": [
+        {
+          "kind": "scrap",
+          "pct": 40,
+          "min": 80,
+          "max": 160
+        },
+        {
+          "kind": "ore",
+          "pct": 30,
+          "min": 15,
+          "max": 40
+        },
+        {
+          "kind": "consumable",
+          "pct": 18,
+          "min": null,
+          "max": null
+        },
+        {
+          "kind": "relic",
+          "pct": 12,
+          "min": null,
+          "max": null
+        }
+      ]
+    },
+    {
+      "id": "void_chest",
+      "outcomes": [
+        {
+          "kind": "scrap",
+          "pct": 40,
+          "min": 30,
+          "max": 90
+        },
+        {
+          "kind": "ore",
+          "pct": 30,
+          "min": 10,
+          "max": 30
+        },
+        {
+          "kind": "consumable",
+          "pct": 18,
+          "min": null,
+          "max": null
+        },
+        {
+          "kind": "relic",
+          "pct": 12,
+          "min": null,
+          "max": null
+        }
+      ]
+    }
+  ],
   "passives": [
     {
       "id": "iron_sights",

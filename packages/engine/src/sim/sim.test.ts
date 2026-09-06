@@ -5,7 +5,7 @@ import { TileLibrary } from '../tiles/board';
 import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions, PASSIVE_SLOTS, RELIC_SLOTS, SALVAGE_ORE } from './sim';
+import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions, PASSIVE_SLOTS, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
 import { effectiveStats } from './defs';
 import type { EnemyDef, PassiveDef, RecipeDef, RelicDef, SetDef, TowerDef } from './defs';
 
@@ -707,6 +707,47 @@ describe('towers and projectiles', () => {
     // Iron Will: a breach costs one less. The parked walker cannot breach; the fold says what it would cost.
     expect(sim.debugGrantRelic('iron_will')).toBe(true);
     expect((sim as unknown as { fold: { breachReduce: number } }).fold.breachReduce).toBe(1);
+  });
+
+  it('void chests surface on water on the loot stream, sink after their window, and a claim pays through the table (session 28, PR 5)', () => {
+    const { cells, simOpts } = makeWorld(53, { maxSpawns: 0, spawnEveryTicks: 1000 });
+    const TABLES = [{ id: 'void_chest', outcomes: [{ kind: 'scrap' as const, weight: 100, min: 50, max: 50 }] }];
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [WALKER], towerDefs: [BOLT], lootTables: TABLES });
+    // A chest's home: water, or on a waterless board unprospected rock (both off-route, unbuildable).
+    const hasWater = cells.some((c) => c === null);
+    const water: { x: number; y: number }[] = [];
+    for (let y = 0; y < simOpts.cellsH; y++) for (let x = 0; x < simOpts.cellsW; x++) if (hasWater ? cells[y * simOpts.cellsW + x] === null : cells[y * simOpts.cellsW + x] === 'R') water.push({ x, y });
+    // Over a long run the water surfaces chests only on water cells, never more than CHEST_MAX at once, and they sink.
+    let seen = 0;
+    let maxAtOnce = 0;
+    for (let t = 0; t < CHEST_EVERY * 12; t++) {
+      sim.tick();
+      maxAtOnce = Math.max(maxAtOnce, sim.voidChests.length);
+      for (const c of sim.voidChests) { expect(hasWater ? sim.cellAt(c.x, c.y) === null : sim.cellAt(c.x, c.y) === 'R').toBe(true); seen++; }
+    }
+    expect(maxAtOnce).toBeLessThanOrEqual(CHEST_MAX);
+    if (water.length > 0) expect(seen).toBeGreaterThan(0);
+    // A forced chest: it stands for its window, a claim pays the table, the input is recorded, and it is gone.
+    if (water.length > 0) {
+      const w = water[0];
+      for (let i = sim.voidChests.length - 1; i >= 0; i--) sim.voidChests.splice(i, 1);
+      expect(sim.debugSurfaceChest(w.x, w.y)).toBe(true);
+      expect(sim.chestAt(w.x, w.y)).not.toBeNull();
+      const scrap0 = sim.scrap;
+      expect(sim.claimChest(w.x, w.y)).toBe(true);
+      expect(sim.scrap).toBe(scrap0 + 50);
+      expect(sim.chestAt(w.x, w.y)).toBeNull();
+      expect(sim.inputs.some((i) => i.a.t === 'claimChest')).toBe(true);
+      expect(sim.claimChest(w.x, w.y)).toBe(false);
+      // Sinking: a chest left alone is gone after its window.
+      expect(sim.debugSurfaceChest(w.x, w.y)).toBe(true);
+      for (let t = 0; t <= CHEST_WINDOW; t++) sim.tick();
+      expect(sim.chestAt(w.x, w.y)).toBeNull();
+      // Never on ground: a forced chest on a non-water cell is refused.
+      let ground = -1;
+      for (let k = 0; k < cells.length && ground === -1; k++) if (cells[k] === 'G') ground = k;
+      if (ground !== -1) expect(sim.debugSurfaceChest(ground % simOpts.cellsW, Math.floor(ground / simOpts.cellsW))).toBe(false);
+    }
   });
 
   it('a beam hits every body in its corridor, heats on a held lead, and turns on a replayed input (session 26, WBS 2.34)', () => {

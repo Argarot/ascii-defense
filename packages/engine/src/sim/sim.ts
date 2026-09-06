@@ -154,6 +154,7 @@ export type SimEvent =
   | { kind: 'impact'; x: number; y: number; r: number; delay?: number } // r 0 = plain hit, >0 = blast radius; delay = ticks before it shows (Splinter's second blast)
   | { kind: 'death'; x: number; y: number }
   | { kind: 'breach'; x: number; y: number; dmg: number }
+  | { kind: 'chest'; x: number; y: number } // a void chest surfaced here (session 28, PR 5)
   | { kind: 'build'; x: number; y: number }
   | { kind: 'sell'; x: number; y: number }
   | { kind: 'waveStart'; wave: number }
@@ -224,6 +225,10 @@ const PIERCE_REACH = 2.5;
 const LOOT_FALLBACK_SCRAP = 60;
 /** Scrap price of prospecting a rock cell (PRD sec 4.6). */
 export const PROSPECT_COST = 25;
+/** Void chests (PRD sec 4.9; session 28, PR 5): a roll every this many ticks, a window this long, this many at once. */
+export const CHEST_EVERY = 300;
+export const CHEST_WINDOW = 240;
+export const CHEST_MAX = 2;
 /** Base prospect duration: breaking rock is a COMMITMENT, not a purchase. */
 export const PROSPECT_TICKS = 600;
 /** Scrap paid per second still on the wave clock when the player CALLS early. */
@@ -431,6 +436,15 @@ export class Sim {
   readonly cellChanges: { x: number; y: number; t: CellType }[] = [];
   /** Cache spots the run produced - prospected rock, boss drops. Hashed. */
   readonly caches: CacheSpot[] = [];
+  /**
+   * Void chests (PRD sec 4.9; session 28, PR 5): a prize that surfaces on a
+   * water cell now and then and sinks again after a window. Rolled on the
+   * loot stream at fixed ticks, so a replay surfaces the same chests; the
+   * claim pays through the loot table 'void_chest'. Hashed.
+   */
+  readonly voidChests: { x: number; y: number; until: number }[] = [];
+  /** Every in-bounds water cell, fixed at construction: where a chest may surface. */
+  private readonly voidCells: number[] = [];
   /** Boon ground an opened cache created; boonAt reads the map's and these. */
   readonly extraBoons: BoonRef[] = [];
   /** What caches gave, newest last (capped). Presentation only, not hashed. */
@@ -487,6 +501,8 @@ export class Sim {
     }
     this.rng = createRng(seed);
     this.mode = opts.mode ?? 'trickle';
+    // Water (null cells inside the board) is where void chests may surface (session 28, PR 5).
+    for (let k = 0; k < opts.cellsW * opts.cellsH; k++) if (opts.cells[k] === null) this.voidCells.push(k);
     this.spawnEvery = opts.spawnEveryTicks ?? TICK_HZ;
     this.maxSpawns = opts.maxSpawns ?? 0;
     this.scrap = opts.startingScrap ?? 100;
@@ -1227,6 +1243,75 @@ export class Sim {
   }
 
   /** The unopened cache at (x, y), or null. */
+  // ---- void chests (PRD sec 4.9; session 28, PR 5) ---------------------------
+
+  /**
+   * Every CHEST_EVERY ticks the water may surface a chest (one roll on the
+   * loot stream, one in two), on a random water cell, for CHEST_WINDOW
+   * ticks; at most CHEST_MAX stand at once. Sunk chests leave without a
+   * trace. Water is never on a route and never buildable, so a chest can
+   * touch neither.
+   */
+  private chestPhase(): void {
+    for (let i = this.voidChests.length - 1; i >= 0; i--) if (this.voidChests[i].until <= this.tickCount) this.voidChests.splice(i, 1);
+    if (this.tickCount === 0 || this.tickCount % CHEST_EVERY !== 0) return;
+    if (this.voidChests.length >= CHEST_MAX) return;
+    if (!(this.opts.lootTables ?? []).some((t) => t.id === 'void_chest')) return;
+    const homes = this.chestHomes();
+    if (homes.length === 0) return;
+    const loot = this.rng.stream('loot');
+    if (loot.int(0, 1) !== 0) return;
+    const k = homes[loot.int(0, homes.length - 1)];
+    const x = k % this.opts.cellsW;
+    const y = Math.floor(k / this.opts.cellsW);
+    if (this.voidChests.some((c) => c.x === x && c.y === y)) return;
+    this.voidChests.push({ x, y, until: this.tickCount + CHEST_WINDOW });
+    this.emit({ kind: 'chest', x: x + 0.5, y: y + 0.5 });
+  }
+
+  /**
+   * Where a chest may surface: water, and - on a board with no water at
+   * all - unprospected rock, which is likewise off every route and
+   * unbuildable. Measured 2026-09-06: the session-24 boards are nine tenths
+   * road and carry no water on 17 of 18 seeds, so water alone would leave
+   * the chests with nowhere to be (PRD sec 4.9's amendment, for Daniil).
+   */
+  private chestHomes(): number[] {
+    if (this.voidCells.length > 0) return this.voidCells;
+    const rocks: number[] = [];
+    for (let k = 0; k < this.cellsMut.length; k++) if (this.cellsMut[k] === 'R' && !this.prospectJobs.has(k)) rocks.push(k);
+    return rocks;
+  }
+
+  chestAt(x: number, y: number): { x: number; y: number; until: number } | null {
+    for (const c of this.voidChests) if (c.x === x && c.y === y) return c;
+    return null;
+  }
+
+  /** Claim a standing chest: the loot table pays; a replayed input. */
+  claimChest(x: number, y: number): boolean {
+    if (this.status !== 'running') return false;
+    const i = this.voidChests.findIndex((c) => c.x === x && c.y === y);
+    if (i === -1) return false;
+    const table = (this.opts.lootTables ?? []).find((t) => t.id === 'void_chest');
+    if (!table) return false;
+    this.voidChests.splice(i, 1);
+    const text = this.rollLoot(table, x, y);
+    this.lootLog.push({ tick: this.tickCount, x, y, text });
+    if (this.lootLog.length > 8) this.lootLog.shift();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'claimChest', x, y } });
+    return true;
+  }
+
+  /** DEBUG: surface a chest on a water cell now (not a recorded input - replays diverge). */
+  debugSurfaceChest(x: number, y: number): boolean {
+    if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return false;
+    if (!this.chestHomes().includes(y * this.opts.cellsW + x)) return false;
+    if (this.chestAt(x, y)) return false;
+    this.voidChests.push({ x, y, until: this.tickCount + CHEST_WINDOW });
+    return true;
+  }
+
   cacheAt(x: number, y: number): CacheSpot | null {
     for (const c of this.caches) if (!c.opened && c.x === x && c.y === y) return c;
     return null;
@@ -1594,6 +1679,7 @@ export class Sim {
       case 'buyRelic': return this.buyRelic();
       case 'rerollOffer': return this.rerollOffer();
       case 'openCache': return this.openCache(a.x, a.y);
+      case 'claimChest': return this.claimChest(a.x, a.y);
       case 'prospect': return this.prospect(a.x, a.y);
       case 'callWave': return this.callWave();
       default: return a satisfies never; // the union is fully implemented
@@ -1641,6 +1727,7 @@ export class Sim {
     for (const p of this.heldPassives) u32(p);
     for (const o of this.passiveOffer ?? [-1]) u32(o + 1);
     for (const c of this.caches) { u32(c.x); u32(c.y); u32(c.opened ? 1 : 0); for (let i = 0; i < c.table.length; i++) u32(c.table.charCodeAt(i)); }
+    for (const c of this.voidChests) { u32(c.x); u32(c.y); u32(c.until); }
     for (const b of this.extraBoons) { u32(b.x); u32(b.y); u32(b.tier ?? 1); u32(b.boon.charCodeAt(0)); }
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
     u32(this.status === 'won' ? 1 : 0);
@@ -1777,6 +1864,7 @@ export class Sim {
     }
     if (this.mode === 'waves') this.wavePhase();
     else this.tricklePhase();
+    this.chestPhase();
     this.towerPhase();
     this.productionPhase();
     this.prospectPhase();

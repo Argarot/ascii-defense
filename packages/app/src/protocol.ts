@@ -103,6 +103,7 @@ export type WorkerAction =
   | { k: 'slot'; index: number }
   | { k: 'fireActive'; relicId: string; x: number; y: number }
   | { k: 'openCache'; x: number; y: number }
+  | { k: 'claimChest'; x: number; y: number }
   | { k: 'prospect'; x: number; y: number }
   | { k: 'callWave' };
 

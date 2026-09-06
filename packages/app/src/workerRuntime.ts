@@ -40,6 +40,7 @@ import {
   type RecipeDef,
   PASSIVE_SLOTS,
   RELIC_SLOTS,
+  CHEST_WINDOW,
   RARITIES,
   relicDescAt,
   type ReplayAction,
@@ -436,6 +437,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         selected,
         routeAllowed: s.flow.allowed,
         caches,
+        chests: s.voidChests.map((c) => ({ x: c.x, y: c.y, left01: Math.max(0, Math.min(1, (c.until - s.tickCount) / CHEST_WINDOW)) })),
         boons: [...(map.boons ?? []), ...s.extraBoons].map((b) => ({ x: b.x, y: b.y, tier: b.tier, boon: b.boon })),
         oreRichness,
         enemies,
@@ -499,6 +501,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         roster,
         waveNow,
         cache: selected && s.cacheAt(selected.x, selected.y) ? { source: s.cacheAt(selected.x, selected.y)!.table } : null,
+        chest: (() => { const c = selected ? s.chestAt(selected.x, selected.y) : null; return c ? { seconds: Math.max(0, Math.ceil((c.until - s.tickCount) / TICK_HZ)), home: s.cellAt(c.x, c.y) === null ? 'water' : 'rock' } : null; })(),
         // The newest thing a cache gave, for a few seconds after it opened.
         loot: (() => {
           const last = s.lootLog[s.lootLog.length - 1];
@@ -605,6 +608,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       case 'rerollOffer': s.rerollOffer(); break;
       case 'buyRelic': s.buyRelic(); break;
       case 'openCache': s.openCache(a.x, a.y); break;
+      case 'claimChest': s.claimChest(a.x, a.y); break;
       case 'prospect': s.prospect(a.x, a.y); break;
       case 'callWave': s.callWave(); break;
       case 'fireActive': s.fireActive(a.relicId, a.x, a.y); break;
@@ -680,6 +684,10 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'skipOffer': result = s.skipOffer(); if (result) syncOfferPause(); break;
           case 'combineTargets': result = s.combineTargets(args[0] as number); break;
           case 'uses': result = s.heldRelicInfo().map((h) => ({ id: h.def.id, uses: h.uses })); break;
+          case 'chests': result = s.voidChests.map((c) => ({ x: c.x, y: c.y, left: c.until - s.tickCount })); break;
+          case 'surfaceChest': result = s.debugSurfaceChest(args[0] as number, args[1] as number); break; // not a recorded input
+          case 'claimChest': result = s.claimChest(args[0] as number, args[1] as number); break;
+          case 'lootLog': result = [...s.lootLog]; break;
           case 'passives': result = { held: s.heldPassiveDefs().map((d) => d.id), offer: s.passiveOfferDefs()?.map((d) => d.id) ?? null }; break;
           case 'pickPassive': result = s.pickPassive(args[0] as number); if (result) syncOfferPause(); break;
           case 'grant': result = s.debugGrantRelic(args[0] as string); break; // not a recorded input: replays diverge

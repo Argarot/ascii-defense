@@ -259,6 +259,41 @@ Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wa
 | **Doomsday** | Orbital Lance | Flashbang | doomsday | The strike that also freezes the board. |
 <!-- /generated -->
 
+## Loot *(generated)*
+
+<!-- generated:loot -->
+3 loot tables in `packages/content/assets/loot/tables.json` (PRD §7.7). Every reward that is not a bounty or a wave's clock comes from one of these: a prospected rock's cache rolls `rock_cache`, a boss drops `boss_drop` where it dies, a void chest (PRD §4.9; session 28, PR 5) pays `void_chest`. A table is a weighted list rolled on the loot stream at claim time, so it rides the input log. "boon" turns the cell into boon ground (ground cells only; elsewhere it pays Scrap); "consumable" and "relic" draw from the unheld pool at a rolled rarity.
+
+#### rock_cache
+
+| Outcome | Chance | Amount |
+|---|---|---|
+| scrap | 35% | 60-120 |
+| ore | 25% | 10-30 |
+| boon | 20% | tier 2 |
+| consumable | 12% |  |
+| relic | 8% |  |
+
+#### boss_drop
+
+| Outcome | Chance | Amount |
+|---|---|---|
+| scrap | 40% | 80-160 |
+| ore | 30% | 15-40 |
+| consumable | 18% |  |
+| relic | 12% |  |
+
+#### void_chest
+
+| Outcome | Chance | Amount |
+|---|---|---|
+| scrap | 40% | 30-90 |
+| ore | 30% | 10-30 |
+| consumable | 18% |  |
+| relic | 12% |  |
+
+<!-- /generated -->
+
 ## PROPOSED - the request queue *(hand-edited, never touched by the generator)*
 
 One row per thing. "What it does" in a sentence; the numbers can come later.

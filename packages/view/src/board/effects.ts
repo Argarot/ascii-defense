@@ -171,6 +171,11 @@ export class EffectsLayer {
         case 'breach':
           this.add({ kind: 'breach', x: e.x, y: e.y, r: 0, start: e.tick, ttl: TTL.breach });
           break;
+        case 'chest':
+          // A void chest surfacing (session 28, PR 5): a splash of dust and a glint.
+          this.add({ kind: 'dust', x: e.x, y: e.y, r: 0, start: e.tick, ttl: TTL.dust });
+          this.add({ kind: 'spark', x: e.x, y: e.y, r: 0, start: e.tick, ttl: TTL.spark });
+          break;
         case 'build':
         case 'sell':
           this.add({ kind: 'dust', x: e.x + 0.5, y: e.y + 0.5, r: 0, start: e.tick, ttl: TTL.dust });
