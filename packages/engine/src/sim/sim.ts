@@ -789,6 +789,22 @@ export class Sim {
     return true;
   }
 
+  /**
+   * Hand the run a relic by id, outside any offer or cache. A DEBUG hook
+   * for the verification surface (`__ad.grant`): it is not a recorded
+   * input, so a replay of a run that used it diverges - never call it
+   * from the game. Returns false for an unknown id.
+   */
+  debugGrantRelic(relicId: string): boolean {
+    const defs = this.opts.relicDefs ?? [];
+    const di = defs.findIndex((d) => d.id === relicId);
+    if (di === -1) return false;
+    this.heldRelics.push(di);
+    this.relicCooldowns.push(0);
+    this.refold();
+    return true;
+  }
+
   fireActive(relicId: string, x?: number, y?: number): boolean {
     if (this.status !== 'running') return false;
     const defs = this.opts.relicDefs ?? [];

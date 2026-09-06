@@ -29,6 +29,38 @@ describe('arcPath', () => {
 });
 
 describe('the effects layer', () => {
+  it('the orbital is a wide column of background light that falls, strikes and fades, with the site whited out (2026-09-06, item 5)', () => {
+    const lum = (hex: string): number => (parseInt(hex.slice(1, 3), 16) * 0.2126 + parseInt(hex.slice(3, 5), 16) * 0.7152 + parseInt(hex.slice(5, 7), 16) * 0.0722);
+    const untouched = new TextTerm({ cols: 1, rows: 1 }).bgAt(0, 0);
+    const drawAt = (age01: number): TextTerm => {
+      const term = new TextTerm({ cols: 20 * CELL_W, rows: 10 * CELL_H });
+      const fx = new EffectsLayer();
+      fx.ingest([{ kind: 'strike', x: 10.5, y: 8.5, r: 2, seq: 0, tick: 50 }]);
+      fx.draw(term, 50 + age01 * 24);
+      return term;
+    };
+    const gx = Math.floor(10.5 * CELL_W);
+    const site = Math.floor(8.5 * CELL_H);
+    // The fall: the top is lit, the site is not yet.
+    const fall = drawAt(0.03);
+    expect(fall.bgAt(gx, 0)).not.toBe(untouched);
+    expect(fall.bgAt(gx, site)).toBe(untouched);
+    // The strike: the whole column, a core brighter than its glow, nine glyphs wide, nothing at ten.
+    const strike = drawAt(0.2);
+    expect(strike.bgAt(gx, site - 4)).not.toBe(untouched);
+    expect(lum(strike.bgAt(gx, 3))).toBeGreaterThan(lum(strike.bgAt(gx + 3, 3)));
+    expect(strike.bgAt(gx + 4, 3)).not.toBe(untouched);
+    expect(strike.bgAt(gx + 5, 3)).toBe(untouched);
+    // The site is whited out over the radius: brighter at the centre than at the rim.
+    expect(lum(strike.bgAt(gx, site))).toBeGreaterThan(lum(strike.bgAt(gx + Math.floor(1.8 * CELL_W), site)));
+    // The fade: the core has cooled well below the strike; the glow is still there.
+    const fade = drawAt(0.85);
+    expect(lum(fade.bgAt(gx, 3))).toBeLessThan(lum(strike.bgAt(gx, 3)) * 0.5);
+    expect(fade.bgAt(gx + 3, 3)).not.toBe(untouched);
+    // No glyph anywhere in the column: background only, the board stays readable.
+    expect(strike.toText().split('\n')[3].trim()).toBe('');
+  });
+
   it('a lance pulse has a shape: a front that runs out, a held beam brighter in the middle row, a centre that cools before its glow (2026-09-06, item 3)', () => {
     const lum = (hex: string): number => (parseInt(hex.slice(1, 3), 16) * 0.2126 + parseInt(hex.slice(3, 5), 16) * 0.7152 + parseInt(hex.slice(5, 7), 16) * 0.0722);
     const drawAt = (age01: number): TextTerm => {
@@ -92,10 +124,10 @@ describe('the effects layer', () => {
       const column = rows.map((r) => r[gx] ?? ' ');
       expect(column.some((ch) => strokes.has(ch)), `column ${gx}`).toBe(true);
     }
-    // The strike: a column of '|' from the top edge down to the cell.
+    // The strike: a column of LIGHT (background, no glyphs) from the top edge; the '|' glyphs of session 25 are gone.
     const bx = Math.floor(17.5 * CELL_W);
-    expect(rows[0][bx]).toBe('|');
-    expect(rows[Math.floor(6 * CELL_H)][bx]).toBe('|');
+    expect(term.bgAt(bx, 0)).not.toBe(new TextTerm({ cols: 1, rows: 1 }).bgAt(0, 0));
+    expect(rows[0][bx]).not.toBe('|');
     // The freeze: a sparkle somewhere on the border, and nothing drawn deep inside by it alone.
     expect(rows.some((r, y) => (y < 2 || y >= rows.length - 2) && r.includes('*'))).toBe(true);
   });

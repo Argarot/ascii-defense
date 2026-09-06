@@ -611,6 +611,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'offer': result = s.offerDefs()?.map((d) => d.id) ?? null; break;
           case 'pick': result = s.pickRelic(args[0]); if (result) syncOfferPause(); break;
           case 'relics': result = s.heldRelicInfo().map((h) => h.def.id); break;
+          case 'grant': result = s.debugGrantRelic(args[0] as string); break; // not a recorded input: replays diverge
+          case 'fire': result = s.fireActive(args[0] as string, args[1] as number | undefined, args[2] as number | undefined); break;
           case 'hash': result = s.hashState(); break;
           case 'events': result = [...s.events]; break;
           case 'enemies': { const out: unknown[] = []; for (let i = 0; i < s.posX.length; i++) if (s.alive[i]) out.push({ x: s.posX[i], y: s.posY[i], id: s.enemyDefOf(i).id }); result = out; break; }
