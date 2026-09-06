@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_stasis.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        "/--\\",
-        "|::|",
-        "\\--/"
+        "\\⠁⠆/",
+        " >< ",
+        "/⡀⠃\\"
       ],
       "ink": [
-        "aaaa",
-        "abba",
-        "aaaa"
+        "a02a",
+        ".aa.",
+        "a41a"
+      ],
+      "bgInk": [
+        ".dd.",
+        "....",
+        ".d.."
+      ],
+      "frames": [
+        {
+          "art": [
+            "\\⠃⠤/",
+            " >< ",
+            "/⠁⠆\\"
+          ],
+          "ink": [
+            "a13a",
+            ".aa.",
+            "a02a"
+          ],
+          "bgInk": [
+            ".dd.",
+            "....",
+            ".d.."
+          ]
+        },
+        {
+          "art": [
+            "\\⠆⡀/",
+            " >< ",
+            "/⠃⠤\\"
+          ],
+          "ink": [
+            "a24a",
+            ".aa.",
+            "a13a"
+          ],
+          "bgInk": [
+            ".dd.",
+            "....",
+            ".d.."
+          ]
+        },
+        {
+          "art": [
+            "\\⠤⠁/",
+            " >< ",
+            "/⠆⡀\\"
+          ],
+          "ink": [
+            "a30a",
+            ".aa.",
+            "a24a"
+          ],
+          "bgInk": [
+            ".dd.",
+            "....",
+            ".d.."
+          ]
+        },
+        {
+          "art": [
+            "\\⡀⠃/",
+            " >< ",
+            "/⠤⠁\\"
+          ],
+          "ink": [
+            "a41a",
+            ".aa.",
+            "a30a"
+          ],
+          "bgInk": [
+            ".dd.",
+            "....",
+            ".d.."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.stasis.review3_pulse_0",
+    "1": "relic.stasis.review3_pulse_1",
+    "2": "relic.stasis.review3_pulse_2",
+    "3": "relic.stasis.review3_pulse_3",
+    "4": "relic.stasis.review3_pulse_4",
     ".": null,
-    "a": "ui.dim",
-    "b": "relic.ice"
+    "h": "relic.stasis.review3_steel_high",
+    "m": "relic.stasis.review3_steel_mid",
+    "l": "relic.stasis.review3_steel_low",
+    "a": "relic.stasis.review3_accent",
+    "b": "relic.stasis.review3_accent_dim",
+    "w": "relic.stasis.review3_lens_high",
+    "d": "relic.stasis.review3_recess",
+    "f": "relic.stasis.review3_exhaust",
+    "g": "relic.stasis.review3_warm_metal",
+    "t": "relic.stasis.review3_body",
+    "u": "relic.stasis.review3_coolant"
   }
 }

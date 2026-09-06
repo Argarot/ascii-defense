@@ -97,8 +97,11 @@ describe('the strip as text', () => {
     // A ready slot in the Core section is a relic action; an empty one is nothing.
     // The Orbital slot carries its sprite (session 25): the beam's '**' row.
     const text = term.toText().split('\n');
-    const orRow = text.findIndex((l) => l.includes(' ** '));
-    const orX = text[orRow].indexOf('**') - 1;
+    // The orbital's own art (whatever pack ships it): its middle row, trimmed, marks the slot.
+    const orArt = SPRITES[2].states[''].art[1].trim();
+    const orRow = text.findIndex((l) => l.includes(orArt));
+    expect(orRow, 'the orbital icon row').toBeGreaterThanOrEqual(0);
+    const orX = text[orRow].indexOf(orArt) - 1;
     expect(orX).toBeGreaterThan(0);
     expect(strip.actionAt(orX * 5, orRow * 8)).toEqual({ kind: 'relic', index: 0 });
     expect(strip.actionAt((orX + 5 * 3 + 1) * 5, orRow * 8)).toBeNull();

@@ -1,0 +1,699 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "ground_slate",
+  "kind": "terrain",
+  "cell": [
+    8,
+    5
+  ],
+  "frameMs": 200,
+  "source": "sources/sprites/approved-pack/studies/ground_slate.study.json; imported and assembled by package.py",
+  "states": {
+    "G0": {
+      "art": [
+        "⠠⠐⠄     ",
+        " ⠠⢀ ⠐⠈ ⠈",
+        ".⠐⠄ ⡀. ⠁",
+        "⠄⠐⠈   . ",
+        "⠐ ⠐⠂ ⡀⠁ "
+      ],
+      "ink": [
+        "ddd.....",
+        ".dd.dd.d",
+        "0d2.dd.d",
+        "ddd...d.",
+        "d.dd.dd."
+      ],
+      "frames": [
+        {
+          "art": [
+            "⠠⠐⠄     ",
+            " ⠠⢀ ⠐⠈ ⠈",
+            ".⠐⠄ ⡀. ⠁",
+            "⠄⠐⠈   . ",
+            "⠐ ⠐⠂ ⡀⠁ "
+          ],
+          "ink": [
+            "ddd.....",
+            ".dd.dd.d",
+            "1d3.dd.d",
+            "ddd...d.",
+            "d.dd.dd."
+          ]
+        },
+        {
+          "art": [
+            "⠠⠐⠄     ",
+            " ⠠⢀ ⠐⠈ ⠈",
+            ".⠐⠄ ⡀. ⠁",
+            "⠄⠐⠈   . ",
+            "⠐ ⠐⠂ ⡀⠁ "
+          ],
+          "ink": [
+            "ddd.....",
+            ".dd.dd.d",
+            "2d4.dd.d",
+            "ddd...d.",
+            "d.dd.dd."
+          ]
+        },
+        {
+          "art": [
+            "⠠⠐⠄     ",
+            " ⠠⢀ ⠐⠈ ⠈",
+            ".⠐⠄ ⡀. ⠁",
+            "⠄⠐⠈   . ",
+            "⠐ ⠐⠂ ⡀⠁ "
+          ],
+          "ink": [
+            "ddd.....",
+            ".dd.dd.d",
+            "3d0.dd.d",
+            "ddd...d.",
+            "d.dd.dd."
+          ]
+        },
+        {
+          "art": [
+            "⠠⠐⠄     ",
+            " ⠠⢀ ⠐⠈ ⠈",
+            ".⠐⠄ ⡀. ⠁",
+            "⠄⠐⠈   . ",
+            "⠐ ⠐⠂ ⡀⠁ "
+          ],
+          "ink": [
+            "ddd.....",
+            ".dd.dd.d",
+            "4d1.dd.d",
+            "ddd...d.",
+            "d.dd.dd."
+          ]
+        }
+      ]
+    },
+    "G1": {
+      "art": [
+        "⡀.⠈⠈⠁⠂ ⠈",
+        " ⠈⠐  ⠈⠂⡀",
+        " ⢀⠂⠄  ⠁⠠",
+        "⢀⠂ ⠄ ⠁⠁ ",
+        "⠄   ⠄⠄ ⠄"
+      ],
+      "ink": [
+        "dddddd.d",
+        ".dd..ddd",
+        ".ddd..dd",
+        "dd.d.3d.",
+        "d...1d.d"
+      ],
+      "frames": [
+        {
+          "art": [
+            "⡀.⠈⠈⠁⠂ ⠈",
+            " ⠈⠐  ⠈⠂⡀",
+            " ⢀⠂⠄  ⠁⠠",
+            "⢀⠂ ⠄ ⠁⠁ ",
+            "⠄   ⠄⠄ ⠄"
+          ],
+          "ink": [
+            "dddddd.d",
+            ".dd..ddd",
+            ".ddd..dd",
+            "dd.d.4d.",
+            "d...2d.d"
+          ]
+        },
+        {
+          "art": [
+            "⡀.⠈⠈⠁⠂ ⠈",
+            " ⠈⠐  ⠈⠂⡀",
+            " ⢀⠂⠄  ⠁⠠",
+            "⢀⠂ ⠄ ⠁⠁ ",
+            "⠄   ⠄⠄ ⠄"
+          ],
+          "ink": [
+            "dddddd.d",
+            ".dd..ddd",
+            ".ddd..dd",
+            "dd.d.0d.",
+            "d...3d.d"
+          ]
+        },
+        {
+          "art": [
+            "⡀.⠈⠈⠁⠂ ⠈",
+            " ⠈⠐  ⠈⠂⡀",
+            " ⢀⠂⠄  ⠁⠠",
+            "⢀⠂ ⠄ ⠁⠁ ",
+            "⠄   ⠄⠄ ⠄"
+          ],
+          "ink": [
+            "dddddd.d",
+            ".dd..ddd",
+            ".ddd..dd",
+            "dd.d.1d.",
+            "d...4d.d"
+          ]
+        },
+        {
+          "art": [
+            "⡀.⠈⠈⠁⠂ ⠈",
+            " ⠈⠐  ⠈⠂⡀",
+            " ⢀⠂⠄  ⠁⠠",
+            "⢀⠂ ⠄ ⠁⠁ ",
+            "⠄   ⠄⠄ ⠄"
+          ],
+          "ink": [
+            "dddddd.d",
+            ".dd..ddd",
+            ".ddd..dd",
+            "dd.d.2d.",
+            "d...0d.d"
+          ]
+        }
+      ]
+    },
+    "G2": {
+      "art": [
+        " .⠐ ⡀⠈.⠂",
+        "⠈⠂⠈⠈ ⠐⠁⠄",
+        "⢀ ⠐⠁ ⠂⡀⠐",
+        "⠁⡀.⡀ ⠂⢀⠠",
+        "⠐⠠ ⡀⢀⡀ ⢀"
+      ],
+      "ink": [
+        ".dd.dddd",
+        "dd4d.d2d",
+        "d.dd.ddd",
+        "dddd.ddd",
+        "dd.ddd.d"
+      ],
+      "frames": [
+        {
+          "art": [
+            " .⠐ ⡀⠈.⠂",
+            "⠈⠂⠈⠈ ⠐⠁⠄",
+            "⢀ ⠐⠁ ⠂⡀⠐",
+            "⠁⡀.⡀ ⠂⢀⠠",
+            "⠐⠠ ⡀⢀⡀ ⢀"
+          ],
+          "ink": [
+            ".dd.dddd",
+            "dd0d.d3d",
+            "d.dd.ddd",
+            "dddd.ddd",
+            "dd.ddd.d"
+          ]
+        },
+        {
+          "art": [
+            " .⠐ ⡀⠈.⠂",
+            "⠈⠂⠈⠈ ⠐⠁⠄",
+            "⢀ ⠐⠁ ⠂⡀⠐",
+            "⠁⡀.⡀ ⠂⢀⠠",
+            "⠐⠠ ⡀⢀⡀ ⢀"
+          ],
+          "ink": [
+            ".dd.dddd",
+            "dd1d.d4d",
+            "d.dd.ddd",
+            "dddd.ddd",
+            "dd.ddd.d"
+          ]
+        },
+        {
+          "art": [
+            " .⠐ ⡀⠈.⠂",
+            "⠈⠂⠈⠈ ⠐⠁⠄",
+            "⢀ ⠐⠁ ⠂⡀⠐",
+            "⠁⡀.⡀ ⠂⢀⠠",
+            "⠐⠠ ⡀⢀⡀ ⢀"
+          ],
+          "ink": [
+            ".dd.dddd",
+            "dd2d.d0d",
+            "d.dd.ddd",
+            "dddd.ddd",
+            "dd.ddd.d"
+          ]
+        },
+        {
+          "art": [
+            " .⠐ ⡀⠈.⠂",
+            "⠈⠂⠈⠈ ⠐⠁⠄",
+            "⢀ ⠐⠁ ⠂⡀⠐",
+            "⠁⡀.⡀ ⠂⢀⠠",
+            "⠐⠠ ⡀⢀⡀ ⢀"
+          ],
+          "ink": [
+            ".dd.dddd",
+            "dd3d.d1d",
+            "d.dd.ddd",
+            "dddd.ddd",
+            "dd.ddd.d"
+          ]
+        }
+      ]
+    },
+    "G3": {
+      "art": [
+        "⠄⠄⡀⠄  ⠈⠐",
+        "⠐   .⠄ ⠁",
+        "⠈   ⠐ ⠈.",
+        "  ⠁⠄ ⠠⠠⢀",
+        "⠂..⢀⠈⠄⠐⢀"
+      ],
+      "ink": [
+        "0ddd..d3",
+        "d...dd.d",
+        "d...d.dd",
+        "..dd.ddd",
+        "dddddddd"
+      ],
+      "frames": [
+        {
+          "art": [
+            "⠄⠄⡀⠄  ⠈⠐",
+            "⠐   .⠄ ⠁",
+            "⠈   ⠐ ⠈.",
+            "  ⠁⠄ ⠠⠠⢀",
+            "⠂..⢀⠈⠄⠐⢀"
+          ],
+          "ink": [
+            "1ddd..d4",
+            "d...dd.d",
+            "d...d.dd",
+            "..dd.ddd",
+            "dddddddd"
+          ]
+        },
+        {
+          "art": [
+            "⠄⠄⡀⠄  ⠈⠐",
+            "⠐   .⠄ ⠁",
+            "⠈   ⠐ ⠈.",
+            "  ⠁⠄ ⠠⠠⢀",
+            "⠂..⢀⠈⠄⠐⢀"
+          ],
+          "ink": [
+            "2ddd..d0",
+            "d...dd.d",
+            "d...d.dd",
+            "..dd.ddd",
+            "dddddddd"
+          ]
+        },
+        {
+          "art": [
+            "⠄⠄⡀⠄  ⠈⠐",
+            "⠐   .⠄ ⠁",
+            "⠈   ⠐ ⠈.",
+            "  ⠁⠄ ⠠⠠⢀",
+            "⠂..⢀⠈⠄⠐⢀"
+          ],
+          "ink": [
+            "3ddd..d1",
+            "d...dd.d",
+            "d...d.dd",
+            "..dd.ddd",
+            "dddddddd"
+          ]
+        },
+        {
+          "art": [
+            "⠄⠄⡀⠄  ⠈⠐",
+            "⠐   .⠄ ⠁",
+            "⠈   ⠐ ⠈.",
+            "  ⠁⠄ ⠠⠠⢀",
+            "⠂..⢀⠈⠄⠐⢀"
+          ],
+          "ink": [
+            "4ddd..d2",
+            "d...dd.d",
+            "d...d.dd",
+            "..dd.ddd",
+            "dddddddd"
+          ]
+        }
+      ]
+    },
+    "G4": {
+      "art": [
+        "⠠ ⠂ ⢀.  ",
+        "⠄⡀. ⡀⢀⠁ ",
+        "⠂⡀ ⠈⠐..⠐",
+        "⢀ ⠈⠂ ⠈⢀⢀",
+        "⠂. ⠠⡀⠠⡀⠁"
+      ],
+      "ink": [
+        "d.d.dd..",
+        "ddd.ddd.",
+        "d4.ddddd",
+        "d.d1.ddd",
+        "dd.ddddd"
+      ],
+      "frames": [
+        {
+          "art": [
+            "⠠ ⠂ ⢀.  ",
+            "⠄⡀. ⡀⢀⠁ ",
+            "⠂⡀ ⠈⠐..⠐",
+            "⢀ ⠈⠂ ⠈⢀⢀",
+            "⠂. ⠠⡀⠠⡀⠁"
+          ],
+          "ink": [
+            "d.d.dd..",
+            "ddd.ddd.",
+            "d0.ddddd",
+            "d.d2.ddd",
+            "dd.ddddd"
+          ]
+        },
+        {
+          "art": [
+            "⠠ ⠂ ⢀.  ",
+            "⠄⡀. ⡀⢀⠁ ",
+            "⠂⡀ ⠈⠐..⠐",
+            "⢀ ⠈⠂ ⠈⢀⢀",
+            "⠂. ⠠⡀⠠⡀⠁"
+          ],
+          "ink": [
+            "d.d.dd..",
+            "ddd.ddd.",
+            "d1.ddddd",
+            "d.d3.ddd",
+            "dd.ddddd"
+          ]
+        },
+        {
+          "art": [
+            "⠠ ⠂ ⢀.  ",
+            "⠄⡀. ⡀⢀⠁ ",
+            "⠂⡀ ⠈⠐..⠐",
+            "⢀ ⠈⠂ ⠈⢀⢀",
+            "⠂. ⠠⡀⠠⡀⠁"
+          ],
+          "ink": [
+            "d.d.dd..",
+            "ddd.ddd.",
+            "d2.ddddd",
+            "d.d4.ddd",
+            "dd.ddddd"
+          ]
+        },
+        {
+          "art": [
+            "⠠ ⠂ ⢀.  ",
+            "⠄⡀. ⡀⢀⠁ ",
+            "⠂⡀ ⠈⠐..⠐",
+            "⢀ ⠈⠂ ⠈⢀⢀",
+            "⠂. ⠠⡀⠠⡀⠁"
+          ],
+          "ink": [
+            "d.d.dd..",
+            "ddd.ddd.",
+            "d3.ddddd",
+            "d.d0.ddd",
+            "dd.ddddd"
+          ]
+        }
+      ]
+    },
+    "G5": {
+      "art": [
+        "⠁⠂ ⠐.⠂⠁⡀",
+        " ⠄⠠ .   ",
+        "⠄⢀⠐⠄.⡀  ",
+        "  ⠂ ⢀⠠⢀⠄",
+        "⠠⠐⢀  ⢀  "
+      ],
+      "ink": [
+        "dd.d2ddd",
+        ".dd.d...",
+        "ddddd0..",
+        "..d.dddd",
+        "ddd..d.."
+      ],
+      "frames": [
+        {
+          "art": [
+            "⠁⠂ ⠐.⠂⠁⡀",
+            " ⠄⠠ .   ",
+            "⠄⢀⠐⠄.⡀  ",
+            "  ⠂ ⢀⠠⢀⠄",
+            "⠠⠐⢀  ⢀  "
+          ],
+          "ink": [
+            "dd.d3ddd",
+            ".dd.d...",
+            "ddddd1..",
+            "..d.dddd",
+            "ddd..d.."
+          ]
+        },
+        {
+          "art": [
+            "⠁⠂ ⠐.⠂⠁⡀",
+            " ⠄⠠ .   ",
+            "⠄⢀⠐⠄.⡀  ",
+            "  ⠂ ⢀⠠⢀⠄",
+            "⠠⠐⢀  ⢀  "
+          ],
+          "ink": [
+            "dd.d4ddd",
+            ".dd.d...",
+            "ddddd2..",
+            "..d.dddd",
+            "ddd..d.."
+          ]
+        },
+        {
+          "art": [
+            "⠁⠂ ⠐.⠂⠁⡀",
+            " ⠄⠠ .   ",
+            "⠄⢀⠐⠄.⡀  ",
+            "  ⠂ ⢀⠠⢀⠄",
+            "⠠⠐⢀  ⢀  "
+          ],
+          "ink": [
+            "dd.d0ddd",
+            ".dd.d...",
+            "ddddd3..",
+            "..d.dddd",
+            "ddd..d.."
+          ]
+        },
+        {
+          "art": [
+            "⠁⠂ ⠐.⠂⠁⡀",
+            " ⠄⠠ .   ",
+            "⠄⢀⠐⠄.⡀  ",
+            "  ⠂ ⢀⠠⢀⠄",
+            "⠠⠐⢀  ⢀  "
+          ],
+          "ink": [
+            "dd.d1ddd",
+            ".dd.d...",
+            "ddddd4..",
+            "..d.dddd",
+            "ddd..d.."
+          ]
+        }
+      ]
+    },
+    "G6": {
+      "art": [
+        "⠠⠂⠂⠠   ⠂",
+        "⠄ ⠄.⠐  ⢀",
+        "  ⠂⠠⠁ ⠂⢀",
+        " ⠂ ⠄⠈  ⡀",
+        ". ⠄. ⠐⠠⠠"
+      ],
+      "ink": [
+        "dddd...d",
+        "d.ddd..d",
+        "..ddd.dd",
+        ".d.3d..d",
+        "d.dd.d1d"
+      ],
+      "frames": [
+        {
+          "art": [
+            "⠠⠂⠂⠠   ⠂",
+            "⠄ ⠄.⠐  ⢀",
+            "  ⠂⠠⠁ ⠂⢀",
+            " ⠂ ⠄⠈  ⡀",
+            ". ⠄. ⠐⠠⠠"
+          ],
+          "ink": [
+            "dddd...d",
+            "d.ddd..d",
+            "..ddd.dd",
+            ".d.4d..d",
+            "d.dd.d2d"
+          ]
+        },
+        {
+          "art": [
+            "⠠⠂⠂⠠   ⠂",
+            "⠄ ⠄.⠐  ⢀",
+            "  ⠂⠠⠁ ⠂⢀",
+            " ⠂ ⠄⠈  ⡀",
+            ". ⠄. ⠐⠠⠠"
+          ],
+          "ink": [
+            "dddd...d",
+            "d.ddd..d",
+            "..ddd.dd",
+            ".d.0d..d",
+            "d.dd.d3d"
+          ]
+        },
+        {
+          "art": [
+            "⠠⠂⠂⠠   ⠂",
+            "⠄ ⠄.⠐  ⢀",
+            "  ⠂⠠⠁ ⠂⢀",
+            " ⠂ ⠄⠈  ⡀",
+            ". ⠄. ⠐⠠⠠"
+          ],
+          "ink": [
+            "dddd...d",
+            "d.ddd..d",
+            "..ddd.dd",
+            ".d.1d..d",
+            "d.dd.d4d"
+          ]
+        },
+        {
+          "art": [
+            "⠠⠂⠂⠠   ⠂",
+            "⠄ ⠄.⠐  ⢀",
+            "  ⠂⠠⠁ ⠂⢀",
+            " ⠂ ⠄⠈  ⡀",
+            ". ⠄. ⠐⠠⠠"
+          ],
+          "ink": [
+            "dddd...d",
+            "d.ddd..d",
+            "..ddd.dd",
+            ".d.2d..d",
+            "d.dd.d0d"
+          ]
+        }
+      ]
+    },
+    "G7": {
+      "art": [
+        "⠐⠈ ⢀⠐⠂.⡀",
+        " ⠄ ⠠⠄  .",
+        "⠁⠐.⠂ .⠂ ",
+        "⠂⠠⠠⢀  ⡀⠂",
+        ".⠠ ⠈⠁⠂⠈ "
+      ],
+      "ink": [
+        "dd.ddd4d",
+        ".d.dd..d",
+        "ddd2.dd.",
+        "dddd..dd",
+        "dd.dddd."
+      ],
+      "frames": [
+        {
+          "art": [
+            "⠐⠈ ⢀⠐⠂.⡀",
+            " ⠄ ⠠⠄  .",
+            "⠁⠐.⠂ .⠂ ",
+            "⠂⠠⠠⢀  ⡀⠂",
+            ".⠠ ⠈⠁⠂⠈ "
+          ],
+          "ink": [
+            "dd.ddd0d",
+            ".d.dd..d",
+            "ddd3.dd.",
+            "dddd..dd",
+            "dd.dddd."
+          ]
+        },
+        {
+          "art": [
+            "⠐⠈ ⢀⠐⠂.⡀",
+            " ⠄ ⠠⠄  .",
+            "⠁⠐.⠂ .⠂ ",
+            "⠂⠠⠠⢀  ⡀⠂",
+            ".⠠ ⠈⠁⠂⠈ "
+          ],
+          "ink": [
+            "dd.ddd1d",
+            ".d.dd..d",
+            "ddd4.dd.",
+            "dddd..dd",
+            "dd.dddd."
+          ]
+        },
+        {
+          "art": [
+            "⠐⠈ ⢀⠐⠂.⡀",
+            " ⠄ ⠠⠄  .",
+            "⠁⠐.⠂ .⠂ ",
+            "⠂⠠⠠⢀  ⡀⠂",
+            ".⠠ ⠈⠁⠂⠈ "
+          ],
+          "ink": [
+            "dd.ddd2d",
+            ".d.dd..d",
+            "ddd0.dd.",
+            "dddd..dd",
+            "dd.dddd."
+          ]
+        },
+        {
+          "art": [
+            "⠐⠈ ⢀⠐⠂.⡀",
+            " ⠄ ⠠⠄  .",
+            "⠁⠐.⠂ .⠂ ",
+            "⠂⠠⠠⢀  ⡀⠂",
+            ".⠠ ⠈⠁⠂⠈ "
+          ],
+          "ink": [
+            "dd.ddd3d",
+            ".d.dd..d",
+            "ddd1.dd.",
+            "dddd..dd",
+            "dd.dddd."
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    "0": "terrain.ground_slate.dust_shine_0",
+    "1": "terrain.ground_slate.dust_shine_1",
+    "2": "terrain.ground_slate.dust_shine_2",
+    "3": "terrain.ground_slate.dust_shine_3",
+    "4": "terrain.ground_slate.dust_shine_4",
+    ".": null,
+    "s": "terrain.ground_slate.soil",
+    "d": "terrain.ground_slate.dust",
+    "r": "terrain.ground_slate.slate",
+    "h": "terrain.ground_slate.facet",
+    "c": "terrain.ground_slate.cleft",
+    "o": "terrain.ground_slate.ore",
+    "m": "terrain.ground_slate.mineral",
+    "w": "terrain.ground_slate.wall",
+    "j": "terrain.ground_slate.mortar",
+    "t": "terrain.ground_slate.steel",
+    "b": "terrain.ground_slate.shadow",
+    "l": "terrain.ground_slate.lamp",
+    "A": "terrain.ground_slate.ore_shine_0",
+    "B": "terrain.ground_slate.ore_shine_1",
+    "C": "terrain.ground_slate.ore_shine_2",
+    "D": "terrain.ground_slate.ore_shine_3",
+    "E": "terrain.ground_slate.ore_shine_4",
+    "F": "terrain.ground_slate.lamp_breathe_0",
+    "G": "terrain.ground_slate.lamp_breathe_1",
+    "H": "terrain.ground_slate.lamp_breathe_2",
+    "I": "terrain.ground_slate.lamp_breathe_3",
+    "J": "terrain.ground_slate.lamp_breathe_4"
+  }
+}

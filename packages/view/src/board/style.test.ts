@@ -5,12 +5,14 @@
  * A change to the drawing rules shows up as a text diff in the PR - never as
  * a screenshot someone has to squint at.
  */
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { TextTerm } from '@ascii-defense/render';
 import { CELL_TYPES, type CellType } from '@ascii-defense/engine';
-import { CELL_H, CELL_W, ROAD_SPRITE, drawTerrainCell, drawVoidCell, roadVariation } from './style';
+import { CELL_H, CELL_W, ROAD_SPRITE, drawTerrainCell, drawVoidCell, roadVariation, setTerrainPack } from './style';
 
 describe('terrain cells as text', () => {
+  // These test the hashed texture; the approved pack's authored terrain (terrainSprites.test.ts) is cleared for them.
+  beforeAll(() => setTerrainPack({}));
   it('every cell letter, then water with every shore side', async () => {
     const letters = CELL_TYPES as readonly CellType[];
     const term = new TextTerm({ cols: (letters.length + 5) * (CELL_W + 1), rows: CELL_H + 1 });

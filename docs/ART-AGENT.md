@@ -1,3 +1,10 @@
+> **Where to write (Daniil, 2026-09-06 evening):** only inside
+> `packages/content/assets-reworked/` - a pack of `sprites/` and
+> `palette.json`, plus your studies. The rest of the repository is read-only
+> for you; the dev moves an approved pack into `assets/` and its studies into
+> `sources/sprites/approved-pack/studies/`. No gameplay JSON, no review
+> pages, no generator scripts in the pack.
+
 # Brief for the art agent — sprites for ASCII Defense
 
 *(Written 2026-09-06 for Daniil to hand to a separate agent. Everything an

@@ -1,0 +1,170 @@
+{
+  "$schema": "../../schema/tiles.schema.json",
+  "tiles": [
+    {
+      "id": "straight",
+      "name": "causeway",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-----",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "corner",
+      "name": "elbow",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "--7GG",
+        "GG|GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "tee",
+      "name": "junction",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "--X--",
+        "GG|GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "cross",
+      "name": "crossroads",
+      "cells": [
+        "GG|GG",
+        "GG|GG",
+        "--X--",
+        "GG|GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "scurve",
+      "name": "switchback",
+      "cells": [
+        "GGGGG",
+        "GF-7G",
+        "-JGL-",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "rock_corner",
+      "name": "cliff bend",
+      "cells": [
+        "GRRGG",
+        "GRGGG",
+        "--7GG",
+        "GG|GG",
+        "GR|GG"
+      ]
+    },
+    {
+      "id": "meadow",
+      "name": "clearing",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "rock_field",
+      "name": "scree",
+      "cells": [
+        "GGGGG",
+        "GRRGG",
+        "GRRRG",
+        "GGRRG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "ore_pocket",
+      "name": "ore vein",
+      "cells": [
+        "GGGGG",
+        "GRRGG",
+        "GROOG",
+        "GGRGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "twin_bend",
+      "special": true,
+      "name": "Twin Bend",
+      "cells": [
+        "GG|GG",
+        "GGL7G",
+        "-7GL-",
+        "GL7GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_ns_2",
+      "special": true,
+      "cells": [
+        "F--7G",
+        "L-7|G",
+        "--JL-",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ns_3",
+      "special": true,
+      "cells": [
+        "GGGGG",
+        "GGF7G",
+        "--JL-",
+        "GGGGG",
+        "GGGGG"
+      ]
+    },
+    {
+      "id": "gen_ne_1",
+      "special": true,
+      "cells": [
+        "GGGGG",
+        "GGF7G",
+        "GG|L-",
+        "GG|GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_ne_3",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-7GGG",
+        "GL7GG",
+        "GG|GG"
+      ]
+    },
+    {
+      "id": "gen_ne_4",
+      "special": true,
+      "cells": [
+        "F--7G",
+        "L7G|G",
+        "-JFJG",
+        "GG|GG",
+        "GG|GG"
+      ]
+    }
+  ]
+}

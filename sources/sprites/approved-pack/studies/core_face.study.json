@@ -1,0 +1,429 @@
+{
+  "id": "core_face",
+  "kind": "face",
+  "cell": [
+    8,
+    5
+  ],
+  "frameMs": 200,
+  "palette": {
+    "soil": "#1c2733",
+    "dust": "#4c5b65",
+    "slate": "#65747e",
+    "facet": "#84929a",
+    "cleft": "#485762",
+    "ore": "#b39a68",
+    "mineral": "#d2b882",
+    "wall": "#899aa5",
+    "mortar": "#526574",
+    "steel": "#b3bab2",
+    "shadow": "#23313e",
+    "lamp": "#a4cbb8",
+    "dust_shine_0": "#52636b",
+    "dust_shine_1": "#596b72",
+    "dust_shine_2": "#61737a",
+    "dust_shine_3": "#5e7077",
+    "dust_shine_4": "#56676f",
+    "ore_shine_0": "#b39a68",
+    "ore_shine_1": "#c0a872",
+    "ore_shine_2": "#deca95",
+    "ore_shine_3": "#d2ba83",
+    "ore_shine_4": "#bba16d",
+    "lamp_breathe_0": "#87ad9e",
+    "lamp_breathe_1": "#98bbac",
+    "lamp_breathe_2": "#b4d3c0",
+    "lamp_breathe_3": "#a8cab6",
+    "lamp_breathe_4": "#91b5a4",
+    "crest": "#bba980"
+  },
+  "inks": {
+    ".": null,
+    "s": "soil",
+    "d": "dust",
+    "r": "slate",
+    "h": "facet",
+    "c": "cleft",
+    "o": "ore",
+    "m": "mineral",
+    "w": "wall",
+    "j": "mortar",
+    "t": "steel",
+    "b": "shadow",
+    "l": "lamp",
+    "0": "dust_shine_0",
+    "1": "dust_shine_1",
+    "2": "dust_shine_2",
+    "3": "dust_shine_3",
+    "4": "dust_shine_4",
+    "A": "ore_shine_0",
+    "B": "ore_shine_1",
+    "C": "ore_shine_2",
+    "D": "ore_shine_3",
+    "E": "ore_shine_4",
+    "F": "lamp_breathe_0",
+    "G": "lamp_breathe_1",
+    "H": "lamp_breathe_2",
+    "I": "lamp_breathe_3",
+    "J": "lamp_breathe_4",
+    "k": "crest"
+  },
+  "states": {
+    "top": {
+      "frames": [
+        {
+          "art": [
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
+          ],
+          "ink": [
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkFkwjw"
+          ],
+          "bg": [
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
+          ],
+          "ink": [
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkGkwjw"
+          ],
+          "bg": [
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
+          ],
+          "ink": [
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkHkwjw"
+          ],
+          "bg": [
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
+          ],
+          "ink": [
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkIkwjw"
+          ],
+          "bg": [
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "  ┌┐ ┌┐ ",
+            " ┌┘└─┘└─",
+            " │⣶⠒⣶⠒⣶⠒",
+            "/├─┬─┬─┬",
+            "⡜│[C]│:│"
+          ],
+          "ink": [
+            "..ww.ww.",
+            ".ttttttt",
+            ".wjjjjjj",
+            "wwwwwwww",
+            "wwkJkwjw"
+          ],
+          "bg": [
+            "..bb.bb.",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        }
+      ]
+    },
+    "mid": {
+      "frames": [
+        {
+          "art": [
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
+          ],
+          "ink": [
+            "wwwwwwww",
+            "wFwttttt",
+            "wwwwGGGw",
+            "wFwttttt",
+            "wwwwwwww"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
+          ],
+          "ink": [
+            "wwwwwwww",
+            "wGwttttt",
+            "wwwwHHHw",
+            "wGwttttt",
+            "wwwwwwww"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
+          ],
+          "ink": [
+            "wwwwwwww",
+            "wHwttttt",
+            "wwwwIIIw",
+            "wHwttttt",
+            "wwwwwwww"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
+          ],
+          "ink": [
+            "wwwwwwww",
+            "wIwttttt",
+            "wwwwJJJw",
+            "wIwttttt",
+            "wwwwwwww"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "│└┬┴─┴─┴",
+            "├o┤/⠉⠉⠉⠉",
+            "───=|||=",
+            "├o┤\\____",
+            "│┌┴┬─┬─┬"
+          ],
+          "ink": [
+            "wwwwwwww",
+            "wJwttttt",
+            "wwwwFFFw",
+            "wJwttttt",
+            "wwwwwwww"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        }
+      ]
+    },
+    "bot": {
+      "frames": [
+        {
+          "art": [
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
+          ],
+          "ink": [
+            "wwjwFwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
+          ],
+          "ink": [
+            "wwjwGwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
+          ],
+          "ink": [
+            "wwjwHwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
+          ],
+          "ink": [
+            "wwjwIwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        },
+        {
+          "art": [
+            "⢣│⠿│o│:│",
+            "\\├─┴─┴─┴",
+            " │⣒⣒/⣒⣒/",
+            " └┬─┴─┬─",
+            "  ⠉⠤⣀⣀⣀⣀"
+          ],
+          "ink": [
+            "wwjwJwjw",
+            "wwwwwwww",
+            ".wjjwjjw",
+            ".wwwwwww",
+            "..wjjjjj"
+          ],
+          "bg": [
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb",
+            "..bbbbbb"
+          ]
+        }
+      ]
+    }
+  }
+}

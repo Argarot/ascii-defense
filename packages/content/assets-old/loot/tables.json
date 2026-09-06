@@ -1,0 +1,85 @@
+{
+  "$schema": "../../schema/loot.schema.json",
+  "tables": [
+    {
+      "id": "rock_cache",
+      "outcomes": [
+        {
+          "kind": "scrap",
+          "weight": 35,
+          "min": 60,
+          "max": 120
+        },
+        {
+          "kind": "ore",
+          "weight": 25,
+          "min": 10,
+          "max": 30
+        },
+        {
+          "kind": "boon",
+          "weight": 20,
+          "tier": 2
+        },
+        {
+          "kind": "consumable",
+          "weight": 12
+        },
+        {
+          "kind": "relic",
+          "weight": 8
+        }
+      ]
+    },
+    {
+      "id": "boss_drop",
+      "outcomes": [
+        {
+          "kind": "scrap",
+          "weight": 40,
+          "min": 80,
+          "max": 160
+        },
+        {
+          "kind": "ore",
+          "weight": 30,
+          "min": 15,
+          "max": 40
+        },
+        {
+          "kind": "consumable",
+          "weight": 18
+        },
+        {
+          "kind": "relic",
+          "weight": 12
+        }
+      ]
+    },
+    {
+      "id": "void_chest",
+      "outcomes": [
+        {
+          "kind": "scrap",
+          "weight": 40,
+          "min": 30,
+          "max": 90
+        },
+        {
+          "kind": "ore",
+          "weight": 30,
+          "min": 10,
+          "max": 30
+        },
+        {
+          "kind": "consumable",
+          "weight": 18
+        },
+        {
+          "kind": "relic",
+          "weight": 12
+        }
+      ]
+    }
+  ]
+}

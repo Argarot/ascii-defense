@@ -1,0 +1,137 @@
+{
+  "id": "relic_orbital",
+  "kind": "relic",
+  "cell": [
+    4,
+    3
+  ],
+  "frameMs": 160,
+  "palette": {
+    "review3_steel_high": "#d8e0dc",
+    "review3_steel_mid": "#a9babf",
+    "review3_steel_low": "#748b91",
+    "review3_accent": "#b6a4dc",
+    "review3_accent_dim": "#8686a7",
+    "review3_lens_high": "#dad2ee",
+    "review3_recess": "#18222c",
+    "review3_exhaust": "#f2c17d",
+    "review3_warm_metal": "#b7a183",
+    "review3_body": "#adb3c8",
+    "review3_coolant": "#9bd8e3",
+    "review3_pulse_0": "#505270",
+    "review3_pulse_1": "#797894",
+    "review3_pulse_2": "#a29fb8",
+    "review3_pulse_3": "#ccc6db",
+    "review3_pulse_4": "#f5ecff"
+  },
+  "inks": {
+    ".": null,
+    "h": "review3_steel_high",
+    "m": "review3_steel_mid",
+    "l": "review3_steel_low",
+    "a": "review3_accent",
+    "b": "review3_accent_dim",
+    "w": "review3_lens_high",
+    "d": "review3_recess",
+    "f": "review3_exhaust",
+    "g": "review3_warm_metal",
+    "t": "review3_body",
+    "u": "review3_coolant",
+    "0": "review3_pulse_0",
+    "1": "review3_pulse_1",
+    "2": "review3_pulse_2",
+    "3": "review3_pulse_3",
+    "4": "review3_pulse_4"
+  },
+  "states": {
+    "": {
+      "frames": [
+        {
+          "art": [
+            "\\||/",
+            " || ",
+            " *⠿ "
+          ],
+          "ink": [
+            "a00a",
+            ".00.",
+            ".02."
+          ],
+          "bg": [
+            "....",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\||/",
+            " || ",
+            " ⠻⠟ "
+          ],
+          "ink": [
+            "a11a",
+            ".11.",
+            ".13."
+          ],
+          "bg": [
+            "....",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\||/",
+            " || ",
+            " ⠿+ "
+          ],
+          "ink": [
+            "a22a",
+            ".22.",
+            ".24."
+          ],
+          "bg": [
+            "....",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\||/",
+            " || ",
+            " ⠟* "
+          ],
+          "ink": [
+            "a33a",
+            ".33.",
+            ".30."
+          ],
+          "bg": [
+            "....",
+            "....",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\||/",
+            " || ",
+            " +⠻ "
+          ],
+          "ink": [
+            "a44a",
+            ".44.",
+            ".41."
+          ],
+          "bg": [
+            "....",
+            "....",
+            "...."
+          ]
+        }
+      ]
+    }
+  }
+}

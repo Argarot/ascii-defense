@@ -1,0 +1,2305 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "refinery",
+  "cell": [
+    8,
+    5
+  ],
+  "frameMs": 650,
+  "source": "sources/sprites/ascii-defense-refinery-upgrade-tree-20.json via tools/import-sprites.mjs",
+  "states": {
+    "0": {
+      "art": [
+        " [=R=]  ",
+        " /===\\  ",
+        "  |#|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "ink": [
+        ".aecea..",
+        ".aaaaa..",
+        "..aea...",
+        "fffffff.",
+        "...g...."
+      ],
+      "bgInk": [
+        ".bbdbb..",
+        ".dbbbd..",
+        "..dbd...",
+        "bdddddb.",
+        "...d...."
+      ],
+      "frames": [
+        {
+          "art": [
+            " [=R=]  ",
+            " /===\\  ",
+            "  |*|   ",
+            "[__|__] ",
+            "   V    "
+          ],
+          "ink": [
+            ".aihia..",
+            ".aaaaa..",
+            "..aia...",
+            "fffffff.",
+            "...i...."
+          ],
+          "bgInk": [
+            ".bbdbb..",
+            ".dbbbd..",
+            "..dbd...",
+            "bdddddb.",
+            "...d...."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              " [=R=]  ",
+              " /===\\  ",
+              "  |*|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aihia..",
+              ".aaaaa..",
+              "..aia...",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              ".dbbbd..",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              " [=R=]  ",
+              " /===\\  ",
+              "  |#|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aecea..",
+              ".aaaaa..",
+              "..aea...",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              ".dbbbd..",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              " [=R=]  ",
+              " /===\\  ",
+              "  |*|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aihia..",
+              ".aaaaa..",
+              "..aia...",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              ".dbbbd..",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              " [=R=]  ",
+              " /===\\  ",
+              "  |#|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aecea..",
+              ".aaaaa..",
+              "..aea...",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              ".dbbbd..",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "1": {
+      "art": [
+        "  [R]   ",
+        " /===\\  ",
+        " =|#|=  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "ink": [
+        "..aca...",
+        ".aaaaa..",
+        ".eaeae..",
+        "fffffff.",
+        "...g...."
+      ],
+      "bgInk": [
+        "..bdb...",
+        ".dbbbd..",
+        ".bdbdb..",
+        "bdddddb.",
+        "...d...."
+      ],
+      "frames": [
+        {
+          "art": [
+            "  [R]   ",
+            " /===\\  ",
+            " =|*|=  ",
+            "[__|__] ",
+            "   V    "
+          ],
+          "ink": [
+            "..aha...",
+            ".aaaaa..",
+            ".iaiai..",
+            "fffffff.",
+            "...i...."
+          ],
+          "bgInk": [
+            "..bdb...",
+            ".dbbbd..",
+            ".bdbdb..",
+            "bdddddb.",
+            "...d...."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              " =|*|=  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aha...",
+              ".aaaaa..",
+              ".iaiai..",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              " =|#|=  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aca...",
+              ".aaaaa..",
+              ".eaeae..",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              " =|*|=  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aha...",
+              ".aaaaa..",
+              ".iaiai..",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              " =|#|=  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aca...",
+              ".aaaaa..",
+              ".eaeae..",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "10": {
+      "art": [
+        "  [R]   ",
+        "^/===\\^ ",
+        " =|#|=  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "ink": [
+        "..aca...",
+        "eaaaaae.",
+        ".eaeae..",
+        "fffffff.",
+        "...g...."
+      ],
+      "bgInk": [
+        "..bdb...",
+        "ddbbbdd.",
+        ".bdbdb..",
+        "bdddddb.",
+        "...d...."
+      ],
+      "frames": [
+        {
+          "art": [
+            "  [R]   ",
+            "^/===\\^ ",
+            " =|*|=  ",
+            "[__|__] ",
+            "   V    "
+          ],
+          "ink": [
+            "..aha...",
+            "iaaaaai.",
+            ".iaiai..",
+            "fffffff.",
+            "...i...."
+          ],
+          "bgInk": [
+            "..bdb...",
+            "ddbbbdd.",
+            ".bdbdb..",
+            "bdddddb.",
+            "...d...."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              "  [R]   ",
+              "^/===\\^ ",
+              " =|*|=  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aha...",
+              "iaaaaai.",
+              ".iaiai..",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              "ddbbbdd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              "  [R]   ",
+              "^/===\\^ ",
+              " =|#|=  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aca...",
+              "eaaaaae.",
+              ".eaeae..",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              "ddbbbdd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              "  [R]   ",
+              "^/===\\^ ",
+              " =|*|=  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aha...",
+              "iaaaaai.",
+              ".iaiai..",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              "ddbbbdd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              "  [R]   ",
+              "^/===\\^ ",
+              " =|#|=  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aca...",
+              "eaaaaae.",
+              ".eaeae..",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              "ddbbbdd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "11": {
+      "art": [
+        "  [R]   ",
+        " /===\\  ",
+        "=[|#|]= ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "ink": [
+        "..aca...",
+        ".aaaaa..",
+        "eeaeaee.",
+        "fffffff.",
+        "...g...."
+      ],
+      "bgInk": [
+        "..bdb...",
+        ".dbbbd..",
+        "bbdbdbb.",
+        "bdddddb.",
+        "...d...."
+      ],
+      "frames": [
+        {
+          "art": [
+            "  [R]   ",
+            " /===\\  ",
+            "=[|*|]= ",
+            "[__|__] ",
+            "   V    "
+          ],
+          "ink": [
+            "..aha...",
+            ".aaaaa..",
+            "iiaiaii.",
+            "fffffff.",
+            "...i...."
+          ],
+          "bgInk": [
+            "..bdb...",
+            ".dbbbd..",
+            "bbdbdbb.",
+            "bdddddb.",
+            "...d...."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              "=[|*|]= ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aha...",
+              ".aaaaa..",
+              "iiaiaii.",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              "=[|#|]= ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aca...",
+              ".aaaaa..",
+              "eeaeaee.",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              "=[|*|]= ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aha...",
+              ".aaaaa..",
+              "iiaiaii.",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              "=[|#|]= ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aca...",
+              ".aaaaa..",
+              "eeaeaee.",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "100": {
+      "art": [
+        "[==R==] ",
+        "^/|=|\\^ ",
+        " =|#|=  ",
+        "[_|_|_] ",
+        "  V V   "
+      ],
+      "ink": [
+        "aaacaaa.",
+        "eaaaaae.",
+        ".eaeae..",
+        "fffffff.",
+        "..g.g..."
+      ],
+      "bgInk": [
+        "bbbdbbb.",
+        "dddbddd.",
+        ".bdbdb..",
+        "bdddddb.",
+        "..d.d..."
+      ],
+      "frames": [
+        {
+          "art": [
+            "[==R==] ",
+            "^/|=|\\^ ",
+            " =|#|=  ",
+            "[_|_|_] ",
+            "  v V   "
+          ],
+          "ink": [
+            "aaahaaa.",
+            "iaaaaai.",
+            ".iaiai..",
+            "fffffff.",
+            "..i.i..."
+          ],
+          "bgInk": [
+            "bbbdbbb.",
+            "dddbddd.",
+            ".bdbdb..",
+            "bdddddb.",
+            "..d.d..."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              "[==R==] ",
+              "^/|=|\\^ ",
+              " =|#|=  ",
+              "[_|_|_] ",
+              "  v V   "
+            ],
+            "ink": [
+              "aaahaaa.",
+              "iaaaaai.",
+              ".iaiai..",
+              "fffffff.",
+              "..i.i..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              "dddbddd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              "[==R==] ",
+              "^/|=|\\^ ",
+              " =|#|=  ",
+              "[_|_|_] ",
+              "  V V   "
+            ],
+            "ink": [
+              "aaacaaa.",
+              "eaaaaae.",
+              ".eaeae..",
+              "fffffff.",
+              "..g.g..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              "dddbddd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              "[==R==] ",
+              "^/|=|\\^ ",
+              " =|#|=  ",
+              "[_|_|_] ",
+              "  v V   "
+            ],
+            "ink": [
+              "aaahaaa.",
+              "iaaaaai.",
+              ".iaiai..",
+              "fffffff.",
+              "..i.i..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              "dddbddd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              "[==R==] ",
+              "^/|=|\\^ ",
+              " =|#|=  ",
+              "[_|_|_] ",
+              "  V V   "
+            ],
+            "ink": [
+              "aaacaaa.",
+              "eaaaaae.",
+              ".eaeae..",
+              "fffffff.",
+              "..g.g..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              "dddbddd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "101": {
+      "art": [
+        " .-R-.  ",
+        "^(===)^ ",
+        " =|#|=  ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "ink": [
+        ".jjcjj..",
+        "eajjjae.",
+        ".eaeae..",
+        "ajjajja.",
+        "..fgf..."
+      ],
+      "bgInk": [
+        ".ddddd..",
+        "dbbbbbd.",
+        ".bdbdb..",
+        "bdddddb.",
+        "..ddd..."
+      ],
+      "frames": [
+        {
+          "art": [
+            " .-R-.  ",
+            "^(=-=)^ ",
+            " =|#|=  ",
+            "[==|==] ",
+            "  \\V/   "
+          ],
+          "ink": [
+            ".jjhjj..",
+            "iajjjai.",
+            ".iaiai..",
+            "ajjajja.",
+            "..fif..."
+          ],
+          "bgInk": [
+            ".ddddd..",
+            "dbbdbbd.",
+            ".bdbdb..",
+            "bdddddb.",
+            "..ddd..."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              " .-R-.  ",
+              "^(=-=)^ ",
+              " =|#|=  ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              ".jjhjj..",
+              "iajjjai.",
+              ".iaiai..",
+              "ajjajja.",
+              "..fif..."
+            ],
+            "bgInk": [
+              ".ddddd..",
+              "dbbdbbd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              " .-R-.  ",
+              "^(===)^ ",
+              " =|#|=  ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              ".jjcjj..",
+              "eajjjae.",
+              ".eaeae..",
+              "ajjajja.",
+              "..fgf..."
+            ],
+            "bgInk": [
+              ".ddddd..",
+              "dbbbbbd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              " .-R-.  ",
+              "^(=-=)^ ",
+              " =|#|=  ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              ".jjhjj..",
+              "iajjjai.",
+              ".iaiai..",
+              "ajjajja.",
+              "..fif..."
+            ],
+            "bgInk": [
+              ".ddddd..",
+              "dbbdbbd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              " .-R-.  ",
+              "^(===)^ ",
+              " =|#|=  ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              ".jjcjj..",
+              "eajjjae.",
+              ".eaeae..",
+              "ajjajja.",
+              "..fgf..."
+            ],
+            "bgInk": [
+              ".ddddd..",
+              "dbbbbbd.",
+              ".bdbdb..",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "110": {
+      "art": [
+        "[==R==] ",
+        " /|=|\\  ",
+        "=[|#|]= ",
+        "[_|_|_] ",
+        "  V V   "
+      ],
+      "ink": [
+        "aaacaaa.",
+        ".aaaaa..",
+        "eeaeaee.",
+        "fffffff.",
+        "..g.g..."
+      ],
+      "bgInk": [
+        "bbbdbbb.",
+        ".ddbdd..",
+        "bbdbdbb.",
+        "bdddddb.",
+        "..d.d..."
+      ],
+      "frames": [
+        {
+          "art": [
+            "[==R==] ",
+            " /|=|\\  ",
+            "=[|#|]= ",
+            "[_|_|_] ",
+            "  v V   "
+          ],
+          "ink": [
+            "aaahaaa.",
+            ".aaaaa..",
+            "iiaiaii.",
+            "fffffff.",
+            "..i.i..."
+          ],
+          "bgInk": [
+            "bbbdbbb.",
+            ".ddbdd..",
+            "bbdbdbb.",
+            "bdddddb.",
+            "..d.d..."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              "[==R==] ",
+              " /|=|\\  ",
+              "=[|#|]= ",
+              "[_|_|_] ",
+              "  v V   "
+            ],
+            "ink": [
+              "aaahaaa.",
+              ".aaaaa..",
+              "iiaiaii.",
+              "fffffff.",
+              "..i.i..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              ".ddbdd..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              "[==R==] ",
+              " /|=|\\  ",
+              "=[|#|]= ",
+              "[_|_|_] ",
+              "  V V   "
+            ],
+            "ink": [
+              "aaacaaa.",
+              ".aaaaa..",
+              "eeaeaee.",
+              "fffffff.",
+              "..g.g..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              ".ddbdd..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              "[==R==] ",
+              " /|=|\\  ",
+              "=[|#|]= ",
+              "[_|_|_] ",
+              "  v V   "
+            ],
+            "ink": [
+              "aaahaaa.",
+              ".aaaaa..",
+              "iiaiaii.",
+              "fffffff.",
+              "..i.i..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              ".ddbdd..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              "[==R==] ",
+              " /|=|\\  ",
+              "=[|#|]= ",
+              "[_|_|_] ",
+              "  V V   "
+            ],
+            "ink": [
+              "aaacaaa.",
+              ".aaaaa..",
+              "eeaeaee.",
+              "fffffff.",
+              "..g.g..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              ".ddbdd..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "111": {
+      "art": [
+        " .-R-.  ",
+        " (===)  ",
+        "=[|#|]= ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "ink": [
+        ".jjcjj..",
+        ".ajjja..",
+        "eeaeaee.",
+        "ajjajja.",
+        "..fgf..."
+      ],
+      "bgInk": [
+        ".ddddd..",
+        ".bbbbb..",
+        "bbdbdbb.",
+        "bdddddb.",
+        "..ddd..."
+      ],
+      "frames": [
+        {
+          "art": [
+            " .-R-.  ",
+            " (=-=)  ",
+            "=[|#|]= ",
+            "[==|==] ",
+            "  \\V/   "
+          ],
+          "ink": [
+            ".jjhjj..",
+            ".ajjja..",
+            "iiaiaii.",
+            "ajjajja.",
+            "..fif..."
+          ],
+          "bgInk": [
+            ".ddddd..",
+            ".bbdbb..",
+            "bbdbdbb.",
+            "bdddddb.",
+            "..ddd..."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              " .-R-.  ",
+              " (=-=)  ",
+              "=[|#|]= ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              ".jjhjj..",
+              ".ajjja..",
+              "iiaiaii.",
+              "ajjajja.",
+              "..fif..."
+            ],
+            "bgInk": [
+              ".ddddd..",
+              ".bbdbb..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              " .-R-.  ",
+              " (===)  ",
+              "=[|#|]= ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              ".jjcjj..",
+              ".ajjja..",
+              "eeaeaee.",
+              "ajjajja.",
+              "..fgf..."
+            ],
+            "bgInk": [
+              ".ddddd..",
+              ".bbbbb..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              " .-R-.  ",
+              " (=-=)  ",
+              "=[|#|]= ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              ".jjhjj..",
+              ".ajjja..",
+              "iiaiaii.",
+              "ajjajja.",
+              "..fif..."
+            ],
+            "bgInk": [
+              ".ddddd..",
+              ".bbdbb..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              " .-R-.  ",
+              " (===)  ",
+              "=[|#|]= ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              ".jjcjj..",
+              ".ajjja..",
+              "eeaeaee.",
+              "ajjajja.",
+              "..fgf..."
+            ],
+            "bgInk": [
+              ".ddddd..",
+              ".bbbbb..",
+              "bbdbdbb.",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "": {
+      "art": [
+        "  [R]   ",
+        " /===\\  ",
+        "  |#|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "ink": [
+        "..aca...",
+        ".aaaaa..",
+        "..aea...",
+        "fffffff.",
+        "...g...."
+      ],
+      "bgInk": [
+        "..bdb...",
+        ".dbbbd..",
+        "..dbd...",
+        "bdddddb.",
+        "...d...."
+      ],
+      "frames": [
+        {
+          "art": [
+            "  [R]   ",
+            " /===\\  ",
+            "  |*|   ",
+            "[__|__] ",
+            "   V    "
+          ],
+          "ink": [
+            "..aha...",
+            ".aaaaa..",
+            "..aia...",
+            "fffffff.",
+            "...i...."
+          ],
+          "bgInk": [
+            "..bdb...",
+            ".dbbbd..",
+            "..dbd...",
+            "bdddddb.",
+            "...d...."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              "  |*|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aha...",
+              ".aaaaa..",
+              "..aia...",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              "  |#|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aca...",
+              ".aaaaa..",
+              "..aea...",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              "  |*|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aha...",
+              ".aaaaa..",
+              "..aia...",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              "  [R]   ",
+              " /===\\  ",
+              "  |#|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              "..aca...",
+              ".aaaaa..",
+              "..aea...",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              "..bdb...",
+              ".dbbbd..",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "00": {
+      "art": [
+        " [=R=]  ",
+        "^/===\\^ ",
+        "  |#|   ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "ink": [
+        ".aecea..",
+        "eaaaaae.",
+        "..aea...",
+        "fffffff.",
+        "...g...."
+      ],
+      "bgInk": [
+        ".bbdbb..",
+        "ddbbbdd.",
+        "..dbd...",
+        "bdddddb.",
+        "...d...."
+      ],
+      "frames": [
+        {
+          "art": [
+            " [=R=]  ",
+            "^/===\\^ ",
+            "  |*|   ",
+            "[__|__] ",
+            "   V    "
+          ],
+          "ink": [
+            ".aihia..",
+            "iaaaaai.",
+            "..aia...",
+            "fffffff.",
+            "...i...."
+          ],
+          "bgInk": [
+            ".bbdbb..",
+            "ddbbbdd.",
+            "..dbd...",
+            "bdddddb.",
+            "...d...."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              " [=R=]  ",
+              "^/===\\^ ",
+              "  |*|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aihia..",
+              "iaaaaai.",
+              "..aia...",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              "ddbbbdd.",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              " [=R=]  ",
+              "^/===\\^ ",
+              "  |#|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aecea..",
+              "eaaaaae.",
+              "..aea...",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              "ddbbbdd.",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              " [=R=]  ",
+              "^/===\\^ ",
+              "  |*|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aihia..",
+              "iaaaaai.",
+              "..aia...",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              "ddbbbdd.",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              " [=R=]  ",
+              "^/===\\^ ",
+              "  |#|   ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aecea..",
+              "eaaaaae.",
+              "..aea...",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              "ddbbbdd.",
+              "..dbd...",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "01": {
+      "art": [
+        " [=R=]  ",
+        " /===\\  ",
+        " +|#|+  ",
+        "[__|__] ",
+        "   V    "
+      ],
+      "ink": [
+        ".aecea..",
+        ".aaaaa..",
+        ".eaeae..",
+        "fffffff.",
+        "...g...."
+      ],
+      "bgInk": [
+        ".bbdbb..",
+        ".dbbbd..",
+        ".bdbdb..",
+        "bdddddb.",
+        "...d...."
+      ],
+      "frames": [
+        {
+          "art": [
+            " [=R=]  ",
+            " /===\\  ",
+            " +|*|+  ",
+            "[__|__] ",
+            "   V    "
+          ],
+          "ink": [
+            ".aihia..",
+            ".aaaaa..",
+            ".iaiai..",
+            "fffffff.",
+            "...i...."
+          ],
+          "bgInk": [
+            ".bbdbb..",
+            ".dbbbd..",
+            ".bdbdb..",
+            "bdddddb.",
+            "...d...."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              " [=R=]  ",
+              " /===\\  ",
+              " +|*|+  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aihia..",
+              ".aaaaa..",
+              ".iaiai..",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              ".dbbbd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              " [=R=]  ",
+              " /===\\  ",
+              " +|#|+  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aecea..",
+              ".aaaaa..",
+              ".eaeae..",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              ".dbbbd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              " [=R=]  ",
+              " /===\\  ",
+              " +|*|+  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aihia..",
+              ".aaaaa..",
+              ".iaiai..",
+              "fffffff.",
+              "...i...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              ".dbbbd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              " [=R=]  ",
+              " /===\\  ",
+              " +|#|+  ",
+              "[__|__] ",
+              "   V    "
+            ],
+            "ink": [
+              ".aecea..",
+              ".aaaaa..",
+              ".eaeae..",
+              "fffffff.",
+              "...g...."
+            ],
+            "bgInk": [
+              ".bbdbb..",
+              ".dbbbd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "...d...."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "000": {
+      "art": [
+        "[==R==] ",
+        "^/|=|\\^ ",
+        "  |#|   ",
+        "[_|_|_] ",
+        "  V V   "
+      ],
+      "ink": [
+        "aeeceea.",
+        "eaaaaae.",
+        "..aea...",
+        "fffffff.",
+        "..g.g..."
+      ],
+      "bgInk": [
+        "bbbdbbb.",
+        "dddbddd.",
+        "..dbd...",
+        "bdddddb.",
+        "..d.d..."
+      ],
+      "frames": [
+        {
+          "art": [
+            "[==R==] ",
+            "^/|=|\\^ ",
+            "  |#|   ",
+            "[_|_|_] ",
+            "  v V   "
+          ],
+          "ink": [
+            "aiihiia.",
+            "iaaaaai.",
+            "..aia...",
+            "fffffff.",
+            "..i.i..."
+          ],
+          "bgInk": [
+            "bbbdbbb.",
+            "dddbddd.",
+            "..dbd...",
+            "bdddddb.",
+            "..d.d..."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              "[==R==] ",
+              "^/|=|\\^ ",
+              "  |#|   ",
+              "[_|_|_] ",
+              "  v V   "
+            ],
+            "ink": [
+              "aiihiia.",
+              "iaaaaai.",
+              "..aia...",
+              "fffffff.",
+              "..i.i..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              "dddbddd.",
+              "..dbd...",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              "[==R==] ",
+              "^/|=|\\^ ",
+              "  |#|   ",
+              "[_|_|_] ",
+              "  V V   "
+            ],
+            "ink": [
+              "aeeceea.",
+              "eaaaaae.",
+              "..aea...",
+              "fffffff.",
+              "..g.g..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              "dddbddd.",
+              "..dbd...",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              "[==R==] ",
+              "^/|=|\\^ ",
+              "  |#|   ",
+              "[_|_|_] ",
+              "  v V   "
+            ],
+            "ink": [
+              "aiihiia.",
+              "iaaaaai.",
+              "..aia...",
+              "fffffff.",
+              "..i.i..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              "dddbddd.",
+              "..dbd...",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              "[==R==] ",
+              "^/|=|\\^ ",
+              "  |#|   ",
+              "[_|_|_] ",
+              "  V V   "
+            ],
+            "ink": [
+              "aeeceea.",
+              "eaaaaae.",
+              "..aea...",
+              "fffffff.",
+              "..g.g..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              "dddbddd.",
+              "..dbd...",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "001": {
+      "art": [
+        ".-=R=-. ",
+        "^(===)^ ",
+        "  |#|   ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "ink": [
+        "jjecejj.",
+        "eajjjae.",
+        "..aea...",
+        "ajjajja.",
+        "..fgf..."
+      ],
+      "bgInk": [
+        "ddbdbdd.",
+        "dbbbbbd.",
+        "..dbd...",
+        "bdddddb.",
+        "..ddd..."
+      ],
+      "frames": [
+        {
+          "art": [
+            ".-=R=-. ",
+            "^(=-=)^ ",
+            "  |#|   ",
+            "[==|==] ",
+            "  \\V/   "
+          ],
+          "ink": [
+            "jjihijj.",
+            "iajjjai.",
+            "..aia...",
+            "ajjajja.",
+            "..fif..."
+          ],
+          "bgInk": [
+            "ddbdbdd.",
+            "dbbdbbd.",
+            "..dbd...",
+            "bdddddb.",
+            "..ddd..."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              ".-=R=-. ",
+              "^(=-=)^ ",
+              "  |#|   ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              "jjihijj.",
+              "iajjjai.",
+              "..aia...",
+              "ajjajja.",
+              "..fif..."
+            ],
+            "bgInk": [
+              "ddbdbdd.",
+              "dbbdbbd.",
+              "..dbd...",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              ".-=R=-. ",
+              "^(===)^ ",
+              "  |#|   ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              "jjecejj.",
+              "eajjjae.",
+              "..aea...",
+              "ajjajja.",
+              "..fgf..."
+            ],
+            "bgInk": [
+              "ddbdbdd.",
+              "dbbbbbd.",
+              "..dbd...",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              ".-=R=-. ",
+              "^(=-=)^ ",
+              "  |#|   ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              "jjihijj.",
+              "iajjjai.",
+              "..aia...",
+              "ajjajja.",
+              "..fif..."
+            ],
+            "bgInk": [
+              "ddbdbdd.",
+              "dbbdbbd.",
+              "..dbd...",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              ".-=R=-. ",
+              "^(===)^ ",
+              "  |#|   ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              "jjecejj.",
+              "eajjjae.",
+              "..aea...",
+              "ajjajja.",
+              "..fgf..."
+            ],
+            "bgInk": [
+              "ddbdbdd.",
+              "dbbbbbd.",
+              "..dbd...",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "010": {
+      "art": [
+        "[==R==] ",
+        " /|=|\\  ",
+        " +|#|+  ",
+        "[_|_|_] ",
+        "  V V   "
+      ],
+      "ink": [
+        "aeeceea.",
+        ".aaaaa..",
+        ".eaeae..",
+        "fffffff.",
+        "..g.g..."
+      ],
+      "bgInk": [
+        "bbbdbbb.",
+        ".ddbdd..",
+        ".bdbdb..",
+        "bdddddb.",
+        "..d.d..."
+      ],
+      "frames": [
+        {
+          "art": [
+            "[==R==] ",
+            " /|=|\\  ",
+            " +|#|+  ",
+            "[_|_|_] ",
+            "  v V   "
+          ],
+          "ink": [
+            "aiihiia.",
+            ".aaaaa..",
+            ".iaiai..",
+            "fffffff.",
+            "..i.i..."
+          ],
+          "bgInk": [
+            "bbbdbbb.",
+            ".ddbdd..",
+            ".bdbdb..",
+            "bdddddb.",
+            "..d.d..."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              "[==R==] ",
+              " /|=|\\  ",
+              " +|#|+  ",
+              "[_|_|_] ",
+              "  v V   "
+            ],
+            "ink": [
+              "aiihiia.",
+              ".aaaaa..",
+              ".iaiai..",
+              "fffffff.",
+              "..i.i..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              ".ddbdd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              "[==R==] ",
+              " /|=|\\  ",
+              " +|#|+  ",
+              "[_|_|_] ",
+              "  V V   "
+            ],
+            "ink": [
+              "aeeceea.",
+              ".aaaaa..",
+              ".eaeae..",
+              "fffffff.",
+              "..g.g..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              ".ddbdd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              "[==R==] ",
+              " /|=|\\  ",
+              " +|#|+  ",
+              "[_|_|_] ",
+              "  v V   "
+            ],
+            "ink": [
+              "aiihiia.",
+              ".aaaaa..",
+              ".iaiai..",
+              "fffffff.",
+              "..i.i..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              ".ddbdd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              "[==R==] ",
+              " /|=|\\  ",
+              " +|#|+  ",
+              "[_|_|_] ",
+              "  V V   "
+            ],
+            "ink": [
+              "aeeceea.",
+              ".aaaaa..",
+              ".eaeae..",
+              "fffffff.",
+              "..g.g..."
+            ],
+            "bgInk": [
+              "bbbdbbb.",
+              ".ddbdd..",
+              ".bdbdb..",
+              "bdddddb.",
+              "..d.d..."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    },
+    "011": {
+      "art": [
+        ".-=R=-. ",
+        " (===)  ",
+        " +|#|+  ",
+        "[==|==] ",
+        "  \\V/   "
+      ],
+      "ink": [
+        "jjecejj.",
+        ".ajjja..",
+        ".eaeae..",
+        "ajjajja.",
+        "..fgf..."
+      ],
+      "bgInk": [
+        "ddbdbdd.",
+        ".bbbbb..",
+        ".bdbdb..",
+        "bdddddb.",
+        "..ddd..."
+      ],
+      "frames": [
+        {
+          "art": [
+            ".-=R=-. ",
+            " (=-=)  ",
+            " +|#|+  ",
+            "[==|==] ",
+            "  \\V/   "
+          ],
+          "ink": [
+            "jjihijj.",
+            ".ajjja..",
+            ".iaiai..",
+            "ajjajja.",
+            "..fif..."
+          ],
+          "bgInk": [
+            "ddbdbdd.",
+            ".bbdbb..",
+            ".bdbdb..",
+            "bdddddb.",
+            "..ddd..."
+          ]
+        }
+      ],
+      "sequences": {
+        "fire": [
+          {
+            "art": [
+              ".-=R=-. ",
+              " (=-=)  ",
+              " +|#|+  ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              "jjihijj.",
+              ".ajjja..",
+              ".iaiai..",
+              "ajjajja.",
+              "..fif..."
+            ],
+            "bgInk": [
+              "ddbdbdd.",
+              ".bbdbb..",
+              ".bdbdb..",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          }
+        ],
+        "cool": [
+          {
+            "art": [
+              ".-=R=-. ",
+              " (===)  ",
+              " +|#|+  ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              "jjecejj.",
+              ".ajjja..",
+              ".eaeae..",
+              "ajjajja.",
+              "..fgf..."
+            ],
+            "bgInk": [
+              "ddbdbdd.",
+              ".bbbbb..",
+              ".bdbdb..",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 150
+          }
+        ],
+        "charge": [
+          {
+            "art": [
+              ".-=R=-. ",
+              " (=-=)  ",
+              " +|#|+  ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              "jjihijj.",
+              ".ajjja..",
+              ".iaiai..",
+              "ajjajja.",
+              "..fif..."
+            ],
+            "bgInk": [
+              "ddbdbdd.",
+              ".bbdbb..",
+              ".bdbdb..",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          },
+          {
+            "art": [
+              ".-=R=-. ",
+              " (===)  ",
+              " +|#|+  ",
+              "[==|==] ",
+              "  \\V/   "
+            ],
+            "ink": [
+              "jjecejj.",
+              ".ajjja..",
+              ".eaeae..",
+              "ajjajja.",
+              "..fgf..."
+            ],
+            "bgInk": [
+              "ddbdbdd.",
+              ".bbbbb..",
+              ".bdbdb..",
+              "bdddddb.",
+              "..ddd..."
+            ],
+            "ms": 100
+          }
+        ]
+      }
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "tower.refinery.steel_high",
+    "b": "tower.refinery.mix.201915",
+    "c": "tower.refinery.ore",
+    "d": "tower.refinery.mix.171b20",
+    "e": "tower.refinery.mix.bd9251",
+    "f": "tower.refinery.steel_mid",
+    "g": "tower.refinery.brass_mid",
+    "h": "tower.refinery.legendary",
+    "i": "tower.refinery.brass_high",
+    "j": "tower.refinery.brass_edge"
+  }
+}

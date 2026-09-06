@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_overflow.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        "o->o",
-        "   |",
-        "   o"
+        "\\⠋/ ",
+        " |\\⠚",
+        "_V_ "
       ],
       "ink": [
-        "abba",
-        "...b",
-        "...a"
+        "a0a.",
+        ".ha2",
+        "aaa."
+      ],
+      "bgInk": [
+        ".d..",
+        "...d",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            "\\⠙/ ",
+            " |\\⢤",
+            "_V_ "
+          ],
+          "ink": [
+            "a1a.",
+            ".ha3",
+            "aaa."
+          ],
+          "bgInk": [
+            ".d..",
+            "...d",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\⠚/ ",
+            " |\\⡤",
+            "_V_ "
+          ],
+          "ink": [
+            "a2a.",
+            ".ha4",
+            "aaa."
+          ],
+          "bgInk": [
+            ".d..",
+            "...d",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\⢤/ ",
+            " |\\⠋",
+            "_V_ "
+          ],
+          "ink": [
+            "a3a.",
+            ".ha0",
+            "aaa."
+          ],
+          "bgInk": [
+            ".d..",
+            "...d",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\⡤/ ",
+            " |\\⠙",
+            "_V_ "
+          ],
+          "ink": [
+            "a4a.",
+            ".ha1",
+            "aaa."
+          ],
+          "bgInk": [
+            ".d..",
+            "...d",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.overflow.review3_pulse_0",
+    "1": "relic.overflow.review3_pulse_1",
+    "2": "relic.overflow.review3_pulse_2",
+    "3": "relic.overflow.review3_pulse_3",
+    "4": "relic.overflow.review3_pulse_4",
     ".": null,
-    "a": "relic.copper",
-    "b": "ui.dim"
+    "h": "relic.overflow.review3_steel_high",
+    "m": "relic.overflow.review3_steel_mid",
+    "l": "relic.overflow.review3_steel_low",
+    "a": "relic.overflow.review3_accent",
+    "b": "relic.overflow.review3_accent_dim",
+    "w": "relic.overflow.review3_lens_high",
+    "d": "relic.overflow.review3_recess",
+    "f": "relic.overflow.review3_exhaust",
+    "g": "relic.overflow.review3_warm_metal",
+    "t": "relic.overflow.review3_body",
+    "u": "relic.overflow.review3_coolant"
   }
 }

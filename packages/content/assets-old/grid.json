@@ -1,0 +1,5 @@
+{
+  "$schema": "../schema/grid.schema.json",
+  "cell": [8, 5],
+  "glyphPx": [5, 8]
+}

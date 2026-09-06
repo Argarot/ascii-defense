@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_ore_pocket.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        " /\\ ",
-        "/oo\\",
-        "\\__/"
+        "\\__/",
+        "|⠋⠚|",
+        "\\VV/"
       ],
       "ink": [
-        ".aa.",
-        "abba",
+        "aaaa",
+        "h02m",
         "aaaa"
+      ],
+      "bgInk": [
+        "....",
+        ".dd.",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            "\\__/",
+            "|⠙⢤|",
+            "\\VV/"
+          ],
+          "ink": [
+            "aaaa",
+            "h13m",
+            "aaaa"
+          ],
+          "bgInk": [
+            "....",
+            ".dd.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\__/",
+            "|⠚⡤|",
+            "\\VV/"
+          ],
+          "ink": [
+            "aaaa",
+            "h24m",
+            "aaaa"
+          ],
+          "bgInk": [
+            "....",
+            ".dd.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\__/",
+            "|⢤⠋|",
+            "\\VV/"
+          ],
+          "ink": [
+            "aaaa",
+            "h30m",
+            "aaaa"
+          ],
+          "bgInk": [
+            "....",
+            ".dd.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "\\__/",
+            "|⡤⠙|",
+            "\\VV/"
+          ],
+          "ink": [
+            "aaaa",
+            "h41m",
+            "aaaa"
+          ],
+          "bgInk": [
+            "....",
+            ".dd.",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.ore_pocket.review3_pulse_0",
+    "1": "relic.ore_pocket.review3_pulse_1",
+    "2": "relic.ore_pocket.review3_pulse_2",
+    "3": "relic.ore_pocket.review3_pulse_3",
+    "4": "relic.ore_pocket.review3_pulse_4",
     ".": null,
-    "a": "ui.dim",
-    "b": "terrain.ore.lit"
+    "h": "relic.ore_pocket.review3_steel_high",
+    "m": "relic.ore_pocket.review3_steel_mid",
+    "l": "relic.ore_pocket.review3_steel_low",
+    "a": "relic.ore_pocket.review3_accent",
+    "b": "relic.ore_pocket.review3_accent_dim",
+    "w": "relic.ore_pocket.review3_lens_high",
+    "d": "relic.ore_pocket.review3_recess",
+    "f": "relic.ore_pocket.review3_exhaust",
+    "g": "relic.ore_pocket.review3_warm_metal",
+    "t": "relic.ore_pocket.review3_body",
+    "u": "relic.ore_pocket.review3_coolant"
   }
 }

@@ -1,0 +1,137 @@
+{
+  "id": "relic_toll",
+  "kind": "relic",
+  "cell": [
+    4,
+    3
+  ],
+  "frameMs": 160,
+  "palette": {
+    "review3_steel_high": "#d8e0dc",
+    "review3_steel_mid": "#a9babf",
+    "review3_steel_low": "#748b91",
+    "review3_accent": "#d3bb80",
+    "review3_accent_dim": "#969277",
+    "review3_lens_high": "#e9ddc0",
+    "review3_recess": "#18222c",
+    "review3_exhaust": "#f2c17d",
+    "review3_warm_metal": "#b7a183",
+    "review3_body": "#b6baac",
+    "review3_coolant": "#9bd8e3",
+    "review3_pulse_0": "#d7c08a",
+    "review3_pulse_1": "#e1d1a9",
+    "review3_pulse_2": "#eadec2",
+    "review3_pulse_3": "#e3d4af",
+    "review3_pulse_4": "#dac694"
+  },
+  "inks": {
+    ".": null,
+    "h": "review3_steel_high",
+    "m": "review3_steel_mid",
+    "l": "review3_steel_low",
+    "a": "review3_accent",
+    "b": "review3_accent_dim",
+    "w": "review3_lens_high",
+    "d": "review3_recess",
+    "f": "review3_exhaust",
+    "g": "review3_warm_metal",
+    "t": "review3_body",
+    "u": "review3_coolant",
+    "0": "review3_pulse_0",
+    "1": "review3_pulse_1",
+    "2": "review3_pulse_2",
+    "3": "review3_pulse_3",
+    "4": "review3_pulse_4"
+  },
+  "states": {
+    "": {
+      "frames": [
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⠋ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa0.",
+            "lll."
+          ],
+          "bg": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⠙ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa1.",
+            "lll."
+          ],
+          "bg": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⠚ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa2.",
+            "lll."
+          ],
+          "bg": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⢤ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa3.",
+            "lll."
+          ],
+          "bg": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⡤ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa4.",
+            "lll."
+          ],
+          "bg": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        }
+      ]
+    }
+  }
+}

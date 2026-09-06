@@ -79,6 +79,11 @@ const STUDIES = join(ROOT, 'sources', 'sprites');
 function write(id, sprite) {
   // A painted study of this id (docs/ART-AGENT.md) owns the sprite now.
   if (existsSync(join(STUDIES, `${id}.study.json`))) { console.log('skipped', `${id}.json`, '(a study exists)'); return; }
+  // An existing sprite that is not this generator's own (its source says so) is approved art: never overwritten (2026-09-06 evening, the approved pack).
+  const at = join(OUT, `${id}.json`);
+  if (existsSync(at)) {
+    try { if (JSON.parse(readFileSync(at, 'utf8')).source !== SOURCE) { console.log('skipped', `${id}.json`, '(approved art, not a placeholder)'); return; } } catch { /* unreadable: overwrite */ }
+  }
   writeFileSync(join(OUT, `${id}.json`), JSON.stringify({ $schema: '../../schema/sprite.schema.json', ...sprite }, null, 2) + '\n');
   console.log('wrote', `${id}.json`);
 }

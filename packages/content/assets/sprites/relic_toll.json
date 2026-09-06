@@ -6,24 +6,114 @@
     4,
     3
   ],
-  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "frameMs": 160,
+  "source": "sources/sprites/approved-pack/studies/relic_toll.study.json; imported and assembled by package.py",
   "states": {
     "": {
       "art": [
-        "|--|",
-        "|$$|",
-        "|  |"
+        "┌─┐ ",
+        "│$⠋ ",
+        "┴─┴ "
       ],
       "ink": [
-        "aaaa",
-        "abba",
-        "a..a"
+        "hhm.",
+        "aa0.",
+        "lll."
+      ],
+      "bgInk": [
+        "....",
+        "..d.",
+        "...."
+      ],
+      "frames": [
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⠙ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa1.",
+            "lll."
+          ],
+          "bgInk": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⠚ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa2.",
+            "lll."
+          ],
+          "bgInk": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⢤ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa3.",
+            "lll."
+          ],
+          "bgInk": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        },
+        {
+          "art": [
+            "┌─┐ ",
+            "│$⡤ ",
+            "┴─┴ "
+          ],
+          "ink": [
+            "hhm.",
+            "aa4.",
+            "lll."
+          ],
+          "bgInk": [
+            "....",
+            "..d.",
+            "...."
+          ]
+        }
       ]
     }
   },
   "inkMap": {
+    "0": "relic.toll.review3_pulse_0",
+    "1": "relic.toll.review3_pulse_1",
+    "2": "relic.toll.review3_pulse_2",
+    "3": "relic.toll.review3_pulse_3",
+    "4": "relic.toll.review3_pulse_4",
     ".": null,
-    "a": "ui.dim",
-    "b": "relic.gold"
+    "h": "relic.toll.review3_steel_high",
+    "m": "relic.toll.review3_steel_mid",
+    "l": "relic.toll.review3_steel_low",
+    "a": "relic.toll.review3_accent",
+    "b": "relic.toll.review3_accent_dim",
+    "w": "relic.toll.review3_lens_high",
+    "d": "relic.toll.review3_recess",
+    "f": "relic.toll.review3_exhaust",
+    "g": "relic.toll.review3_warm_metal",
+    "t": "relic.toll.review3_body",
+    "u": "relic.toll.review3_coolant"
   }
 }
