@@ -30,7 +30,12 @@ interface Effect {
   x1?: number;
   y1?: number;
   heat?: number;
+  /** Painted at least once. An effect the clock jumped over is shown once before it goes. */
+  seen?: boolean;
 }
+
+/** The age an effect is shown at when the clock skipped its whole life: the bloom, not the smoke. */
+const LATE_LOOK_AGE = 0.3;
 
 /** Enough for the busiest wave; past this the oldest eye candy yields. */
 const EFFECT_CAP = 128;
@@ -110,6 +115,12 @@ export function arcPath(x0: number, y0: number, x1: number, y1: number, bow: num
 export class EffectsLayer {
   private effects: Effect[] = [];
   private lastSeq = -1;
+  private drawnLast = 0;
+
+  /** Effects held (born or waiting) and how many the last draw painted - the debug probe's numbers. */
+  alive(): { alive: number; drawn: number } {
+    return { alive: this.effects.length, drawn: this.drawnLast };
+  }
 
   /** Forget everything - a reroll starts a new sim whose seq restarts at 0. */
   reset(): void {
@@ -189,9 +200,28 @@ export class EffectsLayer {
    */
   draw(term: TermSurface, nowTick: number): void {
     const still = isReducedMotion();
-    this.effects = this.effects.filter((e) => nowTick - e.start <= e.ttl && nowTick >= e.start);
+    // Prune by EXPIRY only. An effect is born at its event's sim tick, and
+    // the render clock draws the world a tick behind the newest snapshot,
+    // so a fresh effect sits in the picture's future for a few frames: it
+    // waits, it is never dropped. (Motion v2 pruned unborn effects too, so
+    // everything born at the newest tick died before the picture reached
+    // it - Daniil, 2026-09-06: "sometimes no projectiles/explosions/AOE/
+    // laser were rendered at all".)
+    // And EVERY effect is painted at least once: when the render tick jumps
+    // a whole lifetime in one frame (a stalled worker, a throttled tab, a
+    // burst of ticks), the effect gets one late look at its bloom before
+    // it goes. A blast the player never saw is a rule they cannot read.
+    this.effects = this.effects.filter((e) => !e.seen || nowTick - e.start <= e.ttl);
+    this.drawnLast = 0;
     for (const e of this.effects) {
-      const age01 = (nowTick - e.start) / e.ttl;
+      if (nowTick < e.start) continue;
+      let age01 = (nowTick - e.start) / e.ttl;
+      if (age01 > 1) {
+        if (e.seen) continue;
+        age01 = LATE_LOOK_AGE;
+      }
+      e.seen = true;
+      this.drawnLast++;
       switch (e.kind) {
         case 'pulse': this.drawPulse(term, e, age01, still); break;
         case 'blast': this.drawBlast(term, e, age01, still); break;

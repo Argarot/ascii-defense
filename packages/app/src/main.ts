@@ -949,9 +949,16 @@ async function main(): Promise<void> {
         modalTerm.canvas.style.display = '';
       }
     }
-    requestAnimationFrame(frame);
   };
-  requestAnimationFrame(frame);
+  // The loop is a thin wrapper so a debug probe can run ONE frame by hand
+  // while the pane is hidden (no animation frames fire there; the worker
+  // keeps ticking). Two frames a tick, driven by a timer, is the motion
+  // check that works unseen.
+  const loop = (now: number): void => {
+    frame(now);
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
 
   // ---- debug handle (async now: the sim answers from its worker) -----------
   (globalThis as Record<string, unknown>).__ad = {
@@ -965,6 +972,9 @@ async function main(): Promise<void> {
     relics: () => debug('relics'),
     hash: () => debug('hash'),
     events: () => debug('events'),
+    // Effects held vs drawn last frame: the probe for "nothing renders" (feedback 2026-09-06, item 1).
+    fx: (): { alive: number; drawn: number } => effects.alive(),
+    frame: (now?: number): void => frame(now ?? performance.now()),
     enemies: () => debug('enemies'),
     replay: () => debug('replay'),
     hudText: (): string => hudTerm.toText(),

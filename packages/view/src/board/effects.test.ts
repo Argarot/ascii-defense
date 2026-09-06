@@ -29,6 +29,24 @@ describe('arcPath', () => {
 });
 
 describe('the effects layer', () => {
+  it('an effect born at the newest tick waits for the render clock instead of dying (feedback 2026-09-06, item 1)', () => {
+    const fx = new EffectsLayer();
+    fx.ingest([{ kind: 'impact', x: 3.5, y: 2.5, r: 0, seq: 0, tick: 10 }]);
+    // The picture runs a tick behind the sim: nothing shows yet, nothing is lost.
+    const before = new TextTerm({ cols: 8 * CELL_W, rows: 4 * CELL_H });
+    fx.draw(before, 9.4);
+    expect(before.toText()).not.toContain('x');
+    expect(fx.alive()).toEqual({ alive: 1, drawn: 0 });
+    // The clock reaches the birth tick: the spark is there.
+    const after = new TextTerm({ cols: 8 * CELL_W, rows: 4 * CELL_H });
+    fx.draw(after, 10.3);
+    expect(after.toText()).toContain('x');
+    expect(fx.alive()).toEqual({ alive: 1, drawn: 1 });
+    // And it expires on its own clock, not the render clock's lag.
+    fx.draw(new TextTerm({ cols: 8 * CELL_W, rows: 4 * CELL_H }), 10 + 4 + 0.5);
+    expect(fx.alive().alive).toBe(0);
+  });
+
   it('draws an arc as one stroke through every body, a strike as a column, a freeze as a cold frame', () => {
     const term = new TextTerm({ cols: 20 * CELL_W, rows: 8 * CELL_H });
     const fx = new EffectsLayer();

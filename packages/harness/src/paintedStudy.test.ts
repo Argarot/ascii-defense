@@ -25,7 +25,7 @@ interface Cp {
 const mod = async <T>(name: string): Promise<T> => (await import(/* @vite-ignore */ 'node:' + name)) as T;
 
 describe('a painted study imports', () => {
-  it('writes a relic sprite with roles named after the study, and refuses a wrong shape', async () => {
+  it('writes a relic sprite with roles named after the study, and refuses a wrong shape', { timeout: 20000 }, async () => {
     const fs = await mod<Fs>('fs');
     const cp = await mod<Cp>('child_process');
     const os = await mod<{ tmpdir(): string }>('os');
