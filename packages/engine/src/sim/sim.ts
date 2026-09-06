@@ -30,9 +30,13 @@ import {
   type EffectiveStats,
   type EnemyDef,
   type RelicDef,
+  type RelicEffects,
   type PassiveDef,
+  type SetDef,
   type StatMods,
   foldPassiveMods,
+  relicEffectsAt,
+  RARITIES,
   type RelicFold,
   type TowerDef,
   type LootTable,
@@ -77,6 +81,8 @@ export interface SimOptions {
   relicDefs?: readonly RelicDef[];
   /** The passive pool (session 28, PR 1); absent = no passive offers. */
   passiveDefs?: readonly PassiveDef[];
+  /** Set effects over tags (session 28, PR 2); absent = no sets. */
+  setDefs?: readonly SetDef[];
   /** Wave scaling knobs; DEFAULT_DIFFICULTY when absent. */
   difficulty?: DifficultySpec;
   /** Hold this wave and the run is WON (D6). 0 = endless (tests, demos). */
@@ -378,6 +384,9 @@ export class Sim {
   readonly relicCooldowns: number[] = [];
   /** Pending pick-1-of-3, as pool indices; null when no offer is up. */
   offer: number[] | null = null;
+  /** The rarity of each held relic and of each offered card (0 common, 1 rare, 2 epic; session 28, PR 2). Hashed. */
+  readonly heldRarity: number[] = [];
+  offerRarity: number[] = [];
   /** The passive layer (session 28, PR 1): held pool indices, the pending offer, the wave it was dealt for. */
   readonly heldPassives: number[] = [];
   passiveOffer: number[] | null = null;
@@ -385,9 +394,10 @@ export class Sim {
   passiveOfferWave = 0;
   /** The held passives' tower mods, folded once per change; null when none held. */
   private passiveMods: StatMods | null = null;
-  private passiveEcon = { waveScrap: 0, bountyMul: 1 };
+  private passiveEcon = { waveScrap: 0, bountyMul: 1, coreHealPerWave: 0 };
   /** Wave the last offer was generated for - one offer per eligible wave. */
-  private offerWave = 0;
+  /** The wave the standing relic offer was dealt for (the modal names it). */
+  offerWave = 0;
   /** Purchases this run; each one makes the next dearer (escalating costs). */
   private relicsBought = 0;
   private rerollsBought = 0;
@@ -781,9 +791,45 @@ export class Sim {
 
   private refold(): void {
     const defs = this.opts.relicDefs ?? [];
-    // Passives fold; actives and consumables act when fired/used instead.
-    const live = this.heldRelics.filter((di) => defs[di].kind === 'passive').map((di) => defs[di]);
+    // Passives fold at their HELD rarity; actives and consumables act when fired/used instead.
+    const live: { effects: RelicEffects }[] = [];
+    this.heldRelics.forEach((di, i) => { if (defs[di].kind === 'passive') live.push({ effects: relicEffectsAt(defs[di], this.heldRarity[i] ?? 0) }); });
     this.fold = live.length === 0 ? EMPTY_FOLD : foldRelics(live);
+    // Relic tags count toward the sets, so the passive fold moves too.
+    this.refoldPassives();
+  }
+
+  /**
+   * The rarity a draw lands at (session 28, PR 2): weighted by wave -
+   * common 60 minus the wave (floor 30), rare 30, epic 10 plus half the
+   * wave - and never below the relic's base rarity. On the 'relics'
+   * stream, so map, waves and combat are untouched.
+   */
+  private rollRarity(def: RelicDef): number {
+    const base = Math.max(0, RARITIES.indexOf(def.rarity));
+    const common = Math.max(30, 60 - this.wave);
+    const rare = 30;
+    const epic = 10 + Math.floor(this.wave / 2);
+    const roll = this.rng.stream('relics').int(0, common + rare + epic - 1);
+    const rolled = roll < common ? 0 : roll < common + rare ? 1 : 2;
+    return Math.max(base, rolled);
+  }
+
+  /** Held relic effects at their rarity, by held index. */
+  heldEffects(hi: number): RelicEffects {
+    const defs = this.opts.relicDefs ?? [];
+    return relicEffectsAt(defs[this.heldRelics[hi]], this.heldRarity[hi] ?? 0);
+  }
+
+  /** The set effects lit by the held passives' and relics' tags (session 28, PR 2). */
+  litSets(): SetDef[] {
+    const sets = this.opts.setDefs;
+    if (!sets || sets.length === 0) return [];
+    const count = new Map<string, number>();
+    for (const d of this.heldPassiveDefs()) for (const t of d.tags ?? []) count.set(t, (count.get(t) ?? 0) + 1);
+    const defs = this.opts.relicDefs ?? [];
+    for (const di of this.heldRelics) for (const t of defs[di].tags ?? []) count.set(t, (count.get(t) ?? 0) + 1);
+    return sets.filter((s) => (count.get(s.tag) ?? 0) >= s.at);
   }
 
   // ---- the passive layer (session 28, PR 1; D26) ---------------------------
@@ -834,15 +880,17 @@ export class Sim {
   }
 
   private refoldPassives(): void {
-    const held = this.heldPassiveDefs();
+    const held: { mods?: StatMods; econ?: { waveScrap?: number; bountyMul?: number; coreHealPerWave?: number } }[] = [...this.heldPassiveDefs(), ...this.litSets()];
     this.passiveMods = held.some((d) => d.mods) ? foldPassiveMods(held) : null;
     let waveScrap = 0;
     let bountyMul = 1;
+    let coreHealPerWave = 0;
     for (const d of held) {
       waveScrap += d.econ?.waveScrap ?? 0;
       bountyMul *= d.econ?.bountyMul ?? 1;
+      coreHealPerWave += d.econ?.coreHealPerWave ?? 0;
     }
-    this.passiveEcon = { waveScrap, bountyMul };
+    this.passiveEcon = { waveScrap, bountyMul, coreHealPerWave };
   }
 
   /** The pending offer as defs, for the modal; null when none. */
@@ -851,17 +899,19 @@ export class Sim {
   }
 
   /** Held relics with their live state, for the inventory panel. */
-  heldRelicInfo(): { def: RelicDef; cooldown: number }[] {
+  heldRelicInfo(): { def: RelicDef; cooldown: number; rarity: number }[] {
     const defs = this.opts.relicDefs ?? [];
-    return this.heldRelics.map((di, i) => ({ def: defs[di], cooldown: this.relicCooldowns[i] }));
+    return this.heldRelics.map((di, i) => ({ def: defs[di], cooldown: this.relicCooldowns[i], rarity: this.heldRarity[i] ?? 0 }));
   }
 
   pickRelic(option: number): boolean {
     if (this.status !== 'running') return false;
     if (!this.offer || option < 0 || option >= this.offer.length) return false;
     this.heldRelics.push(this.offer[option]);
+    this.heldRarity.push(this.offerRarity[option] ?? 0);
     this.relicCooldowns.push(0); // actives arrive ready - the first firing is the sales pitch
     this.offer = null;
+    this.offerRarity = [];
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'pickRelic', option } });
     return true;
@@ -878,6 +928,7 @@ export class Sim {
     const di = defs.findIndex((d) => d.id === relicId);
     if (di === -1) return false;
     this.heldRelics.push(di);
+    this.heldRarity.push(this.rollRarity(defs[di]));
     this.relicCooldowns.push(0);
     this.refold();
     return true;
@@ -900,7 +951,7 @@ export class Sim {
     }
     if (hi === -1) return false;
     const def = defs[this.heldRelics[hi]];
-    const e = def.effects ?? {};
+    const e = this.heldEffects(hi);
     if (e.orbitalDamage !== undefined) {
       if (x === undefined || y === undefined) return false; // targeted active needs a target
       const cx = x + 0.5;
@@ -967,7 +1018,9 @@ export class Sim {
     if (pool.length === 0) return false;
     this.ore[0] -= cost;
     this.relicsBought++;
-    this.heldRelics.push(this.rng.stream('relics').pick(pool));
+    const bought = this.rng.stream('relics').pick(pool);
+    this.heldRelics.push(bought);
+    this.heldRarity.push(this.rollRarity(this.opts.relicDefs[bought]));
     this.relicCooldowns.push(0);
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'buyRelic' } });
@@ -984,6 +1037,7 @@ export class Sim {
     this.ore[0] -= cost;
     this.rerollsBought++;
     this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
+    this.offerRarity = this.offer.map((di) => this.rollRarity(this.opts.relicDefs![di]));
     this.inputs.push({ tick: this.tickCount, a: { t: 'rerollOffer' } });
     return true;
   }
@@ -1066,6 +1120,7 @@ export class Sim {
         if (idx.length === 0) return fallback();
         const di = idx[loot.int(0, idx.length - 1)];
         this.heldRelics.push(di);
+        this.heldRarity.push(this.rollRarity(defs[di]));
         this.relicCooldowns.push(0);
         this.refold();
         return `relic: ${defs[di].name}`;
@@ -1076,6 +1131,7 @@ export class Sim {
         if (pool.length === 0) return fallback();
         const di = pool[loot.int(0, pool.length - 1)];
         this.heldRelics.push(di);
+        this.heldRarity.push(this.rollRarity(defs[di]));
         this.relicCooldowns.push(0);
         this.refold();
         return `relic: ${defs[di].name}`;
@@ -1208,7 +1264,7 @@ export class Sim {
     const defs = this.opts.relicDefs ?? [];
     const hi = this.heldRelics.findIndex((di) => defs[di].id === relicId && defs[di].kind === 'consumable');
     if (hi === -1) return false;
-    const e = defs[this.heldRelics[hi]].effects ?? {};
+    const e = this.heldEffects(hi);
     if (e.freezeTicks !== undefined) {
       this.freezeUntil = this.tickCount + e.freezeTicks;
       this.emit({ kind: 'freeze', ticks: e.freezeTicks });
@@ -1221,6 +1277,7 @@ export class Sim {
     if (e.coreHpAdd !== undefined) { this.coreHpMax += e.coreHpAdd; this.coreHp += e.coreHpAdd; } // Sandbags
     if (e.oreAdd !== undefined) this.ore[0] += e.oreAdd; // Ore Pocket
     this.heldRelics.splice(hi, 1);
+    this.heldRarity.splice(hi, 1);
     this.relicCooldowns.splice(hi, 1);
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'useConsumable', relicId } });
@@ -1242,6 +1299,7 @@ export class Sim {
     const pool = this.unheldPool();
     if (pool.length === 0) return;
     this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
+    this.offerRarity = this.offer.map((di) => this.rollRarity(defs[di]));
   }
 
   /** Does this cell touch the Core face (chebyshev 1)? The precious ground of PRD sec 4.5. */
@@ -1391,6 +1449,9 @@ export class Sim {
     for (const r of this.heldRelics) u32(r);
     for (const c of this.relicCooldowns) u32(c);
     for (const o of this.offer ?? [-1]) u32(o + 1);
+    // Rarity (session 28, PR 2): per held relic and per offered card - no lane when nothing is held or offered.
+    for (const r of this.heldRarity) u32(r + 1);
+    for (const r of this.offerRarity) u32(r + 1);
     // The passive layer (session 28, PR 1): held, offered, and the wave dealt for.
     u32(this.passiveOfferWave);
     for (const p of this.heldPassives) u32(p);
@@ -1651,8 +1712,9 @@ export class Sim {
     this.maybeOffer(true);
     this.maybePassiveOffer();
     this.wave++;
-    // War Chest (passive): Scrap at every launch.
+    // War Chest (passive): Scrap at every launch; Masonry (set): the Core mends.
     if (this.passiveEcon.waveScrap > 0) this.scrap += this.passiveEcon.waveScrap;
+    if (this.passiveEcon.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.passiveEcon.coreHealPerWave);
     // Second Wind (relic): the Core mends a little with every front opened.
     if (this.fold.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.fold.coreHealPerWave);
     this.emit({ kind: 'waveStart', wave: this.wave });

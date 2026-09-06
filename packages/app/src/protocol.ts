@@ -63,7 +63,7 @@ export interface FrameSnapshot {
   /** HudState minus phase, same reason. */
   hud: Omit<HudState, 'phase'>;
   /** A pick-1-of-3 standing over the board: a relic offer (with reroll) or a passive offer (session 28, PR 1). */
-  offer: { kind: 'relic' | 'passive'; title: string; cards: { name: string; kind: string; desc: string }[]; wave: number; reroll?: { cost: number; can: boolean; ore: number } } | null;
+  offer: { kind: 'relic' | 'passive'; title: string; cards: { name: string; kind: string; desc: string; rarity?: string }[]; wave: number; reroll?: { cost: number; can: boolean; ore: number } } | null;
   events: StampedSimEvent[];
   /** The sim's terrain mutations, cumulative - the view applies incrementally. */
   cellChanges: { x: number; y: number; t: string }[];

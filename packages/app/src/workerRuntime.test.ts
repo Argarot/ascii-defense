@@ -35,8 +35,8 @@ const BASICS: TileDef[] = [
 const WALKER: EnemyDef = { id: 'walker', hp: 10, speed: 0.2, damage: 2 };
 const BOLT: TowerDef = { id: 'bolt', cost: 20, range: 6, fireEveryTicks: 10, projectile: { damage: 6, speed: 0.6, homing: true } };
 const POOL: RelicDef[] = [
-  { id: 'r1', name: 'One', kind: 'passive', desc: '', effects: { damageMul: 1.1 } },
-  { id: 'r2', name: 'Two', kind: 'passive', desc: '', effects: { damageMul: 1.2 } },
+  { id: 'r1', name: 'One', kind: 'passive', rarity: 'common', desc: '', effects: { damageMul: 1.1 } },
+  { id: 'r2', name: 'Two', kind: 'passive', rarity: 'common', desc: '', effects: { damageMul: 1.2 } },
 ];
 
 const UI: UiState = { hover: null, selected: null, hudHover: null, targeting: null, showGrid: false };
@@ -49,6 +49,7 @@ function makeRt() {
     enemyDefs: [WALKER],
     towerDefs: [BOLT],
     passiveDefs: [],
+    setDefs: [],
     relicDefs: POOL,
     lootTables: [
       { id: 'rock_cache', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },

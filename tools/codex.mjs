@@ -30,6 +30,7 @@ const towers = read('towers/roster.json').towers;
 const enemies = read('enemies/roster.json').enemies;
 const relics = read('relics/pool.json').relics;
 const passives = read('passives/pool.json').passives;
+const sets = read('sets/pool.json').sets;
 
 /** Mirror of engine/sim/traits.ts TRAIT_RULES, in words. */
 const TRAITS = {
@@ -85,10 +86,13 @@ function enemyRows() {
     mul(e.resist?.kinetic), mul(e.resist?.energy), (e.traits ?? []).join(', '),
   ]);
 }
+const fx = (e) => Object.entries(e ?? {}).map(([k, v]) => `${k} ${v}`).join(', ');
 function relicRows() {
   return relics.map((r) => [
-    `**${r.name}**`, r.id, r.kind, r.stackable ? 'yes' : '', r.cooldownTicks ? `${n(r.cooldownTicks / TICK_HZ)} s` : '', r.desc ?? '',
-    Object.entries(r.effects ?? {}).map(([k, v]) => `${k} ${v}`).join(', '),
+    `**${r.name}**`, r.id, r.kind, r.rarity, (r.tags ?? []).join(' '), r.stackable ? 'yes' : '', r.cooldownTicks ? `${n(r.cooldownTicks / TICK_HZ)} s` : '', r.desc ?? '',
+    fx(r.effects),
+    r.tiers?.rare ? `${r.tiers.rare.desc ?? ''} [${fx(r.tiers.rare.effects)}]` : 'same',
+    r.tiers?.epic ? `${r.tiers.epic.desc ?? ''} [${fx(r.tiers.epic.effects)}]` : 'same',
   ]);
 }
 
@@ -127,7 +131,15 @@ const SECTIONS = {
     [
       `${relics.length} relics in \`packages/content/assets/relics/pool.json\`. Passives work while held; actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).`,
       '',
-      table(['Relic', 'id', 'Kind', 'Stacks', 'Recharge', 'What it does', 'Data'], relicRows()),
+      table(['Relic', 'id', 'Kind', 'Base rarity', 'Tags', 'Stacks', 'Recharge', 'What it does (common)', 'Data', 'Rare', 'Epic'], relicRows()),
+      '',
+      'Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wave - common 60 minus the wave (floor 30), rare 30, epic 10 plus half the wave - never below the relic\'s base rarity. A rare or epic copy has the numbers in its column; "same" means the rule does not scale (a boolean).',
+    ].join('\n'),
+  sets: () =>
+    [
+      `${sets.length} set effects in \`packages/content/assets/sets/pool.json\` (session 28, PR 2). Held passives and relics count per tag; at two and at three of a tag the set lights and folds into every tower like a passive (econ knobs into the run). The strip's PASSIVES line names the lit sets.`,
+      '',
+      table(['Set', 'Tag', 'At', 'What it does', 'Mods', 'Econ'], sets.map((s) => [`**${s.name}**`, s.tag, s.at, s.desc, fx(s.mods), fx(s.econ)])),
     ].join('\n'),
 };
 
@@ -157,6 +169,11 @@ const TEMPLATE = `# Catalogue - what is in the game
 ## Passives *(generated)*
 
 <!-- generated:passives -->
+<!-- /generated -->
+
+## Sets *(generated)*
+
+<!-- generated:sets -->
 <!-- /generated -->
 
 ## PROPOSED - the request queue *(hand-edited, never touched by the generator)*
@@ -236,10 +253,15 @@ function codexTs() {
       id: r.id,
       name: r.name,
       kind: r.kind,
+      rarity: r.rarity,
+      tags: r.tags ?? [],
       stacks: r.stackable === true,
       recharge: r.cooldownTicks ? `${n(r.cooldownTicks / TICK_HZ)} s` : '',
       desc: r.desc ?? '',
+      rare: r.tiers?.rare?.desc ?? '',
+      epic: r.tiers?.epic?.desc ?? '',
     })),
+    sets: sets.map((s) => ({ name: s.name, tag: s.tag, at: s.at, desc: s.desc })),
     passives: passives.map((p) => ({ id: p.id, name: p.name, desc: p.desc, tags: p.tags ?? [] })),
     rules: [
       'Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.',

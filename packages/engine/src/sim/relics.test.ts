@@ -40,16 +40,16 @@ const REFINERY: TowerDef = {
 };
 
 const POOL: RelicDef[] = [
-  { id: 'overflow', name: 'Overflow', kind: 'passive', desc: '', effects: { overkillCarry: true } },
-  { id: 'frostbite', name: 'Frostbite', kind: 'passive', desc: '', effects: { slowedDamageMul: 1.5 } },
-  { id: 'tithe', name: 'Tithe', kind: 'passive', desc: '', effects: { killRefundScrap: 2 } },
-  { id: 'vein_tap', name: 'Vein Tap', kind: 'passive', desc: '', effects: { buildOnRock: true } },
-  { id: 'ballistics', name: 'Ballistics', kind: 'passive', desc: '', effects: { damageMul: 1.2 } },
-  { id: 'flashfreeze', name: 'Flash Freeze', kind: 'consumable', desc: '', effects: { freezeTicks: 30 } },
-  { id: 'orbital', name: 'Orbital', kind: 'active', desc: '', cooldownTicks: 100, effects: { orbitalDamage: 400, orbitalRadius: 3 } },
-  { id: 'stasis', name: 'Stasis', kind: 'active', desc: '', cooldownTicks: 100, effects: { freezeTicks: 50 } },
-  { id: 'splinter', name: 'Splinter', kind: 'passive', desc: '', effects: { explodeTwice: true } },
-  { id: 'deep_vein', name: 'Deep Vein', kind: 'active', desc: '', cooldownTicks: 100, effects: { productionMul: 5, boostTicks: 200 } },
+  { id: 'overflow', name: 'Overflow', kind: 'passive', rarity: 'common', desc: '', effects: { overkillCarry: true } },
+  { id: 'frostbite', name: 'Frostbite', kind: 'passive', rarity: 'common', desc: '', effects: { slowedDamageMul: 1.5 } },
+  { id: 'tithe', name: 'Tithe', kind: 'passive', rarity: 'common', desc: '', effects: { killRefundScrap: 2 } },
+  { id: 'vein_tap', name: 'Vein Tap', kind: 'passive', rarity: 'common', desc: '', effects: { buildOnRock: true } },
+  { id: 'ballistics', name: 'Ballistics', kind: 'passive', rarity: 'common', desc: '', effects: { damageMul: 1.2 } },
+  { id: 'flashfreeze', name: 'Flash Freeze', kind: 'consumable', rarity: 'common', desc: '', effects: { freezeTicks: 30 } },
+  { id: 'orbital', name: 'Orbital', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, effects: { orbitalDamage: 400, orbitalRadius: 3 } },
+  { id: 'stasis', name: 'Stasis', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, effects: { freezeTicks: 50 } },
+  { id: 'splinter', name: 'Splinter', kind: 'passive', rarity: 'common', desc: '', effects: { explodeTwice: true } },
+  { id: 'deep_vein', name: 'Deep Vein', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, effects: { productionMul: 5, boostTicks: 200 } },
 ];
 
 /** Both shipped table ids, with tiny deterministic payouts for tests. */
@@ -488,13 +488,13 @@ describe('caches and prospecting - the map as a source of power (1.6.5 A, 1.6.6)
 
 describe('design round 1 (2026-09-03): stackability, escalating costs, the new knobs', () => {
   const NEW: RelicDef[] = [
-    { id: 'frost2', name: 'Frostbite', kind: 'passive', desc: '', stackable: true, effects: { slowedDamageMul: 1.5 } },
-    { id: 'second_wind', name: 'Second Wind', kind: 'passive', desc: '', effects: { coreHealPerWave: 2 } },
-    { id: 'quarry', name: 'Quarry', kind: 'passive', desc: '', effects: { prospectSpeedMul: 3 } },
-    { id: 'toll', name: 'Toll', kind: 'passive', desc: '', stackable: true, effects: { tollScrap: 1 } },
-    { id: 'bounty_board', name: 'Bounty Board', kind: 'passive', desc: '', effects: { bossBountyMul: 1.5 } },
-    { id: 'sandbags', name: 'Sandbags', kind: 'consumable', desc: '', stackable: true, effects: { coreHpAdd: 15 } },
-    { id: 'ore_pocket', name: 'Ore Pocket', kind: 'consumable', desc: '', stackable: true, effects: { oreAdd: 20 } },
+    { id: 'frost2', name: 'Frostbite', kind: 'passive', rarity: 'common', desc: '', stackable: true, effects: { slowedDamageMul: 1.5 } },
+    { id: 'second_wind', name: 'Second Wind', kind: 'passive', rarity: 'common', desc: '', effects: { coreHealPerWave: 2 } },
+    { id: 'quarry', name: 'Quarry', kind: 'passive', rarity: 'common', desc: '', effects: { prospectSpeedMul: 3 } },
+    { id: 'toll', name: 'Toll', kind: 'passive', rarity: 'common', desc: '', stackable: true, effects: { tollScrap: 1 } },
+    { id: 'bounty_board', name: 'Bounty Board', kind: 'passive', rarity: 'common', desc: '', effects: { bossBountyMul: 1.5 } },
+    { id: 'sandbags', name: 'Sandbags', kind: 'consumable', rarity: 'common', desc: '', stackable: true, effects: { coreHpAdd: 15 } },
+    { id: 'ore_pocket', name: 'Ore Pocket', kind: 'consumable', rarity: 'common', desc: '', stackable: true, effects: { oreAdd: 20 } },
   ];
   const POOL2 = [...POOL, ...NEW];
   const pool = (sim: Sim): string[] => (sim as unknown as { unheldPool(): number[] }).unheldPool().map((i) => POOL2[i].id);

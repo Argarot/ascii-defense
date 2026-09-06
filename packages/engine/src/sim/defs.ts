@@ -135,14 +135,25 @@ export interface LootTable {
   outcomes: readonly LootOutcome[];
 }
 
+export type Rarity = 'common' | 'rare' | 'epic';
+export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic'];
+
 export interface RelicDef {
   id: string;
   name: string;
   kind: RelicKind;
-  /** Player-facing card text; the offer modal renders it. */
+  /** Player-facing card text at the base rarity; the offer modal renders it. */
   desc: string;
-  /** Reserved (D5); the M1 pool is flat. */
-  rarity?: 'common' | 'rare' | 'epic';
+  /**
+   * The BASE rarity (session 28, PR 2; PRD sec 7.6 "rarity with teeth"):
+   * the lowest this relic is ever dealt at. Every draw rolls a rarity by
+   * wave, never below the base; a rare or epic copy uses `tiers`.
+   */
+  rarity: Rarity;
+  /** Set tags: held passives and relics count per tag; a set lights at two and three (SetDef). */
+  tags?: readonly string[];
+  /** What a rare and an epic copy are: whole effects and the card text at that rarity. Absent = the same at every rarity. */
+  tiers?: { rare?: { desc?: string; effects: RelicEffects }; epic?: { desc?: string; effects: RelicEffects } };
   /** Actives: ticks between firings. */
   cooldownTicks?: number;
   /**
@@ -171,8 +182,32 @@ export interface PassiveDef {
   econ?: { waveScrap?: number; bountyMul?: number; coreHpMaxAdd?: number };
 }
 
-/** The held passives' mods as one StatMods: adds add, multipliers multiply - order-free. */
-export function foldPassiveMods(defs: readonly PassiveDef[]): StatMods {
+/** A set effect (session 28, PR 2): at `at` held things carrying `tag`, it folds like a passive. */
+export interface SetDef {
+  tag: string;
+  at: number;
+  name: string;
+  desc: string;
+  mods?: StatMods;
+  econ?: { waveScrap?: number; bountyMul?: number; coreHealPerWave?: number };
+}
+
+/** A relic's effects at a held rarity: the base, or the tier's whole effects when it has one (0 common, 1 rare, 2 epic). */
+export function relicEffectsAt(def: RelicDef, rarity: number): RelicEffects {
+  if (rarity >= 2 && def.tiers?.epic) return def.tiers.epic.effects;
+  if (rarity >= 1 && def.tiers?.rare) return def.tiers.rare.effects;
+  return def.effects ?? {};
+}
+
+/** A relic's card text at a held rarity. */
+export function relicDescAt(def: RelicDef, rarity: number): string {
+  if (rarity >= 2 && def.tiers?.epic?.desc) return def.tiers.epic.desc;
+  if (rarity >= 1 && def.tiers?.rare?.desc) return def.tiers.rare.desc;
+  return def.desc;
+}
+
+/** The held passives' (and lit sets') mods as one StatMods: adds add, multipliers multiply - order-free. */
+export function foldPassiveMods(defs: readonly { mods?: StatMods }[]): StatMods {
   const out: StatMods = {};
   for (const d of defs) {
     const m = d.mods;
@@ -224,8 +259,8 @@ export const EMPTY_FOLD: RelicFold = {
   bossBountyMul: 1,
 };
 
-/** Fold the always-on effects of the given relics (see RelicFold). */
-export function foldRelics(defs: readonly RelicDef[]): RelicFold {
+/** Fold the always-on effects of the given relics (see RelicFold). Takes anything with `effects` - a def, or a def's effects at a rarity. */
+export function foldRelics(defs: readonly { effects?: RelicEffects }[]): RelicFold {
   const out: RelicFold = { ...EMPTY_FOLD };
   for (const d of defs) {
     const e = d.effects;

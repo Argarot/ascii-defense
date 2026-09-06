@@ -525,129 +525,335 @@ export const CODEX = {
       "id": "overflow",
       "name": "Overflow",
       "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "damage"
+      ],
       "stacks": false,
       "recharge": "",
-      "desc": "Overkill damage chains to the nearest enemy. Chain kills chain again."
+      "desc": "Overkill damage chains to the nearest enemy. Chain kills chain again.",
+      "rare": "",
+      "epic": ""
     },
     {
       "id": "frostbite",
       "name": "Frostbite",
       "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
       "stacks": true,
       "recharge": "",
-      "desc": "Slowed enemies take +50% damage from everything. Stacks."
+      "desc": "Slowed enemies take +50% damage from everything. Stacks.",
+      "rare": "Slowed enemies take +75% from everything.",
+      "epic": "Slowed enemies take double from everything."
     },
     {
       "id": "tithe",
       "name": "Tithe",
       "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
       "stacks": true,
       "recharge": "",
-      "desc": "Every kill refunds 2 Scrap. Stacks."
+      "desc": "Every kill refunds 2 Scrap. Stacks.",
+      "rare": "Every kill refunds 3 Scrap.",
+      "epic": "Every kill refunds 5 Scrap."
     },
     {
       "id": "splinter",
       "name": "Splinter",
       "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "damage"
+      ],
       "stacks": false,
       "recharge": "",
-      "desc": "Explosions detonate twice: the same blast, resolved again a beat later - you will see both."
+      "desc": "Explosions detonate twice: the same blast, resolved again a beat later - you will see both.",
+      "rare": "",
+      "epic": ""
     },
     {
       "id": "vein_tap",
       "name": "Vein Tap",
       "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "core"
+      ],
       "stacks": false,
       "recharge": "",
-      "desc": "You may build on rock."
+      "desc": "You may build on rock.",
+      "rare": "",
+      "epic": ""
     },
     {
       "id": "loadbearing",
       "name": "Loadbearing",
       "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "reach"
+      ],
       "stacks": false,
       "recharge": "",
-      "desc": "Towers touching the Core block get triple range."
+      "desc": "Towers touching the Core block get triple range.",
+      "rare": "",
+      "epic": ""
     },
     {
       "id": "second_wind",
       "name": "Second Wind",
       "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
       "stacks": false,
       "recharge": "",
-      "desc": "The Core mends 2 health every time a wave launches."
+      "desc": "The Core mends 2 health every time a wave launches.",
+      "rare": "The Core mends 4 health every wave.",
+      "epic": "The Core mends 6 health every wave."
     },
     {
       "id": "quarry",
       "name": "Quarry",
       "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
       "stacks": false,
       "recharge": "",
-      "desc": "Rock breaks three times faster - every prospect job, everywhere."
+      "desc": "Rock breaks three times faster - every prospect job, everywhere.",
+      "rare": "Prospecting runs four times as fast.",
+      "epic": "Prospecting runs six times as fast."
     },
     {
       "id": "toll",
       "name": "Toll",
       "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
       "stacks": true,
       "recharge": "",
-      "desc": "Every enemy pays 1 Scrap for each cell it walks beside a tower. Stacks."
+      "desc": "Every enemy pays 1 Scrap for each cell it walks beside a tower. Stacks.",
+      "rare": "Every enemy that passes a tower pays 2 Scrap.",
+      "epic": "Every enemy that passes a tower pays 3 Scrap."
     },
     {
       "id": "bounty_board",
       "name": "Bounty Board",
       "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
       "stacks": false,
       "recharge": "",
-      "desc": "Bosses pay half again as much Scrap."
+      "desc": "Bosses pay half again as much Scrap.",
+      "rare": "Boss bounties pay double.",
+      "epic": "Boss bounties pay triple."
     },
     {
       "id": "orbital",
       "name": "Orbital Lance",
       "kind": "active",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
       "stacks": true,
       "recharge": "90 s",
-      "desc": "Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly. A second copy is a second charge."
+      "desc": "Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly. A second copy is a second charge.",
+      "rare": "Strike anywhere: 550 damage in a 3.5-cell blast. Recharges slowly.",
+      "epic": "Strike anywhere: 800 damage in a 4-cell blast. Recharges slowly."
     },
     {
       "id": "stasis",
       "name": "Stasis Field",
       "kind": "active",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
       "stacks": true,
       "recharge": "120 s",
-      "desc": "Freeze every enemy for 4 seconds. Towers keep firing. A second copy is a second charge."
+      "desc": "Freeze every enemy for 4 seconds. Towers keep firing. A second copy is a second charge.",
+      "rare": "Freeze every enemy for 6 seconds. Towers keep firing.",
+      "epic": "Freeze every enemy for 8 seconds. Towers keep firing."
     },
     {
       "id": "deep_vein",
       "name": "Deep Vein",
       "kind": "active",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
       "stacks": true,
       "recharge": "120 s",
-      "desc": "Refineries produce five-fold for 20 seconds. A second copy is a second charge."
+      "desc": "Refineries produce five-fold for 20 seconds. A second copy is a second charge.",
+      "rare": "Refineries produce at six times for 30 seconds.",
+      "epic": "Refineries produce at eight times for 40 seconds."
     },
     {
       "id": "sandbags",
       "name": "Sandbags",
       "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "core"
+      ],
       "stacks": true,
       "recharge": "",
-      "desc": "Use: the Core gains 15 health, and 15 to its maximum. One use."
+      "desc": "Use: the Core gains 15 health, and 15 to its maximum. One use.",
+      "rare": "The Core gains 25 max health, once.",
+      "epic": "The Core gains 40 max health, once."
     },
     {
       "id": "flashbang",
       "name": "Flashbang",
       "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
       "stacks": true,
       "recharge": "",
-      "desc": "Use: every enemy freezes for 2 seconds. One use."
+      "desc": "Use: every enemy freezes for 2 seconds. One use.",
+      "rare": "Freeze every enemy for 3 seconds, once.",
+      "epic": "Freeze every enemy for 4 seconds, once."
     },
     {
       "id": "ore_pocket",
       "name": "Ore Pocket",
       "kind": "consumable",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
       "stacks": true,
       "recharge": "",
-      "desc": "Use: 20 Ore, right now. One use."
+      "desc": "Use: 20 Ore, right now. One use.",
+      "rare": "35 Ore, once.",
+      "epic": "60 Ore, once."
+    }
+  ],
+  "sets": [
+    {
+      "name": "Sharpened",
+      "tag": "damage",
+      "at": 2,
+      "desc": "Two of damage: every hit does 5% more."
+    },
+    {
+      "name": "Honed",
+      "tag": "damage",
+      "at": 3,
+      "desc": "Three of damage: every hit does 12% more."
+    },
+    {
+      "name": "Oiled",
+      "tag": "rate",
+      "at": 2,
+      "desc": "Two of rate: every tower cycles a tick faster."
+    },
+    {
+      "name": "Overwound",
+      "tag": "rate",
+      "at": 3,
+      "desc": "Three of rate: every tower cycles three ticks faster."
+    },
+    {
+      "name": "Spotter",
+      "tag": "reach",
+      "at": 2,
+      "desc": "Two of reach: every tower reaches half a cell further."
+    },
+    {
+      "name": "Watchtower",
+      "tag": "reach",
+      "at": 3,
+      "desc": "Three of reach: every tower reaches a cell and a half further."
+    },
+    {
+      "name": "Frost Line",
+      "tag": "cold",
+      "at": 2,
+      "desc": "Two of cold: every slow is 5% colder."
+    },
+    {
+      "name": "Permafrost",
+      "tag": "cold",
+      "at": 3,
+      "desc": "Three of cold: every slow lasts half a second longer."
+    },
+    {
+      "name": "Hardened",
+      "tag": "kinetic",
+      "at": 2,
+      "desc": "Two of kinetic: every shot passes into one more body."
+    },
+    {
+      "name": "Depleted",
+      "tag": "kinetic",
+      "at": 3,
+      "desc": "Three of kinetic: every hit does 2 more."
+    },
+    {
+      "name": "Conductive",
+      "tag": "energy",
+      "at": 2,
+      "desc": "Two of energy: every arc reaches half a cell further."
+    },
+    {
+      "name": "Superheated",
+      "tag": "energy",
+      "at": 3,
+      "desc": "Three of energy: every hit leaves a burn of 1 a tick."
+    },
+    {
+      "name": "Rally",
+      "tag": "support",
+      "at": 2,
+      "desc": "Two of support: every aura reaches a cell further."
+    },
+    {
+      "name": "Banner",
+      "tag": "support",
+      "at": 3,
+      "desc": "Three of support: every hit does 5% more and every tower reaches half a cell further."
+    },
+    {
+      "name": "Ledger",
+      "tag": "economy",
+      "at": 2,
+      "desc": "Two of economy: 5 Scrap at every wave launch."
+    },
+    {
+      "name": "Treasury",
+      "tag": "economy",
+      "at": 3,
+      "desc": "Three of economy: every bounty pays 15% more."
+    },
+    {
+      "name": "Masonry",
+      "tag": "core",
+      "at": 2,
+      "desc": "Two of core: the Core mends 1 health every wave."
+    },
+    {
+      "name": "Citadel",
+      "tag": "core",
+      "at": 3,
+      "desc": "Three of core: the Core mends 3 health every wave."
     }
   ],
   "passives": [

@@ -718,7 +718,15 @@ switched itself off in silence.)*
 
 **Rarity is reopened** (was D5, closed flat "until play evidence"). The evidence
 arrived: a flat pool deals game-breaking relics as readily as filler, so a run's
-ceiling is set by draw order rather than by play.
+ceiling is set by draw order rather than by play. **Decided and built
+2026-09-06 (session 28, PR 2, "rarity with teeth")**: every relic has a
+base rarity; every draw rolls a rarity weighted by wave (common 60 minus
+the wave, rare 30, epic 10 plus half the wave), never below the base; a
+rare or epic copy carries its own numbers and card text (`tiers`), and a
+boolean rule is the same at every rarity. **Sets**: passives and relics
+carry tags; at two and three of a tag a set effect lights and folds like a
+passive (`sets/pool.json`). The frame colour on a slot, a card and the
+strip says the rarity.
 
 **Duplicates are a per-relic property, not a global rule** *(D20, design round
 1, 2026-09-03)*. A multiplier or a charge held twice is a bigger one; a boolean

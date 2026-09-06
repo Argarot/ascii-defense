@@ -25,6 +25,7 @@ import { spriteState } from '../board/BoardView';
 import { drawSpriteFrame } from '../board/sprites';
 import { CELL_H, CELL_W } from '../board/style';
 import type { HudAction, HudState } from './HudPanel';
+import { rarityRole } from './HudPanel';
 
 /**
  * Rows the strip takes at the BOARD's font scale (feedback 2026-09-05 item
@@ -221,6 +222,8 @@ export class StripPanel {
           if (rsp) drawSpriteFrame(term, rsp, rsp.states[''], x0, rowBase, slot.state === 'cooling' ? { flatFg: 'ui.dim' } : { transparent: true });
           else term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, sbg);
           if (slot.state === 'cooling') term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, sbg);
+          const rr = rarityRole(slot.rarity);
+          if (rr) { term.put(x0, rowBase, '┌', role(rr), sbg); term.put(x0 + 3, rowBase, '┐', role(rr), sbg); term.put(x0, rowBase + 2, '└', role(rr), sbg); term.put(x0 + 3, rowBase + 2, '┘', role(rr), sbg); }
           for (let r = 0; r < slotH; r++) this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
         }
       });
@@ -239,7 +242,8 @@ export class StripPanel {
       const pSlots = c.passiveSlots ?? 6;
       const pRow = drawRow + 4;
       if (pRow + slotH < H) {
-        term.write(cx, pRow - 1, `PASSIVES ${passives.length}/${pSlots} - a pick every 2nd wave`, role('terrain.core.lit'));
+        const setsLine = (c.sets ?? []).length ? `  sets: ${(c.sets ?? []).join(', ')}` : '';
+        term.write(cx, pRow - 1, `PASSIVES ${passives.length}/${pSlots}${setsLine}`.slice(0, cw), role('terrain.core.lit'));
         for (let i = 0; i < pSlots; i++) {
           if (i >= perRow) break;
           const x0 = cx + i * slotW;

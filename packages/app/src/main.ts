@@ -555,13 +555,19 @@ async function main(): Promise<void> {
         p.tags.length ? 'tags: ' + p.tags.join(', ') : '',
         '',
         ...wrapLine(`Passives are the permanent layer: six slots a run, a pick every second wave from three offered, and every one of them works on every tower. Relics are found; passives are chosen.`),
+        ...(p.tags.length ? ['', ...CODEX.sets.filter((x) => (p.tags as readonly string[]).includes(x.tag)).flatMap((x) => wrapLine(`set ${x.name} (${x.tag} x${x.at}): ${x.desc}`))] : []),
       ].filter((l, i, a) => l !== '' || a[i - 1] !== '');
     } else {
       const r = CODEX.relics[page];
       title = `${r.name.toUpperCase()}  ${page + 1}/${count}`;
       const sp = SPRITES.find((s) => s.id === `relic_${r.id}`);
       hero = sp ? [sp] : [];
-      body = [[r.kind, r.stacks ? 'stacks' : '', r.recharge ? `recharges in ${r.recharge}` : ''].filter(Boolean).join('  \u2802  '), ...wrapLine(r.desc)];
+      body = [
+        [r.kind, `base rarity ${r.rarity}`, r.tags.length ? `tags ${r.tags.join(' ')}` : '', r.stacks ? 'stacks' : '', r.recharge ? `recharges in ${r.recharge}` : ''].filter(Boolean).join('  \u2802  '),
+        ...wrapLine(r.desc),
+        ...(r.rare ? ['', ...wrapLine(`rare: ${r.rare}`)] : []),
+        ...(r.epic ? wrapLine(`epic: ${r.epic}`) : []),
+      ];
     }
     return {
       title,
@@ -986,6 +992,8 @@ async function main(): Promise<void> {
     pick: (option: number) => debug('pick', option),
     relics: () => debug('relics'),
     passives: () => debug('passives'),
+    relicsHeld: () => debug('relicsHeld'),
+    sets: () => debug('sets'),
     pickPassive: (option: number) => debug('pickPassive', option),
     // Debug-only: a relic by id outside any offer (replays diverge), and an active fired at a cell.
     grant: (id: string) => debug('grant', id),
