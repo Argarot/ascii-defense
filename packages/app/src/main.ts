@@ -28,7 +28,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal } from '@ascii-defense/view';
+  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
 import { validateSprite, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -45,7 +45,25 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string
 // Core face - one glob, validated at boot. The title's hero row is the
 // tower sprites in roster order.
 const SPRITE_JSON = import.meta.glob('../../content/assets/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
-const SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
+// The art agent's reworked pack lives beside the shipped assets (2026-09-06
+// evening, Daniil: "try the new sprites"); a setting picks the pack at boot.
+// Missing folder = empty globs = the shipped pack.
+const REWORKED_JSON = import.meta.glob('../../content/assets-reworked/sprites/*.json', { eager: true, import: 'default' }) as Record<string, unknown>;
+const REWORKED_PALETTE = import.meta.glob('../../content/assets-reworked/palette.json', { eager: true, import: 'default' }) as Record<string, { roles?: Record<string, string> }>;
+const SPRITE_SET: 'shipped' | 'reworked' = loadMetaFrom(localStorage).meta.settings.spriteSet ?? 'shipped';
+const SHIPPED_SPRITES = Object.values(SPRITE_JSON).map((s) => must(validateSprite.check(s), `sprite ${(s as { id?: string }).id ?? '?'}`));
+const REWORKED_SPRITES = SPRITE_SET === 'reworked' ? Object.values(REWORKED_JSON).map((s) => must(validateSprite.check(s), `reworked sprite ${(s as { id?: string }).id ?? '?'}`)) : [];
+// The reworked pack first, the shipped one for anything it lacks.
+const SPRITES = SPRITE_SET === 'reworked' && REWORKED_SPRITES.length > 0
+  ? [...REWORKED_SPRITES, ...SHIPPED_SPRITES.filter((s) => !REWORKED_SPRITES.some((r) => r.id === s.id))]
+  : SHIPPED_SPRITES;
+if (SPRITE_SET === 'reworked') {
+  const pal = Object.values(REWORKED_PALETTE)[0]?.roles;
+  if (pal) setPaletteRoles(pal);
+  const pack: TerrainSpritePack = {};
+  for (const s of REWORKED_SPRITES) { if (s.id === 'ground_slate') pack.G = s; if (s.id === 'rock_slate') pack.R = s; if (s.id === 'ore_slate') pack.O = s; }
+  setTerrainPack(pack);
+}
 const HERO = ['bolt', 'mortar', 'frost', 'refinery', 'tesla', 'missile', 'laser', 'bastion'].map((id) => SPRITES.find((s) => s.id === id)).filter((s) => s !== undefined);
 
 const BASE = import.meta.env.BASE_URL;
@@ -448,6 +466,7 @@ async function main(): Promise<void> {
             { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
             { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
             { id: 'palette', label: 'PALETTE', note: meta.settings.palette === 'colourblind' ? 'COLOURBLIND' : 'DEFAULT' },
+            { id: 'sprites', label: 'SPRITE PACK', note: `${(meta.settings.spriteSet ?? 'shipped').toUpperCase()} - click to switch (reloads)` },
             { id: 'hints', label: 'FIRST-RUN HINTS', note: meta.settings.onboarded ? 'seen - click to show again' : 'ON' },
             { id: 'export', label: 'EXPORT SAVES' },
             { id: 'import', label: 'IMPORT SAVES' },
@@ -689,6 +708,12 @@ async function main(): Promise<void> {
       case 'scale': {
         // Every terminal is sized at boot; the honest switch is a reload.
         meta.settings.hudScale = meta.settings.hudScale === 2 ? 1 : 2;
+        saveMeta(meta);
+        location.reload();
+        break;
+      }
+      case 'sprites': {
+        meta.settings.spriteSet = (meta.settings.spriteSet ?? 'shipped') === 'reworked' ? 'shipped' : 'reworked';
         saveMeta(meta);
         location.reload();
         break;
@@ -1079,6 +1104,7 @@ async function main(): Promise<void> {
     forgePick: (index: number): void => forgeAct({ kind: 'held', index }),
     forgeCombine: (): void => forgeAct({ kind: 'combine' }),
     forgeState: () => forgeState(),
+    spriteSet: (): { set: string; sprites: number; reworked: number; terrain: boolean } => ({ set: SPRITE_SET, sprites: SPRITES.length, reworked: REWORKED_SPRITES.length, terrain: REWORKED_SPRITES.some((s) => s.id === 'ground_slate') }),
     sets: () => debug('sets'),
     // Debug-only: a relic by id outside any offer (replays diverge), and an active fired at a cell.
     grant: (id: string) => debug('grant', id),

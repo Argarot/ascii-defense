@@ -45,6 +45,13 @@ const OVERRIDE_SETS: Record<string, Record<string, string>> = {
   },
 };
 let overrides: Record<string, string> = {};
+/** A sprite pack's own roles (2026-09-06 evening): under the accessibility overrides, over the shipped palette. */
+let packRoles: Record<string, string> = {};
+
+/** Give the palette a pack's roles (the reworked pack ships 500 of its own); {} clears. */
+export function setPaletteRoles(roles: Record<string, string>): void {
+  packRoles = roles;
+}
 
 /** Choose a role override set by name; unknown names clear it. */
 export function setPaletteSet(name: string): void {
@@ -54,6 +61,8 @@ export function setPaletteSet(name: string): void {
 export function role(name: string): string {
   const o = overrides[name];
   if (o) return o;
+  const p = packRoles[name];
+  if (p) return p;
   const c = ROLES[name];
   if (!c) throw new Error(`palette role missing: ${name}`);
   return c;

@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 /**
  * Terrain styling shared by every surface that draws cells - the game board
  * (BoardView) and the Tile Smith preview. One module so the authoring tool
@@ -14,6 +15,22 @@ import terrainJson from '@ascii-defense/content/assets/terrain/appearance.json';
 import gridJson from '@ascii-defense/content/assets/grid.json';
 import roadJson from '@ascii-defense/content/assets/sprites/road_muted_cobble.json';
 import { role } from '../palette';
+import { selectTerrainSprite, type TerrainSpritePack } from './terrainSprites';
+
+// Optional files make the approved pack a folder swap; older packs keep their pools.
+const terrainFiles = import.meta.glob('../../../content/assets/sprites/*_slate.json', { eager: true, import: 'default' });
+let terrainSprites: TerrainSpritePack = {};
+
+/** Swap the authored terrain pack (2026-09-06 evening: the reworked pack's ground, rock and ore). */
+export function setTerrainPack(pack: TerrainSpritePack): void {
+  terrainSprites = pack;
+}
+for (const json of Object.values(terrainFiles)) {
+  const result = validateSprite.check(json);
+  if (!result.ok) throw new Error('Terrain sprite failed validation: ' + result.errors.map(e => `${e.path}: ${e.message}`).join('; '));
+  const kind = ({ ground_slate: 'G', rock_slate: 'R', ore_slate: 'O' } as const)[result.value.id as 'ground_slate' | 'rock_slate' | 'ore_slate'];
+  if (kind) terrainSprites[kind] = result.value;
+}
 
 // The cell geometry is CONTENT (grid.json, D24): the linter checks every
 // sprite against the same file, so the view and the art cannot disagree.
@@ -104,6 +121,8 @@ export interface TerrainShade {
    * passes nothing and stays a still authoring tool).
    */
   drift?: number;
+  /** Ambient clock for authored terrain; zero pins the base frame. */
+  animMs?: number;
 }
 
 /**
@@ -121,6 +140,20 @@ export function drawTerrainCell(
   gy0: number,
   shade: TerrainShade = {},
 ): void {
+  const authored = selectTerrainSprite(terrainSprites, kind, gx0, gy0, shade.richness, shade.animMs);
+  if (authored) {
+    const { sprite, frame } = authored;
+    const substrate = shade.bg ?? role('terrain.ground.dark');
+    for (let y = 0; y < CELL_H; y++) for (let x = 0; x < CELL_W; x++) {
+      const ch = [...frame.art[y]][x];
+      const fgRole = sprite.inkMap[frame.ink[y][x]];
+      const bgRole = frame.bgInk ? sprite.inkMap[frame.bgInk[y][x]] : undefined;
+      const visible = ch !== ' ' && !!fgRole;
+      term.put(gx0 + x, gy0 + y, visible ? ch : ' ', visible ? role(fgRole) : substrate,
+        shade.bg ?? (visible && bgRole ? role(bgRole) : substrate));
+    }
+    return;
+  }
   const pool = POOLS[kind];
   const lit = role(`terrain.${TERRAIN_KEY[kind]}.lit`);
   const mid = role(`terrain.${TERRAIN_KEY[kind]}.mid`);
