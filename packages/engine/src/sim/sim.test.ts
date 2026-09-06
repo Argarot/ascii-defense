@@ -646,6 +646,69 @@ describe('towers and projectiles', () => {
     expect(sim.inputs.some((i) => i.a.t === 'skipOffer')).toBe(true);
   });
 
+  it('the pool grown: costs, refunds, breaches, a board-wide chill, consumables and Thick Walls all read the fold (session 28, PR 4)', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const RELICS: RelicDef[] = [
+      { id: 'bulk_order', name: 'Bulk Order', kind: 'passive', rarity: 'common', desc: '', effects: { buildCostMul: 0.9 } },
+      { id: 'cheap_upgrades', name: 'Cheap Upgrades', kind: 'passive', rarity: 'common', desc: '', effects: { tierCostMul: 0.85 } },
+      { id: 'salvage_rights', name: 'Salvage Rights', kind: 'passive', rarity: 'common', desc: '', effects: { sellRefundBonus: 0.3 } },
+      { id: 'iron_will', name: 'Iron Will', kind: 'passive', rarity: 'common', desc: '', effects: { breachReduce: 1 } },
+      { id: 'thick_walls', name: 'Thick Walls', kind: 'passive', rarity: 'common', desc: '', effects: { coreHpMaxAdd: 10 } },
+      { id: 'frost_nova', name: 'Frost Nova', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, effects: { slowAllMul: 0.5, slowAllTicks: 80 } },
+      { id: 'scrap_rain', name: 'Scrap Rain', kind: 'consumable', rarity: 'common', desc: '', effects: { scrapAdd: 80 } },
+      { id: 'emergency_repair', name: 'Emergency Repair', kind: 'consumable', rarity: 'common', desc: '', effects: { coreHealNow: 20 } },
+      { id: 'wide_net', name: 'Wide Net', kind: 'passive', rarity: 'common', desc: '', effects: { pierceAdd: 2 } },
+    ];
+    const TOWER: TowerDef = { ...BOLT, cost: 20, tiers: [{ choices: [{ name: 'a', cost: 40 }, { name: 'b', cost: 40 }] }] };
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [TOWER], relicDefs: RELICS, coreHp: 50 });
+    let spot: { x: number; y: number } | null = null;
+    for (let y = 0; y < 60 && !spot; y++) for (let x = 0; x < 60 && !spot; x++) if (sim.canBuildAt(x, y)) spot = { x, y };
+    // Bulk Order: the tower costs 18, the strip's number and the charge agree.
+    expect(sim.debugGrantRelic('bulk_order')).toBe(true);
+    expect(sim.towerCost(TOWER)).toBe(18);
+    const scrap0 = sim.scrap;
+    expect(sim.buildTower(spot!.x, spot!.y, 'bolt')).toBe(true);
+    expect(sim.scrap).toBe(scrap0 - 18);
+    const tower = sim.towers.find((t) => t)!;
+    // Wide Net: the shot pierces two more. Cheap Upgrades: the choice costs 34.
+    expect(sim.debugGrantRelic('wide_net')).toBe(true);
+    expect(sim.stats(tower).pierceCount).toBe((TOWER.projectile!.pierceCount ?? 0) + 2);
+    expect(sim.debugGrantRelic('cheap_upgrades')).toBe(true);
+    expect(sim.choiceCost(tower, 0, 0)).toBe(34);
+    // Salvage Rights: 70% + 30% = the whole 18 back.
+    expect(sim.debugGrantRelic('salvage_rights')).toBe(true);
+    const scrap1 = sim.scrap;
+    expect(sim.sellTower(spot!.x, spot!.y)).toBe(true);
+    expect(sim.scrap).toBe(scrap1 + 18);
+    // Thick Walls: max hp up while held, down when salvaged.
+    const max0 = sim.coreHpMax;
+    expect(sim.debugGrantRelic('thick_walls')).toBe(true);
+    expect(sim.coreHpMax).toBe(max0 + 10);
+    const tw = sim.heldRelics.length - 1;
+    expect(sim.salvageRelic(tw)).toBe(true);
+    expect(sim.coreHpMax).toBe(max0);
+    // Consumables: Scrap Rain pays, Emergency Repair mends up to the maximum.
+    expect(sim.debugGrantRelic('scrap_rain')).toBe(true);
+    const scrap2 = sim.scrap;
+    expect(sim.useConsumable('scrap_rain')).toBe(true);
+    expect(sim.scrap).toBe(scrap2 + 80);
+    (sim as unknown as { coreHp: number }).coreHp = sim.coreHpMax - 5;
+    expect(sim.debugGrantRelic('emergency_repair')).toBe(true);
+    expect(sim.useConsumable('emergency_repair')).toBe(true);
+    expect(sim.coreHp).toBe(sim.coreHpMax);
+    // Frost Nova: a body on the board and one cold entry on it after the fire.
+    let body = -1;
+    for (let t = 0; t < 10 && body === -1; t++) { sim.tick(); for (let i = 0; i < 64; i++) if (sim.alive[i]) { body = i; break; } }
+    expect(body).toBeGreaterThanOrEqual(0);
+    expect(sim.debugGrantRelic('frost_nova')).toBe(true);
+    expect(sim.fireActive('frost_nova')).toBe(true);
+    expect(sim.enemyStatuses(body).some((st) => st.kind === 'slow' && st.src === 'relic')).toBe(true);
+    // Iron Will: a breach costs one less. The parked walker cannot breach; the fold says what it would cost.
+    expect(sim.debugGrantRelic('iron_will')).toBe(true);
+    expect((sim as unknown as { fold: { breachReduce: number } }).fold.breachReduce).toBe(1);
+  });
+
   it('a beam hits every body in its corridor, heats on a held lead, and turns on a replayed input (session 26, WBS 2.34)', () => {
     const { cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
     const LANCE: TowerDef = { id: 'laser', cost: 20, fireEveryTicks: 2, attack: 'beam', damageType: 'energy', projectile: { damage: 10, speed: 1 }, beam: { width: 1, rampStep: 0.5, rampMax: 2 } };

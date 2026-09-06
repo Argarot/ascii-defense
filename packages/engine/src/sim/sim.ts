@@ -397,6 +397,10 @@ export class Sim {
   /** Per held relic: how often its rule fired and the tick it last did (session 28, PR 3; presentation, not hashed). */
   readonly heldUses: number[] = [];
   readonly heldLastUse: number[] = [];
+  /** Thick Walls: the Core max hp the held relics currently account for (session 28, PR 4). Hashed through coreHpMax. */
+  private relicHpApplied = 0;
+  /** Bloodstone: kills since the Core last mended (session 28, PR 4). */
+  private killHealCounter = 0;
   /** The passive layer (session 28, PR 1): held pool indices, the pending offer, the wave it was dealt for. */
   readonly heldPassives: number[] = [];
   passiveOffer: number[] | null = null;
@@ -540,7 +544,17 @@ export class Sim {
 
   canAfford(defId: string): boolean {
     const def = this.opts.towerDefs.find((d) => d.id === defId);
-    return def !== undefined && this.scrap >= def.cost;
+    return def !== undefined && this.scrap >= this.towerCost(def);
+  }
+
+  /** What a tower costs THIS run: the def's cost through Bulk Order (session 28, PR 4). */
+  towerCost(def: TowerDef): number {
+    return Math.max(1, Math.round(def.cost * this.fold.buildCostMul));
+  }
+
+  /** What prospecting costs this run (Prospector's Eye makes it free). */
+  prospectCost(): number {
+    return this.fold.prospectFree ? 0 : PROSPECT_COST;
   }
 
   /**
@@ -573,8 +587,10 @@ export class Sim {
     if (defIdx === -1) throw new Error(`unknown tower def '${defId}'`);
     if (!this.canBuildDefAt(x, y, defId)) return false;
     const def = this.opts.towerDefs[defIdx];
-    if (this.scrap < def.cost) return false;
-    this.scrap -= def.cost;
+    const price = this.towerCost(def);
+    if (this.scrap < price) return false;
+    this.scrap -= price;
+    if (price !== def.cost) this.noteRelicUse('buildCostMul');
     // Producers earn their first yield after one full cycle, not on placement.
     const prodCooldown = def.production ? effectiveStats(def, [-1, -1, -1]).productionEveryTicks : 0;
     // A line-shaped tower faces the direction with the most road in reach
@@ -597,7 +613,10 @@ export class Sim {
   choiceCost(t: Tower, tier: number, option: number): number | null {
     const def = this.opts.towerDefs[t.defIdx];
     if (!def.tiers || !canChoose(t.choices, tier)) return null;
-    return def.tiers[tier]?.choices[option]?.cost ?? null;
+    const base = def.tiers[tier]?.choices[option]?.cost;
+    if (base === undefined) return null;
+    // Cheap Upgrades (relic, session 28 PR 4): every choice through the fold.
+    return this.fold.tierCostMul === 1 ? base : Math.max(1, Math.round(base * this.fold.tierCostMul));
   }
 
   chooseTier(x: number, y: number, tier: number, option: number): boolean {
@@ -607,6 +626,7 @@ export class Sim {
     const cost = this.choiceCost(t, tier, option);
     if (cost === null || this.scrap < cost) return false;
     this.scrap -= cost;
+    if (this.fold.tierCostMul !== 1) this.noteRelicUse('tierCostMul');
     t.choices[tier] = option;
     // Deep Bore / Deep Shaft (Refinery rework): the vein under the tower
     // grows once, when chosen - more Ore in the end, at a slower cycle. The
@@ -660,6 +680,17 @@ export class Sim {
    * since the last shot, -1 before the first.
    */
   /** The resolved slow from every live entry: the coldest wins, the longest lasts. */
+  /** One cold entry from a relic on body i (session 28, PR 4), resolved by the usual rule; armoured shrugs it off. */
+  private chill(i: number, mul: number, ticks: number): void {
+    const def = this.opts.enemyDefs[this.enemyDefIdx[i]];
+    if (hasTrait(def, 'armoured')) return;
+    const t = hasTrait(def, 'fast') ? Math.ceil(ticks * TRAIT_RULES.fast.slowDurationMul) : ticks;
+    const list = (this.slowEntries[i] ??= []);
+    list.push({ mul, ticks: t, src: 'relic' });
+    if (list.length > SLOW_ENTRY_CAP) list.sort((a, b) => b.ticks - a.ticks).length = SLOW_ENTRY_CAP;
+    this.resolveSlows(i);
+  }
+
   private resolveSlows(i: number): void {
     const list = this.slowEntries[i];
     let mul = 1;
@@ -784,6 +815,11 @@ export class Sim {
       if (f.coreAdjacentRangeMul !== 1 && this.nearCore[t.cellY * this.opts.cellsW + t.cellX]) {
         out.range *= f.coreAdjacentRangeMul;
       }
+      // Session 28, PR 4: Wide Net, Grounding Rod, Long Fuse (explosive shots only), Sniper Nest.
+      out.pierceCount += f.pierceAdd;
+      if (def.attack === 'chain') out.chainCount += f.chainAdd;
+      if (out.explodeRadius > 0) out.explodeRadius += f.blastAdd;
+      if (f.coreAdjacentDamageMul !== 1 && this.nearCore[t.cellY * this.opts.cellsW + t.cellX]) out.damage *= f.coreAdjacentDamageMul;
     }
     // Boon ground (PRD sec 4.7): the CELL buffs whoever stands on it, after
     // every other fold - the map's own contribution to a build.
@@ -805,6 +841,13 @@ export class Sim {
     const live: { effects: RelicEffects }[] = [];
     this.heldRelics.forEach((di, i) => { if (defs[di].kind === 'passive') live.push({ effects: relicEffectsAt(defs[di], this.heldRarity[i] ?? 0) }); });
     this.fold = live.length === 0 ? EMPTY_FOLD : foldRelics(live);
+    // Thick Walls (session 28, PR 4): the Core's maximum follows what is held - up when taken, down when salvaged.
+    const delta = this.fold.coreHpMaxAdd - this.relicHpApplied;
+    if (delta !== 0) {
+      this.coreHpMax = Math.max(1, this.coreHpMax + delta);
+      this.coreHp = delta > 0 ? this.coreHp + delta : Math.min(this.coreHp, this.coreHpMax);
+      this.relicHpApplied = this.fold.coreHpMaxAdd;
+    }
     // Relic tags count toward the sets, so the passive fold moves too.
     this.refoldPassives();
   }
@@ -1103,6 +1146,10 @@ export class Sim {
       this.prodBoostUntil = this.tickCount + (e.boostTicks ?? 0);
       this.prodBoostMul = e.productionMul;
     }
+    if (e.slowAllMul !== undefined) {
+      // Frost Nova (session 28, PR 4): one cold entry on every body, resolved by the usual rule.
+      for (let i = 0; i < this.enemyHigh; i++) if (this.alive[i]) this.chill(i, e.slowAllMul, e.slowAllTicks ?? 60);
+    }
     this.relicCooldowns[hi] = def.cooldownTicks ?? 0;
     this.markUse(hi);
     this.inputs.push({ tick: this.tickCount, a: { t: 'fireActive', relicId, x, y } });
@@ -1223,8 +1270,10 @@ export class Sim {
     const fallback = (): string => { this.scrap += LOOT_FALLBACK_SCRAP; return `+${LOOT_FALLBACK_SCRAP} scrap`; };
     switch (pick.kind) {
       case 'scrap': {
-        const n = loot.int(pick.min ?? 0, Math.max(pick.min ?? 0, pick.max ?? 0));
+        // Scavenger (relic, session 28 PR 4) multiplies what a cache pays.
+        const n = Math.round(loot.int(pick.min ?? 0, Math.max(pick.min ?? 0, pick.max ?? 0)) * this.fold.lootScrapMul);
         this.scrap += n;
+        if (this.fold.lootScrapMul !== 1) this.noteRelicUse('lootScrapMul');
         return `+${n} scrap`;
       }
       case 'ore': {
@@ -1310,8 +1359,10 @@ export class Sim {
     if (this.cellAt(x, y) !== 'R') return false;
     const k = y * this.opts.cellsW + x;
     if (this.prospectJobs.has(k)) return false;
-    if (this.scrap < PROSPECT_COST) return false;
-    this.scrap -= PROSPECT_COST;
+    const price = this.prospectCost();
+    if (this.scrap < price) return false;
+    this.scrap -= price;
+    if (price === 0) this.noteRelicUse('prospectFree');
     this.prospectJobs.set(k, PROSPECT_TICKS);
     this.inputs.push({ tick: this.tickCount, a: { t: 'prospect', x, y } });
     return true;
@@ -1402,6 +1453,8 @@ export class Sim {
     if (e.killRefundScrap !== undefined) this.scrap += e.killRefundScrap; // flat grant when used as a one-shot
     if (e.coreHpAdd !== undefined) { this.coreHpMax += e.coreHpAdd; this.coreHp += e.coreHpAdd; } // Sandbags
     if (e.oreAdd !== undefined) this.ore[0] += e.oreAdd; // Ore Pocket
+    if (e.scrapAdd !== undefined) this.scrap += e.scrapAdd; // Scrap Rain (session 28, PR 4)
+    if (e.coreHealNow !== undefined) this.coreHp = Math.min(this.coreHpMax, this.coreHp + e.coreHealNow); // Emergency Repair
     this.spliceHeld(hi);
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'useConsumable', relicId } });
@@ -1500,13 +1553,17 @@ export class Sim {
     if (tower) {
       // Refund the base cost plus everything sunk into tiers.
       const def = this.opts.towerDefs[tower.defIdx];
-      let sunk = def.cost;
+      // At the prices THIS run pays (Bulk Order, Cheap Upgrades): a discounted tower must not sell for more than it cost.
+      let sunk = this.towerCost(def);
       def.tiers?.forEach((tierDef, ti) => {
         const pick = tower.choices[ti];
-        if (pick >= 0) sunk += tierDef.choices[pick].cost;
+        if (pick >= 0) sunk += this.fold.tierCostMul === 1 ? tierDef.choices[pick].cost : Math.max(1, Math.round(tierDef.choices[pick].cost * this.fold.tierCostMul));
       });
       // +epsilon: 90*0.7 is 62.999... in IEEE; the player is owed 63.
-      this.scrap += Math.floor(sunk * SELL_REFUND + 1e-6);
+      // Salvage Rights (relic, session 28 PR 4) lifts the fraction, to at most the whole.
+      const fraction = Math.min(1, SELL_REFUND + this.fold.sellRefundBonus);
+      this.scrap += Math.floor(sunk * fraction + 1e-6);
+      if (this.fold.sellRefundBonus > 0) this.noteRelicUse('sellRefundBonus');
     }
     this.towers[idx - 1] = null;
     this.occupancy[y * this.opts.cellsW + x] = 0;
@@ -1660,13 +1717,15 @@ export class Sim {
   /** Scrap the player would earn by calling right now (item 9's bonus). */
   callBonus(): number {
     if (this.waveTimer <= 0) return 0;
-    return Math.ceil(this.waveTimer / TICK_HZ) * CALL_BONUS_PER_SEC;
+    // Rush Bonus (relic, session 28 PR 4) multiplies the clock's worth.
+    return Math.round(Math.ceil(this.waveTimer / TICK_HZ) * CALL_BONUS_PER_SEC * this.fold.callBonusMul);
   }
 
   /** Launch the next wave now, banking the remaining clock as Scrap. */
   callWave(): boolean {
     if (!this.canCallWave()) return false;
     this.scrap += this.callBonus();
+    if (this.fold.callBonusMul !== 1 && this.callBonus() > 0) this.noteRelicUse('callBonusMul');
     this.launchWave();
     this.inputs.push({ tick: this.tickCount, a: { t: 'callWave' } });
     return true;
@@ -1746,7 +1805,9 @@ export class Sim {
       const onVein = this.cellAt(tower.cellX, tower.cellY) === 'O' || anywhere;
       const oreShare = prod.ore ?? 0;
       const scrapShare = prod.scrap ?? 0;
-      if ((oreShare === 0 || !onVein) && scrapShare === 0) continue; // idle: timer holds
+      // Foundry (relic, session 28 PR 4): off any vein, the yield comes out as Scrap.
+      const foundry = this.fold.refineryScrapOffVein && oreShare > 0 && !onVein;
+      if (!foundry && (oreShare === 0 || !onVein) && scrapShare === 0) continue; // idle: timer holds
       if (--tower.prodCooldown > 0) continue;
       const eff = this.stats(tower);
       tower.prodCooldown = eff.productionEveryTicks;
@@ -1756,7 +1817,10 @@ export class Sim {
       // A def mixing ore and scrap splits the folded yield by its base ratio;
       // shipped content never does (ore-only), but the shape must not lie.
       const total = oreShare + scrapShare;
-      if (oreShare > 0 && anywhere && this.cellAt(tower.cellX, tower.cellY) !== 'O') {
+      if (foundry) {
+        this.scrap += Math.max(1, Math.round(yielded));
+        this.noteRelicUse('refineryScrapOffVein');
+      } else if (oreShare > 0 && anywhere && this.cellAt(tower.cellX, tower.cellY) !== 'O') {
         // No vein under it: the Core pays, and nothing runs dry.
         this.ore[0] = (this.ore[0] ?? 0) + Math.round((yielded * oreShare) / total);
       } else if (oreShare > 0 && onVein) {
@@ -2336,6 +2400,42 @@ export class Sim {
       if (this.bossFlag[enemy] && this.fold.bossBountyMul !== 1) this.noteRelicUse('bossBountyMul');
       const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
+      // Session 28, PR 4: what a death sets off. Ricochet carries the
+      // killing hit on; Cold Snap chills the neighbours of a cold body;
+      // Kindling passes a burn on; Bloodstone mends the Core every Nth kill.
+      const px = this.posX[enemy];
+      const py = this.posY[enemy];
+      if (this.fold.killChainMul > 0 && towerIdx >= 0) {
+        const next = this.nearestAliveExcept(px, py, enemy, 2);
+        if (next !== -1) { this.noteRelicUse('killChainMul'); this.applyDamage(next, raw * this.fold.killChainMul, 0, 0, towerIdx, shieldMul, ignoreArmor, type); }
+      }
+      if (this.fold.deathChillTicks > 0 && (this.slowTicks[enemy] > 0 || this.tickCount < this.freezeUntil)) {
+        let any = false;
+        for (let j = 0; j < this.enemyHigh; j++) {
+          if (!this.alive[j] || j === enemy) continue;
+          const ddx = this.posX[j] - px;
+          const ddy = this.posY[j] - py;
+          if (ddx * ddx + ddy * ddy <= 1.5 * 1.5) { this.chill(j, 0.7, this.fold.deathChillTicks); any = true; }
+        }
+        if (any) this.noteRelicUse('deathChillTicks');
+      }
+      const burns = this.burnEntries[enemy];
+      if (this.fold.deathSpreadBurn && burns && burns.length > 0) {
+        const strongest = burns.reduce((a, b) => (b.dps > a.dps ? b : a), burns[0]);
+        let any = false;
+        for (let j = 0; j < this.enemyHigh; j++) {
+          if (!this.alive[j] || j === enemy) continue;
+          const ddx = this.posX[j] - px;
+          const ddy = this.posY[j] - py;
+          if (ddx * ddx + ddy * ddy <= 1.5 * 1.5) { this.applyBurn(j, strongest.dps, strongest.ticks, 'relic', strongest.type); any = true; }
+        }
+        if (any) this.noteRelicUse('deathSpreadBurn');
+      }
+      if (this.fold.killHealEvery > 0 && ++this.killHealCounter >= this.fold.killHealEvery) {
+        this.killHealCounter = 0;
+        this.coreHp = Math.min(this.coreHpMax, this.coreHp + 1);
+        this.noteRelicUse('killHealEvery');
+      }
       // A boss drops a cache where it falls (design round 1, Daniil: "where
       // it dies") - on the road, usually; opened like any other.
       if (this.bossFlag[enemy]) {
@@ -2452,7 +2552,9 @@ export class Sim {
           this.alive[i] = 0;
           this.freeEnemies.push(i);
           this.breaches++;
-          const dealt = this.opts.enemyDefs[this.enemyDefIdx[i]].damage * (this.bossFlag[i] ? BOSS_DAMAGE_MUL : 1);
+          // Iron Will (relic, session 28 PR 4): every breach costs less, never below nothing.
+          const dealt = Math.max(0, this.opts.enemyDefs[this.enemyDefIdx[i]].damage * (this.bossFlag[i] ? BOSS_DAMAGE_MUL : 1) - this.fold.breachReduce);
+          if (this.fold.breachReduce > 0) this.noteRelicUse('breachReduce');
           this.emit({ kind: 'breach', x: this.posX[i], y: this.posY[i], dmg: dealt });
           this.coreDamage += dealt;
           this.coreHp -= dealt;

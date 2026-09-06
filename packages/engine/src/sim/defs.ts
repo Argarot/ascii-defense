@@ -108,6 +108,48 @@ export interface RelicEffects {
   coreHpAdd?: number;
   /** Consumable: grants this much tier-1 Ore (Ore Pocket). */
   oreAdd?: number;
+  // ---- session 28, PR 4: the pool grown ----
+  /** Passive: a kill's hit carries this share to the nearest other body within 2 cells (Ricochet); the largest holds. */
+  killChainMul?: number;
+  /** Passive: a slowed/frozen body that dies chills bodies within 1.5 cells to 70% for this long (Cold Snap); the largest holds. */
+  deathChillTicks?: number;
+  /** Passive: a burning body that dies passes its strongest burn to bodies within 1.5 cells (Kindling). */
+  deathSpreadBurn?: boolean;
+  /** Passive: added to the sell refund fraction, capped at 1 (Salvage Rights). */
+  sellRefundBonus?: number;
+  /** Passive: tower cost multiplier (Bulk Order). */
+  buildCostMul?: number;
+  /** Passive: tier choice cost multiplier (Cheap Upgrades). */
+  tierCostMul?: number;
+  /** Passive: pierce added to every shot (Wide Net). */
+  pierceAdd?: number;
+  /** Passive: bodies added to every arc (Grounding Rod). */
+  chainAdd?: number;
+  /** Passive: cells added to every blast radius, explosive shots only (Long Fuse). */
+  blastAdd?: number;
+  /** Passive: damage multiplier for towers touching the Core face (Sniper Nest). */
+  coreAdjacentDamageMul?: number;
+  /** Passive: every N kills the Core mends 1 (Bloodstone); the smallest holds. */
+  killHealEvery?: number;
+  /** Passive: call-early bonus multiplier (Rush Bonus). */
+  callBonusMul?: number;
+  /** Passive: cache Scrap multiplier (Scavenger). */
+  lootScrapMul?: number;
+  /** Passive: prospecting costs nothing (Prospector's Eye). */
+  prospectFree?: boolean;
+  /** Passive: breach damage reduced by this, floor 0 (Iron Will). */
+  breachReduce?: number;
+  /** Active: every enemy moves at this multiple for slowAllTicks (Frost Nova). */
+  slowAllMul?: number;
+  slowAllTicks?: number;
+  /** Consumable: Scrap granted (Scrap Rain). */
+  scrapAdd?: number;
+  /** Consumable: the Core mends this much now (Emergency Repair). */
+  coreHealNow?: number;
+  /** Passive: a Refinery off any vein yields Scrap (Foundry). */
+  refineryScrapOffVein?: boolean;
+  /** Passive: Core max hp while held (Thick Walls). */
+  coreHpMaxAdd?: number;
 }
 
 export type RelicKind = 'passive' | 'active' | 'consumable';
@@ -251,6 +293,24 @@ export interface RelicFold {
   prospectSpeedMul: number;
   tollScrap: number;
   bossBountyMul: number;
+  // ---- session 28, PR 4 ----
+  killChainMul: number;
+  deathChillTicks: number;
+  deathSpreadBurn: boolean;
+  sellRefundBonus: number;
+  buildCostMul: number;
+  tierCostMul: number;
+  pierceAdd: number;
+  chainAdd: number;
+  blastAdd: number;
+  coreAdjacentDamageMul: number;
+  killHealEvery: number;
+  callBonusMul: number;
+  lootScrapMul: number;
+  prospectFree: boolean;
+  breachReduce: number;
+  refineryScrapOffVein: boolean;
+  coreHpMaxAdd: number;
 }
 
 export const EMPTY_FOLD: RelicFold = {
@@ -267,6 +327,23 @@ export const EMPTY_FOLD: RelicFold = {
   prospectSpeedMul: 1,
   tollScrap: 0,
   bossBountyMul: 1,
+  killChainMul: 0,
+  deathChillTicks: 0,
+  deathSpreadBurn: false,
+  sellRefundBonus: 0,
+  buildCostMul: 1,
+  tierCostMul: 1,
+  pierceAdd: 0,
+  chainAdd: 0,
+  blastAdd: 0,
+  coreAdjacentDamageMul: 1,
+  killHealEvery: 0,
+  callBonusMul: 1,
+  lootScrapMul: 1,
+  prospectFree: false,
+  breachReduce: 0,
+  refineryScrapOffVein: false,
+  coreHpMaxAdd: 0,
 };
 
 /** Fold the always-on effects of the given relics (see RelicFold). Takes anything with `effects` - a def, or a def's effects at a rarity. */
@@ -288,6 +365,24 @@ export function foldRelics(defs: readonly { effects?: RelicEffects }[]): RelicFo
     out.prospectSpeedMul *= e.prospectSpeedMul ?? 1;
     out.tollScrap += e.tollScrap ?? 0;
     out.bossBountyMul *= e.bossBountyMul ?? 1;
+    // Session 28, PR 4: adds add, multipliers multiply, "the largest holds" takes max, "the smallest holds" takes min.
+    out.killChainMul = Math.max(out.killChainMul, e.killChainMul ?? 0);
+    out.deathChillTicks = Math.max(out.deathChillTicks, e.deathChillTicks ?? 0);
+    out.deathSpreadBurn ||= e.deathSpreadBurn ?? false;
+    out.sellRefundBonus += e.sellRefundBonus ?? 0;
+    out.buildCostMul *= e.buildCostMul ?? 1;
+    out.tierCostMul *= e.tierCostMul ?? 1;
+    out.pierceAdd += e.pierceAdd ?? 0;
+    out.chainAdd += e.chainAdd ?? 0;
+    out.blastAdd += e.blastAdd ?? 0;
+    out.coreAdjacentDamageMul *= e.coreAdjacentDamageMul ?? 1;
+    if (e.killHealEvery) out.killHealEvery = out.killHealEvery === 0 ? e.killHealEvery : Math.min(out.killHealEvery, e.killHealEvery);
+    out.callBonusMul *= e.callBonusMul ?? 1;
+    out.lootScrapMul *= e.lootScrapMul ?? 1;
+    out.prospectFree ||= e.prospectFree ?? false;
+    out.breachReduce += e.breachReduce ?? 0;
+    out.refineryScrapOffVein ||= e.refineryScrapOffVein ?? false;
+    out.coreHpMaxAdd += e.coreHpMaxAdd ?? 0;
   }
   return out;
 }

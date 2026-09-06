@@ -693,6 +693,15 @@ Balance intent: relics are **allowed to be unfair**. A run that trivialises
 because three of them stacked is the product working. See §9 for what that does
 to calibration.
 
+**The pool grown (2026-09-06, session 28, PR 4).** Twenty more relics on
+nineteen new engine knobs — Ricochet, Cold Snap, Kindling, Salvage
+Rights, Bulk Order, Cheap Upgrades, Wide Net, Grounding Rod, Long Fuse,
+Sniper Nest, Bloodstone, Rush Bonus, Scavenger, Prospector's Eye, Iron
+Will, Frost Nova, Scrap Rain, Emergency Repair, Foundry (the §7.4 rule,
+shipped), Thick Walls — each with a base rarity, tags and rare/epic
+tiers; thirty-six in the pool plus five fusion-only. The catalogue is
+the list.
+
 ### 7.5 Meta progression owns the pool, not the power
 
 Relics never persist between runs (permanent relics would flatten the tech
