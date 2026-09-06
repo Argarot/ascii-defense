@@ -527,7 +527,7 @@ Verified findings not yet fixed, most material first. Each is a candidate for a 
 - **The lab's gate tolerance sits at 8 waves** after two geometry changes; the build sweep (2.36) is the ruler now and the analytic gate should be retired or re-derived.
 - **Entries are many on a filled board** (8–12 on 7×5): a knob question (`COVERAGE_TARGET`, `MAX_LANE_SHARE`, `EXTRA_WALKS`) for Daniil's playtest, not a defect.
 - **The strip is cramped below seven tiles wide**: at 6×4 the wave columns truncate; a second row or a narrower button would fix it.
-- **The 'inline' lab placement has no distance term**: the cell with the most road under a Laser's corridor can be far from the choke, so the first laser watches an empty run (`docs/lab/build-sweep-2026-09-06-instruments.md`). Session 28's sweep PR.
+- ~~The 'inline' lab placement has no distance term~~ *(session 28, PR 6: road covered minus a quarter of the corridor's route distance - the laser goes to the choke)*.
 - **The Tile Smith is still its own page**, not a spec on the shell's terminal (session 27 had no room).
 - **Full keyboard operation** (4.24's second half): the menus take clicks; the board takes keys for speed, sell, rotate, grid, the wave.
 - **The Loadbearing relic's flat triple range** stands beside the Core gifts (2.35); retiring it is Daniil's call.
