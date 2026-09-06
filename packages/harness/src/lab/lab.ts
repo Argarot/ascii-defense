@@ -57,6 +57,8 @@ export interface LabSpec {
   towers: TowerPlacement[];
   /** Granted before the first tick, in order (offer flow bypassed). */
   relicIds: string[];
+  /** Session 28, PR 6: relics with a held rarity (0 common, 1 rare, 2 epic), granted after relicIds. */
+  relics?: { id: string; rarity?: number }[];
   difficulty?: DifficultySpec;
   maxWaves: number;
   coreHp?: number;
@@ -156,16 +158,43 @@ function corridorRoad(cells: readonly (CellType | null)[], W: number, H: number,
 /** A beam has no range; placed by a coverage instrument other than 'inline' it is placed as a gun of this range would be. */
 const BEAM_AS_GUN_RANGE = 6;
 
-/** The cell and facing whose corridor covers the most road (ties: first in scan order). */
+/** How far (by route) the corridor's first road cell is from the Core; -1 when the corridor meets no road. */
+function corridorDistance(cells: readonly (CellType | null)[], W: number, H: number, dist: Int32Array | number[], x: number, y: number, f: number): number {
+  const DX = [0, 1, 0, -1];
+  const DY = [-1, 0, 1, 0];
+  for (let k = 1; k <= W + H; k++) {
+    const nx = x + DX[f] * k;
+    const ny = y + DY[f] * k;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H) return -1;
+    const c = cells[ny * W + nx];
+    if (c !== null && isRoad(c)) return dist[ny * W + nx];
+  }
+  return -1;
+}
+
+/** Route distance weighs against road covered: a corridor of ten cells thirty out loses to one of six at the choke. */
+export const INLINE_DISTANCE_WEIGHT = 0.25;
+
+/**
+ * The cell and facing whose corridor covers the most road NEAR THE CHOKE
+ * (ties: first in scan order). Session 27 scored road alone, and the first
+ * laser watched an empty run far from the Core while the wave leaked
+ * elsewhere (the instruments sweep); session 28 PR 6 adds the distance
+ * term: road covered minus a quarter of the corridor's route distance.
+ */
 function inlineSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string): { x: number; y: number; facing: number } | null {
+  const flow = computeFlowField(cells, W, H, []);
   let best: { x: number; y: number; facing: number } | null = null;
-  let bestRoad = 0;
+  let bestScore = -Infinity;
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       if (!sim.canBuildDefAt(x, y, towerId)) continue;
       for (let f = 0; f < 4; f++) {
         const road = corridorRoad(cells, W, H, x, y, f);
-        if (road > bestRoad) { bestRoad = road; best = { x, y, facing: f }; }
+        if (road === 0) continue;
+        const d = corridorDistance(cells, W, H, flow.dist, x, y, f);
+        const score = road - (d < 0 ? W + H : d) * INLINE_DISTANCE_WEIGHT;
+        if (score > bestScore) { bestScore = score; best = { x, y, facing: f }; }
       }
     }
   return best;
@@ -242,7 +271,15 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     const idx = content.relicDefs.findIndex((r) => r.id === id);
     if (idx === -1) throw new Error(`unknown relic '${id}'`);
     sim.offer = [idx];
+    sim.offerRarity = [0];
     if (!sim.pickRelic(0)) throw new Error(`could not grant relic '${id}'`);
+  }
+  for (const r of spec.relics ?? []) {
+    const idx = content.relicDefs.findIndex((d) => d.id === r.id);
+    if (idx === -1) throw new Error(`unknown relic '${r.id}'`);
+    sim.offer = [idx];
+    sim.offerRarity = [r.rarity ?? 0];
+    if (!sim.pickRelic(0)) throw new Error(`could not grant relic '${r.id}'`);
   }
 
   const placed: LabReport['towersPlaced'] = [];

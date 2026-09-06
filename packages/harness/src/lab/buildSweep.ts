@@ -110,8 +110,36 @@ const BUILDS: Build[] = [
   { name: 'choke, Hailstorm (close quarters) line + Frost + Mortar, unlimited scrap (capability)', towers: mixed('choke', HAILSTORM), content: baseContent, economy: undefined },
 ];
 
-console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
-for (const board of BOARDS) {
+/**
+ * Session 28, PR 6: the relic sweep. The reference build with a random set
+ * of six held relics - drawn by a seeded LCG from the pool minus
+ * consumables (the lab never uses one) and fusion-only relics - at a rarity
+ * that cycles common, rare, epic across the sets. The spread of the death
+ * waves across sets is the number the layer is bounded by (Daniil's power
+ * target, 2026-09-06: a reference build with six random relics on Standard
+ * lands between 16 and 24; a set past 24 on every seed is flagged).
+ */
+const RELIC_SETS = 8;
+const RELICS_PER_SET = 6;
+function relicSet(n: number): { id: string; rarity: number }[] {
+  const pool = baseContent.relicDefs.filter((r) => r.kind !== 'consumable' && !r.fusionOnly);
+  let x = 2654435761 + n * 40503;
+  const next = (): number => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x; };
+  const picked: { id: string; rarity: number }[] = [];
+  const used = new Set<number>();
+  while (picked.length < RELICS_PER_SET && used.size < pool.length) {
+    const i = next() % pool.length;
+    if (used.has(i)) continue;
+    used.add(i);
+    picked.push({ id: pool[i].id, rarity: Math.max(['common', 'rare', 'epic'].indexOf(pool[i].rarity), n % 3) });
+  }
+  return picked;
+}
+const RELIC_BOARD = { w: 7, h: 5 };
+const RELICS_ONLY = process.argv.includes('--relics');
+
+if (!RELICS_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
+for (const board of RELICS_ONLY ? [] : BOARDS) {
   console.log(`## board ${board.w}x${board.h}\n`);
   console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | crowd kills | all kills |');
   console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
@@ -143,3 +171,28 @@ for (const board of BOARDS) {
   }
   console.log('');
 }
+
+// ---- the relic sweep (session 28, PR 6) ----
+console.log(`## relic sets on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - the reference build (Railbore line + Frost + Mortar, choke, economy) with six held relics\n`);
+console.log('| set | relics (rarity) | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean |');
+console.log('|---|---|' + SEEDS.map(() => '---').join('|') + '|---|');
+const means: number[] = [];
+const flagged: string[] = [];
+const noRelics: number[] = [];
+for (let n = -1; n < RELIC_SETS; n++) {
+  const set = n < 0 ? [] : relicSet(n);
+  const deaths: (number | null)[] = [];
+  for (const seed of SEEDS) {
+    const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: mixed('choke', RAILBORE), relicIds: [], relics: set, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+    try { deaths.push(runLab(spec, baseContent).deathWave); } catch { deaths.push(-1); }
+  }
+  const nums = deaths.map((d) => (d === null ? MAX_WAVES + 1 : d === -1 ? 0 : d));
+  const mean = nums.reduce((a, c) => a + c, 0) / nums.length;
+  if (n < 0) noRelics.push(mean); else means.push(mean);
+  const label = n < 0 ? 'no relics (reference)' : set.map((r) => `${r.id} (${['c', 'r', 'e'][r.rarity]})`).join(', ');
+  if (n >= 0 && nums.every((d) => d > 24)) flagged.push(`set ${n + 1}`);
+  console.log(`| ${n < 0 ? 'ref' : n + 1} | ${label} | ${deaths.map((d) => (d === null ? `>${MAX_WAVES}` : d === -1 ? 'n/a' : String(d))).join(' | ')} | ${mean.toFixed(1)} |`);
+}
+const lo = Math.min(...means);
+const hi = Math.max(...means);
+console.log(`\nspread across ${RELIC_SETS} sets: ${lo.toFixed(1)} to ${hi.toFixed(1)} (reference without relics ${noRelics[0].toFixed(1)}); target band 16-24; past 24 on every seed: ${flagged.length ? flagged.join(', ') : 'none'}\n`);
