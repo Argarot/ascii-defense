@@ -78,6 +78,13 @@ review found flat: the wave clock and the call button, boss waves, traits as
 real rules, stackability and escalating prices for relics, caches that open
 free onto loot tables, a dead zone for the Mortar with the range drawn as a
 filled disc, and every tower fork rebuilt as two roles instead of two numbers.
+**Later that evening** Daniil's feedback on the build folded the passive
+layer back into the relic pool (passives are relics: one pool of
+fifty-two, the offer every second wave), gave combining its own window
+(the Forge), priced the Laser, Tesla and Missiles up, fixed the relic
+card, the HUD column's height and the copy buttons, and added a SPRITE
+PACK setting that loads the art agent's reworked pack beside the shipped
+one.
 **Session 28 (2026-09-06, evening)** built Relics II on Daniil's accepted
 defaults: a passive layer of six slots picked every second wave and
 folded into every tower; rarity with teeth (a wave-weighted roll on every
