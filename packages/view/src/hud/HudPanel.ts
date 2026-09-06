@@ -150,6 +150,13 @@ export interface HudRelicSlot {
   /** Relic id + whether firing needs a board-click aim (main-thread arming). */
   id?: string;
   targeted?: boolean;
+  /** 'common' | 'rare' | 'epic' (session 28, PR 2): the frame's colour. */
+  rarity?: string;
+}
+
+/** The frame role for a rarity; common has none (the slot's own plate). */
+export function rarityRole(r: string | undefined): string | null {
+  return r === 'rare' ? 'rarity.rare' : r === 'epic' ? 'rarity.epic' : null;
 }
 
 export interface HudCoreInfo {
@@ -159,6 +166,8 @@ export interface HudCoreInfo {
   /** The passive layer (session 28, PR 1): the held passives, and how many slots a run has. */
   passives?: readonly { label: string; name: string; id: string }[];
   passiveSlots?: number;
+  /** Lit set effects (session 28, PR 2), as "Name (tag n)". */
+  sets?: readonly string[];
   /** "Name - desc" of the hovered slot, or null. */
   hoverDesc: string | null;
   /** Ore price of a blind draw; the button greys when unaffordable or pool-dry. */
@@ -471,6 +480,9 @@ export class HudPanel {
           if (slot.state === 'cooling') {
             term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, bg);
           }
+          // Rarity with teeth (session 28, PR 2): a rare or epic copy wears its frame corners.
+          const rr = rarityRole(slot.rarity);
+          if (rr) { term.put(x0, rowBase, '┌', role(rr), bg); term.put(x0 + 3, rowBase, '┐', role(rr), bg); term.put(x0, rowBase + 2, '└', role(rr), bg); term.put(x0 + 3, rowBase + 2, '┘', role(rr), bg); }
           for (let r = 0; r < slotH; r++) {
             this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
           }

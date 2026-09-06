@@ -7,7 +7,7 @@ import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
 import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions, PASSIVE_SLOTS } from './sim';
 import { effectiveStats } from './defs';
-import type { EnemyDef, PassiveDef, TowerDef } from './defs';
+import type { EnemyDef, PassiveDef, RelicDef, SetDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
@@ -530,6 +530,43 @@ describe('towers and projectiles', () => {
     // The hash sees the held passives: two runs that differ only in a pick differ.
     const other = new Sim(53, world);
     expect(other.hashState()).not.toBe(sim.hashState());
+  });
+
+  it('rarity with teeth: a draw never lands below the base rarity, a rare copy folds its own numbers, and two of a tag light a set (session 28, PR 2)', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const RELICS: RelicDef[] = [
+      { id: 'frostbite', name: 'Frostbite', kind: 'passive', rarity: 'common', tags: ['cold'], desc: '+50%', effects: { slowedDamageMul: 1.5 }, tiers: { rare: { desc: '+75%', effects: { slowedDamageMul: 1.75 } }, epic: { effects: { slowedDamageMul: 2 } } } },
+      { id: 'loadbearing', name: 'Loadbearing', kind: 'passive', rarity: 'epic', tags: ['reach'], desc: 'x3', effects: { coreAdjacentRangeMul: 3 } },
+      { id: 'stasis', name: 'Stasis', kind: 'active', rarity: 'common', tags: ['cold'], desc: 'freeze', cooldownTicks: 100, effects: { freezeTicks: 80 }, tiers: { rare: { effects: { freezeTicks: 120 } } } },
+    ];
+    const SETS: SetDef[] = [{ tag: 'cold', at: 2, name: 'Frost Line', desc: 'colder', mods: { slowMul: -0.05 } }];
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [WALKER], towerDefs: [BOLT], relicDefs: RELICS, setDefs: SETS });
+    let spot: { x: number; y: number } | null = null;
+    for (let y = 0; y < 60 && !spot; y++) for (let x = 0; x < 60 && !spot; x++) if (sim.canBuildAt(x, y)) spot = { x, y };
+    expect(sim.buildTower(spot!.x, spot!.y, 'bolt')).toBe(true);
+    const tower = sim.towers.find((t) => t)!;
+    // An epic-base relic is epic however the roll goes; a common one lands at common or above.
+    expect(sim.debugGrantRelic('loadbearing')).toBe(true);
+    expect(sim.heldRarity[0]).toBe(2);
+    expect(sim.debugGrantRelic('frostbite')).toBe(true);
+    expect(sim.heldRarity[1]).toBeGreaterThanOrEqual(0);
+    // Effects follow the HELD rarity: force the copy rare, refold, and the fold reads the tier's number.
+    sim.heldRarity[1] = 1;
+    (sim as unknown as { refold(): void }).refold();
+    expect((sim as unknown as { fold: { slowedDamageMul: number } }).fold.slowedDamageMul).toBeCloseTo(1.75, 5);
+    expect(sim.heldEffects(1).slowedDamageMul).toBe(1.75);
+    expect(sim.heldRelicInfo()[1].rarity).toBe(1);
+    // One cold tag: no set. Two: Frost Line lights and every tower's slow is 5% colder.
+    expect(sim.litSets()).toEqual([]);
+    const slowBefore = sim.stats(tower).slowMul;
+    expect(sim.debugGrantRelic('stasis')).toBe(true);
+    expect(sim.litSets().map((x) => x.name)).toEqual(['Frost Line']);
+    expect(sim.stats(tower).slowMul).toBeCloseTo(Math.max(0, slowBefore - 0.05), 5);
+    // The hash sees the rarity: the same run with the copy common hashes differently.
+    const h1 = sim.hashState();
+    sim.heldRarity[1] = 0;
+    (sim as unknown as { refold(): void }).refold();
+    expect(sim.hashState()).not.toBe(h1);
   });
 
   it('a beam hits every body in its corridor, heats on a held lead, and turns on a replayed input (session 26, WBS 2.34)', () => {

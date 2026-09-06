@@ -37,7 +37,10 @@ import {
   type LootTable,
   type RelicDef,
   type PassiveDef,
+  type SetDef,
   PASSIVE_SLOTS,
+  RARITIES,
+  relicDescAt,
   type ReplayAction,
   type TileDef,
   type TowerDef,
@@ -53,6 +56,8 @@ export interface WorkerRuntimeDeps {
   relicDefs: readonly RelicDef[];
   /** The passive pool (session 28, PR 1). */
   passiveDefs: readonly PassiveDef[];
+  /** Set effects over tags (session 28, PR 2). */
+  setDefs: readonly SetDef[];
   lootTables: readonly LootTable[];
 }
 
@@ -61,7 +66,7 @@ const SPEEDS = [0, 1, 2, 4, 8] as const;
 const MIN_SLOTS = 12;
 
 export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
-  const { post, basics, enemyDefs, towerDefs, relicDefs, passiveDefs, lootTables } = deps;
+  const { post, basics, enemyDefs, towerDefs, relicDefs, passiveDefs, setDefs, lootTables } = deps;
   const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs);
 
   // The current run - null until the first successful init. Everything here
@@ -155,6 +160,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         coreHp: 50,
         relicDefs,
         passiveDefs,
+        setDefs,
         lootTables,
         finalWave: THREAT.finalWave,
         interWaveTicks: THREAT.waveSeconds * TICK_HZ,
@@ -338,10 +344,10 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             // id + targeted let the MAIN thread own aim-mode arming: the
             // worker only mirrors `targeting` back per frame, so the two
             // threads can never fight over who is aiming.
-            return { label: slotTag(h.def.name), name: h.def.name, state, cooldownSec: Math.ceil(h.cooldown / TICK_HZ), id: h.def.id, targeted: h.def.kind === 'active' && h.def.effects?.orbitalDamage !== undefined };
+            return { label: slotTag(h.def.name), name: h.def.name, state, cooldownSec: Math.ceil(h.cooldown / TICK_HZ), id: h.def.id, targeted: h.def.kind === 'active' && h.def.effects?.orbitalDamage !== undefined, rarity: RARITIES[h.rarity] };
           }),
           hoverDesc: (hudHover?.kind === 'relic' && held[hudHover.index])
-            ? `${held[hudHover.index].def.name} - ${held[hudHover.index].def.desc}`
+            ? `${held[hudHover.index].def.name} (${RARITIES[held[hudHover.index].rarity]}) - ${relicDescAt(held[hudHover.index].def, held[hudHover.index].rarity)}`
             : (hudHover?.kind === 'passive' && s.heldPassiveDefs()[hudHover.index])
               ? `${s.heldPassiveDefs()[hudHover.index].name} - ${s.heldPassiveDefs()[hudHover.index].desc}`
               : targeting ? 'click the map to aim, Esc cancels' : null,
@@ -350,6 +356,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           // The passive layer (session 28, PR 1): six slots, the held ones first.
           passives: s.heldPassiveDefs().map((d) => ({ label: slotTag(d.name), name: d.name, id: d.id })),
           passiveSlots: PASSIVE_SLOTS,
+          // Lit sets (session 28, PR 2): a line under the slots.
+          sets: s.litSets().map((x) => `${x.name} (${x.tag} ${x.at})`),
         };
     const coreInfo = selected && s.cellAt(selected.x, selected.y) === 'C' ? coreCard : null;
     // The strip's roster: every tower, with affordability and whether it
@@ -516,8 +524,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       offer: offer
         ? {
             kind: 'relic' as const,
-            title: `WAVE ${s.wave} CLEARED - CHOOSE A RELIC`,
-            cards: offer.map((d) => ({ name: d.name, kind: d.kind, desc: d.desc })),
+            title: `WAVE ${s.offerWave} CLEARED - CHOOSE A RELIC`,
+            cards: offer.map((d, i) => ({ name: d.name, kind: `${d.kind} - ${(d.tags ?? []).join(' ')}`, desc: relicDescAt(d, s.offerRarity[i] ?? 0), rarity: RARITIES[s.offerRarity[i] ?? 0] })),
             wave: s.wave,
             reroll: { cost: s.rerollCost(), can: s.ore[0] >= s.rerollCost(), ore: s.ore[0] },
           }
@@ -548,7 +556,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     return {
       killsByTower: [...kills].map(([name, k]) => ({ name, kills: k })).sort((a, b) => b.kills - a.kills),
       met,
-      relics: s.heldRelicInfo().map((h) => h.def.name),
+      relics: s.heldRelicInfo().map((h) => (h.rarity > 0 ? `${h.def.name} (${RARITIES[h.rarity]})` : h.def.name)),
       passives: s.heldPassiveDefs().map((d) => d.name),
     };
   }
@@ -635,6 +643,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'offer': result = s.offerDefs()?.map((d) => d.id) ?? null; break;
           case 'pick': result = s.pickRelic(args[0]); if (result) syncOfferPause(); break;
           case 'relics': result = s.heldRelicInfo().map((h) => h.def.id); break;
+          case 'relicsHeld': result = s.heldRelicInfo().map((h) => ({ id: h.def.id, rarity: RARITIES[h.rarity] })); break;
+          case 'sets': result = s.litSets().map((x) => x.name); break;
           case 'passives': result = { held: s.heldPassiveDefs().map((d) => d.id), offer: s.passiveOfferDefs()?.map((d) => d.id) ?? null }; break;
           case 'pickPassive': result = s.pickPassive(args[0] as number); if (result) syncOfferPause(); break;
           case 'grant': result = s.debugGrantRelic(args[0] as string); break; // not a recorded input: replays diverge

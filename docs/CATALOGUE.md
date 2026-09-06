@@ -148,24 +148,26 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 <!-- generated:relics -->
 16 relics in `packages/content/assets/relics/pool.json`. Passives work while held; actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
 
-| Relic | id | Kind | Stacks | Recharge | What it does | Data |
-|---|---|---|---|---|---|---|
-| **Overflow** | overflow | passive |  |  | Overkill damage chains to the nearest enemy. Chain kills chain again. | overkillCarry true |
-| **Frostbite** | frostbite | passive | yes |  | Slowed enemies take +50% damage from everything. Stacks. | slowedDamageMul 1.5 |
-| **Tithe** | tithe | passive | yes |  | Every kill refunds 2 Scrap. Stacks. | killRefundScrap 2 |
-| **Splinter** | splinter | passive |  |  | Explosions detonate twice: the same blast, resolved again a beat later - you will see both. | explodeTwice true |
-| **Vein Tap** | vein_tap | passive |  |  | You may build on rock. | buildOnRock true |
-| **Loadbearing** | loadbearing | passive |  |  | Towers touching the Core block get triple range. | coreAdjacentRangeMul 3 |
-| **Second Wind** | second_wind | passive |  |  | The Core mends 2 health every time a wave launches. | coreHealPerWave 2 |
-| **Quarry** | quarry | passive |  |  | Rock breaks three times faster - every prospect job, everywhere. | prospectSpeedMul 3 |
-| **Toll** | toll | passive | yes |  | Every enemy pays 1 Scrap for each cell it walks beside a tower. Stacks. | tollScrap 1 |
-| **Bounty Board** | bounty_board | passive |  |  | Bosses pay half again as much Scrap. | bossBountyMul 1.5 |
-| **Orbital Lance** | orbital | active | yes | 90 s | Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly. A second copy is a second charge. | orbitalDamage 400, orbitalRadius 3 |
-| **Stasis Field** | stasis | active | yes | 120 s | Freeze every enemy for 4 seconds. Towers keep firing. A second copy is a second charge. | freezeTicks 80 |
-| **Deep Vein** | deep_vein | active | yes | 120 s | Refineries produce five-fold for 20 seconds. A second copy is a second charge. | productionMul 5, boostTicks 400 |
-| **Sandbags** | sandbags | consumable | yes |  | Use: the Core gains 15 health, and 15 to its maximum. One use. | coreHpAdd 15 |
-| **Flashbang** | flashbang | consumable | yes |  | Use: every enemy freezes for 2 seconds. One use. | freezeTicks 40 |
-| **Ore Pocket** | ore_pocket | consumable | yes |  | Use: 20 Ore, right now. One use. | oreAdd 20 |
+| Relic | id | Kind | Base rarity | Tags | Stacks | Recharge | What it does (common) | Data | Rare | Epic |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Overflow** | overflow | passive | rare | damage |  |  | Overkill damage chains to the nearest enemy. Chain kills chain again. | overkillCarry true | same | same |
+| **Frostbite** | frostbite | passive | common | cold | yes |  | Slowed enemies take +50% damage from everything. Stacks. | slowedDamageMul 1.5 | Slowed enemies take +75% from everything. [slowedDamageMul 1.75] | Slowed enemies take double from everything. [slowedDamageMul 2] |
+| **Tithe** | tithe | passive | common | economy | yes |  | Every kill refunds 2 Scrap. Stacks. | killRefundScrap 2 | Every kill refunds 3 Scrap. [killRefundScrap 3] | Every kill refunds 5 Scrap. [killRefundScrap 5] |
+| **Splinter** | splinter | passive | epic | damage |  |  | Explosions detonate twice: the same blast, resolved again a beat later - you will see both. | explodeTwice true | same | same |
+| **Vein Tap** | vein_tap | passive | rare | core |  |  | You may build on rock. | buildOnRock true | same | same |
+| **Loadbearing** | loadbearing | passive | epic | reach |  |  | Towers touching the Core block get triple range. | coreAdjacentRangeMul 3 | same | same |
+| **Second Wind** | second_wind | passive | common | core |  |  | The Core mends 2 health every time a wave launches. | coreHealPerWave 2 | The Core mends 4 health every wave. [coreHealPerWave 4] | The Core mends 6 health every wave. [coreHealPerWave 6] |
+| **Quarry** | quarry | passive | common | economy |  |  | Rock breaks three times faster - every prospect job, everywhere. | prospectSpeedMul 3 | Prospecting runs four times as fast. [prospectSpeedMul 4] | Prospecting runs six times as fast. [prospectSpeedMul 6] |
+| **Toll** | toll | passive | common | economy | yes |  | Every enemy pays 1 Scrap for each cell it walks beside a tower. Stacks. | tollScrap 1 | Every enemy that passes a tower pays 2 Scrap. [tollScrap 2] | Every enemy that passes a tower pays 3 Scrap. [tollScrap 3] |
+| **Bounty Board** | bounty_board | passive | common | economy |  |  | Bosses pay half again as much Scrap. | bossBountyMul 1.5 | Boss bounties pay double. [bossBountyMul 2] | Boss bounties pay triple. [bossBountyMul 3] |
+| **Orbital Lance** | orbital | active | common | damage | yes | 90 s | Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly. A second copy is a second charge. | orbitalDamage 400, orbitalRadius 3 | Strike anywhere: 550 damage in a 3.5-cell blast. Recharges slowly. [orbitalDamage 550, orbitalRadius 3.5] | Strike anywhere: 800 damage in a 4-cell blast. Recharges slowly. [orbitalDamage 800, orbitalRadius 4] |
+| **Stasis Field** | stasis | active | common | cold | yes | 120 s | Freeze every enemy for 4 seconds. Towers keep firing. A second copy is a second charge. | freezeTicks 80 | Freeze every enemy for 6 seconds. Towers keep firing. [freezeTicks 120] | Freeze every enemy for 8 seconds. Towers keep firing. [freezeTicks 160] |
+| **Deep Vein** | deep_vein | active | common | economy | yes | 120 s | Refineries produce five-fold for 20 seconds. A second copy is a second charge. | productionMul 5, boostTicks 400 | Refineries produce at six times for 30 seconds. [productionMul 6, boostTicks 600] | Refineries produce at eight times for 40 seconds. [productionMul 8, boostTicks 800] |
+| **Sandbags** | sandbags | consumable | common | core | yes |  | Use: the Core gains 15 health, and 15 to its maximum. One use. | coreHpAdd 15 | The Core gains 25 max health, once. [coreHpAdd 25] | The Core gains 40 max health, once. [coreHpAdd 40] |
+| **Flashbang** | flashbang | consumable | common | cold | yes |  | Use: every enemy freezes for 2 seconds. One use. | freezeTicks 40 | Freeze every enemy for 3 seconds, once. [freezeTicks 60] | Freeze every enemy for 4 seconds, once. [freezeTicks 80] |
+| **Ore Pocket** | ore_pocket | consumable | common | economy | yes |  | Use: 20 Ore, right now. One use. | oreAdd 20 | 35 Ore, once. [oreAdd 35] | 60 Ore, once. [oreAdd 60] |
+
+Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wave - common 60 minus the wave (floor 30), rare 30, epic 10 plus half the wave - never below the relic's base rarity. A rare or epic copy has the numbers in its column; "same" means the rule does not scale (a boolean).
 <!-- /generated -->
 
 ## Passives *(generated)*
@@ -189,6 +191,33 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | **Bulwark** | bulwark | core | The Core holds ten more health. |  | coreHpMaxAdd 10 |
 | **Tempered Steel** | tempered_steel | damage reach | Every hit does 10% more and every tower reaches half a cell further. | damageMul 1.1, range 0.5 |  |
 | **Shield Breaker** | shield_breaker | kinetic energy | Every hit does half again to shields. | shieldMul 0.5 |  |
+<!-- /generated -->
+
+## Sets *(generated)*
+
+<!-- generated:sets -->
+18 set effects in `packages/content/assets/sets/pool.json` (session 28, PR 2). Held passives and relics count per tag; at two and at three of a tag the set lights and folds into every tower like a passive (econ knobs into the run). The strip's PASSIVES line names the lit sets.
+
+| Set | Tag | At | What it does | Mods | Econ |
+|---|---|---|---|---|---|
+| **Sharpened** | damage | 2 | Two of damage: every hit does 5% more. | damageMul 1.05 |  |
+| **Honed** | damage | 3 | Three of damage: every hit does 12% more. | damageMul 1.12 |  |
+| **Oiled** | rate | 2 | Two of rate: every tower cycles a tick faster. | fireEveryTicks -1 |  |
+| **Overwound** | rate | 3 | Three of rate: every tower cycles three ticks faster. | fireEveryTicks -3 |  |
+| **Spotter** | reach | 2 | Two of reach: every tower reaches half a cell further. | range 0.5 |  |
+| **Watchtower** | reach | 3 | Three of reach: every tower reaches a cell and a half further. | range 1.5 |  |
+| **Frost Line** | cold | 2 | Two of cold: every slow is 5% colder. | slowMul -0.05 |  |
+| **Permafrost** | cold | 3 | Three of cold: every slow lasts half a second longer. | slowTicks 10 |  |
+| **Hardened** | kinetic | 2 | Two of kinetic: every shot passes into one more body. | pierceCount 1 |  |
+| **Depleted** | kinetic | 3 | Three of kinetic: every hit does 2 more. | damage 2 |  |
+| **Conductive** | energy | 2 | Two of energy: every arc reaches half a cell further. | chainReach 0.5 |  |
+| **Superheated** | energy | 3 | Three of energy: every hit leaves a burn of 1 a tick. | burnDps 1 |  |
+| **Rally** | support | 2 | Two of support: every aura reaches a cell further. | auraReach 1 |  |
+| **Banner** | support | 3 | Three of support: every hit does 5% more and every tower reaches half a cell further. | damageMul 1.05, range 0.5 |  |
+| **Ledger** | economy | 2 | Two of economy: 5 Scrap at every wave launch. |  | waveScrap 5 |
+| **Treasury** | economy | 3 | Three of economy: every bounty pays 15% more. |  | bountyMul 1.15 |
+| **Masonry** | core | 2 | Two of core: the Core mends 1 health every wave. |  | coreHealPerWave 1 |
+| **Citadel** | core | 3 | Three of core: the Core mends 3 health every wave. |  | coreHealPerWave 3 |
 <!-- /generated -->
 
 ## PROPOSED - the request queue *(hand-edited, never touched by the generator)*

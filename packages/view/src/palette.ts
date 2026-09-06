@@ -40,6 +40,8 @@ const OVERRIDE_SETS: Record<string, Record<string, string>> = {
     'status.slowed': '#1b3a5c',
     'status.burning': '#5c2e00',
     'status.frozen': '#5a5f8a',
+    'rarity.rare': '#5fb0ff',
+    'rarity.epic': '#f2e94e',
   },
 };
 let overrides: Record<string, string> = {};

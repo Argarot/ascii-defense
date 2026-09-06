@@ -15,6 +15,8 @@ export interface OfferCard {
   name: string;
   kind: string;
   desc: string;
+  /** 'common' | 'rare' | 'epic' (session 28, PR 2): the card's frame colour and its word. */
+  rarity?: string;
 }
 
 interface CardRegion {
@@ -59,14 +61,17 @@ export class OfferModal {
       for (let r = 0; r < CARD_H; r++) {
         term.write(cx, y0 + r, ' '.repeat(CARD_W), role('ui.text'), role('ui.bg'));
       }
-      term.write(cx, y0, '+' + '-'.repeat(CARD_W - 2) + '+', role('ui.accent'), role('ui.bg'));
-      term.write(cx, y0 + CARD_H - 1, '+' + '-'.repeat(CARD_W - 2) + '+', role('ui.accent'), role('ui.bg'));
+      // Rarity with teeth (session 28, PR 2): the frame wears the rarity's colour and the word.
+      const frame = c.rarity === 'rare' ? role('rarity.rare') : c.rarity === 'epic' ? role('rarity.epic') : role('ui.accent');
+      term.write(cx, y0, '+' + '-'.repeat(CARD_W - 2) + '+', frame, role('ui.bg'));
+      term.write(cx, y0 + CARD_H - 1, '+' + '-'.repeat(CARD_W - 2) + '+', frame, role('ui.bg'));
       for (let r = 1; r < CARD_H - 1; r++) {
-        term.write(cx, y0 + r, '|', role('ui.accent'), role('ui.bg'));
-        term.write(cx + CARD_W - 1, y0 + r, '|', role('ui.accent'), role('ui.bg'));
+        term.write(cx, y0 + r, '|', frame, role('ui.bg'));
+        term.write(cx + CARD_W - 1, y0 + r, '|', frame, role('ui.bg'));
       }
-      term.write(cx + 2, y0 + 2, c.name.slice(0, CARD_W - 4), role('ui.accent'), role('ui.bg'));
-      term.write(cx + 2, y0 + 3, c.kind.toUpperCase(), role('ui.dim'), role('ui.bg'));
+      term.write(cx + 2, y0 + 2, c.name.slice(0, CARD_W - 4), frame, role('ui.bg'));
+      const kindLine = (c.rarity && c.rarity !== 'common' ? `${c.rarity.toUpperCase()} ` : '') + c.kind.toUpperCase();
+      term.write(cx + 2, y0 + 3, kindLine.slice(0, CARD_W - 4), c.rarity && c.rarity !== 'common' ? frame : role('ui.dim'), role('ui.bg'));
       // Wrapped description.
       let row = y0 + 5;
       let line = '';

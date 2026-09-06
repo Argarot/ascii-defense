@@ -6,7 +6,7 @@
    /_||_\    /__\                                                                                                                         DRAW RELIC  50 ore
   Bolt     >Mortar    Frost     Refinery                                                                                                 hover a slot for details; click actives to fire
        $20       $35       $25       $60 └       ┘ └       ┘ └       ┘ └       ┘
-                                                                                                                                         PASSIVES 0/6 - a pick every 2nd wave
+                                                                                                                                         PASSIVES 0/6
  click a button: builds on the selected tile                                                                                             ┌  ┐ ┌  ┐ ┌  ┐ ┌  ┐ ┌  ┐ ┌  ┐
  hover a button: its card in the column
  grey: not enough scrap, or not for that tile                                                                                            └  ┘ └  ┘ └  ┘ └  ┘ └  ┘ └  ┘
