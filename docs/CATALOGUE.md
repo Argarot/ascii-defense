@@ -168,6 +168,29 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | **Ore Pocket** | ore_pocket | consumable | yes |  | Use: 20 Ore, right now. One use. | oreAdd 20 |
 <!-- /generated -->
 
+## Passives *(generated)*
+
+<!-- generated:passives -->
+14 passives in `packages/content/assets/passives/pool.json` (session 28, PR 1; D26). The permanent layer, separate from relics: six slots a run, one pick every second wave from three offered, every one of them on every tower. "Mods" are folded like a tier; "econ" knobs act on the run.
+
+| Passive | id | Tags | What it does | Mods | Econ |
+|---|---|---|---|---|---|
+| **Iron Sights** | iron_sights | reach | Every tower reaches one cell further. | range 1 |  |
+| **Hot Loads** | hot_loads | damage | Every hit does 15% more. | damageMul 1.15 |  |
+| **Quick Hands** | quick_hands | rate | Every tower cycles two ticks faster. | fireEveryTicks -2 |  |
+| **Deep Cold** | deep_cold | cold | Every slow is 10% colder. | slowMul -0.1 |  |
+| **Piercing Rounds** | piercing_rounds | kinetic | Every shot passes into one more body. | pierceCount 1 |  |
+| **Long Arc** | long_arc | energy | Every arc jumps to one more body. | chainCount 1 |  |
+| **Overclock** | overclock | energy | Every beam heats one multiple higher. | beamRampMax 1 |  |
+| **Wide Aura** | wide_aura | support | Every aura reaches one cell further. | auraReach 1 |  |
+| **Rich Seam** | rich_seam | economy | Every refinery mines one more Ore a cycle. | production 1 |  |
+| **War Chest** | war_chest | economy | Ten Scrap at every wave launch. |  | waveScrap 10 |
+| **Bounty Hunter** | bounty_hunter | economy | Every bounty pays 25% more. |  | bountyMul 1.25 |
+| **Bulwark** | bulwark | core | The Core holds ten more health. |  | coreHpMaxAdd 10 |
+| **Tempered Steel** | tempered_steel | damage reach | Every hit does 10% more and every tower reaches half a cell further. | damageMul 1.1, range 0.5 |  |
+| **Shield Breaker** | shield_breaker | kinetic energy | Every hit does half again to shields. | shieldMul 0.5 |  |
+<!-- /generated -->
+
 ## PROPOSED - the request queue *(hand-edited, never touched by the generator)*
 
 One row per thing. "What it does" in a sentence; the numbers can come later.

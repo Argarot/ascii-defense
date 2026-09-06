@@ -156,6 +156,37 @@ export interface RelicDef {
 }
 
 /**
+ * A passive (PRD sec 7.8; D26 decided 2026-09-06): the permanent modifier
+ * layer, separate from relics. Its mods fold into EVERY tower like a tier
+ * (applyCoreBoon is the applier), its econ knobs into the run. Six slots,
+ * one pick every second wave from three offered. Tags feed set effects
+ * (session 28, PR 2).
+ */
+export interface PassiveDef {
+  id: string;
+  name: string;
+  desc: string;
+  tags?: readonly string[];
+  mods?: StatMods;
+  econ?: { waveScrap?: number; bountyMul?: number; coreHpMaxAdd?: number };
+}
+
+/** The held passives' mods as one StatMods: adds add, multipliers multiply - order-free. */
+export function foldPassiveMods(defs: readonly PassiveDef[]): StatMods {
+  const out: StatMods = {};
+  for (const d of defs) {
+    const m = d.mods;
+    if (!m) continue;
+    for (const [k, v] of Object.entries(m) as [keyof StatMods, number][]) {
+      if (v === undefined) continue;
+      if (k === 'damageMul') out.damageMul = (out.damageMul ?? 1) * v;
+      else out[k] = (out[k] ?? 0) + v;
+    }
+  }
+  return out;
+}
+
+/**
  * The always-on modifiers folded from held relics: passives plus USED
  * consumables (an unused consumable is a promise, not a power). Multipliers
  * stack multiplicatively, adds additively - order-free, so determinism does

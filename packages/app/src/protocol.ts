@@ -62,7 +62,8 @@ export interface FrameSnapshot {
   board: Omit<RenderState, 'phase' | 'animMs' | 'drift'>;
   /** HudState minus phase, same reason. */
   hud: Omit<HudState, 'phase'>;
-  offer: { cards: { name: string; kind: string; desc: string }[]; wave: number; reroll: { cost: number; can: boolean; ore: number } } | null;
+  /** A pick-1-of-3 standing over the board: a relic offer (with reroll) or a passive offer (session 28, PR 1). */
+  offer: { kind: 'relic' | 'passive'; title: string; cards: { name: string; kind: string; desc: string }[]; wave: number; reroll?: { cost: number; can: boolean; ore: number } } | null;
   events: StampedSimEvent[];
   /** The sim's terrain mutations, cumulative - the view applies incrementally. */
   cellChanges: { x: number; y: number; t: string }[];
@@ -73,7 +74,7 @@ export interface FrameSnapshot {
   /** Current speed multiplier, for the main thread's world-ambient clock (4.25). */
   speed: number;
   /** The run's story, once it has ended (session 27): kills by tower, bodies met, relics held. */
-  story?: { killsByTower: { name: string; kills: number }[]; met: { name: string; count: number }[]; relics: string[] };
+  story?: { killsByTower: { name: string; kills: number }[]; met: { name: string; count: number }[]; relics: string[]; passives: string[] };
 }
 
 export type ToWorker =
@@ -91,6 +92,7 @@ export type WorkerAction =
   | { k: 'priority'; x: number; y: number; value: string }
   | { k: 'facing'; x: number; y: number; value: number }
   | { k: 'pickRelic'; option: number }
+  | { k: 'pickPassive'; option: number }
   | { k: 'rerollOffer' }
   | { k: 'buyRelic' }
   | { k: 'slot'; index: number }

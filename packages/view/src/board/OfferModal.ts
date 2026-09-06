@@ -43,13 +43,13 @@ export class OfferModal {
     return null;
   }
 
-  render(term: TermSurface, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean; ore: number }): void {
+  render(term: TermSurface, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean; ore: number }, titleText?: string): void {
     this.regions = [];
     const totalW = cards.length * CARD_W + (cards.length - 1) * GAP;
     const x0 = Math.max(0, Math.floor((term.cols - totalW) / 2));
     const y0 = Math.max(0, Math.floor((term.rows - CARD_H) / 2) - 2);
 
-    const title = `WAVE ${wave} CLEARED - CHOOSE A RELIC`;
+    const title = titleText ?? `WAVE ${wave} CLEARED - CHOOSE A RELIC`;
     const blink = phase % 1 < 0.5;
     term.write(Math.floor((term.cols - title.length) / 2), y0 - 2, title, blink ? role('ui.accent') : role('ui.text'), role('ui.bg'));
 

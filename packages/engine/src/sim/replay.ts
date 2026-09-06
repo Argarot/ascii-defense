@@ -28,6 +28,7 @@ export type ReplayAction =
   | { t: 'openCache'; x: number; y: number }
   | { t: 'prospect'; x: number; y: number }
   | { t: 'pickRelic'; option: number }
+  | { t: 'pickPassive'; option: number } // the passive layer (session 28, PR 1)
   | { t: 'buyRelic' }
   | { t: 'rerollOffer' }
   // relicId added 2026-08-16 while still reserved (multiple held actives need

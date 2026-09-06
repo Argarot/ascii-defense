@@ -30,6 +30,9 @@ import {
   type EffectiveStats,
   type EnemyDef,
   type RelicDef,
+  type PassiveDef,
+  type StatMods,
+  foldPassiveMods,
   type RelicFold,
   type TowerDef,
   type LootTable,
@@ -72,6 +75,8 @@ export interface SimOptions {
   lootTables?: readonly LootTable[];
   /** The unlocked relic pool (PRD sec 7). Absent = no relic layer (tests). */
   relicDefs?: readonly RelicDef[];
+  /** The passive pool (session 28, PR 1); absent = no passive offers. */
+  passiveDefs?: readonly PassiveDef[];
   /** Wave scaling knobs; DEFAULT_DIFFICULTY when absent. */
   difficulty?: DifficultySpec;
   /** Hold this wave and the run is WON (D6). 0 = endless (tests, demos). */
@@ -157,6 +162,9 @@ export const EVENT_CAP = 256;
 
 /** D4 (closed 2026-08-16): a pick-1-of-3 offer every this many waves. */
 export const OFFER_EVERY_WAVES = 3;
+/** D26 (decided 2026-09-06): a passive pick-1-of-3 every this many waves, into this many slots. */
+export const PASSIVE_OFFER_EVERY_WAVES = 2;
+export const PASSIVE_SLOTS = 6;
 /**
  * Ore price of the FIRST blind draw at the Core (PRD sec 7.3 C). Every
  * purchase this run multiplies the next by RELIC_COST_GROWTH (Daniil,
@@ -370,6 +378,14 @@ export class Sim {
   readonly relicCooldowns: number[] = [];
   /** Pending pick-1-of-3, as pool indices; null when no offer is up. */
   offer: number[] | null = null;
+  /** The passive layer (session 28, PR 1): held pool indices, the pending offer, the wave it was dealt for. */
+  readonly heldPassives: number[] = [];
+  passiveOffer: number[] | null = null;
+  /** The wave the standing passive offer was dealt for (the modal names it). */
+  passiveOfferWave = 0;
+  /** The held passives' tower mods, folded once per change; null when none held. */
+  private passiveMods: StatMods | null = null;
+  private passiveEcon = { waveScrap: 0, bountyMul: 1 };
   /** Wave the last offer was generated for - one offer per eligible wave. */
   private offerWave = 0;
   /** Purchases this run; each one makes the next dearer (escalating costs). */
@@ -737,6 +753,9 @@ export class Sim {
     if (auraRate !== 1) out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / auraRate));
     if (auraRange !== 0) out.range += auraRange;
     if (auraProd !== 1 && out.productionEveryTicks > 0) out.productionEveryTicks = Math.max(1, Math.round(out.productionEveryTicks / auraProd));
+    // The passive layer (session 28, PR 1): every held passive's mods, on
+    // every tower, folded like one more tier after the auras.
+    if (this.passiveMods) applyCoreBoon(out, { text: '', mods: this.passiveMods });
     const f = this.fold;
     if (f !== EMPTY_FOLD) {
       out.damage *= f.damageMul;
@@ -765,6 +784,65 @@ export class Sim {
     // Passives fold; actives and consumables act when fired/used instead.
     const live = this.heldRelics.filter((di) => defs[di].kind === 'passive').map((di) => defs[di]);
     this.fold = live.length === 0 ? EMPTY_FOLD : foldRelics(live);
+  }
+
+  // ---- the passive layer (session 28, PR 1; D26) ---------------------------
+
+  /**
+   * Every PASSIVE_OFFER_EVERY_WAVES-th wave puts up a pick-1-of-3 of the
+   * unheld passives, until the slots are full. Dealt at the same two
+   * moments as a relic offer; shown after it when both stand.
+   */
+  private maybePassiveOffer(): void {
+    const defs = this.opts.passiveDefs;
+    if (!defs || this.passiveOffer !== null) return;
+    if (this.wave === 0 || this.wave % PASSIVE_OFFER_EVERY_WAVES !== 0 || this.passiveOfferWave === this.wave) return;
+    if (this.heldPassives.length >= PASSIVE_SLOTS) return;
+    this.passiveOfferWave = this.wave;
+    const pool: number[] = [];
+    for (let i = 0; i < defs.length; i++) if (!this.heldPassives.includes(i)) pool.push(i);
+    if (pool.length === 0) return;
+    this.passiveOffer = this.rng.stream('passives').shuffle(pool).slice(0, 3);
+  }
+
+  /** The pending passive offer as defs; null when none. */
+  passiveOfferDefs(): PassiveDef[] | null {
+    return this.passiveOffer ? this.passiveOffer.map((di) => this.opts.passiveDefs![di]) : null;
+  }
+
+  heldPassiveDefs(): PassiveDef[] {
+    const defs = this.opts.passiveDefs ?? [];
+    return this.heldPassives.map((di) => defs[di]);
+  }
+
+  /** Take one of the offered passives: a replayed input. */
+  pickPassive(option: number): boolean {
+    if (this.status !== 'running') return false;
+    if (!this.passiveOffer || option < 0 || option >= this.passiveOffer.length) return false;
+    if (this.heldPassives.length >= PASSIVE_SLOTS) return false;
+    const di = this.passiveOffer[option];
+    this.heldPassives.push(di);
+    this.passiveOffer = null;
+    const d = this.opts.passiveDefs![di];
+    if (d.econ?.coreHpMaxAdd) {
+      this.coreHpMax += d.econ.coreHpMaxAdd;
+      this.coreHp += d.econ.coreHpMaxAdd;
+    }
+    this.refoldPassives();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'pickPassive', option } });
+    return true;
+  }
+
+  private refoldPassives(): void {
+    const held = this.heldPassiveDefs();
+    this.passiveMods = held.some((d) => d.mods) ? foldPassiveMods(held) : null;
+    let waveScrap = 0;
+    let bountyMul = 1;
+    for (const d of held) {
+      waveScrap += d.econ?.waveScrap ?? 0;
+      bountyMul *= d.econ?.bountyMul ?? 1;
+    }
+    this.passiveEcon = { waveScrap, bountyMul };
   }
 
   /** The pending offer as defs, for the modal; null when none. */
@@ -1268,6 +1346,7 @@ export class Sim {
       case 'facing': return this.setFacing(a.x, a.y, a.facing);
       case 'sell': return this.sellTower(a.x, a.y);
       case 'pickRelic': return this.pickRelic(a.option);
+      case 'pickPassive': return this.pickPassive(a.option);
       case 'fireActive': return this.fireActive(a.relicId, a.x, a.y);
       case 'useConsumable': return this.useConsumable(a.relicId);
       case 'buyRelic': return this.buyRelic();
@@ -1312,6 +1391,10 @@ export class Sim {
     for (const r of this.heldRelics) u32(r);
     for (const c of this.relicCooldowns) u32(c);
     for (const o of this.offer ?? [-1]) u32(o + 1);
+    // The passive layer (session 28, PR 1): held, offered, and the wave dealt for.
+    u32(this.passiveOfferWave);
+    for (const p of this.heldPassives) u32(p);
+    for (const o of this.passiveOffer ?? [-1]) u32(o + 1);
     for (const c of this.caches) { u32(c.x); u32(c.y); u32(c.opened ? 1 : 0); for (let i = 0; i < c.table.length; i++) u32(c.table.charCodeAt(i)); }
     for (const b of this.extraBoons) { u32(b.x); u32(b.y); u32(b.tier ?? 1); u32(b.boon.charCodeAt(0)); }
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
@@ -1566,7 +1649,10 @@ export class Sim {
     // An offer owed by the wave just ending is dealt at the latest here, so
     // a straggler can never withhold it (D4 cadence, item 10's clock).
     this.maybeOffer(true);
+    this.maybePassiveOffer();
     this.wave++;
+    // War Chest (passive): Scrap at every launch.
+    if (this.passiveEcon.waveScrap > 0) this.scrap += this.passiveEcon.waveScrap;
     // Second Wind (relic): the Core mends a little with every front opened.
     if (this.fold.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.fold.coreHealPerWave);
     this.emit({ kind: 'waveStart', wave: this.wave });
@@ -1585,7 +1671,7 @@ export class Sim {
       return;
     }
     // A cleared offer wave deals its offer as soon as the board is quiet.
-    if (this.spawnQueue.length === 0 && this.aliveCount() === 0) this.maybeOffer(false);
+    if (this.spawnQueue.length === 0 && this.aliveCount() === 0) { this.maybeOffer(false); this.maybePassiveOffer(); }
     // The clock runs from the previous launch, whoever is still walking.
     if (this.waveTimer > 0 && --this.waveTimer === 0) this.launchWave();
     if (this.spawnQueue.length > 0 && --this.intraTimer <= 0) {
@@ -2055,7 +2141,7 @@ export class Sim {
       this.killsByDef[this.enemyDefIdx[enemy]] = (this.killsByDef[this.enemyDefIdx[enemy]] ?? 0) + 1;
       // Bounty Board (relic) multiplies boss bounty only; rounded so Scrap
       // stays integral (the state hash truncates its lanes to integers).
-      this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1)) + this.fold.killRefundScrap; // Tithe
+      this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1) * this.passiveEcon.bountyMul) + this.fold.killRefundScrap; // Tithe; Bounty Hunter (passive)
       const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
       // A boss drops a cache where it falls (design round 1, Daniil: "where

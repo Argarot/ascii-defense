@@ -232,6 +232,32 @@ export class StripPanel {
       const hint = c.hoverDesc ?? 'hover a slot for details; click actives to fire';
       const lines = this.wrap(hint, cw, 2);
       lines.forEach((l, i) => term.write(cx, drawRow + 1 + i, l, c.hoverDesc ? text : dim));
+      // The passive layer (session 28, PR 1; D26): six slots under the
+      // relics, filled left to right - a permanent bonus on every tower,
+      // chosen every second wave. Hover for its card.
+      const passives = c.passives ?? [];
+      const pSlots = c.passiveSlots ?? 6;
+      const pRow = drawRow + 4;
+      if (pRow + slotH < H) {
+        term.write(cx, pRow - 1, `PASSIVES ${passives.length}/${pSlots} - a pick every 2nd wave`, role('terrain.core.lit'));
+        for (let i = 0; i < pSlots; i++) {
+          if (i >= perRow) break;
+          const x0 = cx + i * slotW;
+          const p = passives[i];
+          const [fg, sbg] = p ? [bg, role('ui.accent')] : [grid, bg];
+          for (let r = 0; r < slotH; r++)
+            for (let k = 0; k < slotW - 1; k++) term.put(x0 + k, pRow + r, ' ', fg, sbg);
+          if (!p) {
+            term.put(x0, pRow, '┌', fg); term.put(x0 + 3, pRow, '┐', fg);
+            term.put(x0, pRow + 2, '└', fg); term.put(x0 + 3, pRow + 2, '┘', fg);
+          } else {
+            const psp = this.sprites.get(`passive_${p.id}`);
+            if (psp) drawSpriteFrame(term, psp, psp.states[''], x0, pRow, { transparent: true });
+            else term.write(x0 + 1, pRow + 1, p.label.slice(0, 2), fg, sbg);
+            for (let r = 0; r < slotH; r++) this.regions.push({ row: pRow + r, x0, x1: x0 + slotW - 1, action: { kind: 'passive', index: i } });
+          }
+        }
+      }
     }
 
     term.flush();

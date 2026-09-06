@@ -5,9 +5,9 @@ import { TileLibrary } from '../tiles/board';
 import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions } from './sim';
+import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions, PASSIVE_SLOTS } from './sim';
 import { effectiveStats } from './defs';
-import type { EnemyDef, TowerDef } from './defs';
+import type { EnemyDef, PassiveDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
@@ -468,6 +468,68 @@ describe('towers and projectiles', () => {
       expect(sim.stats(gifted).damage).toBeCloseTo(base * 1.3);
     }
     expect(cellsW).toBeGreaterThan(0);
+  });
+
+  it('the passive layer: an offer every second wave, a pick folds into every tower and the run, six slots and then no more (session 28, PR 1; D26)', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const PASSIVES: PassiveDef[] = [
+      { id: 'sights', name: 'Sights', desc: '+1 range', mods: { range: 1 } },
+      { id: 'loads', name: 'Loads', desc: 'x1.5 damage', mods: { damageMul: 1.5 } },
+      { id: 'chest', name: 'Chest', desc: '10 scrap a wave', econ: { waveScrap: 10 } },
+      { id: 'wall', name: 'Wall', desc: '+10 core hp', econ: { coreHpMaxAdd: 10 } },
+      { id: 'p5', name: 'P5', desc: '', mods: { range: 0.5 } },
+      { id: 'p6', name: 'P6', desc: '', mods: { range: 0.5 } },
+      { id: 'p7', name: 'P7', desc: '', mods: { range: 0.5 } },
+      { id: 'p8', name: 'P8', desc: '', mods: { range: 0.5 } },
+      { id: 'p9', name: 'P9', desc: '', mods: { range: 0.5 } },
+    ];
+    // Waves mode, a parked walker so the Core never falls, a long clock so only calls launch waves.
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const world = { ...simOpts, mode: 'waves' as const, firstWaveWaits: true, maxSpawns: 0, interWaveTicks: 100000, enemyDefs: [parked], towerDefs: [BOLT], passiveDefs: PASSIVES };
+    const sim = new Sim(53, world);
+    // A wave's spawns must be out before the next call is allowed.
+    const call = (): boolean => { for (let t = 0; t < 3000 && !sim.canCallWave(); t++) sim.tick(); return sim.callWave(); };
+    let spot: { x: number; y: number } | null = null;
+    for (let y = 0; y < 60 && !spot; y++) for (let x = 0; x < 60 && !spot; x++) if (sim.canBuildAt(x, y)) spot = { x, y };
+    expect(spot).not.toBeNull();
+    expect(sim.buildTower(spot!.x, spot!.y, 'bolt')).toBe(true);
+    const tower = sim.towers.find((t) => t)!;
+    const base = sim.stats(tower);
+    // Wave 1: no offer. Launching wave 3 deals the offer owed by wave 2.
+    expect(call()).toBe(true);
+    expect(sim.passiveOffer).toBeNull();
+    expect(call()).toBe(true);
+    expect(call()).toBe(true);
+    expect(sim.passiveOffer).not.toBeNull();
+    expect(sim.passiveOffer!.length).toBe(3);
+    // Pick the first: its mods are on the tower, its econ on the run, the input recorded.
+    const picked = sim.passiveOfferDefs()![0];
+    const scrap0 = sim.scrap;
+    const hpMax0 = sim.coreHpMax;
+    expect(sim.pickPassive(0)).toBe(true);
+    expect(sim.passiveOffer).toBeNull();
+    expect(sim.heldPassives.length).toBe(1);
+    expect(sim.inputs.some((i) => i.a.t === 'pickPassive' && i.a.option === 0)).toBe(true);
+    const after = sim.stats(tower);
+    if (picked.mods?.range) expect(after.range).toBeCloseTo(base.range + picked.mods.range, 5);
+    if (picked.mods?.damageMul) expect(after.damage).toBeCloseTo(base.damage * picked.mods.damageMul, 5);
+    if (picked.econ?.coreHpMaxAdd) expect(sim.coreHpMax).toBe(hpMax0 + picked.econ.coreHpMaxAdd);
+    if (picked.econ?.waveScrap) { call(); expect(sim.scrap).toBeGreaterThanOrEqual(scrap0 + picked.econ.waveScrap); }
+    // A second pick is refused without an offer; the same option twice is refused.
+    expect(sim.pickPassive(0)).toBe(false);
+    // Fill the slots: an offer every second wave until six are held, then none.
+    let guard = 0;
+    while (sim.heldPassives.length < PASSIVE_SLOTS && guard++ < 40) {
+      call();
+      if (sim.passiveOffer) sim.pickPassive(0);
+    }
+    expect(sim.heldPassives.length).toBe(PASSIVE_SLOTS);
+    expect(new Set(sim.heldPassives).size).toBe(PASSIVE_SLOTS); // never the same passive twice
+    for (let i = 0; i < 6; i++) call();
+    expect(sim.passiveOffer).toBeNull();
+    // The hash sees the held passives: two runs that differ only in a pick differ.
+    const other = new Sim(53, world);
+    expect(other.hashState()).not.toBe(sim.hashState());
   });
 
   it('a beam hits every body in its corridor, heats on a held lead, and turns on a replayed input (session 26, WBS 2.34)', () => {

@@ -34,6 +34,7 @@ const SCHEMA_FOR = {
   'enemies/': 'enemies.schema.json',
   'towers/': 'towers.schema.json',
   'relics/': 'relics.schema.json',
+  'passives/': 'passives.schema.json',
   'terrain/': 'terrain.schema.json',
   'loot/': 'loot.schema.json',
   'grid.json': 'grid.schema.json',
