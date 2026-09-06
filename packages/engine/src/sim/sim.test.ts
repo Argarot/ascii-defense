@@ -5,7 +5,7 @@ import { TileLibrary } from '../tiles/board';
 import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
+import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
 import { effectiveStats } from './defs';
 import type { EnemyDef, RecipeDef, RelicDef, SetDef, TowerDef } from './defs';
 
@@ -519,7 +519,8 @@ describe('towers and projectiles', () => {
     const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
     const world = { ...simOpts, mode: 'waves' as const, firstWaveWaits: true, maxSpawns: 0, interWaveTicks: 100000, enemyDefs: [parked], towerDefs: [BOLT], relicDefs: RELICS, recipeDefs: RECIPES };
     const sim = new Sim(53, world);
-    const call = (): boolean => { for (let t = 0; t < 3000 && !sim.canCallWave(); t++) sim.tick(); return sim.callWave(); };
+    // The offer comes only to a quiet board (session 29, PR 0): each call clears the last wave's parked bodies first.
+    const call = (): boolean => { for (let t = 0; t < 3000 && !sim.canCallWave(); t++) sim.tick(); sim.debugKillAll(); sim.tick(); return sim.callWave(); };
     // Fill the row with Tithes (stackable, so the pool keeps dealing them).
     for (let i = 0; i < RELIC_SLOTS; i++) expect(sim.debugGrantRelic('tithe')).toBe(true);
     expect(sim.heldRelics.length).toBe(RELIC_SLOTS);
@@ -647,17 +648,16 @@ describe('towers and projectiles', () => {
     const { cells, simOpts } = makeWorld(53, { maxSpawns: 0, spawnEveryTicks: 1000 });
     const TABLES = [{ id: 'void_chest', outcomes: [{ kind: 'scrap' as const, weight: 100, min: 50, max: 50 }] }];
     const sim = new Sim(53, { ...simOpts, enemyDefs: [WALKER], towerDefs: [BOLT], lootTables: TABLES });
-    // A chest's home: water, or on a waterless board unprospected rock (both off-route, unbuildable).
-    const hasWater = cells.some((c) => c === null);
+    // A chest's home: water, or empty ground (2026-09-06 item 12) - never rock, never road.
     const water: { x: number; y: number }[] = [];
-    for (let y = 0; y < simOpts.cellsH; y++) for (let x = 0; x < simOpts.cellsW; x++) if (hasWater ? cells[y * simOpts.cellsW + x] === null : cells[y * simOpts.cellsW + x] === 'R') water.push({ x, y });
-    // Over a long run the water surfaces chests only on water cells, never more than CHEST_MAX at once, and they sink.
+    for (let y = 0; y < simOpts.cellsH; y++) for (let x = 0; x < simOpts.cellsW; x++) if (cells[y * simOpts.cellsW + x] === null || cells[y * simOpts.cellsW + x] === 'G') water.push({ x, y });
+    // Over a long run chests surface only on water or ground, never more than CHEST_MAX at once, and they sink.
     let seen = 0;
     let maxAtOnce = 0;
     for (let t = 0; t < CHEST_EVERY * 12; t++) {
       sim.tick();
       maxAtOnce = Math.max(maxAtOnce, sim.voidChests.length);
-      for (const c of sim.voidChests) { expect(hasWater ? sim.cellAt(c.x, c.y) === null : sim.cellAt(c.x, c.y) === 'R').toBe(true); seen++; }
+      for (const c of sim.voidChests) { expect(sim.cellAt(c.x, c.y) === null || sim.cellAt(c.x, c.y) === 'G').toBe(true); seen++; }
     }
     expect(maxAtOnce).toBeLessThanOrEqual(CHEST_MAX);
     if (water.length > 0) expect(seen).toBeGreaterThan(0);
@@ -677,10 +677,25 @@ describe('towers and projectiles', () => {
       expect(sim.debugSurfaceChest(w.x, w.y)).toBe(true);
       for (let t = 0; t <= CHEST_WINDOW; t++) sim.tick();
       expect(sim.chestAt(w.x, w.y)).toBeNull();
-      // Never on ground: a forced chest on a non-water cell is refused.
-      let ground = -1;
-      for (let k = 0; k < cells.length && ground === -1; k++) if (cells[k] === 'G') ground = k;
-      if (ground !== -1) expect(sim.debugSurfaceChest(ground % simOpts.cellsW, Math.floor(ground / simOpts.cellsW))).toBe(false);
+      // Never on rock or road: a forced chest there is refused.
+      let rock = -1;
+      for (let k = 0; k < cells.length && rock === -1; k++) if (cells[k] === 'R') rock = k;
+      if (rock !== -1) expect(sim.debugSurfaceChest(rock % simOpts.cellsW, Math.floor(rock / simOpts.cellsW))).toBe(false);
+      let road = -1;
+      for (let k = 0; k < cells.length && road === -1; k++) if (cells[k] === 'X') road = k;
+      if (road !== -1) expect(sim.debugSurfaceChest(road % simOpts.cellsW, Math.floor(road / simOpts.cellsW))).toBe(false);
+      // A chest on ground holds its cell: no build under it until it is claimed.
+      let g = -1;
+      for (let k = 0; k < cells.length && g === -1; k++) if (cells[k] === 'G' && sim.canBuildAt(k % simOpts.cellsW, Math.floor(k / simOpts.cellsW))) g = k;
+      if (g !== -1) {
+        const gx = g % simOpts.cellsW;
+        const gy = Math.floor(g / simOpts.cellsW);
+        expect(sim.debugSurfaceChest(gx, gy)).toBe(true);
+        expect(sim.canBuildAt(gx, gy)).toBe(false);
+        expect(sim.buildTower(gx, gy, 'bolt')).toBe(false);
+        expect(sim.claimChest(gx, gy)).toBe(true);
+        expect(sim.canBuildAt(gx, gy)).toBe(true);
+      }
     }
   });
 
@@ -1448,15 +1463,26 @@ describe('the tower rework (design round 1, item 8): forks are roles, not slider
     expect(firstHit(single, armoured, -1).hp).toBe(998); // 6 - 4
     expect(firstHit(single, armoured, 1).hp).toBe(994); // armour ignored
 
-    const kills = (pierce: number): number => {
-      const def = mk({ fireEveryTicks: 30 }, [{ choices: [{ name: 'P', cost: 1, mods: { pierceCount: pierce } }, { name: 'x', cost: 1 }] }]);
-      const sim = new Sim(47, { ...simOpts, maxSpawns: 30, spawnEveryTicks: 4, towerDefs: [def], enemyDefs: [{ ...WALKER, hp: 5 }] });
+    // Pierce reaches half a cell (session 29, PR 0): a swarm pack walks as one body, so one shot's damage lands
+    // once per body without pierce (the hit radius) and again per pass with it. Measured as damage dealt, since
+    // the wave scales hp (waveHpScale) and a pack shares every impact.
+    const dealt = (pierce: number): number => {
+      const def = mk({ fireEveryTicks: 1000 }, [{ choices: [{ name: 'P', cost: 1, mods: { pierceCount: pierce } }, { name: 'x', cost: 1 }] }]);
+      const sim = new Sim(47, { ...simOpts, mode: 'waves', firstWaveWaits: true, interWaveTicks: 100000, towerDefs: [def], enemyDefs: [{ ...WALKER, hp: 100000, traits: ['swarm'] }] });
       sim.buildTower(spot.x, spot.y, 'bolt');
       sim.chooseTier(spot.x, spot.y, 0, 0);
-      for (let t = 0; t < 1200; t++) sim.tick();
-      return sim.kills;
+      for (let t = 0; t < 3000 && !sim.canCallWave(); t++) sim.tick();
+      sim.callWave();
+      sim.tick();
+      const hp0 = sim.hp[0];
+      const loss = (): number => { let n = 0; for (let i = 0; i < sim.posX.length; i++) if (sim.alive[i]) n += hp0 - sim.hp[i]; return n; };
+      let guard = 0;
+      while (guard++ < 3000 && loss() === 0) sim.tick();
+      for (let t = 0; t < 10; t++) sim.tick();
+      return loss();
     };
-    expect(kills(2)).toBeGreaterThan(kills(0));
+    expect(dealt(0)).toBeGreaterThan(0);
+    expect(dealt(2)).toBeGreaterThan(dealt(0));
   });
 
   it('Concussive: an explosive shell slows what it hits; Absolute Zero: every Nth pulse freezes; Brittle: slowed take more', () => {
@@ -1517,5 +1543,131 @@ describe('the tower rework (design round 1, item 8): forks are roles, not slider
     const after = sim.depositAt(vein.x, vein.y)!;
     expect(after.initial).toBe(before.initial + Math.round(before.initial * 0.5));
     expect(after.left).toBe(before.left + Math.round(before.initial * 0.5));
+  });
+});
+
+describe('session 29, PR 0 - the fix bundle of the 2026-09-06 thought dump', () => {
+  /** Three buildable cells in an L: (x, y), east of it, and south-east of it. */
+  function ell(sim: Sim, W: number, H: number): { x: number; y: number } | null {
+    for (let y = 0; y < H - 1; y++) for (let x = 0; x < W - 1; x++) {
+      if (sim.canBuildAt(x, y) && sim.canBuildAt(x + 1, y) && sim.canBuildAt(x + 1, y + 1) && !sim.isNearCore(x, y) && !sim.isNearCore(x + 1, y) && !sim.isNearCore(x + 1, y + 1)) return { x, y };
+    }
+    return null;
+  }
+  const BASTION: TowerDef = { id: 'bastion', cost: 40, range: 1.5, fireEveryTicks: 1, attack: 'none', aura: { damageMul: 1.15, rateMul: 1, rangeAdd: 0, reach: 1, productionMul: 1 }, tiers: [{ choices: [{ cost: 40, name: 'Reach', mods: { auraReach: 1 } }, { cost: 40, name: 'x' }] }] };
+  const REACH: RelicDef = { id: 'long_arm', name: 'Long Arm', kind: 'passive', rarity: 'common', desc: '+2 range', effects: { rangeAdd: 2 } };
+
+  it('a supporter reaches a PLUS - straight out, never the diagonal - and its own range is that reach whatever relic is held (items 8, 9)', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 0, startingScrap: 900 });
+    const sim = new Sim(53, { ...simOpts, towerDefs: [BOLT, BASTION], relicDefs: [REACH] });
+    const at = ell(sim, simOpts.cellsW, simOpts.cellsH);
+    expect(at).not.toBeNull();
+    const { x, y } = at!;
+    expect(sim.buildTower(x + 1, y, 'bolt')).toBe(true);
+    expect(sim.buildTower(x + 1, y + 1, 'bolt')).toBe(true);
+    const east = sim.towerAt(x + 1, y)!;
+    const diag = sim.towerAt(x + 1, y + 1)!;
+    const base = sim.stats(east).damage;
+    expect(sim.stats(diag).damage).toBeCloseTo(base);
+    expect(sim.buildTower(x, y, 'bastion')).toBe(true);
+    const bastion = sim.towerAt(x, y)!;
+    // The orthogonal neighbour is lifted; the diagonal one is not.
+    expect(sim.stats(east).damage).toBeCloseTo(base * 1.15);
+    expect(sim.stats(diag).damage).toBeCloseTo(base);
+    // The Bastion's range reads its reach, not the def's 1.5 and not a relic's +2.
+    expect(sim.stats(bastion).range).toBe(1);
+    expect(sim.debugGrantRelic('long_arm')).toBe(true);
+    expect(sim.stats(east).range).toBeCloseTo(BOLT.range! + 2);
+    expect(sim.stats(bastion).range).toBe(1);
+    // Reach: the arms grow; the diagonal is still outside the plus.
+    expect(sim.chooseTier(x, y, 0, 0)).toBe(true);
+    expect(sim.stats(bastion).range).toBe(2);
+    expect(sim.stats(diag).damage).toBeCloseTo(base);
+    expect(inPlus(0, 0, 0, 2, 2)).toBe(true);
+    expect(inPlus(0, 0, 1, 1, 2)).toBe(false);
+    expect(inPlus(0, 0, 0, 0, 2)).toBe(false);
+  });
+
+  it('the build preview folds every modifier at the cell: it equals what the tower reads once built there (item 10)', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 0, startingScrap: 900 });
+    const sim = new Sim(53, { ...simOpts, towerDefs: [BOLT, BASTION], relicDefs: [REACH] });
+    const at = ell(sim, simOpts.cellsW, simOpts.cellsH)!;
+    expect(sim.buildTower(at.x, at.y, 'bastion')).toBe(true);
+    expect(sim.debugGrantRelic('long_arm')).toBe(true);
+    const ghost = sim.previewStats('bolt', at.x + 1, at.y)!;
+    // Untouched base: range 6, damage 6. Folded here: +2 range from the relic, x1.15 from the Bastion.
+    expect(ghost.range).toBeCloseTo(BOLT.range! + 2);
+    expect(ghost.damage).toBeCloseTo(BOLT.projectile!.damage * 1.15);
+    expect(sim.buildTower(at.x + 1, at.y, 'bolt')).toBe(true);
+    expect(sim.stats(sim.towerAt(at.x + 1, at.y)!)).toEqual(ghost);
+    expect(sim.previewStats('nothing', 0, 0)).toBeNull();
+  });
+
+  it('the relic offer waits for a quiet board; a call over living bodies carries the debt to the next quiet (item 18)', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 0, spawnEveryTicks: 1 });
+    const RELICS: RelicDef[] = [
+      { id: 'a', name: 'A', kind: 'passive', rarity: 'common', desc: '', effects: { rangeAdd: 1 } },
+      { id: 'b', name: 'B', kind: 'passive', rarity: 'common', desc: '', effects: { rangeAdd: 1 } },
+      { id: 'c', name: 'C', kind: 'passive', rarity: 'common', desc: '', effects: { rangeAdd: 1 } },
+      { id: 'd', name: 'D', kind: 'passive', rarity: 'common', desc: '', effects: { rangeAdd: 1 } },
+    ];
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const sim = new Sim(53, { ...simOpts, mode: 'waves', firstWaveWaits: true, interWaveTicks: 100000, enemyDefs: [parked], towerDefs: [BOLT], relicDefs: RELICS });
+    const call = (): void => { for (let t = 0; t < 3000 && !sim.canCallWave(); t++) sim.tick(); expect(sim.callWave()).toBe(true); };
+    call(); // wave 1
+    for (let t = 0; t < 200; t++) sim.tick();
+    expect(sim.offer).toBeNull();
+    sim.debugKillAll();
+    sim.tick();
+    expect(sim.offer).toBeNull(); // wave 1 is not an offer wave
+    call(); // wave 2, an offer wave - but its bodies stand
+    for (let t = 0; t < 300; t++) sim.tick();
+    expect(sim.aliveCount()).toBeGreaterThan(0);
+    expect(sim.offer).toBeNull();
+    call(); // wave 3 called over them: no offer on the call
+    expect(sim.offer).toBeNull();
+    for (let t = 0; t < 300; t++) sim.tick();
+    expect(sim.offer).toBeNull();
+    // The board goes quiet: the owed offer comes now, once.
+    sim.debugKillAll();
+    sim.tick();
+    expect(sim.offer).not.toBeNull();
+    expect(sim.offerWave).toBe(2);
+    expect(sim.skipOffer()).toBe(true);
+    sim.tick();
+    expect(sim.offer).toBeNull();
+    // Wave 4 cleared once it has all walked in: its offer comes at that quiet.
+    call();
+    for (let t = 0; t < 300; t++) sim.tick();
+    sim.debugKillAll();
+    sim.tick();
+    expect(sim.offer).not.toBeNull();
+    expect(sim.offerWave).toBe(4);
+  });
+
+  it('pierce continues only into bodies within half a cell of the impact (item 24)', () => {
+    const struck = (swarm: boolean): number => {
+      const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { mode: 'waves', firstWaveWaits: true, interWaveTicks: 100000 });
+      const spot = buildSpotNear(cells, cellsW, cellsH);
+      const TANK: EnemyDef = { ...WALKER, hp: 100000, speed: 0.2, traits: swarm ? ['swarm'] : [] };
+      const PIERCER: TowerDef = { ...BOLT, fireEveryTicks: 1000, tiers: [{ choices: [{ name: 'P', cost: 1, mods: { pierceCount: 1 } }, { name: 'x', cost: 1 }] }] };
+      const sim = new Sim(47, { ...simOpts, towerDefs: [PIERCER], enemyDefs: [TANK] });
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      sim.chooseTier(spot.x, spot.y, 0, 0);
+      for (let t = 0; t < 3000 && !sim.canCallWave(); t++) sim.tick();
+      expect(sim.callWave()).toBe(true);
+      sim.tick();
+      const hp0 = sim.hp[0]; // the wave's scaled hp, the same for every body
+      let guard = 0;
+      const hurt = (): number => { let n = 0; for (let i = 0; i < sim.posX.length; i++) if (sim.alive[i] && sim.hp[i] < hp0) n++; return n; };
+      const worst = (): number => { let n = 0; for (let i = 0; i < sim.posX.length; i++) if (sim.alive[i]) n = Math.max(n, hp0 - sim.hp[i]); return n; };
+      while (guard++ < 3000 && hurt() === 0) sim.tick();
+      for (let t = 0; t < 10; t++) sim.tick();
+      return worst() / BOLT.projectile!.damage;
+    };
+    // A swarm pack walks as one body: the shot lands, the pierce finds a body within half a cell and lands again.
+    expect(struck(true)).toBe(2);
+    // Plain bodies six ticks apart walk 1.2 cells apart: the shot lands once and the pierce finds nobody.
+    expect(struck(false)).toBe(1);
   });
 });

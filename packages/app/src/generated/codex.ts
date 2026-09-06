@@ -368,9 +368,9 @@ export const CODEX = {
       "rate": "",
       "dmg": 0,
       "dps": "",
-      "shape": "aura: neighbours within 1 cell(s) hit x1.15",
-      "desc": "Shoots nothing. Every tower touching it hits harder; its tree makes the ring wider and the gift bigger.",
-      "coreBoon": "the aura reaches one cell further.",
+      "shape": "aura: a plus, 1 each way, hit x1.15",
+      "desc": "Shoots nothing. The four towers in its plus hit harder; its tree makes the arms longer and the gift bigger.",
+      "coreBoon": "the plus reaches one cell further.",
       "tiers": [
         [
           {
@@ -388,7 +388,7 @@ export const CODEX = {
           {
             "name": "Reach",
             "cost": 80,
-            "desc": "The ring grows to two cells: twenty-four neighbours instead of eight."
+            "desc": "The arms grow to two cells: eight neighbours instead of four."
           },
           {
             "name": "Hardpoint",
@@ -601,7 +601,7 @@ export const CODEX = {
       ],
       "stacks": false,
       "recharge": "",
-      "desc": "Towers touching the Core block get triple range.",
+      "desc": "Towers touching the Core block get half again their range.",
       "rare": "",
       "epic": ""
     },

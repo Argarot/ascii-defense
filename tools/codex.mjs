@@ -48,7 +48,7 @@ const table = (head, rows) =>
   [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.map(esc).join(' | ')} |`)].join('\n');
 
 function towerShape(t) {
-  if (t.attack === 'none' && t.aura) return `aura: neighbours within ${t.aura.reach} cell(s) hit x${n(t.aura.damageMul, 2)}`;
+  if (t.attack === 'none' && t.aura) return `aura: a plus, ${t.aura.reach} each way, hit x${n(t.aura.damageMul, 2)}`;
   if (t.attack === 'none') return 'producer (no attack)';
   if (t.attack === 'pulse') return 'pulse: hits everything in range at once';
   if (t.attack === 'beam') return `beam: down its facing to where the road turns, however far, every body on it, heat to x${n(t.beam?.rampMax ?? 1)} on a held target (R rotates)`;

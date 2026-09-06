@@ -296,15 +296,18 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const previewDef =
       (hudHover?.kind === 'build' ? palette[hudHover.index] : hudHover?.kind === 'buildId' ? towerDefs.find((d) => d.id === hudHover.id) : undefined) ?? palette[0];
     const aimRelic = targeting !== null ? relicDefs.find((r) => r.id === targeting) : undefined;
+    // The tower the selected cell WOULD hold, every modifier folded (2026-09-06 item 10).
+    const ghost = buildTarget && selected && previewDef ? s.previewStats(previewDef.id, selected.x, selected.y) : null;
     const range = aimRelic && hover
       ? { x: hover.x, y: hover.y, r: aimRelic.effects?.orbitalRadius ?? 1 }
       : selTower
-        ? { x: selTower.cellX, y: selTower.cellY, r: s.towerDef(selTower).attack === 'beam' ? s.beamReach(selTower) : s.stats(selTower).range, minR: s.stats(selTower).minRange, ...(s.towerDef(selTower).attack === 'beam' ? { beam: { dir: selTower.facing, w: s.stats(selTower).beamWidth } } : {}) }
+        ? { x: selTower.cellX, y: selTower.cellY, r: s.towerDef(selTower).attack === 'beam' ? s.beamReach(selTower) : s.stats(selTower).range, minR: s.stats(selTower).minRange, ...(s.towerDef(selTower).attack === 'beam' ? { beam: { dir: selTower.facing, w: s.stats(selTower).beamWidth } } : {}), ...(s.towerDef(selTower).aura ? { plus: true } : {}) }
         : buildTarget && selected && previewDef
           ? previewDef.attack === 'beam'
             // A beam's preview is the corridor it would fire down from this cell (2026-09-06, item 4).
             ? { x: selected.x, y: selected.y, r: s.beamPreview(selected.x, selected.y).len, beam: { dir: s.beamPreview(selected.x, selected.y).dir, w: previewDef.beam?.width ?? 1 } }
-            : { x: selected.x, y: selected.y, r: previewDef.range ?? 0, minR: previewDef.minRange ?? 0 }
+            // Otherwise the reach it WOULD have here, folded (item 10); a supporter's as its plus (items 8, 9).
+            : { x: selected.x, y: selected.y, r: ghost?.range ?? previewDef.range ?? 0, minR: ghost?.minRange ?? previewDef.minRange ?? 0, ...(previewDef.aura ? { plus: true } : {}) }
           : null;
     const hoverTower = hover ? s.towerAt(hover.x, hover.y) : null;
     const infoTower = selTower ?? hoverTower;
@@ -316,10 +319,11 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       next[hudHover.tier] = hudHover.option;
       effPreview = s.statsWith(infoTower, next);
     }
-    const toStats = (e: NonNullable<typeof eff>, d?: { damageType?: string; attack?: string }) => ({
+    const toStats = (e: NonNullable<typeof eff>, d?: { damageType?: string; attack?: string; aura?: unknown }) => ({
       type: d?.damageType ?? '',
       // A beam has no range: its reach is the road to its turn (2026-09-06, item 4).
-      reach: d?.attack === 'beam' ? 'the road, to its turn' : null,
+      // A supporter's is its plus: the cells straight out from it (items 8, 9).
+      reach: d?.attack === 'beam' ? 'the road, to its turn' : d?.aura ? `a plus, ${e.auraReach} each way` : null,
       dmg: Math.round(e.damage * 10) / 10,
       dps: ((e.damage / e.fireEveryTicks) * TICK_HZ).toFixed(1),
       range: Math.round(e.range * 10) / 10,
@@ -397,7 +401,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           name: previewHover.name ?? previewHover.id,
           cost: previewHover.cost,
           desc: previewHover.desc ?? '',
-          stats: toStats(effectiveStats(previewHover, [-1, -1, -1]), previewHover),
+          // At a selected buildable cell the card reads what the tower WOULD be there (item 10).
+          stats: toStats((buildTarget && selected ? s.previewStats(previewHover.id, selected.x, selected.y) : null) ?? effectiveStats(previewHover, [-1, -1, -1]), previewHover),
           coreBoon: selected && s.isNearCore(selected.x, selected.y) ? (previewHover.coreBoon?.text ?? null) : null,
         }
       : null;
@@ -667,6 +672,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'uses': result = s.heldRelicInfo().map((h) => ({ id: h.def.id, uses: h.uses })); break;
           case 'chests': result = s.voidChests.map((c) => ({ x: c.x, y: c.y, left: c.until - s.tickCount })); break;
           case 'surfaceChest': result = s.debugSurfaceChest(args[0] as number, args[1] as number); break; // not a recorded input
+          case 'killAll': result = s.debugKillAll(); break; // not a recorded input
           case 'claimChest': result = s.claimChest(args[0] as number, args[1] as number); break;
           case 'lootLog': result = [...s.lootLog]; break;
           case 'grant': result = s.debugGrantRelic(args[0] as string); break; // not a recorded input: replays diverge

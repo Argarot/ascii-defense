@@ -630,9 +630,9 @@
       "id": "bastion",
       "name": "Bastion",
       "short": "Bastion",
-      "desc": "Shoots nothing. Every tower touching it hits harder; its tree makes the ring wider and the gift bigger.",
+      "desc": "Shoots nothing. The four towers in its plus hit harder; its tree makes the arms longer and the gift bigger.",
       "coreBoon": {
-        "text": "Next to the Core: the aura reaches one cell further.",
+        "text": "Next to the Core: the plus reaches one cell further.",
         "mods": {
           "auraReach": 1
         }
@@ -675,7 +675,7 @@
             {
               "name": "Reach",
               "cost": 80,
-              "desc": "The ring grows to two cells: twenty-four neighbours instead of eight.",
+              "desc": "The arms grow to two cells: eight neighbours instead of four.",
               "mods": {
                 "auraReach": 1
               }

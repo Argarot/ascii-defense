@@ -267,11 +267,18 @@ export class EffectsLayer {
       }
   }
 
-  /** The expanding tower pulse - the visual that used to live in BoardView. */
+  /**
+   * The expanding tower pulse - the visual that used to live in BoardView.
+   * Muted, and fading with radius (2026-09-06 thought dump item 11: with
+   * many Frost towers the rings were "epilepsy-inducing"): brightest at
+   * the tower, dying out toward the full reach, and its peak is well under
+   * half what it was, so overlapping pulses add up to a glow, never a flash.
+   */
   private drawPulse(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     const rNow = still ? e.r : e.r * age01;
-    const strength = still ? 1.5 : 1 + 1.4 * (1 - age01);
-    this.ring(term, e.x, e.y, rNow, 0.24, (gx, gy) => term.shade(gx, gy, strength, 0.08));
+    const far = e.r > 0 ? Math.min(1, rNow / e.r) : 1; // 0 at the tower, 1 at the reach
+    const strength = still ? 1.2 : 1 + 0.6 * (1 - age01) * (1 - 0.7 * far);
+    this.ring(term, e.x, e.y, rNow, 0.24, (gx, gy) => term.shade(gx, gy, strength, 0.03 * (1 - far)));
   }
 
   /**

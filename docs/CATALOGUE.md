@@ -20,7 +20,7 @@
 | **Tesla Coil** | tesla | 70 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. | every arc hits two more bodies. |
 | **Missile Rack** | missile | 85 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. | two missiles per launch. |
 | **Laser Lance** | laser | 110 | energy | the road | 1 | 20 | 20 | beam: down its facing to where the road turns, however far, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces to where the road turns, however far that is, through every body on it: a pulse a second, and the damage climbs while it holds one. R rotates it. | the heat climbs one multiple higher. |
-| **Bastion** | bastion | 40 |  | 1.5 |  |  |  | aura: neighbours within 1 cell(s) hit x1.15 | Shoots nothing. Every tower touching it hits harder; its tree makes the ring wider and the gift bigger. | the aura reaches one cell further. |
+| **Bastion** | bastion | 40 |  | 1.5 |  |  |  | aura: a plus, 1 each way, hit x1.15 | Shoots nothing. The four towers in its plus hit harder; its tree makes the arms longer and the gift bigger. | the plus reaches one cell further. |
 
 The two ground cells touching the Core face (and the border cells beside it) are the precious ground of PRD §4.5: a tower there gets the gift in the last column, folded like a tier.
 
@@ -107,7 +107,7 @@ The two ground cells touching the Core face (and the border cells beside it) are
 |---|---|---|---|---|
 | T1 | **Command** | 40 | Neighbours hit for 30% more instead of 15%. | auraDamage +0.15 |
 | T1 | **Logistics** | 40 | Neighbours fire 15% faster, and producers cycle 15% faster. | auraRate +0.15, auraProduction +0.15 |
-| T2 | **Reach** | 80 | The ring grows to two cells: twenty-four neighbours instead of eight. | auraReach +1 |
+| T2 | **Reach** | 80 | The arms grow to two cells: eight neighbours instead of four. | auraReach +1 |
 | T2 | **Hardpoint** | 80 | Neighbours gain +1 range. | auraRange +1 |
 | T3 | **Warlord** | 160 | Neighbours hit for 30% more on top of everything. | auraDamage +0.3 |
 | T3 | **Quartermaster** | 160 | Neighbouring producers cycle 50% faster; neighbours gain +1 range. | auraProduction +0.5, auraRange +1 |
@@ -155,7 +155,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | **Tithe** | tithe | passive | common | economy | yes |  | Every kill refunds 2 Scrap. Stacks. | killRefundScrap 2 | Every kill refunds 3 Scrap. [killRefundScrap 3] | Every kill refunds 5 Scrap. [killRefundScrap 5] |
 | **Splinter** | splinter | passive | epic | damage |  |  | Explosions detonate twice: the same blast, resolved again a beat later - you will see both. | explodeTwice true | same | same |
 | **Vein Tap** | vein_tap | passive | rare | core |  |  | You may build on rock. | buildOnRock true | same | same |
-| **Loadbearing** | loadbearing | passive | epic | reach |  |  | Towers touching the Core block get triple range. | coreAdjacentRangeMul 3 | same | same |
+| **Loadbearing** | loadbearing | passive | epic | reach |  |  | Towers touching the Core block get half again their range. | coreAdjacentRangeMul 1.5 | same | same |
 | **Second Wind** | second_wind | passive | common | core |  |  | The Core mends 2 health every time a wave launches. | coreHealPerWave 2 | The Core mends 4 health every wave. [coreHealPerWave 4] | The Core mends 6 health every wave. [coreHealPerWave 6] |
 | **Quarry** | quarry | passive | common | economy |  |  | Rock breaks three times faster - every prospect job, everywhere. | prospectSpeedMul 3 | Prospecting runs four times as fast. [prospectSpeedMul 4] | Prospecting runs six times as fast. [prospectSpeedMul 6] |
 | **Toll** | toll | passive | common | economy | yes |  | Every enemy pays 1 Scrap for each cell it walks beside a tower. Stacks. | tollScrap 1 | Every enemy that passes a tower pays 2 Scrap. [tollScrap 2] | Every enemy that passes a tower pays 3 Scrap. [tollScrap 3] |
