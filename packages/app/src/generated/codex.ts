@@ -744,6 +744,78 @@ export const CODEX = {
       "desc": "Use: 20 Ore, right now. One use.",
       "rare": "35 Ore, once.",
       "epic": "60 Ore, once."
+    },
+    {
+      "id": "permafrost_engine",
+      "name": "Permafrost Engine",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "cold",
+        "damage"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Slowed enemies take triple from everything. Frostbite and Stasis, fused.",
+      "rare": "",
+      "epic": ""
+    },
+    {
+      "id": "tollbooth",
+      "name": "Tollbooth",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "economy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused.",
+      "rare": "",
+      "epic": ""
+    },
+    {
+      "id": "bunker",
+      "name": "Bunker",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "core"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "The Core mends 8 health every wave. Sandbags and Second Wind, fused.",
+      "rare": "",
+      "epic": ""
+    },
+    {
+      "id": "quarry_master",
+      "name": "Quarry Master",
+      "kind": "active",
+      "rarity": "epic",
+      "tags": [
+        "economy"
+      ],
+      "stacks": true,
+      "recharge": "90 s",
+      "desc": "Refineries produce at ten times for 40 seconds. Quarry and Deep Vein, fused.",
+      "rare": "",
+      "epic": ""
+    },
+    {
+      "id": "doomsday",
+      "name": "Doomsday",
+      "kind": "active",
+      "rarity": "epic",
+      "tags": [
+        "damage",
+        "cold"
+      ],
+      "stacks": true,
+      "recharge": "90 s",
+      "desc": "Strike anywhere: 900 damage in a 4-cell blast, and every enemy freezes for 2 seconds. Orbital Lance and Flashbang, fused.",
+      "rare": "",
+      "epic": ""
     }
   ],
   "sets": [
@@ -854,6 +926,53 @@ export const CODEX = {
       "tag": "core",
       "at": 3,
       "desc": "Three of core: the Core mends 3 health every wave."
+    }
+  ],
+  "recipes": [
+    {
+      "a": "frostbite",
+      "b": "stasis",
+      "result": "permafrost_engine",
+      "aName": "Frostbite",
+      "bName": "Stasis Field",
+      "resultName": "Permafrost Engine",
+      "desc": "Cold made permanent: slowed enemies take triple."
+    },
+    {
+      "a": "toll",
+      "b": "tithe",
+      "result": "tollbooth",
+      "aName": "Toll",
+      "bName": "Tithe",
+      "resultName": "Tollbooth",
+      "desc": "Every kill and every step pays."
+    },
+    {
+      "a": "sandbags",
+      "b": "second_wind",
+      "result": "bunker",
+      "aName": "Sandbags",
+      "bName": "Second Wind",
+      "resultName": "Bunker",
+      "desc": "The Core mends 8 a wave."
+    },
+    {
+      "a": "quarry",
+      "b": "deep_vein",
+      "result": "quarry_master",
+      "aName": "Quarry",
+      "bName": "Deep Vein",
+      "resultName": "Quarry Master",
+      "desc": "Ten times production on demand."
+    },
+    {
+      "a": "orbital",
+      "b": "flashbang",
+      "result": "doomsday",
+      "aName": "Orbital Lance",
+      "bName": "Flashbang",
+      "resultName": "Doomsday",
+      "desc": "The strike that also freezes the board."
     }
   ],
   "passives": [

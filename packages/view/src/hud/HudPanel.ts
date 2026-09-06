@@ -114,6 +114,8 @@ export interface HudState {
   buildPreview?: { name: string; cost: number; desc: string; stats: HudStats; coreBoon?: string | null } | null;
   /** The Core card, when a Core cell is selected. */
   core: HudCoreInfo | null;
+  /** The opened held relic (session 28, PR 3): salvage, combine, how often it fired. */
+  relicCard?: { index: number; name: string; rarity: string; kind: string; tags: readonly string[]; desc: string; uses: number; salvageOre: number; combine: readonly { with: number; withName: string; result: string }[] } | null;
   /** The cache card, when an unopened cache is selected (PRD sec 4.6): its source. */
   cache: { source: string } | null;
   /** What the last opened cache gave, shown briefly; null otherwise. */
@@ -134,6 +136,12 @@ export type HudAction =
   | { kind: 'relic'; index: number }
   /** A held passive's slot in the strip (session 28, PR 1): hover shows its card. */
   | { kind: 'passive'; index: number }
+  /** The opened relic's card (session 28, PR 3). */
+  | { kind: 'salvage'; index: number }
+  | { kind: 'combine'; a: number; b: number }
+  | { kind: 'closeRelic' }
+  /** The offer modal's decline (session 28, PR 3). */
+  | { kind: 'skipOffer' }
   | { kind: 'coreDraw' }
   | { kind: 'openCache' }
   | { kind: 'prospect' }
@@ -152,7 +160,14 @@ export interface HudRelicSlot {
   targeted?: boolean;
   /** 'common' | 'rare' | 'epic' (session 28, PR 2): the frame's colour. */
   rarity?: string;
+  /** Ticks since the relic's rule last fired; -1 never (session 28, PR 3: the slot pulses for a few ticks). */
+  firedAgo?: number;
+  /** The slot whose card is open in the column. */
+  selected?: boolean;
 }
+
+/** How long a slot pulses after its rule fires, in ticks. */
+export const RELIC_PULSE_TICKS = 8;
 
 /** The frame role for a rarity; common has none (the slot's own plate). */
 export function rarityRole(r: string | undefined): string | null {
@@ -168,6 +183,8 @@ export interface HudCoreInfo {
   passiveSlots?: number;
   /** Lit set effects (session 28, PR 2), as "Name (tag n)". */
   sets?: readonly string[];
+  /** Relic slots a run holds (session 28, PR 3). */
+  relicSlots?: number;
   /** "Name - desc" of the hovered slot, or null. */
   hoverDesc: string | null;
   /** Ore price of a blind draw; the button greys when unaffordable or pool-dry. */
@@ -428,6 +445,27 @@ export class HudPanel {
         this.button(0, y, W - 6, `PROSPECT - $${s.rock.cost} \u2802 ${s.rock.seconds}s`, can ? role('ui.bg') : role('ui.dim'), can ? role('ui.accent') : role('ui.grid'));
         if (can) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'prospect' } });
       }
+    } else if (s.relicCard) {
+      // ---- the opened relic (session 28, PR 3): salvage, combine, how often it fired ----
+      const c = s.relicCard;
+      const rr = rarityRole(c.rarity);
+      term.write(0, y++, c.name.toUpperCase().slice(0, W), rr ? role(rr) : role('ui.accent'));
+      term.write(0, y++, [c.rarity, c.kind, c.tags.length ? c.tags.join(' ') : ''].filter(Boolean).join('  \u2802  ').slice(0, W), role('ui.dim'));
+      for (const line of this.wrapText(c.desc, W).slice(0, 5)) term.write(0, y++, line, role('ui.text'));
+      term.write(0, y++, c.uses > 0 ? `its rule fired ${c.uses} time${c.uses === 1 ? '' : 's'}` : 'its rule has not fired yet', role('ui.dim'));
+      y++;
+      this.button(0, y, W - 2, `SALVAGE  +${c.salvageOre} ore`, role('ui.bg'), role('terrain.ore.lit'));
+      this.regions.push({ row: y, x0: 0, x1: W - 2, action: { kind: 'salvage', index: c.index } });
+      y += 2;
+      for (const t of c.combine.slice(0, 3)) {
+        this.button(0, y, W - 2, `COMBINE with ${t.withName} -> ${t.result}`.slice(0, W - 2), role('ui.bg'), role('ui.accent'));
+        this.regions.push({ row: y, x0: 0, x1: W - 2, action: { kind: 'combine', a: c.index, b: t.with } });
+        y += 2;
+      }
+      if (c.combine.length === 0) term.write(0, y++, 'nothing held combines with it: a second copy of the same rarity, or its recipe partner', role('ui.dim'));
+      this.button(0, y, 12, 'CLOSE', role('ui.bg'), role('ui.grid'));
+      this.regions.push({ row: y, x0: 0, x1: 12, action: { kind: 'closeRelic' } });
+      y += 2;
     } else if (s.core) {
       // ---- the Core card: the vessel and its relic slots (1.6.4) ----------
       const c = s.core;
@@ -483,6 +521,8 @@ export class HudPanel {
           // Rarity with teeth (session 28, PR 2): a rare or epic copy wears its frame corners.
           const rr = rarityRole(slot.rarity);
           if (rr) { term.put(x0, rowBase, '┌', role(rr), bg); term.put(x0 + 3, rowBase, '┐', role(rr), bg); term.put(x0, rowBase + 2, '└', role(rr), bg); term.put(x0 + 3, rowBase + 2, '┘', role(rr), bg); }
+          // The rule just fired (session 28, PR 3): the plate flashes.
+          if (slot.firedAgo !== undefined && slot.firedAgo >= 0 && slot.firedAgo < RELIC_PULSE_TICKS) { const fl = role('fx.flash'); term.put(x0, rowBase, '*', role('ui.bg'), fl); term.put(x0 + 3, rowBase, '*', role('ui.bg'), fl); term.put(x0, rowBase + 2, '*', role('ui.bg'), fl); term.put(x0 + 3, rowBase + 2, '*', role('ui.bg'), fl); }
           for (let r = 0; r < slotH; r++) {
             this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
           }

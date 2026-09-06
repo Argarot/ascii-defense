@@ -781,7 +781,14 @@ codebase.
   placeholder; every relic gets its own sprite (§13, 6.7).
 - **A held relic can be replaced or removed**, and relics can be **combined**
   into stronger ones (§7.6's fusion, made concrete) — a full row of slots is
-  a decision to make, never a wall.
+  a decision to make, never a wall. **Built 2026-09-06 (session 28, PR 3)**:
+  twelve relic slots; a full row still gets its offer and a pick names the
+  held relic it replaces (salvaged for Ore); any offer can be skipped (S);
+  a held relic's card in the column salvages it (10/20/35 Ore by rarity)
+  or combines it — two of a kind at one rarity into the next rarity, or a
+  recipe pair (`recipes/pool.json`, five duos) into a fusion-only relic at
+  the higher rarity; a slot pulses when its rule fires and the summary
+  counts the fires.
 
 ## 8. Enemies
 

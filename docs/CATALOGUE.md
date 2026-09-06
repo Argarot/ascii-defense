@@ -146,7 +146,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 ## Relics *(generated)*
 
 <!-- generated:relics -->
-16 relics in `packages/content/assets/relics/pool.json`. Passives work while held; actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
+21 relics in `packages/content/assets/relics/pool.json`. Passives work while held; actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
 
 | Relic | id | Kind | Base rarity | Tags | Stacks | Recharge | What it does (common) | Data | Rare | Epic |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -166,6 +166,11 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | **Sandbags** | sandbags | consumable | common | core | yes |  | Use: the Core gains 15 health, and 15 to its maximum. One use. | coreHpAdd 15 | The Core gains 25 max health, once. [coreHpAdd 25] | The Core gains 40 max health, once. [coreHpAdd 40] |
 | **Flashbang** | flashbang | consumable | common | cold | yes |  | Use: every enemy freezes for 2 seconds. One use. | freezeTicks 40 | Freeze every enemy for 3 seconds, once. [freezeTicks 60] | Freeze every enemy for 4 seconds, once. [freezeTicks 80] |
 | **Ore Pocket** | ore_pocket | consumable | common | economy | yes |  | Use: 20 Ore, right now. One use. | oreAdd 20 | 35 Ore, once. [oreAdd 35] | 60 Ore, once. [oreAdd 60] |
+| **Permafrost Engine** | permafrost_engine | passive (fusion only) | epic | cold damage |  |  | Slowed enemies take triple from everything. Frostbite and Stasis, fused. | slowedDamageMul 3 | same | same |
+| **Tollbooth** | tollbooth | passive (fusion only) | epic | economy |  |  | Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused. | killRefundScrap 5, tollScrap 3 | same | same |
+| **Bunker** | bunker | passive (fusion only) | epic | core |  |  | The Core mends 8 health every wave. Sandbags and Second Wind, fused. | coreHealPerWave 8 | same | same |
+| **Quarry Master** | quarry_master | active (fusion only) | epic | economy | yes | 90 s | Refineries produce at ten times for 40 seconds. Quarry and Deep Vein, fused. | productionMul 10, boostTicks 800 | same | same |
+| **Doomsday** | doomsday | active (fusion only) | epic | damage cold | yes | 90 s | Strike anywhere: 900 damage in a 4-cell blast, and every enemy freezes for 2 seconds. Orbital Lance and Flashbang, fused. | orbitalDamage 900, orbitalRadius 4, freezeTicks 40 | same | same |
 
 Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wave - common 60 minus the wave (floor 30), rare 30, epic 10 plus half the wave - never below the relic's base rarity. A rare or epic copy has the numbers in its column; "same" means the rule does not scale (a boolean).
 <!-- /generated -->
@@ -218,6 +223,20 @@ Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wa
 | **Treasury** | economy | 3 | Three of economy: every bounty pays 15% more. |  | bountyMul 1.15 |
 | **Masonry** | core | 2 | Two of core: the Core mends 1 health every wave. |  | coreHealPerWave 1 |
 | **Citadel** | core | 3 | Three of core: the Core mends 3 health every wave. |  | coreHealPerWave 3 |
+<!-- /generated -->
+
+## Recipes *(generated)*
+
+<!-- generated:recipes -->
+5 duo recipes in `packages/content/assets/recipes/pool.json` (session 28, PR 3; PRD §7.6 fusion). Two held relics, in either order, combine into the result at the higher of their rarities; the result is a relic marked "fusion only" above and never appears in an offer. Two of a KIND at the same rarity combine into the next rarity without a recipe. A held relic salvages for Ore: 10 common, 20 rare, 35 epic.
+
+| Recipe | A | B | Result | What it does |
+|---|---|---|---|---|
+| **Permafrost Engine** | Frostbite | Stasis Field | permafrost_engine | Cold made permanent: slowed enemies take triple. |
+| **Tollbooth** | Toll | Tithe | tollbooth | Every kill and every step pays. |
+| **Bunker** | Sandbags | Second Wind | bunker | The Core mends 8 a wave. |
+| **Quarry Master** | Quarry | Deep Vein | quarry_master | Ten times production on demand. |
+| **Doomsday** | Orbital Lance | Flashbang | doomsday | The strike that also freezes the board. |
 <!-- /generated -->
 
 ## PROPOSED - the request queue *(hand-edited, never touched by the generator)*

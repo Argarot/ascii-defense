@@ -154,6 +154,8 @@ export interface RelicDef {
   tags?: readonly string[];
   /** What a rare and an epic copy are: whole effects and the card text at that rarity. Absent = the same at every rarity. */
   tiers?: { rare?: { desc?: string; effects: RelicEffects }; epic?: { desc?: string; effects: RelicEffects } };
+  /** Never offered, drawn, bought or found: reached only by a recipe (session 28, PR 3). */
+  fusionOnly?: boolean;
   /** Actives: ticks between firings. */
   cooldownTicks?: number;
   /**
@@ -180,6 +182,14 @@ export interface PassiveDef {
   tags?: readonly string[];
   mods?: StatMods;
   econ?: { waveScrap?: number; bountyMul?: number; coreHpMaxAdd?: number };
+}
+
+/** A duo recipe (session 28, PR 3): two held relics, either order, combine into `result` at the higher rarity. */
+export interface RecipeDef {
+  a: string;
+  b: string;
+  result: string;
+  desc: string;
 }
 
 /** A set effect (session 28, PR 2): at `at` held things carrying `tag`, it folds like a passive. */

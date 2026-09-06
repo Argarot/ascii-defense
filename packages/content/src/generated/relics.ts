@@ -51,6 +51,10 @@ export interface RelicPool {
           effects: Effects;
         };
       };
+      /**
+       * Never offered, drawn, bought or found: reached only by combining two held relics by a recipe (recipes/pool.json; session 28, PR 3).
+       */
+      fusionOnly?: boolean;
     },
     ...{
       id: string;
@@ -93,6 +97,10 @@ export interface RelicPool {
           effects: Effects;
         };
       };
+      /**
+       * Never offered, drawn, bought or found: reached only by combining two held relics by a recipe (recipes/pool.json; session 28, PR 3).
+       */
+      fusionOnly?: boolean;
     }[]
   ];
 }
@@ -305,6 +313,10 @@ export const relicsSchema = {
                 }
               }
             }
+          },
+          "fusionOnly": {
+            "description": "Never offered, drawn, bought or found: reached only by combining two held relics by a recipe (recipes/pool.json; session 28, PR 3).",
+            "type": "boolean"
           }
         }
       }

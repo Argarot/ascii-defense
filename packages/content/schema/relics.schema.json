@@ -120,6 +120,10 @@
                 }
               }
             }
+          },
+          "fusionOnly": {
+            "description": "Never offered, drawn, bought or found: reached only by combining two held relics by a recipe (recipes/pool.json; session 28, PR 3).",
+            "type": "boolean"
           }
         }
       }

@@ -45,7 +45,7 @@ export class OfferModal {
     return null;
   }
 
-  render(term: TermSurface, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean; ore: number }, titleText?: string): void {
+  render(term: TermSurface, cards: readonly OfferCard[], wave: number, phase: number, reroll?: { cost: number; can: boolean; ore: number }, titleText?: string, skip = true): void {
     this.regions = [];
     const totalW = cards.length * CARD_W + (cards.length - 1) * GAP;
     const x0 = Math.max(0, Math.floor((term.cols - totalW) / 2));
@@ -104,6 +104,16 @@ export class OfferModal {
       for (let row = 0; row < 2; row++) term.write(rx, ry + row, ' '.repeat(bw), fg, bg);
       term.write(rx + Math.floor((bw - label.length) / 2), ry + 1, label, fg, bg);
       if (reroll.can) this.regions.push({ x0: rx, y0: ry, x1: rx + bw, y1: ry + 2, option: -1 });
+    }
+    if (skip) {
+      // The honest decline (session 28, PR 3): a full row is a decision, and "none of these" is one of the answers.
+      const label = 'SKIP THIS OFFER (S)';
+      const bw = label.length + 6;
+      const rx = Math.floor((term.cols - bw) / 2);
+      const ry = y0 + CARD_H + (reroll ? 5 : 2);
+      for (let row = 0; row < 2; row++) term.write(rx, ry + row, ' '.repeat(bw), role('ui.text'), role('ui.grid'));
+      term.write(rx + 3, ry + 1, label, role('ui.text'), role('ui.grid'));
+      this.regions.push({ x0: rx, y0: ry, x1: rx + bw, y1: ry + 2, option: -2 });
     }
   }
 }

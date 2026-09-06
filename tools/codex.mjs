@@ -31,6 +31,8 @@ const enemies = read('enemies/roster.json').enemies;
 const relics = read('relics/pool.json').relics;
 const passives = read('passives/pool.json').passives;
 const sets = read('sets/pool.json').sets;
+const recipes = read('recipes/pool.json').recipes;
+const relicName = (id) => relics.find((r) => r.id === id)?.name ?? id;
 
 /** Mirror of engine/sim/traits.ts TRAIT_RULES, in words. */
 const TRAITS = {
@@ -89,7 +91,7 @@ function enemyRows() {
 const fx = (e) => Object.entries(e ?? {}).map(([k, v]) => `${k} ${v}`).join(', ');
 function relicRows() {
   return relics.map((r) => [
-    `**${r.name}**`, r.id, r.kind, r.rarity, (r.tags ?? []).join(' '), r.stackable ? 'yes' : '', r.cooldownTicks ? `${n(r.cooldownTicks / TICK_HZ)} s` : '', r.desc ?? '',
+    `**${r.name}**`, r.id, r.fusionOnly ? `${r.kind} (fusion only)` : r.kind, r.rarity, (r.tags ?? []).join(' '), r.stackable ? 'yes' : '', r.cooldownTicks ? `${n(r.cooldownTicks / TICK_HZ)} s` : '', r.desc ?? '',
     fx(r.effects),
     r.tiers?.rare ? `${r.tiers.rare.desc ?? ''} [${fx(r.tiers.rare.effects)}]` : 'same',
     r.tiers?.epic ? `${r.tiers.epic.desc ?? ''} [${fx(r.tiers.epic.effects)}]` : 'same',
@@ -135,6 +137,12 @@ const SECTIONS = {
       '',
       'Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wave - common 60 minus the wave (floor 30), rare 30, epic 10 plus half the wave - never below the relic\'s base rarity. A rare or epic copy has the numbers in its column; "same" means the rule does not scale (a boolean).',
     ].join('\n'),
+  recipes: () =>
+    [
+      `${recipes.length} duo recipes in \`packages/content/assets/recipes/pool.json\` (session 28, PR 3; PRD §7.6 fusion). Two held relics, in either order, combine into the result at the higher of their rarities; the result is a relic marked "fusion only" above and never appears in an offer. Two of a KIND at the same rarity combine into the next rarity without a recipe. A held relic salvages for Ore: 10 common, 20 rare, 35 epic.`,
+      '',
+      table(['Recipe', 'A', 'B', 'Result', 'What it does'], recipes.map((x) => [`**${relicName(x.result)}**`, relicName(x.a), relicName(x.b), x.result, x.desc])),
+    ].join('\n'),
   sets: () =>
     [
       `${sets.length} set effects in \`packages/content/assets/sets/pool.json\` (session 28, PR 2). Held passives and relics count per tag; at two and at three of a tag the set lights and folds into every tower like a passive (econ knobs into the run). The strip's PASSIVES line names the lit sets.`,
@@ -174,6 +182,11 @@ const TEMPLATE = `# Catalogue - what is in the game
 ## Sets *(generated)*
 
 <!-- generated:sets -->
+<!-- /generated -->
+
+## Recipes *(generated)*
+
+<!-- generated:recipes -->
 <!-- /generated -->
 
 ## PROPOSED - the request queue *(hand-edited, never touched by the generator)*
@@ -262,6 +275,7 @@ function codexTs() {
       epic: r.tiers?.epic?.desc ?? '',
     })),
     sets: sets.map((s) => ({ name: s.name, tag: s.tag, at: s.at, desc: s.desc })),
+    recipes: recipes.map((x) => ({ a: x.a, b: x.b, result: x.result, aName: relicName(x.a), bName: relicName(x.b), resultName: relicName(x.result), desc: x.desc })),
     passives: passives.map((p) => ({ id: p.id, name: p.name, desc: p.desc, tags: p.tags ?? [] })),
     rules: [
       'Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.',

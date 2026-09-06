@@ -25,7 +25,7 @@ import { spriteState } from '../board/BoardView';
 import { drawSpriteFrame } from '../board/sprites';
 import { CELL_H, CELL_W } from '../board/style';
 import type { HudAction, HudState } from './HudPanel';
-import { rarityRole } from './HudPanel';
+import { rarityRole, RELIC_PULSE_TICKS } from './HudPanel';
 
 /**
  * Rows the strip takes at the BOARD's font scale (feedback 2026-09-05 item
@@ -193,7 +193,7 @@ export class StripPanel {
     if (c && cw >= 20) {
       // The column already shows the Core's health; here the card is the
       // slots and the actives only (feedback 2026-09-06, item 3).
-      term.write(cx, 0, 'THE CORE - relics and actives', role('terrain.core.lit'));
+      term.write(cx, 0, `THE CORE - relics and actives ${c.slots.filter((x) => x.state !== 'empty').length}/${c.relicSlots ?? c.slots.length} - click one for its card`.slice(0, cw), role('terrain.core.lit'));
       // Square slots, one row: the HUD's grid at 5x3, as many as fit.
       const slotW = 5;
       const slotH = 3;
@@ -224,6 +224,9 @@ export class StripPanel {
           if (slot.state === 'cooling') term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, sbg);
           const rr = rarityRole(slot.rarity);
           if (rr) { term.put(x0, rowBase, '┌', role(rr), sbg); term.put(x0 + 3, rowBase, '┐', role(rr), sbg); term.put(x0, rowBase + 2, '└', role(rr), sbg); term.put(x0 + 3, rowBase + 2, '┘', role(rr), sbg); }
+          // The rule just fired (session 28, PR 3): the plate flashes; the opened one is underlined.
+          if (slot.firedAgo !== undefined && slot.firedAgo >= 0 && slot.firedAgo < RELIC_PULSE_TICKS) for (let r = 0; r < slotH; r++) for (let k = 0; k < slotW - 1; k++) term.tint(x0 + k, rowBase + r, role('fx.flash'));
+          if (slot.selected) for (let k = 0; k < slotW - 1; k++) term.put(x0 + k, rowBase + slotH, '^', accent);
           for (let r = 0; r < slotH; r++) this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
         }
       });
