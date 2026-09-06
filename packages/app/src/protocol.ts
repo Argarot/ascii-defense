@@ -41,6 +41,8 @@ export interface RunSave {
    * the same world. A v4 save migrates with the everything sentinel.
    */
   meta: MetaState;
+  /** Endless mode (session 29, PR 2; PRD sec 19 item 22): no final wave, the ramp runs until the Core falls. Absent = false. */
+  endless?: boolean;
   tick: number;
   inputs: ReplayInput[];
   contentHash: number;
@@ -87,7 +89,7 @@ export interface FrameSnapshot {
 }
 
 export type ToWorker =
-  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave; board?: { w: number; h: number }; /** The tree state for a NEW run (session 29, PR 1); absent = everything (tests). A resume carries its own. */ meta?: MetaState }
+  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave; board?: { w: number; h: number }; /** The tree state for a NEW run (session 29, PR 1); absent = everything (tests). A resume carries its own. */ meta?: MetaState; /** Endless mode for a NEW run (session 29, PR 2); a resume carries its own. */ endless?: boolean }
   | { t: 'frame'; ui: UiState }
   | { t: 'speed'; idx: number }
   | { t: 'action'; a: WorkerAction }
