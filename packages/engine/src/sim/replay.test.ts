@@ -209,7 +209,11 @@ describe('replay (WBS 1.4.8)', () => {
     // back into the relic pool (Daniil: passives are relics) and its three
     // lanes left the hash - the value is the pre-passive one again, which is
     // the proof that nothing else moved.
-    expect(sim.hashState()).toBe(3921408197);
+    // 3921408197 -> 4031597317 on 2026-09-06 (session 29, PR 4, Ore by tier):
+    // the purse is three tiers long from the start and every tier is hashed -
+    // two more lanes, both zero in the golden world (no tiered vein). No
+    // behaviour change on this run; round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(4031597317);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

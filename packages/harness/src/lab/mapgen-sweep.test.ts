@@ -59,7 +59,9 @@ describe('the label law: shipped flags match the special-shape predicate', () =>
     // one unlabeled shape causes. tilegen emits the flag; this test keeps
     // hand-authored tiles honest too.
     for (const t of libraryJson.tiles) {
-      const should = tileIsSpecialShape(t.cells);
+      // A tile carrying a tiered vein is a BOUGHT tile (PRD sec 11.1; session 29, PR 4): special by economy, whatever its road.
+      const tiered = ((t as { deposits?: { tier?: number }[] }).deposits ?? []).some((d) => (d.tier ?? 1) > 1);
+      const should = tileIsSpecialShape(t.cells) || tiered;
       const flagged = (t as { special?: boolean }).special === true;
       expect(flagged, `${t.id}: shape says special=${should}, library says ${flagged}`).toBe(should);
     }

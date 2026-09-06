@@ -646,7 +646,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - **7.9 The tree, stage 1** *(session 29, 2026-09-06; Daniil's answers: a tree with branches, only Ore in tiers, ~5 runs to the towers, unlocks in the run code, the Tile Smith after every tile is bought; PRD §11 "Built")*:
   - [x] 7.9.1 *(PR #168)* **The tree as content and identity**: `tree/nodes.json` (base + 24 nodes in five branches), `resolveUnlocks`, meta save v4 (Ore by tier, unlocks, earned, forged, owned, discovered), run save v5 (the run's meta), the run code's fifth segment, the worker's filtered towers and pool, relic slots and forging caps in the sim, wins earn relics.
   - [x] 7.9.2 *(PR #169)* **The workshop page**: WORKSHOP on the title page; the branches as pages, a node a row with its price or its reason, BOUGHT once bought; RUN HISTORY (7.3's first half); the setup page shows locked Threats locked, the loadout's slot count is the tree's, ENDLESS at setup once bought (9.22).
-  - [ ] 7.9.3 **Ore tiers in the sim**: a Refinery credits the vein's tier (slower for higher tiers, 9.4); the HUD and the summary show Ore by tier; tier-2/3 vein tiles in the library.
+  - [x] 7.9.3 *(PR #170)* **Ore tiers in the sim**: a Refinery credits the vein's tier at a stretched cycle (×1.5, ×2 - 9.4); the purse has three tiers and hashes them; the HUD and the summary show Ore by tier; `rich_vein` (tier 2) and `mother_lode` (tier 3) in the library as specials.
   - [ ] 7.9.4 **The tile shop and the Tile Smith gate**: shipped specials priced and bought as owned copies (7.7); the loadout offers owned tiles; the Tile Smith link opens when every purchasable tile is owned (answer 6).
   - [ ] 7.9.5 **The lab at tree states**: `unlocks` in LabSpec; a sweep at base / mid / everything; the Ore-per-run reading that prices the nodes.
   - [ ] 7.9.6 **The codex with locked entries** (9.15) and discovered fusions (9.23).
@@ -672,7 +672,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 9.1 **Legendary rarity** (a fourth lane: common green, rare blue, epic purple, legendary gold; the roll's weights gain a lane; tiers gain `legendary`). The paid uber tier is D27, not this item.
 - [ ] 9.2 **Higher tiers unlock by forging**: the meta save records the tier a relic was forged to; the pool deals a tier only once forged.
 - [ ] 9.3 **Relics earned by wins**: difficulty (Threat) sets the rarity granted at a win; the tree gates branches and capacity; paid chests are §18's door.
-- [ ] 9.4 **One Refinery, every ore tier**: a per-tier cycle multiplier (slower for higher tiers).
+- [x] 9.4 *(session 29, PR #170)* **One Refinery, every ore tier**: a per-tier cycle multiplier (×1.5 tier 2, ×2 tier 3).
 - [ ] 9.5 **Core gifts as global powerups** (§4.5 rework): a tower kind beside the Core changes a run-wide rule (Laser: the Orbital doubles and recharges faster).
 - [ ] 9.6 Ignore-armour reads too strong: a balance reading against armoured waves, then the number.
 - [x] 9.7 *(session 29, PR #167)* Loadbearing ×3 → ×1.5.

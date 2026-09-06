@@ -72,6 +72,8 @@ export interface HudTowerInfo {
 export interface HudState {
   scrap: number;
   ore: number;
+  /** Ore by tier (session 29, PR 4); the label shows the higher tiers only once one is mined. */
+  oreTiers?: readonly number[];
   /** Seconds until the next wave; 0 while one is in progress. */
   nextWaveIn: number;
   /** Held relics; the full inventory panel arrives with the Core vessel (1.6.4). */
@@ -313,7 +315,8 @@ export class HudPanel {
     term.write(0, 3, `SCRAP ${s.scrap}`, role('ui.accent'));
     // Ore on the same line, right-aligned: the two currencies never compete
     // for the same pool (PRD sec 6), so they share a row, not a column.
-    const oreLabel = `ORE ${s.ore}`;
+    const higher = (s.oreTiers ?? []).slice(1).some((o) => o > 0);
+    const oreLabel = higher ? `ORE ${(s.oreTiers ?? [s.ore]).join('/')}` : `ORE ${s.ore}`;
     term.write(W - oreLabel.length, 3, oreLabel, role('terrain.ore.lit'));
     const hpFrac = s.coreHpMax > 0 ? s.coreHp / s.coreHpMax : 0;
     const barLen = Math.round(hpFrac * (W - 2));

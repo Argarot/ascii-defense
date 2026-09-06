@@ -482,6 +482,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       hud: {
         scrap: s.scrap,
         ore: s.ore[0],
+        oreTiers: [...s.ore],
         relicCount: s.heldRelics.length,
         kills: s.kills,
         coreHp: s.coreHp,
