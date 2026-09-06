@@ -31,7 +31,6 @@ import {
   type EnemyDef,
   type RelicDef,
   type RelicEffects,
-  type PassiveDef,
   type SetDef,
   type RecipeDef,
   type StatMods,
@@ -80,8 +79,6 @@ export interface SimOptions {
   lootTables?: readonly LootTable[];
   /** The unlocked relic pool (PRD sec 7). Absent = no relic layer (tests). */
   relicDefs?: readonly RelicDef[];
-  /** The passive pool (session 28, PR 1); absent = no passive offers. */
-  passiveDefs?: readonly PassiveDef[];
   /** Set effects over tags (session 28, PR 2); absent = no sets. */
   setDefs?: readonly SetDef[];
   /** Duo recipes (session 28, PR 3); absent = no fusion. */
@@ -170,11 +167,13 @@ export type StampedSimEvent = SimEvent & { seq: number; tick: number };
  */
 export const EVENT_CAP = 256;
 
-/** D4 (closed 2026-08-16): a pick-1-of-3 offer every this many waves. */
-export const OFFER_EVERY_WAVES = 3;
-/** D26 (decided 2026-09-06): a passive pick-1-of-3 every this many waves, into this many slots. */
-export const PASSIVE_OFFER_EVERY_WAVES = 2;
-export const PASSIVE_SLOTS = 6;
+/**
+ * D4 (closed 2026-08-16): a pick-1-of-3 offer every this many waves. Was 3;
+ * 2 since 2026-09-06 evening, when the passive layer (a pick every second
+ * wave of its own) folded back into the relic pool on Daniil's call - the
+ * pick rate stays, the pool is one.
+ */
+export const OFFER_EVERY_WAVES = 2;
 /** Relic slots a run holds (session 28, PR 3): a full row is a decision - replace, salvage or combine - never a wall. */
 export const RELIC_SLOTS = 12;
 /** Ore a salvaged relic returns, by rarity (common, rare, epic). */
@@ -406,14 +405,9 @@ export class Sim {
   private relicHpApplied = 0;
   /** Bloodstone: kills since the Core last mended (session 28, PR 4). */
   private killHealCounter = 0;
-  /** The passive layer (session 28, PR 1): held pool indices, the pending offer, the wave it was dealt for. */
-  readonly heldPassives: number[] = [];
-  passiveOffer: number[] | null = null;
-  /** The wave the standing passive offer was dealt for (the modal names it). */
-  passiveOfferWave = 0;
-  /** The held passives' tower mods, folded once per change; null when none held. */
-  private passiveMods: StatMods | null = null;
-  private passiveEcon = { waveScrap: 0, bountyMul: 1, coreHealPerWave: 0 };
+  /** Tower mods from held relics (`effects.mods`) and lit sets, folded once per change; null when none. */
+  private modsFold: StatMods | null = null;
+  private econFold = { waveScrap: 0, bountyMul: 1, coreHealPerWave: 0 };
   /** Wave the last offer was generated for - one offer per eligible wave. */
   /** The wave the standing relic offer was dealt for (the modal names it). */
   offerWave = 0;
@@ -820,9 +814,9 @@ export class Sim {
     if (auraRate !== 1) out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / auraRate));
     if (auraRange !== 0) out.range += auraRange;
     if (auraProd !== 1 && out.productionEveryTicks > 0) out.productionEveryTicks = Math.max(1, Math.round(out.productionEveryTicks / auraProd));
-    // The passive layer (session 28, PR 1): every held passive's mods, on
-    // every tower, folded like one more tier after the auras.
-    if (this.passiveMods) applyCoreBoon(out, { text: '', mods: this.passiveMods });
+    // Relic mods (Iron Sights, Quick Hands...) and lit sets: on every
+    // tower, folded like one more tier after the auras.
+    if (this.modsFold) applyCoreBoon(out, { text: '', mods: this.modsFold });
     const f = this.fold;
     if (f !== EMPTY_FOLD) {
       out.damage *= f.damageMul;
@@ -864,8 +858,8 @@ export class Sim {
       this.coreHp = delta > 0 ? this.coreHp + delta : Math.min(this.coreHp, this.coreHpMax);
       this.relicHpApplied = this.fold.coreHpMaxAdd;
     }
-    // Relic tags count toward the sets, so the passive fold moves too.
-    this.refoldPassives();
+    // Relic mods and the sets their tags light fold with them.
+    this.refoldMods();
   }
 
   /** Every held-relic array grows together (session 28, PR 3). */
@@ -972,7 +966,6 @@ export class Sim {
   skipOffer(): boolean {
     if (this.status !== 'running') return false;
     if (this.offer) { this.offer = null; this.offerRarity = []; }
-    else if (this.passiveOffer) this.passiveOffer = null;
     else return false;
     this.inputs.push({ tick: this.tickCount, a: { t: 'skipOffer' } });
     return true;
@@ -1000,80 +993,41 @@ export class Sim {
     return relicEffectsAt(defs[this.heldRelics[hi]], this.heldRarity[hi] ?? 0);
   }
 
-  /** The set effects lit by the held passives' and relics' tags (session 28, PR 2). */
+  /** The set effects lit by the held relics' tags (session 28, PR 2). */
   litSets(): SetDef[] {
     const sets = this.opts.setDefs;
     if (!sets || sets.length === 0) return [];
     const count = new Map<string, number>();
-    for (const d of this.heldPassiveDefs()) for (const t of d.tags ?? []) count.set(t, (count.get(t) ?? 0) + 1);
     const defs = this.opts.relicDefs ?? [];
     for (const di of this.heldRelics) for (const t of defs[di].tags ?? []) count.set(t, (count.get(t) ?? 0) + 1);
     return sets.filter((s) => (count.get(s.tag) ?? 0) >= s.at);
   }
 
-  // ---- the passive layer (session 28, PR 1; D26) ---------------------------
-
   /**
-   * Every PASSIVE_OFFER_EVERY_WAVES-th wave puts up a pick-1-of-3 of the
-   * unheld passives, until the slots are full. Dealt at the same two
-   * moments as a relic offer; shown after it when both stand.
+   * Tower mods and econ knobs from the held passive relics at their
+   * rarity (`effects.mods`, `waveScrap`, `bountyMul`) and from the sets
+   * their tags light - folded once per change, applied in foldStats and
+   * at the wave launch and the kill.
    */
-  private maybePassiveOffer(): void {
-    const defs = this.opts.passiveDefs;
-    if (!defs || this.passiveOffer !== null) return;
-    if (this.wave === 0 || this.wave % PASSIVE_OFFER_EVERY_WAVES !== 0 || this.passiveOfferWave === this.wave) return;
-    // Full slots still get the offer (session 28, PR 3): a pick then replaces one, or the offer is skipped.
-    this.passiveOfferWave = this.wave;
-    const pool: number[] = [];
-    for (let i = 0; i < defs.length; i++) if (!this.heldPassives.includes(i)) pool.push(i);
-    if (pool.length === 0) return;
-    this.passiveOffer = this.rng.stream('passives').shuffle(pool).slice(0, 3);
-  }
-
-  /** The pending passive offer as defs; null when none. */
-  passiveOfferDefs(): PassiveDef[] | null {
-    return this.passiveOffer ? this.passiveOffer.map((di) => this.opts.passiveDefs![di]) : null;
-  }
-
-  heldPassiveDefs(): PassiveDef[] {
-    const defs = this.opts.passiveDefs ?? [];
-    return this.heldPassives.map((di) => defs[di]);
-  }
-
-  /** Take one of the offered passives: a replayed input. */
-  pickPassive(option: number, replace?: number): boolean {
-    if (this.status !== 'running') return false;
-    if (!this.passiveOffer || option < 0 || option >= this.passiveOffer.length) return false;
-    if (this.heldPassives.length >= PASSIVE_SLOTS) {
-      // Full slots (session 28, PR 3): the pick names the passive it replaces.
-      if (replace === undefined || replace < 0 || replace >= this.heldPassives.length) return false;
-      this.heldPassives.splice(replace, 1);
-    }
-    const di = this.passiveOffer[option];
-    this.heldPassives.push(di);
-    this.passiveOffer = null;
-    const d = this.opts.passiveDefs![di];
-    if (d.econ?.coreHpMaxAdd) {
-      this.coreHpMax += d.econ.coreHpMaxAdd;
-      this.coreHp += d.econ.coreHpMaxAdd;
-    }
-    this.refoldPassives();
-    this.inputs.push({ tick: this.tickCount, a: replace === undefined ? { t: 'pickPassive', option } : { t: 'pickPassive', option, replace } });
-    return true;
-  }
-
-  private refoldPassives(): void {
-    const held: { mods?: StatMods; econ?: { waveScrap?: number; bountyMul?: number; coreHealPerWave?: number } }[] = [...this.heldPassiveDefs(), ...this.litSets()];
-    this.passiveMods = held.some((d) => d.mods) ? foldPassiveMods(held) : null;
+  private refoldMods(): void {
+    const defs = this.opts.relicDefs ?? [];
+    const items: { mods?: StatMods; econ?: { waveScrap?: number; bountyMul?: number; coreHealPerWave?: number } }[] = [];
+    this.heldRelics.forEach((di, i) => {
+      if (defs[di].kind !== 'passive') return;
+      const e = relicEffectsAt(defs[di], this.heldRarity[i] ?? 0);
+      if (e.mods || e.waveScrap !== undefined || e.bountyMul !== undefined) items.push({ mods: e.mods, econ: { waveScrap: e.waveScrap, bountyMul: e.bountyMul } });
+    });
+    items.push(...this.litSets());
+    this.modsFold = items.some((d) => d.mods) ? foldPassiveMods(items) : null;
     let waveScrap = 0;
     let bountyMul = 1;
     let coreHealPerWave = 0;
-    for (const d of held) {
+    for (const d of items) {
       waveScrap += d.econ?.waveScrap ?? 0;
       bountyMul *= d.econ?.bountyMul ?? 1;
       coreHealPerWave += d.econ?.coreHealPerWave ?? 0;
     }
-    this.passiveEcon = { waveScrap, bountyMul, coreHealPerWave };
+    this.econFold = { waveScrap, bountyMul, coreHealPerWave };
   }
 
   /** The pending offer as defs, for the modal; null when none. */
@@ -1670,7 +1624,6 @@ export class Sim {
       case 'facing': return this.setFacing(a.x, a.y, a.facing);
       case 'sell': return this.sellTower(a.x, a.y);
       case 'pickRelic': return this.pickRelic(a.option, a.replace);
-      case 'pickPassive': return this.pickPassive(a.option, a.replace);
       case 'skipOffer': return this.skipOffer();
       case 'salvage': return this.salvageRelic(a.index);
       case 'combine': return this.combineRelics(a.a, a.b);
@@ -1722,10 +1675,6 @@ export class Sim {
     // Rarity (session 28, PR 2): per held relic and per offered card - no lane when nothing is held or offered.
     for (const r of this.heldRarity) u32(r + 1);
     for (const r of this.offerRarity) u32(r + 1);
-    // The passive layer (session 28, PR 1): held, offered, and the wave dealt for.
-    u32(this.passiveOfferWave);
-    for (const p of this.heldPassives) u32(p);
-    for (const o of this.passiveOffer ?? [-1]) u32(o + 1);
     for (const c of this.caches) { u32(c.x); u32(c.y); u32(c.opened ? 1 : 0); for (let i = 0; i < c.table.length; i++) u32(c.table.charCodeAt(i)); }
     for (const c of this.voidChests) { u32(c.x); u32(c.y); u32(c.until); }
     for (const b of this.extraBoons) { u32(b.x); u32(b.y); u32(b.tier ?? 1); u32(b.boon.charCodeAt(0)); }
@@ -1989,11 +1938,10 @@ export class Sim {
     // An offer owed by the wave just ending is dealt at the latest here, so
     // a straggler can never withhold it (D4 cadence, item 10's clock).
     this.maybeOffer(true);
-    this.maybePassiveOffer();
     this.wave++;
-    // War Chest (passive): Scrap at every launch; Masonry (set): the Core mends.
-    if (this.passiveEcon.waveScrap > 0) this.scrap += this.passiveEcon.waveScrap;
-    if (this.passiveEcon.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.passiveEcon.coreHealPerWave);
+    // War Chest (relic): Scrap at every launch; Masonry (set): the Core mends.
+    if (this.econFold.waveScrap > 0) { this.scrap += this.econFold.waveScrap; this.noteRelicUse('waveScrap'); }
+    if (this.econFold.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.econFold.coreHealPerWave);
     // Second Wind (relic): the Core mends a little with every front opened.
     if (this.fold.coreHealPerWave > 0) { this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.fold.coreHealPerWave); this.noteRelicUse('coreHealPerWave'); }
     this.emit({ kind: 'waveStart', wave: this.wave });
@@ -2012,7 +1960,7 @@ export class Sim {
       return;
     }
     // A cleared offer wave deals its offer as soon as the board is quiet.
-    if (this.spawnQueue.length === 0 && this.aliveCount() === 0) { this.maybeOffer(false); this.maybePassiveOffer(); }
+    if (this.spawnQueue.length === 0 && this.aliveCount() === 0) this.maybeOffer(false);
     // The clock runs from the previous launch, whoever is still walking.
     if (this.waveTimer > 0 && --this.waveTimer === 0) this.launchWave();
     if (this.spawnQueue.length > 0 && --this.intraTimer <= 0) {
@@ -2483,9 +2431,10 @@ export class Sim {
       this.killsByDef[this.enemyDefIdx[enemy]] = (this.killsByDef[this.enemyDefIdx[enemy]] ?? 0) + 1;
       // Bounty Board (relic) multiplies boss bounty only; rounded so Scrap
       // stays integral (the state hash truncates its lanes to integers).
-      this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1) * this.passiveEcon.bountyMul) + this.fold.killRefundScrap; // Tithe; Bounty Hunter (passive)
+      this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1) * this.econFold.bountyMul) + this.fold.killRefundScrap; // Tithe; Bounty Hunter (relic)
       if (this.fold.killRefundScrap > 0) this.noteRelicUse('killRefundScrap');
       if (this.bossFlag[enemy] && this.fold.bossBountyMul !== 1) this.noteRelicUse('bossBountyMul');
+      if (this.econFold.bountyMul !== 1) this.noteRelicUse('bountyMul');
       const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
       // Session 28, PR 4: what a death sets off. Ricochet carries the

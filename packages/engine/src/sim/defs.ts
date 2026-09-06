@@ -150,6 +150,13 @@ export interface RelicEffects {
   refineryScrapOffVein?: boolean;
   /** Passive: Core max hp while held (Thick Walls). */
   coreHpMaxAdd?: number;
+  // ---- the former passive layer, folded back into relics (Daniil, 2026-09-06 evening: "just relics, just some relics are passives") ----
+  /** Passive: tower mods applied to every tower like a tier (Iron Sights, Quick Hands, Deep Cold...). Only fields safe on every tower. */
+  mods?: StatMods;
+  /** Passive: Scrap at every wave launch (War Chest). */
+  waveScrap?: number;
+  /** Passive: multiplies every bounty (Bounty Hunter). */
+  bountyMul?: number;
 }
 
 export type RelicKind = 'passive' | 'active' | 'consumable';
@@ -192,7 +199,7 @@ export interface RelicDef {
    * wave, never below the base; a rare or epic copy uses `tiers`.
    */
   rarity: Rarity;
-  /** Set tags: held passives and relics count per tag; a set lights at two and three (SetDef). */
+  /** Set tags: held relics count per tag; a set lights at two and three (SetDef). */
   tags?: readonly string[];
   /** What a rare and an epic copy are: whole effects and the card text at that rarity. Absent = the same at every rarity. */
   tiers?: { rare?: { desc?: string; effects: RelicEffects }; epic?: { desc?: string; effects: RelicEffects } };
@@ -208,22 +215,6 @@ export interface RelicDef {
    */
   stackable?: boolean;
   effects?: RelicEffects;
-}
-
-/**
- * A passive (PRD sec 7.8; D26 decided 2026-09-06): the permanent modifier
- * layer, separate from relics. Its mods fold into EVERY tower like a tier
- * (applyCoreBoon is the applier), its econ knobs into the run. Six slots,
- * one pick every second wave from three offered. Tags feed set effects
- * (session 28, PR 2).
- */
-export interface PassiveDef {
-  id: string;
-  name: string;
-  desc: string;
-  tags?: readonly string[];
-  mods?: StatMods;
-  econ?: { waveScrap?: number; bountyMul?: number; coreHpMaxAdd?: number };
 }
 
 /** A duo recipe (session 28, PR 3): two held relics, either order, combine into `result` at the higher rarity. */
@@ -258,7 +249,7 @@ export function relicDescAt(def: RelicDef, rarity: number): string {
   return def.desc;
 }
 
-/** The held passives' (and lit sets') mods as one StatMods: adds add, multipliers multiply - order-free. */
+/** Tower mods from held relics and lit sets as one StatMods: adds add, multipliers multiply - order-free. */
 export function foldPassiveMods(defs: readonly { mods?: StatMods }[]): StatMods {
   const out: StatMods = {};
   for (const d of defs) {

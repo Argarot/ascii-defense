@@ -146,7 +146,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 ## Relics *(generated)*
 
 <!-- generated:relics -->
-41 relics in `packages/content/assets/relics/pool.json`. Passives work while held; actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
+52 relics in `packages/content/assets/relics/pool.json`. Passives work while held (some are tower mods on every tower - the former passive layer, one pool since 2026-09-06 evening); actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
 
 | Relic | id | Kind | Base rarity | Tags | Stacks | Recharge | What it does (common) | Data | Rare | Epic |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -186,6 +186,17 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | **Emergency Repair** | emergency_repair | consumable | common | core | yes |  | The Core mends 20 now. | coreHealNow 20 | The Core mends 35 now. [coreHealNow 35] | The Core mends 50 now. [coreHealNow 50] |
 | **Foundry** | foundry | passive | rare | economy |  |  | A Refinery standing off any vein produces its yield as Scrap instead. The PRD's rule, broken by a relic. | refineryScrapOffVein true | same | same |
 | **Thick Walls** | thick_walls | passive | common | core | yes |  | The Core holds 10 more while this is held. | coreHpMaxAdd 10 | The Core holds 20 more while this is held. [coreHpMaxAdd 20] | The Core holds 35 more while this is held. [coreHpMaxAdd 35] |
+| **Iron Sights** | iron_sights | passive | common | reach | yes |  | Every tower reaches one cell further. | mods [object Object] | Every tower reaches a cell and a half further. [mods [object Object]] | Every tower reaches two cells further. [mods [object Object]] |
+| **Hot Loads** | hot_loads | passive | common | damage | yes |  | Every hit does 15% more. | damageMul 1.15 | Every hit does 25% more. [damageMul 1.25] | Every hit does 40% more. [damageMul 1.4] |
+| **Quick Hands** | quick_hands | passive | common | rate | yes |  | Every tower cycles two ticks faster. | mods [object Object] | Every tower cycles three ticks faster. [mods [object Object]] | Every tower cycles five ticks faster. [mods [object Object]] |
+| **Deep Cold** | deep_cold | passive | common | cold |  |  | Every slow is 10% colder. | mods [object Object] | Every slow is 15% colder. [mods [object Object]] | Every slow is 25% colder. [mods [object Object]] |
+| **Overclock** | overclock | passive | rare | energy |  |  | Every beam heats one multiple higher. | mods [object Object] | same | Every beam heats two multiples higher. [mods [object Object]] |
+| **Wide Aura** | wide_aura | passive | rare | support |  |  | Every aura reaches one cell further. | mods [object Object] | same | Every aura reaches two cells further. [mods [object Object]] |
+| **Rich Seam** | rich_seam | passive | common | economy |  |  | Every refinery mines one more Ore a cycle. | mods [object Object] | Every refinery mines two more Ore a cycle. [mods [object Object]] | Every refinery mines three more Ore a cycle. [mods [object Object]] |
+| **War Chest** | war_chest | passive | common | economy | yes |  | Ten Scrap at every wave launch. | waveScrap 10 | Twenty Scrap at every wave launch. [waveScrap 20] | Thirty-five Scrap at every wave launch. [waveScrap 35] |
+| **Bounty Hunter** | bounty_hunter | passive | common | economy |  |  | Every bounty pays 25% more. | bountyMul 1.25 | Every bounty pays 50% more. [bountyMul 1.5] | Every bounty pays double. [bountyMul 2] |
+| **Tempered Steel** | tempered_steel | passive | rare | damage reach |  |  | Every hit does 10% more and every tower reaches half a cell further. | damageMul 1.1, mods [object Object] | same | Every hit does 20% more and every tower reaches a cell further. [damageMul 1.2, mods [object Object]] |
+| **Shield Breaker** | shield_breaker | passive | common | kinetic energy |  |  | Every hit does half again to shields. | mods [object Object] | Every hit does double to shields. [mods [object Object]] | Every hit does triple to shields. [mods [object Object]] |
 | **Permafrost Engine** | permafrost_engine | passive (fusion only) | epic | cold damage |  |  | Slowed enemies take triple from everything. Frostbite and Stasis, fused. | slowedDamageMul 3 | same | same |
 | **Tollbooth** | tollbooth | passive (fusion only) | epic | economy |  |  | Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused. | killRefundScrap 5, tollScrap 3 | same | same |
 | **Bunker** | bunker | passive (fusion only) | epic | core |  |  | The Core mends 8 health every wave. Sandbags and Second Wind, fused. | coreHealPerWave 8 | same | same |
@@ -195,33 +206,10 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wave - common 60 minus the wave (floor 30), rare 30, epic 10 plus half the wave - never below the relic's base rarity. A rare or epic copy has the numbers in its column; "same" means the rule does not scale (a boolean).
 <!-- /generated -->
 
-## Passives *(generated)*
-
-<!-- generated:passives -->
-14 passives in `packages/content/assets/passives/pool.json` (session 28, PR 1; D26). The permanent layer, separate from relics: six slots a run, one pick every second wave from three offered, every one of them on every tower. "Mods" are folded like a tier; "econ" knobs act on the run.
-
-| Passive | id | Tags | What it does | Mods | Econ |
-|---|---|---|---|---|---|
-| **Iron Sights** | iron_sights | reach | Every tower reaches one cell further. | range 1 |  |
-| **Hot Loads** | hot_loads | damage | Every hit does 15% more. | damageMul 1.15 |  |
-| **Quick Hands** | quick_hands | rate | Every tower cycles two ticks faster. | fireEveryTicks -2 |  |
-| **Deep Cold** | deep_cold | cold | Every slow is 10% colder. | slowMul -0.1 |  |
-| **Piercing Rounds** | piercing_rounds | kinetic | Every shot passes into one more body. | pierceCount 1 |  |
-| **Long Arc** | long_arc | energy | Every arc jumps to one more body. | chainCount 1 |  |
-| **Overclock** | overclock | energy | Every beam heats one multiple higher. | beamRampMax 1 |  |
-| **Wide Aura** | wide_aura | support | Every aura reaches one cell further. | auraReach 1 |  |
-| **Rich Seam** | rich_seam | economy | Every refinery mines one more Ore a cycle. | production 1 |  |
-| **War Chest** | war_chest | economy | Ten Scrap at every wave launch. |  | waveScrap 10 |
-| **Bounty Hunter** | bounty_hunter | economy | Every bounty pays 25% more. |  | bountyMul 1.25 |
-| **Bulwark** | bulwark | core | The Core holds ten more health. |  | coreHpMaxAdd 10 |
-| **Tempered Steel** | tempered_steel | damage reach | Every hit does 10% more and every tower reaches half a cell further. | damageMul 1.1, range 0.5 |  |
-| **Shield Breaker** | shield_breaker | kinetic energy | Every hit does half again to shields. | shieldMul 0.5 |  |
-<!-- /generated -->
-
 ## Sets *(generated)*
 
 <!-- generated:sets -->
-18 set effects in `packages/content/assets/sets/pool.json` (session 28, PR 2). Held passives and relics count per tag; at two and at three of a tag the set lights and folds into every tower like a passive (econ knobs into the run). The strip's PASSIVES line names the lit sets.
+18 set effects in `packages/content/assets/sets/pool.json` (session 28, PR 2). Held relics count per tag; at two and at three of a tag the set lights and folds into every tower like a passive (econ knobs into the run). The strip's PASSIVES line names the lit sets.
 
 | Set | Tag | At | What it does | Mods | Econ |
 |---|---|---|---|---|---|

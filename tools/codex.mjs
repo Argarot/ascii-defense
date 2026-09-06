@@ -29,7 +29,6 @@ const read = (p) => JSON.parse(readFileSync(join(ASSETS, p), 'utf8'));
 const towers = read('towers/roster.json').towers;
 const enemies = read('enemies/roster.json').enemies;
 const relics = read('relics/pool.json').relics;
-const passives = read('passives/pool.json').passives;
 const sets = read('sets/pool.json').sets;
 const recipes = read('recipes/pool.json').recipes;
 const lootTables = read('loot/tables.json').tables;
@@ -124,15 +123,9 @@ const SECTIONS = {
       '',
       table(['Trait', 'Rule'], Object.entries(TRAITS)),
     ].join('\n'),
-  passives: () =>
-    [
-      `${passives.length} passives in \`packages/content/assets/passives/pool.json\` (session 28, PR 1; D26). The permanent layer, separate from relics: six slots a run, one pick every second wave from three offered, every one of them on every tower. "Mods" are folded like a tier; "econ" knobs act on the run.`,
-      '',
-      table(['Passive', 'id', 'Tags', 'What it does', 'Mods', 'Econ'], passives.map((p) => [`**${p.name}**`, p.id, (p.tags ?? []).join(' '), p.desc, Object.entries(p.mods ?? {}).map(([k, v]) => `${k} ${v}`).join(', '), Object.entries(p.econ ?? {}).map(([k, v]) => `${k} ${v}`).join(', ')])),
-    ].join('\n'),
   relics: () =>
     [
-      `${relics.length} relics in \`packages/content/assets/relics/pool.json\`. Passives work while held; actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).`,
+      `${relics.length} relics in \`packages/content/assets/relics/pool.json\`. Passives work while held (some are tower mods on every tower - the former passive layer, one pool since 2026-09-06 evening); actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).`,
       '',
       table(['Relic', 'id', 'Kind', 'Base rarity', 'Tags', 'Stacks', 'Recharge', 'What it does (common)', 'Data', 'Rare', 'Epic'], relicRows()),
       '',
@@ -155,7 +148,7 @@ const SECTIONS = {
     ].join('\n'),
   sets: () =>
     [
-      `${sets.length} set effects in \`packages/content/assets/sets/pool.json\` (session 28, PR 2). Held passives and relics count per tag; at two and at three of a tag the set lights and folds into every tower like a passive (econ knobs into the run). The strip's PASSIVES line names the lit sets.`,
+      `${sets.length} set effects in \`packages/content/assets/sets/pool.json\` (session 28, PR 2). Held relics count per tag; at two and at three of a tag the set lights and folds into every tower like a passive (econ knobs into the run). The strip's PASSIVES line names the lit sets.`,
       '',
       table(['Set', 'Tag', 'At', 'What it does', 'Mods', 'Econ'], sets.map((s) => [`**${s.name}**`, s.tag, s.at, s.desc, fx(s.mods), fx(s.econ)])),
     ].join('\n'),
@@ -182,11 +175,6 @@ const TEMPLATE = `# Catalogue - what is in the game
 ## Relics *(generated)*
 
 <!-- generated:relics -->
-<!-- /generated -->
-
-## Passives *(generated)*
-
-<!-- generated:passives -->
 <!-- /generated -->
 
 ## Sets *(generated)*
@@ -292,7 +280,6 @@ function codexTs() {
     sets: sets.map((s) => ({ name: s.name, tag: s.tag, at: s.at, desc: s.desc })),
     recipes: recipes.map((x) => ({ a: x.a, b: x.b, result: x.result, aName: relicName(x.a), bName: relicName(x.b), resultName: relicName(x.result), desc: x.desc })),
     loot: lootTables.map((t) => { const total = t.outcomes.reduce((a, o) => a + o.weight, 0); return { id: t.id, outcomes: t.outcomes.map((o) => ({ kind: o.kind, pct: Math.round((o.weight / total) * 100), min: o.min ?? null, max: o.max ?? null })) }; }),
-    passives: passives.map((p) => ({ id: p.id, name: p.name, desc: p.desc, tags: p.tags ?? [] })),
     rules: [
       'Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.',
       'Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla, Laser.',
@@ -334,5 +321,5 @@ if (process.argv.includes('--check')) {
   writeFileSync(DOC, next);
   mkdirSync(join(ROOT, 'packages', 'app', 'src', 'generated'), { recursive: true });
   writeFileSync(TS, nextTs);
-  console.log(`wrote docs/CATALOGUE.md and packages/app/src/generated/codex.ts (${towers.length} towers, ${enemies.length} enemies, ${relics.length} relics, ${passives.length} passives)`);
+  console.log(`wrote docs/CATALOGUE.md and packages/app/src/generated/codex.ts (${towers.length} towers, ${enemies.length} enemies, ${relics.length} relics)`);
 }

@@ -1031,6 +1031,162 @@ export const CODEX = {
       "epic": "The Core holds 35 more while this is held."
     },
     {
+      "id": "iron_sights",
+      "name": "Iron Sights",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "reach"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every tower reaches one cell further.",
+      "rare": "Every tower reaches a cell and a half further.",
+      "epic": "Every tower reaches two cells further."
+    },
+    {
+      "id": "hot_loads",
+      "name": "Hot Loads",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every hit does 15% more.",
+      "rare": "Every hit does 25% more.",
+      "epic": "Every hit does 40% more."
+    },
+    {
+      "id": "quick_hands",
+      "name": "Quick Hands",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "rate"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every tower cycles two ticks faster.",
+      "rare": "Every tower cycles three ticks faster.",
+      "epic": "Every tower cycles five ticks faster."
+    },
+    {
+      "id": "deep_cold",
+      "name": "Deep Cold",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "cold"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every slow is 10% colder.",
+      "rare": "Every slow is 15% colder.",
+      "epic": "Every slow is 25% colder."
+    },
+    {
+      "id": "overclock",
+      "name": "Overclock",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "energy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every beam heats one multiple higher.",
+      "rare": "",
+      "epic": "Every beam heats two multiples higher."
+    },
+    {
+      "id": "wide_aura",
+      "name": "Wide Aura",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "support"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every aura reaches one cell further.",
+      "rare": "",
+      "epic": "Every aura reaches two cells further."
+    },
+    {
+      "id": "rich_seam",
+      "name": "Rich Seam",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every refinery mines one more Ore a cycle.",
+      "rare": "Every refinery mines two more Ore a cycle.",
+      "epic": "Every refinery mines three more Ore a cycle."
+    },
+    {
+      "id": "war_chest",
+      "name": "War Chest",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Ten Scrap at every wave launch.",
+      "rare": "Twenty Scrap at every wave launch.",
+      "epic": "Thirty-five Scrap at every wave launch."
+    },
+    {
+      "id": "bounty_hunter",
+      "name": "Bounty Hunter",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "economy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every bounty pays 25% more.",
+      "rare": "Every bounty pays 50% more.",
+      "epic": "Every bounty pays double."
+    },
+    {
+      "id": "tempered_steel",
+      "name": "Tempered Steel",
+      "kind": "passive",
+      "rarity": "rare",
+      "tags": [
+        "damage",
+        "reach"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every hit does 10% more and every tower reaches half a cell further.",
+      "rare": "",
+      "epic": "Every hit does 20% more and every tower reaches a cell further."
+    },
+    {
+      "id": "shield_breaker",
+      "name": "Shield Breaker",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "kinetic",
+        "energy"
+      ],
+      "stacks": false,
+      "recharge": "",
+      "desc": "Every hit does half again to shields.",
+      "rare": "Every hit does double to shields.",
+      "epic": "Every hit does triple to shields."
+    },
+    {
       "id": "permafrost_engine",
       "name": "Permafrost Engine",
       "kind": "passive",
@@ -1352,122 +1508,6 @@ export const CODEX = {
           "min": null,
           "max": null
         }
-      ]
-    }
-  ],
-  "passives": [
-    {
-      "id": "iron_sights",
-      "name": "Iron Sights",
-      "desc": "Every tower reaches one cell further.",
-      "tags": [
-        "reach"
-      ]
-    },
-    {
-      "id": "hot_loads",
-      "name": "Hot Loads",
-      "desc": "Every hit does 15% more.",
-      "tags": [
-        "damage"
-      ]
-    },
-    {
-      "id": "quick_hands",
-      "name": "Quick Hands",
-      "desc": "Every tower cycles two ticks faster.",
-      "tags": [
-        "rate"
-      ]
-    },
-    {
-      "id": "deep_cold",
-      "name": "Deep Cold",
-      "desc": "Every slow is 10% colder.",
-      "tags": [
-        "cold"
-      ]
-    },
-    {
-      "id": "piercing_rounds",
-      "name": "Piercing Rounds",
-      "desc": "Every shot passes into one more body.",
-      "tags": [
-        "kinetic"
-      ]
-    },
-    {
-      "id": "long_arc",
-      "name": "Long Arc",
-      "desc": "Every arc jumps to one more body.",
-      "tags": [
-        "energy"
-      ]
-    },
-    {
-      "id": "overclock",
-      "name": "Overclock",
-      "desc": "Every beam heats one multiple higher.",
-      "tags": [
-        "energy"
-      ]
-    },
-    {
-      "id": "wide_aura",
-      "name": "Wide Aura",
-      "desc": "Every aura reaches one cell further.",
-      "tags": [
-        "support"
-      ]
-    },
-    {
-      "id": "rich_seam",
-      "name": "Rich Seam",
-      "desc": "Every refinery mines one more Ore a cycle.",
-      "tags": [
-        "economy"
-      ]
-    },
-    {
-      "id": "war_chest",
-      "name": "War Chest",
-      "desc": "Ten Scrap at every wave launch.",
-      "tags": [
-        "economy"
-      ]
-    },
-    {
-      "id": "bounty_hunter",
-      "name": "Bounty Hunter",
-      "desc": "Every bounty pays 25% more.",
-      "tags": [
-        "economy"
-      ]
-    },
-    {
-      "id": "bulwark",
-      "name": "Bulwark",
-      "desc": "The Core holds ten more health.",
-      "tags": [
-        "core"
-      ]
-    },
-    {
-      "id": "tempered_steel",
-      "name": "Tempered Steel",
-      "desc": "Every hit does 10% more and every tower reaches half a cell further.",
-      "tags": [
-        "damage",
-        "reach"
-      ]
-    },
-    {
-      "id": "shield_breaker",
-      "name": "Shield Breaker",
-      "desc": "Every hit does half again to shields.",
-      "tags": [
-        "kinetic",
-        "energy"
       ]
     }
   ],

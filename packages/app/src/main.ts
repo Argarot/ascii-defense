@@ -121,7 +121,7 @@ async function main(): Promise<void> {
   const copyLabel = (what: 'code' | 'seed', label: string): string => (lastCopied === what ? `${label} - COPIED` : label);
   // The opened held relic (session 28, PR 3) and a pick waiting for the slot it replaces.
   let selectedRelic: number | null = null;
-  let pendingReplace: { kind: 'relic' | 'passive'; option: number } | null = null;
+  let pendingReplace: { option: number } | null = null;
   // Motion v2 (session 27): the picture is drawn at a STEADY time on the
   // world clock, one tick behind the newest snapshot, blended between the
   // two snapshots that bracket it - whatever bursts the worker's ticks
@@ -162,7 +162,7 @@ async function main(): Promise<void> {
   // the same generated facts as docs/CATALOGUE.md; reachable from the
   // title and from pause, and it returns where it came from.
   let howtoFrom: Mode = 'title';
-  type CodexSection = 'basics' | 'towers' | 'enemies' | 'relics' | 'passives';
+  type CodexSection = 'basics' | 'towers' | 'enemies' | 'relics';
   let codexSection: CodexSection = 'basics';
   let codexPage = 0;
   let wipeArmed = false;
@@ -459,7 +459,6 @@ async function main(): Promise<void> {
                       summary.story.killsByTower.length ? 'kills by tower: ' + summary.story.killsByTower.slice(0, 6).map((k) => `${k.name} ${k.kills}`).join(' \u2802 ') : 'no tower killed anything',
                       summary.story.met.length ? 'you met: ' + summary.story.met.map((m) => `${m.count} ${m.name}`).join(', ') : '',
                       summary.story.relics.length ? 'relics held: ' + summary.story.relics.join(', ') : 'no relics held',
-                      summary.story.passives.length ? 'passives: ' + summary.story.passives.join(', ') : 'no passives taken',
                       summary.story.relicUses.length ? 'relic rules fired: ' + summary.story.relicUses.slice(0, 6).map((u) => `${u.name} ${u.uses}`).join(' \u2802 ') : '',
                       '',
                     ].filter((l, i, a) => l !== '' || a[i - 1] !== '')
@@ -519,7 +518,6 @@ async function main(): Promise<void> {
       { id: 'towers', label: `TOWERS ${CODEX.towers.length}`, count: CODEX.towers.length },
       { id: 'enemies', label: `ENEMIES ${CODEX.enemies.length}`, count: CODEX.enemies.length },
       { id: 'relics', label: `RELICS ${CODEX.relics.length}`, count: CODEX.relics.length },
-      { id: 'passives', label: `PASSIVES ${CODEX.passives.length}`, count: CODEX.passives.length },
     ];
     const count = sections.find((s) => s.id === codexSection)!.count;
     const page = Math.min(codexPage, count - 1);
@@ -531,7 +529,7 @@ async function main(): Promise<void> {
         'enemies march the road toward the Core at the east edge; if it falls, the run ends.',
         'select ground, then a tower in the strip under the board, to build. hover a button for its card.',
         'towers upgrade in either/or tiers - each fork is two jobs, never two numbers.',
-        'refineries on gold veins mine Ore; every 3rd wave offers a relic - rules, not numbers; every 2nd wave offers a passive - a permanent bonus on every tower, six slots a run.',
+        'refineries on gold veins mine Ore; every 2nd wave offers a relic - rules, not numbers; some relics are passives that work on every tower, twelve slots a run.',
         'the water has business: a chest surfaces on it now and then and sinks after twelve seconds - select it and CLAIM. every reward in the game comes from one loot table, printed in the catalogue.',
         'a held relic is a decision: click it in the strip for its card - salvage it for Ore, or combine two of a kind into the next rarity, or two recipe partners into a fused relic. full slots ask which one a pick replaces; S skips an offer.',
         'rock hides ore and caches; prospecting opens it. R turns a laser. N calls the next wave.',
@@ -562,16 +560,6 @@ async function main(): Promise<void> {
         [e.armour ? `armour ${e.armour}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type at x1',
         ...e.traits.flatMap((t) => wrapLine(t)),
       ];
-    } else if (codexSection === 'passives') {
-      const p = CODEX.passives[page];
-      title = `${p.name.toUpperCase()}  ${page + 1}/${count}`;
-      body = [
-        ...wrapLine(p.desc),
-        p.tags.length ? 'tags: ' + p.tags.join(', ') : '',
-        '',
-        ...wrapLine(`Passives are the permanent layer: six slots a run, a pick every second wave from three offered, and every one of them works on every tower. Relics are found; passives are chosen.`),
-        ...(p.tags.length ? ['', ...CODEX.sets.filter((x) => (p.tags as readonly string[]).includes(x.tag)).flatMap((x) => wrapLine(`set ${x.name} (${x.tag} x${x.at}): ${x.desc}`))] : []),
-      ].filter((l, i, a) => l !== '' || a[i - 1] !== '');
     } else {
       const r = CODEX.relics[page];
       title = `${r.name.toUpperCase()}  ${page + 1}/${count}`;
@@ -788,7 +776,7 @@ async function main(): Promise<void> {
     if (action.kind === 'choose' && selected) act({ k: 'choose', x: selected.x, y: selected.y, tier: action.tier, option: action.option });
     if (action.kind === 'relic') {
       // A pick waiting for the slot it replaces (session 28, PR 3) takes this click.
-      if (pendingReplace?.kind === 'relic') { act({ k: 'pickRelic', option: pendingReplace.option, replace: action.index }); pendingReplace = null; return; }
+      if (pendingReplace) { act({ k: 'pickRelic', option: pendingReplace.option, replace: action.index }); pendingReplace = null; return; }
       // The strip's card is always there; the column's only when the face is
       // selected - reading the column alone left a targeted active unarmed
       // (feedback 2026-09-06, item 2).
@@ -798,7 +786,6 @@ async function main(): Promise<void> {
       // A passive or a cooling active opens its card in the column (session 28, PR 3): salvage, combine, its fires.
       else if (slot && slot.state !== 'empty') selectedRelic = selectedRelic === action.index ? null : action.index;
     }
-    if (action.kind === 'passive' && pendingReplace?.kind === 'passive') { act({ k: 'pickPassive', option: pendingReplace.option, replace: action.index }); pendingReplace = null; }
     if (action.kind === 'salvage') { act({ k: 'salvage', index: action.index }); selectedRelic = null; }
     if (action.kind === 'combine') { act({ k: 'combine', a: action.a, b: action.b }); selectedRelic = null; }
     if (action.kind === 'closeRelic') selectedRelic = null;
@@ -812,8 +799,8 @@ async function main(): Promise<void> {
   /** A pick from the standing offer: straight through, or - with the slots full - parked until the player clicks the slot it replaces. */
   const pickFromOffer = (option: number): void => {
     if (!snap?.offer) return;
-    if (snap.offer.full) { pendingReplace = { kind: snap.offer.kind, option }; return; }
-    act(snap.offer.kind === 'passive' ? { k: 'pickPassive', option } : { k: 'pickRelic', option });
+    if (snap.offer.full) { pendingReplace = { option }; return; }
+    act({ k: 'pickRelic', option });
   };
   hudTerm.canvas.addEventListener('click', (e) => {
     if (!inGame()) return;
@@ -1008,7 +995,7 @@ async function main(): Promise<void> {
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else if (snap.offer && inGame()) {
-        offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll, pendingReplace ? `TAKING CARD ${pendingReplace.option + 1} - click the held ${pendingReplace.kind} it replaces (S skips)` : snap.offer.title);
+        offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll, pendingReplace ? `TAKING CARD ${pendingReplace.option + 1} - click the held relic it replaces (S skips)` : snap.offer.title);
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else {
@@ -1037,7 +1024,6 @@ async function main(): Promise<void> {
     offer: () => debug('offer'),
     pick: (option: number) => debug('pick', option),
     relics: () => debug('relics'),
-    passives: () => debug('passives'),
     relicsHeld: () => debug('relicsHeld'),
     salvage: (index: number) => debug('salvage', index),
     combine: (a: number, b: number) => debug('combine', a, b),
@@ -1050,7 +1036,6 @@ async function main(): Promise<void> {
     lootLog: () => debug('lootLog'),
     openRelic: (index: number | null): void => { selectedRelic = index; },
     sets: () => debug('sets'),
-    pickPassive: (option: number) => debug('pickPassive', option),
     // Debug-only: a relic by id outside any offer (replays diverge), and an active fired at a cell.
     grant: (id: string) => debug('grant', id),
     fire: (id: string, x?: number, y?: number) => debug('fire', id, x, y),

@@ -272,6 +272,33 @@ export interface Effects {
    * Passive: the Core holds this much more while the relic is held (Thick Walls).
    */
   coreHpMaxAdd?: number;
+  /**
+   * Passive: tower mods applied to every tower like a tier (the former passive layer, folded back into relics 2026-09-06 evening on Daniil's call). Only fields safe on every tower belong here.
+   */
+  mods?: {
+    damage?: number;
+    damageMul?: number;
+    range?: number;
+    fireEveryTicks?: number;
+    slowMul?: number;
+    slowTicks?: number;
+    pierceCount?: number;
+    chainCount?: number;
+    chainReach?: number;
+    beamRampMax?: number;
+    auraReach?: number;
+    production?: number;
+    burnDps?: number;
+    shieldMul?: number;
+  };
+  /**
+   * Passive: Scrap paid at every wave launch (War Chest).
+   */
+  waveScrap?: number;
+  /**
+   * Passive: multiplies every bounty (Bounty Hunter).
+   */
+  bountyMul?: number;
 }
 
 /** The schema itself, for runtime validation. Same source as the type above. */
@@ -608,6 +635,66 @@ export const relicsSchema = {
         },
         "coreHpMaxAdd": {
           "description": "Passive: the Core holds this much more while the relic is held (Thick Walls).",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mods": {
+          "type": "object",
+          "description": "Passive: tower mods applied to every tower like a tier (the former passive layer, folded back into relics 2026-09-06 evening on Daniil's call). Only fields safe on every tower belong here.",
+          "additionalProperties": false,
+          "properties": {
+            "damage": {
+              "type": "number"
+            },
+            "damageMul": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "range": {
+              "type": "number"
+            },
+            "fireEveryTicks": {
+              "type": "integer"
+            },
+            "slowMul": {
+              "type": "number"
+            },
+            "slowTicks": {
+              "type": "integer"
+            },
+            "pierceCount": {
+              "type": "integer"
+            },
+            "chainCount": {
+              "type": "integer"
+            },
+            "chainReach": {
+              "type": "number"
+            },
+            "beamRampMax": {
+              "type": "number"
+            },
+            "auraReach": {
+              "type": "integer"
+            },
+            "production": {
+              "type": "number"
+            },
+            "burnDps": {
+              "type": "number"
+            },
+            "shieldMul": {
+              "type": "number"
+            }
+          }
+        },
+        "waveScrap": {
+          "description": "Passive: Scrap paid at every wave launch (War Chest).",
+          "type": "integer",
+          "minimum": 1
+        },
+        "bountyMul": {
+          "description": "Passive: multiplies every bounty (Bounty Hunter).",
           "type": "number",
           "exclusiveMinimum": 0
         }
