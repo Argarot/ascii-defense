@@ -5,9 +5,9 @@ import { TileLibrary } from '../tiles/board';
 import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions, PASSIVE_SLOTS } from './sim';
+import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, TICK_HZ, waveCount, waveHpScale, type SimOptions, PASSIVE_SLOTS, RELIC_SLOTS, SALVAGE_ORE } from './sim';
 import { effectiveStats } from './defs';
-import type { EnemyDef, PassiveDef, RelicDef, SetDef, TowerDef } from './defs';
+import type { EnemyDef, PassiveDef, RecipeDef, RelicDef, SetDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
 const LIB = new TileLibrary([
@@ -525,8 +525,12 @@ describe('towers and projectiles', () => {
     }
     expect(sim.heldPassives.length).toBe(PASSIVE_SLOTS);
     expect(new Set(sim.heldPassives).size).toBe(PASSIVE_SLOTS); // never the same passive twice
-    for (let i = 0; i < 6; i++) call();
-    expect(sim.passiveOffer).toBeNull();
+    // Full slots still get an offer (session 28, PR 3): a pick then names the one it replaces, or the offer is skipped.
+    for (let i = 0; i < 4 && !sim.passiveOffer; i++) call();
+    expect(sim.passiveOffer).not.toBeNull();
+    expect(sim.pickPassive(0)).toBe(false);
+    expect(sim.pickPassive(0, 0)).toBe(true);
+    expect(sim.heldPassives.length).toBe(PASSIVE_SLOTS);
     // The hash sees the held passives: two runs that differ only in a pick differ.
     const other = new Sim(53, world);
     expect(other.hashState()).not.toBe(sim.hashState());
@@ -567,6 +571,79 @@ describe('towers and projectiles', () => {
     sim.heldRarity[1] = 0;
     (sim as unknown as { refold(): void }).refold();
     expect(sim.hashState()).not.toBe(h1);
+  });
+
+  it('replace, salvage, combine, skip: a full row is a decision, two of a kind climb a rarity, a recipe fuses, a fired rule is counted (session 28, PR 3)', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const RELICS: RelicDef[] = [
+      { id: 'tithe', name: 'Tithe', kind: 'passive', rarity: 'common', tags: ['economy'], stackable: true, desc: '+2', effects: { killRefundScrap: 2 }, tiers: { rare: { effects: { killRefundScrap: 3 } }, epic: { effects: { killRefundScrap: 5 } } } },
+      { id: 'frostbite', name: 'Frostbite', kind: 'passive', rarity: 'common', tags: ['cold'], desc: '+50%', effects: { slowedDamageMul: 1.5 } },
+      { id: 'stasis', name: 'Stasis', kind: 'active', rarity: 'common', tags: ['cold'], desc: 'freeze', cooldownTicks: 100, effects: { freezeTicks: 80 } },
+      { id: 'permafrost_engine', name: 'Permafrost Engine', kind: 'passive', rarity: 'epic', tags: ['cold', 'damage'], fusionOnly: true, desc: 'x3', effects: { slowedDamageMul: 3 } },
+    ];
+    const RECIPES: RecipeDef[] = [{ a: 'frostbite', b: 'stasis', result: 'permafrost_engine', desc: 'fused' }];
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const world = { ...simOpts, mode: 'waves' as const, firstWaveWaits: true, maxSpawns: 0, interWaveTicks: 100000, enemyDefs: [parked], towerDefs: [BOLT], relicDefs: RELICS, recipeDefs: RECIPES };
+    const sim = new Sim(53, world);
+    const call = (): boolean => { for (let t = 0; t < 3000 && !sim.canCallWave(); t++) sim.tick(); return sim.callWave(); };
+    // Fill the row with Tithes (stackable, so the pool keeps dealing them).
+    for (let i = 0; i < RELIC_SLOTS; i++) expect(sim.debugGrantRelic('tithe')).toBe(true);
+    expect(sim.heldRelics.length).toBe(RELIC_SLOTS);
+    // A fusion-only relic is never in the pool; the offer at wave 3 still comes to a full row.
+    for (let i = 0; i < 6 && !sim.offer; i++) call();
+    expect(sim.offer).not.toBeNull();
+    expect(sim.offerDefs()!.every((d) => !d.fusionOnly)).toBe(true);
+    // Full: a pick without a replacement is refused; with one, the replaced relic salvages for Ore.
+    expect(sim.pickRelic(0)).toBe(false);
+    const ore0 = sim.ore[0];
+    const replacedRarity = sim.heldRarity[3];
+    expect(sim.pickRelic(0, 3)).toBe(true);
+    expect(sim.heldRelics.length).toBe(RELIC_SLOTS);
+    expect(sim.ore[0]).toBe(ore0 + SALVAGE_ORE[replacedRarity]);
+    expect(sim.inputs.some((i) => i.a.t === 'pickRelic' && i.a.replace === 3)).toBe(true);
+    // Salvage: Ore back by rarity, the row shrinks, the input is recorded.
+    const ore1 = sim.ore[0];
+    const r0 = sim.heldRarity[0];
+    expect(sim.salvageRelic(0)).toBe(true);
+    expect(sim.ore[0]).toBe(ore1 + SALVAGE_ORE[r0]);
+    expect(sim.heldRelics.length).toBe(RELIC_SLOTS - 1);
+    expect(sim.salvageRelic(99)).toBe(false);
+    // Combine two of a kind at one rarity: one copy, one rarity up, its fold reads the tier.
+    const a = sim.heldRelics.findIndex((di, i) => RELICS[di].id === 'tithe' && sim.heldRarity[i] === 0);
+    const b = sim.heldRelics.findIndex((di, i) => RELICS[di].id === 'tithe' && sim.heldRarity[i] === 0 && i !== a);
+    expect(a).toBeGreaterThanOrEqual(0);
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(sim.combineTargets(a).some((t) => t.with === b)).toBe(true);
+    const nBefore = sim.heldRelics.length;
+    expect(sim.combineRelics(a, b)).toBe(true);
+    expect(sim.heldRelics.length).toBe(nBefore - 1);
+    expect(sim.heldRarity.filter((r) => r >= 1).length).toBeGreaterThanOrEqual(1);
+    // A recipe: frostbite + stasis -> Permafrost Engine at the higher rarity; it is not in any pool.
+    while (sim.heldRelics.length > RELIC_SLOTS - 2) expect(sim.salvageRelic(sim.heldRelics.length - 1)).toBe(true);
+    expect(sim.debugGrantRelic('frostbite')).toBe(true);
+    expect(sim.debugGrantRelic('stasis')).toBe(true);
+    const fi = sim.heldRelics.length - 2;
+    const si = sim.heldRelics.length - 1;
+    sim.heldRarity[fi] = 1;
+    expect(sim.combineTargets(fi).find((t) => t.with === si)?.result).toBe('Permafrost Engine');
+    expect(sim.combineRelics(fi, si)).toBe(true);
+    const pe = sim.heldRelics.findIndex((di) => RELICS[di].id === 'permafrost_engine');
+    expect(pe).toBeGreaterThanOrEqual(0);
+    expect(sim.heldRarity[pe]).toBe(2); // epic base beats the rare copy
+    expect((sim as unknown as { fold: { slowedDamageMul: number } }).fold.slowedDamageMul).toBeCloseTo(3, 5);
+    expect(sim.inputs.some((i) => i.a.t === 'combine')).toBe(true);
+    // A fired rule is counted: an active marks itself when fired.
+    expect(sim.debugGrantRelic('stasis')).toBe(true);
+    const st = sim.heldRelics.length - 1;
+    expect(sim.fireActive('stasis')).toBe(true);
+    expect(sim.heldRelicInfo()[st].uses).toBe(1);
+    expect(sim.heldRelicInfo()[st].usedAgo).toBe(0);
+    // Skip closes a standing offer and is replayed.
+    for (let i = 0; i < 6 && !sim.offer; i++) call();
+    expect(sim.offer).not.toBeNull();
+    expect(sim.skipOffer()).toBe(true);
+    expect(sim.offer).toBeNull();
+    expect(sim.inputs.some((i) => i.a.t === 'skipOffer')).toBe(true);
   });
 
   it('a beam hits every body in its corridor, heats on a held lead, and turns on a replayed input (session 26, WBS 2.34)', () => {

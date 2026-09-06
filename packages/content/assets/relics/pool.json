@@ -394,6 +394,86 @@
           }
         }
       }
+    },
+    {
+      "id": "permafrost_engine",
+      "name": "Permafrost Engine",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "cold",
+        "damage"
+      ],
+      "fusionOnly": true,
+      "desc": "Slowed enemies take triple from everything. Frostbite and Stasis, fused.",
+      "effects": {
+        "slowedDamageMul": 3
+      }
+    },
+    {
+      "id": "tollbooth",
+      "name": "Tollbooth",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "economy"
+      ],
+      "fusionOnly": true,
+      "desc": "Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused.",
+      "effects": {
+        "killRefundScrap": 5,
+        "tollScrap": 3
+      }
+    },
+    {
+      "id": "bunker",
+      "name": "Bunker",
+      "kind": "passive",
+      "rarity": "epic",
+      "tags": [
+        "core"
+      ],
+      "fusionOnly": true,
+      "desc": "The Core mends 8 health every wave. Sandbags and Second Wind, fused.",
+      "effects": {
+        "coreHealPerWave": 8
+      }
+    },
+    {
+      "id": "quarry_master",
+      "name": "Quarry Master",
+      "kind": "active",
+      "rarity": "epic",
+      "tags": [
+        "economy"
+      ],
+      "stackable": true,
+      "fusionOnly": true,
+      "desc": "Refineries produce at ten times for 40 seconds. Quarry and Deep Vein, fused.",
+      "cooldownTicks": 1800,
+      "effects": {
+        "productionMul": 10,
+        "boostTicks": 800
+      }
+    },
+    {
+      "id": "doomsday",
+      "name": "Doomsday",
+      "kind": "active",
+      "rarity": "epic",
+      "tags": [
+        "damage",
+        "cold"
+      ],
+      "stackable": true,
+      "fusionOnly": true,
+      "desc": "Strike anywhere: 900 damage in a 4-cell blast, and every enemy freezes for 2 seconds. Orbital Lance and Flashbang, fused.",
+      "cooldownTicks": 1800,
+      "effects": {
+        "orbitalDamage": 900,
+        "orbitalRadius": 4,
+        "freezeTicks": 40
+      }
     }
   ]
 }

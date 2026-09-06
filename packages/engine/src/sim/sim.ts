@@ -33,6 +33,7 @@ import {
   type RelicEffects,
   type PassiveDef,
   type SetDef,
+  type RecipeDef,
   type StatMods,
   foldPassiveMods,
   relicEffectsAt,
@@ -83,6 +84,8 @@ export interface SimOptions {
   passiveDefs?: readonly PassiveDef[];
   /** Set effects over tags (session 28, PR 2); absent = no sets. */
   setDefs?: readonly SetDef[];
+  /** Duo recipes (session 28, PR 3); absent = no fusion. */
+  recipeDefs?: readonly RecipeDef[];
   /** Wave scaling knobs; DEFAULT_DIFFICULTY when absent. */
   difficulty?: DifficultySpec;
   /** Hold this wave and the run is WON (D6). 0 = endless (tests, demos). */
@@ -171,6 +174,10 @@ export const OFFER_EVERY_WAVES = 3;
 /** D26 (decided 2026-09-06): a passive pick-1-of-3 every this many waves, into this many slots. */
 export const PASSIVE_OFFER_EVERY_WAVES = 2;
 export const PASSIVE_SLOTS = 6;
+/** Relic slots a run holds (session 28, PR 3): a full row is a decision - replace, salvage or combine - never a wall. */
+export const RELIC_SLOTS = 12;
+/** Ore a salvaged relic returns, by rarity (common, rare, epic). */
+export const SALVAGE_ORE: readonly number[] = [10, 20, 35];
 /**
  * Ore price of the FIRST blind draw at the Core (PRD sec 7.3 C). Every
  * purchase this run multiplies the next by RELIC_COST_GROWTH (Daniil,
@@ -387,6 +394,9 @@ export class Sim {
   /** The rarity of each held relic and of each offered card (0 common, 1 rare, 2 epic; session 28, PR 2). Hashed. */
   readonly heldRarity: number[] = [];
   offerRarity: number[] = [];
+  /** Per held relic: how often its rule fired and the tick it last did (session 28, PR 3; presentation, not hashed). */
+  readonly heldUses: number[] = [];
+  readonly heldLastUse: number[] = [];
   /** The passive layer (session 28, PR 1): held pool indices, the pending offer, the wave it was dealt for. */
   readonly heldPassives: number[] = [];
   passiveOffer: number[] | null = null;
@@ -799,6 +809,116 @@ export class Sim {
     this.refoldPassives();
   }
 
+  /** Every held-relic array grows together (session 28, PR 3). */
+  private pushHeld(di: number, rarity: number): void {
+    this.heldRelics.push(di);
+    this.heldRarity.push(rarity);
+    this.relicCooldowns.push(0); // actives arrive ready - the first firing is the sales pitch
+    this.heldUses.push(0);
+    this.heldLastUse.push(-1);
+  }
+
+  /** ...and shrinks together. */
+  private spliceHeld(hi: number): void {
+    this.heldRelics.splice(hi, 1);
+    this.heldRarity.splice(hi, 1);
+    this.relicCooldowns.splice(hi, 1);
+    this.heldUses.splice(hi, 1);
+    this.heldLastUse.splice(hi, 1);
+  }
+
+  /** A held relic's rule just fired: every held copy carrying `field` is marked (the strip pulses, the summary counts). */
+  private noteRelicUse(field: keyof RelicEffects): void {
+    for (let i = 0; i < this.heldRelics.length; i++) {
+      if (this.heldEffects(i)[field] === undefined) continue;
+      this.heldUses[i]++;
+      this.heldLastUse[i] = this.tickCount;
+    }
+  }
+
+  private markUse(hi: number): void {
+    this.heldUses[hi]++;
+    this.heldLastUse[hi] = this.tickCount;
+  }
+
+  /** Ore a held relic returns when salvaged. */
+  salvageOre(hi: number): number {
+    return SALVAGE_ORE[Math.max(0, Math.min(SALVAGE_ORE.length - 1, this.heldRarity[hi] ?? 0))];
+  }
+
+  /**
+   * A held relic back for Ore (session 28, PR 3; PRD sec 7.6 salvage): a
+   * replayed input. Returns false for a bad index.
+   */
+  salvageRelic(hi: number): boolean {
+    if (this.status !== 'running') return false;
+    if (hi < 0 || hi >= this.heldRelics.length) return false;
+    this.ore[0] += this.salvageOre(hi);
+    this.spliceHeld(hi);
+    this.refold();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'salvage', index: hi } });
+    return true;
+  }
+
+  /** What `hi` can combine with: a same-id copy at the same rarity below epic (the next rarity), or a recipe partner (the result). */
+  combineTargets(hi: number): { with: number; result: string; resultId: string }[] {
+    const defs = this.opts.relicDefs ?? [];
+    const out: { with: number; result: string; resultId: string }[] = [];
+    if (hi < 0 || hi >= this.heldRelics.length) return out;
+    const a = defs[this.heldRelics[hi]];
+    for (let j = 0; j < this.heldRelics.length; j++) {
+      if (j === hi) continue;
+      const b = defs[this.heldRelics[j]];
+      if (b.id === a.id && this.heldRarity[j] === this.heldRarity[hi] && this.heldRarity[hi] < 2) {
+        out.push({ with: j, result: `${a.name} (${RARITIES[this.heldRarity[hi] + 1]})`, resultId: a.id });
+        continue;
+      }
+      const r = (this.opts.recipeDefs ?? []).find((x) => (x.a === a.id && x.b === b.id) || (x.a === b.id && x.b === a.id));
+      const resultDef = r ? defs.find((d) => d.id === r.result) : undefined;
+      if (r && resultDef) out.push({ with: j, result: resultDef.name, resultId: resultDef.id });
+    }
+    return out;
+  }
+
+  /**
+   * Two held relics into one (session 28, PR 3; PRD sec 7.6 fusion): two
+   * of a kind at the same rarity become one at the next rarity; a recipe
+   * pair becomes the recipe's relic at the higher of the two rarities. A
+   * replayed input; false when the pair combines into nothing.
+   */
+  combineRelics(a: number, b: number): boolean {
+    if (this.status !== 'running') return false;
+    const target = this.combineTargets(a).find((t) => t.with === b);
+    if (!target) return false;
+    const defs = this.opts.relicDefs ?? [];
+    const sameKind = defs[this.heldRelics[a]].id === target.resultId;
+    if (sameKind) {
+      this.heldRarity[a] = this.heldRarity[a] + 1;
+      this.spliceHeld(b);
+    } else {
+      const di = defs.findIndex((d) => d.id === target.resultId);
+      // The higher of the two rarities, never below the result's own base.
+      const rarity = Math.max(this.heldRarity[a], this.heldRarity[b], RARITIES.indexOf(defs[di].rarity));
+      const [hi, lo] = a > b ? [a, b] : [b, a];
+      this.spliceHeld(hi);
+      this.spliceHeld(lo);
+      this.pushHeld(di, rarity);
+    }
+    this.refold();
+    this.inputs.push({ tick: this.tickCount, a: { t: 'combine', a, b } });
+    return true;
+  }
+
+  /** Decline the standing offer - the relic one if up, else the passive one (session 28, PR 3). A replayed input. */
+  skipOffer(): boolean {
+    if (this.status !== 'running') return false;
+    if (this.offer) { this.offer = null; this.offerRarity = []; }
+    else if (this.passiveOffer) this.passiveOffer = null;
+    else return false;
+    this.inputs.push({ tick: this.tickCount, a: { t: 'skipOffer' } });
+    return true;
+  }
+
   /**
    * The rarity a draw lands at (session 28, PR 2): weighted by wave -
    * common 60 minus the wave (floor 30), rare 30, epic 10 plus half the
@@ -843,7 +963,7 @@ export class Sim {
     const defs = this.opts.passiveDefs;
     if (!defs || this.passiveOffer !== null) return;
     if (this.wave === 0 || this.wave % PASSIVE_OFFER_EVERY_WAVES !== 0 || this.passiveOfferWave === this.wave) return;
-    if (this.heldPassives.length >= PASSIVE_SLOTS) return;
+    // Full slots still get the offer (session 28, PR 3): a pick then replaces one, or the offer is skipped.
     this.passiveOfferWave = this.wave;
     const pool: number[] = [];
     for (let i = 0; i < defs.length; i++) if (!this.heldPassives.includes(i)) pool.push(i);
@@ -862,10 +982,14 @@ export class Sim {
   }
 
   /** Take one of the offered passives: a replayed input. */
-  pickPassive(option: number): boolean {
+  pickPassive(option: number, replace?: number): boolean {
     if (this.status !== 'running') return false;
     if (!this.passiveOffer || option < 0 || option >= this.passiveOffer.length) return false;
-    if (this.heldPassives.length >= PASSIVE_SLOTS) return false;
+    if (this.heldPassives.length >= PASSIVE_SLOTS) {
+      // Full slots (session 28, PR 3): the pick names the passive it replaces.
+      if (replace === undefined || replace < 0 || replace >= this.heldPassives.length) return false;
+      this.heldPassives.splice(replace, 1);
+    }
     const di = this.passiveOffer[option];
     this.heldPassives.push(di);
     this.passiveOffer = null;
@@ -875,7 +999,7 @@ export class Sim {
       this.coreHp += d.econ.coreHpMaxAdd;
     }
     this.refoldPassives();
-    this.inputs.push({ tick: this.tickCount, a: { t: 'pickPassive', option } });
+    this.inputs.push({ tick: this.tickCount, a: replace === undefined ? { t: 'pickPassive', option } : { t: 'pickPassive', option, replace } });
     return true;
   }
 
@@ -899,21 +1023,29 @@ export class Sim {
   }
 
   /** Held relics with their live state, for the inventory panel. */
-  heldRelicInfo(): { def: RelicDef; cooldown: number; rarity: number }[] {
+  heldRelicInfo(): { def: RelicDef; cooldown: number; rarity: number; uses: number; usedAgo: number }[] {
     const defs = this.opts.relicDefs ?? [];
-    return this.heldRelics.map((di, i) => ({ def: defs[di], cooldown: this.relicCooldowns[i], rarity: this.heldRarity[i] ?? 0 }));
+    return this.heldRelics.map((di, i) => ({ def: defs[di], cooldown: this.relicCooldowns[i], rarity: this.heldRarity[i] ?? 0, uses: this.heldUses[i] ?? 0, usedAgo: (this.heldLastUse[i] ?? -1) < 0 ? -1 : this.tickCount - this.heldLastUse[i] }));
   }
 
-  pickRelic(option: number): boolean {
+  /**
+   * Take one of the offered relics. With the slots full (RELIC_SLOTS) the
+   * pick needs `replace`: the held index salvaged to make room (session
+   * 28, PR 3) - a full row is a decision, never a wall.
+   */
+  pickRelic(option: number, replace?: number): boolean {
     if (this.status !== 'running') return false;
     if (!this.offer || option < 0 || option >= this.offer.length) return false;
-    this.heldRelics.push(this.offer[option]);
-    this.heldRarity.push(this.offerRarity[option] ?? 0);
-    this.relicCooldowns.push(0); // actives arrive ready - the first firing is the sales pitch
+    if (this.heldRelics.length >= RELIC_SLOTS) {
+      if (replace === undefined || replace < 0 || replace >= this.heldRelics.length) return false;
+      this.ore[0] += this.salvageOre(replace);
+      this.spliceHeld(replace);
+    }
+    this.pushHeld(this.offer[option], this.offerRarity[option] ?? 0);
     this.offer = null;
     this.offerRarity = [];
     this.refold();
-    this.inputs.push({ tick: this.tickCount, a: { t: 'pickRelic', option } });
+    this.inputs.push({ tick: this.tickCount, a: replace === undefined ? { t: 'pickRelic', option } : { t: 'pickRelic', option, replace } });
     return true;
   }
 
@@ -927,9 +1059,7 @@ export class Sim {
     const defs = this.opts.relicDefs ?? [];
     const di = defs.findIndex((d) => d.id === relicId);
     if (di === -1) return false;
-    this.heldRelics.push(di);
-    this.heldRarity.push(this.rollRarity(defs[di]));
-    this.relicCooldowns.push(0);
+    this.pushHeld(di, this.rollRarity(defs[di]));
     this.refold();
     return true;
   }
@@ -974,6 +1104,7 @@ export class Sim {
       this.prodBoostMul = e.productionMul;
     }
     this.relicCooldowns[hi] = def.cooldownTicks ?? 0;
+    this.markUse(hi);
     this.inputs.push({ tick: this.tickCount, a: { t: 'fireActive', relicId, x, y } });
     return true;
   }
@@ -990,6 +1121,7 @@ export class Sim {
       // A held UNSTACKABLE relic leaves the pool: a second Vein Tap is a
       // dead card, a second Frostbite is a bigger one (design round 1).
       if (!(defs[i].stackable ?? false) && this.heldRelics.includes(i)) continue;
+      if (defs[i].fusionOnly) continue; // reached only by a recipe (session 28, PR 3)
       pool.push(i);
     }
     return pool;
@@ -1019,9 +1151,7 @@ export class Sim {
     this.ore[0] -= cost;
     this.relicsBought++;
     const bought = this.rng.stream('relics').pick(pool);
-    this.heldRelics.push(bought);
-    this.heldRarity.push(this.rollRarity(this.opts.relicDefs[bought]));
-    this.relicCooldowns.push(0);
+    this.pushHeld(bought, this.rollRarity(this.opts.relicDefs[bought]));
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'buyRelic' } });
     return true;
@@ -1116,12 +1246,10 @@ export class Sim {
       case 'consumable': {
         const defs = this.opts.relicDefs ?? [];
         const idx: number[] = [];
-        defs.forEach((d, i) => { if (d.kind === 'consumable') idx.push(i); });
+        defs.forEach((d, i) => { if (d.kind === 'consumable' && !d.fusionOnly) idx.push(i); });
         if (idx.length === 0) return fallback();
         const di = idx[loot.int(0, idx.length - 1)];
-        this.heldRelics.push(di);
-        this.heldRarity.push(this.rollRarity(defs[di]));
-        this.relicCooldowns.push(0);
+        this.pushHeld(di, this.rollRarity(defs[di]));
         this.refold();
         return `relic: ${defs[di].name}`;
       }
@@ -1130,9 +1258,7 @@ export class Sim {
         const pool = this.unheldPool().filter((i) => defs[i].kind !== 'consumable');
         if (pool.length === 0) return fallback();
         const di = pool[loot.int(0, pool.length - 1)];
-        this.heldRelics.push(di);
-        this.heldRarity.push(this.rollRarity(defs[di]));
-        this.relicCooldowns.push(0);
+        this.pushHeld(di, this.rollRarity(defs[di]));
         this.refold();
         return `relic: ${defs[di].name}`;
       }
@@ -1276,9 +1402,7 @@ export class Sim {
     if (e.killRefundScrap !== undefined) this.scrap += e.killRefundScrap; // flat grant when used as a one-shot
     if (e.coreHpAdd !== undefined) { this.coreHpMax += e.coreHpAdd; this.coreHp += e.coreHpAdd; } // Sandbags
     if (e.oreAdd !== undefined) this.ore[0] += e.oreAdd; // Ore Pocket
-    this.heldRelics.splice(hi, 1);
-    this.heldRarity.splice(hi, 1);
-    this.relicCooldowns.splice(hi, 1);
+    this.spliceHeld(hi);
     this.refold();
     this.inputs.push({ tick: this.tickCount, a: { t: 'useConsumable', relicId } });
     return true;
@@ -1403,8 +1527,11 @@ export class Sim {
       case 'priority': return this.setPriority(a.x, a.y, a.priority);
       case 'facing': return this.setFacing(a.x, a.y, a.facing);
       case 'sell': return this.sellTower(a.x, a.y);
-      case 'pickRelic': return this.pickRelic(a.option);
-      case 'pickPassive': return this.pickPassive(a.option);
+      case 'pickRelic': return this.pickRelic(a.option, a.replace);
+      case 'pickPassive': return this.pickPassive(a.option, a.replace);
+      case 'skipOffer': return this.skipOffer();
+      case 'salvage': return this.salvageRelic(a.index);
+      case 'combine': return this.combineRelics(a.a, a.b);
       case 'fireActive': return this.fireActive(a.relicId, a.x, a.y);
       case 'useConsumable': return this.useConsumable(a.relicId);
       case 'buyRelic': return this.buyRelic();
@@ -1716,7 +1843,7 @@ export class Sim {
     if (this.passiveEcon.waveScrap > 0) this.scrap += this.passiveEcon.waveScrap;
     if (this.passiveEcon.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.passiveEcon.coreHealPerWave);
     // Second Wind (relic): the Core mends a little with every front opened.
-    if (this.fold.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.fold.coreHealPerWave);
+    if (this.fold.coreHealPerWave > 0) { this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.fold.coreHealPerWave); this.noteRelicUse('coreHealPerWave'); }
     this.emit({ kind: 'waveStart', wave: this.wave });
     this.waveEntries = this.nextWaveEntries.length ? this.nextWaveEntries : this.pickWaveEntries(this.wave);
     this.nextWaveEntries = this.pickWaveEntries(this.wave + 1);
@@ -2105,6 +2232,7 @@ export class Sim {
     this.emit({ kind: 'impact', x: ix, y: iy, r: this.projRadius[p] });
     // Splinter (relic): the explosion resolves twice.
     const blasts = this.projRadius[p] > 0 && this.fold.explodeTwice ? 2 : 1;
+    if (blasts === 2) this.noteRelicUse('explodeTwice');
     for (let rep = 0; rep < blasts; rep++) {
       // Splinter's second blast is DRAWN as a second blast (WBS 2.31: a
       // rule the player cannot see is a presentation bug): the same spot,
@@ -2173,7 +2301,7 @@ export class Sim {
     let dmg = typed <= 0 ? 0 : Math.max(1, typed - (ignoreArmor ? 0 : (def.armor ?? 0)));
     // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
     // relic that turns Frost from utility into a damage amplifier.
-    if (dmg > 0 && this.slowTicks[enemy] > 0) dmg *= this.fold.slowedDamageMul;
+    if (dmg > 0 && this.slowTicks[enemy] > 0 && this.fold.slowedDamageMul !== 1) { dmg *= this.fold.slowedDamageMul; this.noteRelicUse('slowedDamageMul'); }
     if (this.shield[enemy] > 0) {
       // Shatter (Bolt rework): a shield takes shieldMul times the hit; the
       // part that gets through to health is unchanged.
@@ -2204,6 +2332,8 @@ export class Sim {
       // Bounty Board (relic) multiplies boss bounty only; rounded so Scrap
       // stays integral (the state hash truncates its lanes to integers).
       this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1) * this.passiveEcon.bountyMul) + this.fold.killRefundScrap; // Tithe; Bounty Hunter (passive)
+      if (this.fold.killRefundScrap > 0) this.noteRelicUse('killRefundScrap');
+      if (this.bossFlag[enemy] && this.fold.bossBountyMul !== 1) this.noteRelicUse('bossBountyMul');
       const tower = this.towers[towerIdx];
       if (tower) tower.kills++;
       // A boss drops a cache where it falls (design round 1, Daniil: "where
@@ -2215,6 +2345,7 @@ export class Sim {
       // chain kill's excess chains again - kills feed kills. Terminates
       // because every recursion step required a kill.
       if (this.fold.overkillCarry && overkill >= 1) {
+        this.noteRelicUse('overkillCarry');
         const next = this.nearestAlive(this.posX[enemy], this.posY[enemy]);
         if (next !== -1) this.applyDamage(next, overkill, 0, 0, towerIdx);
       }
@@ -2333,7 +2464,7 @@ export class Sim {
         }
         // Toll (relic): stepping into a cell that touches a tower costs the
         // enemy Scrap - roads lined with towers become toll roads.
-        if (this.fold.tollScrap > 0 && this.towerTouches(cx, cy)) this.scrap += this.fold.tollScrap;
+        if (this.fold.tollScrap > 0 && this.towerTouches(cx, cy)) { this.scrap += this.fold.tollScrap; this.noteRelicUse('tollScrap'); }
         let found = false;
         const mask = this.flow.allowed[cy * width + cx];
         for (let d = 0; d < 4; d++) {

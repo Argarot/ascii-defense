@@ -9,13 +9,14 @@
  * simulating when the tab does not have the screen (D7's whole point); an
  * explicit pause is the only thing that stops time.
  */
-import { validateEnemies, validateLoot, validatePassives, validateRelics, validateSets, validateTowers } from '@ascii-defense/content';
+import { validateEnemies, validateLoot, validatePassives, validateRecipes, validateRelics, validateSets, validateTowers } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import passivesJson from '@ascii-defense/content/assets/passives/pool.json';
 import setsJson from '@ascii-defense/content/assets/sets/pool.json';
+import recipesJson from '@ascii-defense/content/assets/recipes/pool.json';
 import lootJson from '@ascii-defense/content/assets/loot/tables.json';
 import type { FromWorker, ToWorker } from './protocol';
 import { createWorkerRuntime } from './workerRuntime';
@@ -33,6 +34,7 @@ const runtime = createWorkerRuntime({
   relicDefs: must(validateRelics.check(relicsJson), 'relics').relics,
   passiveDefs: must(validatePassives.check(passivesJson), 'passives').passives,
   setDefs: must(validateSets.check(setsJson), 'sets').sets,
+  recipeDefs: must(validateRecipes.check(recipesJson), 'recipes').recipes,
   lootTables: must(validateLoot.check(lootJson), 'loot').tables,
 });
 

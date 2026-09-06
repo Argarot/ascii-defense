@@ -36,6 +36,7 @@ const SCHEMA_FOR = {
   'relics/': 'relics.schema.json',
   'passives/': 'passives.schema.json',
   'sets/': 'sets.schema.json',
+  'recipes/': 'recipes.schema.json',
   'terrain/': 'terrain.schema.json',
   'loot/': 'loot.schema.json',
   'grid.json': 'grid.schema.json',

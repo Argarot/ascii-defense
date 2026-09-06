@@ -50,6 +50,7 @@ function makeRt() {
     towerDefs: [BOLT],
     passiveDefs: [],
     setDefs: [],
+    recipeDefs: [],
     relicDefs: POOL,
     lootTables: [
       { id: 'rock_cache', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },

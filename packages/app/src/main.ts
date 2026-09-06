@@ -112,6 +112,9 @@ async function main(): Promise<void> {
   const stripTerm = new GLTerm(glyphs, { cols: boardCols, rows: STRIP_ROWS, cellPx: GLYPH_PX_W, cellPxH: GLYPH_PX_H, background: role('ui.bg') });
   const strip = new StripPanel(stripTerm, GLYPH_PX_W, GLYPH_PX_H, SPRITES);
   let stripHover: HudAction | null = null;
+  // The opened held relic (session 28, PR 3) and a pick waiting for the slot it replaces.
+  let selectedRelic: number | null = null;
+  let pendingReplace: { kind: 'relic' | 'passive'; option: number } | null = null;
   // Motion v2 (session 27): the picture is drawn at a STEADY time on the
   // world clock, one tick behind the newest snapshot, blended between the
   // two snapshots that bracket it - whatever bursts the worker's ticks
@@ -449,6 +452,7 @@ async function main(): Promise<void> {
                       summary.story.met.length ? 'you met: ' + summary.story.met.map((m) => `${m.count} ${m.name}`).join(', ') : '',
                       summary.story.relics.length ? 'relics held: ' + summary.story.relics.join(', ') : 'no relics held',
                       summary.story.passives.length ? 'passives: ' + summary.story.passives.join(', ') : 'no passives taken',
+                      summary.story.relicUses.length ? 'relic rules fired: ' + summary.story.relicUses.slice(0, 6).map((u) => `${u.name} ${u.uses}`).join(' \u2802 ') : '',
                       '',
                     ].filter((l, i, a) => l !== '' || a[i - 1] !== '')
                   : []),
@@ -519,6 +523,7 @@ async function main(): Promise<void> {
         'select ground, then a tower in the strip under the board, to build. hover a button for its card.',
         'towers upgrade in either/or tiers - each fork is two jobs, never two numbers.',
         'refineries on gold veins mine Ore; every 3rd wave offers a relic - rules, not numbers; every 2nd wave offers a passive - a permanent bonus on every tower, six slots a run.',
+        'a held relic is a decision: click it in the strip for its card - salvage it for Ore, or combine two of a kind into the next rarity, or two recipe partners into a fused relic. full slots ask which one a pick replaces; S skips an offer.',
         'rock hides ore and caches; prospecting opens it. R turns a laser. N calls the next wave.',
         ...CODEX.rules,
         'hold to the final wave and THE CORE STANDS.',
@@ -560,6 +565,7 @@ async function main(): Promise<void> {
     } else {
       const r = CODEX.relics[page];
       title = `${r.name.toUpperCase()}  ${page + 1}/${count}`;
+      const recipesOf = CODEX.recipes.filter((x) => x.a === r.id || x.b === r.id || x.result === r.id);
       const sp = SPRITES.find((s) => s.id === `relic_${r.id}`);
       hero = sp ? [sp] : [];
       body = [
@@ -567,6 +573,7 @@ async function main(): Promise<void> {
         ...wrapLine(r.desc),
         ...(r.rare ? ['', ...wrapLine(`rare: ${r.rare}`)] : []),
         ...(r.epic ? wrapLine(`epic: ${r.epic}`) : []),
+        ...(recipesOf.length ? ['', ...recipesOf.flatMap((x) => wrapLine(x.result === r.id ? `reached only by combining ${x.aName} and ${x.bName}` : `combines with ${x.a === r.id ? x.bName : x.aName} into ${x.resultName}: ${x.desc}`))] : []),
       ];
     }
     return {
@@ -764,17 +771,32 @@ async function main(): Promise<void> {
     if (action.kind === 'rotate' && selected) rotateSelected();
     if (action.kind === 'choose' && selected) act({ k: 'choose', x: selected.x, y: selected.y, tier: action.tier, option: action.option });
     if (action.kind === 'relic') {
+      // A pick waiting for the slot it replaces (session 28, PR 3) takes this click.
+      if (pendingReplace?.kind === 'relic') { act({ k: 'pickRelic', option: pendingReplace.option, replace: action.index }); pendingReplace = null; return; }
       // The strip's card is always there; the column's only when the face is
       // selected - reading the column alone left a targeted active unarmed
       // (feedback 2026-09-06, item 2).
       const slot = (snap.hud.coreCard ?? snap.hud.core)?.slots[action.index];
       if (slot?.state === 'ready' && slot.targeted && slot.id) targeting = slot.id;
-      else act({ k: 'slot', index: action.index });
+      else if (slot?.state === 'ready' || slot?.state === 'consumable') act({ k: 'slot', index: action.index });
+      // A passive or a cooling active opens its card in the column (session 28, PR 3): salvage, combine, its fires.
+      else if (slot && slot.state !== 'empty') selectedRelic = selectedRelic === action.index ? null : action.index;
     }
+    if (action.kind === 'passive' && pendingReplace?.kind === 'passive') { act({ k: 'pickPassive', option: pendingReplace.option, replace: action.index }); pendingReplace = null; }
+    if (action.kind === 'salvage') { act({ k: 'salvage', index: action.index }); selectedRelic = null; }
+    if (action.kind === 'combine') { act({ k: 'combine', a: action.a, b: action.b }); selectedRelic = null; }
+    if (action.kind === 'closeRelic') selectedRelic = null;
+    if (action.kind === 'skipOffer') { pendingReplace = null; act({ k: 'skipOffer' }); }
     if (action.kind === 'coreDraw') act({ k: 'buyRelic' });
     if (action.kind === 'openCache' && selected) act({ k: 'openCache', x: selected.x, y: selected.y });
     if (action.kind === 'prospect' && selected) act({ k: 'prospect', x: selected.x, y: selected.y });
     if (action.kind === 'callWave') act({ k: 'callWave' });
+  };
+  /** A pick from the standing offer: straight through, or - with the slots full - parked until the player clicks the slot it replaces. */
+  const pickFromOffer = (option: number): void => {
+    if (!snap?.offer) return;
+    if (snap.offer.full) { pendingReplace = { kind: snap.offer.kind, option }; return; }
+    act(snap.offer.kind === 'passive' ? { k: 'pickPassive', option } : { k: 'pickRelic', option });
   };
   hudTerm.canvas.addEventListener('click', (e) => {
     if (!inGame()) return;
@@ -810,7 +832,8 @@ async function main(): Promise<void> {
     if (snap?.offer) {
       const option = offerModal.optionAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
       if (option === -1) { if (snap.offer.kind === 'relic') act({ k: 'rerollOffer' }); }
-      else if (option !== null) act(snap.offer.kind === 'passive' ? { k: 'pickPassive', option } : { k: 'pickRelic', option });
+      else if (option === -2) { pendingReplace = null; act({ k: 'skipOffer' }); }
+      else if (option !== null) pickFromOffer(option);
     }
   });
   // The overlay canvas sits over the board; forward hover/board clicks when
@@ -839,7 +862,12 @@ async function main(): Promise<void> {
       return;
     }
     if (snap?.offer && (e.key === '1' || e.key === '2' || e.key === '3')) {
-      act(snap.offer.kind === 'passive' ? { k: 'pickPassive', option: Number(e.key) - 1 } : { k: 'pickRelic', option: Number(e.key) - 1 });
+      pickFromOffer(Number(e.key) - 1);
+      return;
+    }
+    if (snap?.offer && (e.key === 's' || e.key === 'S')) {
+      pendingReplace = null;
+      act({ k: 'skipOffer' });
       return;
     }
     if (e.key === ' ') {
@@ -883,7 +911,7 @@ async function main(): Promise<void> {
     const animMs = still ? 0 : worldMs;
     const drift = still ? 0 : Math.floor(worldMs / 1400);
 
-    send({ t: 'frame', ui: { hover, selected, hudHover: hudHover ?? stripHover, targeting, showGrid } as UiState });
+    send({ t: 'frame', ui: { hover, selected, hudHover: hudHover ?? stripHover, targeting, showGrid, selectedRelic } as UiState });
 
     if (snap && currentMap) {
       // The run ended while playing: bank once, then the summary owns the eye.
@@ -962,7 +990,7 @@ async function main(): Promise<void> {
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else if (snap.offer && inGame()) {
-        offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll, snap.offer.title);
+        offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll, pendingReplace ? `TAKING CARD ${pendingReplace.option + 1} - click the held ${pendingReplace.kind} it replaces (S skips)` : snap.offer.title);
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else {
@@ -993,6 +1021,12 @@ async function main(): Promise<void> {
     relics: () => debug('relics'),
     passives: () => debug('passives'),
     relicsHeld: () => debug('relicsHeld'),
+    salvage: (index: number) => debug('salvage', index),
+    combine: (a: number, b: number) => debug('combine', a, b),
+    skipOffer: () => debug('skipOffer'),
+    combineTargets: (index: number) => debug('combineTargets', index),
+    uses: () => debug('uses'),
+    openRelic: (index: number | null): void => { selectedRelic = index; },
     sets: () => debug('sets'),
     pickPassive: (option: number) => debug('pickPassive', option),
     // Debug-only: a relic by id outside any offer (replays diverge), and an active fired at a cell.
