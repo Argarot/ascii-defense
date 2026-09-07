@@ -1,147 +1,172 @@
-# Handover — state as of 2026-09-06, late evening (the feedback round on Relics II shipped six PRs; the next theme is the meta tree, after Daniil describes it)
+# Handover — state as of 2026-09-07 (session 29 shipped the meta tree in eight PRs; the next theme is the Tile Smith in the shell and the menus)
 
 > **Updated once per working day** (Daniil). State and seams only; sequencing
 > lives in the roadmap ledger, the checklist in the WBS, requests in the WBS
 > request index. Anything restated here is a drift surface.
 
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
-[docs/PRD.md](docs/PRD.md) (§7.8 passives ARE relics; §11 meta progression —
-the next theme; §4.9 the water finding) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-→ [docs/ASSETS.md](docs/ASSETS.md) → [docs/ART-AGENT.md](docs/ART-AGENT.md) →
-[docs/CATALOGUE.md](docs/CATALOGUE.md) (52 relics, 18 sets, 5 recipes, 3 loot
-tables) → [docs/lab/](docs/lab/) (the prices sweep last) → [docs/WBS.md](docs/WBS.md)
-→ this file → the roadmap ledger's next open row. The gitignored
-`POSTMORTEM.md` holds collaboration findings — **read its last two sections
-before writing any code today.** End every working day with the
-`wrap-session` skill.
+[docs/PRD.md](docs/PRD.md) (§11 "Built" — the tree; §7.6 legendary; §4.5 the
+Bastion's plus; §4.9 chests on ground; §19 the thought dump's status table)
+→ [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) → [docs/ASSETS.md](docs/ASSETS.md)
+→ [docs/ART-AGENT.md](docs/ART-AGENT.md) → [docs/CATALOGUE.md](docs/CATALOGUE.md)
+(52 relics with a Legendary column, 18 sets, 5 recipes, 3 loot tables) →
+[docs/lab/](docs/lab/) (the tree sweep last) → [docs/WBS.md](docs/WBS.md)
+(§7.9 the tree's checklist; §9 the thought dump) → this file → the roadmap
+ledger's next open row. The gitignored `POSTMORTEM.md` holds collaboration
+findings — **read its last two sections before writing any code today.**
+End every working day with the `wrap-session` skill.
 
 Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always).
-**Since tonight there is no PASSIVES row, the relic offer comes every second
-wave, the strip's Core card has a FORGE button, SETTINGS has SPRITE PACK,
-and the HUD column reaches the strip's bottom** — a build without those is older.
+**Since session 29 the title page has WORKSHOP, a fresh save's strip offers
+four towers, the Core's strip shows locked slots as dim crosses, and the
+codex marks locked entries** — a build without those is older.
 
 ## Where the project is
 
-**2026-09-06, late evening — Daniil's feedback on the Relics II build
-(#159–#163), in his order:**
+**2026-09-06 night into 2026-09-07 — session 29, the meta tree (PRs
+#167–#173, all merged green):**
 
-1. **Passives are relics (#161).** The separate layer of session 28 PR 1
-   was folded back the same day: eleven tower-mod relics (`effects.mods`,
-   `waveScrap`, `bountyMul`) with tiers, one pool of 52, twelve slots, the
-   relic offer every second wave (OFFER_EVERY_WAVES 2). The golden is back
-   at 3921408197.
-2. **The relic card follows the eye (#159)**: a board click or Escape closes it.
-3. **The HUD column runs the whole left column** (board plus strip; #159).
-4. **The Forge (#163)**: combining in its own window — held relics as icon
-   plates, two slots, the result plate, one COMBINE button.
-5. **Prices (#160)**: Laser 110 (90/180/320), Tesla 70, Missile 85, tiers at
-   1.5×. The Laser line reads 21.5 (was 27.0); still the strongest by five.
-6. **Copy the run code and the seed** from the pause page and the summary (#159).
-7. **The reworked sprite pack (#163)**: SETTINGS → SPRITE PACK → REWORKED
-   loads `packages/content/assets-reworked` at boot — 61 valid sprites, its
-   510 palette roles, its ground/rock/ore terrain through the art agent's
-   own renderer (adopted). Daniil renames the folders when he is satisfied;
-   the globs tolerate either name being empty.
+0. **The fix bundle (#167)** — Daniil's thought dump items 7–12, 18, 24:
+   Loadbearing ×1.5; the Bastion's reach is a **plus** (four cells at base,
+   eight with Reach; shipped as four, his "a plus" taken literally — eight
+   is one constant), its range IS its reach; the build preview folds every
+   modifier at the selected cell (`previewStats`); the pulse muted and
+   fading with radius; chests on water and empty ground, never rock, and a
+   chest holds its cell; the relic offer only at a quiet board; pierce
+   within half a cell.
+1. **The tree as content and identity (#168)** — `tree/nodes.json`: a base
+   grant (Bolt, Mortar, Frost, Refinery; the sixteen original relics; six
+   slots; Calm and Standard; one tile slot) and 24 nodes in five branches.
+   `resolveUnlocks` is the one object the shell, the worker and the lab
+   read. Meta save **v4** (Ore by tier, unlocks, earned, forged, owned,
+   discovered); run save **v5** (the run's meta identity; a v4 save
+   migrates with the everything sentinel); the run code's fifth segment.
+   **Tiers unlock by forging** (relicCaps); **wins earn relics** (a rare at
+   Standard, an epic at Grim, from open branches).
+2. **The workshop (#169)** — the branches as pages, a node a row with its
+   price or its reason, RUN HISTORY; the setup page shows locked Threats
+   locked, the loadout's slots are the tree's, ENDLESS once bought.
+3. **Ore by tier (#170)** — three purses, hashed (golden 3921408197 →
+   4031597317, reason on the constant); a Refinery on a tiered vein pays that
+   tier at a stretched cycle (×1.5, ×2); `rich_vein` and `mother_lode`.
+4. **The tile shop and the Smith's door (#171)** — every shipped special
+   priced; bought once; the loadout offers minted and OWNED tiles; the Tile
+   Smith link appears only once every tile the workshop sells is owned.
+5. **The lab at tree states (#172)** — `LabSpec.unlocks`, a producer at
+   'vein', the purse in the report; BASE 13.5 / MID 11.3 / EVERYTHING 26.3;
+   **a base run banks ~22 tier-1 Ore**, which priced the nodes (the arsenal
+   105: about five base runs).
+6. **The codex and legendary (#173)** — locked towers name their node,
+   locked relics their branch or the win that earns them; a fused relic is
+   "???" until fused once; legendary as a fourth lane reached only by
+   forging two epics of a relic with a legendary tier (six today); Daniil's
+   four rarity colours in the palette.
 
-**Not built:** passive sprites are moot (they are relic icons now); full
-keyboard operation; the Tile Smith as a page.
+**Not built:** copies of a tile as a multiset (the generator places a chosen
+id once); personal bests; the Tile Smith as a page of the shell; the menus
+rework; the tree sweep with a loadout (no tier-2/3 Ore has been read yet).
 
-**Readings for Daniil, his calls:** the Laser at 21.5 (the pulse's damage is
-the remaining knob); water or rock for the chests; the ramp; the strip's
-text scale; Hailstorm.
+**Readings for Daniil, his calls:** four or eight cells for the Bastion
+(four shipped); the node prices after his first five runs (content, one
+file); the relic-unlock split (tree = branches and capacity, wins = the
+rarer relics, chests = §18's door) — built as written, his confirmation
+still open; the Laser at 21.5; the ramp; Hailstorm.
 
-**Gate:** his eye on the live build — one pool, the Forge as a window, the
-reworked pack side by side with the shipped one.
+**Gate:** his eye on the live build — a fresh save's first run, the
+workshop after it, the codex's locked entries.
 
 ## Fresh-context warnings (beyond CONTRIBUTING)
 
 - **Two agents share this working tree.** The art agent is confined to
-  `packages/content/assets-reworked` since tonight (its AGENTS.md says
-  so); its earlier files in `packages/view` were adopted in #163. Still:
-  `git add` by explicit path, `git diff <file>` before adding, never
-  `stash`/`checkout .`/`reset --hard`.
-- **Stacked PRs do not merge on this squash-merge repo** (#162 reported a
-  conflict; #163 carried the merge). One PR per branch off main.
+  `packages/content/assets-reworked` (its AGENTS.md says so). Still: `git
+  add` by explicit path, `git diff <file>` before adding, never `stash`/
+  `checkout .`/`reset --hard`.
+- **After a merge, never `gh pr merge --delete-branch`.** It checks local
+  main out over locked files and leaves a mixed tree (old unlocked files,
+  new locked ones) — twice in session 29. The recipe: merge without the
+  flag, `git fetch`, `git reset -q origin/main` on the current branch, `git
+  checkout -q -b <next>`, delete the remote branch by name.
+- **A new export from a workspace package needs the dev server restarted**
+  (Vite served a stale engine module across four reloads). A content JSON
+  edit reloads the page under a running probe.
 - **The gate is the exit code**: vitest to a log and `$?`; `gh pr checks
   --watch` exit 0, no `pending` line, the same SHA.
-- **The dev server must restart after a content file is deleted** (a stale
-  worker kept importing the passive pool and the console kept its errors
-  across reloads).
-- **Relic effects at the HELD rarity** (`heldEffects`, `relicEffectsAt`);
-  the five held arrays only through `pushHeld`/`spliceHeld`; a rule that
-  fires calls `noteRelicUse`. Relic `mods` fold through `refoldMods` with
-  the lit sets.
-- **The relic pool's size is a map knob** (boon cells): growing it moves
-  every board; compare sweeps within a file.
-- **A PRD section older than the last generator change** may describe a
-  board that no longer exists (§4.9 did).
-- **`__ad`** has hooks for everything tonight added: `forge`, `forgePick`,
-  `forgeCombine`, `forgeState`, `spriteSet`, plus the relic, chest and
-  frame hooks of the day.
+- **A run's world is the tree's.** The worker filters `towerDefs` and
+  `relicDefs` by `resolveUnlocks`; `defIdx` is per run; `contentHash` and
+  `relicPoolSize` stay over the FULL content. Tests and the lab without a
+  `meta`/`unlocks` get everything.
+- **Relic effects at the HELD rarity** (`heldEffects`, `relicEffectsAt` —
+  legendary first); the five held arrays only through `pushHeld`/
+  `spliceHeld`; a same-kind combine records `forgedThisRun`, a recipe
+  `fusedThisRun`; the summary merges both into the meta save.
+- **The wave scales hp** (`waveHpScale`) and a non-explosive shot damages
+  every body inside `HIT_RADIUS`: a test that counts hits must measure
+  damage against the spawned hp.
+- **`__ad`** gained `pool`, `meta`, `buy`, `buyTile`, `unlocked`, `bank`,
+  `smith`, `killAll`, `stripText`.
 
-## Next session, proposed — 29 (ledger row 29): The meta tree
+## Next session, proposed — 30 (ledger row 30): The Tile Smith in the shell, and the menus
 
-*(Daniil, 2026-09-06 evening: "it's time to start working on the meta
-upgrade tree. Before you build it though, let's discuss how I see it."
-The plan below is the PRD's shape, offered as the starting point for that
-discussion — not a "go" plan yet. His description comes first; the PR
-list is written after it.)*
+**Theme.** Every essential piece is in the game now; what a new player
+meets is a product with a workshop, a codex and a door to the Tile Smith —
+and the door opens onto a separate page with a different face, from menus
+that are plates of text. Session 30 makes the shell one thing: the Smith
+inside it, and every page drawn to the standard Daniil named
+(Stone-Story quality, item 30).
 
-**Theme.** What a run leaves behind. Today banked Ore accumulates and buys
-nothing ("banked ore will buy the workshop tree between runs (not built
-yet)"); the tech tree turns it into the reason to play again.
+**PR list (a full day):**
 
-**Daniil's answers (2026-09-06 late)**: a tree with branches; only Ore, in
-tiers; about five runs to the towers, many more to everything; unlocks
-in the run code; the Tile Smith after every tile is bought. On permanent
-stat power the reply argued for capacity and access instead (PRD §19
-carries the thought dump this came with). **The list:**
+1. **The menu language** — `MenuSpec` grows what the pages need (columns,
+   a framed plate with ornament, an animated title, a hero row on every
+   page, a footer with keys) and `MenuScreen` draws it; the title, setup,
+   settings, summary and pause pages move onto it. Proof: a screenshot of
+   each page beside its old one; `__ad.modalText()` unchanged in content.
+2. **The workshop drawn as a tree** — branches as columns with lines from a
+   node to what it requires, nodes as plates that read BOUGHT / BUY / the
+   reason; the TILES page with the previews framed by rarity of vein. Proof:
+   the pane, a node bought by click on the drawn plate.
+3. **The Tile Smith as a page** — the editor (brushes, features, validity
+   as it types) on the fullscreen terminal, opened from the workshop's
+   TILES page once the door is open; MINT prices the tile by its features
+   (the one pricing function the shop uses: road cells, a vein's tier, a
+   boon's tier) and adds it to the owned pool. `tilesmith.html` stays as
+   the authoring tool for the art agent and the docs. Proof: mint a tile in
+   the shell, load it, see it on the map.
+4. **The relic surfaces in the new language** — the offer, the Forge and
+   the relic card as framed plates with the rarity ring (9.14 at 6×5), a
+   plate shape per kind (9.19), the chest as a sprite kind coloured by
+   rarity (9.13). Proof: the pane.
+5. **Per-tower blasts and beam colours** (9.25, 9.27) — the Mortar's and the
+   Missile's looks apart; a Laser path tints the beam. Proof: the effects
+   tests and the pane.
+6. **The tree sweep with a loadout** — `rich_vein` loaded at MID, the tier-2
+   Ore reading, and the tier-2/3 node prices adjusted if the reading says
+   so. Proof: the doc.
 
-0. **The fix bundle** (WBS 9.7–9.12, 9.18, 9.24): Loadbearing ×1.5; the
-   Bastion's reach takes no modifier but its own and previews as a plus
-   (four or eight — his call); the build preview folds every modifier;
-   the Frost pulse muted with radius; chests on water and ground; the
-   offer only when the board is quiet; pierce within half a cell.
+**Gate — his judgement:** the shell reads as a product; the Smith is part
+of the game.
 
-**The PRD's shape (§11, §7.5, §11.1), as the plan:**
+**His part:** the art brief's additions (the relic ring, the chest kind,
+the active plate) — defaults: placeholders from the generator until the
+agent delivers; a look at the workshop's prices after five runs (default:
+they stand). "Go" is enough.
 
-1. **The workshop page** in the shell: banked Ore, the tree, run history
-   (WBS 7.3). Stage 1 nodes (~5): a starting relic, a tower unlock or
-   variant, Threat Level 2, +1 terrain tile unlock, +relic pool unlocks.
-2. **The relic pool as the sink**: relics stay run-local; the tree decides
-   which may appear (§7.5) — the layer that grows with content forever.
-3. **The tile pool as the Ore economy** (§11.1): special tiles bought,
-   owned as copies, loadout slots as an upgrade with locked slots shown.
-4. **Meta identity in the sim**: `metaPowerIndex` and the unlocked sets
-   ride the run code and the replay (§12); the lab sweeps at tree states
-   (row 34's job, made possible now).
-5. **The Tile Smith folded into the shell** — Daniil's next theme after
-   this one; the workshop page is where it will open from (§11.1).
-6. **The codex** (9.15): every entry, locked ones locked, from every
-   menu and from pause, reading the unlock set; fusions discovered (9.23).
-7. **Legendary, forging unlocks tiers, wins grant relics, endless as a
-   node** (9.1, 9.2, 9.3, 9.22); one Refinery for every ore tier (9.4).
-
-**Gate — his judgement:** finishing a run visibly changes the next one.
-
-**His part:** the description he promised; then the node list and prices.
-
-**Biggest risk:** the tree multiplies player power under the curves the lab
-measures; every node is a `metaPowerIndex` lane and the sweeps re-baseline
-per tree state (PRD §11 stage 3's warning). **Expensive if wrong:** the
-save shape (what persists, versioned) and the run code (what identifies a
-run) — both are migrations once players hold saves.
+**Biggest risk:** the menu rework touches every page and the `MenuSpec`
+shape every page authors against — a wrong shape is a rewrite of six
+pages. **Expensive if wrong:** the pricing function (shop and Smith share
+it; a change later reprices what players own) and the Smith's output
+format (minted tiles persist in players' browsers).
 
 ## Standing open items
 
-- Daniil's playtest of tonight's build; his description of the meta tree.
-- The Laser at 21.5, water or rock for the chests, the ramp, the strip's
-  text scale, Hailstorm — his calls.
-- Rename `assets-reworked` → `assets` when the pack satisfies him.
-- Retire Loadbearing beside the Core gifts — his call.
+- Daniil's playtest of session 29: a fresh save's first run, the workshop,
+  the codex's locked entries.
+- His calls: four or eight cells for the Bastion; the unlock split; the
+  node prices after five runs; the Laser at 21.5; the ramp; Hailstorm.
 - Repo settings: the homepage is empty and the token cannot set it.
-- D25 multi-cell towers, D27 monetization — open.
+- D25 multi-cell towers, D27 monetization, D28 where the meta lives — open.
 - 2.27 gate — his.
-- Technical-debt register: the Tile Smith as a page; 4.24's keyboard half;
+- Technical-debt register: the multiset of tile copies (the generator
+  places a chosen id once); personal bests; 4.24's keyboard half;
   terminals once per session; 2× tile previews; the lab's analytic model;
-  the offer modal without icons; relic offers weighted by applicability.
+  relic offers weighted by applicability.
