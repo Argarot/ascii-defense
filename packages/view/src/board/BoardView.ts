@@ -22,6 +22,7 @@ import {
 import type { TermSurface } from '@ascii-defense/render';
 import type { Sprite } from '@ascii-defense/content';
 import { role } from '../palette';
+import { rarityRole } from '../hud/HudPanel';
 import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, drawStripCell, drawTerrainCell, drawVoidCell } from './style';
 import { attackLook, drawSpriteFrame, idleFrame } from './sprites';
@@ -184,7 +185,7 @@ export interface RenderState {
   /** Unclaimed relic caches - drawn as a bright find on the terrain. */
   caches?: readonly CellRef[];
   /** Void chests (session 28, PR 5): surfaced on water, with the share of their window left (1 = just surfaced). */
-  chests?: readonly { x: number; y: number; left01: number }[];
+  chests?: readonly { x: number; y: number; left01: number; /** Its rarity's colour (session 30, PR 4). */ rarity?: string }[];
   /** Ore cells' remaining richness 0..1 - scales the gold-speck density. */
   oreRichness?: readonly { x: number; y: number; frac: number }[];
   /** The sim's route graph (FlowField.allowed): legal steps per cell. Kerbs
@@ -606,13 +607,22 @@ export class BoardView {
     // Void chests (PRD sec 4.9): a plate on the water that blinks faster as
     // it sinks - the void's one reason to be watched.
     for (const c of state.chests ?? []) {
-      const gx = c.x * CELL_W;
-      const gy = offsetY + c.y * CELL_H;
+      // A chest is a 4x3 box in its rarity's colour (session 30, PR 4; item
+      // 13): the lid, two coins that blink faster as it sinks, the base. A
+      // 'chest' sprite from the pack, when one ships, draws in its place.
+      const gx = c.x * CELL_W + Math.floor((CELL_W - 4) / 2);
+      const gy = offsetY + c.y * CELL_H + Math.floor((CELL_H - 3) / 2);
       const rate = c.left01 > 0.5 ? 1 : c.left01 > 0.25 ? 2 : 4;
       const on = ((state.phase ?? 0) * rate) % 1 < 0.6;
-      term.put(gx + MID_X - 1, gy + MID_Y, '{', role('terrain.ore.lit'));
-      term.put(gx + MID_X, gy + MID_Y, on ? '$' : '~', on ? '#ffffff' : role('terrain.ore.lit'), on ? '#4a3a10' : undefined);
-      term.put(gx + MID_X + 1, gy + MID_Y, '}', role('terrain.ore.lit'));
+      const rr = rarityRole(c.rarity);
+      const frame = rr ? role(rr) : role('terrain.ore.lit');
+      const sp = this.sprites.get('chest');
+      if (sp) { drawSpriteFrame(term, sp, sp.states[''], gx, gy, { flatFg: rr ?? 'terrain.ore.lit', transparent: true }); continue; }
+      term.write(gx, gy, '┌──┐', frame, '#2a2210');
+      term.put(gx, gy + 1, '│', frame, '#2a2210');
+      term.write(gx + 1, gy + 1, on ? '$$' : '~~', on ? '#ffffff' : frame, on ? '#4a3a10' : '#2a2210');
+      term.put(gx + 3, gy + 1, '│', frame, '#2a2210');
+      term.write(gx, gy + 2, '└──┘', frame, '#2a2210');
     }
 
     // Entry markers, two honest states (Daniil: a blink at a quiet entry

@@ -121,7 +121,7 @@ export interface HudState {
   /** The cache card, when an unopened cache is selected (PRD sec 4.6): its source. */
   cache: { source: string } | null;
   /** The chest card, when a surfaced void chest is selected (PRD sec 4.9): seconds before it sinks. */
-  chest?: { seconds: number; home: 'water' | 'rock' } | null;
+  chest?: { seconds: number; home: 'water' | 'rock' | 'ground'; /** The chest's rarity and what it multiplies its loot by (session 30, PR 4). */ rarity?: string; mul?: number } | null;
   /** What the last opened cache gave, shown briefly; null otherwise. */
   loot: string | null;
   /** The prospect card, when a rock cell is selected. */
@@ -424,8 +424,9 @@ export class HudPanel {
       term.write(0, y + 3, 'the summary has the rest', role('ui.text'));
     } else if (s.chest) {
       // ---- the void chest (PRD sec 4.9; session 28, PR 5): claim it before it sinks ----
-      term.write(0, y++, 'VOID CHEST', role('terrain.ore.lit'));
-      term.write(0, y++, `sinks in ${s.chest.seconds}s`, s.chest.seconds <= 3 ? role('enemy.fast') : role('ui.dim'));
+      const cr = rarityRole(s.chest.rarity);
+      term.write(0, y++, `VOID CHEST${s.chest.rarity && s.chest.rarity !== 'common' ? ` - ${s.chest.rarity.toUpperCase()}` : ''}`, cr ? role(cr) : role('terrain.ore.lit'));
+      term.write(0, y++, `sinks in ${s.chest.seconds}s${(s.chest.mul ?? 1) > 1 ? ` \u2802 pays x${s.chest.mul}` : ''}`, s.chest.seconds <= 3 ? role('enemy.fast') : role('ui.dim'));
       y++;
       for (const line of this.wrap(`Surfaced on the ${s.chest.home}. Claiming it costs nothing but the click: Scrap, Ore, a consumable - now and then a relic.`, W, 5)) {
         term.write(0, y++, line, role('ui.text'));

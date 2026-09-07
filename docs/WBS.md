@@ -653,6 +653,7 @@ is the same mistake as authoring sprites before the animation engine.)*
   - [x] 7.9.5 *(PR #172; docs/lab/build-sweep-2026-09-06-tree.md)* **The lab at tree states**: `unlocks` in LabSpec with the content's tree, a producer at 'vein', the purse in the report; the sweep at base / mid / everything (13.5 / 11.3 / 26.3); a base run banks ~22 tier-1 Ore, which priced the nodes (the arsenal 105: about five base runs).
   - [x] 7.9.6 *(PR #173)* **The codex with locked entries** (9.15) and discovered fusions (9.23).
   - [x] 7.10.1 *(session 30, PR #175)* **The menu language**: framed plates, a lit title band, columns that wrap, links, key hints, tones; the workshop drawn as a tree.
+  - [x] 7.10.4 *(session 30, PR #178)* **Chests by rarity, blasts by tower, beams by path** (9.13, 9.25, 9.27).
   - [x] 7.10.3 *(session 30, PR #177)* **The relic surfaces in the language**: the relic plate (9.14, 9.19) in the strip, the Forge and the offer; the Forge and the offer cards framed like every page.
   - [x] 7.10.2 *(session 30, PR #176)* **The Tile Smith as a page** (7.5's first half): the editor on the fullscreen terminal behind the door, MINT priced by `priceTile` (the shop's fallback), the tile into the owned pool.
   - [x] 7.9.7 *(PR #173)* **Legendary** (9.1) - a fourth lane reached only by forging two epics of a relic with a legendary tier (six today); the four rarity colours are Daniil's.
@@ -686,7 +687,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [x] 9.10 *(session 29, PR #167: previewStats)* The build preview folds every modifier at the selected cell.
 - [x] 9.11 *(session 29, PR #167)* The pulse muted and fading with radius.
 - [x] 9.12 *(session 29, PR #167; a chest holds its cell while it stands)* Void chests surface on water and empty ground, not rock.
-- [ ] 9.13 A chest sprite kind, bigger, coloured by a rolled rarity.
+- [x] 9.13 *(session 30, PR #178: the chest rolls a rarity at surface - hashed, x1/x1.5/x2 on its Scrap and Ore - and the board draws a 4x3 box in the rarity's colour; a 'chest' sprite kind in the schema for the art agent)* A chest sprite kind, bigger, coloured by a rolled rarity.
 - [x] 9.14 *(session 30, PR #177: the view draws the ring around the 4×3 icon - `drawRelicPlate`, 6×5 - in the strip, the Forge and the offer; the art agent may paint 6×5 sprites carrying their own ring later)* Relic sprites 6×5: the icon plus a rarity ring; strip and Forge plates follow.
 - [x] 9.15 *(session 29, PR #173)* **The codex**: every entry, locked ones shown locked, from every menu and from pause; reads the unlock set.
 - [ ] 9.16 Consumable: place boon ground on an empty ground cell.
@@ -698,9 +699,9 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 9.22 Endless mode as the tree's last unlock.
 - [x] 9.23 *(session 29, PR #173: the discoveries; more recipes are content)* More recipes; fusions discovered are recorded in the meta save and listed in the codex.
 - [x] 9.24 *(session 29, PR #167: PIERCE_REACH 0.5)* Pierce continues into bodies within half a cell of the impact, never across lanes.
-- [ ] 9.25 Per-tower projectile and blast looks (Mortar vs Missile).
+- [x] 9.25 *(session 30, PR #178: the impact names its tower; a Missile's blast is a hard core and eight spokes of shrapnel, a Mortar's the grainy shockwave)* Per-tower projectile and blast looks (Mortar vs Missile).
 - [ ] 9.26 Slows stacking multiplicatively with a floor - **debated, open**; the sweep decides.
-- [ ] 9.27 A Laser path changes the beam's colour.
+- [x] 9.27 *(session 30, PR #178: the beam carries the lens's tier-1 choice - Chill runs cold, Capacitor hot; roles beam.cold and beam.hot)* A Laser path changes the beam's colour.
 - [ ] 9.28 The burn ignores armour and stacks per source: the Laser's control path becomes the anti-armour path.
 - [ ] 9.29 Towers that exist only as relics (single-build).
 - [ ] 9.30 **The menus reworked** to Stone-Story quality: frames, ornament, animated titles, a design pass on every page.

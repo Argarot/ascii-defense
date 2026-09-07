@@ -156,3 +156,43 @@ describe('the tower pulse (session 29, PR 0, item 11)', () => {
     expect(near).toBeGreaterThan(untouched * 1.2);
   });
 });
+
+describe('per-tower blasts and the beam\'s path (session 30, PR 4)', () => {
+  it('a Missile\'s blast throws spokes where a Mortar\'s throws a ring; nothing beyond the radius', () => {
+    const draw = (by: string): TextTerm => {
+      const term = new TextTerm({ cols: 12 * CELL_W, rows: 12 * CELL_H });
+      const fx = new EffectsLayer();
+      fx.ingest([{ kind: 'impact', x: 6, y: 6, r: 2, by, seq: 0, tick: 100 } as StampedSimEvent]);
+      fx.draw(term, 100 + 0.5 * 12);
+      return term;
+    };
+    const missile = draw('missile').toText();
+    const mortar = draw('mortar').toText();
+    expect(missile).not.toBe(mortar);
+    expect(missile.includes('|') || missile.includes('-')).toBe(true); // the spokes
+    for (const t of [draw('missile'), draw('mortar')]) {
+      const lines = t.toText().split('\n');
+      for (let gy = 0; gy < lines.length; gy++) for (let gx = 0; gx < lines[gy].length; gx++) {
+        if (lines[gy][gx] === ' ' || lines[gy][gx] === undefined) continue;
+        const dx = (gx + 0.5) / CELL_W - 6;
+        const dy = (gy + 0.5) / CELL_H - 6;
+        expect(Math.sqrt(dx * dx + dy * dy)).toBeLessThanOrEqual(2.6);
+      }
+    }
+  });
+
+  it('a lance on the Chill path runs cold, on the Capacitor path hot', () => {
+    const colourAt = (path: number | undefined): string => {
+      const term = new TextTerm({ cols: 14 * CELL_W, rows: 4 * CELL_H });
+      const fx = new EffectsLayer();
+      fx.ingest([{ kind: 'beam', x0: 1.5, y0: 1.5, x1: 12.5, y1: 1.5, w: 1, heat: 1, every: 20, path, seq: 0, tick: 100 } as StampedSimEvent]);
+      fx.draw(term, 100 + 0.4 * 20);
+      return term.bgAt(Math.floor(6 * CELL_W), Math.floor(1.5 * CELL_H));
+    };
+    const cold = colourAt(1);
+    const hot = colourAt(0);
+    const plain = colourAt(undefined);
+    expect(cold).not.toBe(hot);
+    expect(cold).not.toBe(plain);
+  });
+});

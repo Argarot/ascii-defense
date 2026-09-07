@@ -38,6 +38,7 @@ import {
   type SetDef,
   type RecipeDef,
   CHEST_WINDOW,
+  CHEST_RARITY_MUL,
   RARITIES,
   relicDescAt,
   type ReplayAction,
@@ -463,7 +464,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         selected,
         routeAllowed: s.flow.allowed,
         caches,
-        chests: s.voidChests.map((c) => ({ x: c.x, y: c.y, left01: Math.max(0, Math.min(1, (c.until - s.tickCount) / CHEST_WINDOW)) })),
+        chests: s.voidChests.map((c) => ({ x: c.x, y: c.y, left01: Math.max(0, Math.min(1, (c.until - s.tickCount) / CHEST_WINDOW)), rarity: RARITIES[c.rarity] })),
         boons: [...(map.boons ?? []), ...s.extraBoons].map((b) => ({ x: b.x, y: b.y, tier: b.tier, boon: b.boon })),
         oreRichness,
         enemies,
@@ -528,7 +529,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         roster,
         waveNow,
         cache: selected && s.cacheAt(selected.x, selected.y) ? { source: s.cacheAt(selected.x, selected.y)!.table } : null,
-        chest: (() => { const c = selected ? s.chestAt(selected.x, selected.y) : null; return c ? { seconds: Math.max(0, Math.ceil((c.until - s.tickCount) / TICK_HZ)), home: s.cellAt(c.x, c.y) === null ? 'water' : 'rock' } : null; })(),
+        chest: (() => { const c = selected ? s.chestAt(selected.x, selected.y) : null; return c ? { seconds: Math.max(0, Math.ceil((c.until - s.tickCount) / TICK_HZ)), home: s.cellAt(c.x, c.y) === null ? ('water' as const) : s.cellAt(c.x, c.y) === 'G' ? ('ground' as const) : ('rock' as const), rarity: RARITIES[c.rarity], mul: CHEST_RARITY_MUL[c.rarity] ?? 1 } : null; })(),
         // The newest thing a cache gave, for a few seconds after it opened.
         loot: (() => {
           const last = s.lootLog[s.lootLog.length - 1];
@@ -706,8 +707,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'skipOffer': result = s.skipOffer(); if (result) syncOfferPause(); break;
           case 'combineTargets': result = s.combineTargets(args[0] as number); break;
           case 'uses': result = s.heldRelicInfo().map((h) => ({ id: h.def.id, uses: h.uses })); break;
-          case 'chests': result = s.voidChests.map((c) => ({ x: c.x, y: c.y, left: c.until - s.tickCount })); break;
-          case 'surfaceChest': result = s.debugSurfaceChest(args[0] as number, args[1] as number); break; // not a recorded input
+          case 'chests': result = s.voidChests.map((c) => ({ x: c.x, y: c.y, left: c.until - s.tickCount, rarity: RARITIES[c.rarity] })); break;
+          case 'surfaceChest': result = s.debugSurfaceChest(args[0] as number, args[1] as number, (args[2] as number | undefined) ?? 0); break; // not a recorded input
           case 'killAll': result = s.debugKillAll(); break; // not a recorded input
           case 'claimChest': result = s.claimChest(args[0] as number, args[1] as number); break;
           case 'lootLog': result = [...s.lootLog]; break;
