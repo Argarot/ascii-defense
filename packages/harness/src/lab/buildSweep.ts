@@ -11,8 +11,9 @@
  *
  * Usage: node tools/build-sweep.mjs [seed ...]
  */
-import { TILE_SIZE, TileLibrary, createRng, type DifficultySpec, type TowerDef } from '@ascii-defense/engine';
-import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
+import { TILE_SIZE, TileLibrary, createRng, resolveUnlocks, type DifficultySpec, type TowerDef } from '@ascii-defense/engine';
+import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
+import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
@@ -31,6 +32,7 @@ const baseContent: LabContent = {
   enemyDefs: must(validateEnemies.check(enemiesJson)).enemies,
   towerDefs: must(validateTowers.check(towersJson)).towers,
   relicDefs: must(validateRelics.check(relicsJson)).relics,
+  tree: must(validateTree.check(treeJson)),
 };
 
 /** Standard, as protocol.ts ships it after PR 2 of session 23. */
@@ -138,9 +140,68 @@ function relicSet(n: number): { id: string; rarity: number }[] {
 }
 const RELIC_BOARD = { w: 7, h: 5 };
 const RELICS_ONLY = process.argv.includes('--relics');
+const TREE_ONLY = process.argv.includes('--tree');
 
-if (!RELICS_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
-for (const board of RELICS_ONLY ? [] : BOARDS) {
+/**
+ * Session 29, PR 6: the sweep at TREE STATES (PRD sec 11 stage 3's warning,
+ * measured). Three worlds - the base set, a mid tree, everything - each
+ * with the build its towers allow, a Refinery on the richest vein, six
+ * relics from ITS pool, and the Ore the run would bank. The base row is
+ * what a new player meets; the Ore column prices the nodes (Daniil:
+ * "about 5 runs to unlock all the towers").
+ */
+const TREE_STATES: { name: string; unlocks: string[]; towers: TowerPlacement[] }[] = [
+  { name: 'BASE - Bolt, Mortar, Frost, Refinery; 16 relics; 6 slots', unlocks: [], towers: [A('refinery', [0, 0, 0], 'vein'), ...mixed('choke', RAILBORE)] },
+  { name: 'MID - + Tesla, Bastion; damage, cold, economy branches; 8 slots', unlocks: ['tesla', 'bastion', 'branch_damage', 'branch_cold', 'branch_economy', 'slots_8'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('bastion', [0, 1, 0], 'adjacent'), P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('mortar', [1, 1, 0])] },
+  { name: 'EVERYTHING - the Laser line, 52 relics, 12 slots', unlocks: ['*'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')] },
+];
+/** Six relics from the state's own pool, deterministic per state and seed. */
+function poolSet(unlocks: string[], n: number): { id: string; rarity: number }[] {
+  const u = resolveUnlocks(baseContent.tree!, { unlocks, earned: [], forged: {} }, baseContent.relicDefs);
+  const pool = baseContent.relicDefs.filter((r) => u.relics.has(r.id) && r.kind !== 'consumable' && !r.fusionOnly);
+  let x = 2654435761 + n * 40503;
+  const next = (): number => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x; };
+  const picked: { id: string; rarity: number }[] = [];
+  const used = new Set<number>();
+  while (picked.length < Math.min(RELICS_PER_SET, pool.length) && used.size < pool.length) {
+    const i = next() % pool.length;
+    if (used.has(i)) continue;
+    used.add(i);
+    picked.push({ id: pool[i].id, rarity: Math.max(['common', 'rare', 'epic'].indexOf(pool[i].rarity), 0) });
+  }
+  return picked;
+}
+if (TREE_ONLY) {
+  console.log(`## the tree's states on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - Standard curve, economy 100 scrap, a Refinery on the richest vein, six relics from the state's pool, horizon ${MAX_WAVES}\n`);
+  console.log('| state | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | ore banked per run (t1/t2/t3) | mean t1 ore | towers / relics / slots |');
+  console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|---|');
+  for (const st of TREE_STATES) {
+    const deaths: (number | null)[] = [];
+    const ores: number[][] = [];
+    let world = { towers: 0, relics: 0, relicSlots: 0 };
+    SEEDS.forEach((seed, i) => {
+      const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: st.towers, relicIds: [], relics: poolSet(st.unlocks, i), unlocks: st.unlocks, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+      try {
+        const r = runLab(spec, baseContent);
+        deaths.push(r.deathWave);
+        ores.push(r.oreEnd);
+        world = r.world;
+      } catch (e) {
+        deaths.push(-1);
+        ores.push([0, 0, 0]);
+        console.log(`<!-- ${st.name} @${seed}: ${e instanceof Error ? e.message : String(e)} -->`);
+      }
+    });
+    const nums = deaths.map((d) => (d === null ? MAX_WAVES + 1 : d === -1 ? 0 : d));
+    const mean = nums.reduce((a, c) => a + c, 0) / nums.length;
+    const meanOre = ores.reduce((a, o) => a + o[0], 0) / ores.length;
+    console.log(`| ${st.name} | ${deaths.map((d) => (d === null ? `>${MAX_WAVES}` : d === -1 ? 'n/a' : String(d))).join(' | ')} | ${mean.toFixed(1)} | ${ores.map((o) => o.join('/')).join(' · ')} | ${meanOre.toFixed(1)} | ${world.towers} / ${world.relics} / ${world.relicSlots} |`);
+  }
+  console.log('');
+}
+
+if (!RELICS_ONLY && !TREE_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
+for (const board of RELICS_ONLY || TREE_ONLY ? [] : BOARDS) {
   console.log(`## board ${board.w}x${board.h}\n`);
   console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | crowd kills | all kills |');
   console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
@@ -174,6 +235,7 @@ for (const board of RELICS_ONLY ? [] : BOARDS) {
 }
 
 // ---- the relic sweep (session 28, PR 6) ----
+if (!TREE_ONLY) {
 console.log(`## relic sets on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - the reference build (Railbore line + Frost + Mortar, choke, economy) with six held relics\n`);
 console.log('| set | relics (rarity) | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean |');
 console.log('|---|---|' + SEEDS.map(() => '---').join('|') + '|---|');
@@ -197,3 +259,4 @@ for (let n = -1; n < RELIC_SETS; n++) {
 const lo = Math.min(...means);
 const hi = Math.max(...means);
 console.log(`\nspread across ${RELIC_SETS} sets: ${lo.toFixed(1)} to ${hi.toFixed(1)} (reference without relics ${noRelics[0].toFixed(1)}); target band 16-24; past 24 on every seed: ${flagged.length ? flagged.join(', ') : 'none'}\n`);
+}

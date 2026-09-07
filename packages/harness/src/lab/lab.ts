@@ -30,6 +30,8 @@ import {
   type GeneratedMap,
   type RelicDef,
   type TowerDef,
+  resolveUnlocks,
+  type TreeDef,
 } from '@ascii-defense/engine';
 
 export interface TowerPlacement {
@@ -44,7 +46,8 @@ export interface TowerPlacement {
    *  LAST tower placed - how a Bastion is actually used. 'inline' (session
    *  27): the cell and facing whose straight corridor covers the most road
    *  - how a Laser is actually aimed; the tower is turned to that facing. */
-  at: 'auto' | 'core' | 'choke' | 'adjacent' | 'inline' | { x: number; y: number };
+  /** 'vein': a producer on the richest vein it may stand on (session 29, PR 6: the Ore-per-run reading). */
+  at: 'auto' | 'core' | 'choke' | 'adjacent' | 'inline' | 'vein' | { x: number; y: number };
 }
 
 /** Road cells within this many cells of the Core (by route) are the choke. */
@@ -52,6 +55,13 @@ export const CHOKE_REACH = 15;
 
 export interface LabSpec {
   seed: number;
+  /**
+   * The tree state the run plays under (session 29, PR 6; PRD sec 11
+   * stage 3's warning made measurable): node ids bought, or ['*'] for
+   * everything. Absent = everything (the sweeps before the tree). The
+   * content's tree must be given for this to mean anything.
+   */
+  unlocks?: string[];
   /** 'demo' derives the map exactly as the live app does for this seed. */
   map: 'demo' | { width: number; height: number; entries: number; targetPathCells: number };
   towers: TowerPlacement[];
@@ -90,6 +100,10 @@ export interface LabReport {
   towersPlaced: { towerId: string; x: number; y: number }[];
   /** Kills per enemy id over the run (session 27): a crowd role shows here, not on the death wave. */
   killsByDef: Record<string, number>;
+  /** The purse at the end, by tier (session 29, PR 6): what the run would bank. */
+  oreEnd: number[];
+  /** The towers and relics the tree state allowed this run. */
+  world: { towers: number; relics: number; relicSlots: number };
 }
 
 export interface LabContent {
@@ -97,6 +111,8 @@ export interface LabContent {
   towerDefs: readonly TowerDef[];
   enemyDefs: readonly EnemyDef[];
   relicDefs: readonly RelicDef[];
+  /** The meta tree (session 29, PR 6); with it and a spec's unlocks the world is the tree's. */
+  tree?: TreeDef;
 }
 
 /** The live app's map-knob derivation, reproduced draw-for-draw. */
@@ -250,14 +266,20 @@ function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: n
 
 export function runLab(spec: LabSpec, content: LabContent): LabReport {
   const { map, cellsW, cellsH, cells } = makeWorld(spec, content);
+  // The tree decides the world (session 29, PR 6), the way the worker does it.
+  const unlocked = content.tree && spec.unlocks ? resolveUnlocks(content.tree, { unlocks: spec.unlocks, earned: [], forged: {} }, content.relicDefs) : null;
+  const towerDefs = unlocked ? content.towerDefs.filter((d) => unlocked.towers.has(d.id)) : content.towerDefs;
+  const relicDefs = unlocked ? content.relicDefs.filter((d) => unlocked.relics.has(d.id)) : content.relicDefs;
+  content = { ...content, towerDefs, relicDefs };
   const sim = new Sim(spec.seed, {
     cells,
     cellsW,
     cellsH,
     map,
     enemyDefs: content.enemyDefs,
-    towerDefs: content.towerDefs,
-    relicDefs: content.relicDefs,
+    towerDefs,
+    relicDefs,
+    relicSlots: unlocked?.relicSlots,
     mode: 'waves',
     firstWaveWaits: false,
     coreHp: spec.coreHp ?? 50,
@@ -294,6 +316,18 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
       const inl = inlineSpot(sim, cells, cellsW, cellsH, p.towerId);
       if (inl) { spot = inl; facing = inl.facing; }
       else spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, 'choke');
+    } else if (p.at === 'vein') {
+      // The richest vein it may stand on: highest tier, then most Ore left.
+      spot = null;
+      let bestKey = -1;
+      for (let y = 0; y < cellsH; y++)
+        for (let x = 0; x < cellsW; x++) {
+          if (cells[y * cellsW + x] !== 'O' || !sim.canBuildDefAt(x, y, p.towerId)) continue;
+          const d = sim.depositAt(x, y);
+          const key = d ? d.tier * 10000 + d.left : 0;
+          if (key > bestKey) { bestKey = key; spot = { x, y }; }
+        }
+      if (!spot) return false; // no vein: the plan goes on without its producer
     } else if (typeof p.at === 'string') {
       spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, p.at, placed[placed.length - 1]) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE);
     } else {
@@ -308,6 +342,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   const upgradeNext = (i: number): boolean => {
     const p = spec.towers[i];
     const at = placed[i];
+    if (at.x < 0) return false; // a skipped producer
     for (let tier = 0; tier < 3; tier++) {
       const opt = p.choices[tier];
       if (opt < 0) return false;
@@ -327,7 +362,12 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   const advancePlan = (): void => {
     for (;;) {
       if (nextToPlace < spec.towers.length) {
-        if (!placeNext(spec.towers[nextToPlace])) return;
+        const p = spec.towers[nextToPlace];
+        if (!placeNext(p)) {
+          // A producer with no vein is skipped, not waited for (the plan would stall forever).
+          if (p.at === 'vein' && (!spec.economy || sim.canAfford(p.towerId))) { placed.push({ towerId: p.towerId, x: -1, y: -1 }); nextToPlace++; continue; }
+          return;
+        }
         nextToPlace++;
         continue;
       }
@@ -386,6 +426,8 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     L: sim.flow.L,
     towersPlaced: placed,
     killsByDef,
+    oreEnd: [...sim.ore],
+    world: { towers: towerDefs.length, relics: relicDefs.length, relicSlots: sim.relicSlots },
   };
 }
 
