@@ -474,6 +474,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           ? { x: selTower.cellX, y: selTower.cellY, r: effPreview.range, minR: effPreview.minRange }
           : range,
         hoverBuildable: hover !== null && s.canBuildAt(hover.x, hover.y) && previewDef !== undefined && s.canAfford(previewDef.id),
+        selectedBuildable: selected !== null && s.canBuildAt(selected.x, selected.y),
         showGrid: ui.showGrid,
         rangeIsPreview: targeting !== null || (!selTower && buildTarget) || (selTower !== null && effPreview !== null),
         telegraph: s.nextWaveEntries,

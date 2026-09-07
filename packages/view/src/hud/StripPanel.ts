@@ -85,6 +85,19 @@ export const BUTTON_SLOTS = 8;
 
 export class StripPanel {
   private regions: Region[] = [];
+  /** Where the last render put things (session 31: the tutorial points at them). Glyph rectangles. */
+  lastLayout: { build: { x: number; y: number; w: number; h: number }; wave: { x: number; y: number; w: number; h: number }; core: { x: number; y: number; w: number; h: number }; slots: { x: number; y: number; w: number; h: number } | null } = { build: { x: 0, y: 0, w: 0, h: 0 }, wave: { x: 0, y: 0, w: 0, h: 0 }, core: { x: 0, y: 0, w: 0, h: 0 }, slots: null };
+
+  /** The rectangle of every region an action predicate matches, or null. */
+  regionOf(pred: (a: HudAction) => boolean): { x: number; y: number; w: number; h: number } | null {
+    let x0 = Infinity; let x1 = -Infinity; let y0 = Infinity; let y1 = -Infinity;
+    for (const r of this.regions) {
+      if (!pred(r.action)) continue;
+      x0 = Math.min(x0, r.x0); x1 = Math.max(x1, r.x1); y0 = Math.min(y0, r.row); y1 = Math.max(y1, r.row);
+    }
+    if (x0 === Infinity) return null;
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 + 1 };
+  }
   private readonly sprites: Map<string, Sprite>;
 
   constructor(
@@ -190,6 +203,7 @@ export class StripPanel {
     // ---- CORE: the vessel, always ---------------------------------------------
     const cx = wx + waveW + 2;
     const cw = W - cx - 1;
+    this.lastLayout = { build: { x: 1, y: 1, w: buildW - 1, h: H - 2 }, wave: { x: wx, y: 0, w: waveW, h: H - 1 }, core: { x: cx, y: 0, w: cw, h: H - 1 }, slots: null };
     const c = s.coreCard;
     if (c && cw >= 20) {
       // The column already shows the Core's health; here the card is the
@@ -201,6 +215,7 @@ export class StripPanel {
       const slotH = RELIC_PLATE_H;
       const slotW = cw >= c.slots.length * (RELIC_PLATE_W + 1) ? RELIC_PLATE_W + 1 : RELIC_PLATE_W;
       const perRow = Math.max(1, Math.floor(cw / slotW));
+      this.lastLayout.slots = { x: cx, y: 2, w: Math.min(cw, Math.min(c.slots.length, perRow) * slotW), h: RELIC_PLATE_H };
       c.slots.forEach((slot, i) => {
         if (Math.floor(i / perRow) > 0) return; // one row: what does not fit waits for a wider screen
         const x0 = cx + (i % perRow) * slotW;

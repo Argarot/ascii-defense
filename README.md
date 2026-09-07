@@ -33,7 +33,12 @@ save doubles as an exact replay.
 0. A **title screen**: new run (pick a Threat the tree has opened), continue a
    saved run, the **workshop**, settings, how to play. `Esc` pauses mid-run; a
    run ends on a summary screen. Progress lives in this browser and can be
-   exported to a file.
+   exported to a file. **A first run is Calm and comes with a tutorial**:
+   twelve steps, each pointing a pulsing yellow box at the thing to look at
+   (the Core, an entry, ground, the Bolt, its card, Scrap and Ore, CALL
+   WAVE, the strip, the offer, the slots, rock) with a sentence on what it
+   means; NEXT or Enter moves the look-steps, your own actions move the
+   rest, SKIP ends it, and SETTINGS replays it.
 1. A generated map: the Core near the middle, winding roads to the edges, ore
    veins (finite — richness is visible as gold density), rock that may hide
    ore or relic caches, boon cells that buff whatever is built on them, and

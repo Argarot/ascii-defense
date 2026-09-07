@@ -41,6 +41,17 @@ export class OfferModal {
   private regions: CardRegion[] = [];
   constructor(private readonly sprites: ReadonlyMap<string, Sprite> = new Map()) {}
 
+  /** The rectangle around every card (session 31: the tutorial's box), or null when nothing is drawn. */
+  bounds(): { x: number; y: number; w: number; h: number } | null {
+    const cards = this.regions.filter((r) => r.option >= 0);
+    if (cards.length === 0) return null;
+    const x0 = Math.min(...cards.map((r) => r.x0));
+    const x1 = Math.max(...cards.map((r) => r.x1));
+    const y0 = Math.min(...cards.map((r) => r.y0));
+    const y1 = Math.max(...cards.map((r) => r.y1));
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+
   /** Option index under a canvas pixel, or null. */
   optionAt(px: number, py: number, glyphPxW: number, glyphPxH: number): number | null {
     const gx = Math.floor(px / glyphPxW);

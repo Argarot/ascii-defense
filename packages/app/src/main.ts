@@ -10,7 +10,8 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, smithOpen, priceTile, validateTileCells, deriveConnectors } from '@ascii-defense/engine';
+import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, smithOpen, priceTile, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
+import { TUTORIAL_STEPS, goodGround, nearRock, nextStep, type TutorialCtx } from './tutorial';
 import type { TreeNode, CellType } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
 import { loadMintedProblems, loadMintedTiles, removeMintedTile, addMintedTile, libraryTwinOf } from './mintedTiles';
@@ -29,7 +30,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack, SmithScreen, type SmithState } from '@ascii-defense/view';
+  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack, SmithScreen, type SmithState, drawPulseBox, type GlyphRect } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
 import { validateSprite, validateTree, validateRelics, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -202,6 +203,44 @@ async function main(): Promise<void> {
     }
   };
   const menu = new MenuScreen();
+  // ---- the tutorial (session 31) ------------------------------------------
+  // A sequence of things to look at, each a pulsing box on the terminal it
+  // lives on and a sentence in the column; the step lives in the meta save.
+  let tutStep = 0; // read from the meta save once it loads, below
+  let tutNextPressed = false;
+  /** The run's cells on the main thread, for the ground and rock the tutorial points at. */
+  let tutCells: readonly (string | null)[] = [];
+  const tutorialOn = (): boolean => !meta.settings.onboarded && inGame();
+  const tutorialAction = (kind: 'tutNext' | 'tutSkip'): void => {
+    if (kind === 'tutNext') { tutNextPressed = true; return; }
+    meta.settings.onboarded = true;
+    saveMeta(meta);
+  };
+  /** Where the current step's box goes, in the glyphs of the terminal named. */
+  const tutorialTarget = (): { term: 'board' | 'hud' | 'strip' | 'modal'; rect: GlyphRect } | null => {
+    const step = TUTORIAL_STEPS[tutStep];
+    if (!step || !snap || !currentMap) return null;
+    const cellRect = (c: CellRef): GlyphRect => ({ x: c.x * CELL_W, y: c.y * CELL_H, w: CELL_W, h: CELL_H });
+    switch (step.target) {
+      case 'core': {
+        const f = currentMap.coreFace;
+        if (!f.length) return null;
+        const xs = f.map((c) => c.x); const ys = f.map((c) => c.y);
+        return { term: 'board', rect: { x: Math.min(...xs) * CELL_W, y: Math.min(...ys) * CELL_H, w: (Math.max(...xs) - Math.min(...xs) + 1) * CELL_W, h: (Math.max(...ys) - Math.min(...ys) + 1) * CELL_H } };
+      }
+      case 'entry': { const e = snap.board.telegraph?.[0] ?? currentMap.entries[0]; return e ? { term: 'board', rect: cellRect(e) } : null; }
+      case 'ground': { const g = goodGround(tutCells, currentMap.cellsW, currentMap.cellsH, currentMap.coreFace, (c) => isRoad(c as import('@ascii-defense/engine').CellType)); return g ? { term: 'board', rect: cellRect(g) } : null; }
+      case 'rock': { const r = nearRock(tutCells, currentMap.cellsW, currentMap.cellsH, currentMap.coreFace, (c) => isRoad(c as import('@ascii-defense/engine').CellType)); return r ? { term: 'board', rect: cellRect(r) } : null; }
+      case 'strip:bolt': { const r = strip.regionOf((a) => a.kind === 'buildId' && a.id === 'bolt'); return r ? { term: 'strip', rect: r } : null; }
+      case 'strip:wave': return { term: 'strip', rect: strip.lastLayout.wave };
+      case 'strip:slots': return strip.lastLayout.slots ? { term: 'strip', rect: strip.lastLayout.slots } : { term: 'strip', rect: strip.lastLayout.core };
+      case 'hud:card': { const r = hud.regionOf((a) => a.kind === 'priority' || a.kind === 'choose'); return r ? { term: 'hud', rect: { x: 0, y: Math.max(0, r.y - 7), w: HUD_COLS - 2, h: r.h + 7 } } : null; }
+      case 'hud:scrap': return { term: 'hud', rect: { x: 0, y: 2, w: HUD_COLS - 2, h: 2 } };
+      case 'hud:call': { const r = hud.regionOf((a) => a.kind === 'callWave'); return r ? { term: 'hud', rect: r } : null; }
+      case 'offer': { const b = offerModal.bounds(); return b ? { term: 'modal', rect: b } : null; }
+      default: return null;
+    }
+  };
   // ---- the Tile Smith as a page (session 30, PR 2) ------------------------
   // The same verbs as the standalone tool; the tile lives here, the screen
   // draws it, MINT pays the shared price into the owned pool.
@@ -295,6 +334,7 @@ async function main(): Promise<void> {
 
   // ---- state ---------------------------------------------------------------
   const { meta, problem: metaProblem } = loadMeta();
+  tutStep = meta.settings.tutorialStep ?? 0;
   const runLoad = loadRunForThisScreen();
   let saveProblem = metaProblem ?? runLoad.problem;
   if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
@@ -404,6 +444,7 @@ async function main(): Promise<void> {
     if (m.t === 'ready') {
       seed = m.seed;
       finalWave = m.finalWave;
+      tutCells = mapCells(m.map, lib);
       currentMap = m.map;
       view.setMap(m.map);
       effects.reset();
@@ -694,7 +735,7 @@ async function main(): Promise<void> {
             { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
             { id: 'palette', label: 'PALETTE', note: meta.settings.palette === 'colourblind' ? 'COLOURBLIND' : 'DEFAULT' },
             { id: 'sprites', label: 'SPRITE PACK', note: `${(meta.settings.spriteSet ?? 'current').toUpperCase()} (reloads)` },
-            { id: 'hints', label: 'FIRST-RUN HINTS', note: meta.settings.onboarded ? 'seen - click to show again' : 'ON' },
+            { id: 'hints', label: 'TUTORIAL', note: meta.settings.onboarded ? 'done - click to replay it' : `ON - step ${Math.min(TUTORIAL_STEPS.length, tutStep + 1)} of ${TUTORIAL_STEPS.length}` },
             { id: 'export', label: 'EXPORT SAVES' },
             { id: 'import', label: 'IMPORT SAVES' },
             { id: 'wipe', label: wipeArmed ? 'CLICK AGAIN TO WIPE' : 'WIPE DATA' },
@@ -942,7 +983,8 @@ async function main(): Promise<void> {
     }
     switch (id) {
       case 'new':
-        setupThreat = threatIdx;
+        // A first run is Calm (session 31): the tutorial walks it, and the base world's towers hold it.
+        setupThreat = !meta.settings.onboarded && !meta.history.some((h) => h.status === 'won') ? 0 : threatIdx;
         genError = null;
         mode = 'setup';
         break;
@@ -1011,6 +1053,7 @@ async function main(): Promise<void> {
       }
       case 'hints': {
         meta.settings.onboarded = !meta.settings.onboarded;
+        if (!meta.settings.onboarded) { tutStep = 0; meta.settings.tutorialStep = 0; }
         saveMeta(meta);
         break;
       }
@@ -1134,6 +1177,7 @@ async function main(): Promise<void> {
     if (action.kind === 'claimChest' && selected) act({ k: 'claimChest', x: selected.x, y: selected.y });
     if (action.kind === 'prospect' && selected) act({ k: 'prospect', x: selected.x, y: selected.y });
     if (action.kind === 'callWave') act({ k: 'callWave' });
+    if (action.kind === 'tutNext' || action.kind === 'tutSkip') tutorialAction(action.kind);
   };
   /** A pick from the standing offer: straight through, or - with the slots full - parked until the player clicks the slot it replaces. */
   const pickFromOffer = (option: number): void => {
@@ -1255,6 +1299,7 @@ async function main(): Promise<void> {
     if (e.key === 'g' || e.key === 'G') showGrid = !showGrid;
     if ((e.key === 'r' || e.key === 'R') && selected) rotateSelected();
     if (e.key === 'n' || e.key === 'N') act({ k: 'callWave' }); // the sim refuses when it may not
+    if (e.key === 'Enter' && tutorialOn()) tutorialAction('tutNext');
     if ((e.key === 'x' || e.key === 'X' || e.key === 'Delete') && selected) act({ k: 'sell', x: selected.x, y: selected.y });
     if (selected) {
       const prio = { f: 'first', l: 'last', c: 'closest', w: 'weakest' } as const;
@@ -1331,29 +1376,47 @@ async function main(): Promise<void> {
         enemies: pair ? interpolate(pair.a.board.enemies ?? [], pair.b.board.enemies ?? [], pair.alpha, WALKER_MAX_STEP) : snap.board.enemies,
         projectiles: pair ? interpolate(pair.a.board.projectiles ?? [], pair.b.board.projectiles ?? [], pair.alpha, SHOT_MAX_STEP) : snap.board.projectiles,
       };
+      // The tutorial (session 31; it replaced the three hints of WBS 4.23):
+      // the step advances on the player's action or on NEXT, its sentence is
+      // the column's prompt, its target a pulsing box; the meta save keeps
+      // the step and, at the end, the fact that it is done.
+      let prompt = '';
+      let promptButtons: HudState['promptButtons'];
+      let tutTarget: ReturnType<typeof tutorialTarget> = null;
+      if (tutorialOn()) {
+        const ctx: TutorialCtx = {
+          towers: snap.board.towers?.length ?? 0, wave: snap.hud.wave, relics: snap.hud.relicCount, offerUp: snap.offer !== null,
+          selected, selectedBuildable: snap.board.selectedBuildable === true, towerSelected: snap.hud.selectedTower !== null && snap.hud.selectedTower !== undefined, next: tutNextPressed,
+        };
+        tutNextPressed = false;
+        const advanced = nextStep(tutStep, ctx);
+        if (advanced !== tutStep) { tutStep = advanced; meta.settings.tutorialStep = advanced; saveMeta(meta); }
+        if (tutStep >= TUTORIAL_STEPS.length) { meta.settings.onboarded = true; saveMeta(meta); }
+        else {
+          const step = TUTORIAL_STEPS[tutStep];
+          prompt = `TUTORIAL ${tutStep + 1}/${TUTORIAL_STEPS.length}: ${step.text}`;
+          promptButtons = { next: step.needsNext };
+          tutTarget = tutorialTarget();
+        }
+      }
       view.render(board, (t) => {
         effects.ingest(snap!.events);
         effects.draw(t, pair ? renderTick : snap!.tick);
+        if (tutTarget?.term === 'board') drawPulseBox(t, tutTarget.rect, animPhase);
       });
-      // The first run's prompts (WBS 4.23): one at a time, until the third
-      // wave is out - then the meta save remembers.
-      let prompt = '';
-      if (!meta.settings.onboarded && inGame()) {
-        const towersBuilt = snap.board.towers?.length ?? 0;
-        if (towersBuilt === 0) prompt = 'HINT 1/3: select a ground tile, then click a tower button in the strip under the board. hover a button for its card.';
-        else if (snap.hud.wave === 0) prompt = 'HINT 2/3: press N or click CALL WAVE to send the first wave. space pauses; 1-4 set the speed.';
-        else if (snap.hud.wave < 3) prompt = 'HINT 3/3: every third wave offers a relic. rock hides ore and caches - select rock to prospect it. the two cells beside the Core face give every tower a gift.';
-        else { meta.settings.onboarded = true; saveMeta(meta); }
-      }
       const hudState: HudState = {
         ...snap.hud,
         prompt,
+        promptButtons,
         phase: animPhase,
         inspector: view.describeCell(selected ?? hover) + snap.hud.inspector,
         selectedBuild: snap.hud.palette.findIndex((p) => p.id === selectedBuildId),
       };
       hud.render(hudState);
       strip.render({ ...hudState, selectedBuildId });
+      // The tutorial's box on the panel it points at, after the panel drew (a second flush is cheap).
+      if (tutTarget?.term === 'hud') { drawPulseBox(hudTerm, tutTarget.rect, animPhase, 'x'); hudTerm.flush(); }
+      if (tutTarget?.term === 'strip') { drawPulseBox(stripTerm, tutTarget.rect, animPhase, 'x'); stripTerm.flush(); }
 
       // Overlay: a screen, else the offer, else nothing. The HUD hides
       // behind fullscreen menus (playtest 12, item 4) - a menu is not a
@@ -1384,6 +1447,7 @@ async function main(): Promise<void> {
         modalTerm.canvas.style.display = '';
       } else if (snap.offer && inGame()) {
         offerModal.render(modalTerm, snap.offer.cards, snap.offer.wave, animPhase, snap.offer.reroll, pendingReplace ? `TAKING CARD ${pendingReplace.option + 1} - click the held relic it replaces (S skips)` : snap.offer.title);
+        if (tutTarget?.term === 'modal') { const b = offerModal.bounds(); if (b) drawPulseBox(modalTerm, b, animPhase); }
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else if (forgeOpen && inGame()) {

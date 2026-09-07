@@ -112,6 +112,8 @@ export interface HudState {
   selectedTower: HudTowerInfo | null;
   /** A first-run prompt (session 27, WBS 4.23): shown in accent where the hint sits; '' or absent = none. */
   prompt?: string;
+  /** The tutorial (session 31): draw NEXT (when the step waits for it) and SKIP TUTORIAL under the prompt. */
+  promptButtons?: { next: boolean };
   /** The hovered build button's tower, before it is bought (feedback item 1, 2026-09-05). */
   buildPreview?: { name: string; cost: number; desc: string; stats: HudStats; coreBoon?: string | null } | null;
   /** The Core card, when a Core cell is selected. */
@@ -151,7 +153,10 @@ export type HudAction =
   /** A void chest claimed while it stands (session 28, PR 5). */
   | { kind: 'claimChest' }
   | { kind: 'prospect' }
-  | { kind: 'callWave' };
+  | { kind: 'callWave' }
+  /** The tutorial's NEXT and SKIP under its prompt (session 31). */
+  | { kind: 'tutNext' }
+  | { kind: 'tutSkip' };
 
 /** One inventory slot on the Core card. Empty slots render too (Daniil). */
 export interface HudRelicSlot {
@@ -214,6 +219,18 @@ const PRIORITY_LABEL: Record<Priority, string> = {
 
 export class HudPanel {
   private regions: Region[] = [];
+
+  /** The screen rectangle of every region an action predicate matches, or null (session 31: the tutorial's box). */
+  regionOf(pred: (a: HudAction) => boolean): { x: number; y: number; w: number; h: number } | null {
+    let x0 = Infinity; let x1 = -Infinity; let y0 = Infinity; let y1 = -Infinity;
+    for (const r of this.regions) {
+      if (!pred(r.action)) continue;
+      x0 = Math.min(x0, r.x0); x1 = Math.max(x1, r.x1);
+      y0 = Math.min(y0, r.row - this.scroll); y1 = Math.max(y1, r.row - this.scroll);
+    }
+    if (x0 === Infinity) return null;
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 + 1 };
+  }
   // Panel scroll (2.13): the whole panel is a column that may outgrow its
   // rows; the wheel slides it. Regions are stored in CONTENT rows and
   // translated at hit-test time, so scrolling can never desync a click.
@@ -381,7 +398,18 @@ export class HudPanel {
     if (s.prompt) {
       // The first run explains itself (WBS 4.23): one prompt at a time, in
       // accent, until the meta save says the player has seen them.
-      for (const line of this.wrapText(s.prompt, W).slice(0, 4)) term.write(0, y++, line, role('ui.accent'));
+      for (const line of this.wrapText(s.prompt, W).slice(0, 6)) term.write(0, y++, line, role('ui.accent'));
+      if (s.promptButtons) {
+        if (s.promptButtons.next) {
+          this.button(0, y, 8, 'NEXT', role('ui.bg'), role('tutorial.box'));
+          this.regions.push({ row: y, x0: 0, x1: 8, action: { kind: 'tutNext' } });
+          term.write(9, y, 'Enter', role('ui.dim'));
+        }
+        const sx = s.promptButtons.next ? 16 : 0;
+        this.button(sx, y, 12, 'SKIP', role('ui.dim'), role('ui.grid'));
+        this.regions.push({ row: y, x0: sx, x1: sx + 12, action: { kind: 'tutSkip' } });
+        y++;
+      }
       y++;
     }
 

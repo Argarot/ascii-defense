@@ -57,13 +57,15 @@ export interface MetaSave {
     palette: 'default' | 'colourblind';
     /** Which sprite pack the game draws with (2026-09-06 evening): the current assets, or the previous pack kept beside them for comparison. Read at boot. */
     spriteSet: 'current' | 'previous';
-    /** The first-run prompts have been seen (session 27, WBS 4.23). */
+    /** The first-run prompts have been seen (session 27, WBS 4.23); since session 31, the tutorial is done or skipped. */
     onboarded: boolean;
+    /** The tutorial's step (session 31): a reload resumes where the player was. */
+    tutorialStep: number;
   };
   history: { seed: number; threat: string; wave: number; status: string; kills: number }[];
 }
 
-export const defaultMeta = (): MetaSave => ({ version: META_VERSION, ore: Array.from({ length: ORE_TIERS }, () => 0), unlocks: [], earned: [], forged: {}, owned: {}, discovered: [], settings: { reducedMotion: null, hudScale: 2, palette: 'default', spriteSet: 'current', onboarded: false }, history: [] });
+export const defaultMeta = (): MetaSave => ({ version: META_VERSION, ore: Array.from({ length: ORE_TIERS }, () => 0), unlocks: [], earned: [], forged: {}, owned: {}, discovered: [], settings: { reducedMotion: null, hudScale: 2, palette: 'default', spriteSet: 'current', onboarded: false, tutorialStep: 0 }, history: [] });
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -98,6 +100,7 @@ function shapeMeta(m: Record<string, unknown>): MetaSave | null {
   const hudScale = settings.hudScale === 1 ? 1 : 2;
   const palette = settings.palette === 'colourblind' ? 'colourblind' : 'default';
   const onboarded = settings.onboarded === true;
+  const tutorialStep = isNum(settings.tutorialStep) ? Math.max(0, Math.floor(settings.tutorialStep)) : 0;
   const spriteSet = settings.spriteSet === 'previous' ? 'previous' : 'current'; // 'shipped'/'reworked' of one evening both mean the current pack now
   return {
     version: META_VERSION,
@@ -107,7 +110,7 @@ function shapeMeta(m: Record<string, unknown>): MetaSave | null {
     forged,
     owned,
     discovered,
-    settings: { reducedMotion: rm, hudScale, palette, spriteSet, onboarded },
+    settings: { reducedMotion: rm, hudScale, palette, spriteSet, onboarded, tutorialStep },
     history: history as MetaSave['history'],
   };
 }
