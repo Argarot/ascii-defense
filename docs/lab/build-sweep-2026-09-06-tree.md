@@ -38,6 +38,31 @@ state** (each plays the towers its tree allows), so the rows compare
   workshop and loaded by the player; a sweep with `rich_vein` in the
   loadout is the next reading once the lab takes a loadout.
 
+## With a vein tile loaded (2026-09-07, session 30, PR 5)
+
+The same worlds with a vein tile in the loadout (`LabSpec.loadout`), the
+one Refinery on the richest vein - so it mines the loaded tile's tier and
+nothing else. The road plan is unchanged (a roadless special takes a fill
+slot), so the death waves are the same runs.
+
+| state | death @945046 | death @12345 | death @777 | death @2024 | mean | ore banked per run (t1/t2/t3) | towers / relics / slots |
+|---|---|---|---|---|---|---|---|
+| MID + rich_vein loaded (tier-2 veins) | 11 | 9 | 17 | 8 | 11.3 | 0/9/0 · 0/8/0 · 0/25/0 · 0/12/0 | 6 / 36 / 8 |
+| EVERYTHING + mother_lode loaded (a tier-3 vein) | 19 | 33 | 28 | 25 | 26.3 | 0/0/17 · 0/0/49 · 0/0/32 · 0/0/28 | 8 / 52 / 12 |
+
+- **A MID run on a rich vein banks about 13 tier-2 Ore** and no tier-1 at
+  all - one Refinery mines one vein, and the tier-2 cycle is half again as
+  long. The tree's tier-2 nodes cost 135 together: about ten such runs, or
+  fewer with a second Refinery on a tier-1 vein (the sweep places one).
+  The tier-2 purse is the slow one by design; whether ten is right is
+  Daniil's call after his own runs.
+- **An EVERYTHING run on a mother lode banks about 31 tier-3 Ore**; the
+  tier-3 nodes cost 60 together - two runs. The lode pays well because the
+  everything world lives to wave 26.
+- The instrument: `LabSpec.loadout` (special tile ids the generator must
+  place, as the app's loadout does), read by the tree sweep's two loaded
+  states.
+
 ## The instrument
 
 - `LabSpec.unlocks` (node ids, or `['*']`) with `LabContent.tree` resolves

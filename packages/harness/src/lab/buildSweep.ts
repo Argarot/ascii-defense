@@ -150,10 +150,13 @@ const TREE_ONLY = process.argv.includes('--tree');
  * what a new player meets; the Ore column prices the nodes (Daniil:
  * "about 5 runs to unlock all the towers").
  */
-const TREE_STATES: { name: string; unlocks: string[]; towers: TowerPlacement[] }[] = [
+const TREE_STATES: { name: string; unlocks: string[]; towers: TowerPlacement[]; loadout?: string[] }[] = [
   { name: 'BASE - Bolt, Mortar, Frost, Refinery; 16 relics; 6 slots', unlocks: [], towers: [A('refinery', [0, 0, 0], 'vein'), ...mixed('choke', RAILBORE)] },
   { name: 'MID - + Tesla, Bastion; damage, cold, economy branches; 8 slots', unlocks: ['tesla', 'bastion', 'branch_damage', 'branch_cold', 'branch_economy', 'slots_8'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('bastion', [0, 1, 0], 'adjacent'), P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('mortar', [1, 1, 0])] },
   { name: 'EVERYTHING - the Laser line, 52 relics, 12 slots', unlocks: ['*'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')] },
+  // Session 30, PR 5: the same worlds with a vein tile LOADED - the tier-2 and tier-3 Ore readings the tree's higher nodes are priced against.
+  { name: 'MID + rich_vein loaded (tier-2 veins)', unlocks: ['tesla', 'bastion', 'branch_damage', 'branch_cold', 'branch_economy', 'slots_8', 'ore_t2'], loadout: ['rich_vein'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('bastion', [0, 1, 0], 'adjacent'), P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('mortar', [1, 1, 0])] },
+  { name: 'EVERYTHING + mother_lode loaded (a tier-3 vein)', unlocks: ['*'], loadout: ['mother_lode'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')] },
 ];
 /** Six relics from the state's own pool, deterministic per state and seed. */
 function poolSet(unlocks: string[], n: number): { id: string; rarity: number }[] {
@@ -180,7 +183,7 @@ if (TREE_ONLY) {
     const ores: number[][] = [];
     let world = { towers: 0, relics: 0, relicSlots: 0 };
     SEEDS.forEach((seed, i) => {
-      const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: st.towers, relicIds: [], relics: poolSet(st.unlocks, i), unlocks: st.unlocks, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+      const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: st.towers, relicIds: [], relics: poolSet(st.unlocks, i), unlocks: st.unlocks, loadout: st.loadout, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
       try {
         const r = runLab(spec, baseContent);
         deaths.push(r.deathWave);
