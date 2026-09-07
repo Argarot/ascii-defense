@@ -649,8 +649,8 @@ is the same mistake as authoring sprites before the animation engine.)*
   - [x] 7.9.3 *(PR #170)* **Ore tiers in the sim**: a Refinery credits the vein's tier at a stretched cycle (×1.5, ×2 - 9.4); the purse has three tiers and hashes them; the HUD and the summary show Ore by tier; `rich_vein` (tier 2) and `mother_lode` (tier 3) in the library as specials.
   - [x] 7.9.4 *(PR #171)* **The tile shop and the Tile Smith gate**: shipped specials priced (`price` in the tile schema) and bought once (7.7's first half; copies wait for a generator that places them); the loadout offers minted and OWNED tiles; the Tile Smith link opens when every purchasable tile is owned (answer 6), the caption says so until then.
   - [x] 7.9.5 *(PR #172; docs/lab/build-sweep-2026-09-06-tree.md)* **The lab at tree states**: `unlocks` in LabSpec with the content's tree, a producer at 'vein', the purse in the report; the sweep at base / mid / everything (13.5 / 11.3 / 26.3); a base run banks ~22 tier-1 Ore, which priced the nodes (the arsenal 105: about five base runs).
-  - [ ] 7.9.6 **The codex with locked entries** (9.15) and discovered fusions (9.23).
-  - [ ] 7.9.7 **Legendary** (9.1) - a fourth lane reached only by forging two epics.
+  - [x] 7.9.6 *(PR #173)* **The codex with locked entries** (9.15) and discovered fusions (9.23).
+  - [x] 7.9.7 *(PR #173)* **Legendary** (9.1) - a fourth lane reached only by forging two epics of a relic with a legendary tier (six today); the four rarity colours are Daniil's.
 
 **M7 gate: finishing a run visibly changes the next one.**
 
@@ -669,7 +669,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 
 ## 9. The thought dump of 2026-09-06 *(Daniil; filed in PRD §19 with status - this is the checklist, by his numbering)*
 
-- [ ] 9.1 **Legendary rarity** (a fourth lane: common green, rare blue, epic purple, legendary gold; the roll's weights gain a lane; tiers gain `legendary`). The paid uber tier is D27, not this item.
+- [x] 9.1 *(session 29, PR #173)* **Legendary rarity** (a fourth lane: common green, rare blue, epic purple, legendary gold; the roll's weights gain a lane; tiers gain `legendary`). The paid uber tier is D27, not this item.
 - [ ] 9.2 **Higher tiers unlock by forging**: the meta save records the tier a relic was forged to; the pool deals a tier only once forged.
 - [ ] 9.3 **Relics earned by wins**: difficulty (Threat) sets the rarity granted at a win; the tree gates branches and capacity; paid chests are §18's door.
 - [x] 9.4 *(session 29, PR #170)* **One Refinery, every ore tier**: a per-tier cycle multiplier (×1.5 tier 2, ×2 tier 3).
@@ -683,7 +683,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [x] 9.12 *(session 29, PR #167; a chest holds its cell while it stands)* Void chests surface on water and empty ground, not rock.
 - [ ] 9.13 A chest sprite kind, bigger, coloured by a rolled rarity.
 - [ ] 9.14 Relic sprites 6×5: the icon plus a rarity ring; strip and Forge plates follow.
-- [ ] 9.15 **The codex**: every entry, locked ones shown locked, from every menu and from pause; reads the unlock set.
+- [x] 9.15 *(session 29, PR #173)* **The codex**: every entry, locked ones shown locked, from every menu and from pause; reads the unlock set.
 - [ ] 9.16 Consumable: place boon ground on an empty ground cell.
 - [ ] 9.17 Consumable: god mode for one tower (a timed +100% to everything) with an epic sequence.
 - [x] 9.18 *(session 29, PR #167)* The relic offer only when the board is quiet; a call over living bodies carries the debt to the next quiet.
@@ -691,7 +691,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 9.20 Neutral structures - **debated, open** (the reply argues the Tile Smith's placeables and boon ground already own this).
 - [ ] 9.21 Merging four identical towers - **debated, open** (D25; the reply proposes a formation bonus around a Bastion instead).
 - [ ] 9.22 Endless mode as the tree's last unlock.
-- [ ] 9.23 More recipes; fusions discovered are recorded in the meta save and listed in the codex.
+- [x] 9.23 *(session 29, PR #173: the discoveries; more recipes are content)* More recipes; fusions discovered are recorded in the meta save and listed in the codex.
 - [x] 9.24 *(session 29, PR #167: PIERCE_REACH 0.5)* Pierce continues into bodies within half a cell of the impact, never across lanes.
 - [ ] 9.25 Per-tower projectile and blast looks (Mortar vs Missile).
 - [ ] 9.26 Slows stacking multiplicatively with a floor - **debated, open**; the sweep decides.

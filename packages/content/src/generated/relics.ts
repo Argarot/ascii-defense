@@ -39,7 +39,7 @@ export interface RelicPool {
        */
       tags?: ('damage' | 'rate' | 'reach' | 'cold' | 'kinetic' | 'energy' | 'support' | 'economy' | 'core')[];
       /**
-       * What a rare and an epic copy are: the effects (whole, not deltas) and the card text at that rarity. A relic without tiers is the same at every rarity (a boolean rule).
+       * What a rare, an epic and a legendary copy are: the effects (whole, not deltas) and the card text at that rarity. A relic without tiers is the same at every rarity (a boolean rule). Legendary (session 29, PR 7; Daniil's item 1) is never dealt: it is reached only by forging two epics of a relic that has a legendary tier.
        */
       tiers?: {
         rare?: {
@@ -47,6 +47,10 @@ export interface RelicPool {
           effects: Effects;
         };
         epic?: {
+          desc?: string;
+          effects: Effects;
+        };
+        legendary?: {
           desc?: string;
           effects: Effects;
         };
@@ -85,7 +89,7 @@ export interface RelicPool {
        */
       tags?: ('damage' | 'rate' | 'reach' | 'cold' | 'kinetic' | 'energy' | 'support' | 'economy' | 'core')[];
       /**
-       * What a rare and an epic copy are: the effects (whole, not deltas) and the card text at that rarity. A relic without tiers is the same at every rarity (a boolean rule).
+       * What a rare, an epic and a legendary copy are: the effects (whole, not deltas) and the card text at that rarity. A relic without tiers is the same at every rarity (a boolean rule). Legendary (session 29, PR 7; Daniil's item 1) is never dealt: it is reached only by forging two epics of a relic that has a legendary tier.
        */
       tiers?: {
         rare?: {
@@ -93,6 +97,10 @@ export interface RelicPool {
           effects: Effects;
         };
         epic?: {
+          desc?: string;
+          effects: Effects;
+        };
+        legendary?: {
           desc?: string;
           effects: Effects;
         };
@@ -389,7 +397,7 @@ export const relicsSchema = {
             "uniqueItems": true
           },
           "tiers": {
-            "description": "What a rare and an epic copy are: the effects (whole, not deltas) and the card text at that rarity. A relic without tiers is the same at every rarity (a boolean rule).",
+            "description": "What a rare, an epic and a legendary copy are: the effects (whole, not deltas) and the card text at that rarity. A relic without tiers is the same at every rarity (a boolean rule). Legendary (session 29, PR 7; Daniil's item 1) is never dealt: it is reached only by forging two epics of a relic that has a legendary tier.",
             "type": "object",
             "additionalProperties": false,
             "properties": {
@@ -409,6 +417,21 @@ export const relicsSchema = {
                 }
               },
               "epic": {
+                "type": "object",
+                "required": [
+                  "effects"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "desc": {
+                    "type": "string"
+                  },
+                  "effects": {
+                    "$ref": "#/definitions/effects"
+                  }
+                }
+              },
+              "legendary": {
                 "type": "object",
                 "required": [
                   "effects"

@@ -695,7 +695,8 @@ async function main(): Promise<void> {
         'enemies march the road toward the Core at the east edge; if it falls, the run ends.',
         'select ground, then a tower in the strip under the board, to build. hover a button for its card.',
         'towers upgrade in either/or tiers - each fork is two jobs, never two numbers.',
-        'refineries on gold veins mine Ore; every 2nd wave offers a relic - rules, not numbers; some relics are passives that work on every tower, twelve slots a run.',
+        'refineries on gold veins mine Ore, by tier; every 2nd wave, once the board is quiet, offers a relic - rules, not numbers; some relics are passives that work on every tower.',
+        'between runs the WORKSHOP spends banked Ore on the tree: towers, relic branches, slots, threats, vein tiles. locked towers and relics stay in this codex, marked LOCKED with what opens them; wins earn the rarer relics of an open branch.',
         'the water has business: a chest surfaces on it now and then and sinks after twelve seconds - select it and CLAIM. every reward in the game comes from one loot table, printed in the catalogue.',
         'a held relic is a decision: click it in the strip for its card - salvage it for Ore, or combine two of a kind into the next rarity, or two recipe partners into a fused relic. full slots ask which one a pick replaces; S skips an offer.',
         'rock hides ore and caches; prospecting opens it. R turns a laser. N calls the next wave.',
@@ -704,10 +705,13 @@ async function main(): Promise<void> {
       ].flatMap((l) => wrapLine(l));
     } else if (codexSection === 'towers') {
       const t = CODEX.towers[page];
-      title = `${t.name.toUpperCase()}  ${page + 1}/${count}`;
+      // Locked entries are shown locked, never hidden (session 29, PR 7; thought dump item 15): the node that opens it is named.
+      const lockedBy = unlockedNow().towers.has(t.id) ? null : TREE.nodes.find((n) => n.grants.towers?.includes(t.id));
+      title = `${t.name.toUpperCase()}  ${page + 1}/${count}` + (lockedBy ? '  - LOCKED' : '');
       const sp = SPRITES.find((s) => s.id === t.id);
       hero = sp ? [sp] : [];
       body = [
+        ...(lockedBy ? [`LOCKED - the workshop's ARSENAL branch opens it: ${lockedBy.name} (${lockedBy.cost.ore} tier-${lockedBy.cost.tier} ore)`, ''] : []),
         ...wrapLine(t.desc),
         [t.type ? `type ${t.type}` : '', `cost $${t.cost}`, typeof t.range === 'number' ? `range ${t.range}` : `reach ${t.range}`, t.rate ? `rate ${t.rate}/s` : '', t.dmg ? `dmg ${t.dmg}` : '', t.dps ? `dps ${t.dps}` : ''].filter(Boolean).join('  \u2802  '),
         ...wrapLine(t.shape),
@@ -728,17 +732,33 @@ async function main(): Promise<void> {
       ];
     } else {
       const r = CODEX.relics[page];
-      title = `${r.name.toUpperCase()}  ${page + 1}/${count}`;
       const recipesOf = CODEX.recipes.filter((x) => x.a === r.id || x.b === r.id || x.result === r.id);
       const sp = SPRITES.find((s) => s.id === `relic_${r.id}`);
-      hero = sp ? [sp] : [];
-      body = [
-        [r.kind, `base rarity ${r.rarity}`, r.tags.length ? `tags ${r.tags.join(' ')}` : '', r.stacks ? 'stacks' : '', r.recharge ? `recharges in ${r.recharge}` : ''].filter(Boolean).join('  \u2802  '),
-        ...wrapLine(r.desc),
-        ...(r.rare ? ['', ...wrapLine(`rare: ${r.rare}`)] : []),
-        ...(r.epic ? wrapLine(`epic: ${r.epic}`) : []),
-        ...(recipesOf.length ? ['', ...recipesOf.flatMap((x) => wrapLine(x.result === r.id ? `reached only by combining ${x.aName} and ${x.bName}` : `combines with ${x.a === r.id ? x.bName : x.aName} into ${x.resultName}: ${x.desc}`))] : []),
-      ];
+      // A fusion not yet discovered keeps its secret (item 23): the name, the partners and the rule stay hidden until fused once.
+      const undiscovered = r.fusionOnly && !meta.discovered.includes(r.id);
+      // A locked relic says what opens it (item 15): a branch of the workshop, or the win that earns it.
+      const u = unlockedNow();
+      const lockReason = r.fusionOnly || u.relics.has(r.id) ? null
+        : !r.tags.some((t) => u.relicTags.has(t)) ? `the workshop's RELIQUARY branch: ${r.tags.map((t) => TREE.nodes.find((n) => n.grants.relicTags?.includes(t))?.name ?? t).join(' or ')}`
+          : r.rarity === 'rare' ? 'earned by a win at Standard or above' : r.rarity === 'epic' ? 'earned by a win at Grim' : 'the workshop';
+      if (undiscovered) {
+        title = `???  ${page + 1}/${count}`;
+        hero = [];
+        body = ['a fused relic not yet discovered - two held relics of a recipe pair combine into it in the Forge', `${meta.discovered.length} of ${CODEX.relics.filter((x) => x.fusionOnly).length} fusions discovered`];
+      } else {
+        title = `${r.name.toUpperCase()}  ${page + 1}/${count}` + (lockReason ? '  - LOCKED' : '');
+        hero = sp ? [sp] : [];
+        body = [
+          ...(lockReason ? [`LOCKED - ${lockReason}`, ''] : []),
+          ...(r.fusionOnly ? ['DISCOVERED - fused at least once', ''] : []),
+          [r.kind, `base rarity ${r.rarity}`, r.tags.length ? `tags ${r.tags.join(' ')}` : '', r.stacks ? 'stacks' : '', r.recharge ? `recharges in ${r.recharge}` : ''].filter(Boolean).join('  \u2802  '),
+          ...wrapLine(r.desc),
+          ...(r.rare ? ['', ...wrapLine(`rare: ${r.rare}`)] : []),
+          ...(r.epic ? wrapLine(`epic: ${r.epic}`) : []),
+          ...(r.legendary ? wrapLine(`legendary (forge two epics): ${r.legendary}`) : []),
+          ...(recipesOf.length ? ['', ...recipesOf.flatMap((x) => wrapLine(x.result === r.id ? `reached only by combining ${x.aName} and ${x.bName}` : `combines with ${x.a === r.id ? x.bName : x.aName} into ${x.resultName}: ${x.desc}`))] : []),
+        ];
+      }
     }
     return {
       title,

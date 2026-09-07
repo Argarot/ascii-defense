@@ -40,8 +40,11 @@ const OVERRIDE_SETS: Record<string, Record<string, string>> = {
     'status.slowed': '#1b3a5c',
     'status.burning': '#5c2e00',
     'status.frozen': '#5a5f8a',
-    'rarity.rare': '#5fb0ff',
-    'rarity.epic': '#f2e94e',
+    // Rarity colours (Daniil's item 1, 2026-09-06): common green, rare blue, epic purple, legendary gold. The pack's palette carries the same.
+    'rarity.common': '#5fbf6a',
+    'rarity.rare': '#4c9be8',
+    'rarity.epic': '#a86cf0',
+    'rarity.legendary': '#f2c14e',
   },
 };
 let overrides: Record<string, string> = {};

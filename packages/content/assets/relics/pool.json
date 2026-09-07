@@ -107,6 +107,14 @@
       "desc": "Towers touching the Core block get half again their range.",
       "effects": {
         "coreAdjacentRangeMul": 1.5
+      },
+      "tiers": {
+        "legendary": {
+          "desc": "Towers touching the Core block get double range.",
+          "effects": {
+            "coreAdjacentRangeMul": 2
+          }
+        }
       }
     },
     {
@@ -1248,6 +1256,14 @@
       "desc": "Slowed enemies take triple from everything. Frostbite and Stasis, fused.",
       "effects": {
         "slowedDamageMul": 3
+      },
+      "tiers": {
+        "legendary": {
+          "desc": "Slowed enemies take quadruple from everything.",
+          "effects": {
+            "slowedDamageMul": 4
+          }
+        }
       }
     },
     {
@@ -1263,6 +1279,15 @@
       "effects": {
         "killRefundScrap": 5,
         "tollScrap": 3
+      },
+      "tiers": {
+        "legendary": {
+          "desc": "Every kill refunds 8 Scrap and every enemy pays 4 Scrap for each cell it walks beside a tower.",
+          "effects": {
+            "killRefundScrap": 8,
+            "tollScrap": 4
+          }
+        }
       }
     },
     {
@@ -1277,6 +1302,14 @@
       "desc": "The Core mends 8 health every wave. Sandbags and Second Wind, fused.",
       "effects": {
         "coreHealPerWave": 8
+      },
+      "tiers": {
+        "legendary": {
+          "desc": "The Core mends 12 health every wave.",
+          "effects": {
+            "coreHealPerWave": 12
+          }
+        }
       }
     },
     {
@@ -1294,6 +1327,15 @@
       "effects": {
         "productionMul": 10,
         "boostTicks": 800
+      },
+      "tiers": {
+        "legendary": {
+          "desc": "Refineries produce at ten times for 80 seconds.",
+          "effects": {
+            "productionMul": 10,
+            "boostTicks": 1600
+          }
+        }
       }
     },
     {
@@ -1313,6 +1355,16 @@
         "orbitalDamage": 900,
         "orbitalRadius": 4,
         "freezeTicks": 40
+      },
+      "tiers": {
+        "legendary": {
+          "desc": "Strike anywhere: 1500 damage in a 5-cell blast, and every enemy freezes for 3 seconds.",
+          "effects": {
+            "orbitalDamage": 1500,
+            "orbitalRadius": 5,
+            "freezeTicks": 60
+          }
+        }
       }
     }
   ]

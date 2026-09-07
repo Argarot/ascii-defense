@@ -95,6 +95,7 @@ function relicRows() {
     fx(r.effects),
     r.tiers?.rare ? `${r.tiers.rare.desc ?? ''} [${fx(r.tiers.rare.effects)}]` : 'same',
     r.tiers?.epic ? `${r.tiers.epic.desc ?? ''} [${fx(r.tiers.epic.effects)}]` : 'same',
+    r.tiers?.legendary ? `${r.tiers.legendary.desc ?? ''} [${fx(r.tiers.legendary.effects)}]` : 'none',
   ]);
 }
 
@@ -127,9 +128,9 @@ const SECTIONS = {
     [
       `${relics.length} relics in \`packages/content/assets/relics/pool.json\`. Passives work while held (some are tower mods on every tower - the former passive layer, one pool since 2026-09-06 evening); actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).`,
       '',
-      table(['Relic', 'id', 'Kind', 'Base rarity', 'Tags', 'Stacks', 'Recharge', 'What it does (common)', 'Data', 'Rare', 'Epic'], relicRows()),
+      table(['Relic', 'id', 'Kind', 'Base rarity', 'Tags', 'Stacks', 'Recharge', 'What it does (common)', 'Data', 'Rare', 'Epic', 'Legendary'], relicRows()),
       '',
-      'Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wave - common 60 minus the wave (floor 30), rare 30, epic 10 plus half the wave - never below the relic\'s base rarity. A rare or epic copy has the numbers in its column; "same" means the rule does not scale (a boolean).',
+      'Rarity with teeth (PRD §7.6; session 28, PR 2): every draw rolls a rarity by wave - common 60 minus the wave (floor 30), rare 30, epic 10 plus half the wave - never below the relic\'s base rarity. A rare or epic copy has the numbers in its column; "same" means the rule does not scale (a boolean). Legendary (session 29, PR 7) is never dealt: it is reached only by forging two epics of a relic with a Legendary column, and salvages for 60 Ore. Since the meta tree (session 29), a rarity above the base is dealt only once the relic was forged to it.',
     ].join('\n'),
   loot: () =>
     [
@@ -276,6 +277,8 @@ function codexTs() {
       desc: r.desc ?? '',
       rare: r.tiers?.rare?.desc ?? '',
       epic: r.tiers?.epic?.desc ?? '',
+      legendary: r.tiers?.legendary?.desc ?? '',
+      fusionOnly: r.fusionOnly === true,
     })),
     sets: sets.map((s) => ({ name: s.name, tag: s.tag, at: s.at, desc: s.desc })),
     recipes: recipes.map((x) => ({ a: x.a, b: x.b, result: x.result, aName: relicName(x.a), bName: relicName(x.b), resultName: relicName(x.result), desc: x.desc })),

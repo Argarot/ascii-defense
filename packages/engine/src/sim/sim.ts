@@ -195,7 +195,7 @@ export const ORE_TIERS = 3;
  */
 export const ORE_TIER_CYCLE: readonly number[] = [1, 1.5, 2];
 /** Ore a salvaged relic returns, by rarity (common, rare, epic). */
-export const SALVAGE_ORE: readonly number[] = [10, 20, 35];
+export const SALVAGE_ORE: readonly number[] = [10, 20, 35, 60];
 /**
  * Ore price of the FIRST blind draw at the Core (PRD sec 7.3 C). Every
  * purchase this run multiplies the next by RELIC_COST_GROWTH (Daniil,
@@ -984,7 +984,10 @@ export class Sim {
     for (let j = 0; j < this.heldRelics.length; j++) {
       if (j === hi) continue;
       const b = defs[this.heldRelics[j]];
-      if (b.id === a.id && this.heldRarity[j] === this.heldRarity[hi] && this.heldRarity[hi] < 2) {
+      // Two of a kind climb one rarity; two epics climb to legendary only when the relic HAS a legendary tier (session 29, PR 7).
+      const next = this.heldRarity[hi] + 1;
+      const canClimb = next <= 2 || (next === 3 && a.tiers?.legendary !== undefined);
+      if (b.id === a.id && this.heldRarity[j] === this.heldRarity[hi] && canClimb) {
         out.push({ with: j, result: a.name, resultId: a.id, resultRarity: RARITIES[this.heldRarity[hi] + 1] });
         continue;
       }

@@ -178,7 +178,7 @@ export const RELIC_PULSE_TICKS = 8;
 
 /** The frame role for a rarity; common has none (the slot's own plate). */
 export function rarityRole(r: string | undefined): string | null {
-  return r === 'rare' ? 'rarity.rare' : r === 'epic' ? 'rarity.epic' : null;
+  return r === 'rare' ? 'rarity.rare' : r === 'epic' ? 'rarity.epic' : r === 'legendary' ? 'rarity.legendary' : null;
 }
 
 export interface HudCoreInfo {
