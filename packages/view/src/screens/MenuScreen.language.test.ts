@@ -51,3 +51,22 @@ describe('the menu language', () => {
     expect(lines.some((l) => l.includes('BRANCH 5'))).toBe(true); // nothing lost
   });
 });
+
+describe('the keyboard on a page (session 31)', () => {
+  it('reports every clickable id in draw order and lights the cursor row', () => {
+    const term = new TextTerm({ cols: 120, rows: 50 });
+    const screen = new MenuScreen();
+    const spec: MenuSpec = {
+      title: 'T',
+      tiles: [{ id: 'twin', cells: ['GGGGG', 'GG|GG', 'GG|GG', 'GG|GG', 'GGGGG'], selected: false }],
+      columns: [{ heading: 'A', items: [{ id: 'a1', label: 'one' }, { id: 'a2', label: 'two', disabled: true }] }],
+      items: [{ id: 'back', label: 'BACK' }],
+    };
+    screen.render(term, spec);
+    expect([...screen.itemIds()]).toEqual(['tile:twin', 'a1', 'back']); // the disabled row is skipped
+    screen.render(term, { ...spec, cursor: 'back' });
+    const row = term.toText().split('\n').find((l) => l.includes('BACK'))!;
+    expect(row.indexOf('>')).toBeGreaterThan(0); // the marker, inside the frame's edge
+    expect(row.indexOf('>')).toBeLessThan(row.indexOf('BACK'));
+  });
+});

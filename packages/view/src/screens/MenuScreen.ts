@@ -81,6 +81,8 @@ export interface MenuSpec {
   hero?: readonly Sprite[];
   /** A dim line in the screen's bottom-right corner (build, cell, version). */
   caption?: string;
+  /** The keyboard's cursor (session 31: WBS 4.24's other half): the id of the row the arrows are on; Enter activates it. */
+  cursor?: string;
 }
 
 const TILE_GW = TILE_SIZE * CELL_W; // tile preview width in glyphs
@@ -170,9 +172,16 @@ export function drawFrame(term: TermSurface, o: FrameOpts): void {
 
 export class MenuScreen {
   private regions: { row: number; rowEnd?: number; x0: number; x1: number; id: string }[] = [];
+  /** Every clickable id of the last render, in draw order - what the arrows walk. */
+  private order: string[] = [];
+
+  itemIds(): readonly string[] {
+    return this.order;
+  }
 
   render(term: TermSurface, spec: MenuSpec): void {
     this.regions = [];
+    this.order = [];
     const W = term.cols;
     const phase = spec.phase ?? 0;
     // The board dims to backdrop under a screen (playtest 10): a checkerboard
@@ -260,7 +269,8 @@ export class MenuScreen {
         const tx = x0 + Math.max(1, Math.floor((plateW - rowW) / 2)) + col * (TILE_GW + 3);
         const ty = y + 1 + rowN * (TILE_GH + 3);
         const tile = tiles[i];
-        const frame = tile.selected ? accent : tile.tone ? role(tile.tone) : grid;
+        const frame = tile.selected || spec.cursor === `tile:${tile.id}` ? accent : tile.tone ? role(tile.tone) : grid;
+        this.order.push(`tile:${tile.id}`);
         for (let fy = -1; fy <= TILE_GH; fy++) {
           for (let fx = -1; fx <= TILE_GW; fx++) {
             if (fy !== -1 && fy !== TILE_GH && fx !== -1 && fx !== TILE_GW) continue;
@@ -293,7 +303,7 @@ export class MenuScreen {
         if (c.heading || c.lines?.length) cy++;
         for (const it of c.items) {
           if (it.link) { term.put(cx0 + Math.floor(cw / 2), cy++, '│', grid, PLATE_BG); }
-          this.drawItem(term, it, cx0, cy, cw, phase);
+          this.drawItem(term, it, cx0, cy, cw, phase, spec.cursor);
           cy++;
         }
         cx0 += cw + COLUMN_GAP;
@@ -301,7 +311,7 @@ export class MenuScreen {
       y += rowHeight(row);
     }
     for (const it of spec.items) {
-      this.drawItem(term, it, x0 + 2, y, plateW - 4, phase);
+      this.drawItem(term, it, x0 + 2, y, plateW - 4, phase, spec.cursor);
       y += 2;
     }
     if (spec.footer) {
@@ -315,10 +325,12 @@ export class MenuScreen {
   }
 
   /** One item as a plate row of width bw at (x, y); a selected row wears diamond markers around an accent label. */
-  private drawItem(term: TermSurface, it: MenuItem, x: number, y: number, bw: number, phase: number): void {
+  private drawItem(term: TermSurface, it: MenuItem, x: number, y: number, bw: number, phase: number, cursor?: string): void {
     const accent = role('ui.accent');
-    const fg = it.disabled ? role('ui.grid') : it.selected ? accent : it.tone ? role(it.tone) : role('ui.text');
-    const bg = it.disabled ? PLATE_BG : role('ui.grid');
+    // The keyboard's cursor row (session 31): the plate lit, so the arrows are seen to land somewhere.
+    const onCursor = cursor !== undefined && cursor === it.id && !it.disabled;
+    const fg = it.disabled ? role('ui.grid') : onCursor ? role('ui.bg') : it.selected ? accent : it.tone ? role(it.tone) : role('ui.text');
+    const bg = it.disabled ? PLATE_BG : onCursor ? mix(role('ui.grid'), accent, 0.55) : role('ui.grid');
     // Centred label; the note keeps the right edge (playtest 10). A selected
     // row wears markers around an accent label (playtest 13) - diamonds, a
     // glyph spleen has (the first attempt used U+00BB, which it does not,
@@ -335,8 +347,9 @@ export class MenuScreen {
       term.put(x + pad, y, '◆', glow, bg);
       term.put(x + pad + label.length - 1, y, '◆', glow, bg);
     }
-    if (it.note) term.write(x + bw - it.note.length - 1, y, it.note.slice(0, Math.max(0, bw - 2)), it.disabled ? role('ui.grid') : accent, bg);
-    if (!it.disabled) this.regions.push({ row: y, x0: x, x1: x + bw, id: it.id });
+    if (it.note) term.write(x + bw - it.note.length - 1, y, it.note.slice(0, Math.max(0, bw - 2)), it.disabled ? role('ui.grid') : onCursor ? role('ui.bg') : accent, bg);
+    if (onCursor) term.put(x, y, '>', role('ui.bg'), bg);
+    if (!it.disabled) { this.regions.push({ row: y, x0: x, x1: x + bw, id: it.id }); this.order.push(it.id); }
   }
 
   itemAt(px: number, py: number, glyphPxW: number, glyphPxH: number): string | null {
