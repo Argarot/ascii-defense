@@ -48,6 +48,7 @@ import {
   type MetaState,
   ALL_UNLOCKS,
   resolveUnlocks,
+  relicApplies,
  effectiveStats, DAMAGE_TYPES } from '@ascii-defense/engine';
 import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
@@ -107,7 +108,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       const nextMeta: MetaState = resume?.meta ?? meta ?? { unlocks: [ALL_UNLOCKS], earned: [], forged: {} };
       const unlocked = resolveUnlocks(tree, nextMeta, relicDefs);
       const nextTowers = towerDefs.filter((d) => unlocked.towers.has(d.id));
-      const nextRelics = relicDefs.filter((d) => unlocked.relics.has(d.id));
+      // A relic whose only effect touches a tower this run lacks stays out of the pool (session 31, PR 7).
+      const nextRelics = relicDefs.filter((d) => unlocked.relics.has(d.id) && relicApplies(d, nextTowers.map((t) => t.id)));
       if (nextTowers.length === 0) { post({ t: 'genError', message: 'the tree grants no tower - the base set is empty' }); return; }
       // The board is the caller's (viewport-derived, D24) or the default; a
       // resumed save is exactly its map's size, whatever the screen is now.

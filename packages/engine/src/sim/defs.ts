@@ -206,6 +206,8 @@ export interface RelicDef {
   tiers?: { rare?: { desc?: string; effects: RelicEffects }; epic?: { desc?: string; effects: RelicEffects }; legendary?: { desc?: string; effects: RelicEffects } };
   /** Never offered, drawn, bought or found: reached only by a recipe (session 28, PR 3). */
   fusionOnly?: boolean;
+  /** Tower ids its only effect touches (session 31, PR 7): absent from a run that grants none of them. */
+  needsTower?: readonly string[];
   /** Actives: ticks between firings. */
   cooldownTicks?: number;
   /**

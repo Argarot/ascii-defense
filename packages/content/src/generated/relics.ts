@@ -59,6 +59,12 @@ export interface RelicPool {
        * Never offered, drawn, bought or found: reached only by combining two held relics by a recipe (recipes/pool.json; session 28, PR 3).
        */
       fusionOnly?: boolean;
+      /**
+       * Tower ids this relic's only effect touches (session 31, PR 7): a run whose tree grants none of them leaves the relic out of its pool - a Grounding Rod with no Tesla was a dead pick.
+       *
+       * @minItems 1
+       */
+      needsTower?: [string, ...string[]];
     },
     ...{
       id: string;
@@ -109,6 +115,12 @@ export interface RelicPool {
        * Never offered, drawn, bought or found: reached only by combining two held relics by a recipe (recipes/pool.json; session 28, PR 3).
        */
       fusionOnly?: boolean;
+      /**
+       * Tower ids this relic's only effect touches (session 31, PR 7): a run whose tree grants none of them leaves the relic out of its pool - a Grounding Rod with no Tesla was a dead pick.
+       *
+       * @minItems 1
+       */
+      needsTower?: [string, ...string[]];
     }[]
   ];
 }
@@ -451,6 +463,14 @@ export const relicsSchema = {
           "fusionOnly": {
             "description": "Never offered, drawn, bought or found: reached only by combining two held relics by a recipe (recipes/pool.json; session 28, PR 3).",
             "type": "boolean"
+          },
+          "needsTower": {
+            "description": "Tower ids this relic's only effect touches (session 31, PR 7): a run whose tree grants none of them leaves the relic out of its pool - a Grounding Rod with no Tesla was a dead pick.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

@@ -689,6 +689,14 @@ what towers *do* — freely — but never which of the 14 forms they are.
 
 ### 7.3 Where relics come from
 
+**The run's pool is what the run can use (session 31, PR 7).** A relic
+whose only effect touches a tower kind - Grounding Rod's arcs, Overclock's
+beam, Wide Aura's aura, Kindling's burn - carries `needsTower`, and a run
+whose tree grants none of those towers leaves it out of every channel
+below; the codex says "Needs the Tesla Coil in the run". The reliquary's
+energy branch can be bought before the Tesla, so without this a first
+energy relic was a dead pick.
+
 Three channels, each with a job the others cannot do. Build order is the order
 listed — each is independently shippable and useful alone.
 
