@@ -34,9 +34,9 @@ save doubles as an exact replay.
    saved run, the **workshop**, settings, how to play. `Esc` pauses mid-run; a
    run ends on a summary screen. Progress lives in this browser and can be
    exported to a file. **A first run is Calm and comes with a tutorial**:
-   twelve steps, each pointing a pulsing yellow box at the thing to look at
-   (the Core, an entry, ground, the Bolt, its card, Scrap and Ore, CALL
-   WAVE, the strip, the offer, the slots, rock) with a sentence on what it
+   thirteen steps, each pointing a pulsing yellow box at the thing to look
+   at (the Core, an entry, ground by the Core, the Bolt, its card, Scrap and
+   Ore, CALL WAVE, the strip, the offer, the slots, a fork, rock) with a sentence on what it
    means; NEXT or Enter moves the look-steps, your own actions move the
    rest, SKIP ends it, and SETTINGS replays it.
 1. A generated map: the Core near the middle, winding roads to the edges, ore

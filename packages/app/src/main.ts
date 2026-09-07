@@ -230,6 +230,12 @@ async function main(): Promise<void> {
       }
       case 'entry': { const e = snap.board.telegraph?.[0] ?? currentMap.entries[0]; return e ? { term: 'board', rect: cellRect(e) } : null; }
       case 'ground': { const g = goodGround(tutCells, currentMap.cellsW, currentMap.cellsH, currentMap.coreFace, (c) => isRoad(c as import('@ascii-defense/engine').CellType)); return g ? { term: 'board', rect: cellRect(g) } : null; }
+      case 'upgrade': {
+        // A selected tower: its forks in the card; otherwise the first tower on the board.
+        if (snap.hud.selectedTower) { const r = hud.regionOf((a) => a.kind === 'choose'); if (r) return { term: 'hud', rect: { x: 0, y: r.y, w: HUD_COLS - 2, h: r.h } }; }
+        const t = snap.board.towers?.[0];
+        return t ? { term: 'board', rect: cellRect({ x: t.x, y: t.y }) } : null;
+      }
       case 'rock': { const r = nearRock(tutCells, currentMap.cellsW, currentMap.cellsH, currentMap.coreFace, (c) => isRoad(c as import('@ascii-defense/engine').CellType)); return r ? { term: 'board', rect: cellRect(r) } : null; }
       case 'strip:bolt': { const r = strip.regionOf((a) => a.kind === 'buildId' && a.id === 'bolt'); return r ? { term: 'strip', rect: r } : null; }
       case 'strip:wave': return { term: 'strip', rect: strip.lastLayout.wave };
@@ -413,7 +419,7 @@ async function main(): Promise<void> {
   // 'ready', never on send - a failed init can no longer strand the player
   // in a phantom of the previous run.
   let pendingStart = false;
-  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; /** Ore banked by tier (session 29, PR 4). */ oreTiers: number[]; seed: number; story?: FrameSnapshot['story']; /** The relic a win earned (session 29, PR 1), by name; null when nothing was left to earn. */ earned?: string | null } | null = null;
+  let summary: { won: boolean; wave: number; kills: number; oreBanked: number; /** Ore banked by tier (session 29, PR 4). */ oreTiers: number[]; seed: number; story?: FrameSnapshot['story']; /** The relic a win earned (session 29, PR 1), by name; null when nothing was left to earn. */ earned?: string | null; /** The Threat index the run was played at. */ threat?: number } | null = null;
   let summaryBanked = false;
 
   let hover: CellRef | null = null;
@@ -573,7 +579,7 @@ async function main(): Promise<void> {
           caption: `spleen 5x8 \u2802 ${CELL_W}x${CELL_H} glyph cells \u2802 ${mapX}x${mapY} tiles`,
           body: [
             'the board is a press; the waves want it stopped',
-            ...(!meta.settings.onboarded ? ['new here? NEW RUN starts on Calm with the tutorial: twelve steps, a box on each thing to look at'] : []),
+            ...(!meta.settings.onboarded ? ['new here? NEW RUN starts on Calm with the tutorial: thirteen steps, a box on each thing to look at'] : []),
             '',
             ...(saveProblem ? [`! ${saveProblem}`] : []),
             meta.ore.some((o) => o > 0) ? `banked ore ${meta.ore[0]}${meta.ore[1] > 0 || meta.ore[2] > 0 ? ` \u2802 tier 2: ${meta.ore[1]} \u2802 tier 3: ${meta.ore[2]}` : ''}` : '',
@@ -592,6 +598,7 @@ async function main(): Promise<void> {
           title: 'RUN SETUP',
           body: [
             'threat sets waves, path length and the final wave',
+            `${THREAT_LEVELS[setupThreat].name.toUpperCase()}: ${THREAT_HINT[setupThreat] ?? ''}`,
             ...(genError ? ['', `! ${genError}`] : []),
           ],
           items: [
@@ -599,7 +606,7 @@ async function main(): Promise<void> {
             ...THREAT_LEVELS.map((t, i) => ({
               id: `threat:${i}`,
               label: t.name.toUpperCase(),
-              note: i > unlockedNow().threatMax ? 'locked - the workshop opens it' : `to wave ${t.finalWave} \u2802 ${THREAT_HINT[i] ?? ''}`,
+              note: i > unlockedNow().threatMax ? 'locked - the workshop opens it' : `to wave ${t.finalWave}`,
               selected: i === setupThreat,
               disabled: i > unlockedNow().threatMax,
             })),
@@ -625,7 +632,7 @@ async function main(): Promise<void> {
             loadoutDeleteArmed
               ? 'click a MINTED tile to remove it permanently (shipped tiles stay)'
               : pool.length > 0
-                ? `load up to ${loadoutSlots()} special tiles - a loaded tile is GUARANTEED on the map`
+                ? `load up to ${loadoutSlots()} special tile${loadoutSlots() === 1 ? '' : 's'} - a loaded tile is GUARANTEED on the map`
                 : 'no special tiles yet - the workshop sells them, the tile smith mints them',
             // Tiles the pool holds but cannot offer, and why - never silent.
             ...problems.slice(0, 4).map((p) => `not offered: ${p.id} - ${p.problem}`),
@@ -744,7 +751,10 @@ async function main(): Promise<void> {
         return {
           title: 'SETTINGS',
           body: ['saves live in this browser; export moves them'],
-          keys: [{ key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'grid' }, { key: '1/2/3', does: 'pick a relic' }, { key: 'Esc', does: 'back' }],
+          // A run's keys only when the page was opened from the pause (session 31: the title's settings listed "next wave").
+          keys: settingsFrom === 'paused'
+            ? [{ key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'grid' }, { key: '1-3', does: 'take a relic' }, { key: 'Esc', does: 'back' }]
+            : [{ key: 'Esc', does: 'back' }],
           items: [
             { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
             { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
@@ -784,7 +794,7 @@ async function main(): Promise<void> {
                 `kills ${summary.kills}`,
                 `ore banked +${summary.oreBanked} (total ${meta.ore[0]})` + (summary.oreTiers.slice(1).some((o) => o > 0) ? ` \u2802 tier 2 +${summary.oreTiers[1]} (${meta.ore[1]}) \u2802 tier 3 +${summary.oreTiers[2]} (${meta.ore[2]})` : ''),
                 // A win earns a relic of the Threat's rarity (session 29, PR 1; PRD sec 19 item 3).
-                ...(summary.won ? [summary.earned ? `earned: ${summary.earned} - it joins the pool from the next run` : 'nothing left to earn at this threat - the workshop opens more branches'] : []),
+                ...(summary.won ? [summary.earned ? `earned: ${summary.earned} - it joins the pool from the next run` : summary.threat === 0 ? 'Calm banks Ore; a win on Standard earns a relic, on Grim an epic one' : 'nothing left to earn at this threat - the workshop opens more branches'] : []),
                 // The run's story (session 27): who killed, who came, what was held.
                 ...(summary.story
                   ? [
@@ -837,7 +847,7 @@ async function main(): Promise<void> {
   };
 
   /** Wrap a sentence to the codex plate's width. */
-  const wrapLine = (s: string, w = 64): string[] => {
+  const wrapLine = (s: string, w = Math.min(64, screenCols - 12)): string[] => {
     const out: string[] = [];
     let line = '';
     for (const word of s.split(' ')) {
@@ -868,7 +878,7 @@ async function main(): Promise<void> {
         'towers upgrade in either/or tiers - each fork is two jobs, never two numbers.',
         'refineries on gold veins mine Ore, by tier; every 2nd wave, once the board is quiet, offers a relic - rules, not numbers; some relics are passives that work on every tower.',
         'between runs the WORKSHOP spends banked Ore on the tree: towers, relic branches, slots, threats, vein tiles. locked towers and relics stay in this codex, marked LOCKED with what opens them; wins earn the rarer relics of an open branch.',
-        'the water has business: a chest surfaces on it now and then and sinks after twelve seconds - select it and CLAIM. every reward in the game comes from one loot table, printed in the catalogue.',
+        'a chest surfaces on the water or on empty ground now and then and sinks after twelve seconds - select it and CLAIM; a rarer chest pays more. every reward in the game comes from one loot table, printed in the catalogue.',
         'a held relic is a decision: click it in the strip for its card - salvage it for Ore, or combine two of a kind into the next rarity, or two recipe partners into a fused relic. full slots ask which one a pick replaces; S skips an offer.',
         'rock hides ore and caches; prospecting opens it. R turns a laser. N calls the next wave.',
         ...CODEX.rules,
@@ -1359,7 +1369,7 @@ async function main(): Promise<void> {
       if (snap.status !== 'running' && (mode === 'playing' || mode === 'paused') && !summaryBanked) {
         summaryBanked = true;
         const tiers = snap.hud.oreTiers ?? [snap.hud.ore];
-        summary = { won: snap.status === 'won', wave: snap.hud.wave, kills: snap.hud.kills, oreBanked: snap.hud.ore, oreTiers: [...tiers], seed, story: snap.story };
+        summary = { won: snap.status === 'won', wave: snap.hud.wave, kills: snap.hud.kills, oreBanked: snap.hud.ore, oreTiers: [...tiers], seed, story: snap.story, threat: threatIdx };
         // Banked BY TIER (session 29, PR 4): a tier-2 vein pays into the tier-2 purse.
         for (let i = 0; i < meta.ore.length; i++) meta.ore[i] += tiers[i] ?? 0;
         // What the run leaves behind for the tree (session 29, PR 1): the
@@ -1409,6 +1419,7 @@ async function main(): Promise<void> {
         const ctx: TutorialCtx = {
           towers: snap.board.towers?.length ?? 0, wave: snap.hud.wave, relics: snap.hud.relicCount, offerUp: snap.offer !== null,
           selected, selectedBuildable: snap.board.selectedBuildable === true, towerSelected: snap.hud.selectedTower !== null && snap.hud.selectedTower !== undefined, next: tutNextPressed,
+          upgrades: (snap.board.towers ?? []).filter((t) => (t.choices?.[0] ?? -1) >= 0).length,
         };
         tutNextPressed = false;
         const advanced = nextStep(tutStep, ctx);
@@ -1521,6 +1532,9 @@ async function main(): Promise<void> {
     chests: () => debug('chests'),
     surfaceChest: (x: number, y: number, rarity = 0) => debug('surfaceChest', x, y, rarity),
     killAll: () => debug('killAll'),
+    choose: (x: number, y: number, tier: number, option: number) => debug('choose', x, y, tier, option),
+    sell: (x: number, y: number) => debug('sell', x, y),
+    stats: (x: number, y: number) => debug('stats', x, y),
     claimChest: (x: number, y: number) => debug('claimChest', x, y),
     lootLog: () => debug('lootLog'),
     openRelic: (index: number | null): void => { selectedRelic = index; },
@@ -1541,6 +1555,7 @@ async function main(): Promise<void> {
     enemies: () => debug('enemies'),
     replay: () => debug('replay'),
     hudText: (): string => hudTerm.toText(),
+    tutorial: (): { step: number; id: string | null; target: ReturnType<typeof tutorialTarget> } => ({ step: tutStep, id: TUTORIAL_STEPS[tutStep]?.id ?? null, target: tutorialTarget() }),
     boardText: (): string => term.toText(),
     stripText: (): string => stripTerm.toText(),
     select: (x: number, y: number): void => { selected = { x, y }; },

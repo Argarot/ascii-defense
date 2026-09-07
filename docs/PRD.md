@@ -1445,13 +1445,15 @@ new player. Daniil's ask: a tutorial that walks the player through the key
 mechanics with **the expected sequence of things to pay attention to
 highlighted in a coloured box that pulses**, changing size a bit.
 
-**Built (session 31, PR 1).** A first run is Calm. Twelve steps, each a
-target, a sentence in the column and an end: the Core; an entry; a good
-ground cell (ends when the player selects ground); the Bolt's button (ends
-on the first tower); the tower's card; Scrap and Ore; CALL WAVE (ends on
-wave 1); the strip's NOW and NEXT (ends on wave 2); the offer (ends on the
-first relic, or wave 3 with no offer up); the Core's slots; a rock; the
-end. The target is a yellow box-drawn outline on the terminal it lives on
+**Built (session 31, PR 1; the upgrade step in PR 6).** A first run is
+Calm. Thirteen steps, each a target, a sentence in the column and an end:
+the Core; an entry; a good ground cell by the Core, where every road ends
+(ends when the player selects ground); the Bolt's button (ends on the
+first tower); the tower's card; Scrap and Ore; CALL WAVE (ends on wave 1);
+the strip's NOW and NEXT (ends on wave 2); the offer (ends on the first
+relic, or wave 3 with no offer up); the Core's slots; **a fork** (ends on
+the first upgrade, or wave 6 - the live probe's plain Bolts died at wave 8
+and its forked ones held Calm without a breach); a rock; the end. The target is a yellow box-drawn outline on the terminal it lives on
 - the board, the column, the strip, the offer - one glyph wider on the
 pulse's other half (sideways only on a panel, so it never eats a line of
 text). Look-steps end on NEXT or Enter; SKIP ends the tutorial; a late

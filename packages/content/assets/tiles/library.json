@@ -118,6 +118,7 @@
     },
     {
       "id": "gen_ns_2",
+      "name": "Double Step",
       "special": true,
       "cells": [
         "F--7G",
@@ -133,6 +134,7 @@
     },
     {
       "id": "gen_ns_3",
+      "name": "Hump",
       "special": true,
       "cells": [
         "GGGGG",
@@ -148,6 +150,7 @@
     },
     {
       "id": "gen_ne_1",
+      "name": "Jogged Elbow",
       "special": true,
       "cells": [
         "GGGGG",
@@ -163,6 +166,7 @@
     },
     {
       "id": "gen_ne_3",
+      "name": "Staircase",
       "cells": [
         "GGGGG",
         "GGGGG",
@@ -173,6 +177,7 @@
     },
     {
       "id": "gen_ne_4",
+      "name": "Loop",
       "special": true,
       "cells": [
         "F--7G",

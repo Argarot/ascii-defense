@@ -712,6 +712,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'chests': result = s.voidChests.map((c) => ({ x: c.x, y: c.y, left: c.until - s.tickCount, rarity: RARITIES[c.rarity] })); break;
           case 'surfaceChest': result = s.debugSurfaceChest(args[0] as number, args[1] as number, (args[2] as number | undefined) ?? 0); break; // not a recorded input
           case 'killAll': result = s.debugKillAll(); break; // not a recorded input
+          case 'choose': result = s.chooseTier(args[0] as number, args[1] as number, args[2] as number, args[3] as number); break;
+          case 'sell': result = s.sellTower(args[0] as number, args[1] as number); break;
+          case 'stats': { const t = s.towerAt(args[0] as number, args[1] as number); result = t ? { ...s.stats(t), choices: [...t.choices], kills: t.kills } : null; break; }
           case 'claimChest': result = s.claimChest(args[0] as number, args[1] as number); break;
           case 'lootLog': result = [...s.lootLog]; break;
           case 'grant': result = s.debugGrantRelic(args[0] as string); break; // not a recorded input: replays diverge

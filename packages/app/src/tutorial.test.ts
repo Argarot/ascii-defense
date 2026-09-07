@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { TUTORIAL_STEPS, goodGround, nearRock, nextStep, type TutorialCtx } from './tutorial';
 
-const ctx = (over: Partial<TutorialCtx> = {}): TutorialCtx => ({ towers: 0, wave: 0, relics: 0, offerUp: false, selected: null, selectedBuildable: false, towerSelected: false, next: false, ...over });
+const ctx = (over: Partial<TutorialCtx> = {}): TutorialCtx => ({ towers: 0, wave: 0, relics: 0, offerUp: false, selected: null, selectedBuildable: false, towerSelected: false, upgrades: 0, next: false, ...over });
 
 describe('the tutorial', () => {
   it('walks the steps in order: NEXT ends one look-step; actions end the action steps', () => {
@@ -15,6 +15,7 @@ describe('the tutorial', () => {
     expect(nextStep(1, ctx({ next: true }))).toBe(2);
     expect(nextStep(2, ctx({ next: true }))).toBe(2); // the ground step wants a selection, not NEXT
     expect(nextStep(2, ctx({ selectedBuildable: true }))).toBe(3);
+    expect(nextStep(2, ctx({ towers: 1 }))).toBe(4); // built between two frames: the ground step lets go too
     expect(nextStep(3, ctx({ towers: 1 }))).toBe(4);
     expect(nextStep(4, ctx({ towers: 1 }))).toBe(4);
     expect(nextStep(4, ctx({ towers: 1, next: true }))).toBe(5);
@@ -26,8 +27,12 @@ describe('the tutorial', () => {
     // A player who skipped the offer is not stuck: wave 3 with no offer up moves on.
     expect(nextStep(8, ctx({ wave: 3 }))).toBe(9);
     expect(nextStep(9, ctx({ next: true }))).toBe(10);
-    expect(nextStep(10, ctx({ next: true }))).toBe(11);
-    expect(nextStep(11, ctx({ next: true }))).toBe(TUTORIAL_STEPS.length);
+    // The upgrade step wants a fork taken, not NEXT; a player who never forks is let go at wave 6.
+    expect(nextStep(10, ctx({ next: true, wave: 3 }))).toBe(10);
+    expect(nextStep(10, ctx({ upgrades: 1 }))).toBe(11);
+    expect(nextStep(10, ctx({ wave: 6 }))).toBe(11);
+    expect(nextStep(11, ctx({ next: true }))).toBe(12);
+    expect(nextStep(12, ctx({ next: true }))).toBe(TUTORIAL_STEPS.length);
     // A late joiner: a player who already built and called catches up in one frame, stopping at the first look-step.
     expect(nextStep(2, ctx({ selectedBuildable: true, towers: 2, wave: 1 }))).toBe(4);
   });

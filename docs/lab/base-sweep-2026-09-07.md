@@ -78,3 +78,22 @@ changes, then the numbers:
 - **Not read here**: relics in the base world (the lab grants none in this
   sweep), Grim, the tower nodes' effect on a second run - the tree sweep's
   MID row is the nearest.
+
+## Addendum - the live board (session 31, PR 6)
+
+The lab's 7x5 board is not the app's: the live Calm map (31x20 cells, seven
+entries on average - the threat's roll is a floor, the carve fills the board
+to nine tenths road, D28) was played through the debug handle three times:
+
+| build | placement | forks | outcome |
+|---|---|---|---|
+| three Bolts, more as Scrap came, no forks | the first buildable cells (far from the Core) | none | the Core fell at wave 7-8; 200-400 Scrap unspent |
+| fourteen Bolts | by the Core | none | fell at wave 13; 1,864 Scrap unspent |
+| eight Bolts | by the Core | every fork, first option | **held fifteen, no breach**; 2,100 Scrap unspent |
+
+What it says: the curve holds for a player who builds where the roads
+meet and spends Scrap on forks; the early losses were placement and an
+unspent purse. So the tutorial's ground step now names the Core's ground
+("where every road ends, sees every front") and a fork step was added
+(ends on the first upgrade). The unspent Scrap at wave 15 says Calm's late
+economy outgrows a Bolt-only build - not a problem for a first run.
