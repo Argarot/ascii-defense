@@ -31,6 +31,7 @@ import {
   type RelicDef,
   type TowerDef,
   resolveUnlocks,
+  relicApplies,
   type TreeDef,
 } from '@ascii-defense/engine';
 
@@ -273,7 +274,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   // The tree decides the world (session 29, PR 6), the way the worker does it.
   const unlocked = content.tree && spec.unlocks ? resolveUnlocks(content.tree, { unlocks: spec.unlocks, earned: [], forged: {} }, content.relicDefs) : null;
   const towerDefs = unlocked ? content.towerDefs.filter((d) => unlocked.towers.has(d.id)) : content.towerDefs;
-  const relicDefs = unlocked ? content.relicDefs.filter((d) => unlocked.relics.has(d.id)) : content.relicDefs;
+  const relicDefs = (unlocked ? content.relicDefs.filter((d) => unlocked.relics.has(d.id)) : content.relicDefs).filter((d) => relicApplies(d, towerDefs.map((t) => t.id)));
   content = { ...content, towerDefs, relicDefs };
   const sim = new Sim(spec.seed, {
     cells,

@@ -171,6 +171,19 @@ export function relicForWin(tree: TreeDef, meta: MetaState, relicDefs: readonly 
   return pool[h % pool.length];
 }
 
+/**
+ * Does this relic do anything in a run with these towers? A relic whose
+ * only effect touches a tower kind (Grounding Rod's arcs, Overclock's beam,
+ * Wide Aura's aura, Kindling's burn) is a dead pick in a run without that
+ * tower; the worker and the lab leave it out of the run's pool (session
+ * 31, PR 7; the register's "relic offers weighted by applicability").
+ */
+export function relicApplies(def: { needsTower?: readonly string[] }, towerIds: Iterable<string>): boolean {
+  if (!def.needsTower || def.needsTower.length === 0) return true;
+  const have = new Set(towerIds);
+  return def.needsTower.some((t) => have.has(t));
+}
+
 /** The nodes of one branch, in content order. */
 export function branchNodes(tree: TreeDef, branch: TreeNode['branch']): TreeNode[] {
   return tree.nodes.filter((n) => n.branch === branch);

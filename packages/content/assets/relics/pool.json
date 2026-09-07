@@ -460,6 +460,7 @@
     },
     {
       "id": "kindling",
+      "needsTower": ["laser"],
       "name": "Kindling",
       "kind": "passive",
       "rarity": "rare",
@@ -585,6 +586,7 @@
     },
     {
       "id": "grounding_rod",
+      "needsTower": ["tesla"],
       "name": "Grounding Rod",
       "kind": "passive",
       "rarity": "common",
@@ -1045,6 +1047,7 @@
     },
     {
       "id": "overclock",
+      "needsTower": ["laser"],
       "name": "Overclock",
       "kind": "passive",
       "rarity": "rare",
@@ -1070,6 +1073,7 @@
     },
     {
       "id": "wide_aura",
+      "needsTower": ["bastion"],
       "name": "Wide Aura",
       "kind": "passive",
       "rarity": "rare",

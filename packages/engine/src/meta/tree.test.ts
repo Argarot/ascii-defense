@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_UNLOCKS, EMPTY_META, buyNode, buyTile, everyShopTile, priceTile, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
+import { ALL_UNLOCKS, EMPTY_META, buyNode, buyTile, everyShopTile, priceTile, relicApplies, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
 
 const TREE: TreeDef = {
   base: { towers: ['bolt'], relics: ['tithe'], relicSlots: 6, threat: 1, tileSlots: 1, oreTier: 1, tiles: ['twin'] },
@@ -114,5 +114,14 @@ describe('priceTile (session 30, PR 2)', () => {
     expect(priceTile({ cells: g('GGGGG', 'GGGGG', '-----', 'GGGGG', 'GGGGG') })).toEqual({ tier: 1, ore: 20 });
     expect(priceTile({ cells: g('GGGGG', 'GGOGG', 'GGGGG', 'GGGGG', 'GGGGG'), deposits: [{ amount: 60, tier: 2 }] })).toEqual({ tier: 1, ore: 20 });
     expect(priceTile({ cells: g('GGGGG', 'GGOGG', 'GGGGG', 'GGGGG', 'GGGGG'), deposits: [{ amount: 90, tier: 3 }], boons: [{ tier: 2 }] })).toEqual({ tier: 2, ore: 41 });
+  });
+});
+
+describe('applicable relics (session 31, PR 7)', () => {
+  it('a relic that only touches a tower kind is out of a run without that tower', () => {
+    expect(relicApplies({ needsTower: ['tesla'] }, ['bolt', 'mortar'])).toBe(false);
+    expect(relicApplies({ needsTower: ['tesla'] }, ['bolt', 'tesla'])).toBe(true);
+    expect(relicApplies({ needsTower: ['laser', 'missile'] }, ['missile'])).toBe(true); // any one of them
+    expect(relicApplies({}, [])).toBe(true); // a relic for every world
   });
 });

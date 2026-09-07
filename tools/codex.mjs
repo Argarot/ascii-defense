@@ -88,10 +88,12 @@ function enemyRows() {
     mul(e.resist?.kinetic), mul(e.resist?.energy), (e.traits ?? []).join(', '),
   ]);
 }
-const fx = (e) => Object.entries(e ?? {}).map(([k, v]) => `${k} ${v}`).join(', ');
+const fx = (e) => Object.entries(e ?? {}).map(([k, v]) => `${k} ${v !== null && typeof v === 'object' ? '{' + fx(v) + '}' : v}`).join(', ');
+/** A relic's text, with the tower it needs (session 31, PR 7): the run's pool leaves it out without that tower. */
+const needsText = (r) => (r.needsTower?.length ? ` Needs the ${r.needsTower.map((id) => towers.find((t) => t.id === id)?.name ?? id).join(' or ')} in the run.` : '');
 function relicRows() {
   return relics.map((r) => [
-    `**${r.name}**`, r.id, r.fusionOnly ? `${r.kind} (fusion only)` : r.kind, r.rarity, (r.tags ?? []).join(' '), r.stackable ? 'yes' : '', r.cooldownTicks ? `${n(r.cooldownTicks / TICK_HZ)} s` : '', r.desc ?? '',
+    `**${r.name}**`, r.id, r.fusionOnly ? `${r.kind} (fusion only)` : r.kind, r.rarity, (r.tags ?? []).join(' '), r.stackable ? 'yes' : '', r.cooldownTicks ? `${n(r.cooldownTicks / TICK_HZ)} s` : '', (r.desc ?? '') + needsText(r),
     fx(r.effects),
     r.tiers?.rare ? `${r.tiers.rare.desc ?? ''} [${fx(r.tiers.rare.effects)}]` : 'same',
     r.tiers?.epic ? `${r.tiers.epic.desc ?? ''} [${fx(r.tiers.epic.effects)}]` : 'same',
@@ -274,7 +276,7 @@ function codexTs() {
       tags: r.tags ?? [],
       stacks: r.stackable === true,
       recharge: r.cooldownTicks ? `${n(r.cooldownTicks / TICK_HZ)} s` : '',
-      desc: r.desc ?? '',
+      desc: (r.desc ?? '') + needsText(r),
       rare: r.tiers?.rare?.desc ?? '',
       epic: r.tiers?.epic?.desc ?? '',
       legendary: r.tiers?.legendary?.desc ?? '',
