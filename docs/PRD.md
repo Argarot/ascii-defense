@@ -982,6 +982,12 @@ grunt, ×1.5 for a juggernaut) - the ×6 juggernaut at wave 10 was a wall no
 base-world build passed. The reference line now holds Calm's fifteen on
 every seed; a plain Bolt builder on half.
 
+**A wave has a ceiling of sixty bodies** (`countMax`, session 31): the count
+grows linearly and an endless run past wave 40 composed waves of 160 that
+took longer to walk in than the clock between them; past the ceiling the
+ramp is the hp curve's alone. And **a body the slot cap refuses waits in
+the queue** instead of vanishing (a dropped body was a free wave).
+
 **Boss waves** come every fifth wave **and on the final wave, by rule**: one
 boss — the heaviest enemy unlocked, scaled up in health, bounty and Core
 damage — behind a normal escort. *(The former elite surge happened to land

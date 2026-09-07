@@ -118,6 +118,13 @@ export interface DifficultySpec {
    * about the answer to armour. 0 or absent on Standard and Grim.
    */
   unlockDelay?: number;
+  /**
+   * The most bodies one wave may hold (session 31): the count grows
+   * linearly and an endless run past wave 40 was composing waves of 160
+   * that took longer to walk in than the clock between them. Past the
+   * ceiling the ramp is the hp curve's alone. Absent = no ceiling.
+   */
+  countMax?: number;
 }
 
 /**
@@ -145,7 +152,8 @@ export function waveHpScale(d: DifficultySpec, wave: number): number {
 export function waveCount(d: DifficultySpec, wave: number): number {
   let geo = 1;
   for (let i = 1; i < wave; i++) geo *= d.countGeometric;
-  return Math.max(1, Math.round((d.countBase + d.countLinear * (wave - 1)) * geo));
+  const n = Math.max(1, Math.round((d.countBase + d.countLinear * (wave - 1)) * geo));
+  return d.countMax !== undefined ? Math.min(d.countMax, n) : n;
 }
 
 /**
@@ -2094,13 +2102,21 @@ export class Sim {
       const boss = (q & BOSS_QUEUE_FLAG) !== 0;
       // Swarm (traits.ts): one queue entry, a pack of bodies from one entry.
       const pack = hasTrait(this.opts.enemyDefs[defIdx], 'swarm') ? TRAIT_RULES.swarm.packSize : 1;
-      for (let n = 0; n < pack; n++) this.spawn(entry, defIdx, boss);
+      for (let n = 0; n < pack; n++) {
+        if (this.spawn(entry, defIdx, boss)) continue;
+        // Every slot taken (an endless run's firehose): the body waits in the
+        // queue for the next tick rather than vanishing - a dropped body was
+        // a free wave nobody had paid for (session 31).
+        if (n === 0) this.spawnQueue.unshift(q);
+        break;
+      }
     }
   }
 
-  private spawn(entry: CellRef, defIdx: number, boss = false): void {
+  /** Spawns one body; false when every slot is taken (session 31: the caller keeps the body for a later tick instead of losing it). */
+  private spawn(entry: CellRef, defIdx: number, boss = false): boolean {
     const i = this.freeEnemies.pop() ?? (this.enemyHigh < ENEMY_CAP ? this.enemyHigh++ : -1);
-    if (i === -1) return;
+    if (i === -1) return false;
     const def = this.opts.enemyDefs[defIdx];
     this.alive[i] = 1;
     this.gen[i]++;
