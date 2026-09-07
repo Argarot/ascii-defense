@@ -11,9 +11,9 @@
  */
 import type { TermSurface } from '@ascii-defense/render';
 import type { Sprite } from '@ascii-defense/content';
-import { drawSpriteFrame } from '../board/sprites';
+import { drawRelicPlate, RELIC_PLATE_W } from '../board/relicPlate';
 import { FACING_NAME, PRIORITIES, type Priority } from '@ascii-defense/engine';
-import { role } from '../palette';
+import { role, rarityRole } from '../palette';
 
 export interface HudChoiceInfo {
   name: string;
@@ -119,7 +119,7 @@ export interface HudState {
   /** The Core card, when a Core cell is selected. */
   core: HudCoreInfo | null;
   /** The opened held relic (session 28, PR 3): salvage, combine, how often it fired. */
-  relicCard?: { index: number; name: string; rarity: string; kind: string; tags: readonly string[]; desc: string; uses: number; salvageOre: number; combine: readonly { with: number; withName: string; result: string }[] } | null;
+  relicCard?: { index: number; name: string; rarity: string; kind: string; id?: string; tags: readonly string[]; desc: string; uses: number; salvageOre: number; combine: readonly { with: number; withName: string; result: string }[] } | null;
   /** The cache card, when an unopened cache is selected (PRD sec 4.6): its source. */
   cache: { source: string } | null;
   /** The chest card, when a surfaced void chest is selected (PRD sec 4.9): seconds before it sinks. */
@@ -182,9 +182,7 @@ export interface HudRelicSlot {
 export const RELIC_PULSE_TICKS = 8;
 
 /** The frame role for a rarity; common has none (the slot's own plate). */
-export function rarityRole(r: string | undefined): string | null {
-  return r === 'rare' ? 'rarity.rare' : r === 'epic' ? 'rarity.epic' : r === 'legendary' ? 'rarity.legendary' : null;
-}
+export { rarityRole } from '../palette';
 
 export interface HudCoreInfo {
   hp: number;
@@ -315,6 +313,11 @@ export class HudPanel {
         this.contentH = Math.max(this.contentH, y2);
         raw.put(x, y2 - this.scroll, ch, fg, bg);
       },
+      tint: (x: number, y2: number, c: string): void => { raw.tint(x, y2 - this.scroll, c); },
+      shade: (x: number, y2: number, mul: number, add?: number): void => { raw.shade(x, y2 - this.scroll, mul, add); },
+      clear: (bg?: string): void => raw.clear(bg),
+      has: (ch: string): boolean => raw.has(ch),
+      toText: (): string => raw.toText(),
       flush: (): void => raw.flush(),
     };
     const term = shim;
@@ -345,7 +348,7 @@ export class HudPanel {
       const rl = `RELICS ${s.relicCount}`;
       term.write(W - rl.length, 7, rl, role('ui.accent'));
     }
-    term.write(0, 8, `kills ${s.kills} \u2802 road L=${s.L}`, role('ui.dim'));
+    term.write(0, 8, `kills ${s.kills} \u2802 road ${s.L} cells`, role('ui.dim'));
     // ---- the next wave, and the CALL button -------------------------------
     // What is coming is shown before it comes (item 11): counts by kind,
     // the fronts, and BOSS when one rides behind the escort. The button
@@ -496,7 +499,9 @@ export class HudPanel {
       // ---- the opened relic (session 28, PR 3): salvage, combine, how often it fired ----
       const c = s.relicCard;
       const rr = rarityRole(c.rarity);
-      term.write(0, y++, c.name.toUpperCase().slice(0, W), rr ? role(rr) : role('ui.accent'));
+      // The opened relic's plate at the card's right (session 31): the same ring the strip shows.
+      drawRelicPlate(term, c.id ? this.sprites.get(`relic_${c.id}`) : undefined, W - RELIC_PLATE_W, y, { rarity: c.rarity, kind: c.kind === 'active' ? 'active' : c.kind === 'consumable' ? 'consumable' : 'passive', plate: role('ui.grid'), fg: role('ui.text'), label: c.name.slice(0, 2).toUpperCase() });
+      term.write(0, y++, c.name.toUpperCase().slice(0, W - RELIC_PLATE_W - 1), rr ? role(rr) : role('ui.accent'));
       term.write(0, y++, [c.rarity, c.kind, c.tags.length ? c.tags.join(' ') : ''].filter(Boolean).join('  \u2802  ').slice(0, W), role('ui.dim'));
       for (const line of this.wrapText(c.desc, W).slice(0, 5)) term.write(0, y++, line, role('ui.text'));
       term.write(0, y++, c.uses > 0 ? `its rule fired ${c.uses} time${c.uses === 1 ? '' : 's'}` : 'its rule has not fired yet', role('ui.dim'));
@@ -529,65 +534,10 @@ export class HudPanel {
         term.write(0, y++, 'in the strip below', role('ui.dim'));
         return this.finish(term, s);
       }
-      term.write(0, y++, 'RELIC SLOTS', role('ui.dim'));
-      // Stone Story-style grid: empty slots render as empty boxes - what you
-      // COULD hold is as visible as what you do (Daniil). SQUARE slots
-      // (playtest 8): 5 glyphs x 3 rows is 50x48 px at panel scale - an
-      // inventory reads as an inventory only if the cells do. The middle row
-      // carries the tag, the bottom the state; board-scale relic ART fills
-      // these at the art pass (6.7).
-      const perRow = 6;
-      const slotW = 5;
-      const slotH = 3;
-      c.slots.forEach((slot, i) => {
-        const x0 = (i % perRow) * slotW;
-        const rowBase = y + Math.floor(i / perRow) * slotH;
-        const [fg, bg] =
-          slot.state === 'empty'
-            ? [role('ui.grid'), role('ui.bg')]
-            : slot.state === 'ready'
-              ? [role('ui.bg'), role('ui.accent')]
-              : slot.state === 'cooling'
-                ? [role('ui.dim'), role('ui.grid')]
-                : slot.state === 'consumable'
-                  ? [role('ui.bg'), role('terrain.ore.lit')]
-                  : [role('ui.text'), role('ui.grid')]; // passive
-        for (let r = 0; r < slotH; r++)
-          for (let cx = 0; cx < slotW - 1; cx++) term.put(x0 + cx, rowBase + r, ' ', fg, bg);
-        if (slot.state === 'empty') {
-          // An empty box is drawn as its outline, not painted absence.
-          term.put(x0, rowBase, '┌', fg); term.put(x0 + 3, rowBase, '┐', fg);
-          term.put(x0, rowBase + 2, '└', fg); term.put(x0 + 3, rowBase + 2, '┘', fg);
-        } else {
-          const rsp = slot.id ? this.sprites.get(`relic_${slot.id}`) : undefined;
-          if (rsp) drawSpriteFrame(term, rsp, rsp.states[''], x0, rowBase, slot.state === 'cooling' ? { flatFg: 'ui.dim' } : { transparent: true });
-          else term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, bg);
-          if (slot.state === 'cooling') {
-            term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, bg);
-          }
-          // Rarity with teeth (session 28, PR 2): a rare or epic copy wears its frame corners.
-          const rr = rarityRole(slot.rarity);
-          if (rr) { term.put(x0, rowBase, '┌', role(rr), bg); term.put(x0 + 3, rowBase, '┐', role(rr), bg); term.put(x0, rowBase + 2, '└', role(rr), bg); term.put(x0 + 3, rowBase + 2, '┘', role(rr), bg); }
-          // The rule just fired (session 28, PR 3): the plate flashes.
-          if (slot.firedAgo !== undefined && slot.firedAgo >= 0 && slot.firedAgo < RELIC_PULSE_TICKS) { const fl = role('fx.flash'); term.put(x0, rowBase, '*', role('ui.bg'), fl); term.put(x0 + 3, rowBase, '*', role('ui.bg'), fl); term.put(x0, rowBase + 2, '*', role('ui.bg'), fl); term.put(x0 + 3, rowBase + 2, '*', role('ui.bg'), fl); }
-          for (let r = 0; r < slotH; r++) {
-            this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
-          }
-        }
-      });
-      y += Math.ceil(c.slots.length / perRow) * slotH + 1;
-      // Channel C (PRD sec 7.3): spend banked Ore on a blind draw.
-      const drawLabel = `DRAW RELIC  ${c.drawCost} ore`;
-      this.button(0, y, W - 6, drawLabel, c.canDraw ? role('ui.bg') : role('ui.dim'), c.canDraw ? role('terrain.ore.lit') : role('ui.grid'));
-      if (c.canDraw) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'coreDraw' } });
-      y += 2;
-      if (c.hoverDesc) {
-        for (const line of this.wrap(c.hoverDesc, W, 4)) term.write(0, y++, line, role('ui.text'));
-      } else {
-        term.write(0, y++, 'hover a slot for details;', role('ui.dim'));
-        term.write(0, y++, 'click actives to fire,', role('ui.dim'));
-        term.write(0, y++, 'consumables to use', role('ui.dim'));
-      }
+      // The strip has owned the slots since 4.27 and the worker always sends
+      // the Core card; the column's own slot grid (session 31: dead since
+      // then, two drawings of one thing) is gone.
+      return this.finish(term, s);
     } else if (s.selectedTower) {
       const t = s.selectedTower;
       term.write(0, y++, t.name, role('ui.accent'));

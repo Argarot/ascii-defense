@@ -6,7 +6,7 @@ CORE 41/50
 =======================
 
 WAVE 4/20             RELICS 2
-kills 37 ⠂ road L=122
+kills 37 ⠂ road 122 cells
 wave 5 ⠂ 2 fronts ⠂ BOSS
 9 grunt, 2 brute
  CALL WAVE 5 +23 scrap

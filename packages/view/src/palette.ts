@@ -75,3 +75,8 @@ export function role(name: string): string {
   if (!c) throw new Error(`palette role missing: ${name}`);
   return c;
 }
+
+/** The palette role a rarity wears, or null for common (moved here from the HUD in session 31 so every surface may read it without a cycle). */
+export function rarityRole(r: string | undefined): string | null {
+  return r === 'rare' ? 'rarity.rare' : r === 'epic' ? 'rarity.epic' : r === 'legendary' ? 'rarity.legendary' : null;
+}
