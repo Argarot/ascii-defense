@@ -994,7 +994,7 @@ Ore buys a tech tree, staged and gated behind the core loop being fun.
 
 | Stage | Grants | When |
 |---|---|---|
-| 1 | ~5 nodes: a tower, a starting relic, **+1 terrain tile unlock**, **+relic pool unlocks**, Threat Level 2 | M3 |
+| 1 | ~5 nodes: a tower, a starting relic, **+1 terrain tile unlock**, **+relic pool unlocks**, Threat Level 2 | **shipped as 24 nodes, session 29** (PRs #168–#173; "Built" below) |
 | 2 | Full tree: five disciplines, alternate tier-5s, capped economy nodes, **terrain tile pool expansion**, **the bulk of the relic pool** | M4+ |
 | 3 | Potency nodes — permanent stat increases | optional |
 

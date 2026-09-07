@@ -13,22 +13,26 @@ victory or death, and coasting is death.
 
 ▶ **[Play the current build](https://argarot.github.io/ascii-defense/)** ·
 ▶ **[Tile Smith](https://argarot.github.io/ascii-defense/tilesmith.html)**
-(author your own terrain tiles — mint them as **specials**, then load up to
-**five** in run setup: a loaded tile is guaranteed on the map. Tiles whose
-roads touch without merging, or carry two separate roads, are specials by
-law — they appear only when you chose them)
+(author your own terrain tiles — mint them as **specials**, then load them in
+run setup, as many as the tree's slots allow — one to start, five at the
+top: a loaded tile is guaranteed on the map. Tiles whose roads touch
+without merging, carry two separate roads, or carry a richer vein, are
+specials by law — they appear only when you chose them. The link under the
+board opens only once every tile the workshop sells is yours)
 
 Add `?seed=12345` to pin a world, `?threat=0|1|2` for Calm / Standard / Grim.
 A seed determines the whole run **for a given loadout**; the pause and
 summary screens show a copyable **run code** (generator version + seed +
-threat + loadout). The save file carries the generated map itself, so
-resuming never re-rolls the world — a save doubles as an exact replay.
+threat + loadout + the tree state the run started under). The save file
+carries the generated map itself, so resuming never re-rolls the world — a
+save doubles as an exact replay.
 
 ## What a run looks like
 
-0. A **title screen**: new run (pick Calm / Standard / Grim), continue a saved
-   run, settings, how to play. `Esc` pauses mid-run; a run ends on a summary
-   screen. Progress lives in this browser and can be exported to a file.
+0. A **title screen**: new run (pick a Threat the tree has opened), continue a
+   saved run, the **workshop**, settings, how to play. `Esc` pauses mid-run; a
+   run ends on a summary screen. Progress lives in this browser and can be
+   exported to a file.
 1. A generated map: the Core near the middle, winding roads to the edges, ore
    veins (finite — richness is visible as gold density), rock that may hide
    ore or relic caches, boon cells that buff whatever is built on them, and
@@ -36,15 +40,21 @@ resuming never re-rolls the world — a save doubles as an exact replay.
 2. Click ground, pick a tower: **Bolt** (homing shots), **Mortar** (ballistic
    shells — aimed at a place, they land there whether or not anyone is still
    standing on it), **Frost** (slow pulse), **Refinery** (mines Ore — on
-   veins only, until the vein runs dry). Each has 3 either/or tiers: 14
-   variants per tower, every choice final, every choice explained in words
-   before you buy it.
-3. Every third cleared wave offers a **pick-1-of-3 relic** over the live
-   board: passives that break rules (overkill chains, slowed enemies take
-   more, a toll on every enemy walking past a tower), actives fired from the
-   Core (orbital strike, board freeze), consumables (sandbags, a flashbang).
-   Multipliers stack; a rule you already hold is never dealt again. Spend
-   Ore to draw or reroll — each purchase makes the next dearer.
+   veins only, until the vein runs dry; a richer vein pays a rarer tier of
+   Ore, slower). Four more — the Tesla Coil, the Missile Rack, the Laser
+   Lance, the Bastion — are bought in the workshop. Each has 3 either/or
+   tiers: 14 variants per tower, every choice final, every choice explained
+   in words before you buy it — and the build preview shows the tower as it
+   would be on THAT cell, every modifier folded.
+3. Every second wave, once the board is quiet, offers a **pick-1-of-3 relic**
+   over the live board: passives that break rules (overkill chains, slowed
+   enemies take more, a toll on every enemy walking past a tower), actives
+   fired from the Core (orbital strike, board freeze), consumables
+   (sandbags, a flashbang). A rule you already hold is never dealt again.
+   Relics come in rarities — common, rare, epic, and a legendary reached
+   only by forging — and the **Forge** combines two of a kind into the next
+   rarity or a recipe pair into a fused relic. Spend Ore to draw or reroll —
+   each purchase makes the next dearer.
 4. Rocks are containers: **prospect** them (scrap + time; Survey refineries
    speed and automate it) to reveal ore, a sealed cache, or bare ground.
    **Caches open free**, and hold Scrap, Ore, a relic — or turn their own
@@ -52,12 +62,29 @@ resuming never re-rolls the world — a save doubles as an exact replay.
 5. **The wave clock never waits for you**: waves come on a timer from the
    last launch, you can **call the next one early** for Scrap, and the HUD
    shows what is coming before it comes. Boss waves every fifth wave and on
-   the last; the road's length is paid for in enemy health. Hold wave 20.
+   the last; the road's length is paid for in enemy health. Hold wave 20 —
+   or, once the tree grants it, play **endless**.
+6. **Between runs, the workshop.** Every run banks its Ore by tier, and the
+   tree spends it: four towers to buy, relic branches by tag (their commons
+   join the pool; their rarer relics are **earned by wins** — a rare at
+   Standard, an epic at Grim), relic slots from six to twelve, tile slots,
+   the Grim threat, endless, and tiles — road specials and the richer veins
+   whose Ore buys the higher nodes. A new player starts with four towers,
+   sixteen relics and six slots; the codex shows every locked thing and what
+   opens it. The tree owns what may appear and how much you may carry — never
+   a stat.
 
 ## Where the project is
 
 **M1 passed its gate** ("is it fun?" — yes); M2 and the product shell are under
-way. Working today: everything above, plus an **effects engine** (explosions
+way. **Session 29 (2026-09-06 night into 2026-09-07)** built the meta tree
+in eight PRs: a fix bundle from Daniil's thought dump (the Bastion's reach
+as a plus, the build preview folding every modifier, the relic offer only
+at a quiet board, chests on ground, pierce within half a cell), then the
+tree as content and as a run's identity, the workshop page, Ore by tier,
+the tile shop and the Tile Smith's door, the lab at tree states (which
+priced the nodes), and the codex with locked entries, undiscovered fusions
+and the legendary lane. Working today: everything above, plus an **effects engine** (explosions
 with shockwaves, projectile trails, drifting terrain, void-as-water, tower idle
 frames — all of it respecting reduced motion, none of it able to touch the
 simulation), the **sim running in a Web Worker** so a hidden tab keeps playing,
@@ -126,7 +153,9 @@ two idle frames) and cobbled roads (four variations, picked by position) are
 on the board through a sprite format that keys art by upgrade path. The
 variant sweep in `docs/lab/` measures every path; three forks still lose.
 
-**Not built yet**: damage-type resistances, relic fusion, onboarding, art.
+**Not built yet**: the Tile Smith as a page of the shell (the tool still
+lives on its own page), the menus at Stone-Story quality, full keyboard
+operation, art beyond the approved pack.
 The roadmap runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the
 checklist is [docs/WBS.md](docs/WBS.md).
 
