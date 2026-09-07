@@ -23,9 +23,10 @@ import type { Sprite } from '@ascii-defense/content';
 import { role } from '../palette';
 import { spriteState } from '../board/BoardView';
 import { drawSpriteFrame } from '../board/sprites';
+import { RELIC_PLATE_H, RELIC_PLATE_W, drawRelicPlate } from '../board/relicPlate';
 import { CELL_H, CELL_W } from '../board/style';
 import type { HudAction, HudState } from './HudPanel';
-import { rarityRole, RELIC_PULSE_TICKS } from './HudPanel';
+import { RELIC_PULSE_TICKS } from './HudPanel';
 
 /**
  * Rows the strip takes at the BOARD's font scale (feedback 2026-09-05 item
@@ -194,14 +195,16 @@ export class StripPanel {
       // The column already shows the Core's health; here the card is the
       // slots and the actives only (feedback 2026-09-06, item 3).
       term.write(cx, 0, `THE CORE - relics and actives ${c.slots.filter((x) => x.state !== 'empty' && x.state !== 'locked').length}/${c.relicSlots ?? c.slots.length} - click one for its card`.slice(0, cw), role('terrain.core.lit'));
-      // Square slots, one row: the HUD's grid at 5x3, as many as fit.
-      const slotW = 5;
-      const slotH = 3;
+      // Relic plates (session 30, PR 3; items 14 and 19): the 4x3 icon in a
+      // ring of its rarity's colour, corners by kind - 6x5, a gap when the
+      // strip has room for one.
+      const slotH = RELIC_PLATE_H;
+      const slotW = cw >= c.slots.length * (RELIC_PLATE_W + 1) ? RELIC_PLATE_W + 1 : RELIC_PLATE_W;
       const perRow = Math.max(1, Math.floor(cw / slotW));
       c.slots.forEach((slot, i) => {
-        if (Math.floor(i / perRow) > 0 && 2 + slotH * 2 > H - 2) return; // no room for a second row
+        if (Math.floor(i / perRow) > 0) return; // one row: what does not fit waits for a wider screen
         const x0 = cx + (i % perRow) * slotW;
-        const rowBase = 2 + Math.floor(i / perRow) * slotH;
+        const rowBase = 2;
         const [fg, sbg] =
           slot.state === 'empty' || slot.state === 'locked'
             ? [grid, bg]
@@ -212,26 +215,16 @@ export class StripPanel {
                 : slot.state === 'consumable'
                   ? [bg, role('terrain.ore.lit')]
                   : [text, grid]; // passive
-        for (let r = 0; r < slotH; r++)
-          for (let k = 0; k < slotW - 1; k++) term.put(x0 + k, rowBase + r, ' ', fg, sbg);
-        if (slot.state === 'empty') {
-          term.put(x0, rowBase, '┌', fg); term.put(x0 + 3, rowBase, '┐', fg);
-          term.put(x0, rowBase + 2, '└', fg); term.put(x0 + 3, rowBase + 2, '┘', fg);
-        } else if (slot.state === 'locked') {
-          // A slot the tree has not granted yet (session 29, PR 1): a dim cross, no frame - the ladder is visible.
-          term.put(x0 + 1, rowBase + 1, 'x', dim); term.put(x0 + 2, rowBase + 1, 'x', dim);
-        } else {
-          const rsp = slot.id ? this.sprites.get(`relic_${slot.id}`) : undefined;
-          if (rsp) drawSpriteFrame(term, rsp, rsp.states[''], x0, rowBase, slot.state === 'cooling' ? { flatFg: 'ui.dim' } : { transparent: true });
-          else term.write(x0 + 1, rowBase + 1, slot.label.slice(0, 2), fg, sbg);
-          if (slot.state === 'cooling') term.write(x0 + 1, rowBase + 2, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, sbg);
-          const rr = rarityRole(slot.rarity);
-          if (rr) { term.put(x0, rowBase, '┌', role(rr), sbg); term.put(x0 + 3, rowBase, '┐', role(rr), sbg); term.put(x0, rowBase + 2, '└', role(rr), sbg); term.put(x0 + 3, rowBase + 2, '┘', role(rr), sbg); }
-          // The rule just fired (session 28, PR 3): the plate flashes; the opened one is underlined.
-          if (slot.firedAgo !== undefined && slot.firedAgo >= 0 && slot.firedAgo < RELIC_PULSE_TICKS) for (let r = 0; r < slotH; r++) for (let k = 0; k < slotW - 1; k++) term.tint(x0 + k, rowBase + r, role('fx.flash'));
-          if (slot.selected) for (let k = 0; k < slotW - 1; k++) term.put(x0 + k, rowBase + slotH, '^', accent);
-          for (let r = 0; r < slotH; r++) this.regions.push({ row: rowBase + r, x0, x1: x0 + slotW - 1, action: { kind: 'relic', index: i } });
-        }
+        const kind = slot.state === 'ready' || slot.state === 'cooling' ? 'active' : slot.state === 'consumable' ? 'consumable' : 'passive';
+        const rsp = slot.id ? this.sprites.get(`relic_${slot.id}`) : undefined;
+        drawRelicPlate(term, rsp, x0, rowBase, {
+          rarity: slot.rarity, kind, plate: sbg, fg, label: slot.label,
+          dimIcon: slot.state === 'cooling', selected: slot.selected,
+          flash: slot.firedAgo !== undefined && slot.firedAgo >= 0 && slot.firedAgo < RELIC_PULSE_TICKS,
+          empty: slot.state === 'empty', locked: slot.state === 'locked',
+        });
+        if (slot.state === 'cooling') term.write(x0 + 2, rowBase + 4, String(Math.min(99, slot.cooldownSec)).padStart(2), fg, sbg);
+        if (slot.state !== 'empty' && slot.state !== 'locked') for (let r = 0; r < slotH; r++) this.regions.push({ row: rowBase + r, x0, x1: x0 + RELIC_PLATE_W, action: { kind: 'relic', index: i } });
       });
       const drawRow = 2 + slotH;
       const drawLabel = ` DRAW RELIC  ${c.drawCost} ore`;

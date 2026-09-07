@@ -74,7 +74,7 @@ export interface FrameSnapshot {
   /** HudState minus phase, same reason. */
   hud: Omit<HudState, 'phase'>;
   /** A pick-1-of-3 standing over the board: the relic offer, with reroll (the passive layer folded into it 2026-09-06 evening). */
-  offer: { kind: 'relic'; title: string; cards: { name: string; kind: string; desc: string; rarity?: string }[]; wave: number; reroll?: { cost: number; can: boolean; ore: number }; /** Slots full: a pick must name the held one it replaces (session 28, PR 3). */ full: boolean } | null;
+  offer: { kind: 'relic'; title: string; cards: { id?: string; name: string; kind: string; desc: string; rarity?: string }[]; wave: number; reroll?: { cost: number; can: boolean; ore: number }; /** Slots full: a pick must name the held one it replaces (session 28, PR 3). */ full: boolean } | null;
   events: StampedSimEvent[];
   /** The sim's terrain mutations, cumulative - the view applies incrementally. */
   cellChanges: { x: number; y: number; t: string }[];

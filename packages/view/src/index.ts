@@ -17,6 +17,8 @@ export { CELL_W, CELL_H, GLYPH_PX_W, GLYPH_PX_H, drawTerrainCell, drawVoidCell }
 export { EffectsLayer } from './board/effects';
 export { MenuScreen, tileCapacity, drawFrame } from './screens/MenuScreen';
 export { SmithScreen, BRUSH_GRID, BRUSH_GLYPH, BRUSH_NAME } from './screens/SmithScreen';
+export { drawRelicPlate, RELIC_PLATE_W, RELIC_PLATE_H } from './board/relicPlate';
+export type { RelicPlateKind, RelicPlateOpts } from './board/relicPlate';
 export type { SmithState } from './screens/SmithScreen';
 export type { MenuItem, MenuSpec } from './screens/MenuScreen';
 export { isReducedMotion, setReducedMotion } from './motion';

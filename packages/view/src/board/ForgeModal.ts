@@ -10,8 +10,9 @@
 import type { Sprite } from '@ascii-defense/content';
 import type { TermSurface } from '@ascii-defense/render';
 import { role } from '../palette';
-import { drawSpriteFrame } from './sprites';
 import { rarityRole } from '../hud/HudPanel';
+import { RELIC_PLATE_H, RELIC_PLATE_W, drawRelicPlate, type RelicPlateKind } from './relicPlate';
+import { drawFrame } from '../screens/MenuScreen';
 
 export interface ForgeHeld {
   index: number;
@@ -39,8 +40,10 @@ interface Region {
   action: ForgeAction;
 }
 
-const SLOT_W = 9;
-const SLOT_H = 4;
+const SLOT_W = RELIC_PLATE_W + 2;
+const SLOT_H = RELIC_PLATE_H + 1;
+// The held row carries the SLOT state (ready/cooling for an active); the plate wants the kind.
+const kindOf = (k: string): RelicPlateKind => (k === 'active' || k === 'ready' || k === 'cooling' ? 'active' : k === 'consumable' ? 'consumable' : 'passive');
 
 export class ForgeModal {
   private regions: Region[] = [];
@@ -64,13 +67,8 @@ export class ForgeModal {
     const dim = role('ui.dim');
     const accent = role('ui.accent');
     const grid = role('ui.grid');
-    // Plate and frame.
-    for (let r = 0; r < H; r++) term.write(x0, y0 + r, ' '.repeat(W), text, bg);
-    term.write(x0, y0, '+' + '-'.repeat(W - 2) + '+', accent, bg);
-    term.write(x0, y0 + H - 1, '+' + '-'.repeat(W - 2) + '+', accent, bg);
-    for (let r = 1; r < H - 1; r++) { term.write(x0, y0 + r, '|', accent, bg); term.write(x0 + W - 1, y0 + r, '|', accent, bg); }
-    const title = 'THE FORGE - two relics in, one out';
-    term.write(x0 + Math.floor((W - title.length) / 2), y0 + 1, title, phase % 1 < 0.5 ? accent : text, bg);
+    // The plate in the menu language (session 30, PR 3): the frame, the lit band, the keys.
+    drawFrame(term, { title: 'THE FORGE - two relics in, one out', keys: [{ key: 'Esc', does: 'close' }], phase, plateW: W - 2, frameH: H, x0: x0 + 1, y0 });
     term.write(x0 + 2, y0 + 2, 'two of a kind at one rarity become the next rarity; a recipe pair becomes a fused relic.'.slice(0, W - 4), dim, bg);
     term.write(x0 + 2, y0 + 3, 'click a held relic to place it; click a slot to empty it.'.slice(0, W - 4), dim, bg);
 
@@ -84,14 +82,9 @@ export class ForgeModal {
       const py = hy + row * (SLOT_H + 1);
       if (py + SLOT_H > y0 + H - 12) return; // no room: the rest is off the plate
       const inSlot = s.picked[0] === h.index || s.picked[1] === h.index;
-      const plate = inSlot ? accent : grid;
-      for (let r = 0; r < 3; r++) for (let k = 0; k < 5; k++) term.put(px + k, py + r, ' ', text, plate);
       const sp = h.id ? this.sprites.get(`relic_${h.id}`) : undefined;
-      if (sp) drawSpriteFrame(term, sp, sp.states[''], px, py, { transparent: true });
-      else term.write(px + 1, py + 1, h.name.slice(0, 2).toUpperCase(), inSlot ? bg : text, plate);
-      const rr = rarityRole(h.rarity);
-      if (rr) { term.put(px, py, '┌', role(rr), plate); term.put(px + 4, py, '┐', role(rr), plate); term.put(px, py + 2, '└', role(rr), plate); term.put(px + 4, py + 2, '┘', role(rr), plate); }
-      term.write(px, py + 3, h.name.slice(0, SLOT_W - 1), inSlot ? accent : dim, bg);
+      drawRelicPlate(term, sp, px, py, { rarity: h.rarity, kind: kindOf(h.kind), plate: inSlot ? accent : grid, fg: inSlot ? bg : text, label: h.name.slice(0, 2).toUpperCase(), selected: inSlot });
+      term.write(px, py + RELIC_PLATE_H, h.name.slice(0, SLOT_W - 1), inSlot ? accent : dim, bg);
       this.regions.push({ x0: px, y0: py, x1: px + SLOT_W - 1, y1: py + SLOT_H, action: { kind: 'held', index: h.index } });
     });
     if (s.held.length === 0) term.write(x0 + 2, hy, 'nothing held yet - relics come from offers, caches and the DRAW button', dim, bg);
@@ -106,12 +99,11 @@ export class ForgeModal {
       for (let r = 0; r < 5; r++) term.write(sx, slotY + r, ' '.repeat(9), text, plate);
       if (h) {
         const sp = h.id ? this.sprites.get(`relic_${h.id}`) : undefined;
-        if (sp) drawSpriteFrame(term, sp, sp.states[''], sx + 2, slotY + 1, { transparent: true });
-        else term.write(sx + 3, slotY + 2, h.name.slice(0, 2).toUpperCase(), bg, plate);
+        drawRelicPlate(term, sp, sx + 1, slotY, { rarity: h.rarity, kind: kindOf(h.kind), plate, fg: bg, label: h.name.slice(0, 2).toUpperCase() });
         term.write(sx, slotY + 5, h.name.slice(0, 9), accent, bg);
         term.write(sx, slotY + 6, h.rarity ?? '', dim, bg);
       } else {
-        term.write(sx + 1, slotY + 2, 'empty', dim, plate);
+        drawRelicPlate(term, undefined, sx + 1, slotY, { plate, fg: dim, empty: true });
         term.write(sx, slotY + 5, which === 0 ? 'first' : 'second', dim, bg);
       }
       this.regions.push({ x0: sx, y0: slotY, x1: sx + 9, y1: slotY + 5, action: { kind: 'slot', slot: which } });
@@ -140,8 +132,8 @@ export class ForgeModal {
     for (let r = 0; r < 2; r++) term.write(bx, by + r, ' '.repeat(bw), can ? bg : dim, can ? accent : grid);
     term.write(bx + Math.floor((bw - label.length) / 2), by + 1, label, can ? bg : dim, can ? accent : grid);
     if (can) this.regions.push({ x0: bx, y0: by, x1: bx + bw, y1: by + 2, action: { kind: 'combine' } });
-    const close = 'CLOSE (Esc)';
-    term.write(x0 + W - close.length - 3, y0 + H - 2, close, text, grid);
-    this.regions.push({ x0: x0 + W - close.length - 3, y0: y0 + H - 2, x1: x0 + W - 3, y1: y0 + H - 1, action: { kind: 'close' } });
+    const close = ' CLOSE ';
+    term.write(x0 + W - close.length - 3, y0 + H - 3, close, text, grid);
+    this.regions.push({ x0: x0 + W - close.length - 3, y0: y0 + H - 3, x1: x0 + W - 3, y1: y0 + H - 2, action: { kind: 'close' } });
   }
 }

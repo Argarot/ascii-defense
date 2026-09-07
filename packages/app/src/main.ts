@@ -172,7 +172,7 @@ async function main(): Promise<void> {
   screenTerm.canvas.style.zIndex = '20';
   screenTerm.canvas.style.border = 'none';
   const FULLSCREEN_MODES = new Set(['title', 'setup', 'loadout', 'howto', 'settings', 'summary', 'workshop', 'history']);
-  const offerModal = new OfferModal();
+  const offerModal = new OfferModal(new Map(SPRITES.map((s) => [s.id, s])));
   // The Forge (feedback 2026-09-06 evening, item 4): its own window, two slots, one button.
   const forgeModal = new ForgeModal(new Map(SPRITES.map((s) => [s.id, s])));
   let forgeOpen = false;
@@ -180,7 +180,7 @@ async function main(): Promise<void> {
   const forgeState = (): import('@ascii-defense/view').ForgeState | null => {
     const card = snap?.hud.coreCard;
     if (!card) return null;
-    const held = card.slots.map((sl, i) => ({ index: i, name: sl.name, kind: sl.state, rarity: sl.rarity, id: sl.id })).filter((h) => h.kind !== 'empty');
+    const held = card.slots.map((sl, i) => ({ index: i, name: sl.name, kind: sl.state, rarity: sl.rarity, id: sl.id })).filter((h) => h.kind !== 'empty' && h.kind !== 'locked'); // a locked slot is not a relic (session 29)
     // A held index that vanished (salvaged, combined) leaves its slot.
     const picked: [number | null, number | null] = [forgePicked[0] !== null && held.some((h) => h.index === forgePicked[0]) ? forgePicked[0] : null, forgePicked[1] !== null && held.some((h) => h.index === forgePicked[1]) ? forgePicked[1] : null];
     const pair = picked[0] !== null && picked[1] !== null ? (card.combines ?? []).find((c) => c.a === picked[0] && c.b === picked[1]) : undefined;

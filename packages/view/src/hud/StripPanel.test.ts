@@ -99,12 +99,14 @@ describe('the strip as text', () => {
     const text = term.toText().split('\n');
     // The orbital's own art (whatever pack ships it): its middle row, trimmed, marks the slot.
     const orArt = SPRITES[2].states[''].art[1].trim();
-    const orRow = text.findIndex((l) => l.includes(orArt));
+    // Searched from the Core card's column: the plates (session 30) sit a row lower, where a button's art may share a row.
+    const coreX = text[0].indexOf('THE CORE');
+    const orRow = text.findIndex((l) => l.indexOf(orArt, coreX) >= 0);
     expect(orRow, 'the orbital icon row').toBeGreaterThanOrEqual(0);
-    const orX = text[orRow].indexOf(orArt) - 1;
+    const orX = text[orRow].indexOf(orArt, coreX) - 1;
     expect(orX).toBeGreaterThan(0);
     expect(strip.actionAt(orX * 5, orRow * 8)).toEqual({ kind: 'relic', index: 0 });
-    expect(strip.actionAt((orX + 5 * 3 + 1) * 5, orRow * 8)).toBeNull();
+    expect(strip.actionAt((orX + 7 * 3 + 2) * 5, orRow * 8)).toBeNull();
     // The draw plate, when affordable.
     const drawRow = text.findIndex((l) => l.includes('DRAW RELIC'));
     expect(drawRow).toBeGreaterThan(0);

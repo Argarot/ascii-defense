@@ -653,6 +653,7 @@ is the same mistake as authoring sprites before the animation engine.)*
   - [x] 7.9.5 *(PR #172; docs/lab/build-sweep-2026-09-06-tree.md)* **The lab at tree states**: `unlocks` in LabSpec with the content's tree, a producer at 'vein', the purse in the report; the sweep at base / mid / everything (13.5 / 11.3 / 26.3); a base run banks ~22 tier-1 Ore, which priced the nodes (the arsenal 105: about five base runs).
   - [x] 7.9.6 *(PR #173)* **The codex with locked entries** (9.15) and discovered fusions (9.23).
   - [x] 7.10.1 *(session 30, PR #175)* **The menu language**: framed plates, a lit title band, columns that wrap, links, key hints, tones; the workshop drawn as a tree.
+  - [x] 7.10.3 *(session 30, PR #177)* **The relic surfaces in the language**: the relic plate (9.14, 9.19) in the strip, the Forge and the offer; the Forge and the offer cards framed like every page.
   - [x] 7.10.2 *(session 30, PR #176)* **The Tile Smith as a page** (7.5's first half): the editor on the fullscreen terminal behind the door, MINT priced by `priceTile` (the shop's fallback), the tile into the owned pool.
   - [x] 7.9.7 *(PR #173)* **Legendary** (9.1) - a fourth lane reached only by forging two epics of a relic with a legendary tier (six today); the four rarity colours are Daniil's.
 
@@ -686,12 +687,12 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [x] 9.11 *(session 29, PR #167)* The pulse muted and fading with radius.
 - [x] 9.12 *(session 29, PR #167; a chest holds its cell while it stands)* Void chests surface on water and empty ground, not rock.
 - [ ] 9.13 A chest sprite kind, bigger, coloured by a rolled rarity.
-- [ ] 9.14 Relic sprites 6×5: the icon plus a rarity ring; strip and Forge plates follow.
+- [x] 9.14 *(session 30, PR #177: the view draws the ring around the 4×3 icon - `drawRelicPlate`, 6×5 - in the strip, the Forge and the offer; the art agent may paint 6×5 sprites carrying their own ring later)* Relic sprites 6×5: the icon plus a rarity ring; strip and Forge plates follow.
 - [x] 9.15 *(session 29, PR #173)* **The codex**: every entry, locked ones shown locked, from every menu and from pause; reads the unlock set.
 - [ ] 9.16 Consumable: place boon ground on an empty ground cell.
 - [ ] 9.17 Consumable: god mode for one tower (a timed +100% to everything) with an epic sequence.
 - [x] 9.18 *(session 29, PR #167)* The relic offer only when the board is quiet; a call over living bodies carries the debt to the next quiet.
-- [ ] 9.19 Actives and passives look different in the slot (a plate shape per kind).
+- [x] 9.19 *(session 30, PR #177: the ring's corners say the kind - plain for a passive, diamonds for an active, crosses for a consumable)* Actives and passives look different in the slot (a plate shape per kind).
 - [ ] 9.20 Neutral structures - **debated, open** (the reply argues the Tile Smith's placeables and boon ground already own this).
 - [ ] 9.21 Merging four identical towers - **debated, open** (D25; the reply proposes a formation bonus around a Bastion instead).
 - [ ] 9.22 Endless mode as the tree's last unlock.
