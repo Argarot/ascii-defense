@@ -2141,6 +2141,7 @@ export class Sim {
     // Facing inward from the board edge - so if the entry cell itself is a
     // bridge, the walker already knows which strand it arrived on.
     this.walkDir[i] = entry.y === 0 ? 2 : entry.x === 0 ? 1 : entry.x === this.opts.cellsW - 1 ? 3 : 0;
+    return true;
   }
 
   // ---- combat --------------------------------------------------------------
