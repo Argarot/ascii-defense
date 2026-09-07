@@ -13,12 +13,13 @@ victory or death, and coasting is death.
 
 ▶ **[Play the current build](https://argarot.github.io/ascii-defense/)** ·
 ▶ **[Tile Smith](https://argarot.github.io/ascii-defense/tilesmith.html)**
-(author your own terrain tiles — mint them as **specials**, then load them in
-run setup, as many as the tree's slots allow — one to start, five at the
-top: a loaded tile is guaranteed on the map. Tiles whose roads touch
+(the standalone authoring tool; **the game has its own Tile Smith page**,
+in the workshop, once every tile the workshop sells is yours — author a
+tile with the game's own brushes, MINT it for Ore at the price its roads,
+veins and boons earn, and load it in run setup, as many as the tree's slots
+allow: a loaded tile is guaranteed on the map. Tiles whose roads touch
 without merging, carry two separate roads, or carry a richer vein, are
-specials by law — they appear only when you chose them. The link under the
-board opens only once every tile the workshop sells is yours)
+specials by law — they appear only when you chose them)
 
 Add `?seed=12345` to pin a world, `?threat=0|1|2` for Calm / Standard / Grim.
 A seed determines the whole run **for a given loadout**; the pause and
@@ -77,7 +78,16 @@ save doubles as an exact replay.
 ## Where the project is
 
 **M1 passed its gate** ("is it fun?" — yes); M2 and the product shell are under
-way. **Session 29 (2026-09-06 night into 2026-09-07)** built the meta tree
+way.
+**Session 30 (2026-09-07)** gave the shell one face: every page is a
+framed plate with a lit title band, columns and key hints; the workshop is
+drawn as a tree with a node hanging from the one it needs; the Tile Smith
+is a page of the game behind its door; held and offered relics wear a ring
+in their rarity's colour with corners that say the kind; chests surface
+with a rarity that colours them and pays more; a Missile's blast looks
+unlike a Mortar's and a Laser's path colours its beam; and the lab read
+the tier-2 and tier-3 Ore a loaded vein tile banks.
+**Session 29 (2026-09-06 night into 2026-09-07)** built the meta tree
 in eight PRs: a fix bundle from Daniil's thought dump (the Bastion's reach
 as a plus, the build preview folding every modifier, the relic offer only
 at a quiet board, chests on ground, pierce within half a cell), then the
@@ -153,9 +163,9 @@ two idle frames) and cobbled roads (four variations, picked by position) are
 on the board through a sprite format that keys art by upgrade path. The
 variant sweep in `docs/lab/` measures every path; three forks still lose.
 
-**Not built yet**: the Tile Smith as a page of the shell (the tool still
-lives on its own page), the menus at Stone-Story quality, full keyboard
-operation, art beyond the approved pack.
+**Not built yet**: full keyboard operation, the art agent's 6×5 relic
+sprites and chest sprite (the view draws its own ring and box until then),
+the enemies of Enemies II.
 The roadmap runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the
 checklist is [docs/WBS.md](docs/WBS.md).
 
