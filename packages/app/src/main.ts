@@ -215,6 +215,8 @@ async function main(): Promise<void> {
   // pages, banked Ore as the currency, a node bought with one click.
   type WorkshopPage = TreeNode['branch'] | 'tiles';
   let workshopBranch: WorkshopPage = 'arsenal';
+  /** The node last clicked (session 30): its sentence and its reason show in the body; a second click buys. */
+  let workshopFocus: string | null = null;
   const BRANCHES: { id: WorkshopPage; label: string }[] = [
     { id: 'arsenal', label: 'ARSENAL' },
     { id: 'reliquary', label: 'RELIQUARY' },
@@ -525,34 +527,58 @@ async function main(): Promise<void> {
                 return `${t.name ?? t.id}: ${why === null ? `BUY - ${t.price!.ore} tier-${t.price!.tier} ore - click the tile` : why === 'owned' ? 'OWNED' : why}`;
               }),
             ],
-            tiles: forSale.map((t) => ({ id: t.id, cells: t.cells, selected: (meta.owned[t.id] ?? 0) > 0 })),
+            // A vein tile wears its tier as a frame colour (session 30): tier 2 rare-blue, tier 3 epic-purple.
+            tiles: forSale.map((t) => { const tier = Math.max(1, ...(t.deposits ?? []).map((d) => d.tier ?? 1)); return { id: t.id, cells: t.cells, selected: (meta.owned[t.id] ?? 0) > 0, tone: tier >= 3 ? 'rarity.epic' : tier === 2 ? 'rarity.rare' : undefined }; }),
             items: [
-              ...BRANCHES.map((b) => ({ id: `br:${b.id}`, label: b.label, selected: b.id === workshopBranch, note: b.id === 'tiles' ? `${smith.owned}/${smith.total}` : `${branchNodes(TREE, b.id).filter((n) => meta.unlocks.includes(n.id)).length}/${branchNodes(TREE, b.id).length}` })),
+              { id: 'br:arsenal', label: 'THE TREE', note: 'back to the branches' },
               { id: 'back', label: 'BACK' },
             ],
+            keys: [{ key: 'Esc', does: 'back' }],
             footer: 'a framed tile is owned; a tile carrying a tier-N vein costs tier-(N-1) ore',
           };
         }
-        const nodes = branchNodes(TREE, workshopBranch);
+        // The tree drawn as a tree (session 30, PR 1): every branch a column
+        // of node plates, a node hanging from the one it requires; a first
+        // click reads the node into the body, a second buys it.
+        const focus = workshopFocus ? TREE.nodes.find((n) => n.id === workshopFocus) : undefined;
+        const focusWhy = focus ? whyNot(TREE, meta, meta.ore, focus.id) : null;
+        const smith = smithOpen(TREE, meta.owned);
         return {
           title: 'WORKSHOP',
           body: [
             `banked ore: ${ore[0]} tier 1 \u2802 ${ore[1]} tier 2 \u2802 ${ore[2]} tier 3`,
-            `towers ${u.towers.size}/${TOWER_COUNT} \u2802 relics in the pool ${u.relics.size}/${RELIC_POOL.length} \u2802 relic slots ${u.relicSlots} \u2802 tile slots ${u.tileSlots}`,
+            `towers ${u.towers.size}/${TOWER_COUNT} \u2802 relics in the pool ${u.relics.size}/${RELIC_POOL.length} \u2802 relic slots ${u.relicSlots} \u2802 tile slots ${u.tileSlots} \u2802 tiles owned ${smith.owned}/${smith.total}`,
             '',
-            ...nodes.flatMap((n) => wrapLine(`${n.name}: ${n.desc}`, Math.min(90, screenCols - 12))),
+            ...(focus
+              ? [...wrapLine(`${focus.name.toUpperCase()}: ${focus.desc}`, Math.min(100, screenCols - 12)), focusWhy === 'already bought' ? 'bought' : focusWhy ? `cannot buy yet: ${focusWhy}` : `click it again to buy for ${focus.cost.ore} tier-${focus.cost.tier} ore`]
+              : ['click a node to read it; click it again to buy']),
           ],
+          columns: BRANCHES.filter((b) => b.id !== 'tiles').map((b) => {
+            const nodes = branchNodes(TREE, b.id as TreeNode['branch']);
+            return {
+              heading: `${b.label} ${nodes.filter((n) => meta.unlocks.includes(n.id)).length}/${nodes.length}`,
+              items: nodes.map((n, i) => {
+                const why = whyNot(TREE, meta, meta.ore, n.id);
+                const bought = meta.unlocks.includes(n.id);
+                const prev = nodes[i - 1];
+                return {
+                  id: `node:${n.id}`,
+                  label: n.name,
+                  note: bought ? 'BOUGHT' : why === null ? (workshopFocus === n.id ? 'BUY' : `${n.cost.ore} t${n.cost.tier}`) : why.startsWith('needs') && !why.includes('ore') ? 'locked' : `${n.cost.ore} t${n.cost.tier}`,
+                  link: prev !== undefined && (n.requires ?? []).includes(prev.id),
+                  selected: workshopFocus === n.id,
+                  tone: bought ? 'rarity.legendary' : why === null ? undefined : 'ui.dim',
+                };
+              }),
+            };
+          }),
           items: [
-            ...BRANCHES.map((b) => ({ id: `br:${b.id}`, label: b.label, selected: b.id === workshopBranch, note: b.id === 'tiles' ? `${smithOpen(TREE, meta.owned).owned}/${smithOpen(TREE, meta.owned).total}` : `${branchNodes(TREE, b.id).filter((n) => meta.unlocks.includes(n.id)).length}/${branchNodes(TREE, b.id).length}` })),
-            ...nodes.map((n) => {
-              const why = whyNot(TREE, meta, meta.ore, n.id);
-              const bought = meta.unlocks.includes(n.id);
-              return { id: `node:${n.id}`, label: `  ${n.name.toUpperCase()}`, note: bought ? 'BOUGHT' : why ?? `BUY - ${n.cost.ore} tier-${n.cost.tier} ore`, disabled: bought || why !== null };
-            }),
+            { id: 'br:tiles', label: 'TILES', note: `${smith.owned}/${smith.total} owned >` },
             { id: 'history', label: 'RUN HISTORY', note: `${meta.history.length} runs` },
             { id: 'back', label: 'BACK' },
           ],
-          footer: 'a node is bought once; higher nodes want rarer ore; wins earn the rarer relics of an open branch',
+          keys: [{ key: 'Esc', does: 'back' }],
+          footer: 'a node is bought once; a node hangs from the one it needs; higher nodes want rarer ore; wins earn the rarer relics of an open branch',
         };
       }
       case 'history': {
@@ -570,12 +596,8 @@ async function main(): Promise<void> {
       case 'settings':
         return {
           title: 'SETTINGS',
-          body: [
-            'saves live in this browser; export moves them',
-            '',
-            'keys: space pause  \u2802  1-4 speed  \u2802  N next wave  \u2802  R rotate a laser',
-            'X sell  \u2802  G grid  \u2802  Esc back  \u2802  1/2/3 pick a relic',
-          ],
+          body: ['saves live in this browser; export moves them'],
+          keys: [{ key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'grid' }, { key: '1/2/3', does: 'pick a relic' }, { key: 'Esc', does: 'back' }],
           items: [
             { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
             { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
@@ -595,6 +617,7 @@ async function main(): Promise<void> {
             `wave ${snap?.hud.wave ?? 0} of ${finalWave > 0 ? finalWave : 'endless'} \u2802 seed ${seed}`,
             `run code ${runCode(seed)}`,
           ],
+          keys: [{ key: 'Esc', does: 'resume' }, { key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'grid' }],
           items: [
             { id: 'resume', label: 'RESUME' },
             { id: 'copycode', label: copyLabel('code', 'COPY RUN CODE') },
@@ -796,8 +819,10 @@ async function main(): Promise<void> {
       return;
     }
     if (id.startsWith('node:')) {
-      // A purchase (session 29, PR 2): pure in the engine, saved here.
-      const bought = buyNode(TREE, meta, meta.ore, id.slice('node:'.length));
+      // First click reads the node (session 30); the second buys it - pure in the engine, saved here.
+      const nid = id.slice('node:'.length);
+      if (workshopFocus !== nid) { workshopFocus = nid; return; }
+      const bought = buyNode(TREE, meta, meta.ore, nid);
       if (bought) {
         meta.unlocks = [...bought.meta.unlocks];
         meta.ore = bought.ore;
