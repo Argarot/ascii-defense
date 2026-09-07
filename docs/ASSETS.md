@@ -102,7 +102,7 @@ roles. A sprite is a map of **states**, keyed by a string the view chooses:
 - **terrain**: the cell letter (`"|"`, `"L"`, `"B"` …).
 - **the Core face** (`kind: "face"`): `"top"`, `"mid"`, `"bot"` — the three
   stacked cells past the east border; the road arrives at the middle one.
-- **enemies** (`kind: "enemy"`) and **relics** (`kind: "relic"`): `""` alone.
+- **enemies** (`kind: "enemy"`), **relics** (`kind: "relic"`) and **the chest** (`kind: "chest"`): `""` alone.
 
 **`kind` decides the cell rule** *(session 25)*. Towers, terrain and the
 face are board cells (`cell` equals grid.json). An **enemy** is a small
@@ -110,6 +110,9 @@ walker, at most 5×3, drawn centred on its position with its feet on the
 position row, transparent over the road (a slow tints its ground cold); the
 sprite id is `enemy_<roster id>`. A **relic** is exactly 4×3, the inventory
 slot's interior in the strip and the column; the id is `relic_<pool id>`.
+A **chest** (session 30) is 4×3, drawn on the void chest's cell and tinted
+by the chest's rarity; the id is `chest`. Until one ships the board draws
+its own box.
 The view looks sprites up by those ids and falls back to the old
 single-glyph look or the two-letter tag when none exists.
 

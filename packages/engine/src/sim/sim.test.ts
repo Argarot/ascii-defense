@@ -1766,3 +1766,45 @@ describe('session 29, PR 7 - legendary', () => {
     expect(sim.salvageOre(2)).toBe(SALVAGE_ORE[3]);
   });
 });
+
+describe('session 30, PR 4 - chests by rarity, blasts by tower, beams by path', () => {
+  it('a surfaced chest rolls a rarity that scales its loot and joins the hash', () => {
+    const { cells, simOpts } = makeWorld(53, { maxSpawns: 0, spawnEveryTicks: 1000 });
+    const TABLES = [{ id: 'void_chest', outcomes: [{ kind: 'scrap' as const, weight: 100, min: 50, max: 50 }] }];
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [WALKER], towerDefs: [BOLT], lootTables: TABLES });
+    let g = -1;
+    for (let k = 0; k < cells.length && g === -1; k++) if (cells[k] === 'G' && sim.canBuildAt(k % simOpts.cellsW, Math.floor(k / simOpts.cellsW))) g = k;
+    const gx = g % simOpts.cellsW;
+    const gy = Math.floor(g / simOpts.cellsW);
+    expect(sim.debugSurfaceChest(gx, gy, 2)).toBe(true);
+    expect(sim.chestAt(gx, gy)!.rarity).toBe(2);
+    const h = sim.hashState();
+    const scrap0 = sim.scrap;
+    expect(sim.claimChest(gx, gy)).toBe(true);
+    expect(sim.scrap).toBe(scrap0 + 100); // 50 x2 for an epic chest
+    expect(sim.debugSurfaceChest(gx, gy, 0)).toBe(true);
+    expect(sim.hashState()).not.toBe(h); // the rarity is a hashed lane
+    expect(sim.claimChest(gx, gy)).toBe(true);
+    expect(sim.scrap).toBe(scrap0 + 150);
+    // Surfaced by the clock, a chest has a rarity in range.
+    for (let t = 0; t < CHEST_EVERY * 12; t++) { sim.tick(); for (const c of sim.voidChests) expect(c.rarity).toBeGreaterThanOrEqual(0); }
+  });
+
+  it('an impact names its tower; a beam names its path', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const MORTAR: TowerDef = { id: 'missile', cost: 20, range: 6, fireEveryTicks: 20, projectile: { damage: 1, speed: 1, homing: true, explosive: true, explodeRadius: 1.5 } };
+    const sim = new Sim(47, { ...simOpts, towerDefs: [MORTAR], enemyDefs: [{ ...WALKER, hp: 100000 }] });
+    expect(sim.buildTower(spot.x, spot.y, 'missile')).toBe(true);
+    let by: string | undefined;
+    for (let t = 0; t < 1500 && by === undefined; t++) { sim.tick(); for (const e of sim.events) if (e.kind === 'impact' && e.r > 0) by = e.by; }
+    expect(by).toBe('missile');
+    const LANCE: TowerDef = { id: 'laser', cost: 20, fireEveryTicks: 2, attack: 'beam', damageType: 'energy', projectile: { damage: 10, speed: 1 }, beam: { width: 1, rampStep: 0.5, rampMax: 2 }, tiers: [{ choices: [{ name: 'Capacitor', cost: 1, mods: { damage: 1 } }, { name: 'Chill', cost: 1, mods: { slowMul: -0.3, slowTicks: 10 } }] }] };
+    const laser = new Sim(47, { ...simOpts, towerDefs: [LANCE], enemyDefs: [{ ...WALKER, hp: 100000 }] });
+    expect(laser.buildTower(spot.x, spot.y, 'laser')).toBe(true);
+    expect(laser.chooseTier(spot.x, spot.y, 0, 1)).toBe(true);
+    let path: number | undefined;
+    for (let t = 0; t < 1500 && path === undefined; t++) { laser.tick(); for (const e of laser.events) if (e.kind === 'beam') path = e.path; }
+    expect(path).toBe(1);
+  });
+});

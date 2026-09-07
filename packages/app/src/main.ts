@@ -1432,7 +1432,7 @@ async function main(): Promise<void> {
     combineTargets: (index: number) => debug('combineTargets', index),
     uses: () => debug('uses'),
     chests: () => debug('chests'),
-    surfaceChest: (x: number, y: number) => debug('surfaceChest', x, y),
+    surfaceChest: (x: number, y: number, rarity = 0) => debug('surfaceChest', x, y, rarity),
     killAll: () => debug('killAll'),
     claimChest: (x: number, y: number) => debug('claimChest', x, y),
     lootLog: () => debug('lootLog'),

@@ -45,6 +45,9 @@ const OVERRIDE_SETS: Record<string, Record<string, string>> = {
     'rarity.rare': '#4c9be8',
     'rarity.epic': '#a86cf0',
     'rarity.legendary': '#f2c14e',
+    // The Laser's paths (session 30, PR 4; item 27): Chill cold, Capacitor hot.
+    'beam.cold': '#9fe8ff',
+    'beam.hot': '#ffb070',
   },
 };
 let overrides: Record<string, string> = {};

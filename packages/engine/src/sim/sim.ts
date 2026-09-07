@@ -155,9 +155,9 @@ export type SimEvent =
   | { kind: 'pulse'; x: number; y: number; r: number }
   | { kind: 'strike'; x: number; y: number; r: number } // the orbital: a column from the sky, then a blast of radius r (session 25)
   | { kind: 'arc'; pts: readonly { x: number; y: number }[] } // a chain: the tower's centre, then every body hit in order (session 25)
-  | { kind: 'beam'; x0: number; y0: number; x1: number; y1: number; w: number; heat: number; every: number } // a lance firing down its corridor (session 26); every = ticks to its next pulse, the view's pulse length
+  | { kind: 'beam'; x0: number; y0: number; x1: number; y1: number; w: number; heat: number; every: number; path?: number } // a lance firing down its corridor (session 26); every = ticks to its next pulse, the view's pulse length; path = its tier-1 choice, for the beam's colour (session 30)
   | { kind: 'freeze'; ticks: number } // every enemy held for this long (Stasis, Flashbang)
-  | { kind: 'impact'; x: number; y: number; r: number; delay?: number } // r 0 = plain hit, >0 = blast radius; delay = ticks before it shows (Splinter's second blast)
+  | { kind: 'impact'; x: number; y: number; r: number; delay?: number; by?: string } // r 0 = plain hit, >0 = blast radius; delay = ticks before it shows (Splinter's second blast); by = the tower's id, for its own look (session 30)
   | { kind: 'death'; x: number; y: number }
   | { kind: 'breach'; x: number; y: number; dmg: number }
   | { kind: 'chest'; x: number; y: number } // a void chest surfaced here (session 28, PR 5)
@@ -249,6 +249,8 @@ export const PROSPECT_COST = 25;
 export const CHEST_EVERY = 300;
 export const CHEST_WINDOW = 240;
 export const CHEST_MAX = 2;
+/** What a chest of each rarity pays, on its Scrap and Ore outcomes (session 30, PR 4). */
+export const CHEST_RARITY_MUL: readonly number[] = [1, 1.5, 2];
 /** Base prospect duration: breaking rock is a COMMITMENT, not a purchase. */
 export const PROSPECT_TICKS = 600;
 /** Scrap paid per second still on the wave clock when the player CALLS early. */
@@ -477,7 +479,8 @@ export class Sim {
    * loot stream at fixed ticks, so a replay surfaces the same chests; the
    * claim pays through the loot table 'void_chest'. Hashed.
    */
-  readonly voidChests: { x: number; y: number; until: number }[] = [];
+  /** Surfaced chests (PRD sec 4.9); rarity 0..2 rolled at surface (session 30, PR 4; Daniil's item 13) colours the chest and scales its loot. Hashed. */
+  readonly voidChests: { x: number; y: number; until: number; rarity: number }[] = [];
   /** Every in-bounds water cell, fixed at construction: where a chest may surface. */
   private readonly voidCells: number[] = [];
   /** Boon ground an opened cache created; boonAt reads the map's and these. */
@@ -1298,7 +1301,10 @@ export class Sim {
     const x = k % this.opts.cellsW;
     const y = Math.floor(k / this.opts.cellsW);
     if (this.voidChests.some((c) => c.x === x && c.y === y)) return;
-    this.voidChests.push({ x, y, until: this.tickCount + CHEST_WINDOW });
+    // The chest's rarity (item 13): common six in ten, rare three, epic one - a third loot draw.
+    const rr = loot.int(0, 99);
+    const rarity = rr < 60 ? 0 : rr < 90 ? 1 : 2;
+    this.voidChests.push({ x, y, until: this.tickCount + CHEST_WINDOW, rarity });
     this.emit({ kind: 'chest', x: x + 0.5, y: y + 0.5 });
   }
 
@@ -1321,7 +1327,7 @@ export class Sim {
     return homes;
   }
 
-  chestAt(x: number, y: number): { x: number; y: number; until: number } | null {
+  chestAt(x: number, y: number): { x: number; y: number; until: number; rarity: number } | null {
     for (const c of this.voidChests) if (c.x === x && c.y === y) return c;
     return null;
   }
@@ -1333,8 +1339,10 @@ export class Sim {
     if (i === -1) return false;
     const table = (this.opts.lootTables ?? []).find((t) => t.id === 'void_chest');
     if (!table) return false;
+    const rarity = this.voidChests[i].rarity;
     this.voidChests.splice(i, 1);
-    const text = this.rollLoot(table, x, y);
+    // A rarer chest pays more (item 13): its Scrap and Ore outcomes scale.
+    const text = this.rollLoot(table, x, y, CHEST_RARITY_MUL[rarity] ?? 1);
     this.lootLog.push({ tick: this.tickCount, x, y, text });
     if (this.lootLog.length > 8) this.lootLog.shift();
     this.inputs.push({ tick: this.tickCount, a: { t: 'claimChest', x, y } });
@@ -1342,11 +1350,11 @@ export class Sim {
   }
 
   /** DEBUG: surface a chest on a water cell now (not a recorded input - replays diverge). */
-  debugSurfaceChest(x: number, y: number): boolean {
+  debugSurfaceChest(x: number, y: number, rarity = 0): boolean {
     if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return false;
     if (!this.chestHomes().includes(y * this.opts.cellsW + x)) return false;
     if (this.chestAt(x, y)) return false;
-    this.voidChests.push({ x, y, until: this.tickCount + CHEST_WINDOW });
+    this.voidChests.push({ x, y, until: this.tickCount + CHEST_WINDOW, rarity });
     return true;
   }
 
@@ -1378,7 +1386,7 @@ export class Sim {
   }
 
   /** Weighted pick, then apply. Returns the player-facing line. */
-  private rollLoot(table: LootTable, x: number, y: number): string {
+  private rollLoot(table: LootTable, x: number, y: number, mul = 1): string {
     const loot = this.rng.stream('loot');
     // Weights quantised to hundredths so a fractional weight still draws an
     // integer (the stream has no float pick); order is the table's order.
@@ -1394,13 +1402,13 @@ export class Sim {
     switch (pick.kind) {
       case 'scrap': {
         // Scavenger (relic, session 28 PR 4) multiplies what a cache pays.
-        const n = Math.round(loot.int(pick.min ?? 0, Math.max(pick.min ?? 0, pick.max ?? 0)) * this.fold.lootScrapMul);
+        const n = Math.round(loot.int(pick.min ?? 0, Math.max(pick.min ?? 0, pick.max ?? 0)) * this.fold.lootScrapMul * mul);
         this.scrap += n;
         if (this.fold.lootScrapMul !== 1) this.noteRelicUse('lootScrapMul');
         return `+${n} scrap`;
       }
       case 'ore': {
-        const n = loot.int(pick.min ?? 0, Math.max(pick.min ?? 0, pick.max ?? 0));
+        const n = Math.round(loot.int(pick.min ?? 0, Math.max(pick.min ?? 0, pick.max ?? 0)) * mul);
         this.ore[0] += n;
         return `+${n} ore`;
       }
@@ -1764,7 +1772,7 @@ export class Sim {
     for (const r of this.heldRarity) u32(r + 1);
     for (const r of this.offerRarity) u32(r + 1);
     for (const c of this.caches) { u32(c.x); u32(c.y); u32(c.opened ? 1 : 0); for (let i = 0; i < c.table.length; i++) u32(c.table.charCodeAt(i)); }
-    for (const c of this.voidChests) { u32(c.x); u32(c.y); u32(c.until); }
+    for (const c of this.voidChests) { u32(c.x); u32(c.y); u32(c.until); u32(c.rarity); }
     for (const b of this.extraBoons) { u32(b.x); u32(b.y); u32(b.tier ?? 1); u32(b.boon.charCodeAt(0)); }
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
     u32(this.status === 'won' ? 1 : 0);
@@ -2195,7 +2203,7 @@ export class Sim {
       this.applyDamage(b.i, eff.damage * tower.heat, slowMulN, slowTicksN, towerIdx, eff.shieldMul, eff.ignoreArmor, type);
       if (eff.burnDps > 0) this.applyBurn(b.i, eff.burnDps, eff.burnTicks, srcId, type);
     }
-    this.emit({ kind: 'beam', x0: cx, y0: cy, x1: cx + FACING_DX[tower.facing] * reach, y1: cy + FACING_DY[tower.facing] * reach, w: eff.beamWidth, heat: tower.heat, every: eff.fireEveryTicks });
+    this.emit({ kind: 'beam', x0: cx, y0: cy, x1: cx + FACING_DX[tower.facing] * reach, y1: cy + FACING_DY[tower.facing] * reach, w: eff.beamWidth, heat: tower.heat, every: eff.fireEveryTicks, path: tower.choices[0] });
   }
 
   /** Living bodies inside a corridor, nearest first (ties by slot). */
@@ -2418,7 +2426,10 @@ export class Sim {
    */
   private detonate(p: number, ix: number, iy: number): void {
     const radius = Math.max(this.projRadius[p], HIT_RADIUS);
-    this.emit({ kind: 'impact', x: ix, y: iy, r: this.projRadius[p] });
+    // The blast carries its tower's id (session 30, PR 4; item 25): a Missile's looks unlike a Mortar's.
+    const ownerTower = this.towers[this.projTowerIdx[p]];
+    const by = ownerTower ? this.opts.towerDefs[ownerTower.defIdx].id : undefined;
+    this.emit({ kind: 'impact', x: ix, y: iy, r: this.projRadius[p], by });
     // Splinter (relic): the explosion resolves twice.
     const blasts = this.projRadius[p] > 0 && this.fold.explodeTwice ? 2 : 1;
     if (blasts === 2) this.noteRelicUse('explodeTwice');
@@ -2426,7 +2437,7 @@ export class Sim {
       // Splinter's second blast is DRAWN as a second blast (WBS 2.31: a
       // rule the player cannot see is a presentation bug): the same spot,
       // three ticks later on screen, resolved now.
-      if (rep === 1) this.emit({ kind: 'impact', x: ix, y: iy, r: this.projRadius[p], delay: SPLINTER_DELAY });
+      if (rep === 1) this.emit({ kind: 'impact', x: ix, y: iy, r: this.projRadius[p], delay: SPLINTER_DELAY, by });
       for (let i = 0; i < this.enemyHigh; i++) {
         if (!this.alive[i]) continue;
         const dx = this.posX[i] - ix;

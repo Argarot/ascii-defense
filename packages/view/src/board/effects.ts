@@ -30,6 +30,10 @@ interface Effect {
   x1?: number;
   y1?: number;
   heat?: number;
+  /** The tower a blast came from (session 30, PR 4; item 25): a Missile's looks unlike a Mortar's. */
+  by?: string;
+  /** A lance's tier-1 path (item 27): 1 Chill runs cold, 0 Capacitor runs hot. */
+  path?: number;
   /** Painted at least once. An effect the clock jumped over is shown once before it goes. */
   seen?: boolean;
 }
@@ -154,7 +158,7 @@ export class EffectsLayer {
           this.add({ kind: 'frost', x: 0, y: 0, r: 0, start: e.tick, ttl: Math.max(1, e.ticks) });
           break;
         case 'beam':
-          this.add({ kind: 'lance', x: e.x0, y: e.y0, r: e.w, start: e.tick, ttl: Math.max(2, e.every ?? TTL.lance), x1: e.x1, y1: e.y1, heat: e.heat });
+          this.add({ kind: 'lance', x: e.x0, y: e.y0, r: e.w, start: e.tick, ttl: Math.max(2, e.every ?? TTL.lance), x1: e.x1, y1: e.y1, heat: e.heat, path: e.path });
           break;
         case 'arc':
           this.add({ kind: 'arc', x: e.pts[0]?.x ?? 0, y: e.pts[0]?.y ?? 0, r: 0, start: e.tick, ttl: TTL.arc, pts: e.pts });
@@ -162,7 +166,7 @@ export class EffectsLayer {
           break;
         case 'impact':
           // A delayed impact is Splinter's second blast: the same spot, a beat later.
-          if (e.r > 0) this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick + (e.delay ?? 0), ttl: TTL.blast });
+          if (e.r > 0) this.add({ kind: 'blast', x: e.x, y: e.y, r: e.r, start: e.tick + (e.delay ?? 0), ttl: TTL.blast, by: e.by });
           else this.add({ kind: 'spark', x: e.x, y: e.y, r: 0, start: e.tick + (e.delay ?? 0), ttl: TTL.spark });
           break;
         case 'death':
@@ -289,6 +293,7 @@ export class EffectsLayer {
    * blast than the one that kills.
    */
   private drawBlast(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    if (e.by === 'missile') { this.drawMissileBlast(term, e, age01, still); return; }
     // Shockwave ring: expands to the kill radius over the lifetime and
     // fades to smoke as it arrives - nothing is ever drawn beyond r.
     const rNow = still ? e.r : Math.max(0.4, e.r * age01);
@@ -316,6 +321,44 @@ export class EffectsLayer {
           const ux = (gx + 0.5) / CELL_W - e.x;
           const uy = (gy + 0.5) / CELL_H - e.y;
           if (Math.sqrt(ux * ux + uy * uy) <= e.r) term.shade(gx, gy, strength, 0.25);
+        }
+    }
+  }
+
+  /**
+   * A Missile's blast (session 30, PR 4; Daniil's item 25: "Mortar and
+   * Missile explosions must look different"): where the Mortar's shell
+   * throws a grainy shockwave outward, the Missile's warhead is a hard
+   * white core that throws eight SPOKES of shrapnel to the kill radius and
+   * leaves a smoke cross - a burst, not a wave. Nothing beyond r.
+   */
+  private drawMissileBlast(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    const reach = still ? e.r : e.r * Math.min(1, age01 * 1.4);
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]] as const;
+    const spoke = ['-', '-', '|', '|', '\\', '/', '/', '\\'];
+    const fg = age01 < 0.35 ? role('fx.flash') : age01 < 0.7 ? role('fx.ember') : role('fx.smoke');
+    for (let d = 0; d < dirs.length; d++) {
+      const [dx, dy] = dirs[d];
+      for (let k = 0.5; k <= reach; k += 0.5) {
+        const gx = Math.floor((e.x + dx * k) * CELL_W);
+        const gy = Math.floor((e.y + dy * k) * CELL_H);
+        if (gx < 0 || gy < 0 || gx >= term.cols || gy >= term.rows) continue;
+        // The spokes thin as they fly; the tips burn last.
+        if (hash2(gx, gy, 53 + d) < (age01 < 0.5 ? 0.9 : 0.5)) term.put(gx, gy, k >= reach - 0.25 ? '*' : spoke[d], fg);
+      }
+    }
+    if (!still && age01 < 0.3) {
+      // The core: a small hard white disc, gone fast.
+      const core = Math.max(0.3, e.r * 0.4);
+      const minGx = Math.max(0, Math.floor((e.x - core) * CELL_W));
+      const maxGx = Math.min(term.cols - 1, Math.ceil((e.x + core) * CELL_W));
+      const minGy = Math.max(0, Math.floor((e.y - core) * CELL_H));
+      const maxGy = Math.min(term.rows - 1, Math.ceil((e.y + core) * CELL_H));
+      for (let gy = minGy; gy <= maxGy; gy++)
+        for (let gx = minGx; gx <= maxGx; gx++) {
+          const ux = (gx + 0.5) / CELL_W - e.x;
+          const uy = (gy + 0.5) / CELL_H - e.y;
+          if (Math.sqrt(ux * ux + uy * uy) <= core) term.shade(gx, gy, 4 - 10 * age01, 0.35);
         }
     }
   }
@@ -465,7 +508,9 @@ export class EffectsLayer {
     const y1 = e.y1 ?? e.y;
     const horizontal = Math.abs(x1 - e.x) >= Math.abs(y1 - e.y);
     const heat01 = still ? 0 : Math.max(0, Math.min(1, (e.heat ?? 1) - 1));
-    const beam = mixHex(role('tower.laser.beam'), role('fx.flash'), heat01 * 0.6);
+    // The path colours the beam (session 30, PR 4; item 27): Chill runs cold, Capacitor runs hot, an unchosen lens the pack's beam.
+    const base = e.path === 1 ? role('beam.cold') : e.path === 0 ? role('beam.hot') : role('tower.laser.beam');
+    const beam = mixHex(base, role('fx.flash'), heat01 * 0.6);
     const dark = role('terrain.road.dark');
     const lens = role('tower.laser.lens');
     // The envelope: STRIKE (the front runs out), HOLD, then the decay -

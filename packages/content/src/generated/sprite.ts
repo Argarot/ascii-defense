@@ -25,9 +25,9 @@ export interface Sprite {
   $schema?: string;
   id: string;
   /**
-   * What the sprite is drawn AS (session 25); decides the cell rule. tower/terrain/face: the cell equals grid.json (the face is the Core's three stacked cells, states top/mid/bot). enemy: at most 5x3, drawn centred on the walker. relic: exactly 4x3, the inventory slot's interior. Absent = tower.
+   * What the sprite is drawn AS (session 25); decides the cell rule. tower/terrain/face: the cell equals grid.json (the face is the Core's three stacked cells, states top/mid/bot). enemy: at most 5x3, drawn centred on the walker. relic: exactly 4x3, the inventory slot's interior. Absent = tower. chest (session 30): 4x3, drawn on the chest's cell, tinted by the chest's rarity; the id is chest.
    */
-  kind?: 'tower' | 'terrain' | 'enemy' | 'relic' | 'face';
+  kind?: 'tower' | 'terrain' | 'enemy' | 'relic' | 'face' | 'chest';
   /**
    * [width, height] in glyphs. The rule depends on kind (see kind); the linter holds it.
    *
@@ -254,14 +254,15 @@ export const spriteSchema = {
       "pattern": "^[a-z][a-z0-9_]*$"
     },
     "kind": {
-      "description": "What the sprite is drawn AS (session 25); decides the cell rule. tower/terrain/face: the cell equals grid.json (the face is the Core's three stacked cells, states top/mid/bot). enemy: at most 5x3, drawn centred on the walker. relic: exactly 4x3, the inventory slot's interior. Absent = tower.",
+      "description": "What the sprite is drawn AS (session 25); decides the cell rule. tower/terrain/face: the cell equals grid.json (the face is the Core's three stacked cells, states top/mid/bot). enemy: at most 5x3, drawn centred on the walker. relic: exactly 4x3, the inventory slot's interior. Absent = tower. chest (session 30): 4x3, drawn on the chest's cell, tinted by the chest's rarity; the id is chest.",
       "type": "string",
       "enum": [
         "tower",
         "terrain",
         "enemy",
         "relic",
-        "face"
+        "face",
+        "chest"
       ]
     },
     "cell": {
