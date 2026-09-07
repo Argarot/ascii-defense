@@ -10,8 +10,7 @@
  */
 import type { Sprite } from '@ascii-defense/content';
 import type { TermSurface } from '@ascii-defense/render';
-import { role } from '../palette';
-import { rarityRole } from '../hud/HudPanel';
+import { role, rarityRole } from '../palette';
 import { drawSpriteFrame } from './sprites';
 
 export const RELIC_PLATE_W = 6;

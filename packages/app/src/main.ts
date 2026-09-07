@@ -360,6 +360,8 @@ async function main(): Promise<void> {
   /** What the tree has granted, resolved from the meta save as it is NOW (the page after a purchase reads the purchase). */
   const unlockedNow = () => resolveUnlocks(TREE, meta, RELIC_POOL);
   let setupEndless = false;
+  /** What each Threat means, in a phrase (session 31): the setup row said only a wave number. */
+  const THREAT_HINT = ['fewer fronts, a slow ramp, the tutorial\'s home', 'the game as measured', 'more fronts, shorter roads, a fast ramp'];
   let mode: Mode = 'title';
   let settingsFrom: Mode = 'title';
   // The how-to is the CODEX (session 27): sections of pages rendered from
@@ -559,6 +561,7 @@ async function main(): Promise<void> {
           caption: `spleen 5x8 \u2802 ${CELL_W}x${CELL_H} glyph cells \u2802 ${mapX}x${mapY} tiles`,
           body: [
             'the board is a press; the waves want it stopped',
+            ...(!meta.settings.onboarded ? ['new here? NEW RUN starts on Calm with the tutorial: twelve steps, a box on each thing to look at'] : []),
             '',
             ...(saveProblem ? [`! ${saveProblem}`] : []),
             meta.ore.some((o) => o > 0) ? `banked ore ${meta.ore[0]}${meta.ore[1] > 0 || meta.ore[2] > 0 ? ` \u2802 tier 2: ${meta.ore[1]} \u2802 tier 3: ${meta.ore[2]}` : ''}` : '',
@@ -584,11 +587,11 @@ async function main(): Promise<void> {
             ...THREAT_LEVELS.map((t, i) => ({
               id: `threat:${i}`,
               label: t.name.toUpperCase(),
-              note: i > unlockedNow().threatMax ? 'locked - the workshop opens it' : `to wave ${t.finalWave}`,
+              note: i > unlockedNow().threatMax ? 'locked - the workshop opens it' : `to wave ${t.finalWave} \u2802 ${THREAT_HINT[i] ?? ''}`,
               selected: i === setupThreat,
               disabled: i > unlockedNow().threatMax,
             })),
-            { id: 'loadout', label: 'LOADOUT', note: `${setupLoadout.length}/${loadoutSlots()} special(s) >` },
+            { id: 'loadout', label: 'LOADOUT', note: loadMintedTiles().length + ownedSpecials().length === 0 ? 'no special tiles yet - the workshop sells them' : `${setupLoadout.length}/${loadoutSlots()} special(s) >` },
             ...(unlockedNow().endless ? [{ id: 'endless', label: 'ENDLESS', note: setupEndless ? 'ON - no final wave, the ramp runs until the Core falls' : 'OFF', selected: setupEndless }] : []),
             { id: 'start', label: 'START RUN' },
             { id: 'back', label: 'BACK' },
@@ -749,7 +752,7 @@ async function main(): Promise<void> {
             `wave ${snap?.hud.wave ?? 0} of ${finalWave > 0 ? finalWave : 'endless'} \u2802 seed ${seed}`,
             `run code ${runCode(seed)}`,
           ],
-          keys: [{ key: 'Esc', does: 'resume' }, { key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'grid' }],
+          keys: [{ key: 'Esc', does: 'resume' }, { key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: '1-3', does: 'take a relic' }, { key: 'S', does: 'skip an offer' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'grid' }],
           items: [
             { id: 'resume', label: 'RESUME' },
             { id: 'copycode', label: copyLabel('code', 'COPY RUN CODE') },
@@ -781,10 +784,11 @@ async function main(): Promise<void> {
                       '',
                     ].filter((l, i, a) => l !== '' || a[i - 1] !== '')
                   : []),
-                'banked ore buys the workshop tree between runs',
+                'the WORKSHOP spends banked ore on towers, relic branches, slots and tiles',
               ],
               items: [
                 { id: 'again', label: summary.won ? 'GO AGAIN' : 'TRY AGAIN' },
+                { id: 'workshop', label: 'WORKSHOP', note: `spend ${meta.ore[0]} ore >` },
                 { id: 'copycode', label: copyLabel('code', 'COPY RUN CODE') },
                 { id: 'copyseed', label: copyLabel('seed', `COPY SEED ${summary.seed}`) },
                 { id: 'title', label: 'TITLE' },

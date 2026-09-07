@@ -401,6 +401,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       if (!h) return null;
       return {
         index: selectedRelic,
+        id: h.def.id,
         name: h.def.name,
         rarity: RARITIES[h.rarity],
         kind: h.def.kind,
