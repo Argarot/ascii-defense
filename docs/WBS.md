@@ -648,7 +648,7 @@ is the same mistake as authoring sprites before the animation engine.)*
   - [x] 7.9.2 *(PR #169)* **The workshop page**: WORKSHOP on the title page; the branches as pages, a node a row with its price or its reason, BOUGHT once bought; RUN HISTORY (7.3's first half); the setup page shows locked Threats locked, the loadout's slot count is the tree's, ENDLESS at setup once bought (9.22).
   - [x] 7.9.3 *(PR #170)* **Ore tiers in the sim**: a Refinery credits the vein's tier at a stretched cycle (×1.5, ×2 - 9.4); the purse has three tiers and hashes them; the HUD and the summary show Ore by tier; `rich_vein` (tier 2) and `mother_lode` (tier 3) in the library as specials.
   - [x] 7.9.4 *(PR #171)* **The tile shop and the Tile Smith gate**: shipped specials priced (`price` in the tile schema) and bought once (7.7's first half; copies wait for a generator that places them); the loadout offers minted and OWNED tiles; the Tile Smith link opens when every purchasable tile is owned (answer 6), the caption says so until then.
-  - [ ] 7.9.5 **The lab at tree states**: `unlocks` in LabSpec; a sweep at base / mid / everything; the Ore-per-run reading that prices the nodes.
+  - [x] 7.9.5 *(PR #172; docs/lab/build-sweep-2026-09-06-tree.md)* **The lab at tree states**: `unlocks` in LabSpec with the content's tree, a producer at 'vein', the purse in the report; the sweep at base / mid / everything (13.5 / 11.3 / 26.3); a base run banks ~22 tier-1 Ore, which priced the nodes (the arsenal 105: about five base runs).
   - [ ] 7.9.6 **The codex with locked entries** (9.15) and discovered fusions (9.23).
   - [ ] 7.9.7 **Legendary** (9.1) - a fourth lane reached only by forging two epics.
 

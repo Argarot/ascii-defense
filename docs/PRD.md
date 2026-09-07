@@ -1013,7 +1013,12 @@ The tree owns the pool and the capacity, never the power (sec 7.5):
 the run code hold the nodes, the earned relics and the forged caps the run
 started under, so a resume and a replay see the same towers, pool and
 slots. The meta save (v4) banks Ore **by tier**. The workshop page that
-sells the nodes is PR 2 of the same session.
+sells the nodes is PR 2 of the same session. **Priced by the lab (PR 6,
+docs/lab/build-sweep-2026-09-06-tree.md):** a base run banks about 22
+tier-1 Ore, so the arsenal costs 105 together (about five base runs, answer
+4), every tier-1 node 420, the tier-2 nodes 135 and the tier-3 nodes 60;
+the everything world plays to wave 26 where the base plays to 13 - the
+gap the tree opens, and the reason every later sweep states its tree state.
 
 ### 11.1 The tile pool is the ore economy *(Daniil, 2026-08-16 — resolves D9)*
 
