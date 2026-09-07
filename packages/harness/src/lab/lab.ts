@@ -62,6 +62,8 @@ export interface LabSpec {
    * content's tree must be given for this to mean anything.
    */
   unlocks?: string[];
+  /** Special tiles guaranteed on the map (session 30, PR 5): the loadout a player would carry - a vein tile for a tier-2 Ore reading. */
+  loadout?: string[];
   /** 'demo' derives the map exactly as the live app does for this seed. */
   map: 'demo' | { width: number; height: number; entries: number; targetPathCells: number };
   towers: TowerPlacement[];
@@ -128,7 +130,7 @@ export function demoMap(seed: number, lib: TileLibrary, poolSize: number, board 
 
 function makeWorld(spec: LabSpec, content: LabContent) {
   if (spec.map === 'demo') return demoMap(spec.seed, content.lib, content.relicDefs.length);
-  const map = generateMap(createRng(spec.seed).stream('map'), content.lib, { ...spec.map, relicPoolSize: content.relicDefs.length });
+  const map = generateMap(createRng(spec.seed).stream('map'), content.lib, { ...spec.map, relicPoolSize: content.relicDefs.length, specials: spec.loadout ?? [] });
   return { map, cellsW: map.cellsW, cellsH: map.cellsH, cells: mapCells(map, content.lib) };
 }
 

@@ -653,6 +653,7 @@ is the same mistake as authoring sprites before the animation engine.)*
   - [x] 7.9.5 *(PR #172; docs/lab/build-sweep-2026-09-06-tree.md)* **The lab at tree states**: `unlocks` in LabSpec with the content's tree, a producer at 'vein', the purse in the report; the sweep at base / mid / everything (13.5 / 11.3 / 26.3); a base run banks ~22 tier-1 Ore, which priced the nodes (the arsenal 105: about five base runs).
   - [x] 7.9.6 *(PR #173)* **The codex with locked entries** (9.15) and discovered fusions (9.23).
   - [x] 7.10.1 *(session 30, PR #175)* **The menu language**: framed plates, a lit title band, columns that wrap, links, key hints, tones; the workshop drawn as a tree.
+  - [x] 7.10.5 *(session 30, PR #179; docs/lab/build-sweep-2026-09-06-tree.md)* **The tree sweep with a loadout**: `LabSpec.loadout`; a MID run on a rich vein banks ~13 tier-2 Ore, an EVERYTHING run on a mother lode ~31 tier-3.
   - [x] 7.10.4 *(session 30, PR #178)* **Chests by rarity, blasts by tower, beams by path** (9.13, 9.25, 9.27).
   - [x] 7.10.3 *(session 30, PR #177)* **The relic surfaces in the language**: the relic plate (9.14, 9.19) in the strip, the Forge and the offer; the Forge and the offer cards framed like every page.
   - [x] 7.10.2 *(session 30, PR #176)* **The Tile Smith as a page** (7.5's first half): the editor on the fullscreen terminal behind the door, MINT priced by `priceTile` (the shop's fallback), the tile into the owned pool.
