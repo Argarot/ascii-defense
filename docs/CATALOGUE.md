@@ -137,7 +137,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 
 | Trait | Rule |
 |---|---|
-| armoured | immune to slows; armour is subtracted from every hit (Railbore ignores it) |
+| armoured | immune to slows; armour is subtracted from every hit, but never more than 65% of it (Railbore ignores it) |
 | shielded | a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire |
 | fast | slows last half as long |
 | swarm | spawns in packs of three - one queue entry, three bodies |

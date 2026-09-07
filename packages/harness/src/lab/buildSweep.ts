@@ -141,6 +141,53 @@ function relicSet(n: number): { id: string; rarity: number }[] {
 const RELIC_BOARD = { w: 7, h: 5 };
 const RELICS_ONLY = process.argv.includes('--relics');
 const TREE_ONLY = process.argv.includes('--tree');
+const BASE_ONLY = process.argv.includes('--base');
+
+/**
+ * Session 31, PR 2: the EARLY GAME. The base world (four towers, sixteen
+ * relics, six slots - what a new player has) at Calm's knobs (2-3 entries,
+ * longer roads, a 55 s clock, fifteen waves) and Standard's, with the
+ * builds a new player makes: three plain Bolts; two Bolts, a Frost and a
+ * Refinery with the Bolts' first fork; the reference line. Death wave
+ * per seed; "survived" means the Calm run's fifteen (or Standard's twenty)
+ * were held - the number a first run must reach.
+ */
+function calmKnobs(seed: number): { entries: number; targetPathCells: number } {
+  const knobs = createRng(seed).stream('map');
+  const entries = knobs.int(2, 3);
+  const targetPathCells = (12 + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+  return { entries, targetPathCells };
+}
+const EARLY_BUILDS: { name: string; towers: TowerPlacement[] }[] = [
+  { name: 'three plain Bolts', towers: [P('bolt', [-1, -1, -1]), P('bolt', [-1, -1, -1]), P('bolt', [-1, -1, -1])] },
+  { name: 'two Bolts (Marksman), a Frost, a Refinery', towers: [P('bolt', [0, -1, -1]), A('refinery', [0, 0, 0], 'vein'), P('bolt', [0, -1, -1]), P('frost', [1, -1, -1])] },
+  { name: 'the reference: Railbore line + Frost + Mortar + Refinery', towers: [A('refinery', [0, 0, 0], 'vein'), ...mixed('choke', RAILBORE)] },
+  // Plans that keep building, the way a player does: more of the same as the scrap comes.
+  { name: 'eight Bolts, Marksman then Piercing', towers: Array.from({ length: 8 }, () => P('bolt', [0, 0, -1])) },
+  { name: 'Refinery, then 4 Railbores + 2 Frost + Mortar, then 3 more Railbores', towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), P('frost', [1, 0, 1]), P('bolt', RAILBORE), P('mortar', [1, 1, 0]), P('bolt', RAILBORE), P('frost', [1, 0, 1]), P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE)] },
+];
+if (BASE_ONLY) {
+  /** Calm as protocol.ts ships it since session 31: slower growth, the heavier kinds two waves later. */
+  const CALM: DifficultySpec = { hpLinear: 0.08, hpGeometric: 1.03, countBase: 6, countLinear: 3, countGeometric: 1, unlockDelay: 3 };
+  for (const world of [{ name: 'CALM before session 31 (the Standard curve)', knobs: calmKnobs, clock: 55 * 20, final: 15, spec: STANDARD }, { name: 'CALM (session 31: hp +8%/wave x1.03, 6 + 3/wave, the heavier kinds three waves later)', knobs: calmKnobs, clock: 55 * 20, final: 15, spec: CALM }, { name: 'STANDARD', knobs: demoKnobs, clock: 40 * 20, final: 20, spec: STANDARD }]) {
+    console.log(`## the base world at ${world.name} knobs on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - economy 100 scrap, no relics, horizon ${MAX_WAVES}; the run holds at wave ${world.final}\n`);
+    console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | held the run | ore banked |');
+    console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
+    for (const b of EARLY_BUILDS) {
+      const deaths: (number | null)[] = [];
+      const ores: number[] = [];
+      for (const seed of SEEDS) {
+        const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...world.knobs(seed) }, towers: b.towers, relicIds: [], unlocks: [], interWaveTicks: world.clock, difficulty: world.spec, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+        try { const r = runLab(spec, baseContent); deaths.push(r.deathWave); ores.push(r.oreEnd[0]); } catch (e) { deaths.push(-1); ores.push(0); console.log(`<!-- ${b.name} @${seed}: ${e instanceof Error ? e.message : String(e)} -->`); }
+      }
+      const nums = deaths.map((d) => (d === null ? MAX_WAVES + 1 : d === -1 ? 0 : d));
+      const mean = nums.reduce((a, c) => a + c, 0) / nums.length;
+      const held = deaths.filter((d) => d === null || d > world.final).length;
+      console.log(`| ${b.name} | ${deaths.map((d) => (d === null ? `>${MAX_WAVES}` : d === -1 ? 'n/a' : String(d))).join(' | ')} | ${mean.toFixed(1)} | ${held}/${SEEDS.length} | ${ores.join(' · ')} |`);
+    }
+    console.log('');
+  }
+}
 
 /**
  * Session 29, PR 6: the sweep at TREE STATES (PRD sec 11 stage 3's warning,
@@ -203,8 +250,8 @@ if (TREE_ONLY) {
   console.log('');
 }
 
-if (!RELICS_ONLY && !TREE_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
-for (const board of RELICS_ONLY || TREE_ONLY ? [] : BOARDS) {
+if (!RELICS_ONLY && !TREE_ONLY && !BASE_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
+for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY ? [] : BOARDS) {
   console.log(`## board ${board.w}x${board.h}\n`);
   console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | crowd kills | all kills |');
   console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
@@ -238,7 +285,7 @@ for (const board of RELICS_ONLY || TREE_ONLY ? [] : BOARDS) {
 }
 
 // ---- the relic sweep (session 28, PR 6) ----
-if (!TREE_ONLY) {
+if (!TREE_ONLY && !BASE_ONLY) {
 console.log(`## relic sets on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - the reference build (Railbore line + Frost + Mortar, choke, economy) with six held relics\n`);
 console.log('| set | relics (rarity) | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean |');
 console.log('|---|---|' + SEEDS.map(() => '---').join('|') + '|---|');

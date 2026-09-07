@@ -588,6 +588,7 @@ withdrawn before it got an entry (PRD §14). Do not reuse any of these numbers.
 - [x] 4.20 *(session 18)* **Persistence** (PRD §15.2): meta state (Ore, unlocks, history, settings) in localStorage; run state as seed + input log (**a save IS a replay**). Schema versioned, migrate-or-say-so, never wipe silently.
 - [x] 4.21 *(session 18)* **Save export / import** — a file. Cheap, moves progress between machines, and gives us reproducible bug reports for free.
 - [~] 4.22 *(session 18: reduced motion, export/import, two-click wipe)* **Settings screen**. Remaining for session 22: colourblind palette, text scale, keybinds.
+- [x] 4.31 *(session 31, PR #182; docs/lab/base-sweep-2026-09-07.md)* **The early game**: the base world measured at Calm and Standard with a new player's builds; the armour floor, the boss multiplier by weight, Calm's own curve with delayed unlocks; the reference line holds Calm on every seed, a plain Bolt builder on half.
 - [x] 4.30 *(session 31, PR #181; PRD §20)* **The tutorial**: twelve steps with a pulsing box on the terminal the target lives on, NEXT/Enter and SKIP under the prompt, the step in the meta save, Calm for a first run, a replay from SETTINGS. Daniil's friend found the interface unintuitive; Daniil's ask of 2026-09-07. It replaced 4.23's prompts.
 - [x] 4.23 *(session 27, PR #142: three first-run prompts in the column - build, call the wave, relics and prospecting - until the third wave is out; the meta save remembers; settings show them again. PR #141: HOW TO PLAY is the codex - every tower, enemy and relic on pages from the catalogue's source)* **Onboarding** (PRD §15.3): contextual first-encounter prompts, a How-to-play screen, gentle opening waves. No forced tutorial.
 - [~] 4.24 *(session 27, PR #142: the colourblind palette as a role override set - enemy kinds, boon types, the hp pip apart without red and green; HUD text scale 1x/2x; the key list on the settings page. Full keyboard operation of the menus and the board remains)* **Accessibility** (PRD §15.4): colourblind palette values, full keyboard operation, reduced motion honoured by the effects engine, HUD text scale.
@@ -684,7 +685,7 @@ is the same mistake as authoring sprites before the animation engine.)*
 - [ ] 9.3 **Relics earned by wins**: difficulty (Threat) sets the rarity granted at a win; the tree gates branches and capacity; paid chests are §18's door.
 - [x] 9.4 *(session 29, PR #170)* **One Refinery, every ore tier**: a per-tier cycle multiplier (×1.5 tier 2, ×2 tier 3).
 - [ ] 9.5 **Core gifts as global powerups** (§4.5 rework): a tower kind beside the Core changes a run-wide rule (Laser: the Orbital doubles and recharges faster).
-- [ ] 9.6 Ignore-armour reads too strong: a balance reading against armoured waves, then the number.
+- [ ] 9.6 Ignore-armour reads too strong: a balance reading against armoured waves, then the number. *(Half answered in session 31, PR #182: the armour floor - armour strips at most 65% of a hit - narrows the gap; the fork's own number is still to read.)*
 - [x] 9.7 *(session 29, PR #167)* Loadbearing ×3 → ×1.5.
 - [x] 9.8 *(session 29, PR #167)* The Bastion's reach takes no modifier but its own: its range IS its reach.
 - [x] 9.9 *(session 29, PR #167: shipped as FOUR - his "a plus" taken literally; eight is one constant)* The Bastion's reach as a plus, previewed as one.

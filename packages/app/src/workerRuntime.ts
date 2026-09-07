@@ -190,7 +190,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         lootTables,
         finalWave: nextEndless ? 0 : THREAT.finalWave,
         interWaveTicks: THREAT.waveSeconds * TICK_HZ,
-        difficulty: { hpLinear: 0.15, hpGeometric: THREAT.hpGeometric, countBase: 6, countLinear: 4, countGeometric: 1 },
+        difficulty: THREAT.difficulty,
       });
       if (resume) {
         // A save IS a replay (PRD sec 15.2): re-apply the input log at its

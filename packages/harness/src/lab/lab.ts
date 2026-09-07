@@ -64,6 +64,8 @@ export interface LabSpec {
   unlocks?: string[];
   /** Special tiles guaranteed on the map (session 30, PR 5): the loadout a player would carry - a vein tile for a tier-2 Ore reading. */
   loadout?: string[];
+  /** The wave clock, launch to launch, in ticks (session 31: Calm's 55 s vs Standard's 40 s); the sim's default when absent. */
+  interWaveTicks?: number;
   /** 'demo' derives the map exactly as the live app does for this seed. */
   map: 'demo' | { width: number; height: number; entries: number; targetPathCells: number };
   towers: TowerPlacement[];
@@ -282,6 +284,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     towerDefs,
     relicDefs,
     relicSlots: unlocked?.relicSlots,
+    interWaveTicks: spec.interWaveTicks,
     mode: 'waves',
     firstWaveWaits: false,
     coreHp: spec.coreHp ?? 50,
