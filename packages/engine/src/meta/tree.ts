@@ -205,6 +205,22 @@ export function buyTile(unlocked: Unlocked, owned: Readonly<Record<string, numbe
   return { owned: { ...owned, [tile.id]: (owned[tile.id] ?? 0) + 1 }, ore: next };
 }
 
+/**
+ * What a tile is worth (PRD sec 11.1: "features price the tile"; session
+ * 30, PR 2) - the one function the Smith mints with. Road cells, veins by
+ * their Ore, boons by their tier; the TIER of the price is one below the
+ * richest vein (a tier-N vein is bought with tier-(N-1) Ore), tier 1
+ * otherwise. Shipped specials keep their authored price; this is the
+ * Smith's, and the shop's fallback.
+ */
+export function priceTile(tile: { cells: readonly string[]; deposits?: readonly { amount: number; tier?: number }[]; boons?: readonly { tier: number }[] }): { tier: number; ore: number } {
+  const road = [...tile.cells.join('')].filter((c) => !'GROC'.includes(c)).length;
+  const veinTier = Math.max(1, ...(tile.deposits ?? []).map((d) => d.tier ?? 1));
+  const veins = (tile.deposits ?? []).reduce((a, d) => a + Math.round(d.amount / 6), 0);
+  const boons = (tile.boons ?? []).reduce((a, b) => a + b.tier * 8, 0);
+  return { tier: Math.max(1, Math.min(3, veinTier - 1)), ore: 10 + road * 2 + veins + boons };
+}
+
 /** Every tile the tree can ever sell - the base's and every node's. */
 export function everyShopTile(tree: TreeDef): string[] {
   const ids = new Set<string>(tree.base.tiles ?? []);

@@ -10,10 +10,10 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, smithOpen } from '@ascii-defense/engine';
-import type { TreeNode } from '@ascii-defense/engine';
+import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, smithOpen, priceTile, validateTileCells, deriveConnectors } from '@ascii-defense/engine';
+import type { TreeNode, CellType } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
-import { loadMintedProblems, loadMintedTiles, removeMintedTile } from './mintedTiles';
+import { loadMintedProblems, loadMintedTiles, removeMintedTile, addMintedTile, libraryTwinOf } from './mintedTiles';
 import {
   BoardView,
   EffectsLayer,
@@ -29,7 +29,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack } from '@ascii-defense/view';
+  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack, SmithScreen, type SmithState } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
 import { validateSprite, validateTree, validateRelics, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -202,6 +202,96 @@ async function main(): Promise<void> {
     }
   };
   const menu = new MenuScreen();
+  // ---- the Tile Smith as a page (session 30, PR 2) ------------------------
+  // The same verbs as the standalone tool; the tile lives here, the screen
+  // draws it, MINT pays the shared price into the owned pool.
+  const smithScreen = new SmithScreen();
+  const DEV = new URLSearchParams(location.search).has('dev');
+  const BLANK_TILE = ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
+  type SmithDeposit = { x: number; y: number; amount: number; tier?: number };
+  type SmithBoon = { x: number; y: number; boon: 'range' | 'damage' | 'rate'; tier: 1 | 2 | 3 | 4 };
+  let smithCells: string[] = [...BLANK_TILE];
+  let smithBrush: CellType = 'G';
+  let smithMode: 'cells' | 'overlay' = 'cells';
+  let smithTier = 1;
+  let smithDeposits: SmithDeposit[] = [];
+  let smithBoons: SmithBoon[] = [];
+  let smithNote = 'a blank tile: paint roads with the brushes, then MINT';
+  const smithUndo: { cells: string[]; deposits: SmithDeposit[]; boons: SmithBoon[] }[] = [];
+  let smithPainting = false;
+  const smithSnapshot = (): void => { smithUndo.push({ cells: smithCells.slice(), deposits: smithDeposits.map((d) => ({ ...d })), boons: smithBoons.map((b) => ({ ...b })) }); if (smithUndo.length > 60) smithUndo.shift(); };
+  const smithId = (): string => { let h = 0x811c9dc5; const t = smithCells.join(''); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193); } return 'tile_' + (h >>> 0).toString(36); };
+  const smithTile = (): TileDef => { const t: TileDef = { id: smithId(), cells: [...smithCells] }; if (smithDeposits.length) t.deposits = smithDeposits.map((d) => ({ ...d })) as TileDef['deposits']; if (smithBoons.length) t.boons = smithBoons.map((b) => ({ ...b })) as TileDef['boons']; return t; };
+  const smithErrors = (): string[] => {
+    const errors = validateTileCells(smithCells);
+    const id = smithId();
+    const minted = loadMintedTiles();
+    if (tileLibraryJson.tiles.some((t) => t.id === id) || minted.some((t) => t.id === id)) errors.push(`'${id}' is already in the pool`);
+    const twin = libraryTwinOf(smithCells);
+    if (twin && errors.length === 0) errors.push(`this shape is the basic '${twin}' - basics are infinite, no need to mint one`);
+    if (smithCells.every((r) => r === 'GGGGG') && errors.length === 0) errors.push('a blank tile is a meadow the game already has');
+    return errors;
+  };
+  const smithState = (phase: number): SmithState => {
+    const c = deriveConnectors(smithCells);
+    return {
+      cells: smithCells, brush: smithBrush, mode: smithMode, veinTier: smithTier, veinTierMax: unlockedNow().oreTierMax,
+      deposits: smithDeposits, boons: smithBoons, connectors: { n: c.n, e: c.e, s: c.s, w: c.w },
+      errors: smithErrors(), id: smithId(), price: priceTile(smithTile()), ore: meta.ore, canUndo: smithUndo.length > 0, note: smithNote, dev: DEV, phase,
+    };
+  };
+  const smithSetCell = (x: number, y: number, t: string): void => {
+    const row = smithCells[y];
+    smithCells = smithCells.map((r, i) => (i === y ? row.slice(0, x) + t + row.slice(x + 1) : r));
+    smithDeposits = smithDeposits.filter((d) => smithCells[d.y][d.x] === 'O');
+    smithBoons = smithBoons.filter((b) => smithCells[b.y][b.x] === 'G');
+  };
+  const smithAction = (id: string): void => {
+    if (id.startsWith('brush:')) { smithBrush = id.slice(6) as CellType; smithMode = 'cells'; return; }
+    if (id === 'mode:cells' || id === 'mode:overlay') { smithMode = id === 'mode:cells' ? 'cells' : 'overlay'; return; }
+    if (id.startsWith('tier:')) { smithTier = Math.min(unlockedNow().oreTierMax, Number(id.slice(5))); return; }
+    if (id === 'undo') { const prev = smithUndo.pop(); if (prev) { smithCells = prev.cells; smithDeposits = prev.deposits; smithBoons = prev.boons; } return; }
+    if (id.startsWith('cell:')) {
+      const [x, y] = id.slice(5).split(',').map(Number);
+      if (smithMode === 'cells') {
+        if (smithCells[y][x] === smithBrush) return;
+        smithSnapshot();
+        smithSetCell(x, y, smithBrush);
+      } else {
+        const cell = smithCells[y][x];
+        if (cell === 'O') {
+          smithSnapshot();
+          const cur = smithDeposits.find((d) => d.x === x && d.y === y);
+          const steps = [30, 60, 90];
+          if (!cur) smithDeposits = [...smithDeposits, { x, y, amount: steps[0], tier: smithTier }];
+          else { const next = steps[steps.indexOf(cur.amount) + 1]; smithDeposits = next === undefined ? smithDeposits.filter((d) => d !== cur) : smithDeposits.map((d) => (d === cur ? { ...d, amount: next, tier: smithTier } : d)); }
+        } else if (cell === 'G') {
+          smithSnapshot();
+          const cur = smithBoons.find((b) => b.x === x && b.y === y);
+          const cycle: SmithBoon['boon'][] = ['range', 'damage', 'rate'];
+          if (!cur) smithBoons = [...smithBoons, { x, y, boon: cycle[0], tier: 1 }];
+          else { const next = cycle[cycle.indexOf(cur.boon) + 1]; smithBoons = next === undefined ? smithBoons.filter((b) => b !== cur) : smithBoons.map((b) => (b === cur ? { ...b, boon: next } : b)); }
+        }
+      }
+      return;
+    }
+    if (id === 'mint') {
+      const errors = smithErrors();
+      if (errors.length) { smithNote = errors[0]; return; }
+      const tile = smithTile();
+      const price = priceTile(tile);
+      if ((meta.ore[price.tier - 1] ?? 0) < price.ore) { smithNote = `needs ${price.ore} tier-${price.tier} ore`; return; }
+      meta.ore[price.tier - 1] -= price.ore;
+      addMintedTile(tile);
+      meta.owned[tile.id] = 1;
+      saveMeta(meta);
+      smithNote = `minted '${tile.id}' for ${price.ore} tier-${price.tier} ore - it is in the loadout pool now`;
+      smithUndo.length = 0;
+      smithCells = [...BLANK_TILE]; smithDeposits = []; smithBoons = [];
+      return;
+    }
+    if (id === 'back') { mode = 'workshop'; workshopBranch = 'tiles'; }
+  };
 
   // ---- state ---------------------------------------------------------------
   const { meta, problem: metaProblem } = loadMeta();
@@ -210,7 +300,7 @@ async function main(): Promise<void> {
   if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
   setPaletteSet(meta.settings.palette);
 
-  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary' | 'workshop' | 'history';
+  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary' | 'workshop' | 'history' | 'smith';
   // The workshop (session 29, PR 2; PRD sec 11): the tree's branches as
   // pages, banked Ore as the currency, a node bought with one click.
   type WorkshopPage = TreeNode['branch'] | 'tiles';
@@ -530,6 +620,7 @@ async function main(): Promise<void> {
             // A vein tile wears its tier as a frame colour (session 30): tier 2 rare-blue, tier 3 epic-purple.
             tiles: forSale.map((t) => { const tier = Math.max(1, ...(t.deposits ?? []).map((d) => d.tier ?? 1)); return { id: t.id, cells: t.cells, selected: (meta.owned[t.id] ?? 0) > 0, tone: tier >= 3 ? 'rarity.epic' : tier === 2 ? 'rarity.rare' : undefined }; }),
             items: [
+              { id: 'smith', label: 'THE TILE SMITH', note: smith.open ? 'author a tile >' : `locked - own every tile (${smith.owned}/${smith.total})`, disabled: !smith.open },
               { id: 'br:arsenal', label: 'THE TREE', note: 'back to the branches' },
               { id: 'back', label: 'BACK' },
             ],
@@ -889,6 +980,7 @@ async function main(): Promise<void> {
       case 'howto': howtoFrom = mode; codexSection = 'basics'; codexPage = 0; mode = 'howto'; break;
       case 'back': mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : mode === 'history' ? 'workshop' : 'title'; break;
       case 'workshop': mode = 'workshop'; break;
+      case 'smith': if (smithOpen(TREE, meta.owned).open || DEV) { mode = 'smith'; smithNote = 'a blank tile: paint roads with the brushes, then MINT'; } break;
       case 'history': mode = 'history'; break;
       case 'endless': setupEndless = !setupEndless; break;
       case 'motion': {
@@ -1062,7 +1154,26 @@ async function main(): Promise<void> {
     if (action) onHudAction(action);
   });
 
+  // The Smith paints by click and by drag (cells mode); every other click is a plate.
+  screenTerm.canvas.addEventListener('mousedown', (e) => {
+    if (mode !== 'smith') return;
+    smithPainting = true;
+    const id = smithScreen.itemAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
+    if (id?.startsWith('cell:') && smithMode === 'cells') smithAction(id);
+  });
+  screenTerm.canvas.addEventListener('mousemove', (e) => {
+    if (mode !== 'smith' || !smithPainting || smithMode !== 'cells') return;
+    const id = smithScreen.itemAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
+    if (id?.startsWith('cell:')) smithAction(id);
+  });
+  window.addEventListener('mouseup', () => { smithPainting = false; });
   screenTerm.canvas.addEventListener('click', (e) => {
+    if (mode === 'smith') {
+      const id = smithScreen.itemAt(e.offsetX, e.offsetY, GLYPH_PX_W * UI_SCALE, GLYPH_PX_H * UI_SCALE);
+      // A cell click in cells mode was painted on mousedown already.
+      if (id && !(id.startsWith('cell:') && smithMode === 'cells')) smithAction(id);
+      return;
+    }
     if (!menuSpec() || !FULLSCREEN_MODES.has(mode)) return;
     // Hit-test against the regions of the page actually ON SCREEN: a click
     // that arrives before the next render would otherwise land on the
@@ -1110,6 +1221,11 @@ async function main(): Promise<void> {
 
   window.addEventListener('keydown', (e) => {
     if (mode !== 'playing') {
+      if (mode === 'smith') {
+        if (e.key === 'Escape') smithAction('back');
+        if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); smithAction('undo'); }
+        return;
+      }
       if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup' || mode === 'loadout')) {
         const leavingPause = mode === 'paused';
         mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : leavingPause ? 'playing' : 'title';
@@ -1243,13 +1359,20 @@ async function main(): Promise<void> {
       // behind fullscreen menus (playtest 12, item 4) - a menu is not a
       // moment to read tower stats, and the panel pulled the eye.
       const spec = menuSpec();
-      const fullscreen = spec !== null && FULLSCREEN_MODES.has(mode);
-      hudTerm.canvas.style.visibility = spec && mode !== 'paused' ? 'hidden' : 'visible';
-      stripTerm.canvas.style.visibility = spec && mode !== 'paused' ? 'hidden' : 'visible';
+      const smithPage = mode === 'smith';
+      const fullscreen = (spec !== null && FULLSCREEN_MODES.has(mode)) || smithPage;
+      hudTerm.canvas.style.visibility = (spec || smithPage) && mode !== 'paused' ? 'hidden' : 'visible';
+      stripTerm.canvas.style.visibility = (spec || smithPage) && mode !== 'paused' ? 'hidden' : 'visible';
       screenTerm.canvas.style.display = fullscreen ? '' : 'none';
       modalTerm.clear();
-      renderedMenuMode = spec ? mode : null;
-      if (fullscreen) {
+      renderedMenuMode = spec || smithPage ? mode : null;
+      if (smithPage) {
+        screenTerm.clear();
+        smithScreen.render(screenTerm, smithState(animPhase));
+        screenTerm.flush();
+        modalTerm.flush();
+        modalTerm.canvas.style.display = '';
+      } else if (fullscreen && spec) {
         screenTerm.clear();
         menu.render(screenTerm, { ...spec, phase: animPhase });
         screenTerm.flush();
@@ -1342,7 +1465,11 @@ async function main(): Promise<void> {
     menu: (id: string): void => { menuAction(id); },
     // The page on screen: the fullscreen terminal for the shell's pages, the
     // board's modal for the pause overlay and the offer.
-    modalText: (): string => (FULLSCREEN_MODES.has(mode) && menuSpec() ? screenTerm : modalTerm).toText(),
+    modalText: (): string => (mode === 'smith' || (FULLSCREEN_MODES.has(mode) && menuSpec()) ? screenTerm : modalTerm).toText(),
+    // The Smith (session 30, PR 2): open the page past the door, act by id, read the state.
+    smithPage: (): void => { mode = 'smith'; },
+    smithDo: (id: string): void => smithAction(id),
+    smithState: () => { const s = smithState(0); return { cells: s.cells, brush: s.brush, mode: s.mode, errors: s.errors, id: s.id, price: s.price, deposits: s.deposits, boons: s.boons, note: s.note, connectors: s.connectors }; },
     setupState: (): { threat: number; loadout: string[]; genError: string | null } => ({ threat: setupThreat, loadout: [...setupLoadout], genError }),
   };
 }
