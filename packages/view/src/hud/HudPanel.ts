@@ -286,10 +286,18 @@ export class HudPanel {
       }
     }
     if (line !== '') lines.push(line);
-    // Never silently drop words: cram the tail into the last allowed line.
+    // Never silently drop words: the tail goes on the last allowed line, cut
+    // at a word with a mark that says more follows (session 31: a mid-word cut
+    // read as a kind called "shellb").
     if (lines.length > maxLines) {
       const head = lines.slice(0, maxLines - 1);
-      head.push(lines.slice(maxLines - 1).join(' ').slice(0, w));
+      const tail = lines.slice(maxLines - 1).join(' ');
+      if (tail.length <= w) head.push(tail);
+      else {
+        const cut = tail.slice(0, w - 2);
+        const sp = cut.lastIndexOf(' ');
+        head.push((sp > 0 ? cut.slice(0, sp) : cut) + ' +');
+      }
       return head;
     }
     return lines;
@@ -361,7 +369,8 @@ export class HudPanel {
       const fronts = `${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'}`;
       const head = `wave ${nw.wave} \u2802 ${fronts}${nw.boss ? ' \u2802 BOSS' : ''}`;
       term.write(0, y++, head, nw.boss ? role('enemy.fast') : role('ui.text'));
-      for (const line of this.wrap(kinds, W, 2)) term.write(0, y++, line, role('ui.dim'));
+      // Three lines for the composition (session 31: two cut "2 shellback" to "2 shellb" on a five-kind wave).
+      for (const line of this.wrap(kinds, W, 3)) term.write(0, y++, line, role('ui.dim'));
       const label = nw.waiting ? `CALL WAVE 1` : nw.canCall ? `CALL WAVE ${nw.wave} +${nw.callBonus} scrap` : 'wave still arriving';
       this.button(0, y, W - 4, label, nw.canCall ? role('ui.bg') : role('ui.dim'), nw.canCall ? role('ui.accent') : role('ui.grid'));
       if (nw.canCall) this.regions.push({ row: y, x0: 0, x1: W - 4, action: { kind: 'callWave' } });

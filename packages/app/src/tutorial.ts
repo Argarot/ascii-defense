@@ -23,6 +23,7 @@ export type TutorialTarget =
   | 'offer' // the relic offer over the board
   | 'strip:slots' // the Core's relic slots in the strip
   | 'rock' // a rock cell near the road
+  | 'upgrade' // the first tower on the board, or the selected tower's forks in its card
   | null;
 
 export interface TutorialCtx {
@@ -35,6 +36,8 @@ export interface TutorialCtx {
   selectedBuildable: boolean;
   /** A tower is selected (its card is in the column). */
   towerSelected: boolean;
+  /** Towers with at least one fork taken (session 31: the probe's plain Bolts died at wave 8; eight forked ones held Calm with no breach). */
+  upgrades: number;
   /** The player pressed NEXT (or Enter) since the last frame. */
   next: boolean;
 }
@@ -51,7 +54,7 @@ export interface TutorialStep {
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   { id: 'core', target: 'core', text: 'This is the CORE, at the east edge. Enemies march to it; if it falls, the run ends. Everything you build defends it.', needsNext: true, done: (c) => c.next },
   { id: 'entry', target: 'entry', text: 'Enemies enter from the road\'s ends - the blinking markers - and walk the road to the Core. The next wave\'s entries blink before it comes.', needsNext: true, done: (c) => c.next },
-  { id: 'ground', target: 'ground', text: 'Ground beside the road is where towers stand. Click the highlighted cell to select it (any ground works).', needsNext: false, done: (c) => c.selectedBuildable },
+  { id: 'ground', target: 'ground', text: 'Ground beside the road is where towers stand - and the ground by the CORE, where every road ends, sees every front. Click the highlighted cell to select it.', needsNext: false, done: (c) => c.selectedBuildable || c.towers >= 1 },
   { id: 'build', target: 'strip:bolt', text: 'Now the BOLT TURRET: click its button in the strip under the board. Hover a button first if you want its card.', needsNext: false, done: (c) => c.towers >= 1 },
   { id: 'card', target: 'hud:card', text: 'Your tower\'s card: what it does, its range, and its UPGRADE TREE - each fork is two jobs, never two numbers. Click a tower any time to see it.', needsNext: true, done: (c) => c.next },
   { id: 'scrap', target: 'hud:scrap', text: 'SCRAP pays for towers and upgrades; kills pay Scrap back. ORE is mined by a Refinery on a gold vein - it buys relics now, and the WORKSHOP between runs.', needsNext: true, done: (c) => c.next },
@@ -59,6 +62,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   { id: 'watch', target: 'strip:wave', text: 'The strip\'s NOW is what walks; NEXT is what comes. Space pauses, 1-4 set the speed. Build more towers while the wave walks.', needsNext: true, done: (c) => c.next || c.wave >= 2 },
   { id: 'offer', target: 'offer', text: 'A quiet board after wave 2 offers three RELICS - rules that bend the game, not numbers. Take one (click it, or press 1-3).', needsNext: false, done: (c) => c.relics >= 1 || (c.wave >= 3 && !c.offerUp) },
   { id: 'slots', target: 'strip:slots', text: 'Held relics live in the Core\'s slots. Click one for its card; actives fire from there; two of a kind combine in the FORGE.', needsNext: true, done: (c) => c.next },
+  { id: 'upgrade', target: 'upgrade', text: 'Scrap piles up - spend it. Select a tower and take a FORK in its card (the first costs 25): a forked tower near the Core beats a plain one far away.', needsNext: false, done: (c) => c.upgrades >= 1 || c.wave >= 6 },
   { id: 'rock', target: 'rock', text: 'ROCK hides ore, caches and bare ground. Select a rock and PROSPECT it to find out - Scrap and time, and the veins it opens pay Ore.', needsNext: true, done: (c) => c.next },
   { id: 'end', target: null, text: 'Hold the final wave and THE CORE STANDS. Every run banks its Ore for the WORKSHOP on the title page: towers, relic branches, slots, threats, tiles. That is the tutorial - the rest is yours.', needsNext: true, done: (c) => c.next },
 ];

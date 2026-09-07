@@ -193,6 +193,10 @@ export class MenuScreen {
     // longest of title, body lines, items with notes, columns, footer, keys -
     // plus padding.
     const tiles = spec.tiles ?? [];
+    // A body line longer than the widest plate wraps at a word (session 31:
+    // the summary's "you met" line and its workshop sentence were cut
+    // mid-word on a narrow screen).
+    const body = (spec.body ?? []).flatMap((l) => wrapLine(l, W - 12));
     const maxPerRow = Math.max(1, Math.floor((W - 10) / (TILE_GW + 3)));
     const perRow = Math.min(tiles.length, maxPerRow);
     const tileRows = perRow > 0 ? Math.ceil(tiles.length / perRow) : 0;
@@ -218,7 +222,7 @@ export class MenuScreen {
     const keysText = (spec.keys ?? []).map((k) => `[${k.key}] ${k.does}`).join('   ');
     const widest = Math.max(
       spec.title.length + 6,
-      ...(spec.body ?? []).map((l) => l.length),
+      ...body.map((l) => l.length),
       ...spec.items.map(itemW),
       (spec.footer ?? '').length,
       keysText.length,
@@ -230,7 +234,7 @@ export class MenuScreen {
     const heroW = hero.length > 0 ? hero.length * (CELL_W + 2) - 2 : 0;
     const plateW = Math.min(W - 4, Math.max(widest + 8, heroW + 8));
     const stripH = tileRows * (TILE_GH + 3);
-    const bodyH = (spec.body?.length ?? 0) + (spec.body?.length ? 1 : 0);
+    const bodyH = body.length + (body.length ? 1 : 0);
     const contentH = 2 + heroH + bodyH + stripH + columnsH + spec.items.length * 2 + (spec.footer ? 1 : 0);
     const frameH = contentH + 2; // the top band and the bottom band
     const y0 = Math.max(1, Math.floor((term.rows - frameH) / 2));
@@ -253,11 +257,11 @@ export class MenuScreen {
       });
       y += heroH;
     }
-    for (const line of spec.body ?? []) {
+    for (const line of body) {
       const l = line.slice(0, plateW - 2);
       term.write(x0 + Math.floor((plateW - l.length) / 2), y++, l, dim, PLATE_BG);
     }
-    if (spec.body?.length) y++;
+    if (body.length) y++;
     if (tiles.length > 0) {
       // The pool is a VISUAL surface (PRD sec 4.8): each special drawn by the
       // same renderer the board uses, framed in accent when loaded.
@@ -347,7 +351,8 @@ export class MenuScreen {
       term.put(x + pad, y, '◆', glow, bg);
       term.put(x + pad + label.length - 1, y, '◆', glow, bg);
     }
-    if (it.note) term.write(x + bw - it.note.length - 1, y, it.note.slice(0, Math.max(0, bw - 2)), it.disabled ? role('ui.grid') : onCursor ? role('ui.bg') : accent, bg);
+    // A note longer than the row is clipped at the row's right edge, never drawn left of the plate (session 31).
+    if (it.note) { const note = it.note.slice(0, Math.max(0, bw - 2)); term.write(Math.max(x + 1, x + bw - note.length - 1), y, note, it.disabled ? role('ui.grid') : onCursor ? role('ui.bg') : accent, bg); }
     if (onCursor) term.put(x, y, '>', role('ui.bg'), bg);
     if (!it.disabled) { this.regions.push({ row: y, x0: x, x1: x + bw, id: it.id }); this.order.push(it.id); }
   }
@@ -361,4 +366,17 @@ export class MenuScreen {
     }
     return null;
   }
+}
+
+/** A line wrapped at words to at most `w` glyphs; a word longer than `w` is cut. */
+export function wrapLine(line: string, w: number): string[] {
+  if (line.length <= w) return [line];
+  const out: string[] = [];
+  let cur = '';
+  for (const word of line.split(' ')) {
+    if (cur !== '' && cur.length + 1 + word.length > w) { out.push(cur); cur = ''; }
+    cur = cur === '' ? word.slice(0, w) : cur + ' ' + word;
+  }
+  if (cur !== '') out.push(cur);
+  return out;
 }
