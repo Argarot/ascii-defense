@@ -347,6 +347,18 @@ async function main(): Promise<void> {
   let workshopBranch: WorkshopPage = 'arsenal';
   /** The node last clicked (session 30): its sentence and its reason show in the body; a second click buys. */
   let workshopFocus: string | null = null;
+  // The keyboard on every page (session 31; WBS 4.24's other half): the
+  // arrows walk the page's clickable rows, Enter clicks the one they are on;
+  // the cursor resets when the page changes.
+  let menuCursor: string | null = null;
+  let menuCursorMode: Mode | null = null;
+  const moveCursor = (dir: 1 | -1): void => {
+    const ids = menu.itemIds();
+    if (ids.length === 0) return;
+    const at = menuCursor === null ? -1 : ids.indexOf(menuCursor);
+    const next = at === -1 ? (dir === 1 ? 0 : ids.length - 1) : (at + dir + ids.length) % ids.length;
+    menuCursor = ids[next];
+  };
   const BRANCHES: { id: WorkshopPage; label: string }[] = [
     { id: 'arsenal', label: 'ARSENAL' },
     { id: 'reliquary', label: 'RELIQUARY' },
@@ -1274,6 +1286,12 @@ async function main(): Promise<void> {
         if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); smithAction('undo'); }
         return;
       }
+      // Any page with rows: the arrows and Enter (session 31).
+      if (menuSpec()) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); moveCursor(1); return; }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); moveCursor(-1); return; }
+        if (e.key === 'Enter' && menuCursor !== null && menu.itemIds().includes(menuCursor)) { e.preventDefault(); menuAction(menuCursor); return; }
+      }
       if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup' || mode === 'loadout')) {
         const leavingPause = mode === 'paused';
         mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : leavingPause ? 'playing' : 'title';
@@ -1426,6 +1444,7 @@ async function main(): Promise<void> {
       // behind fullscreen menus (playtest 12, item 4) - a menu is not a
       // moment to read tower stats, and the panel pulled the eye.
       const spec = menuSpec();
+      if (mode !== menuCursorMode) { menuCursor = null; menuCursorMode = mode; }
       const smithPage = mode === 'smith';
       const fullscreen = (spec !== null && FULLSCREEN_MODES.has(mode)) || smithPage;
       hudTerm.canvas.style.visibility = (spec || smithPage) && mode !== 'paused' ? 'hidden' : 'visible';
@@ -1441,12 +1460,12 @@ async function main(): Promise<void> {
         modalTerm.canvas.style.display = '';
       } else if (fullscreen && spec) {
         screenTerm.clear();
-        menu.render(screenTerm, { ...spec, phase: animPhase });
+        menu.render(screenTerm, { ...spec, phase: animPhase, cursor: menuCursor ?? undefined });
         screenTerm.flush();
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else if (spec) {
-        menu.render(modalTerm, { ...spec, phase: animPhase });
+        menu.render(modalTerm, { ...spec, phase: animPhase, cursor: menuCursor ?? undefined });
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else if (snap.offer && inGame()) {
