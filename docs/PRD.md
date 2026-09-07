@@ -969,6 +969,19 @@ for the call**: a fresh map deserves a look before the first front opens.
 and shown by kind and count, so "which tower answers this" is a decision
 made with the information it needs.
 
+**The early game, measured (session 31, PR 2;
+docs/lab/base-sweep-2026-09-07.md).** Every level carries its own curve
+(`THREAT_LEVELS[].difficulty`): Calm grows hp 8% a wave and ×1.03, six
+bodies plus three a wave, and meets every kind above wave 1 **three waves
+later** (`unlockDelay`); Standard and Grim keep the curve below. Two rules
+changed for every level: **armour strips a flat amount from a hit but never
+more than 65% of it** (`ARMOR_FLOOR`; a plain Bolt does 2.8 to a
+juggernaut, not 2 - Railbore still ignores armour), and **a boss's
+multiplier shrinks with the body's own weight** (`bossHpMul`: ×6 for a
+grunt, ×1.5 for a juggernaut) - the ×6 juggernaut at wave 10 was a wall no
+base-world build passed. The reference line now holds Calm's fifteen on
+every seed; a plain Bolt builder on half.
+
 **Boss waves** come every fifth wave **and on the final wave, by rule**: one
 boss — the heaviest enemy unlocked, scaled up in health, bounty and Core
 damage — behind a normal escort. *(The former elite surge happened to land
@@ -1455,7 +1468,7 @@ one line; his answer moves the row.
 | 3 | New relics unlock by **beating the game** (difficulty sets the rarity) or through **paid chests**; once a category is exhausted, chests of that rarity | **Accepted with a reconciliation**: the tree unlocks branches (tags) and capacity; the relics inside a branch are earned by wins at a Threat level; paid chests are §18's door. Daniil to confirm the split | 9.3 · row 29 |
 | 4 | One Refinery mines every ore tier; higher tiers mine slower | **Accepted** — a per-tier cycle multiplier; Deep Bore / Deep Shaft keep growing the vein | 9.4 · row 29 (with ore tiers) |
 | 5 | Core-adjacency boons become **global powerups** (a Laser by the Core doubles the Orbital and halves its cooldown) | **Accepted** — §4.5's gifts move from "this tower's stats" to "a run-wide rule per tower kind" | 9.5 · row 31 balance |
-| 6 | Ignore-armour is too strong and always the pick | **Accepted as a balance reading** — the sweep against armoured waves decides the number | 9.6 · row 31 |
+| 6 | Ignore-armour is too strong and always the pick | **Read, and half answered** (session 31, PR 2) — the armour floor caps what armour strips at 65% of a hit, so Railbore's edge over a plain Bolt against a juggernaut is 8 vs 2.8, not 8 vs 2; the sweep against armoured waves for the fork's number is still open | 9.6 · row 31 |
 | 7 | Loadbearing's triple range is absurd; +50% or so | **Shipped** (session 29, PR 0) — `coreAdjacentRangeMul` 3 → 1.5 | 9.7 · PR 0 of session 29 |
 | 8 | The Bastion's reach takes no modifier but its own | **Shipped** (session 29, PR 0) — the Bastion's range IS its reach; relic and boon range do nothing to it (§4.5) | 9.8 · PR 0 |
 | 9 | The Bastion's reach previews as a **plus** of four cells, like the Laser's corridor | **Shipped as four** (session 29, PR 0): the aura is a plus - straight out, never the diagonal - and the preview draws it. His "a plus" taken literally; eight is one constant if he wants the ring back (§4.5) | 9.9 · PR 0 |

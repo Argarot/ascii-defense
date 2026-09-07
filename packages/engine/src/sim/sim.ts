@@ -112,6 +112,12 @@ export interface DifficultySpec {
   countBase: number;
   countLinear: number;
   countGeometric: number;
+  /**
+   * Waves added to every enemy's minWave above 1 (session 31): Calm meets
+   * the heavier kinds later, so its first run is about placing towers, not
+   * about the answer to armour. 0 or absent on Standard and Grim.
+   */
+  unlockDelay?: number;
 }
 
 /**
@@ -259,6 +265,24 @@ export const CALL_BONUS_PER_SEC = 1;
 export const BOSS_EVERY_WAVES = 5;
 /** A boss is the heaviest unlocked enemy, scaled: hp, bounty, Core damage. */
 export const BOSS_HP_MUL = 6;
+/**
+ * A boss is the heaviest body available, made a boss (D17). The multiplier
+ * is BOSS_HP_MUL for a grunt-weight body and shrinks for heavier ones, to
+ * a floor of 1.5 (session 31, the early game): a juggernaut at x6 on top
+ * of its own 400 hp and armour 6 was a wall no base-world build could
+ * pass at wave 10 - 8,600 hp against a Bolt's 2 damage per hit.
+ */
+export const BOSS_REF_HP = 30;
+export function bossHpMul(def: { hp: number }): number {
+  return Math.max(1.5, Math.min(BOSS_HP_MUL, (BOSS_HP_MUL * BOSS_REF_HP) / Math.max(1, def.hp)));
+}
+/**
+ * Armour strips a flat amount from a hit, but never more than this share
+ * of it (session 31): a body's armour blunts a weak shot, it does not make
+ * the shot nothing. Before this a plain Bolt did 2 of its 8 to a
+ * juggernaut; with the floor it does 2.8. Railbore still ignores armour.
+ */
+export const ARMOR_FLOOR = 0.35;
 export const BOSS_BOUNTY_MUL = 5;
 export const BOSS_DAMAGE_MUL = 3;
 /** Queue encoding: a boss entry is its defIdx OR this flag. */
@@ -2005,8 +2029,10 @@ export class Sim {
     const waves = this.rng.stream('waves');
     const count = waveCount(this.difficulty, w);
     const available: { idx: number; w: number }[] = [];
+    const delay = this.difficulty.unlockDelay ?? 0;
     this.opts.enemyDefs.forEach((d, i) => {
-      const mw = d.minWave ?? 1;
+      const base = d.minWave ?? 1;
+      const mw = base > 1 ? base + delay : 1;
       if (mw <= w) available.push({ idx: i, w: 1 + (w - mw) });
     });
     const totalW = available.reduce((a, b) => a + b.w, 0);
@@ -2083,7 +2109,7 @@ export class Sim {
     this.enemyDefIdx[i] = defIdx;
     // Waves scale hp by the difficulty data. Trickle mode stays flat for tests.
     const hpScale = this.mode === 'waves' ? waveHpScale(this.difficulty, Math.max(1, this.wave)) * this.lengthMul : 1;
-    this.hp[i] = def.hp * hpScale * (boss ? BOSS_HP_MUL : 1);
+    this.hp[i] = def.hp * hpScale * (boss ? bossHpMul(def) : 1);
     this.bossFlag[i] = boss ? 1 : 0;
     this.lastHit[i] = this.tickCount;
     this.spawnHp[i] = this.hp[i];
@@ -2498,7 +2524,7 @@ export class Sim {
     // Zero-damage attacks are pure control (Frost's base): effects land,
     // health does not move, armor's min-1 rule only applies to real hits.
     // Railbore ignores armour outright.
-    let dmg = typed <= 0 ? 0 : Math.max(1, typed - (ignoreArmor ? 0 : (def.armor ?? 0)));
+    let dmg = typed <= 0 ? 0 : Math.max(1, ignoreArmor ? typed : Math.max(typed * ARMOR_FLOOR, typed - (def.armor ?? 0)));
     // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
     // relic that turns Frost from utility into a damage amplifier.
     if (dmg > 0 && this.slowTicks[enemy] > 0 && this.fold.slowedDamageMul !== 1) { dmg *= this.fold.slowedDamageMul; this.noteRelicUse('slowedDamageMul'); }

@@ -5,7 +5,7 @@ import { TileLibrary } from '../tiles/board';
 import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
+import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, bossHpMul, ARMOR_FLOOR, BOSS_HP_MUL, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
 import { effectiveStats, relicDescAt } from './defs';
 import type { EnemyDef, RecipeDef, RelicDef, SetDef, TowerDef } from './defs';
 
@@ -1460,7 +1460,7 @@ describe('the tower rework (design round 1, item 8): forks are roles, not slider
     expect(firstHit(single, shelled, -1).shield).toBe(24); // 6 damage
     expect(firstHit(single, shelled, 0).shield).toBe(18); // doubled on the shield
     const armoured: EnemyDef = { ...WALKER, hp: 1000, armor: 4 };
-    expect(firstHit(single, armoured, -1).hp).toBe(998); // 6 - 4
+    expect(firstHit(single, armoured, -1).hp).toBeCloseTo(1000 - Math.max(6 - 4, 6 * ARMOR_FLOOR)); // 6 - 4 = 2, lifted to the floor's 2.1 (session 31)
     expect(firstHit(single, armoured, 1).hp).toBe(994); // armour ignored
 
     // Pierce reaches half a cell (session 29, PR 0): a swarm pack walks as one body, so one shot's damage lands
@@ -1806,5 +1806,36 @@ describe('session 30, PR 4 - chests by rarity, blasts by tower, beams by path', 
     let path: number | undefined;
     for (let t = 0; t < 1500 && path === undefined; t++) { laser.tick(); for (const e of laser.events) if (e.kind === 'beam') path = e.path; }
     expect(path).toBe(1);
+  });
+});
+
+describe('session 31, PR 2 - the early game', () => {
+  it('armour strips a flat amount but never more than the floor\'s share; a boss multiplier shrinks for heavy bodies', () => {
+    expect(bossHpMul({ hp: 30 })).toBe(BOSS_HP_MUL);
+    expect(bossHpMul({ hp: 12 })).toBe(BOSS_HP_MUL);
+    expect(bossHpMul({ hp: 90 })).toBeCloseTo(2);
+    expect(bossHpMul({ hp: 400 })).toBe(1.5);
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const plated: EnemyDef = { ...WALKER, hp: 100000, armor: 6 };
+    const single: TowerDef = { ...BOLT, fireEveryTicks: 1000, projectile: { damage: 8, speed: 1, homing: true } };
+    const sim = new Sim(47, { ...simOpts, towerDefs: [single], enemyDefs: [plated] });
+    sim.buildTower(spot.x, spot.y, 'bolt');
+    let guard = 0;
+    while (guard++ < 3000 && !(sim.alive[0] && sim.hp[0] < plated.hp)) sim.tick();
+    expect(plated.hp - sim.hp[0]).toBeCloseTo(8 * ARMOR_FLOOR); // 2.8, not 8 - 6 = 2
+  });
+
+  it('a delay in the difficulty spec pushes every unlock above wave 1 later, and the boss stays the heaviest available', () => {
+    const late: EnemyDef = { ...WALKER, id: 'late', hp: 90, minWave: 4 };
+    const { simOpts } = makeWorld(53, {});
+    const compose = (delay: number, w: number): number[] => {
+      const sim = new Sim(53, { ...simOpts, mode: 'waves', firstWaveWaits: true, enemyDefs: [WALKER, late], towerDefs: [BOLT], difficulty: { ...DEFAULT_DIFFICULTY, unlockDelay: delay } });
+      return (sim as unknown as { composeWave(w: number): number[] }).composeWave(w);
+    };
+    const hasLate = (q: number[]): boolean => q.some((x) => (x & ~(1 << 8)) === 1); // the boss flag is bit 8
+    expect(hasLate(compose(0, 4))).toBe(true);
+    expect(hasLate(compose(2, 4))).toBe(false);
+    expect(hasLate(compose(2, 6))).toBe(true);
   });
 });

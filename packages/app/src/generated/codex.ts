@@ -472,7 +472,7 @@ export const CODEX = {
       "kinetic": "x0.6",
       "energy": "x1.6",
       "traits": [
-        "armoured: immune to slows; armour is subtracted from every hit (Railbore ignores it)"
+        "armoured: immune to slows; armour is subtracted from every hit, but never more than 65% of it (Railbore ignores it)"
       ]
     },
     {
