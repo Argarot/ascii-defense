@@ -8,14 +8,18 @@
  * Regions are glyph-coordinate rectangles the app maps clicks through, the
  * same words-are-buttons contract as the HUD.
  */
+import type { Sprite } from '@ascii-defense/content';
 import type { TermSurface } from '@ascii-defense/render';
 import { role } from '../palette';
 import { rarityRole } from '../hud/HudPanel';
+import { RELIC_PLATE_W, drawRelicPlate, type RelicPlateKind } from './relicPlate';
 
 export interface OfferCard {
   name: string;
   kind: string;
   desc: string;
+  /** The relic's id, for its icon (session 30, PR 3). */
+  id?: string;
   /** 'common' | 'rare' | 'epic' (session 28, PR 2): the card's frame colour and its word. */
   rarity?: string;
 }
@@ -35,6 +39,7 @@ const GAP = 4;
 
 export class OfferModal {
   private regions: CardRegion[] = [];
+  constructor(private readonly sprites: ReadonlyMap<string, Sprite> = new Map()) {}
 
   /** Option index under a canvas pixel, or null. */
   optionAt(px: number, py: number, glyphPxW: number, glyphPxH: number): number | null {
@@ -62,20 +67,27 @@ export class OfferModal {
       for (let r = 0; r < CARD_H; r++) {
         term.write(cx, y0 + r, ' '.repeat(CARD_W), role('ui.text'), role('ui.bg'));
       }
-      // Rarity with teeth (session 28, PR 2): the frame wears the rarity's colour and the word.
+      // Rarity with teeth (session 28, PR 2) in the menu language (session 30,
+      // PR 3): the frame wears the rarity's colour with diamond corners, the
+      // rarity's word in a band on the top edge, the icon in its ring plate.
       const rr = rarityRole(c.rarity);
       const frame = rr ? role(rr) : role('ui.accent');
-      term.write(cx, y0, '+' + '-'.repeat(CARD_W - 2) + '+', frame, role('ui.bg'));
-      term.write(cx, y0 + CARD_H - 1, '+' + '-'.repeat(CARD_W - 2) + '+', frame, role('ui.bg'));
+      const bg = role('ui.bg');
+      term.write(cx, y0, '┌' + '─'.repeat(CARD_W - 2) + '┐', frame, bg);
+      term.write(cx, y0 + CARD_H - 1, '└' + '─'.repeat(CARD_W - 2) + '┘', frame, bg);
       for (let r = 1; r < CARD_H - 1; r++) {
-        term.write(cx, y0 + r, '|', frame, role('ui.bg'));
-        term.write(cx + CARD_W - 1, y0 + r, '|', frame, role('ui.bg'));
+        term.write(cx, y0 + r, '│', frame, bg);
+        term.write(cx + CARD_W - 1, y0 + r, '│', frame, bg);
       }
-      term.write(cx + 2, y0 + 2, c.name.slice(0, CARD_W - 4), frame, role('ui.bg'));
-      const kindLine = (c.rarity && c.rarity !== 'common' ? `${c.rarity.toUpperCase()} ` : '') + c.kind.toUpperCase();
-      term.write(cx + 2, y0 + 3, kindLine.slice(0, CARD_W - 4), c.rarity && c.rarity !== 'common' ? frame : role('ui.dim'), role('ui.bg'));
+      for (const [px, py] of [[cx, y0], [cx + CARD_W - 1, y0], [cx, y0 + CARD_H - 1], [cx + CARD_W - 1, y0 + CARD_H - 1]] as const) term.put(px, py, '◆', frame, bg);
+      const band = ` ${(c.rarity ?? 'common').toUpperCase()} `;
+      term.write(cx + Math.floor((CARD_W - band.length) / 2), y0, '┤' + band + '├', frame, bg);
+      const kind: RelicPlateKind = c.kind.startsWith('active') ? 'active' : c.kind.startsWith('consumable') ? 'consumable' : 'passive';
+      drawRelicPlate(term, c.id ? this.sprites.get(`relic_${c.id}`) : undefined, cx + 2, y0 + 2, { rarity: c.rarity, kind, plate: bg, fg: role('ui.text'), label: c.name.slice(0, 2).toUpperCase() });
+      term.write(cx + 3 + RELIC_PLATE_W, y0 + 3, c.name.slice(0, CARD_W - 5 - RELIC_PLATE_W), frame, bg);
+      term.write(cx + 3 + RELIC_PLATE_W, y0 + 4, c.kind.toUpperCase().slice(0, CARD_W - 5 - RELIC_PLATE_W), role('ui.dim'), bg);
       // Wrapped description.
-      let row = y0 + 5;
+      let row = y0 + 8;
       let line = '';
       for (const word of c.desc.split(' ')) {
         if (line !== '' && line.length + 1 + word.length > CARD_W - 4) {

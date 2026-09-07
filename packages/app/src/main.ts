@@ -172,7 +172,7 @@ async function main(): Promise<void> {
   screenTerm.canvas.style.zIndex = '20';
   screenTerm.canvas.style.border = 'none';
   const FULLSCREEN_MODES = new Set(['title', 'setup', 'loadout', 'howto', 'settings', 'summary', 'workshop', 'history']);
-  const offerModal = new OfferModal();
+  const offerModal = new OfferModal(new Map(SPRITES.map((s) => [s.id, s])));
   // The Forge (feedback 2026-09-06 evening, item 4): its own window, two slots, one button.
   const forgeModal = new ForgeModal(new Map(SPRITES.map((s) => [s.id, s])));
   let forgeOpen = false;

@@ -579,7 +579,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         ? {
             kind: 'relic' as const,
             title: s.heldRelics.length >= s.relicSlots ? `WAVE ${s.offerWave} CLEARED - RELICS FULL: press 1-3, then click the one it replaces (S skips)` : `WAVE ${s.offerWave} CLEARED - CHOOSE A RELIC`,
-            cards: offer.map((d, i) => ({ name: d.name, kind: `${d.kind} - ${(d.tags ?? []).join(' ')}`, desc: relicDescAt(d, s.offerRarity[i] ?? 0), rarity: RARITIES[s.offerRarity[i] ?? 0] })),
+            cards: offer.map((d, i) => ({ id: d.id, name: d.name, kind: `${d.kind} - ${(d.tags ?? []).join(' ')}`, desc: relicDescAt(d, s.offerRarity[i] ?? 0), rarity: RARITIES[s.offerRarity[i] ?? 0] })),
             wave: s.wave,
             reroll: { cost: s.rerollCost(), can: s.ore[0] >= s.rerollCost(), ore: s.ore[0] },
             full: s.heldRelics.length >= s.relicSlots,
