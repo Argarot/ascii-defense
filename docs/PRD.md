@@ -287,7 +287,9 @@ too, rock was a bug. A chest's homes are water and **empty ground** (no
 tower, no unopened cache); a chest on ground holds its cell for its window
 (no build under it) and gives it back when claimed or sunk. The off-route
 half of the invariant stands; the off-buildable half is now "not while it
-stands".
+stands". **A chest has a rarity** (session 30, PR 4; item 13): rolled when it
+surfaces - common six in ten, rare three, epic one - it colours the chest's
+box on the board and scales its Scrap and Ore ×1 / ×1.5 / ×2.
 
 ### 4.4 Map parameters are the difficulty dial
 
@@ -1438,23 +1440,23 @@ one line; his answer moves the row.
 | 10 | The build preview shows **every** modifier (boons, relics, an adjacent Bastion) so numbers never jump on build | **Shipped** (session 29, PR 0) — `previewStats` folds a ghost tower at the selected cell; the card and the range preview read it (§4.5) | 9.10 · PR 0 |
 | 11 | The Frost animation is harsh and epilepsy-inducing with many towers; mute it, or mute with distance | **Shipped** (session 29, PR 0) — the pulse ring fades with radius (bright at the tower, near nothing at the reach) and its peak is under half what it was | 9.11 · PR 0 |
 | 12 | Void chests on **unoccupied ground** too, not rock | **Shipped** (session 29, PR 0) — water and empty ground; a chest holds its cell while it stands (§4.9) | 9.12 · PR 0 |
-| 13 | Chests need a bigger, finer sprite, coloured by rarity | **Accepted** — the chest rolls its rarity when it surfaces; a 'chest' sprite kind for the art agent | 9.13 · art brief; row 29 |
-| 14 | Relic sprites one layer larger for a rarity frame (the approved icons plus a ring) | **Accepted** — relic cell 4×3 → 6×5 with the frame in the outer ring; strip and Forge plates follow | 9.14 · art brief; row 30 |
+| 13 | Chests need a bigger, finer sprite, coloured by rarity | **Shipped** (session 30, PR 4) — a chest rolls its rarity at surface (hashed; ×1 / ×1.5 / ×2 on its Scrap and Ore) and the board draws a 4×3 box in the rarity's colour; a `chest` sprite kind waits for the art agent | 9.13 · row 30 |
+| 14 | Relic sprites one layer larger for a rarity frame (the approved icons plus a ring) | **Shipped** (session 30, PR 3) — the view draws a 6×5 plate: the 4×3 icon in a ring of the rarity's colour, in the strip, the Forge and the offer; 6×5 sprites carrying their own ring may follow from the art agent | 9.14 · row 30 |
 | 15 | A **codex** menu with detailed entries for everything, locked entries shown as locked, reachable from every menu including mid-run | **Shipped** (session 29, PR 7) — HOW TO PLAY reads the tree: a locked tower names the node that opens it, a locked relic its branch or the win that earns it; from the title and from pause | 9.15 · row 29 |
 | 16 | Consumable: place **boon ground** on an empty ground cell | **Accepted** — boons already come from caches; the difficulty cost is the same as a cache boon | 9.16 · row 31 content |
 | 17 | Consumable: **god mode** for one tower, +100% to everything for a while, with an epic animation | **Accepted** — a timed per-tower multiplier and a sprite sequence | 9.17 · row 31 |
 | 18 | The relic offer only after the wave is **cleared**, never on "next wave" | **Shipped** (session 29, PR 0) — dealt only when the board is quiet; a call over living bodies carries the debt to the next quiet | 9.18 · PR 0 |
-| 19 | Actives and passives should look different in the slot | **Accepted** — a plate shape per kind (a button plate for actives), same icons | 9.19 · row 30 |
+| 19 | Actives and passives should look different in the slot | **Shipped** (session 30, PR 3) — the ring's corners say the kind: plain for a passive, diamonds for an active, crosses for a consumable | 9.19 · row 30 |
 | 20 | **Neutral structures** on the map, Tower-Dominion style, for the empty ground | **Debated** — the reply argues no: boon ground, caches and chests are the ground's business; the empty share is a generator knob; the Tile Smith's placeables (his own answer 6) author structures without a new kind | open |
 | 21 | **Merging four identical towers** into one big one; or a Bastion with four identical neighbours | **Debated** — merging is D25 (a 2×2 footprint through occupancy, targeting, art at 16×10); the reply proposes a **formation bonus** for four of a kind around a Bastion as the same feel at content cost | open (D25) |
 | 22 | **Endless mode** as the last unlock in the tree | **Accepted** — waves past 20 on the same curve; the harness already runs to 40 | 9.22 · row 29 (a node) |
 | 23 | **Fusing different relics**, tracked in the codex as discoveries | **Shipped** (session 29, PR 7) — a fused relic stays "???" in the codex until fused once; the meta save records discoveries; more recipes are content | 9.23 · row 29 |
 | 24 | **Piercing** should be a small local hit on bodies in the same cell, not a jump across lanes | **Shipped** (session 29, PR 0) — pierce continues only into bodies within half a cell of the impact (was 2.5 cells) | 9.24 · PR 0 |
-| 25 | Mortar and Missile explosions and projectiles must look different | **Accepted** — per-tower projectile and blast looks | 9.25 · art brief; row 30 |
+| 25 | Mortar and Missile explosions and projectiles must look different | **Shipped** (session 30, PR 4) — the impact names its tower; a Missile's blast is a hard core and eight spokes of shrapnel, a Mortar's the grainy shockwave | 9.25 · row 30 |
 | 26 | The Laser's slow path is redundant unless slows from different sources **stack multiplicatively** (never reaching 100%) | **Debated** — the reply proposes multiplicative stacking with a **floor** (a body never below 25% speed) and the sweep as the ruler; today's rule is coldest-wins (2026-09-05) | open · row 31 |
-| 27 | A Laser path could change the beam's colour | **Accepted** — the beam role per path | 9.27 · row 30 |
+| 27 | A Laser path could change the beam's colour | **Shipped** (session 30, PR 4) — the beam carries the lens's tier-1 path: Chill runs cold, Capacitor hot | 9.27 · row 30 |
 | 28 | Raw Laser damage always beats the burn; the burn needs a job | **Accepted** — the burn ignores armour and stacks per source: the control path is the anti-armour path | 9.28 · row 31 |
 | 29 | More towers, some only as **relics** (single-build towers) | **Accepted for later** — a relic that grants one copy of a unique tower; the tree can unlock them | 9.29 · row 32 content |
-| 30 | The menus need a real graphical rework, Stone-Story-quality | **Accepted** — a presentation session of its own, before the content push | 9.30 · row 30 |
+| 30 | The menus need a real graphical rework, Stone-Story-quality | **Shipped, the language** (session 30, PR 1) — every page a framed plate with a lit title band, columns, links and key hints; the workshop drawn as a tree; the Smith, the Forge and the offer in the same language. Ornament beyond what spleen has (double lines, blocks) is not drawable; the art agent's splash and the tile art are the next layer | 9.30 · row 30 |
 | 31 | How is meta progression tracked for a browser game; not-browser; monetization hardening | **Decision needed (D28)** — options in the reply: browser plus a light account backend, a desktop wrapper with a store's cloud saves and payments, or both; vendor facts to be checked before a plan | D28 · row 33 |
 | 32 | How many frames per sprite for smooth animation; or procedural animation | **Debated with a recommendation** — authored 4–8 frames for bodies at 100–150 ms, procedural for light and colour; an experiment sprite at 4/8/16 frames for his eye | 9.32 · art brief |
