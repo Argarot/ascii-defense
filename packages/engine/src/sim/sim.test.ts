@@ -1839,3 +1839,28 @@ describe('session 31, PR 2 - the early game', () => {
     expect(hasLate(compose(2, 6))).toBe(true);
   });
 });
+
+describe('session 31, PR 5 - the sim\'s edges', () => {
+  it('a wave keeps a body the slot cap refused instead of dropping it, and the count ceiling holds', () => {
+    expect(waveCount({ ...DEFAULT_DIFFICULTY, countMax: 60 }, 40)).toBe(60);
+    expect(waveCount(DEFAULT_DIFFICULTY, 40)).toBeGreaterThan(60);
+    const { simOpts } = makeWorld(53, {});
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const sim = new Sim(53, { ...simOpts, mode: 'waves', firstWaveWaits: true, interWaveTicks: 100000, enemyDefs: [parked], towerDefs: [BOLT] });
+    // Fill every slot by hand, then call a wave: nothing spawns and nothing is lost; kill them and the wave walks in.
+    const spawn = (sim as unknown as { spawn(e: { x: number; y: number }, d: number): boolean }).spawn.bind(sim);
+    let n = 0;
+    while (spawn(simOpts.map.entries[0], 0)) n++;
+    expect(n).toBe(1024);
+    expect(sim.callWave()).toBe(true);
+    const queued = sim.spawnRemaining();
+    expect(queued).toBeGreaterThan(0);
+    for (let t = 0; t < 60; t++) sim.tick();
+    expect(sim.spawnRemaining()).toBe(queued); // held, not dropped
+    expect(sim.aliveCount()).toBe(1024);
+    sim.debugKillAll();
+    for (let t = 0; t < 6 * queued + 10; t++) sim.tick();
+    expect(sim.spawnRemaining()).toBe(0);
+    expect(sim.aliveCount()).toBe(queued);
+  });
+});
