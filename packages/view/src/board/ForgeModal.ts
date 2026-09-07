@@ -42,7 +42,8 @@ interface Region {
 
 const SLOT_W = RELIC_PLATE_W + 2;
 const SLOT_H = RELIC_PLATE_H + 1;
-const kindOf = (k: string): RelicPlateKind => (k === 'active' ? 'active' : k === 'consumable' ? 'consumable' : 'passive');
+// The held row carries the SLOT state (ready/cooling for an active); the plate wants the kind.
+const kindOf = (k: string): RelicPlateKind => (k === 'active' || k === 'ready' || k === 'cooling' ? 'active' : k === 'consumable' ? 'consumable' : 'passive');
 
 export class ForgeModal {
   private regions: Region[] = [];
