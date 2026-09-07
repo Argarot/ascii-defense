@@ -32,10 +32,10 @@ describe('the title page', () => {
     screen.render(term, spec);
     const lines = term.toText().split('\n');
     const titleRow = lines.findIndex((l) => l.includes('ASCII DEFENSE'));
-    expect(titleRow).toBeGreaterThan(CELL_H); // room for the hero above
-    // Sprite glyphs stand in the rows above the title, two sprites wide.
+    expect(titleRow).toBeGreaterThanOrEqual(0); // the title is the frame's top band (session 30)
+    // Sprite glyphs stand in the rows under the band, two sprites wide.
     let drawn = 0;
-    for (let y = titleRow - CELL_H - 2; y < titleRow; y++) if (y >= 0) drawn += lines[y].trim().replace(/[⠀-⣿ ]/g, '').length;
+    for (let y = titleRow + 1; y < titleRow + CELL_H + 3 && y < lines.length; y++) drawn += lines[y].trim().replace(/[⠀-⣿ │─◆]/g, '').length;
     expect(drawn).toBeGreaterThan(CELL_W); // more than a sliver of art
     // The caption sits in the last row, right-aligned.
     expect(lines[49].trimEnd().endsWith('8x5 glyph cells')).toBe(true);
@@ -46,6 +46,6 @@ describe('the title page', () => {
     const plain = new TextTerm({ cols: 120, rows: 50 });
     screen.render(plain, { ...spec, hero: undefined });
     const plainTitle = plain.toText().split('\n').findIndex((l) => l.includes('ASCII DEFENSE'));
-    expect(plainTitle).toBeLessThan(titleRow);
+    expect(plainTitle).toBeGreaterThan(titleRow); // with a hero the frame is taller, so its band sits higher (session 30)
   });
 });

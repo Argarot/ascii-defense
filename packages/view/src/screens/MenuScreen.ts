@@ -4,6 +4,16 @@
  * transparent overlay terminal; closing a screen is simply not painting it.
  * No screen owns game state (PRD sec 15.1): items carry ids, the app decides
  * what an id means.
+ *
+ * The menu LANGUAGE (session 30, PR 1; Daniil's item 30, "the menus need a
+ * real graphical rework"): every page is a framed plate - a box-drawn frame
+ * with diamond corners, the title in a band on the top edge and lit by a
+ * travelling glow, an optional hero row of sprites, body lines, tile
+ * previews, COLUMNS of items side by side (a tree's branches, a tab rail),
+ * the main items as plates, a footer, and a row of key hints. spleen has
+ * the single-line box set and the diamond, nothing double or block-shaped;
+ * the language is drawn from what the font has (a glyph the font lacks
+ * draws nothing, silently - the playtest-13 lesson).
  */
 import type { TermSurface } from '@ascii-defense/render';
 import type { Sprite } from '@ascii-defense/content';
@@ -23,6 +33,13 @@ export interface MenuItem {
   /** Radio-style state (playtest 13): the row reads as CHOSEN - accent
    *  label between markers - not merely hoverable. */
   selected?: boolean;
+  /**
+   * This item hangs from the one above it (session 30): a connector is
+   * drawn between them - a tree's requirement, read at a glance.
+   */
+  link?: boolean;
+  /** A tint for the row's label: a rarity, a branch colour. A palette role name. */
+  tone?: string;
 }
 
 /** A pickable tile preview (2.21): the pool is seen, never read as names. */
@@ -30,6 +47,16 @@ export interface MenuTile {
   id: string;
   cells: readonly string[];
   selected: boolean;
+  /** The frame's colour when not selected - a rarity role for a vein tile (session 30). */
+  tone?: string;
+}
+
+/** A column of items (session 30): the pages that are a tree or a rail lay these side by side. */
+export interface MenuColumn {
+  heading?: string;
+  /** Dim lines under the heading - a branch's sentence, a tab's count. */
+  lines?: readonly string[];
+  items: readonly MenuItem[];
 }
 
 export interface MenuSpec {
@@ -38,9 +65,13 @@ export interface MenuSpec {
   body?: readonly string[];
   /** Tile previews rendered between body and items; clicking reports 'tile:<id>'. */
   tiles?: readonly MenuTile[];
+  /** Columns of items side by side, between the body and the main items (session 30). */
+  columns?: readonly MenuColumn[];
   items: readonly MenuItem[];
   footer?: string;
-  /** 0..1 breathing phase for the selected-item shimmer. */
+  /** Key hints in the frame's bottom band (session 30): [Esc] back  [N] next wave. */
+  keys?: readonly { key: string; does: string }[];
+  /** 0..1 breathing phase for the selected-item shimmer and the title's glow. */
   phase?: number;
   /**
    * The title page's HERO (4.28): a row of sprites drawn above the title at
@@ -54,6 +85,9 @@ export interface MenuSpec {
 
 const TILE_GW = TILE_SIZE * CELL_W; // tile preview width in glyphs
 const TILE_GH = TILE_SIZE * CELL_H;
+const PLATE_BG = '#0a0f16';
+const BACKDROP = '#070b11';
+const COLUMN_GAP = 3;
 
 /**
  * How many tile previews a screen of `cols` x `rows` can show at once with
@@ -68,45 +102,116 @@ export function tileCapacity(cols: number, rows: number, reservedRows: number): 
   return Math.max(1, perRow * Math.max(0, rowsFit));
 }
 
+/** Mix two hex colours; t = 0 is a, 1 is b. */
+function mix(a: string, b: string, t: number): string {
+  const ch = (h: string, i: number): number => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  const k = Math.max(0, Math.min(1, t));
+  const v = [0, 1, 2].map((i) => Math.round(ch(a, i) + (ch(b, i) - ch(a, i)) * k));
+  return '#' + v.map((n) => n.toString(16).padStart(2, '0')).join('');
+}
+
+const itemW = (it: MenuItem): number => it.label.length + (it.note ? it.note.length + 3 : 0) + (it.selected ? 4 : 0);
+const columnW = (c: MenuColumn): number => Math.max(c.heading?.length ?? 0, ...(c.lines ?? []).map((l) => l.length), ...c.items.map(itemW)) + 2;
+const columnH = (c: MenuColumn): number => (c.heading ? 1 : 0) + (c.lines?.length ?? 0) + c.items.reduce((n, it) => n + (it.link ? 2 : 1), 0) + (c.items.length ? 1 : 0);
+
 export class MenuScreen {
   private regions: { row: number; rowEnd?: number; x0: number; x1: number; id: string }[] = [];
 
   render(term: TermSurface, spec: MenuSpec): void {
     this.regions = [];
     const W = term.cols;
+    const phase = spec.phase ?? 0;
     // The board dims to backdrop under a screen (playtest 10): a checkerboard
     // of dark cells - the terminal's screen-door tint, since glyph cells have
     // no alpha. The map stays legible as a place, the menu owns the eye.
     for (let y = 0; y < term.rows; y++)
-      for (let x = (y % 2); x < W; x += 2) term.put(x, y, ' ', role('ui.dim'), '#070b11');
+      for (let x = (y % 2); x < W; x += 2) term.put(x, y, ' ', role('ui.dim'), BACKDROP);
     // Plate width comes from the CONTENT (playtest 10: clipped text): the
-    // longest of title, body lines, items with notes, footer - plus padding.
-    const noteW = (it: MenuItem): number => it.label.length + (it.note ? it.note.length + 3 : 0);
-    // Tiles wrap into rows sized by the terminal, never clipped (playtest
-    // 12, item 2): the plate grows to fit whole tiles, rows grow to fit all.
+    // longest of title, body lines, items with notes, columns, footer, keys -
+    // plus padding.
     const tiles = spec.tiles ?? [];
     const maxPerRow = Math.max(1, Math.floor((W - 10) / (TILE_GW + 3)));
     const perRow = Math.min(tiles.length, maxPerRow);
     const tileRows = perRow > 0 ? Math.ceil(tiles.length / perRow) : 0;
     const stripW = perRow > 0 ? perRow * (TILE_GW + 3) - 3 : 0;
+    const columns = spec.columns ?? [];
+    const colWs = columns.map(columnW);
+    // Columns wrap into rows that fit the screen (a five-branch tree on a
+    // narrow screen becomes three columns over two): greedy, in order.
+    const fitW = W - 8;
+    const rowsOfCols: number[][] = [];
+    let rowW = 0;
+    for (let i = 0; i < columns.length; i++) {
+      const w = colWs[i] + (rowW > 0 ? COLUMN_GAP : 0);
+      if (rowW > 0 && rowW + w > fitW) { rowsOfCols.push([]); rowW = 0; }
+      if (rowsOfCols.length === 0) rowsOfCols.push([]);
+      rowsOfCols[rowsOfCols.length - 1].push(i);
+      rowW += colWs[i] + (rowW > 0 ? COLUMN_GAP : 0);
+    }
+    const rowWidth = (r: number[]): number => r.reduce((a, i) => a + colWs[i], 0) + COLUMN_GAP * Math.max(0, r.length - 1);
+    const rowHeight = (r: number[]): number => Math.max(...r.map((i) => columnH(columns[i]))) + 1;
+    const columnsW = rowsOfCols.length ? Math.max(...rowsOfCols.map(rowWidth)) : 0;
+    const columnsH = rowsOfCols.reduce((a, r) => a + rowHeight(r), 0);
+    const keysText = (spec.keys ?? []).map((k) => `[${k.key}] ${k.does}`).join('   ');
     const widest = Math.max(
-      spec.title.length,
+      spec.title.length + 6,
       ...(spec.body ?? []).map((l) => l.length),
-      ...spec.items.map(noteW),
+      ...spec.items.map(itemW),
       (spec.footer ?? '').length,
+      keysText.length,
       stripW,
+      columnsW,
     );
     const hero = spec.hero ?? [];
     const heroH = hero.length > 0 ? CELL_H + 2 : 0;
     const heroW = hero.length > 0 ? hero.length * (CELL_W + 2) - 2 : 0;
-    const plateW = Math.min(W - 2, Math.max(widest + 8, heroW + 8));
+    const plateW = Math.min(W - 4, Math.max(widest + 8, heroW + 8));
     const stripH = tileRows * (TILE_GH + 3);
-    const contentH = heroH + 4 + (spec.body?.length ?? 0) + stripH + spec.items.length * 2 + (spec.footer ? 2 : 0);
-    const y0 = Math.max(1, Math.floor((term.rows - contentH) / 2));
+    const bodyH = (spec.body?.length ?? 0) + (spec.body?.length ? 1 : 0);
+    const contentH = 2 + heroH + bodyH + stripH + columnsH + spec.items.length * 2 + (spec.footer ? 1 : 0);
+    const frameH = contentH + 2; // the top band and the bottom band
+    const y0 = Math.max(1, Math.floor((term.rows - frameH) / 2));
     const x0 = Math.floor((W - plateW) / 2);
-    for (let y = y0 - 1; y < y0 + contentH + 1 && y < term.rows; y++)
-      for (let x = x0 - 1; x <= x0 + plateW && x < W; x++) term.put(x, y, ' ', role('ui.text'), '#0a0f16');
-    let y = y0;
+    const accent = role('ui.accent');
+    const grid = role('ui.grid');
+    const dim = role('ui.dim');
+    const text = role('ui.text');
+
+    // ---- the plate and its frame ------------------------------------------
+    for (let y = y0; y < y0 + frameH && y < term.rows; y++)
+      for (let x = x0 - 1; x <= x0 + plateW && x < W; x++) term.put(x, y, ' ', text, PLATE_BG);
+    const top = y0;
+    const bottom = y0 + frameH - 1;
+    for (let x = x0; x < x0 + plateW; x++) { term.put(x, top, '─', grid, PLATE_BG); term.put(x, bottom, '─', grid, PLATE_BG); }
+    for (let y = top + 1; y < bottom; y++) { term.put(x0 - 1, y, '│', grid, PLATE_BG); term.put(x0 + plateW, y, '│', grid, PLATE_BG); }
+    // Diamond corners: the ornament the font has.
+    for (const [cx, cy] of [[x0 - 1, top], [x0 + plateW, top], [x0 - 1, bottom], [x0 + plateW, bottom]] as const) term.put(cx, cy, '◆', accent, PLATE_BG);
+    // The title band: ─┤ TITLE ├─ on the top edge, each glyph lit by a glow
+    // that travels along the word with the phase - the animated title.
+    const band = ` ${spec.title} `;
+    const bx = x0 + Math.floor((plateW - band.length - 2) / 2);
+    term.put(bx, top, '┤', grid, PLATE_BG);
+    term.put(bx + band.length + 1, top, '├', grid, PLATE_BG);
+    for (let i = 0; i < band.length; i++) {
+      const wave = 0.5 + 0.5 * Math.sin((i / Math.max(1, band.length)) * Math.PI * 2 - phase * Math.PI * 2);
+      term.put(bx + 1 + i, top, band[i], mix(text, accent, 0.35 + 0.65 * wave), PLATE_BG);
+    }
+    // The bottom band carries the key hints, centred.
+    if (keysText) {
+      const kx = x0 + Math.floor((plateW - keysText.length - 2) / 2);
+      // The whole hint first (spaces cover the edge's dashes), then the keys lit over it.
+      term.put(kx, bottom, '┤', grid, PLATE_BG);
+      term.write(kx + 1, bottom, ' ' + keysText + ' ', dim, PLATE_BG);
+      term.put(kx + keysText.length + 3, bottom, '├', grid, PLATE_BG);
+      let x = kx + 2;
+      for (const k of spec.keys ?? []) {
+        const key = `[${k.key}]`;
+        term.write(x, bottom, key, accent, PLATE_BG);
+        x += key.length + 1 + k.does.length + 3;
+      }
+    }
+
+    let y = top + 2;
     if (hero.length > 0) {
       // The towers stand in a row above the title, each on its own ground.
       const hx0 = x0 + Math.floor((plateW - heroW) / 2);
@@ -117,11 +222,9 @@ export class MenuScreen {
       });
       y += heroH;
     }
-    term.write(x0 + Math.floor((plateW - spec.title.length) / 2), y, spec.title, role('ui.accent'));
-    y += 2;
     for (const line of spec.body ?? []) {
       const l = line.slice(0, plateW - 2);
-      term.write(x0 + Math.floor((plateW - l.length) / 2), y++, l, role('ui.dim'));
+      term.write(x0 + Math.floor((plateW - l.length) / 2), y++, l, dim, PLATE_BG);
     }
     if (spec.body?.length) y++;
     if (tiles.length > 0) {
@@ -135,7 +238,7 @@ export class MenuScreen {
         const tx = x0 + Math.max(1, Math.floor((plateW - rowW) / 2)) + col * (TILE_GW + 3);
         const ty = y + 1 + rowN * (TILE_GH + 3);
         const tile = tiles[i];
-        const frame = tile.selected ? role('ui.accent') : role('ui.grid');
+        const frame = tile.selected ? accent : tile.tone ? role(tile.tone) : grid;
         for (let fy = -1; fy <= TILE_GH; fy++) {
           for (let fx = -1; fx <= TILE_GW; fx++) {
             if (fy !== -1 && fy !== TILE_GH && fx !== -1 && fx !== TILE_GW) continue;
@@ -156,31 +259,62 @@ export class MenuScreen {
       }
       y += stripH;
     }
+    // ---- columns: a tree's branches, a rail of tabs -------------------------
+    for (const row of rowsOfCols) {
+      let cx0 = x0 + Math.floor((plateW - rowWidth(row)) / 2);
+      for (const ci of row) {
+        const c = columns[ci];
+        const cw = colWs[ci];
+        let cy = y;
+        if (c.heading) { term.write(cx0 + Math.floor((cw - c.heading.length) / 2), cy++, c.heading, accent, PLATE_BG); }
+        for (const l of c.lines ?? []) term.write(cx0 + Math.floor((cw - Math.min(l.length, cw)) / 2), cy++, l.slice(0, cw), dim, PLATE_BG);
+        if (c.heading || c.lines?.length) cy++;
+        for (const it of c.items) {
+          if (it.link) { term.put(cx0 + Math.floor(cw / 2), cy++, '│', grid, PLATE_BG); }
+          this.drawItem(term, it, cx0, cy, cw, phase);
+          cy++;
+        }
+        cx0 += cw + COLUMN_GAP;
+      }
+      y += rowHeight(row);
+    }
     for (const it of spec.items) {
-      const fg = it.disabled ? role('ui.grid') : it.selected ? role('ui.accent') : role('ui.text');
-      const bg = it.disabled ? '#0a0f16' : role('ui.grid');
-      const bw = plateW - 4;
-      // Centred label; the note keeps the right edge (playtest 10). A
-      // selected row wears markers around an accent label (playtest 13).
-      // ASCII markers on purpose: the first attempt used U+00BB, which
-      // spleen does not have - GLTerm silently drew nothing, which is
-      // exactly the "no visible effect" Daniil reported.
-      const label = it.selected ? `[ ${it.label} ]` : it.label;
-      const pad = Math.max(0, Math.floor((bw - label.length) / 2));
-      const rowText = (' '.repeat(pad) + label).padEnd(bw, ' ').slice(0, bw);
-      term.write(x0 + 2, y, rowText, fg, bg);
-      if (it.note) term.write(x0 + 2 + bw - it.note.length - 1, y, it.note, it.disabled ? role('ui.grid') : role('ui.accent'), bg);
-      if (!it.disabled) this.regions.push({ row: y, x0: x0 + 2, x1: x0 + plateW - 2, id: it.id });
+      this.drawItem(term, it, x0 + 2, y, plateW - 4, phase);
       y += 2;
     }
     if (spec.footer) {
       const f = spec.footer.slice(0, plateW - 2);
-      term.write(x0 + Math.floor((plateW - f.length) / 2), y, f, role('ui.dim'));
+      term.write(x0 + Math.floor((plateW - f.length) / 2), y, f, dim, PLATE_BG);
     }
     if (spec.caption) {
       const c = spec.caption.slice(0, W - 2);
-      term.write(W - 1 - c.length, term.rows - 1, c, role('ui.dim'));
+      term.write(W - 1 - c.length, term.rows - 1, c, dim);
     }
+  }
+
+  /** One item as a plate row of width bw at (x, y); a selected row wears diamond markers around an accent label. */
+  private drawItem(term: TermSurface, it: MenuItem, x: number, y: number, bw: number, phase: number): void {
+    const accent = role('ui.accent');
+    const fg = it.disabled ? role('ui.grid') : it.selected ? accent : it.tone ? role(it.tone) : role('ui.text');
+    const bg = it.disabled ? PLATE_BG : role('ui.grid');
+    // Centred label; the note keeps the right edge (playtest 10). A selected
+    // row wears markers around an accent label (playtest 13) - diamonds, a
+    // glyph spleen has (the first attempt used U+00BB, which it does not,
+    // and GLTerm drew nothing).
+    const label = it.selected ? `◆ ${it.label} ◆` : it.label;
+    // Centred when there is room; a note keeps the right edge, so in a narrow column the label moves left of it.
+    const room = it.note ? bw - it.note.length - 3 : bw;
+    const pad = Math.max(1, Math.min(Math.floor((bw - label.length) / 2), room - label.length));
+    const rowText = (' '.repeat(pad) + label).padEnd(bw, ' ').slice(0, bw);
+    term.write(x, y, rowText, fg, bg);
+    if (it.selected) {
+      // The markers breathe with the phase.
+      const glow = mix(role('ui.grid'), accent, 0.5 + 0.5 * Math.sin(phase * Math.PI * 2));
+      term.put(x + pad, y, '◆', glow, bg);
+      term.put(x + pad + label.length - 1, y, '◆', glow, bg);
+    }
+    if (it.note) term.write(x + bw - it.note.length - 1, y, it.note.slice(0, Math.max(0, bw - 2)), it.disabled ? role('ui.grid') : accent, bg);
+    if (!it.disabled) this.regions.push({ row: y, x0: x, x1: x + bw, id: it.id });
   }
 
   itemAt(px: number, py: number, glyphPxW: number, glyphPxH: number): string | null {
