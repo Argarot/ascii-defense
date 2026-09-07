@@ -1419,6 +1419,28 @@ built now closes the door — accounts and cloud saves are "out of scope" in
 nothing in the beta plan depends on it.
 
 
+## 20. The tutorial *(Daniil, 2026-09-07; built session 31)*
+
+Daniil's friend, some sessions ago: the interface is not intuitive for a
+new player. Daniil's ask: a tutorial that walks the player through the key
+mechanics with **the expected sequence of things to pay attention to
+highlighted in a coloured box that pulses**, changing size a bit.
+
+**Built (session 31, PR 1).** A first run is Calm. Twelve steps, each a
+target, a sentence in the column and an end: the Core; an entry; a good
+ground cell (ends when the player selects ground); the Bolt's button (ends
+on the first tower); the tower's card; Scrap and Ore; CALL WAVE (ends on
+wave 1); the strip's NOW and NEXT (ends on wave 2); the offer (ends on the
+first relic, or wave 3 with no offer up); the Core's slots; a rock; the
+end. The target is a yellow box-drawn outline on the terminal it lives on
+- the board, the column, the strip, the offer - one glyph wider on the
+pulse's other half (sideways only on a panel, so it never eats a line of
+text). Look-steps end on NEXT or Enter; SKIP ends the tutorial; a late
+joiner catches up in one frame. The step lives in the meta save, so a
+reload resumes; done or skipped sets `onboarded`, and SETTINGS → TUTORIAL
+replays it. The run never pauses for it: the sim is the sim, the tutorial
+is a lens. It replaced the three first-run prompts of session 27.
+
 ## 19. The thought dump of 2026-09-06 — filed *(Daniil, late evening)*
 
 Thirty-two items, absorbed here so nothing lives only in chat. Each row

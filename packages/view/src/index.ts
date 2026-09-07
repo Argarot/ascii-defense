@@ -18,6 +18,8 @@ export { EffectsLayer } from './board/effects';
 export { MenuScreen, tileCapacity, drawFrame } from './screens/MenuScreen';
 export { SmithScreen, BRUSH_GRID, BRUSH_GLYPH, BRUSH_NAME } from './screens/SmithScreen';
 export { drawRelicPlate, RELIC_PLATE_W, RELIC_PLATE_H } from './board/relicPlate';
+export { drawPulseBox } from './board/tutorialBox';
+export type { GlyphRect } from './board/tutorialBox';
 export type { RelicPlateKind, RelicPlateOpts } from './board/relicPlate';
 export type { SmithState } from './screens/SmithScreen';
 export type { MenuItem, MenuSpec } from './screens/MenuScreen';

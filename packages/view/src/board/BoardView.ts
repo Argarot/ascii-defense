@@ -170,6 +170,8 @@ export interface RenderState {
   projectiles?: readonly { x: number; y: number; vx?: number; vy?: number; kind?: string; k?: number }[];
   /** The hovered cell accepts a build right now (sim's verdict, not ours). */
   hoverBuildable?: boolean;
+  /** The selected cell accepts a build right now (session 31: the tutorial reads it). */
+  selectedBuildable?: boolean;
   /** Faint markers on tile corners - the map's seams, visible on demand. */
   showGrid?: boolean;
   /** Range overlay for the selected tower, in cell units; minR = the dead zone. */

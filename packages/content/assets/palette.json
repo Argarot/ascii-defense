@@ -676,6 +676,7 @@
     "terrain.rock_slate.lamp_breathe_4": "#91b5a4",
     "rarity.legendary": "#f2c14e",
     "beam.cold": "#9fe8ff",
-    "beam.hot": "#ffb070"
+    "beam.hot": "#ffb070",
+    "tutorial.box": "#f2d64e"
   }
 }
