@@ -652,6 +652,8 @@ is the same mistake as authoring sprites before the animation engine.)*
   - [x] 7.9.4 *(PR #171)* **The tile shop and the Tile Smith gate**: shipped specials priced (`price` in the tile schema) and bought once (7.7's first half; copies wait for a generator that places them); the loadout offers minted and OWNED tiles; the Tile Smith link opens when every purchasable tile is owned (answer 6), the caption says so until then.
   - [x] 7.9.5 *(PR #172; docs/lab/build-sweep-2026-09-06-tree.md)* **The lab at tree states**: `unlocks` in LabSpec with the content's tree, a producer at 'vein', the purse in the report; the sweep at base / mid / everything (13.5 / 11.3 / 26.3); a base run banks ~22 tier-1 Ore, which priced the nodes (the arsenal 105: about five base runs).
   - [x] 7.9.6 *(PR #173)* **The codex with locked entries** (9.15) and discovered fusions (9.23).
+  - [x] 7.10.1 *(session 30, PR #175)* **The menu language**: framed plates, a lit title band, columns that wrap, links, key hints, tones; the workshop drawn as a tree.
+  - [x] 7.10.2 *(session 30, PR #176)* **The Tile Smith as a page** (7.5's first half): the editor on the fullscreen terminal behind the door, MINT priced by `priceTile` (the shop's fallback), the tile into the owned pool.
   - [x] 7.9.7 *(PR #173)* **Legendary** (9.1) - a fourth lane reached only by forging two epics of a relic with a legendary tier (six today); the four rarity colours are Daniil's.
 
 **M7 gate: finishing a run visibly changes the next one.**

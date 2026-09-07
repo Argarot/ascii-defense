@@ -1075,6 +1075,18 @@ longer free. **The Tile Smith opens only once every tile the workshop can
 sell is owned** (Daniil, answer 6): until then the caption under the board
 says what opens it and the link is gone.
 
+**Built 2026-09-07 (session 30, PR 2) - the Tile Smith as a page of the
+shell.** Behind the door, the workshop's TILES page opens THE TILE SMITH on
+the fullscreen terminal in the menu language: the brush matrix as plates,
+the tile at the board's own scale (click or drag to paint; OVERLAYS click a
+vein or a boon onto a cell, the vein at a tier the tree allows), the
+derived connectors, the engine's verdict, the id, and **the price** -
+`priceTile`, the one function the Smith mints with (road cells, veins by
+their Ore, boons by their tier; the price's tier is one below the richest
+vein). MINT pays it from the banked purse and puts the tile in the owned
+pool. The standalone `tilesmith.html` stays as the authoring tool for
+library work and the art agent.
+
 This collapses what looked like three systems — ore tiers, the tile pool as
 progression, and Tile Smith as a meta feature — into one. The engine keeps only
 the shape: ore cells carry a tier, costs are expressed per tier.

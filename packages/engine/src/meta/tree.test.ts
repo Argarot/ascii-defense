@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_UNLOCKS, EMPTY_META, buyNode, buyTile, everyShopTile, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
+import { ALL_UNLOCKS, EMPTY_META, buyNode, buyTile, everyShopTile, priceTile, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
 
 const TREE: TreeDef = {
   base: { towers: ['bolt'], relics: ['tithe'], relicSlots: 6, threat: 1, tileSlots: 1, oreTier: 1, tiles: ['twin'] },
@@ -104,5 +104,15 @@ describe('the tile shop and the Smith\'s door (session 29, PR 5)', () => {
     const opened = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['ore2'] }, RELICS);
     const c = buyTile(opened, b!.owned, [60, 0, 0], RICH)!;
     expect(smithOpen(TREE, c.owned)).toEqual({ open: true, owned: 2, total: 2 });
+  });
+});
+
+describe('priceTile (session 30, PR 2)', () => {
+  it('prices roads, veins and boons; the tier is one below the richest vein', () => {
+    const g = (...rows: string[]): string[] => rows;
+    expect(priceTile({ cells: g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG') })).toEqual({ tier: 1, ore: 10 });
+    expect(priceTile({ cells: g('GGGGG', 'GGGGG', '-----', 'GGGGG', 'GGGGG') })).toEqual({ tier: 1, ore: 20 });
+    expect(priceTile({ cells: g('GGGGG', 'GGOGG', 'GGGGG', 'GGGGG', 'GGGGG'), deposits: [{ amount: 60, tier: 2 }] })).toEqual({ tier: 1, ore: 20 });
+    expect(priceTile({ cells: g('GGGGG', 'GGOGG', 'GGGGG', 'GGGGG', 'GGGGG'), deposits: [{ amount: 90, tier: 3 }], boons: [{ tier: 2 }] })).toEqual({ tier: 2, ore: 41 });
   });
 });

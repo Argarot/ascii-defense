@@ -114,6 +114,60 @@ const itemW = (it: MenuItem): number => it.label.length + (it.note ? it.note.len
 const columnW = (c: MenuColumn): number => Math.max(c.heading?.length ?? 0, ...(c.lines ?? []).map((l) => l.length), ...c.items.map(itemW)) + 2;
 const columnH = (c: MenuColumn): number => (c.heading ? 1 : 0) + (c.lines?.length ?? 0) + c.items.reduce((n, it) => n + (it.link ? 2 : 1), 0) + (c.items.length ? 1 : 0);
 
+/** What drawFrame needs: where the plate is and what its bands say. */
+export interface FrameOpts {
+  title: string;
+  keys?: readonly { key: string; does: string }[];
+  phase: number;
+  plateW: number;
+  frameH: number;
+  x0: number;
+  y0: number;
+}
+
+/**
+ * The frame of every page (session 30): the plate fill, the box-drawn
+ * edges, the diamond corners, the title band on the top edge lit by a glow
+ * that travels with the phase, the key hints in the bottom band. Shared by
+ * the menu and the Smith so the shell has one face.
+ */
+export function drawFrame(term: TermSurface, o: FrameOpts): void {
+  const accent = role('ui.accent');
+  const grid = role('ui.grid');
+  const dim = role('ui.dim');
+  const text = role('ui.text');
+  const W = term.cols;
+  const { x0, y0, plateW, frameH } = o;
+  for (let y = y0; y < y0 + frameH && y < term.rows; y++)
+    for (let x = x0 - 1; x <= x0 + plateW && x < W; x++) term.put(x, y, ' ', text, PLATE_BG);
+  const top = y0;
+  const bottom = y0 + frameH - 1;
+  for (let x = x0; x < x0 + plateW; x++) { term.put(x, top, '─', grid, PLATE_BG); term.put(x, bottom, '─', grid, PLATE_BG); }
+  for (let y = top + 1; y < bottom; y++) { term.put(x0 - 1, y, '│', grid, PLATE_BG); term.put(x0 + plateW, y, '│', grid, PLATE_BG); }
+  for (const [cx, cy] of [[x0 - 1, top], [x0 + plateW, top], [x0 - 1, bottom], [x0 + plateW, bottom]] as const) term.put(cx, cy, '◆', accent, PLATE_BG);
+  const band = ` ${o.title} `;
+  const bx = x0 + Math.floor((plateW - band.length - 2) / 2);
+  term.put(bx, top, '┤', grid, PLATE_BG);
+  term.put(bx + band.length + 1, top, '├', grid, PLATE_BG);
+  for (let i = 0; i < band.length; i++) {
+    const wave = 0.5 + 0.5 * Math.sin((i / Math.max(1, band.length)) * Math.PI * 2 - o.phase * Math.PI * 2);
+    term.put(bx + 1 + i, top, band[i], mix(text, accent, 0.35 + 0.65 * wave), PLATE_BG);
+  }
+  const keysText = (o.keys ?? []).map((k) => `[${k.key}] ${k.does}`).join('   ');
+  if (keysText) {
+    const kx = x0 + Math.floor((plateW - keysText.length - 2) / 2);
+    term.put(kx, bottom, '┤', grid, PLATE_BG);
+    term.write(kx + 1, bottom, ' ' + keysText + ' ', dim, PLATE_BG);
+    term.put(kx + keysText.length + 3, bottom, '├', grid, PLATE_BG);
+    let x = kx + 2;
+    for (const k of o.keys ?? []) {
+      const key = `[${k.key}]`;
+      term.write(x, bottom, key, accent, PLATE_BG);
+      x += key.length + 1 + k.does.length + 3;
+    }
+  }
+}
+
 export class MenuScreen {
   private regions: { row: number; rowEnd?: number; x0: number; x1: number; id: string }[] = [];
 
@@ -175,41 +229,9 @@ export class MenuScreen {
     const accent = role('ui.accent');
     const grid = role('ui.grid');
     const dim = role('ui.dim');
-    const text = role('ui.text');
 
-    // ---- the plate and its frame ------------------------------------------
-    for (let y = y0; y < y0 + frameH && y < term.rows; y++)
-      for (let x = x0 - 1; x <= x0 + plateW && x < W; x++) term.put(x, y, ' ', text, PLATE_BG);
+    drawFrame(term, { title: spec.title, keys: spec.keys, phase, plateW, frameH, x0, y0 });
     const top = y0;
-    const bottom = y0 + frameH - 1;
-    for (let x = x0; x < x0 + plateW; x++) { term.put(x, top, '─', grid, PLATE_BG); term.put(x, bottom, '─', grid, PLATE_BG); }
-    for (let y = top + 1; y < bottom; y++) { term.put(x0 - 1, y, '│', grid, PLATE_BG); term.put(x0 + plateW, y, '│', grid, PLATE_BG); }
-    // Diamond corners: the ornament the font has.
-    for (const [cx, cy] of [[x0 - 1, top], [x0 + plateW, top], [x0 - 1, bottom], [x0 + plateW, bottom]] as const) term.put(cx, cy, '◆', accent, PLATE_BG);
-    // The title band: ─┤ TITLE ├─ on the top edge, each glyph lit by a glow
-    // that travels along the word with the phase - the animated title.
-    const band = ` ${spec.title} `;
-    const bx = x0 + Math.floor((plateW - band.length - 2) / 2);
-    term.put(bx, top, '┤', grid, PLATE_BG);
-    term.put(bx + band.length + 1, top, '├', grid, PLATE_BG);
-    for (let i = 0; i < band.length; i++) {
-      const wave = 0.5 + 0.5 * Math.sin((i / Math.max(1, band.length)) * Math.PI * 2 - phase * Math.PI * 2);
-      term.put(bx + 1 + i, top, band[i], mix(text, accent, 0.35 + 0.65 * wave), PLATE_BG);
-    }
-    // The bottom band carries the key hints, centred.
-    if (keysText) {
-      const kx = x0 + Math.floor((plateW - keysText.length - 2) / 2);
-      // The whole hint first (spaces cover the edge's dashes), then the keys lit over it.
-      term.put(kx, bottom, '┤', grid, PLATE_BG);
-      term.write(kx + 1, bottom, ' ' + keysText + ' ', dim, PLATE_BG);
-      term.put(kx + keysText.length + 3, bottom, '├', grid, PLATE_BG);
-      let x = kx + 2;
-      for (const k of spec.keys ?? []) {
-        const key = `[${k.key}]`;
-        term.write(x, bottom, key, accent, PLATE_BG);
-        x += key.length + 1 + k.does.length + 3;
-      }
-    }
 
     let y = top + 2;
     if (hero.length > 0) {
