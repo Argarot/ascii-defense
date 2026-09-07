@@ -6,7 +6,7 @@ import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
 import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
-import { effectiveStats } from './defs';
+import { effectiveStats, relicDescAt } from './defs';
 import type { EnemyDef, RecipeDef, RelicDef, SetDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
@@ -1740,5 +1740,29 @@ describe('session 29, PR 4 - Ore by tier', () => {
     for (let t = 0; t < cycle; t++) t2.tick();
     expect(t2.ore[1]).toBe(2); // the second cycle at 1.5x: 40 + 60 = 100 < 3 * 40 + 2
     expect(t2.depositAt(vein.x, vein.y)!.tier).toBe(2);
+  });
+});
+
+describe('session 29, PR 7 - legendary', () => {
+  it('two epics climb to legendary only for a relic with a legendary tier; the fold and the salvage follow', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 0, spawnEveryTicks: 1000 });
+    const RELICS: RelicDef[] = [
+      { id: 'plain', name: 'Plain', kind: 'passive', rarity: 'epic', desc: '', effects: { damageMul: 1.5 } },
+      { id: 'crowned', name: 'Crowned', kind: 'passive', rarity: 'epic', desc: '', effects: { damageMul: 1.5 }, tiers: { legendary: { desc: 'x2', effects: { damageMul: 2 } } } },
+    ];
+    const sim = new Sim(53, { ...simOpts, relicDefs: RELICS });
+    expect(sim.debugGrantRelic('plain')).toBe(true);
+    expect(sim.debugGrantRelic('plain')).toBe(true);
+    expect(sim.combineTargets(0)).toEqual([]); // no legendary tier: two epics stay two epics
+    expect(sim.combineRelics(0, 1)).toBe(false);
+    expect(sim.debugGrantRelic('crowned')).toBe(true);
+    expect(sim.debugGrantRelic('crowned')).toBe(true);
+    expect(sim.combineTargets(2)[0].resultRarity).toBe('legendary');
+    expect(sim.combineRelics(2, 3)).toBe(true);
+    expect(sim.heldRarity[2]).toBe(3);
+    expect(relicDescAt(RELICS[1], 3)).toBe('x2');
+    expect(sim.heldEffects(2).damageMul).toBe(2);
+    expect(sim.forgedThisRun.get('crowned')).toBe(3);
+    expect(sim.salvageOre(2)).toBe(SALVAGE_ORE[3]);
   });
 });

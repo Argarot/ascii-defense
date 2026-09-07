@@ -10,6 +10,7 @@
  */
 import type { TermSurface } from '@ascii-defense/render';
 import { role } from '../palette';
+import { rarityRole } from '../hud/HudPanel';
 
 export interface OfferCard {
   name: string;
@@ -62,7 +63,8 @@ export class OfferModal {
         term.write(cx, y0 + r, ' '.repeat(CARD_W), role('ui.text'), role('ui.bg'));
       }
       // Rarity with teeth (session 28, PR 2): the frame wears the rarity's colour and the word.
-      const frame = c.rarity === 'rare' ? role('rarity.rare') : c.rarity === 'epic' ? role('rarity.epic') : role('ui.accent');
+      const rr = rarityRole(c.rarity);
+      const frame = rr ? role(rr) : role('ui.accent');
       term.write(cx, y0, '+' + '-'.repeat(CARD_W - 2) + '+', frame, role('ui.bg'));
       term.write(cx, y0 + CARD_H - 1, '+' + '-'.repeat(CARD_W - 2) + '+', frame, role('ui.bg'));
       for (let r = 1; r < CARD_H - 1; r++) {

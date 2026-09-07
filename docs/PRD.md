@@ -746,6 +746,15 @@ one filter, no new system.
 
 ### 7.6 Scarcity, fusion, and why slots are not the constraint
 
+**Legendary (session 29, PR 7; Daniil's item 1).** A fourth rarity lane -
+common green, rare blue, epic purple, **legendary gold** (the palette's
+`rarity.*` roles) - that the offer never deals: it is reached only by
+forging two epics of a relic that carries a `tiers.legendary`, in the
+Forge, and it salvages for 60 Ore. Six relics carry one today (the five
+fused relics and Loadbearing); a relic without the tier stops at epic, and
+the Forge says so by offering no target. The paid "uber" tier of the same
+item stays D27.
+
 *(Added 2026-08-16, after a run filled every slot within a minute and then stopped
 receiving offers entirely: the pool was exhausted, so the acquisition layer
 switched itself off in silence.)*
@@ -1405,7 +1414,7 @@ one line; his answer moves the row.
 
 | # | The ask | Status | Where / when |
 |---|---|---|---|
-| 1 | A fourth rarity, **legendary**; colours common green, rare blue, epic purple, legendary gold; an **uber tier for money** with shifting rainbow colours, Stone-Story style | Legendary: **accepted** (a fifth lane in RARITIES, tiers gain `legendary`, the roll's weights gain a lane). Uber: **debated** — it is the pay-to-win §18 rules out; filed under D27 as intent, not built | 9.1 · row 29 (legendary), D27 (uber) |
+| 1 | A fourth rarity, **legendary**; colours common green, rare blue, epic purple, legendary gold; an **uber tier for money** with shifting rainbow colours, Stone-Story style | Legendary: **shipped** (session 29, PR 7) as a lane the offer never deals - reached by forging two epics of a relic with a legendary tier; the four colours are the palette's (§7.6). Uber: **debated** — it is the pay-to-win §18 rules out; filed under D27 as intent, not built | 9.1 · row 29 (legendary), D27 (uber) |
 | 2 | The higher tier of a relic that has tiers is **unlocked by forging** the lower ones first; tierless relics unlock on their own | **Accepted** — the meta save records "forged to rare/epic/legendary" per relic; the pool deals a tier only once it was forged once (the tree still gates the relic itself) | 9.2 · row 29 |
 | 3 | New relics unlock by **beating the game** (difficulty sets the rarity) or through **paid chests**; once a category is exhausted, chests of that rarity | **Accepted with a reconciliation**: the tree unlocks branches (tags) and capacity; the relics inside a branch are earned by wins at a Threat level; paid chests are §18's door. Daniil to confirm the split | 9.3 · row 29 |
 | 4 | One Refinery mines every ore tier; higher tiers mine slower | **Accepted** — a per-tier cycle multiplier; Deep Bore / Deep Shaft keep growing the vein | 9.4 · row 29 (with ore tiers) |
@@ -1419,7 +1428,7 @@ one line; his answer moves the row.
 | 12 | Void chests on **unoccupied ground** too, not rock | **Shipped** (session 29, PR 0) — water and empty ground; a chest holds its cell while it stands (§4.9) | 9.12 · PR 0 |
 | 13 | Chests need a bigger, finer sprite, coloured by rarity | **Accepted** — the chest rolls its rarity when it surfaces; a 'chest' sprite kind for the art agent | 9.13 · art brief; row 29 |
 | 14 | Relic sprites one layer larger for a rarity frame (the approved icons plus a ring) | **Accepted** — relic cell 4×3 → 6×5 with the frame in the outer ring; strip and Forge plates follow | 9.14 · art brief; row 30 |
-| 15 | A **codex** menu with detailed entries for everything, locked entries shown as locked, reachable from every menu including mid-run | **Accepted** — HOW TO PLAY becomes the codex, reads the unlock set, opens from pause | 9.15 · row 29 |
+| 15 | A **codex** menu with detailed entries for everything, locked entries shown as locked, reachable from every menu including mid-run | **Shipped** (session 29, PR 7) — HOW TO PLAY reads the tree: a locked tower names the node that opens it, a locked relic its branch or the win that earns it; from the title and from pause | 9.15 · row 29 |
 | 16 | Consumable: place **boon ground** on an empty ground cell | **Accepted** — boons already come from caches; the difficulty cost is the same as a cache boon | 9.16 · row 31 content |
 | 17 | Consumable: **god mode** for one tower, +100% to everything for a while, with an epic animation | **Accepted** — a timed per-tower multiplier and a sprite sequence | 9.17 · row 31 |
 | 18 | The relic offer only after the wave is **cleared**, never on "next wave" | **Shipped** (session 29, PR 0) — dealt only when the board is quiet; a call over living bodies carries the debt to the next quiet | 9.18 · PR 0 |
@@ -1427,7 +1436,7 @@ one line; his answer moves the row.
 | 20 | **Neutral structures** on the map, Tower-Dominion style, for the empty ground | **Debated** — the reply argues no: boon ground, caches and chests are the ground's business; the empty share is a generator knob; the Tile Smith's placeables (his own answer 6) author structures without a new kind | open |
 | 21 | **Merging four identical towers** into one big one; or a Bastion with four identical neighbours | **Debated** — merging is D25 (a 2×2 footprint through occupancy, targeting, art at 16×10); the reply proposes a **formation bonus** for four of a kind around a Bastion as the same feel at content cost | open (D25) |
 | 22 | **Endless mode** as the last unlock in the tree | **Accepted** — waves past 20 on the same curve; the harness already runs to 40 | 9.22 · row 29 (a node) |
-| 23 | **Fusing different relics**, tracked in the codex as discoveries | **Accepted** — five recipes exist; more come with the codex's "discovered" list in the meta save | 9.23 · row 29 |
+| 23 | **Fusing different relics**, tracked in the codex as discoveries | **Shipped** (session 29, PR 7) — a fused relic stays "???" in the codex until fused once; the meta save records discoveries; more recipes are content | 9.23 · row 29 |
 | 24 | **Piercing** should be a small local hit on bodies in the same cell, not a jump across lanes | **Shipped** (session 29, PR 0) — pierce continues only into bodies within half a cell of the impact (was 2.5 cells) | 9.24 · PR 0 |
 | 25 | Mortar and Missile explosions and projectiles must look different | **Accepted** — per-tower projectile and blast looks | 9.25 · art brief; row 30 |
 | 26 | The Laser's slow path is redundant unless slows from different sources **stack multiplicatively** (never reaching 100%) | **Debated** — the reply proposes multiplicative stacking with a **floor** (a body never below 25% speed) and the sweep as the ruler; today's rule is coldest-wins (2026-09-05) | open · row 31 |

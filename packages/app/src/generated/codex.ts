@@ -533,7 +533,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Overkill damage chains to the nearest enemy. Chain kills chain again.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "frostbite",
@@ -547,7 +549,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Slowed enemies take +50% damage from everything. Stacks.",
       "rare": "Slowed enemies take +75% from everything.",
-      "epic": "Slowed enemies take double from everything."
+      "epic": "Slowed enemies take double from everything.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "tithe",
@@ -561,7 +565,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every kill refunds 2 Scrap. Stacks.",
       "rare": "Every kill refunds 3 Scrap.",
-      "epic": "Every kill refunds 5 Scrap."
+      "epic": "Every kill refunds 5 Scrap.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "splinter",
@@ -575,7 +581,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Explosions detonate twice: the same blast, resolved again a beat later - you will see both.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "vein_tap",
@@ -589,7 +597,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "You may build on rock.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "loadbearing",
@@ -603,7 +613,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Towers touching the Core block get half again their range.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "Towers touching the Core block get double range.",
+      "fusionOnly": false
     },
     {
       "id": "second_wind",
@@ -617,7 +629,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "The Core mends 2 health every time a wave launches.",
       "rare": "The Core mends 4 health every wave.",
-      "epic": "The Core mends 6 health every wave."
+      "epic": "The Core mends 6 health every wave.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "quarry",
@@ -631,7 +645,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Rock breaks three times faster - every prospect job, everywhere.",
       "rare": "Prospecting runs four times as fast.",
-      "epic": "Prospecting runs six times as fast."
+      "epic": "Prospecting runs six times as fast.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "toll",
@@ -645,7 +661,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every enemy pays 1 Scrap for each cell it walks beside a tower. Stacks.",
       "rare": "Every enemy that passes a tower pays 2 Scrap.",
-      "epic": "Every enemy that passes a tower pays 3 Scrap."
+      "epic": "Every enemy that passes a tower pays 3 Scrap.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "bounty_board",
@@ -659,7 +677,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Bosses pay half again as much Scrap.",
       "rare": "Boss bounties pay double.",
-      "epic": "Boss bounties pay triple."
+      "epic": "Boss bounties pay triple.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "orbital",
@@ -673,7 +693,9 @@ export const CODEX = {
       "recharge": "90 s",
       "desc": "Strike anywhere: 400 damage in a 3-cell blast. Recharges slowly. A second copy is a second charge.",
       "rare": "Strike anywhere: 550 damage in a 3.5-cell blast. Recharges slowly.",
-      "epic": "Strike anywhere: 800 damage in a 4-cell blast. Recharges slowly."
+      "epic": "Strike anywhere: 800 damage in a 4-cell blast. Recharges slowly.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "stasis",
@@ -687,7 +709,9 @@ export const CODEX = {
       "recharge": "120 s",
       "desc": "Freeze every enemy for 4 seconds. Towers keep firing. A second copy is a second charge.",
       "rare": "Freeze every enemy for 6 seconds. Towers keep firing.",
-      "epic": "Freeze every enemy for 8 seconds. Towers keep firing."
+      "epic": "Freeze every enemy for 8 seconds. Towers keep firing.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "deep_vein",
@@ -701,7 +725,9 @@ export const CODEX = {
       "recharge": "120 s",
       "desc": "Refineries produce five-fold for 20 seconds. A second copy is a second charge.",
       "rare": "Refineries produce at six times for 30 seconds.",
-      "epic": "Refineries produce at eight times for 40 seconds."
+      "epic": "Refineries produce at eight times for 40 seconds.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "sandbags",
@@ -715,7 +741,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Use: the Core gains 15 health, and 15 to its maximum. One use.",
       "rare": "The Core gains 25 max health, once.",
-      "epic": "The Core gains 40 max health, once."
+      "epic": "The Core gains 40 max health, once.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "flashbang",
@@ -729,7 +757,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Use: every enemy freezes for 2 seconds. One use.",
       "rare": "Freeze every enemy for 3 seconds, once.",
-      "epic": "Freeze every enemy for 4 seconds, once."
+      "epic": "Freeze every enemy for 4 seconds, once.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "ore_pocket",
@@ -743,7 +773,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Use: 20 Ore, right now. One use.",
       "rare": "35 Ore, once.",
-      "epic": "60 Ore, once."
+      "epic": "60 Ore, once.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "ricochet",
@@ -758,7 +790,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "A killing hit carries half of itself to the nearest body within two cells.",
       "rare": "A killing hit carries 70% of itself to the nearest body within two cells.",
-      "epic": "A killing hit carries itself whole to the nearest body within two cells."
+      "epic": "A killing hit carries itself whole to the nearest body within two cells.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "cold_snap",
@@ -772,7 +806,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "A slowed or frozen body that dies chills everything within a cell and a half for a second.",
       "rare": "...for a second and a half.",
-      "epic": "...for two seconds."
+      "epic": "...for two seconds.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "kindling",
@@ -787,7 +823,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "A burning body that dies passes its burn to everything within a cell and a half.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "salvage_rights",
@@ -801,7 +839,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Sold towers refund 85% instead of 70%.",
       "rare": "Sold towers refund in full.",
-      "epic": "Sold towers refund in full."
+      "epic": "Sold towers refund in full.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "bulk_order",
@@ -815,7 +855,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every tower costs 10% less.",
       "rare": "Every tower costs 15% less.",
-      "epic": "Every tower costs 25% less."
+      "epic": "Every tower costs 25% less.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "cheap_upgrades",
@@ -829,7 +871,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every tier choice costs 15% less.",
       "rare": "Every tier choice costs 25% less.",
-      "epic": "Every tier choice costs 40% less."
+      "epic": "Every tier choice costs 40% less.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "wide_net",
@@ -843,7 +887,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every shot passes into one more body.",
       "rare": "Every shot passes into two more bodies.",
-      "epic": "Every shot passes into three more bodies."
+      "epic": "Every shot passes into three more bodies.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "grounding_rod",
@@ -857,7 +903,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every arc jumps to one more body.",
       "rare": "Every arc jumps to two more bodies.",
-      "epic": "Every arc jumps to three more bodies."
+      "epic": "Every arc jumps to three more bodies.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "long_fuse",
@@ -872,7 +920,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every blast reaches half a cell further.",
       "rare": "Every blast reaches a cell further.",
-      "epic": "Every blast reaches a cell and a half further."
+      "epic": "Every blast reaches a cell and a half further.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "sniper_nest",
@@ -887,7 +937,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Towers touching the Core face hit for half again.",
       "rare": "",
-      "epic": "Towers touching the Core face hit for double."
+      "epic": "Towers touching the Core face hit for double.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "bloodstone",
@@ -901,7 +953,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every tenth kill mends the Core by 1.",
       "rare": "Every seventh kill mends the Core by 1.",
-      "epic": "Every fifth kill mends the Core by 1."
+      "epic": "Every fifth kill mends the Core by 1.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "rush_bonus",
@@ -916,7 +970,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Calling a wave early pays double the clock bonus.",
       "rare": "Calling a wave early pays triple the clock bonus.",
-      "epic": "Calling a wave early pays four times the clock bonus."
+      "epic": "Calling a wave early pays four times the clock bonus.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "scavenger",
@@ -930,7 +986,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Caches pay double Scrap.",
       "rare": "Caches pay triple Scrap.",
-      "epic": "Caches pay four times the Scrap."
+      "epic": "Caches pay four times the Scrap.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "prospectors_eye",
@@ -944,7 +1002,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Prospecting rock costs nothing.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "iron_will",
@@ -958,7 +1018,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every breach costs the Core 1 less.",
       "rare": "Every breach costs the Core 2 less.",
-      "epic": "Every breach costs the Core 3 less."
+      "epic": "Every breach costs the Core 3 less.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "frost_nova",
@@ -972,7 +1034,9 @@ export const CODEX = {
       "recharge": "60 s",
       "desc": "Every enemy on the board moves at half speed for 4 seconds. Recharges in a minute.",
       "rare": "Every enemy moves at 40% for 6 seconds.",
-      "epic": "Every enemy moves at 30% for 8 seconds."
+      "epic": "Every enemy moves at 30% for 8 seconds.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "scrap_rain",
@@ -986,7 +1050,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "80 Scrap, once.",
       "rare": "140 Scrap, once.",
-      "epic": "220 Scrap, once."
+      "epic": "220 Scrap, once.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "emergency_repair",
@@ -1000,7 +1066,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "The Core mends 20 now.",
       "rare": "The Core mends 35 now.",
-      "epic": "The Core mends 50 now."
+      "epic": "The Core mends 50 now.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "foundry",
@@ -1014,7 +1082,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "A Refinery standing off any vein produces its yield as Scrap instead. The PRD's rule, broken by a relic.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "thick_walls",
@@ -1028,7 +1098,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "The Core holds 10 more while this is held.",
       "rare": "The Core holds 20 more while this is held.",
-      "epic": "The Core holds 35 more while this is held."
+      "epic": "The Core holds 35 more while this is held.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "iron_sights",
@@ -1042,7 +1114,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every tower reaches one cell further.",
       "rare": "Every tower reaches a cell and a half further.",
-      "epic": "Every tower reaches two cells further."
+      "epic": "Every tower reaches two cells further.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "hot_loads",
@@ -1056,7 +1130,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every hit does 15% more.",
       "rare": "Every hit does 25% more.",
-      "epic": "Every hit does 40% more."
+      "epic": "Every hit does 40% more.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "quick_hands",
@@ -1070,7 +1146,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every tower cycles two ticks faster.",
       "rare": "Every tower cycles three ticks faster.",
-      "epic": "Every tower cycles five ticks faster."
+      "epic": "Every tower cycles five ticks faster.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "deep_cold",
@@ -1084,7 +1162,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every slow is 10% colder.",
       "rare": "Every slow is 15% colder.",
-      "epic": "Every slow is 25% colder."
+      "epic": "Every slow is 25% colder.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "overclock",
@@ -1098,7 +1178,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every beam heats one multiple higher.",
       "rare": "",
-      "epic": "Every beam heats two multiples higher."
+      "epic": "Every beam heats two multiples higher.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "wide_aura",
@@ -1112,7 +1194,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every aura reaches one cell further.",
       "rare": "",
-      "epic": "Every aura reaches two cells further."
+      "epic": "Every aura reaches two cells further.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "rich_seam",
@@ -1126,7 +1210,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every refinery mines one more Ore a cycle.",
       "rare": "Every refinery mines two more Ore a cycle.",
-      "epic": "Every refinery mines three more Ore a cycle."
+      "epic": "Every refinery mines three more Ore a cycle.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "war_chest",
@@ -1140,7 +1226,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Ten Scrap at every wave launch.",
       "rare": "Twenty Scrap at every wave launch.",
-      "epic": "Thirty-five Scrap at every wave launch."
+      "epic": "Thirty-five Scrap at every wave launch.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "bounty_hunter",
@@ -1154,7 +1242,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every bounty pays 25% more.",
       "rare": "Every bounty pays 50% more.",
-      "epic": "Every bounty pays double."
+      "epic": "Every bounty pays double.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "tempered_steel",
@@ -1169,7 +1259,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every hit does 10% more and every tower reaches half a cell further.",
       "rare": "",
-      "epic": "Every hit does 20% more and every tower reaches a cell further."
+      "epic": "Every hit does 20% more and every tower reaches a cell further.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "shield_breaker",
@@ -1184,7 +1276,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every hit does half again to shields.",
       "rare": "Every hit does double to shields.",
-      "epic": "Every hit does triple to shields."
+      "epic": "Every hit does triple to shields.",
+      "legendary": "",
+      "fusionOnly": false
     },
     {
       "id": "permafrost_engine",
@@ -1199,7 +1293,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Slowed enemies take triple from everything. Frostbite and Stasis, fused.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "Slowed enemies take quadruple from everything.",
+      "fusionOnly": true
     },
     {
       "id": "tollbooth",
@@ -1213,7 +1309,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "Every kill refunds 8 Scrap and every enemy pays 4 Scrap for each cell it walks beside a tower.",
+      "fusionOnly": true
     },
     {
       "id": "bunker",
@@ -1227,7 +1325,9 @@ export const CODEX = {
       "recharge": "",
       "desc": "The Core mends 8 health every wave. Sandbags and Second Wind, fused.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "The Core mends 12 health every wave.",
+      "fusionOnly": true
     },
     {
       "id": "quarry_master",
@@ -1241,7 +1341,9 @@ export const CODEX = {
       "recharge": "90 s",
       "desc": "Refineries produce at ten times for 40 seconds. Quarry and Deep Vein, fused.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "Refineries produce at ten times for 80 seconds.",
+      "fusionOnly": true
     },
     {
       "id": "doomsday",
@@ -1256,7 +1358,9 @@ export const CODEX = {
       "recharge": "90 s",
       "desc": "Strike anywhere: 900 damage in a 4-cell blast, and every enemy freezes for 2 seconds. Orbital Lance and Flashbang, fused.",
       "rare": "",
-      "epic": ""
+      "epic": "",
+      "legendary": "Strike anywhere: 1500 damage in a 5-cell blast, and every enemy freezes for 3 seconds.",
+      "fusionOnly": true
     }
   ],
   "sets": [

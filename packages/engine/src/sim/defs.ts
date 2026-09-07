@@ -184,8 +184,9 @@ export interface LootTable {
   outcomes: readonly LootOutcome[];
 }
 
-export type Rarity = 'common' | 'rare' | 'epic';
-export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic'];
+/** Legendary (session 29, PR 7; Daniil's item 1): a fourth lane, never dealt - reached only by forging two epics of a relic that has a legendary tier. */
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 
 export interface RelicDef {
   id: string;
@@ -202,7 +203,7 @@ export interface RelicDef {
   /** Set tags: held relics count per tag; a set lights at two and three (SetDef). */
   tags?: readonly string[];
   /** What a rare and an epic copy are: whole effects and the card text at that rarity. Absent = the same at every rarity. */
-  tiers?: { rare?: { desc?: string; effects: RelicEffects }; epic?: { desc?: string; effects: RelicEffects } };
+  tiers?: { rare?: { desc?: string; effects: RelicEffects }; epic?: { desc?: string; effects: RelicEffects }; legendary?: { desc?: string; effects: RelicEffects } };
   /** Never offered, drawn, bought or found: reached only by a recipe (session 28, PR 3). */
   fusionOnly?: boolean;
   /** Actives: ticks between firings. */
@@ -237,6 +238,7 @@ export interface SetDef {
 
 /** A relic's effects at a held rarity: the base, or the tier's whole effects when it has one (0 common, 1 rare, 2 epic). */
 export function relicEffectsAt(def: RelicDef, rarity: number): RelicEffects {
+  if (rarity >= 3 && def.tiers?.legendary) return def.tiers.legendary.effects;
   if (rarity >= 2 && def.tiers?.epic) return def.tiers.epic.effects;
   if (rarity >= 1 && def.tiers?.rare) return def.tiers.rare.effects;
   return def.effects ?? {};
@@ -244,6 +246,7 @@ export function relicEffectsAt(def: RelicDef, rarity: number): RelicEffects {
 
 /** A relic's card text at a held rarity. */
 export function relicDescAt(def: RelicDef, rarity: number): string {
+  if (rarity >= 3 && def.tiers?.legendary?.desc) return def.tiers.legendary.desc;
   if (rarity >= 2 && def.tiers?.epic?.desc) return def.tiers.epic.desc;
   if (rarity >= 1 && def.tiers?.rare?.desc) return def.tiers.rare.desc;
   return def.desc;
