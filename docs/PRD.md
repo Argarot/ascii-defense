@@ -1587,6 +1587,24 @@ PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
 enemy not yet met is a `???` page that says when it walks; a tower or
 relic the tree has not opened stays LOCKED with what opens it, as before.
 
+## 21. The creative page *(Daniil, 2026-09-08, item 10; session 33, PR 3)*
+
+"We're getting to a point where I need a debug mode, where I can toggle
+researched stuff on and off, select specific relics and their rarity,
+spawn scrap and ore, spawn enemies of specific type - a creative mode.
+Only for debug purposes, the player will never be exposed to this."
+
+**Built.** A page off the pause menu, shown only behind `?dev` or after
+Ctrl+Shift+D (which toggles it on any build): PURSE (+100 Scrap, +50 Ore
+of each tier, +100 banked Ore of every tier), BOARD (kill every body, call
+the next wave, surface a chest at the chosen rarity), SPAWN (one body of
+any kind at the first entry; a boss of the heaviest kind), RELICS (a
+rarity to cycle, the pool paged, a click grants), TREE (every node ON or
+off in the meta save - the next run's world; everything ON / off). Every
+verb goes through the sim's debug methods, which record no input: a
+replay of such a run diverges from that point, and the page says so on
+its first line. It is not a player's surface and never will be.
+
 ## 19. The thought dump of 2026-09-06 — filed *(Daniil, late evening)*
 
 Thirty-two items, absorbed here so nothing lives only in chat. Each row

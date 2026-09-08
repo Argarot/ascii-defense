@@ -729,7 +729,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'stats': { const t = s.towerAt(args[0] as number, args[1] as number); result = t ? { ...s.stats(t), choices: [...t.choices], kills: t.kills } : null; break; }
           case 'claimChest': result = s.claimChest(args[0] as number, args[1] as number); break;
           case 'lootLog': result = [...s.lootLog]; break;
-          case 'grant': result = s.debugGrantRelic(args[0] as string); break; // not a recorded input: replays diverge
+          case 'grant': result = s.debugGrantRelic(args[0] as string, args[1] as number | undefined); break; // not a recorded input: replays diverge
+          case 'spawn': result = s.debugSpawn(args[0] as string, args[1] === true); break; // not a recorded input
+          case 'give': s.debugGive(args[0] as 'scrap' | 'ore', args[1] as number, (args[2] as number | undefined) ?? 0); result = { scrap: s.scrap, ore: [...s.ore] }; break; // not a recorded input
           case 'fire': result = s.fireActive(args[0] as string, args[1] as number | undefined, args[2] as number | undefined); break;
           case 'hash': result = s.hashState(); break;
           case 'events': result = [...s.events]; break;

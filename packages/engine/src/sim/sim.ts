@@ -1243,13 +1243,27 @@ export class Sim {
     return n;
   }
 
-  debugGrantRelic(relicId: string): boolean {
+  debugGrantRelic(relicId: string, rarity?: number): boolean {
     const defs = this.opts.relicDefs ?? [];
     const di = defs.findIndex((d) => d.id === relicId);
     if (di === -1) return false;
-    this.pushHeld(di, this.rollRarity(defs[di]));
+    this.pushHeld(di, rarity === undefined ? this.rollRarity(defs[di]) : Math.max(0, Math.min(RARITIES.length - 1, Math.floor(rarity))));
     this.refold();
     return true;
+  }
+
+  /** Debug (never a recorded input; feedback 2026-09-08, item 10): one body of a kind at the first entry, a boss if asked. */
+  debugSpawn(enemyId: string, boss = false): boolean {
+    const di = this.opts.enemyDefs.findIndex((d) => d.id === enemyId);
+    if (di === -1 || this.opts.map.entries.length === 0) return false;
+    if (this.wave === 0) this.wave = 1; // hp scales by the wave; a body before any wave is a wave-1 body
+    return this.spawn(this.opts.map.entries[0], di, boss);
+  }
+
+  /** Debug (never a recorded input): Scrap or Ore into the purse. */
+  debugGive(what: 'scrap' | 'ore', amount: number, tier = 0): void {
+    if (what === 'scrap') this.scrap = Math.max(0, this.scrap + Math.round(amount));
+    else if (tier >= 0 && tier < this.ore.length) this.ore[tier] = Math.max(0, this.ore[tier] + Math.round(amount));
   }
 
   fireActive(relicId: string, x?: number, y?: number): boolean {
