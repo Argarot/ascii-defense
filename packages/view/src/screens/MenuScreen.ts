@@ -50,6 +50,8 @@ export interface MenuTile {
   selected: boolean;
   /** The frame's colour when not selected - a rarity role for a vein tile (session 30). */
   tone?: string;
+  /** A short mark on the frame's top edge (session 33, PR 7): "x2" copies owned, "1/2" copies loaded. */
+  badge?: string;
 }
 
 /** A column of items (session 30): the pages that are a tree or a rail lay these side by side. */
@@ -295,6 +297,7 @@ export class MenuScreen {
             term.put(tx + fx, ty + fy, ' ', frame, frame);
           }
         }
+        if (tile.badge) term.write(tx + TILE_GW - tile.badge.length, ty - 1, tile.badge.slice(0, TILE_GW), role('ui.bg'), frame);
         for (let cy = 0; cy < TILE_SIZE; cy++)
           for (let cx = 0; cx < TILE_SIZE; cx++)
             drawTerrainCell(term, tile.cells[cy][cx] as CellType, tx + cx * CELL_W, ty + cy * CELL_H, {

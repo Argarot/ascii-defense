@@ -1594,6 +1594,18 @@ PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
 enemy not yet met is a `???` page that says when it walks; a tower or
 relic the tree has not opened stays LOCKED with what opens it, as before.
 
+## 24. The multiset of copies *(session 33, PR 7; the register since session 29)*
+
+The pool holds **the number of copies you actually own** (§11.1 said so
+from the start; the shop sold one copy each since session 29). Now a
+second and a third copy of a special can be bought - the first price plus
+half of it per copy owned (20, 30, 40) - at most three (`MAX_TILE_COPIES`);
+the shop says "(x2 owned)" and prices the next copy; the loadout page
+badges a tile "1/2" and a click loads one more copy up to what is owned
+and the tile slots, then unloads it; **the carve places every loaded
+copy** (two copies, two placements); the run code carries them all. A
+minted tile is one copy.
+
 ## 23. The tile library's breadth *(session 33, PR 6; docs/lab/tile-sweep-2026-09-08.md)*
 
 The plan's "generator's hundred" met the one law: a 5×5 tile holds

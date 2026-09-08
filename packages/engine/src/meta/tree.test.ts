@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_UNLOCKS, EMPTY_META, buyNode, buyTile, everyShopTile, priceTile, relicApplies, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
+import { ALL_UNLOCKS, EMPTY_META, MAX_TILE_COPIES, buyNode, buyTile, copyPrice, everyShopTile, priceTile, relicApplies, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
 
 const TREE: TreeDef = {
   base: { towers: ['bolt'], relics: ['tithe'], relicSlots: 6, threat: 1, tileSlots: 1, oreTier: 1, tiles: ['twin'] },
@@ -97,8 +97,10 @@ describe('the tile shop and the Smith\'s door (session 29, PR 5)', () => {
     expect(whyNotTile(base, {}, [100, 0, 0], FREE)).toBe('not for sale');
     const b = buyTile(base, {}, [30, 0, 0], TWIN);
     expect(b).toEqual({ owned: { twin: 1 }, ore: [5, 0, 0] });
-    expect(whyNotTile(base, b!.owned, [100, 0, 0], TWIN)).toBe('owned');
-    expect(buyTile(base, b!.owned, [100, 0, 0], TWIN)).toBeNull();
+    // A second copy is for sale at the first price plus half (session 33, PR 7); the purse decides.
+    expect(whyNotTile(base, b!.owned, [100, 0, 0], TWIN)).toBeNull();
+    expect(whyNotTile(base, b!.owned, [30, 0, 0], TWIN)).toMatch(/needs 38 tier-1 ore/);
+    expect(buyTile(base, b!.owned, [30, 0, 0], TWIN)).toBeNull();
     expect(everyShopTile(TREE).sort()).toEqual(['rich', 'twin']);
     expect(smithOpen(TREE, b!.owned)).toEqual({ open: false, owned: 1, total: 2 });
     const opened = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['ore2'] }, RELICS);
@@ -123,5 +125,23 @@ describe('applicable relics (session 31, PR 7)', () => {
     expect(relicApplies({ needsTower: ['tesla'] }, ['bolt', 'tesla'])).toBe(true);
     expect(relicApplies({ needsTower: ['laser', 'missile'] }, ['missile'])).toBe(true); // any one of them
     expect(relicApplies({}, [])).toBe(true); // a relic for every world
+  });
+});
+
+describe('the multiset of copies (session 33, PR 7)', () => {
+  it('a second copy costs the first price plus half, a third plus a whole; the fourth is refused', () => {
+    const u = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['tiles_all'] }, RELICS);
+    const tile = { id: 'twin', price: { tier: 1, ore: 20 } };
+    const uu = { ...u, tiles: new Set(['twin']) };
+    expect(copyPrice(tile, {})).toEqual({ tier: 1, ore: 20 });
+    expect(copyPrice(tile, { twin: 1 })).toEqual({ tier: 1, ore: 30 });
+    expect(copyPrice(tile, { twin: 2 })).toEqual({ tier: 1, ore: 40 });
+    let owned: Record<string, number> = {};
+    let ore = [100, 0, 0];
+    for (let i = 0; i < MAX_TILE_COPIES; i++) { const b = buyTile(uu, owned, ore, tile); expect(b).not.toBeNull(); owned = b!.owned; ore = b!.ore; }
+    expect(owned.twin).toBe(MAX_TILE_COPIES);
+    expect(ore[0]).toBe(100 - 20 - 30 - 40);
+    expect(whyNotTile(uu, owned, ore, tile)).toContain('the most a tile may be held');
+    expect(buyTile(uu, owned, ore, tile)).toBeNull();
   });
 });

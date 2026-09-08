@@ -201,20 +201,32 @@ export interface ShopTile {
  * copy would buy nothing (the multiset of sec 11.1 waits for a generator
  * that places copies).
  */
+/** The most copies of one tile a player may hold (session 33, PR 7: the multiset): the carve places each loaded copy, and a loadout holds at most the tree's tile slots. */
+export const MAX_TILE_COPIES = 3;
+
+/** What the next copy of a tile costs (session 33, PR 7): the first price, plus half of it per copy already owned. */
+export function copyPrice(tile: ShopTile, owned: Readonly<Record<string, number>>): { tier: number; ore: number } | null {
+  if (!tile.price) return null;
+  const copies = owned[tile.id] ?? 0;
+  return { tier: tile.price.tier, ore: Math.round(tile.price.ore * (1 + 0.5 * copies)) };
+}
+
 export function whyNotTile(unlocked: Unlocked, owned: Readonly<Record<string, number>>, ore: readonly number[], tile: ShopTile): string | null {
   if (!tile.price) return 'not for sale';
-  if ((owned[tile.id] ?? 0) > 0) return 'owned';
+  if ((owned[tile.id] ?? 0) >= MAX_TILE_COPIES) return `owned x${MAX_TILE_COPIES} - the most a tile may be held`;
   if (!unlocked.tiles.has(tile.id)) return 'the tree has not opened it';
-  const have = ore[tile.price.tier - 1] ?? 0;
-  if (have < tile.price.ore) return `needs ${tile.price.ore} tier-${tile.price.tier} ore (have ${have})`;
+  const price = copyPrice(tile, owned)!;
+  const have = ore[price.tier - 1] ?? 0;
+  if (have < price.ore) return `needs ${price.ore} tier-${price.tier} ore (have ${have})`;
   return null;
 }
 
-/** Buy one copy: the new owned record and the Ore left, or null when whyNotTile says no. Pure - the caller saves. */
+/** Buy one copy (a second and a third at a rising price - the multiset of PRD sec 11.1): the new owned record and the Ore left, or null when whyNotTile says no. Pure - the caller saves. */
 export function buyTile(unlocked: Unlocked, owned: Readonly<Record<string, number>>, ore: readonly number[], tile: ShopTile): { owned: Record<string, number>; ore: number[] } | null {
   if (whyNotTile(unlocked, owned, ore, tile) !== null) return null;
+  const price = copyPrice(tile, owned)!;
   const next = [...ore];
-  next[tile.price!.tier - 1] -= tile.price!.ore;
+  next[price.tier - 1] -= price.ore;
   return { owned: { ...owned, [tile.id]: (owned[tile.id] ?? 0) + 1 }, ore: next };
 }
 

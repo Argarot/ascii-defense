@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, smithOpen, priceTile, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
+import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, priceTile, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
 import { TUTORIAL_STEPS, goodGround, nearRock, nextStep, type TutorialCtx } from './tutorial';
 import type { TreeNode, CellType } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
@@ -721,7 +721,7 @@ async function main(): Promise<void> {
             ...problems.slice(0, 4).map((p) => `not offered: ${p.id} - ${p.problem}`),
             ...(problems.length > 4 ? [`and ${problems.length - 4} more - fix them in the tile smith`] : []),
           ],
-          tiles: shown.map((t) => ({ id: t.id, cells: t.cells, selected: setupLoadout.includes(t.id) })),
+          tiles: shown.map((t) => { const loaded = setupLoadout.filter((x) => x === t.id).length; const copies = shippedSpecials.some((s) => s.id === t.id) ? (meta.owned[t.id] ?? 0) : 1; return { id: t.id, cells: t.cells, selected: loaded > 0, badge: copies > 1 ? `${loaded}/${copies}` : undefined }; }),
           items: [
             ...(pages > 1
               ? [
@@ -760,11 +760,14 @@ async function main(): Promise<void> {
               '',
               ...forSale.map((t) => {
                 const why = whyNotTile(u, meta.owned, ore, t);
-                return `${t.name ?? t.id}: ${why === null ? `BUY - ${t.price!.ore} tier-${t.price!.tier} ore - click the tile` : why === 'owned' ? 'OWNED' : why}`;
+                const copies = meta.owned[t.id] ?? 0;
+                const price = copyPrice(t, meta.owned);
+                // Copies (session 33, PR 7): a second and a third at a rising price; the loadout may carry them all.
+                return `${t.name ?? t.id}${copies > 0 ? ` (x${copies} owned)` : ''}: ${why === null ? `BUY${copies > 0 ? ' another copy' : ''} - ${price?.ore} tier-${price?.tier} ore - click the tile` : why}`;
               }),
             ],
             // A vein tile wears its tier as a frame colour (session 30): tier 2 rare-blue, tier 3 epic-purple.
-            tiles: forSale.map((t) => { const tier = Math.max(1, ...(t.deposits ?? []).map((d) => d.tier ?? 1)); return { id: t.id, cells: t.cells, selected: (meta.owned[t.id] ?? 0) > 0, tone: tier >= 3 ? 'rarity.epic' : tier === 2 ? 'rarity.rare' : undefined }; }),
+            tiles: forSale.map((t) => { const tier = Math.max(1, ...(t.deposits ?? []).map((d) => d.tier ?? 1)); const copies = meta.owned[t.id] ?? 0; return { id: t.id, cells: t.cells, selected: copies > 0, badge: copies > 1 ? `x${copies}` : undefined, tone: tier >= 3 ? 'rarity.epic' : tier === 2 ? 'rarity.rare' : undefined }; }),
             items: [
               { id: 'smith', label: 'THE TILE SMITH', note: smith.open ? 'author a tile >' : `locked - own every tile (${smith.owned}/${smith.total})`, disabled: !smith.open },
               { id: 'br:arsenal', label: 'THE TREE', note: 'back to the branches' },
@@ -1171,8 +1174,11 @@ async function main(): Promise<void> {
         }
         return;
       }
-      if (setupLoadout.includes(tid)) setupLoadout = setupLoadout.filter((t) => t !== tid);
-      else if (setupLoadout.length < loadoutSlots()) setupLoadout = [...setupLoadout, tid];
+      // A click loads one more copy of the tile, up to what is owned and the slots; past that, unloads it (session 33, PR 7).
+      const loaded = setupLoadout.filter((t) => t === tid).length;
+      const copies = shippedSpecials.some((s) => s.id === tid) ? (meta.owned[tid] ?? 0) : 1;
+      if (loaded >= copies || setupLoadout.length >= loadoutSlots()) setupLoadout = setupLoadout.filter((t) => t !== tid);
+      else setupLoadout = [...setupLoadout, tid];
       return;
     }
     switch (id) {
