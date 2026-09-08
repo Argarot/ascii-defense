@@ -607,7 +607,8 @@ export const CODEX = {
       "kind": "passive",
       "rarity": "epic",
       "tags": [
-        "reach"
+        "reach",
+        "support"
       ],
       "stacks": false,
       "recharge": "",
@@ -839,7 +840,7 @@ export const CODEX = {
       "recharge": "",
       "desc": "Sold towers refund 85% instead of 70%.",
       "rare": "Sold towers refund in full.",
-      "epic": "Sold towers refund in full.",
+      "epic": "Sold towers refund in full, and every build costs 10% less.",
       "legendary": "",
       "fusionOnly": false
     },
@@ -885,7 +886,7 @@ export const CODEX = {
       ],
       "stacks": true,
       "recharge": "",
-      "desc": "Every shot passes into one more body.",
+      "desc": "Every plain shot passes into one more body (blasts never pierce).",
       "rare": "Every shot passes into two more bodies.",
       "epic": "Every shot passes into three more bodies.",
       "legendary": "",
@@ -931,7 +932,8 @@ export const CODEX = {
       "rarity": "rare",
       "tags": [
         "damage",
-        "core"
+        "core",
+        "support"
       ],
       "stacks": false,
       "recharge": "",
@@ -1434,7 +1436,7 @@ export const CODEX = {
       "name": "Superheated",
       "tag": "energy",
       "at": 3,
-      "desc": "Three of energy: every hit leaves a burn of 1 a tick."
+      "desc": "Three of energy: every burning beam burns 1 a tick hotter."
     },
     {
       "name": "Rally",

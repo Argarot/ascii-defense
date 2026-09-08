@@ -46,8 +46,8 @@ const POOL: RelicDef[] = [
   { id: 'vein_tap', name: 'Vein Tap', kind: 'passive', rarity: 'common', desc: '', effects: { buildOnRock: true } },
   { id: 'ballistics', name: 'Ballistics', kind: 'passive', rarity: 'common', desc: '', effects: { damageMul: 1.2 } },
   { id: 'flashfreeze', name: 'Flash Freeze', kind: 'consumable', rarity: 'common', desc: '', effects: { freezeTicks: 30 } },
-  { id: 'orbital', name: 'Orbital', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, effects: { orbitalDamage: 400, orbitalRadius: 3 } },
-  { id: 'stasis', name: 'Stasis', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, effects: { freezeTicks: 50 } },
+  { id: 'orbital', name: 'Orbital', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, stackable: true, effects: { orbitalDamage: 400, orbitalRadius: 3 } },
+  { id: 'stasis', name: 'Stasis', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, stackable: true, effects: { freezeTicks: 50 } },
   { id: 'splinter', name: 'Splinter', kind: 'passive', rarity: 'common', desc: '', effects: { explodeTwice: true } },
   { id: 'deep_vein', name: 'Deep Vein', kind: 'active', rarity: 'common', desc: '', cooldownTicks: 100, effects: { productionMul: 5, boostTicks: 200 } },
 ];

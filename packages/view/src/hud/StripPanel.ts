@@ -180,7 +180,8 @@ export class StripPanel {
     term.write(wx, 1, 'NOW', dim);
     const now = s.waveNow ?? [];
     if (now.length === 0) term.write(wx, 2, 'the road is empty', dim);
-    const KIND_W = 12;
+    // Thirteen glyphs: "12 swarmling" is twelve, and the wave ceiling of sixty keeps counts to two digits (session 31: "swarmlin").
+    const KIND_W = 13;
     now.slice(0, H - 2).forEach((k, i) => {
       const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);
       term.write(wx, 2 + i, line, text);

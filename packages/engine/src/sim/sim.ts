@@ -318,6 +318,8 @@ export interface Tower {
   /** The beam's held lead target (slot and generation); -1 when it has none. */
   beamLead: number;
   beamLeadGen: number;
+  /** Scrap paid for the tower and its forks at this run's prices (session 31, PR 8): the sell refund is a share of THIS - a tower bought under Bulk Order sold for full price once the relic was salvaged. Hashed. */
+  paid: number;
 }
 
 export const SELL_REFUND = 0.7;
@@ -686,7 +688,7 @@ export class Sim {
     // A line-shaped tower faces the direction with the most road in reach
     // (deterministic: ties go north-first); anyone else faces east.
     const facing = def.attack === 'beam' ? this.bestFacing(x, y) : 1;
-    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1, facing, heat: 1, beamLead: -1, beamLeadGen: 0 });
+    this.towers.push({ cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1, facing, heat: 1, beamLead: -1, beamLeadGen: 0, paid: price });
     this.occupancy[y * this.opts.cellsW + x] = this.towers.length;
     this.emit({ kind: 'build', x, y });
     this.inputs.push({ tick: this.tickCount, a: { t: 'build', x, y, defId } });
@@ -716,6 +718,7 @@ export class Sim {
     const cost = this.choiceCost(t, tier, option);
     if (cost === null || this.scrap < cost) return false;
     this.scrap -= cost;
+    t.paid += cost;
     if (this.fold.tierCostMul !== 1) this.noteRelicUse('tierCostMul');
     t.choices[tier] = option;
     // Deep Bore / Deep Shaft (Refinery rework): the vein under the tower
@@ -755,7 +758,7 @@ export class Sim {
   previewStats(defId: string, x: number, y: number): EffectiveStats | null {
     const defIdx = this.opts.towerDefs.findIndex((d) => d.id === defId);
     if (defIdx === -1) return null;
-    const ghost: Tower = { cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown: 0, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1, facing: 1, heat: 1, beamLead: -1, beamLeadGen: 0 };
+    const ghost: Tower = { cellX: x, cellY: y, defIdx, cooldown: 0, prodCooldown: 0, kills: 0, pulses: 0, priority: 'first', choices: [-1, -1, -1], lastFire: -1, facing: 1, heat: 1, beamLead: -1, beamLeadGen: 0, paid: 0 };
     return this.foldStats(ghost);
   }
 
@@ -898,6 +901,8 @@ export class Sim {
       if (!sdef.aura) continue;
       const se = effectiveStats(sdef, s.choices);
       if (sdef.coreBoon && this.nearCore[s.cellY * this.opts.cellsW + s.cellX]) applyCoreBoon(se, sdef.coreBoon);
+      // Wide Aura and the Rally set widen the plus (session 31, PR 8: the reach test read the def alone, so the ring the HUD drew was one cell wider than the ring that buffed).
+      if (this.modsFold) applyCoreBoon(se, { text: '', mods: this.modsFold });
       if (!inPlus(s.cellX, s.cellY, t.cellX, t.cellY, se.auraReach)) continue;
       auraDmg = Math.max(auraDmg, se.auraDamageMul);
       auraRate = Math.max(auraRate, se.auraRateMul);
@@ -910,7 +915,11 @@ export class Sim {
     if (auraProd !== 1 && out.productionEveryTicks > 0) out.productionEveryTicks = Math.max(1, Math.round(out.productionEveryTicks / auraProd));
     // Relic mods (Iron Sights, Quick Hands...) and lit sets: on every
     // tower, folded like one more tier after the auras.
-    if (this.modsFold) applyCoreBoon(out, { text: '', mods: this.modsFold });
+    if (this.modsFold) {
+      const nearCore = out.coreBoon; // applyCoreBoon marks the Core's gift; a relic's mods are not it (session 31, PR 8)
+      applyCoreBoon(out, { text: '', mods: this.modsFold });
+      out.coreBoon = nearCore;
+    }
     const f = this.fold;
     if (f !== EMPTY_FOLD) {
       out.damage *= f.damageMul;
@@ -952,7 +961,8 @@ export class Sim {
     const delta = this.fold.coreHpMaxAdd - this.relicHpApplied;
     if (delta !== 0) {
       this.coreHpMax = Math.max(1, this.coreHpMax + delta);
-      this.coreHp = delta > 0 ? this.coreHp + delta : Math.min(this.coreHp, this.coreHpMax);
+      // Down takes the same hp back, never below 1 (session 31, PR 8: it only clamped, so take-then-salvage was a repeatable heal plus the salvage Ore).
+      this.coreHp = delta > 0 ? this.coreHp + delta : Math.max(1, Math.min(this.coreHp + delta, this.coreHpMax));
       this.relicHpApplied = this.fold.coreHpMaxAdd;
     }
     // Relic mods and the sets their tags light fold with them.
@@ -1028,7 +1038,9 @@ export class Sim {
       }
       const r = (this.opts.recipeDefs ?? []).find((x) => (x.a === a.id && x.b === b.id) || (x.a === b.id && x.b === a.id));
       const resultDef = r ? defs.find((d) => d.id === r.result) : undefined;
-      if (r && resultDef) out.push({ with: j, result: resultDef.name, resultId: resultDef.id, resultRarity: RARITIES[Math.max(this.heldRarity[hi], this.heldRarity[j], RARITIES.indexOf(resultDef.rarity))] });
+      // A fusion already held (and unstackable) is not a target: the second copy would be dead (session 31, PR 8).
+      const heldAlready = resultDef !== undefined && !(resultDef.stackable ?? false) && this.heldRelics.includes(defs.indexOf(resultDef));
+      if (r && resultDef && !heldAlready) out.push({ with: j, result: resultDef.name, resultId: resultDef.id, resultRarity: RARITIES[Math.max(this.heldRarity[hi], this.heldRarity[j], RARITIES.indexOf(resultDef.rarity))] });
     }
     return out;
   }
@@ -1049,6 +1061,7 @@ export class Sim {
       this.heldRarity[a] = this.heldRarity[a] + 1;
       const fid = defs[this.heldRelics[a]].id;
       this.forgedThisRun.set(fid, Math.max(this.forgedThisRun.get(fid) ?? 0, this.heldRarity[a]));
+      this.relicCooldowns[a] = Math.min(this.relicCooldowns[a], this.relicCooldowns[b]); // the readier clock survives (session 31, PR 8: the order of the clicks decided)
       this.spliceHeld(b);
     } else {
       const di = defs.findIndex((d) => d.id === target.resultId);
@@ -1156,6 +1169,8 @@ export class Sim {
   pickRelic(option: number, replace?: number): boolean {
     if (this.status !== 'running') return false;
     if (!this.offer || option < 0 || option >= this.offer.length) return false;
+    // A copy that arrived while the offer stood (a cache, a purchase) makes an unstackable card a dead pick (session 31, PR 8).
+    if (!(this.opts.relicDefs![this.offer[option]].stackable ?? false) && this.heldRelics.includes(this.offer[option])) return false;
     if (this.heldRelics.length >= this.relicSlots) {
       if (replace === undefined || replace < 0 || replace >= this.heldRelics.length) return false;
       this.ore[0] += this.salvageOre(replace);
@@ -1639,9 +1654,9 @@ export class Sim {
     // over the debt (2026-09-06 thought dump item 18).
     const owed = this.wave - (this.wave % OFFER_EVERY_WAVES);
     if (owed === 0 || owed <= this.offerWave) return;
-    this.offerWave = owed;
     const pool = this.unheldPool();
-    if (pool.length === 0) return;
+    if (pool.length === 0) return; // the debt stands until something is dealable (session 31, PR 8: it was marked paid first)
+    this.offerWave = owed;
     this.offer = this.rng.stream('relics').shuffle(pool).slice(0, 3);
     this.offerRarity = this.offer.map((di) => this.rollRarity(defs[di]));
   }
@@ -1719,13 +1734,9 @@ export class Sim {
     const tower = this.towers[idx - 1];
     if (tower) {
       // Refund the base cost plus everything sunk into tiers.
-      const def = this.opts.towerDefs[tower.defIdx];
-      // At the prices THIS run pays (Bulk Order, Cheap Upgrades): a discounted tower must not sell for more than it cost.
-      let sunk = this.towerCost(def);
-      def.tiers?.forEach((tierDef, ti) => {
-        const pick = tower.choices[ti];
-        if (pick >= 0) sunk += this.fold.tierCostMul === 1 ? tierDef.choices[pick].cost : Math.max(1, Math.round(tierDef.choices[pick].cost * this.fold.tierCostMul));
-      });
+      // What was PAID (session 31, PR 8): recomputing at today's prices let a
+      // tower bought under Bulk Order sell for full price once the relic was gone.
+      const sunk = tower.paid;
       // +epsilon: 90*0.7 is 62.999... in IEEE; the player is owed 63.
       // Salvage Rights (relic, session 28 PR 4) lifts the fraction, to at most the whole.
       const fraction = Math.min(1, SELL_REFUND + this.fold.sellRefundBonus);
@@ -1842,6 +1853,20 @@ export class Sim {
       u32(PRIORITIES.indexOf(t.priority));
       u32(t.facing); u32(Math.round(t.heat * 1000)); // session 26: facing and heat are tower state
       for (const c of t.choices) u32(c + 1);
+      u32(t.beamLead + 1); u32(t.beamLeadGen); u32(t.paid); // session 31, PR 8: the lead decides whether heat ramps; paid decides a refund
+    }
+    // Session 31, PR 8: state that decided damage or a heal and was not hashed -
+    // a shot's damage type, the kill count toward a Bloodstone heal, and the
+    // slow and burn entries whose resolved values agree today and diverge later.
+    for (let i = 0; i < ph; i++) u32(this.projType[i]);
+    u32(this.killHealCounter);
+    for (let i = 0; i < eh; i++) {
+      const sl = this.slowEntries[i];
+      const bu = this.burnEntries[i];
+      u32(sl ? sl.length : 0);
+      if (sl) for (const e of sl) { u32(Math.round(e.mul * 1000)); u32(e.ticks); }
+      u32(bu ? bu.length : 0);
+      if (bu) for (const e of bu) { u32(Math.round(e.dps * 1000)); u32(e.ticks); u32(TYPE_CODE[e.type ?? 'none']); }
     }
     return h >>> 0;
   }
@@ -2544,7 +2569,8 @@ export class Sim {
     let dmg = typed <= 0 ? 0 : Math.max(1, ignoreArmor ? typed : Math.max(typed * ARMOR_FLOOR, typed - (def.armor ?? 0)));
     // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
     // relic that turns Frost from utility into a damage amplifier.
-    if (dmg > 0 && this.slowTicks[enemy] > 0 && this.fold.slowedDamageMul !== 1) { dmg *= this.fold.slowedDamageMul; this.noteRelicUse('slowedDamageMul'); }
+    // A frozen body is a slowed body (session 31, PR 8: Stasis held them still and Frostbite did nothing; Cold Snap already counted the freeze).
+    if (dmg > 0 && (this.slowTicks[enemy] > 0 || this.tickCount < this.freezeUntil) && this.fold.slowedDamageMul !== 1) { dmg *= this.fold.slowedDamageMul; this.noteRelicUse('slowedDamageMul'); }
     if (this.shield[enemy] > 0) {
       // Shatter (Bolt rework): a shield takes shieldMul times the hit; the
       // part that gets through to health is unchanged.
@@ -2627,7 +2653,7 @@ export class Sim {
       if (this.fold.overkillCarry && overkill >= 1) {
         this.noteRelicUse('overkillCarry');
         const next = this.nearestAlive(this.posX[enemy], this.posY[enemy]);
-        if (next !== -1) this.applyDamage(next, overkill, 0, 0, towerIdx);
+        if (next !== -1) this.applyDamage(next, overkill, 0, 0, towerIdx, shieldMul, ignoreArmor, type); // the same hit, carried (session 31, PR 8: it arrived untyped and re-armoured)
       }
     }
   }
