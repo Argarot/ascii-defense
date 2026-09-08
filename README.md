@@ -84,6 +84,18 @@ save doubles as an exact replay.
 
 **M1 passed its gate** ("is it fun?" — yes); M2 and the product shell are under
 way.
+**Session 31 (2026-09-07 night into 2026-09-08)** was Daniil's "make this
+session big": a **tutorial** for new players (thirteen steps, a pulsing
+box on the thing to look at, the Core's ground and the first fork among
+them), the **early game measured** on the base world and re-curved (armour
+never strips more than 65% of a hit, a boss's multiplier shrinks with its
+own weight, Calm has its own curve and meets the heavier kinds three waves
+later - a plain-Bolt player who forks holds it), the keyboard on every
+page, three comb passes over the pages and the HUD, relics that need a
+tower the run lacks left out of its pool, a **logic comb** over the sim
+against the relic cards (fourteen findings, all fixed - among them a
+repeatable Core heal, a sell refund at today's prices, and holes in the
+state hash), and personal bests on the history page.
 **Session 30 (2026-09-07)** gave the shell one face: every page is a
 framed plate with a lit title band, columns and key hints; the workshop is
 drawn as a tree with a node hanging from the one it needs; the Tile Smith
@@ -168,9 +180,9 @@ two idle frames) and cobbled roads (four variations, picked by position) are
 on the board through a sprite format that keys art by upgrade path. The
 variant sweep in `docs/lab/` measures every path; three forks still lose.
 
-**Not built yet**: full keyboard operation, the art agent's 6×5 relic
-sprites and chest sprite (the view draws its own ring and box until then),
-the enemies of Enemies II.
+**Not built yet**: the art agent's 6×5 relic sprites and chest sprite (the
+view draws its own ring and box until then), the enemies of Enemies II,
+copies of a tile as a multiset.
 The roadmap runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the
 checklist is [docs/WBS.md](docs/WBS.md).
 
