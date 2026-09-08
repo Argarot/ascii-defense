@@ -90,13 +90,29 @@ field says so) — **all of these want your version**, in this order:
    (what each choice does, so the art can say it) are in
    `docs/CATALOGUE.md`. The Laser also wants **one state per facing**
    (see §4) — it points north, east, south or west.
-3. **Seven enemies** (`enemy_grunt`, `enemy_skitter`, `enemy_swarmling`,
-   `enemy_brute`, `enemy_shell`, `enemy_husk`, `enemy_juggernaut`): small
+3. **Fourteen enemies** (`enemy_grunt`, `enemy_skitter`, `enemy_swarmling`,
+   `enemy_brute`, `enemy_shell`, `enemy_husk`, `enemy_juggernaut`, and
+   since session 32 `enemy_courser`, `enemy_ram`, `enemy_blob`,
+   `enemy_mender`, `enemy_mole`, `enemy_pavise`, `enemy_warden`): small
    walkers with a walk cycle of four or more frames. The catalogue lists
-   what each is (hp, speed, traits, what it resists). Sizes: keep the
-   grunt/skitter/shellback at 3×2, the swarmling at 2×1, the brute and
-   husk at 4×3, the juggernaut at 5×3 — the game's marks are laid out
-   around those.
+   what each is (hp, speed, traits, what it resists) and its rule. Sizes:
+   keep the grunt/skitter/shellback/courser/mender/mole at 3×2, the
+   swarmling at 2×1, the blob and ram at 4×2, the brute and husk at 4×3,
+   the pavise at 4×3, the juggernaut and the Warden at 5×3 — the game's
+   marks are laid out around those. **The marks the view draws that a
+   sprite may own** (session 33): the view puts a mark beside a body for
+   its rule — a cross above a mender, braces around the Warden, a `>>`
+   trail behind a charging ram, a `~` behind a sprinting courser, a plank
+   `|` on the side a pavise faces; and a burrowed mole is drawn as a mound
+   `_^_` with no sprite at all. A study may carry the mark in the art
+   (a mender with its cross, a pavise with its plank on the east side —
+   the view keeps drawing the plank on the facing side) and, for the
+   mole, a second state `"burrowed"` for the mound. The view's marks stay
+   until a study says it owns them.
+3b. **The chests** (`chest`, `chest_boss`; 4×3, `kind: "chest"`): a void
+   chest and the crowned one a boss leaves; drawn flat in the rarity's
+   colour by the view, so a study gives shape, not colour; a second frame
+   for the blink as the window closes.
 4. **Sixteen relic icons** (`relic_<id>`, ids in the catalogue): 4×3,
    one dominant colour per relic, readable at 20×24 px.
 5. **The Core face** (`core_face`): three 8×5 cells, top/mid/bot, the

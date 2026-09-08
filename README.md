@@ -85,7 +85,19 @@ save doubles as an exact replay.
 
 **M1 passed its gate** ("is it fun?" — yes); M2 and the product shell are under
 way.
-**Session 32 (2026-09-08)** was Enemies II: seven more bodies, each a
+**Session 33 (2026-09-08)** was Daniil's feedback round and the plan's
+five: Esc leaves every page and the workshop's purse sits in its title
+band; the clock deals a relic offer the board never went quiet for;
+**encounter cards** pop on every first meeting and the title's **CODEX**
+is the wiki of what was met; the title's towers animate; **the tree is
+drawn as a tree** of ringed plates with the towers' sprites; chests come
+half as often and **a boss leaves a crowned chest** rarer with the wave;
+the mender's field is a green pulse; a **creative page** behind `?dev` or
+Ctrl+Shift+D spawns anything; the tile library goes to eighty-two (every
+legal road shape, sixty land tiles) with a map sweep as the guard; a
+second and third copy of a special can be bought and every copy is
+placed; tile previews are one glyph a cell; and a stranger-test protocol
+waits for hands. **Session 32 (2026-09-08)** was Enemies II: seven more bodies, each a
 rule the towers answer (a courser that sprints while unhit, a ram that
 charges under half hp, a blob that dies into two, a mender that heals its
 neighbours, a mole that surfaces past the entry, a pavise whose shield
