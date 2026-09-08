@@ -40,6 +40,13 @@ const TRAITS = {
   shielded: 'a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire',
   fast: 'slows last half as long',
   swarm: 'spawns in packs of three - one queue entry, three bodies',
+  split: 'dies into two skitters where it fell - kill it early, or let a blast take the halves together',
+  heal: 'mends every body within a cell and a half by 3 every second - kill the mender first (priority WEAKEST finds it)',
+  burrow: 'untargetable and unhittable for its first eight cells of road - the towers deeper in see it',
+  charge: 'runs at double speed once under half hp - finish it, or slow it before the sprint',
+  frontshield: 'a shield facing the way it walks: hits from ahead do a third - flank it from beside the road',
+  sprint: 'runs 60% faster while unhit for two seconds - keep it under fire',
+  bulwark: 'every body within two and a half cells takes 30% less while it lives - the boss to kill first',
 };
 
 const n = (v, d = 1) => (v === undefined ? '' : Number.isInteger(v) ? String(v) : v.toFixed(d));
@@ -84,7 +91,7 @@ function tierRows(t) {
 function enemyRows() {
   const mul = (v) => (v === undefined || v === 1 ? '' : v === 0 ? 'immune' : `x${v}`);
   return enemies.map((e) => [
-    `**${e.name ?? e.id}**`, e.id, e.hp, n(e.speed * TICK_HZ, 2), e.damage, e.bounty, e.minWave ?? 1, e.armor ?? '', e.shield ?? '',
+    `**${e.name ?? e.id}**${e.bossOnly ? ' (boss only)' : ''}`, e.id, e.hp, n(e.speed * TICK_HZ, 2), e.damage, e.bounty, e.minWave ?? 1, e.armor ?? '', e.shield ?? '',
     mul(e.resist?.kinetic), mul(e.resist?.energy), (e.traits ?? []).join(', '),
   ]);
 }

@@ -98,6 +98,14 @@ const ENEMIES = {
   shell: { role: 'enemy.shell', body: 'S', cell: [3, 2], frames: [['(S)', '\\_/'], ['(S)', '/_\\']] },
   husk: { role: 'enemy.husk', body: 'H', cell: [4, 3], frames: [['/HH\\', '|..|', '|__|'], ['/HH\\', '|. |', '|__|']] },
   juggernaut: { role: 'enemy.boss', body: 'J#=', cell: [5, 3], frames: [['[=J=]', '|###|', '/___\\'], ['[=J=]', '|#.#|', '/___\\']] },
+  // ---- Enemies II (session 32): seven more, each drawn as its rule ----
+  courser: { role: 'enemy.fast', body: 'c', cell: [3, 2], frames: [['>c>', '/ \\'], ['>c>', '\\ /']] },
+  ram: { role: 'enemy.brute', body: 'R', cell: [4, 2], frames: [['=RR>', '/  \\'], ['=RR>', '\\  /']] },
+  blob: { role: 'enemy.swarm', body: 'o', cell: [4, 2], frames: [['(oo)', ' \\/ '], ['(oo)', ' /\\ ']] },
+  mender: { role: 'enemy.shell', body: '+', cell: [3, 2], frames: [['+@+', '/|\\'], ['+@+', '\\|/']] },
+  mole: { role: 'enemy.husk', body: 'M', cell: [3, 2], frames: [['_M_', '///'], ['_M_', '\\\\\\']] },
+  pavise: { role: 'enemy.shell', body: '|', cell: [4, 3], frames: [['|]P ', '|]P ', '|]  '], ['|]P ', '|] P', '|]  ']] },
+  warden: { role: 'enemy.boss', body: 'W#', cell: [5, 3], frames: [['/=W=\\', '|###|', '|___|'], ['/=W=\\', '|#.#|', '|___|']] },
 };
 for (const [id, e] of Object.entries(ENEMIES)) {
   const keys = makeKeys();

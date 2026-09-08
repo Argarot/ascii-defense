@@ -1,0 +1,44 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "enemy_warden",
+  "kind": "enemy",
+  "cell": [
+    5,
+    3
+  ],
+  "frameMs": 360,
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "/=W=\\",
+        "|###|",
+        "|___|"
+      ],
+      "ink": [
+        "aabaa",
+        "abbba",
+        "aaaaa"
+      ],
+      "frames": [
+        {
+          "art": [
+            "/=W=\\",
+            "|#.#|",
+            "|___|"
+          ],
+          "ink": [
+            "aabaa",
+            "ababa",
+            "aaaaa"
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "enemy.limb",
+    "b": "enemy.boss"
+  }
+}

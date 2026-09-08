@@ -19,7 +19,7 @@
 import { createRng, type Rng } from '../rng/rng';
 import { isBuildable, isRoad, strandEntered, strandPorts, type CellType } from '../grid/cells';
 import type { BoonRef, GeneratedMap, CellRef } from '../mapgen/mapgen';
-import { SHIELD_REGEN_DELAY, SHIELD_REGEN_TICKS, TRAIT_RULES, hasTrait } from './traits';
+import { SHIELD_REGEN_DELAY, SHIELD_REGEN_TICKS, TRAIT_RULES, frontShieldMul, hasTrait, traitSpeedMul } from './traits';
 import { computeFlowField, type FlowField } from './flow';
 import { PRIORITIES, pickTarget, type Priority, type TargetCandidate } from './targeting';
 import {
@@ -365,6 +365,10 @@ export class Sim {
    * hashed so bridge-free replays keep their hash.
    */
   private readonly walkDir = new Uint8Array(ENEMY_CAP);
+  /** Cells of road a burrower has still to walk unseen (traits.ts 'burrow'): above 0 nothing targets or hits it. Hashed. */
+  readonly burrowLeft = new Float32Array(ENEMY_CAP);
+  /** Living bodies with the 'bulwark' trait, rebuilt each walk phase; every hit within their radius is softened. */
+  private readonly bulwarks: number[] = [];
   /** Slow timer, public read-only so the view can mark chilled enemies. */
   readonly slowTicks = new Int16Array(ENEMY_CAP);
   private readonly slowMul = new Float32Array(ENEMY_CAP);
@@ -1230,7 +1234,7 @@ export class Sim {
       const cy = y + 0.5;
       const r = e.orbitalRadius ?? 1;
       for (let i = 0; i < this.enemyHigh; i++) {
-        if (!this.alive[i]) continue;
+        if (!this.alive[i] || this.burrowLeft[i] > 0) continue;
         const dx = this.posX[i] - cx;
         const dy = this.posY[i] - cy;
         if (Math.sqrt(dx * dx + dy * dy) <= r) this.applyDamage(i, e.orbitalDamage, 0, 0, -1);
@@ -1832,6 +1836,7 @@ export class Sim {
     f32(this.posX, eh); f32(this.posY, eh); f32(this.hp, eh); f32(this.shield, eh);
     f32(this.slowMul, eh); f32(this.tgtX, eh); f32(this.tgtY, eh);
     i16(this.slowTicks, eh); i16(this.gen, eh);
+    f32(this.burrowLeft, eh); // session 32: the unseen cells decide whether a hit lands
     for (let i = 0; i < eh; i++) u32((this.bossFlag[i] << 16) | (this.alive[i] << 8) | this.enemyDefIdx[i]);
     for (let i = 0; i < eh; i++) u32(this.lastHit[i]);
     for (const s of this.freeEnemies) u32(s);
@@ -2063,10 +2068,13 @@ export class Sim {
     const count = waveCount(this.difficulty, w);
     const available: { idx: number; w: number }[] = [];
     const delay = this.difficulty.unlockDelay ?? 0;
+    const bossPool: number[] = [];
     this.opts.enemyDefs.forEach((d, i) => {
       const base = d.minWave ?? 1;
       const mw = base > 1 ? base + delay : 1;
-      if (mw <= w) available.push({ idx: i, w: 1 + (w - mw) });
+      if (mw > w) return;
+      bossPool.push(i);
+      if (!d.bossOnly) available.push({ idx: i, w: 1 + (w - mw) }); // a boss-only body (session 32) never walks in the escort
     });
     const totalW = available.reduce((a, b) => a + b.w, 0);
     // Unreachable given the constructor's minWave check (minWave never
@@ -2083,8 +2091,8 @@ export class Sim {
       queue.push(pick);
     }
     if (Sim.isBossWave(w, this.finalWave)) {
-      let heavy = available[0].idx;
-      for (const a of available) if (this.opts.enemyDefs[a.idx].hp > this.opts.enemyDefs[heavy].hp) heavy = a.idx;
+      let heavy = bossPool[0];
+      for (const idx of bossPool) if (this.opts.enemyDefs[idx].hp > this.opts.enemyDefs[heavy].hp) heavy = idx;
       queue.push(heavy | BOSS_QUEUE_FLAG);
     }
     return queue;
@@ -2139,7 +2147,7 @@ export class Sim {
   }
 
   /** Spawns one body; false when every slot is taken (session 31: the caller keeps the body for a later tick instead of losing it). */
-  private spawn(entry: CellRef, defIdx: number, boss = false): boolean {
+  private spawn(entry: CellRef, defIdx: number, boss = false, at?: { x: number; y: number; dir: number }): boolean {
     const i = this.freeEnemies.pop() ?? (this.enemyHigh < ENEMY_CAP ? this.enemyHigh++ : -1);
     if (i === -1) return false;
     const def = this.opts.enemyDefs[defIdx];
@@ -2166,6 +2174,9 @@ export class Sim {
     // Facing inward from the board edge - so if the entry cell itself is a
     // bridge, the walker already knows which strand it arrived on.
     this.walkDir[i] = entry.y === 0 ? 2 : entry.x === 0 ? 1 : entry.x === this.opts.cellsW - 1 ? 3 : 0;
+    // A body born mid-road (a splitter's halves, session 32): where its parent fell, walking the same way.
+    if (at) { this.posX[i] = at.x; this.posY[i] = at.y; this.tgtX[i] = at.x; this.tgtY[i] = at.y; this.walkDir[i] = at.dir; }
+    this.burrowLeft[i] = hasTrait(def, 'burrow') ? TRAIT_RULES.burrow.cells : 0;
     return true;
   }
 
@@ -2210,7 +2221,7 @@ export class Sim {
     const minSq = minRange * minRange;
     const candidates: TargetCandidate[] = [];
     for (let i = 0; i < this.enemyHigh; i++) {
-      if (!this.alive[i]) continue;
+      if (!this.alive[i] || this.burrowLeft[i] > 0) continue; // a burrowed body is not there (session 32)
       const dx = this.posX[i] - cx;
       const dy = this.posY[i] - cy;
       const dSq = dx * dx + dy * dy;
@@ -2281,7 +2292,7 @@ export class Sim {
     const half = Math.max(0.5, width / 2);
     const out: { i: number; along: number }[] = [];
     for (let i = 0; i < this.enemyHigh; i++) {
-      if (!this.alive[i]) continue;
+      if (!this.alive[i] || this.burrowLeft[i] > 0) continue; // a burrowed body is not there (session 32)
       const dx = this.posX[i] - cx;
       const dy = this.posY[i] - cy;
       const along = dx * fx + dy * fy;
@@ -2344,7 +2355,7 @@ export class Sim {
       let best = -1;
       let bestSq = reachSq;
       for (let i = 0; i < this.enemyHigh; i++) {
-        if (!this.alive[i] || hit.has(i)) continue;
+        if (!this.alive[i] || this.burrowLeft[i] > 0 || hit.has(i)) continue;
         const dx = this.posX[i] - cx;
         const dy = this.posY[i] - cy;
         const dSq = dx * dx + dy * dy;
@@ -2379,7 +2390,7 @@ export class Sim {
       const maxSq = eff.range * eff.range;
       const minSq = eff.minRange * eff.minRange;
       for (let i = 0; i < this.enemyHigh; i++) {
-        if (!this.alive[i] || i === target) continue;
+        if (!this.alive[i] || this.burrowLeft[i] > 0 || i === target) continue;
         const dx = this.posX[i] - cx;
         const dy = this.posY[i] - cy;
         const dSq = dx * dx + dy * dy;
@@ -2507,7 +2518,7 @@ export class Sim {
       // three ticks later on screen, resolved now.
       if (rep === 1) this.emit({ kind: 'impact', x: ix, y: iy, r: this.projRadius[p], delay: SPLINTER_DELAY, by });
       for (let i = 0; i < this.enemyHigh; i++) {
-        if (!this.alive[i]) continue;
+        if (!this.alive[i] || this.burrowLeft[i] > 0) continue;
         const dx = this.posX[i] - ix;
         const dy = this.posY[i] - iy;
         if (Math.sqrt(dx * dx + dy * dy) <= radius) this.damageEnemy(i, p);
@@ -2539,7 +2550,7 @@ export class Sim {
     let best = -1;
     let bestSq = reach * reach;
     for (let i = 0; i < this.enemyHigh; i++) {
-      if (!this.alive[i] || i === except) continue;
+      if (!this.alive[i] || this.burrowLeft[i] > 0 || i === except) continue;
       const dx = this.posX[i] - x;
       const dy = this.posY[i] - y;
       const dSq = dx * dx + dy * dy;
@@ -2558,11 +2569,23 @@ export class Sim {
 
   private applyDamage(enemy: number, raw: number, slowMulN: number, slowTicksN: number, towerIdx: number, shieldMul = 1, ignoreArmor = false, type?: DamageType): void {
     if (!this.alive[enemy]) return;
+    if (this.burrowLeft[enemy] > 0) return; // burrowed (traits.ts, session 32): nothing reaches it until it surfaces
     const def = this.opts.enemyDefs[this.enemyDefIdx[enemy]];
     // Damage TYPES decide fights (PRD sec 8, session 26): the enemy's
     // multiplier against the hit's type comes first - an immune body takes
     // nothing, not the min-1 chip - then armour, then everything else.
-    const typed = raw * resistMul(def, type);
+    let typed = raw * resistMul(def, type);
+    // Enemies II (session 32): a shieldbearer's front, a bulwark's cover.
+    if (towerIdx >= 0 && hasTrait(def, 'frontshield')) {
+      const tw = this.towers[towerIdx];
+      if (tw) typed *= frontShieldMul(def, this.posX[enemy], this.posY[enemy], this.walkDir[enemy], tw.cellX + 0.5, tw.cellY + 0.5);
+    }
+    for (const b of this.bulwarks) {
+      if (b === enemy || !this.alive[b]) continue;
+      const bx = this.posX[b] - this.posX[enemy];
+      const by = this.posY[b] - this.posY[enemy];
+      if (bx * bx + by * by <= TRAIT_RULES.bulwark.radius * TRAIT_RULES.bulwark.radius) { typed *= TRAIT_RULES.bulwark.damageMul; break; }
+    }
     // Zero-damage attacks are pure control (Frost's base): effects land,
     // health does not move, armor's min-1 rule only applies to real hits.
     // Railbore ignores armour outright.
@@ -2598,6 +2621,14 @@ export class Sim {
       this.emit({ kind: 'death', x: this.posX[enemy], y: this.posY[enemy] });
       this.kills++;
       this.killsByDef[this.enemyDefIdx[enemy]] = (this.killsByDef[this.enemyDefIdx[enemy]] ?? 0) + 1;
+      // A splitter dies into two where it fell (traits.ts 'split', session 32).
+      if (def.splitInto !== undefined && hasTrait(def, 'split')) {
+        const si = this.opts.enemyDefs.findIndex((d) => d.id === def.splitInto);
+        if (si >= 0) {
+          const cell = { x: Math.floor(this.posX[enemy]), y: Math.floor(this.posY[enemy]) };
+          for (let n = 0; n < TRAIT_RULES.split.count; n++) this.spawn(cell, si, false, { x: this.posX[enemy], y: this.posY[enemy], dir: this.walkDir[enemy] });
+        }
+      }
       // Bounty Board (relic) multiplies boss bounty only; rounded so Scrap
       // stays integral (the state hash truncates its lanes to integers).
       this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1) * this.econFold.bountyMul) + this.fold.killRefundScrap; // Tithe; Bounty Hunter (relic)
@@ -2678,7 +2709,7 @@ export class Sim {
     let best = -1;
     let bestSq = Infinity;
     for (let i = 0; i < this.enemyHigh; i++) {
-      if (!this.alive[i]) continue;
+      if (!this.alive[i] || this.burrowLeft[i] > 0) continue;
       const dx = this.posX[i] - x;
       const dy = this.posY[i] - y;
       const dSq = dx * dx + dy * dy;
@@ -2702,7 +2733,7 @@ export class Sim {
     const slowMul = eff.slowTicks > 0 && eff.slowMul < 1 ? (freeze ? 0 : eff.slowMul) : freeze ? 0 : 0;
     const slowTicks = eff.slowTicks > 0 && (eff.slowMul < 1 || freeze) ? eff.slowTicks : 0;
     for (let i = 0; i < this.enemyHigh; i++) {
-      if (!this.alive[i]) continue;
+      if (!this.alive[i] || this.burrowLeft[i] > 0) continue; // a burrowed body is not there (session 32)
       const dx = this.posX[i] - cx;
       const dy = this.posY[i] - cy;
       if (dx * dx + dy * dy > r2) continue;
@@ -2720,15 +2751,38 @@ export class Sim {
 
   // ---- movement ------------------------------------------------------------
 
+  /** Menders (traits.ts 'heal', session 32): every second, each heals every other body within its radius, never above what it spawned with. */
+  private healPhase(): void {
+    const r2 = TRAIT_RULES.heal.radius * TRAIT_RULES.heal.radius;
+    for (let i = 0; i < this.enemyHigh; i++) {
+      if (!this.alive[i] || this.burrowLeft[i] > 0 || !hasTrait(this.opts.enemyDefs[this.enemyDefIdx[i]], 'heal')) continue;
+      for (let j = 0; j < this.enemyHigh; j++) {
+        if (j === i || !this.alive[j] || this.hp[j] >= this.spawnHp[j]) continue;
+        const dx = this.posX[j] - this.posX[i];
+        const dy = this.posY[j] - this.posY[i];
+        if (dx * dx + dy * dy > r2) continue;
+        this.hp[j] = Math.min(this.spawnHp[j], this.hp[j] + TRAIT_RULES.heal.amount);
+      }
+    }
+  }
+
   private walkPhase(): void {
     // Stasis (relic active): the board freezes - nothing moves, slow timers
     // hold, towers keep firing. The get-out-of-jail card.
     if (this.tickCount < this.freezeUntil) return;
     const { nodeDist, width } = this.flow;
+    // Enemies II (session 32): the living bulwarks this tick, and the menders' second.
+    this.bulwarks.length = 0;
+    for (let i = 0; i < this.enemyHigh; i++) if (this.alive[i] && this.burrowLeft[i] <= 0 && hasTrait(this.opts.enemyDefs[this.enemyDefIdx[i]], 'bulwark')) this.bulwarks.push(i);
+    if (this.tickCount % TRAIT_RULES.heal.every === 0) this.healPhase();
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;
       const edef = this.opts.enemyDefs[this.enemyDefIdx[i]];
       let speed = edef.speed;
+      // A charger under half hp, a sprinter unhit (traits.ts, session 32).
+      speed *= traitSpeedMul(edef, this.spawnHp[i] > 0 ? this.hp[i] / this.spawnHp[i] : 1, this.tickCount - this.lastHit[i]);
+      // A burrower spends its unseen cells at its nominal pace, then surfaces.
+      if (this.burrowLeft[i] > 0) this.burrowLeft[i] = Math.max(0, this.burrowLeft[i] - edef.speed);
       // Shielded (traits.ts): the shield regrows after a pause unhit, so
       // focus fire breaks it and chip damage never does.
       const shieldMax = edef.shield ?? 0;

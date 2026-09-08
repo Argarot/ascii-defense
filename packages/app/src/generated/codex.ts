@@ -518,6 +518,118 @@ export const CODEX = {
       "kinetic": "x0.8",
       "energy": "x1.2",
       "traits": []
+    },
+    {
+      "id": "courser",
+      "name": "courser",
+      "hp": 20,
+      "speed": "1.60",
+      "breach": 1,
+      "bounty": 4,
+      "fromWave": 3,
+      "armour": 0,
+      "shield": 0,
+      "kinetic": "x1.2",
+      "energy": "x0.8",
+      "traits": [
+        "sprint: runs 60% faster while unhit for two seconds - keep it under fire"
+      ]
+    },
+    {
+      "id": "ram",
+      "name": "ram",
+      "hp": 70,
+      "speed": "1",
+      "breach": 3,
+      "bounty": 8,
+      "fromWave": 6,
+      "armour": 0,
+      "shield": 0,
+      "kinetic": "x0.8",
+      "energy": "x1.2",
+      "traits": [
+        "charge: runs at double speed once under half hp - finish it, or slow it before the sprint"
+      ]
+    },
+    {
+      "id": "blob",
+      "name": "blob",
+      "hp": 60,
+      "speed": "1",
+      "breach": 2,
+      "bounty": 6,
+      "fromWave": 7,
+      "armour": 0,
+      "shield": 0,
+      "kinetic": "",
+      "energy": "",
+      "traits": [
+        "split: dies into two skitters where it fell - kill it early, or let a blast take the halves together"
+      ]
+    },
+    {
+      "id": "mender",
+      "name": "mender",
+      "hp": 40,
+      "speed": "1",
+      "breach": 1,
+      "bounty": 9,
+      "fromWave": 8,
+      "armour": 0,
+      "shield": 0,
+      "kinetic": "",
+      "energy": "x1.4",
+      "traits": [
+        "heal: mends every body within a cell and a half by 3 every second - kill the mender first (priority WEAKEST finds it)"
+      ]
+    },
+    {
+      "id": "mole",
+      "name": "mole",
+      "hp": 50,
+      "speed": "1.20",
+      "breach": 3,
+      "bounty": 8,
+      "fromWave": 9,
+      "armour": 0,
+      "shield": 0,
+      "kinetic": "",
+      "energy": "",
+      "traits": [
+        "burrow: untargetable and unhittable for its first eight cells of road - the towers deeper in see it"
+      ]
+    },
+    {
+      "id": "pavise",
+      "name": "pavise",
+      "hp": 110,
+      "speed": "0.80",
+      "breach": 4,
+      "bounty": 12,
+      "fromWave": 11,
+      "armour": 0,
+      "shield": 0,
+      "kinetic": "x1.2",
+      "energy": "x0.8",
+      "traits": [
+        "frontshield: a shield facing the way it walks: hits from ahead do a third - flank it from beside the road"
+      ]
+    },
+    {
+      "id": "warden",
+      "name": "Warden",
+      "hp": 450,
+      "speed": "0.60",
+      "breach": 10,
+      "bounty": 30,
+      "fromWave": 12,
+      "armour": 3,
+      "shield": 0,
+      "kinetic": "",
+      "energy": "x1.2",
+      "traits": [
+        "bulwark: every body within two and a half cells takes 30% less while it lives - the boss to kill first"
+      ]
     }
   ],
   "relics": [

@@ -219,7 +219,12 @@ describe('replay (WBS 1.4.8)', () => {
     // the slow and burn entry lists (their resolved values agree today and
     // diverge later), a beam's held lead, and the Scrap a tower was paid for.
     // No behaviour change on this run; round-trip replay still proves bit-identical.
-    expect(sim.hashState()).toBe(432368675);
+    // 432368675 -> 4165960643 on 2026-09-08 (session 32, PR 1, Enemies II): a
+    // burrow lane joined the hash (the cells a burrower has still to walk
+    // unseen) - zero for every body of this golden world, which has no
+    // burrower. No behaviour change on this run; round-trip replay still
+    // proves bit-identical.
+    expect(sim.hashState()).toBe(4165960643);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

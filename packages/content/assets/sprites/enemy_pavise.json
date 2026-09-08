@@ -1,0 +1,44 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "enemy_pavise",
+  "kind": "enemy",
+  "cell": [
+    4,
+    3
+  ],
+  "frameMs": 360,
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "|]P ",
+        "|]P ",
+        "|]  "
+      ],
+      "ink": [
+        "abb.",
+        "abb.",
+        "ab.."
+      ],
+      "frames": [
+        {
+          "art": [
+            "|]P ",
+            "|] P",
+            "|]  "
+          ],
+          "ink": [
+            "abb.",
+            "ab.b",
+            "ab.."
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "enemy.shell",
+    "b": "enemy.limb"
+  }
+}

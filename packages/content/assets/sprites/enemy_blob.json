@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "enemy_blob",
+  "kind": "enemy",
+  "cell": [
+    4,
+    2
+  ],
+  "frameMs": 360,
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "(oo)",
+        " \\/ "
+      ],
+      "ink": [
+        "abba",
+        ".aa."
+      ],
+      "frames": [
+        {
+          "art": [
+            "(oo)",
+            " /\\ "
+          ],
+          "ink": [
+            "abba",
+            ".aa."
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "enemy.limb",
+    "b": "enemy.swarm"
+  }
+}
