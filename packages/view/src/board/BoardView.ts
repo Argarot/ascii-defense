@@ -187,7 +187,7 @@ export interface RenderState {
   /** Unclaimed relic caches - drawn as a bright find on the terrain. */
   caches?: readonly CellRef[];
   /** Void chests (session 28, PR 5): surfaced on water, with the share of their window left (1 = just surfaced). */
-  chests?: readonly { x: number; y: number; left01: number; /** Its rarity's colour (session 30, PR 4). */ rarity?: string }[];
+  chests?: readonly { x: number; y: number; left01: number; /** Its rarity's colour (session 30, PR 4). */ rarity?: string; /** A boss's chest: the crowned sprite (feedback 2026-09-08, item 7). */ boss?: boolean }[];
   /** Ore cells' remaining richness 0..1 - scales the gold-speck density. */
   oreRichness?: readonly { x: number; y: number; frac: number }[];
   /** The sim's route graph (FlowField.allowed): legal steps per cell. Kerbs
@@ -637,8 +637,13 @@ export class BoardView {
       const on = ((state.phase ?? 0) * rate) % 1 < 0.6;
       const rr = rarityRole(c.rarity);
       const frame = rr ? role(rr) : role('terrain.ore.lit');
-      const sp = this.sprites.get('chest');
-      if (sp) { drawSpriteFrame(term, sp, sp.states[''], gx, gy, { flatFg: rr ?? 'terrain.ore.lit', transparent: true }); continue; }
+      const sp = this.sprites.get(c.boss ? 'chest_boss' : 'chest') ?? this.sprites.get('chest');
+      if (sp) {
+        // The chest's own frames blink with its sinking (feedback item 7: a reworked sprite, by rarity).
+        const cycle = [sp.states[''], ...(sp.states[''].frames ?? [])];
+        drawSpriteFrame(term, sp, on ? cycle[0] : cycle[cycle.length - 1], gx, gy, { flatFg: rr ?? 'terrain.ore.lit', transparent: true });
+        continue;
+      }
       term.write(gx, gy, '┌──┐', frame, '#2a2210');
       term.put(gx, gy + 1, '│', frame, '#2a2210');
       term.write(gx + 1, gy + 1, on ? '$$' : '~~', on ? '#ffffff' : frame, on ? '#4a3a10' : '#2a2210');

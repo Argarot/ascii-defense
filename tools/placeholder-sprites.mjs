@@ -114,6 +114,18 @@ for (const [id, e] of Object.entries(ENEMIES)) {
   write(`enemy_${id}`, { id: `enemy_${id}`, kind: 'enemy', cell: e.cell, frameMs: 360, source: SOURCE, states: { '': { ...base, frames: rest } }, inkMap: keys.inkMap });
 }
 
+// ---- the chests (feedback 2026-09-08, item 7): 4x3, drawn flat in the rarity's colour by the view; a second frame for the blink ----
+{
+  const keys = makeKeys();
+  const chest = frame(keys, ['\u250c\u2500\u2500\u2510', '\u2502$$\u2502', '\u2514\u2500\u2500\u2518'], (ch) => (ch === '$' ? 'relic.gold' : 'relic.copper'));
+  const chestLit = frame(keys, ['\u250c\u2500\u2500\u2510', '\u2502~~\u2502', '\u2514\u2500\u2500\u2518'], (ch) => (ch === '~' ? 'relic.copper' : 'relic.copper'));
+  write('chest', { id: 'chest', kind: 'chest', cell: [4, 3], frameMs: 500, source: SOURCE, states: { '': { ...chest, frames: [chestLit] } }, inkMap: keys.inkMap });
+  const k2 = makeKeys();
+  const crown = frame(k2, ['\\/\\/', '[$$]', '\\__/'], (ch) => (ch === '$' ? 'relic.gold' : ch === '/' || ch === '\\' ? 'relic.gold' : 'relic.copper'));
+  const crownLit = frame(k2, ['\\/\\/', '[**]', '\\__/'], (ch) => (ch === '*' ? 'relic.gold' : ch === '/' || ch === '\\' ? 'relic.gold' : 'relic.copper'));
+  write('chest_boss', { id: 'chest_boss', kind: 'chest', cell: [4, 3], frameMs: 500, source: SOURCE, states: { '': { ...crown, frames: [crownLit] } }, inkMap: k2.inkMap });
+}
+
 // ---- relics: a 4x3 icon, one colour each, a dimmer second class for the frame --
 const RELICS = {
   overflow: { role: 'relic.copper', rows: ['o->o', '   |', '   o'], dim: '->|' },

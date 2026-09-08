@@ -38,6 +38,7 @@ import {
   type SetDef,
   type RecipeDef,
   CHEST_WINDOW,
+  BOSS_CHEST_WINDOW,
   CHEST_RARITY_MUL,
   RARITIES,
   relicDescAt,
@@ -474,7 +475,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         selected,
         routeAllowed: s.flow.allowed,
         caches,
-        chests: s.voidChests.map((c) => ({ x: c.x, y: c.y, left01: Math.max(0, Math.min(1, (c.until - s.tickCount) / CHEST_WINDOW)), rarity: RARITIES[c.rarity] })),
+        chests: s.voidChests.map((c) => ({ x: c.x, y: c.y, left01: Math.max(0, Math.min(1, (c.until - s.tickCount) / (c.boss ? BOSS_CHEST_WINDOW : CHEST_WINDOW))), rarity: RARITIES[c.rarity], ...(c.boss ? { boss: true } : {}) })),
         boons: [...(map.boons ?? []), ...s.extraBoons].map((b) => ({ x: b.x, y: b.y, tier: b.tier, boon: b.boon })),
         oreRichness,
         enemies,
@@ -542,7 +543,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         roster,
         waveNow,
         cache: selected && s.cacheAt(selected.x, selected.y) ? { source: s.cacheAt(selected.x, selected.y)!.table } : null,
-        chest: (() => { const c = selected ? s.chestAt(selected.x, selected.y) : null; return c ? { seconds: Math.max(0, Math.ceil((c.until - s.tickCount) / TICK_HZ)), home: s.cellAt(c.x, c.y) === null ? ('water' as const) : s.cellAt(c.x, c.y) === 'G' ? ('ground' as const) : ('rock' as const), rarity: RARITIES[c.rarity], mul: CHEST_RARITY_MUL[c.rarity] ?? 1 } : null; })(),
+        chest: (() => { const c = selected ? s.chestAt(selected.x, selected.y) : null; return c ? { seconds: Math.max(0, Math.ceil((c.until - s.tickCount) / TICK_HZ)), home: s.cellAt(c.x, c.y) === null ? ('water' as const) : s.cellAt(c.x, c.y) === 'G' ? ('ground' as const) : ('rock' as const), rarity: RARITIES[c.rarity], mul: CHEST_RARITY_MUL[c.rarity] ?? 1, boss: c.boss === true } : null; })(),
         // The newest thing a cache gave, for a few seconds after it opened.
         loot: (() => {
           const last = s.lootLog[s.lootLog.length - 1];

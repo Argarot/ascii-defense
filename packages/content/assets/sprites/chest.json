@@ -1,0 +1,44 @@
+{
+  "$schema": "../../schema/sprite.schema.json",
+  "id": "chest",
+  "kind": "chest",
+  "cell": [
+    4,
+    3
+  ],
+  "frameMs": 500,
+  "source": "tools/placeholder-sprites.mjs (session 25 placeholder; a study in sources/sprites/ replaces it)",
+  "states": {
+    "": {
+      "art": [
+        "┌──┐",
+        "│$$│",
+        "└──┘"
+      ],
+      "ink": [
+        "aaaa",
+        "abba",
+        "aaaa"
+      ],
+      "frames": [
+        {
+          "art": [
+            "┌──┐",
+            "│~~│",
+            "└──┘"
+          ],
+          "ink": [
+            "aaaa",
+            "aaaa",
+            "aaaa"
+          ]
+        }
+      ]
+    }
+  },
+  "inkMap": {
+    ".": null,
+    "a": "relic.copper",
+    "b": "relic.gold"
+  }
+}

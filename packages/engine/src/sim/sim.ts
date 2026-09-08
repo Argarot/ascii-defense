@@ -266,7 +266,13 @@ export const CHEST_EVERY = 600; // 300 -> 600 (feedback 2026-09-08, item 6: "voi
 export const CHEST_WINDOW = 240;
 export const CHEST_MAX = 2;
 /** What a chest of each rarity pays, on its Scrap and Ore outcomes (session 30, PR 4). */
-export const CHEST_RARITY_MUL: readonly number[] = [1, 1.5, 2];
+export const CHEST_RARITY_MUL: readonly number[] = [1, 1.5, 2, 3];
+/** A boss's chest stands a minute (feedback 2026-09-08, item 7): a reward, not a race. */
+export const BOSS_CHEST_WINDOW = 1200;
+/** A boss's chest is rarer with the wave it fell on: rare before 10, epic before 20, legendary from 20. */
+export function bossChestRarity(wave: number): number {
+  return wave < 10 ? 1 : wave < 20 ? 2 : 3;
+}
 /** Base prospect duration: breaking rock is a COMMITMENT, not a purchase. */
 export const PROSPECT_TICKS = 600;
 /** Scrap paid per second still on the wave clock when the player CALLS early. */
@@ -560,7 +566,7 @@ export class Sim {
    * claim pays through the loot table 'void_chest'. Hashed.
    */
   /** Surfaced chests (PRD sec 4.9); rarity 0..2 rolled at surface (session 30, PR 4; Daniil's item 13) colours the chest and scales its loot. Hashed. */
-  readonly voidChests: { x: number; y: number; until: number; rarity: number }[] = [];
+  readonly voidChests: { x: number; y: number; until: number; rarity: number; /** A boss's chest (feedback 2026-09-08, item 7): its own look, the boss table, a minute to claim. */ boss?: boolean }[] = [];
   /** Every in-bounds water cell, fixed at construction: where a chest may surface. */
   private readonly voidCells: number[] = [];
   /** Boon ground an opened cache created; boonAt reads the map's and these. */
@@ -1398,7 +1404,7 @@ export class Sim {
   private chestPhase(): void {
     for (let i = this.voidChests.length - 1; i >= 0; i--) if (this.voidChests[i].until <= this.tickCount) this.voidChests.splice(i, 1);
     if (this.tickCount === 0 || this.tickCount % CHEST_EVERY !== 0) return;
-    if (this.voidChests.length >= CHEST_MAX) return;
+    if (this.voidChests.filter((c) => !c.boss).length >= CHEST_MAX) return; // a boss's chest does not take a void slot
     if (!(this.opts.lootTables ?? []).some((t) => t.id === 'void_chest')) return;
     const homes = this.chestHomes();
     if (homes.length === 0) return;
@@ -1434,7 +1440,7 @@ export class Sim {
     return homes;
   }
 
-  chestAt(x: number, y: number): { x: number; y: number; until: number; rarity: number } | null {
+  chestAt(x: number, y: number): { x: number; y: number; until: number; rarity: number; boss?: boolean } | null {
     for (const c of this.voidChests) if (c.x === x && c.y === y) return c;
     return null;
   }
@@ -1444,7 +1450,7 @@ export class Sim {
     if (this.status !== 'running') return false;
     const i = this.voidChests.findIndex((c) => c.x === x && c.y === y);
     if (i === -1) return false;
-    const table = (this.opts.lootTables ?? []).find((t) => t.id === 'void_chest');
+    const table = (this.opts.lootTables ?? []).find((t) => t.id === (this.voidChests[i].boss ? 'boss_drop' : 'void_chest'));
     if (!table) return false;
     const rarity = this.voidChests[i].rarity;
     this.voidChests.splice(i, 1);
@@ -1877,7 +1883,7 @@ export class Sim {
     for (const r of this.heldRarity) u32(r + 1);
     for (const r of this.offerRarity) u32(r + 1);
     for (const c of this.caches) { u32(c.x); u32(c.y); u32(c.opened ? 1 : 0); for (let i = 0; i < c.table.length; i++) u32(c.table.charCodeAt(i)); }
-    for (const c of this.voidChests) { u32(c.x); u32(c.y); u32(c.until); u32(c.rarity); }
+    for (const c of this.voidChests) { u32(c.x); u32(c.y); u32(c.until); u32(c.rarity); u32(c.boss ? 1 : 0); }
     for (const b of this.extraBoons) { u32(b.x); u32(b.y); u32(b.tier ?? 1); u32(b.boon.charCodeAt(0)); }
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
     u32(this.status === 'won' ? 1 : 0);
@@ -2782,10 +2788,14 @@ export class Sim {
         this.coreHp = Math.min(this.coreHpMax, this.coreHp + 1);
         this.noteRelicUse('killHealEvery');
       }
-      // A boss drops a cache where it falls (design round 1, Daniil: "where
-      // it dies") - on the road, usually; opened like any other.
+      // A boss leaves a CHEST where it falls (design round 1: "where it dies";
+      // feedback 2026-09-08, item 7: its own sprite and a rarity) - rarer
+      // with the wave, a minute to claim, paid through the boss table.
       if (this.bossFlag[enemy]) {
-        this.caches.push({ x: Math.floor(this.posX[enemy]), y: Math.floor(this.posY[enemy]), table: 'boss_drop', opened: false });
+        const bx = Math.floor(this.posX[enemy]);
+        const by = Math.floor(this.posY[enemy]);
+        if (!this.voidChests.some((c) => c.x === bx && c.y === by)) this.voidChests.push({ x: bx, y: by, until: this.tickCount + BOSS_CHEST_WINDOW, rarity: bossChestRarity(this.wave), boss: true });
+        this.emit({ kind: 'chest', x: bx + 0.5, y: by + 0.5 });
       }
       // Overflow (relic): excess damage chains to the nearest enemy, and a
       // chain kill's excess chains again - kills feed kills. Terminates
