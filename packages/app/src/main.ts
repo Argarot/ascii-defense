@@ -738,10 +738,19 @@ async function main(): Promise<void> {
       case 'history': {
         // Run history (WBS 7.3): the last runs, newest first.
         const rows = [...meta.history].reverse().slice(0, 14);
+        // Personal bests (session 31, PR 8; the register since session 29): per Threat, the deepest wave and the most kills.
+        const bests = THREAT_LEVELS.map((t) => {
+          const runs = meta.history.filter((h) => h.threat === t.name);
+          if (runs.length === 0) return null;
+          const wave = Math.max(...runs.map((h) => h.wave));
+          const kills = Math.max(...runs.map((h) => h.kills));
+          const won = runs.filter((h) => h.status === 'won').length;
+          return `${t.name.padEnd(8)}  best wave ${String(wave).padStart(2)}  most kills ${String(kills).padStart(4)}  won ${won}/${runs.length}`;
+        }).filter((l): l is string => l !== null);
         return {
           title: 'RUN HISTORY',
           body: rows.length
-            ? rows.map((h) => `${h.status === 'won' ? 'WON ' : 'lost'}  ${h.threat.padEnd(8)}  wave ${String(h.wave).padStart(2)}  kills ${String(h.kills).padStart(4)}  seed ${h.seed}`)
+            ? [...bests, '', ...rows.map((h) => `${h.status === 'won' ? 'WON ' : 'lost'}  ${h.threat.padEnd(8)}  wave ${String(h.wave).padStart(2)}  kills ${String(h.kills).padStart(4)}  seed ${h.seed}`)]
             : ['no runs yet'],
           items: [{ id: 'back', label: 'BACK' }],
           footer: `${meta.history.length} runs played \u2802 ${meta.history.filter((h) => h.status === 'won').length} won`,
@@ -753,14 +762,14 @@ async function main(): Promise<void> {
           body: ['saves live in this browser; export moves them'],
           // A run's keys only when the page was opened from the pause (session 31: the title's settings listed "next wave").
           keys: settingsFrom === 'paused'
-            ? [{ key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'grid' }, { key: '1-3', does: 'take a relic' }, { key: 'Esc', does: 'back' }]
+            ? [{ key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'tile seams' }, { key: '1-3', does: 'take a relic' }, { key: 'Esc', does: 'back' }]
             : [{ key: 'Esc', does: 'back' }],
           items: [
             { id: 'motion', label: 'REDUCED MOTION', note: isReducedMotion() ? 'ON' : 'OFF' },
             { id: 'scale', label: 'HUD TEXT SCALE', note: `${meta.settings.hudScale}x - click to switch (reloads)` },
             { id: 'palette', label: 'PALETTE', note: meta.settings.palette === 'colourblind' ? 'COLOURBLIND' : 'DEFAULT' },
             { id: 'sprites', label: 'SPRITE PACK', note: `${(meta.settings.spriteSet ?? 'current').toUpperCase()} (reloads)` },
-            { id: 'hints', label: 'TUTORIAL', note: meta.settings.onboarded ? 'done - click to replay it' : `ON - step ${Math.min(TUTORIAL_STEPS.length, tutStep + 1)} of ${TUTORIAL_STEPS.length}` },
+            { id: 'hints', label: 'TUTORIAL', note: meta.settings.onboarded ? 'done - click to replay it' : `ON - step ${Math.min(TUTORIAL_STEPS.length, tutStep + 1)} of ${TUTORIAL_STEPS.length} - click to turn it off` },
             { id: 'export', label: 'EXPORT SAVES' },
             { id: 'import', label: 'IMPORT SAVES' },
             { id: 'wipe', label: wipeArmed ? 'CLICK AGAIN TO WIPE' : 'WIPE DATA' },
@@ -774,7 +783,7 @@ async function main(): Promise<void> {
             `wave ${snap?.hud.wave ?? 0} of ${finalWave > 0 ? finalWave : 'endless'} \u2802 seed ${seed}`,
             `run code ${runCode(seed)}`,
           ],
-          keys: [{ key: 'Esc', does: 'resume' }, { key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: '1-3', does: 'take a relic' }, { key: 'S', does: 'skip an offer' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'grid' }],
+          keys: [{ key: 'Esc', does: 'resume' }, { key: 'Space', does: 'pause' }, { key: '1-4', does: 'speed' }, { key: 'N', does: 'next wave' }, { key: '1-3', does: 'take a relic' }, { key: 'S', does: 'skip an offer' }, { key: 'R', does: 'turn a laser' }, { key: 'X', does: 'sell' }, { key: 'G', does: 'tile seams' }],
           items: [
             { id: 'resume', label: 'RESUME' },
             { id: 'copycode', label: copyLabel('code', 'COPY RUN CODE') },

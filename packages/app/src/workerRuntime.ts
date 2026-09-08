@@ -49,6 +49,7 @@ import {
   ALL_UNLOCKS,
   resolveUnlocks,
   relicApplies,
+  relicEffectsAt,
  effectiveStats, DAMAGE_TYPES } from '@ascii-defense/engine';
 import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
@@ -642,7 +643,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         const h = s.heldRelicInfo()[a.index];
         if (!h) break;
         if (h.def.kind === 'consumable') s.useConsumable(h.def.id);
-        else if (h.def.kind === 'active' && h.cooldown === 0 && h.def.effects?.orbitalDamage === undefined) s.fireActive(h.def.id);
+        else if (h.def.kind === 'active' && h.cooldown === 0 && relicEffectsAt(h.def, h.rarity).orbitalDamage === undefined) s.fireActive(h.def.id); // targeted at the HELD rarity (session 31, PR 8)
         break;
       }
       default: a satisfies never;

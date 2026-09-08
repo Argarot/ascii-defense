@@ -803,6 +803,32 @@ draw at the Core costs 50 Ore and every purchase multiplies the next by 1.5;
 rerolls start lower and climb the same way. Ore keeps its spend-now-or-bank
 tension (§6) precisely because the fourth relic costs what the first three did.
 
+**The logic comb (session 31, PR 8).** An audit of the sim against the
+cards found rules that lied or leaked, all fixed and tested: Thick Walls
+gives its hp back on salvage (it only clamped - take-then-salvage was a
+repeatable heal plus the salvage Ore); a sold tower refunds a share of
+what it PAID (`Tower.paid`), not of today's prices (a tower bought under
+Bulk Order sold for full price once the relic was gone); a copy of an
+unstackable relic that arrived while an offer stood (a cache, a purchase)
+makes that card a dead pick, refused, and a fusion already held is not a
+Forge target; two of a kind keep the readier cooldown, whichever was
+clicked first; Wide Aura and the Rally set widen the plus a neighbour must
+stand in (the HUD's ring was one cell wider than the ring that buffed); an
+empty pool no longer burns the wave's offer; Frostbite counts a frozen
+body as slowed, as Cold Snap already did (Stasis held them still and the
+bonus never fired); Overflow's carried damage keeps the hit's type and
+armour rule, as Ricochet's does. Content told the truth where the code
+could not cheaply change: Wide Net says plain shots (blasts never pierce);
+Superheated says a burning beam burns hotter; Salvage Rights' epic tier was
+its rare twice and now also cuts build costs; the support sets were
+unreachable with one support relic in the pool, so Loadbearing and Sniper
+Nest (the Core's ring) carry the tag too. The state hash now covers a
+shot's damage type, the Bloodstone kill count, the slow and burn entry
+lists, a beam's held lead and a tower's paid Scrap (the golden hash moved,
+with the reason on the constant). Left as read: `countMax` counts queue
+entries, so a swarm pack triples it; `fireRateMul`/`rangeAdd` are
+schema-live seams no content uses (`mods.*` is the one content uses).
+
 ### 7.7 Loot tables — one answer to "what do I get" *(Daniil, 2026-08-17)*
 
 Rewards are currently hard-coded per source: a cache grants a relic, a vein

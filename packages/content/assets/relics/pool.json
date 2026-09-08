@@ -102,7 +102,8 @@
       "kind": "passive",
       "rarity": "epic",
       "tags": [
-        "reach"
+        "reach",
+        "support"
       ],
       "desc": "Towers touching the Core block get half again their range.",
       "effects": {
@@ -460,7 +461,9 @@
     },
     {
       "id": "kindling",
-      "needsTower": ["laser"],
+      "needsTower": [
+        "laser"
+      ],
       "name": "Kindling",
       "kind": "passive",
       "rarity": "rare",
@@ -493,9 +496,10 @@
           }
         },
         "epic": {
-          "desc": "Sold towers refund in full.",
+          "desc": "Sold towers refund in full, and every build costs 10% less.",
           "effects": {
-            "sellRefundBonus": 0.3
+            "sellRefundBonus": 0.3,
+            "buildCostMul": 0.9
           }
         }
       }
@@ -565,7 +569,7 @@
         "kinetic"
       ],
       "stackable": true,
-      "desc": "Every shot passes into one more body.",
+      "desc": "Every plain shot passes into one more body (blasts never pierce).",
       "effects": {
         "pierceAdd": 1
       },
@@ -586,7 +590,9 @@
     },
     {
       "id": "grounding_rod",
-      "needsTower": ["tesla"],
+      "needsTower": [
+        "tesla"
+      ],
       "name": "Grounding Rod",
       "kind": "passive",
       "rarity": "common",
@@ -649,7 +655,8 @@
       "rarity": "rare",
       "tags": [
         "damage",
-        "core"
+        "core",
+        "support"
       ],
       "desc": "Towers touching the Core face hit for half again.",
       "effects": {
@@ -1047,7 +1054,9 @@
     },
     {
       "id": "overclock",
-      "needsTower": ["laser"],
+      "needsTower": [
+        "laser"
+      ],
       "name": "Overclock",
       "kind": "passive",
       "rarity": "rare",
@@ -1073,7 +1082,9 @@
     },
     {
       "id": "wide_aura",
-      "needsTower": ["bastion"],
+      "needsTower": [
+        "bastion"
+      ],
       "name": "Wide Aura",
       "kind": "passive",
       "rarity": "rare",

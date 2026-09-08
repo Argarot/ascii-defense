@@ -213,7 +213,13 @@ describe('replay (WBS 1.4.8)', () => {
     // the purse is three tiers long from the start and every tier is hashed -
     // two more lanes, both zero in the golden world (no tiered vein). No
     // behaviour change on this run; round-trip replay still proves bit-identical.
-    expect(sim.hashState()).toBe(4031597317);
+    // 4031597317 -> 432368675 on 2026-09-08 (session 31, PR 8, the logic comb):
+    // the hash now covers state that decided a hit or a heal and was not
+    // hashed - a shot's damage type, the kill count toward a Bloodstone heal,
+    // the slow and burn entry lists (their resolved values agree today and
+    // diverge later), a beam's held lead, and the Scrap a tower was paid for.
+    // No behaviour change on this run; round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(432368675);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {

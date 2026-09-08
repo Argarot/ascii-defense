@@ -104,7 +104,7 @@
       "tag": "energy",
       "at": 3,
       "name": "Superheated",
-      "desc": "Three of energy: every hit leaves a burn of 1 a tick.",
+      "desc": "Three of energy: every burning beam burns 1 a tick hotter.",
       "mods": {
         "burnDps": 1
       }

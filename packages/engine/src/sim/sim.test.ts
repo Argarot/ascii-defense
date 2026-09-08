@@ -1864,3 +1864,51 @@ describe('session 31, PR 5 - the sim\'s edges', () => {
     expect(sim.aliveCount()).toBe(queued);
   });
 });
+
+describe('session 31, PR 8 - the logic comb', () => {
+  it('Thick Walls takes its hp back on salvage; a tower sells for a share of what it PAID', () => {
+    const { simOpts } = makeWorld(53, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const RELICS: RelicDef[] = [
+      { id: 'bulk_order', name: 'Bulk Order', kind: 'passive', rarity: 'common', desc: '', effects: { buildCostMul: 0.9 } },
+      { id: 'salvage_rights', name: 'Salvage Rights', kind: 'passive', rarity: 'common', desc: '', effects: { sellRefundBonus: 0.3 } },
+      { id: 'thick_walls', name: 'Thick Walls', kind: 'passive', rarity: 'common', desc: '', effects: { coreHpMaxAdd: 10 } },
+    ];
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [{ ...BOLT, cost: 20 }], relicDefs: RELICS, coreHp: 50 });
+    // A damaged Core: 30/50. Thick Walls taken: 40/60. Salvaged: 30/50 - not 40/50.
+    sim.coreHp = 30;
+    expect(sim.debugGrantRelic('thick_walls')).toBe(true);
+    expect([sim.coreHp, sim.coreHpMax]).toEqual([40, 60]);
+    expect(sim.salvageRelic(0)).toBe(true);
+    expect([sim.coreHp, sim.coreHpMax]).toEqual([30, 50]);
+    // Bought under Bulk Order for 18; the relic salvaged; Salvage Rights (the whole back): 18, never 20.
+    let spot: { x: number; y: number } | null = null;
+    for (let y = 0; y < 60 && !spot; y++) for (let x = 0; x < 60 && !spot; x++) if (sim.canBuildAt(x, y)) spot = { x, y };
+    expect(sim.debugGrantRelic('bulk_order')).toBe(true);
+    expect(sim.buildTower(spot!.x, spot!.y, 'bolt')).toBe(true);
+    expect(sim.towers.find((t) => t)!.paid).toBe(18);
+    expect(sim.salvageRelic(0)).toBe(true);
+    expect(sim.debugGrantRelic('salvage_rights')).toBe(true);
+    const before = sim.scrap;
+    expect(sim.sellTower(spot!.x, spot!.y)).toBe(true);
+    expect(sim.scrap).toBe(before + 18);
+  });
+
+  it('a relic that widens auras widens the plus a neighbour must stand in', () => {
+    const { simOpts, cellsW, cellsH } = makeWorld(53, {});
+    const BASTION: TowerDef = { id: 'bastion', cost: 40, range: 1.5, fireEveryTicks: 1, attack: 'none', aura: { damageMul: 1.15, rateMul: 1, rangeAdd: 0, reach: 1, productionMul: 1 } };
+    const WIDE: RelicDef = { id: 'wide_aura', name: 'Wide Aura', kind: 'passive', rarity: 'common', desc: '', effects: { mods: { auraReach: 1 } } };
+    const sim = new Sim(53, { ...simOpts, towerDefs: [BOLT, BASTION], relicDefs: [WIDE], startingScrap: 1000 });
+    // Two buildable cells two apart on a row: the Bolt stands one cell outside a reach-1 plus.
+    let pair: { a: { x: number; y: number }; b: { x: number; y: number } } | null = null;
+    for (let y = 0; y < cellsH && !pair; y++) for (let x = 0; x + 2 < cellsW && !pair; x++) if (sim.canBuildAt(x, y) && sim.canBuildAt(x + 2, y)) pair = { a: { x, y }, b: { x: x + 2, y } };
+    expect(pair).not.toBeNull();
+    expect(sim.buildTower(pair!.a.x, pair!.a.y, 'bastion')).toBe(true);
+    expect(sim.buildTower(pair!.b.x, pair!.b.y, 'bolt')).toBe(true);
+    const bolt = sim.towerAt(pair!.b.x, pair!.b.y)!;
+    const plain = sim.stats(bolt).damage;
+    expect(plain).toBe(BOLT.projectile!.damage); // out of reach: no buff
+    expect(sim.debugGrantRelic('wide_aura')).toBe(true);
+    expect(sim.stats(bolt).damage).toBeCloseTo(plain * 1.15, 5); // the wider plus reaches it
+  });
+});
