@@ -7,8 +7,9 @@ terrain, towers, enemies, UI — as characters on a grid.
 at the board's east edge; roads are carved from it across the board until
 nine tenths of the land is road, and every road end on the other three
 sides is a front the enemy marches in from. You place eight kinds of tower
-beside those roads, commit each one to an either/or upgrade path, collect
-rule-breaking relics, and try to hold **wave 20** — every run ends in
+beside those roads against fourteen kinds of enemy, commit each tower to
+an either/or upgrade path, collect rule-breaking relics, and try to hold
+**wave 20** — every run ends in
 victory or death, and coasting is death.
 
 ▶ **[Play the current build](https://argarot.github.io/ascii-defense/)** ·
@@ -84,6 +85,16 @@ save doubles as an exact replay.
 
 **M1 passed its gate** ("is it fun?" — yes); M2 and the product shell are under
 way.
+**Session 32 (2026-09-08)** was Enemies II: seven more bodies, each a
+rule the towers answer (a courser that sprints while unhit, a ram that
+charges under half hp, a blob that dies into two, a mender that heals its
+neighbours, a mole that surfaces past the entry, a pavise whose shield
+faces the way it walks, and the Warden, a boss whose cover softens every
+hit around it); waves composed from **packs** of one kind on one front in
+a column, a wedge or a wall, the boss on a beat behind; every rule shown on
+the body, in the strip and as **the answer** under the next wave; and a
+balance pass with an enemy sweep (every body alone against every tower
+line) that set Standard at five bodies a wave on a steeper hp curve.
 **Session 31 (2026-09-07 night into 2026-09-08)** was Daniil's "make this
 session big": a **tutorial** for new players (thirteen steps, a pulsing
 box on the thing to look at, the Core's ground and the first fork among
