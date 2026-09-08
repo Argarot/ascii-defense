@@ -20,7 +20,7 @@ import type { Sprite } from '@ascii-defense/content';
 import { TILE_SIZE, tileRimMask, type CellType } from '@ascii-defense/engine';
 import { CELL_H, CELL_W, drawTerrainCell } from '../board/style';
 import { spriteState } from '../board/BoardView';
-import { drawSpriteFrame } from '../board/sprites';
+import { drawSpriteFrame, idleFrame } from '../board/sprites';
 import { role } from '../palette';
 
 export interface MenuItem {
@@ -73,6 +73,8 @@ export interface MenuSpec {
   keys?: readonly { key: string; does: string }[];
   /** 0..1 breathing phase for the selected-item shimmer and the title's glow. */
   phase?: number;
+  /** World milliseconds for the hero row's idle frames (feedback 2026-09-08, item 4: the title's towers animate). */
+  animMs?: number;
   /**
    * The title page's HERO (4.28): a row of sprites drawn above the title at
    * the screen's scale - the towers themselves, until the art agent's splash
@@ -253,7 +255,7 @@ export class MenuScreen {
       hero.forEach((sp, i) => {
         const gx = hx0 + i * (CELL_W + 2);
         for (let r = 0; r < CELL_H; r++) for (let c = 0; c < CELL_W; c++) term.put(gx + c, y + r, ' ', role('tower.ground'), role('tower.ground'));
-        drawSpriteFrame(term, sp, spriteState(sp, []), gx, y);
+        drawSpriteFrame(term, sp, idleFrame(sp, spriteState(sp, []), spec.animMs ?? 0, i), gx, y);
       });
       y += heroH;
     }

@@ -2070,3 +2070,29 @@ describe('packs and formations (session 32, PR 2)', () => {
     for (const k of p.packs) expect(['column', 'wedge', 'wall']).toContain(k.formation);
   });
 });
+
+describe('feedback 2026-09-08', () => {
+  it('item 2: an offer owed by wave 2 is dealt at the latest when the clock launches wave 3, even if the board was never quiet', () => {
+    const { simOpts } = makeWorld(53, {});
+    const RELICS: RelicDef[] = ['a', 'b', 'c', 'd'].map((id) => ({ id, name: id.toUpperCase(), kind: 'passive' as const, rarity: 'common' as const, desc: '', effects: { rangeAdd: 1 } }));
+    const parked: EnemyDef = { ...WALKER, hp: 100000, speed: 0.0001 };
+    const sim = new Sim(53, { ...simOpts, mode: 'waves', firstWaveWaits: true, interWaveTicks: 100, enemyDefs: [parked], towerDefs: [BOLT], relicDefs: RELICS });
+    expect(sim.callWave()).toBe(true); // wave 1
+    for (let t = 0; t < 120; t++) sim.tick(); // the clock launches wave 2; bodies stay alive
+    expect(sim.wave).toBe(2);
+    expect(sim.offerDefs()).toBeNull(); // wave 2 is owed, not dealt: the board is never quiet
+    for (let t = 0; t < 120; t++) sim.tick(); // the clock launches wave 3
+    expect(sim.wave).toBe(3);
+    expect(sim.offerDefs()).not.toBeNull(); // dealt at the launch
+    expect(sim.aliveCount()).toBeGreaterThan(0);
+  });
+
+  it('item 9: a mender emits a green pulse each second', () => {
+    const MENDER: EnemyDef = { ...WALKER, id: 'mender', hp: 40, speed: 0.0001, traits: ['heal'] };
+    const { simOpts } = makeWorld(53, {});
+    const sim = new Sim(53, { ...simOpts, mode: 'waves', firstWaveWaits: true, interWaveTicks: 100000, enemyDefs: [MENDER], towerDefs: [BOLT] });
+    (sim as unknown as { spawn(e: { x: number; y: number }, d: number): boolean }).spawn(simOpts.map.entries[0], 0);
+    for (let t = 0; t < 45; t++) sim.tick();
+    expect(sim.events.filter((e) => e.kind === 'heal').length).toBeGreaterThanOrEqual(2);
+  });
+});

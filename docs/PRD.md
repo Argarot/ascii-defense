@@ -271,9 +271,10 @@ sink again after a short window** — a small, seeded, optional prize that gives
 the void a reason to be watched. Claiming one pays out through the loot-table
 layer (§7.7). It stays strictly off-route and off-buildable, so it can never
 touch connectivity or placement. **Built 2026-09-06 (session 28, PR 5)**:
-every fifteen seconds the water rolls once on the loot stream and one time
-in two a chest surfaces on a random water cell for twelve seconds, at most
-two at once; it blinks faster as it sinks; selecting it shows a CLAIM card
+every thirty seconds (fifteen until 2026-09-08 - Daniil: "void chests
+appear a bit too frequently") the water rolls once on the loot stream and
+one time in two a chest surfaces on a random water cell for twelve
+seconds, at most two at once; it blinks faster as it sinks; selecting it shows a CLAIM card
 and the claim pays through `void_chest` (Scrap 40%, Ore 30%, a
 consumable 18%, a relic 12%). The claim is a replayed input; the chests
 are hashed. **Found while building it**: the session-24 boards are nine
@@ -1041,6 +1042,17 @@ for the call**: a fresh map deserves a look before the first front opens.
 **The next wave is known before it comes.** It is composed one wave ahead
 and shown by kind and count, so "which tower answers this" is a decision
 made with the information it needs.
+
+**An owed offer is dealt by the clock at the latest (feedback 2026-09-08,
+item 2).** The offer every second wave waits for a quiet board (item 18 of
+the thought dump: never on a next-wave call), but a Standard run whose
+board was never quiet saw no offer at all; now the CLOCK deals the owed
+offer when it launches the wave after it, and only a player's call over
+living bodies still carries the debt. The mender's field is a green pulse
+each second (item 9); the title's towers idle in their frames (item 4);
+Esc leaves every page (item 1); the workshop's purse sits in the frame's
+bottom band and a node priced in a tier the purse lacks says where that
+ore comes from (item 1).
 
 **Packs and formations (session 32, PR 2).** A wave is composed from
 **packs** - one kind, one front, one formation - until its count of BODIES
