@@ -58,7 +58,14 @@
                 "armoured",
                 "shielded",
                 "fast",
-                "swarm"
+                "swarm",
+                "split",
+                "heal",
+                "burrow",
+                "charge",
+                "frontshield",
+                "sprint",
+                "bulwark"
               ]
             },
             "uniqueItems": true
@@ -81,6 +88,14 @@
             "description": "Absorb pool burned before hp.",
             "type": "number",
             "minimum": 0
+          },
+          "splitInto": {
+            "description": "The enemy id a 'split' body dies into, twice, where it fell (session 32, Enemies II).",
+            "type": "string"
+          },
+          "bossOnly": {
+            "description": "Never in a wave's escort: only the boss of a boss wave, once its minWave is reached (session 32).",
+            "type": "boolean"
           },
           "minWave": {
             "description": "First wave this enemy may appear in.",

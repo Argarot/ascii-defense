@@ -990,6 +990,33 @@ consequences, both accepted deliberately:
   runs" criterion (§17) is therefore measured with the relic layer held fixed —
   otherwise the harness will spend its life reporting the game working.
 
+### 9.1b Enemies II — seven more bodies, each a rule *(session 32, PR 1; ledger row 32)*
+
+Seven bodies fought eight towers; the trait matrix had four rules. Seven
+more bodies join the roster, each one rule in `traits.ts` with one seam in
+the sim, each an answer a tower line gives (docs/CATALOGUE.md carries the
+numbers):
+
+| body | wave | rule (trait) | the answer |
+|---|---|---|---|
+| **courser** | 3 | `sprint`: runs 60% faster while unhit for two seconds | keep it under fire — a Tesla's arcs, a Laser's beam, a Bolt line |
+| **ram** | 6 | `charge`: runs at double speed once under half hp | finish it in one volley, or slow it before the sprint (Frost) |
+| **blob** | 7 | `split`: dies into two skitters where it fell | kill it early, or let a blast take the halves together |
+| **mender** | 8 | `heal`: mends every body within a cell and a half by 3 a second | priority WEAKEST finds it; kill it first |
+| **mole** | 9 | `burrow`: untargetable and unhittable for its first eight cells | the towers deeper in see it — a line by the Core, not at the entry |
+| **pavise** | 11 | `frontshield`: hits from within 45° of ahead do a third | flank it from beside the road |
+| **Warden** | 12, boss only | `bulwark`: every body within two and a half cells takes 30% less while it lives | the boss to kill first, not last |
+
+Rules of the roster: a **boss-only** body (`bossOnly`) never walks in an
+escort and is the boss of a boss wave once its wave is reached (the
+heaviest unlocked body still wins the pick, so the Warden at 450 hp takes
+the Juggernaut's place from wave 12 on Standard, wave 15 on Calm's delay —
+which is Calm's last, so a first run never meets it); `unlockDelay`
+applies to the seven as to every body above wave 1; a burrower's unseen
+cells are hashed. Placeholder sprites from the generator, each drawn as
+its rule (a mole under a mound, a pavise behind its plank), until the art
+agent's studies replace them.
+
 ### 9.2 Wave tempo *(Daniil, design round 1, 2026-09-03 — D17)*
 
 The wave clock runs **from one launch to the next** and never waits for the

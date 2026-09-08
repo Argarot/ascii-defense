@@ -37,6 +37,10 @@ export interface EnemyDef {
   /** First wave this enemy may appear in (waves mode). */
   minWave?: number;
   traits?: readonly string[];
+  /** The def a 'split' body dies into, twice, where it fell (session 32). */
+  splitInto?: string;
+  /** Never in a wave's escort: only the boss of a boss wave, once unlocked (session 32). */
+  bossOnly?: boolean;
 }
 
 export interface ProjectileSpec {

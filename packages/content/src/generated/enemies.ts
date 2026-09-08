@@ -23,7 +23,19 @@ export interface EnemyRoster {
        * Scrap on kill. Reserved; economy lands in session B.
        */
       bounty?: number;
-      traits?: ('armoured' | 'shielded' | 'fast' | 'swarm')[];
+      traits?: (
+        | 'armoured'
+        | 'shielded'
+        | 'fast'
+        | 'swarm'
+        | 'split'
+        | 'heal'
+        | 'burrow'
+        | 'charge'
+        | 'frontshield'
+        | 'sprint'
+        | 'bulwark'
+      )[];
       /**
        * Damage multipliers by type (session 26, PRD sec 8): 0 immune, 0.5 resists, 1.5 weak; absent = 1. Applied before armour; an immune body takes nothing.
        */
@@ -39,6 +51,14 @@ export interface EnemyRoster {
        * Absorb pool burned before hp.
        */
       shield?: number;
+      /**
+       * The enemy id a 'split' body dies into, twice, where it fell (session 32, Enemies II).
+       */
+      splitInto?: string;
+      /**
+       * Never in a wave's escort: only the boss of a boss wave, once its minWave is reached (session 32).
+       */
+      bossOnly?: boolean;
       /**
        * First wave this enemy may appear in.
        */
@@ -57,7 +77,19 @@ export interface EnemyRoster {
        * Scrap on kill. Reserved; economy lands in session B.
        */
       bounty?: number;
-      traits?: ('armoured' | 'shielded' | 'fast' | 'swarm')[];
+      traits?: (
+        | 'armoured'
+        | 'shielded'
+        | 'fast'
+        | 'swarm'
+        | 'split'
+        | 'heal'
+        | 'burrow'
+        | 'charge'
+        | 'frontshield'
+        | 'sprint'
+        | 'bulwark'
+      )[];
       /**
        * Damage multipliers by type (session 26, PRD sec 8): 0 immune, 0.5 resists, 1.5 weak; absent = 1. Applied before armour; an immune body takes nothing.
        */
@@ -73,6 +105,14 @@ export interface EnemyRoster {
        * Absorb pool burned before hp.
        */
       shield?: number;
+      /**
+       * The enemy id a 'split' body dies into, twice, where it fell (session 32, Enemies II).
+       */
+      splitInto?: string;
+      /**
+       * Never in a wave's escort: only the boss of a boss wave, once its minWave is reached (session 32).
+       */
+      bossOnly?: boolean;
       /**
        * First wave this enemy may appear in.
        */
@@ -142,7 +182,14 @@ export const enemiesSchema = {
                 "armoured",
                 "shielded",
                 "fast",
-                "swarm"
+                "swarm",
+                "split",
+                "heal",
+                "burrow",
+                "charge",
+                "frontshield",
+                "sprint",
+                "bulwark"
               ]
             },
             "uniqueItems": true
@@ -171,6 +218,14 @@ export const enemiesSchema = {
             "description": "Absorb pool burned before hp.",
             "type": "number",
             "minimum": 0
+          },
+          "splitInto": {
+            "description": "The enemy id a 'split' body dies into, twice, where it fell (session 32, Enemies II).",
+            "type": "string"
+          },
+          "bossOnly": {
+            "description": "Never in a wave's escort: only the boss of a boss wave, once its minWave is reached (session 32).",
+            "type": "boolean"
           },
           "minWave": {
             "description": "First wave this enemy may appear in.",

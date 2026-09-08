@@ -98,6 +98,113 @@
         "kinetic": 0.8,
         "energy": 1.2
       }
+    },
+    {
+      "id": "courser",
+      "name": "courser",
+      "hp": 20,
+      "speed": 0.08,
+      "damage": 1,
+      "bounty": 4,
+      "minWave": 3,
+      "traits": [
+        "sprint"
+      ],
+      "resist": {
+        "kinetic": 1.2,
+        "energy": 0.8
+      }
+    },
+    {
+      "id": "ram",
+      "name": "ram",
+      "hp": 70,
+      "speed": 0.05,
+      "damage": 3,
+      "bounty": 8,
+      "minWave": 6,
+      "traits": [
+        "charge"
+      ],
+      "resist": {
+        "kinetic": 0.8,
+        "energy": 1.2
+      }
+    },
+    {
+      "id": "blob",
+      "name": "blob",
+      "hp": 60,
+      "speed": 0.05,
+      "damage": 2,
+      "bounty": 6,
+      "minWave": 7,
+      "traits": [
+        "split"
+      ],
+      "splitInto": "skitter"
+    },
+    {
+      "id": "mender",
+      "name": "mender",
+      "hp": 40,
+      "speed": 0.05,
+      "damage": 1,
+      "bounty": 9,
+      "minWave": 8,
+      "traits": [
+        "heal"
+      ],
+      "resist": {
+        "kinetic": 1,
+        "energy": 1.4
+      }
+    },
+    {
+      "id": "mole",
+      "name": "mole",
+      "hp": 50,
+      "speed": 0.06,
+      "damage": 3,
+      "bounty": 8,
+      "minWave": 9,
+      "traits": [
+        "burrow"
+      ]
+    },
+    {
+      "id": "pavise",
+      "name": "pavise",
+      "hp": 110,
+      "speed": 0.04,
+      "damage": 4,
+      "bounty": 12,
+      "minWave": 11,
+      "traits": [
+        "frontshield"
+      ],
+      "resist": {
+        "kinetic": 1.2,
+        "energy": 0.8
+      }
+    },
+    {
+      "id": "warden",
+      "name": "Warden",
+      "hp": 450,
+      "speed": 0.03,
+      "damage": 10,
+      "bounty": 30,
+      "armor": 3,
+      "minWave": 12,
+      "traits": [
+        "bulwark"
+      ],
+      "bossOnly": true,
+      "resist": {
+        "kinetic": 1,
+        "energy": 1.2
+      }
     }
   ]
 }

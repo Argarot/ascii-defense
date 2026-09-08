@@ -7,6 +7,7 @@ import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
 import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, bossHpMul, ARMOR_FLOOR, BOSS_HP_MUL, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
 import { effectiveStats, relicDescAt } from './defs';
+import { TRAIT_RULES, frontShieldMul, traitSpeedMul } from './traits';
 import type { EnemyDef, RecipeDef, RelicDef, SetDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
@@ -1910,5 +1911,102 @@ describe('session 31, PR 8 - the logic comb', () => {
     expect(plain).toBe(BOLT.projectile!.damage); // out of reach: no buff
     expect(sim.debugGrantRelic('wide_aura')).toBe(true);
     expect(sim.stats(bolt).damage).toBeCloseTo(plain * 1.15, 5); // the wider plus reaches it
+  });
+});
+
+describe('Enemies II (session 32, PR 1) - seven bodies, each a rule', () => {
+  type Priv = { spawn(e: { x: number; y: number }, d: number, boss?: boolean): boolean; applyDamage(i: number, raw: number, a: number, b: number, t: number): void; acquire(cx: number, cy: number, range: number, priority: string): number; composeWave(w: number): number[] };
+  const PARKED = 0.0001;
+  const quiet = (seed: number, defs: EnemyDef[], towers: TowerDef[] = [BOLT]) => {
+    const { simOpts } = makeWorld(seed, {});
+    const sim = new Sim(seed, { ...simOpts, mode: 'waves', firstWaveWaits: true, interWaveTicks: 100000, enemyDefs: defs, towerDefs: towers, startingScrap: 1000 });
+    return { sim, priv: sim as unknown as Priv, entry: simOpts.map.entries[0] };
+  };
+
+  it('a splitter dies into two of its halves where it fell', () => {
+    const HALF: EnemyDef = { ...WALKER, id: 'half', hp: 5, speed: PARKED };
+    const BLOB: EnemyDef = { ...WALKER, id: 'blob', hp: 20, speed: PARKED, traits: ['split'], splitInto: 'half' };
+    const { sim, priv, entry } = quiet(53, [HALF, BLOB]);
+    expect(priv.spawn(entry, 1)).toBe(true);
+    expect(sim.aliveCount()).toBe(1);
+    priv.applyDamage(0, 1e9, 0, 0, -1);
+    expect(sim.aliveCount()).toBe(TRAIT_RULES.split.count);
+    for (let i = 0; i < sim.aliveCount(); i++) { expect(sim.enemyDefOf(i).id).toBe('half'); expect(sim.posX[i]).toBe(entry.x + 0.5); }
+    expect(sim.kills).toBe(1);
+  });
+
+  it('a mender heals its neighbours every second, never above what they spawned with', () => {
+    const MENDER: EnemyDef = { ...WALKER, id: 'mender', hp: 40, speed: PARKED, traits: ['heal'] };
+    const GRUNT: EnemyDef = { ...WALKER, id: 'grunt', hp: 30, speed: PARKED };
+    const { sim, priv, entry } = quiet(53, [GRUNT, MENDER]);
+    priv.spawn(entry, 0); priv.spawn(entry, 1);
+    priv.applyDamage(0, 10, 0, 0, -1);
+    const hurt = sim.hp[0];
+    expect(hurt).toBeLessThan(sim.spawnHp[0]);
+    for (let t = 0; t < TRAIT_RULES.heal.every; t++) sim.tick();
+    expect(sim.hp[0]).toBeCloseTo(hurt + TRAIT_RULES.heal.amount, 5);
+    for (let t = 0; t < TRAIT_RULES.heal.every * 10; t++) sim.tick();
+    expect(sim.hp[0]).toBe(sim.spawnHp[0]); // full, never above
+  });
+
+  it('a burrower is neither hit nor targeted until it has walked its unseen cells', () => {
+    const MOLE: EnemyDef = { ...WALKER, id: 'mole', hp: 50, speed: 0.1, traits: ['burrow'] };
+    const { sim, priv, entry } = quiet(53, [MOLE]);
+    priv.spawn(entry, 0);
+    expect(sim.burrowLeft[0]).toBe(TRAIT_RULES.burrow.cells);
+    priv.applyDamage(0, 10, 0, 0, -1);
+    expect(sim.hp[0]).toBe(sim.spawnHp[0]);
+    expect(priv.acquire(sim.posX[0], sim.posY[0], 6, 'first')).toBe(-1);
+    for (let t = 0; t < TRAIT_RULES.burrow.cells / 0.1 + 2; t++) sim.tick();
+    expect(sim.burrowLeft[0]).toBe(0);
+    expect(priv.acquire(sim.posX[0], sim.posY[0], 6, 'first')).toBe(0);
+    priv.applyDamage(0, 10, 0, 0, -1);
+    expect(sim.hp[0]).toBeLessThan(sim.spawnHp[0]);
+  });
+
+  it('a charger doubles under half hp; a sprinter runs faster once unhit for two seconds (pure rules)', () => {
+    const RAM: EnemyDef = { ...WALKER, traits: ['charge'] };
+    expect(traitSpeedMul(RAM, 0.6, 0)).toBe(1);
+    expect(traitSpeedMul(RAM, 0.4, 0)).toBe(TRAIT_RULES.charge.speedMul);
+    const COURSER: EnemyDef = { ...WALKER, traits: ['sprint'] };
+    expect(traitSpeedMul(COURSER, 1, TRAIT_RULES.sprint.unhitTicks)).toBe(1);
+    expect(traitSpeedMul(COURSER, 1, TRAIT_RULES.sprint.unhitTicks + 1)).toBe(TRAIT_RULES.sprint.speedMul);
+    expect(traitSpeedMul(WALKER, 0.1, 1000)).toBe(1);
+  });
+
+  it('a shieldbearer takes a third from ahead and the whole hit from beside or behind', () => {
+    const PAVISE: EnemyDef = { ...WALKER, traits: ['frontshield'] };
+    // Walking east (dir 1): a tower to the east is ahead, one to the north is beside, one to the west is behind.
+    expect(frontShieldMul(PAVISE, 5, 5, 1, 9, 5)).toBe(TRAIT_RULES.frontshield.frontMul);
+    expect(frontShieldMul(PAVISE, 5, 5, 1, 5, 1)).toBe(1);
+    expect(frontShieldMul(PAVISE, 5, 5, 1, 1, 5)).toBe(1);
+    expect(frontShieldMul(WALKER, 5, 5, 1, 9, 5)).toBe(1);
+  });
+
+  it('a bulwark softens every hit on the bodies around it while it lives', () => {
+    const WARDEN: EnemyDef = { ...WALKER, id: 'warden', hp: 400, speed: PARKED, traits: ['bulwark'] };
+    const GRUNT: EnemyDef = { ...WALKER, id: 'grunt', hp: 100, speed: PARKED };
+    const { sim, priv, entry } = quiet(53, [GRUNT, WARDEN]);
+    priv.spawn(entry, 0); priv.spawn(entry, 1);
+    sim.tick(); // the walk phase lists the bulwarks
+    priv.applyDamage(0, 10, 0, 0, -1);
+    expect(sim.hp[0]).toBeCloseTo(sim.spawnHp[0] - 10 * TRAIT_RULES.bulwark.damageMul, 5);
+    priv.applyDamage(1, 1e9, 0, 0, -1);
+    sim.tick();
+    const before = sim.hp[0];
+    priv.applyDamage(0, 10, 0, 0, -1);
+    expect(sim.hp[0]).toBeCloseTo(before - 10, 5); // the cover died with it
+  });
+
+  it('a boss-only body never walks in the escort and is the boss once unlocked', () => {
+    const GRUNT: EnemyDef = { ...WALKER, id: 'grunt' };
+    const WARDEN: EnemyDef = { ...WALKER, id: 'warden', hp: 400, minWave: 1, bossOnly: true };
+    const { priv } = quiet(53, [GRUNT, WARDEN]);
+    const q = priv.composeWave(5);
+    const BOSS = 1 << 8; // BOSS_QUEUE_FLAG
+    const escort = q.filter((e) => (e & BOSS) === 0);
+    expect(escort.length).toBeGreaterThan(0);
+    expect(escort.every((e) => e === 0)).toBe(true);
+    expect(q.some((e) => (e & BOSS) !== 0 && (e & ~BOSS) === 1)).toBe(true);
   });
 });

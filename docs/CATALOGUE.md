@@ -117,7 +117,7 @@ The two ground cells touching the Core face (and the border cells beside it) are
 ## Enemies *(generated)*
 
 <!-- generated:enemies -->
-7 enemies in `packages/content/assets/enemies/roster.json`. Speed is cells per second; breach is the Core health lost when one arrives; "from wave" is the first wave that may roll it. Every enemy walks the road; there are no flyers (PRD §8).
+14 enemies in `packages/content/assets/enemies/roster.json`. Speed is cells per second; breach is the Core health lost when one arrives; "from wave" is the first wave that may roll it. Every enemy walks the road; there are no flyers (PRD §8).
 
 | Enemy | id | HP | Speed | Breach | Bounty | From wave | Armour | Shield | vs kinetic | vs energy | Traits |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -128,6 +128,13 @@ The two ground cells touching the Core face (and the border cells beside it) are
 | **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 30 | x1.4 | x0.6 | shielded |
 | **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  |  | x1.4 | x0.6 |  |
 | **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  | x0.8 | x1.2 |  |
+| **courser** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  | x1.2 | x0.8 | sprint |
+| **ram** | ram | 70 | 1 | 3 | 8 | 6 |  |  | x0.8 | x1.2 | charge |
+| **blob** | blob | 60 | 1 | 2 | 6 | 7 |  |  |  |  | split |
+| **mender** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  | x1.4 | heal |
+| **mole** | mole | 50 | 1.20 | 3 | 8 | 9 |  |  |  |  | burrow |
+| **pavise** | pavise | 110 | 0.80 | 4 | 12 | 11 |  |  | x1.2 | x0.8 | frontshield |
+| **Warden** (boss only) | warden | 450 | 0.60 | 10 | 30 | 12 | 3 |  |  | x1.2 | bulwark |
 
 Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.
 
@@ -141,6 +148,13 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | shielded | a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire |
 | fast | slows last half as long |
 | swarm | spawns in packs of three - one queue entry, three bodies |
+| split | dies into two skitters where it fell - kill it early, or let a blast take the halves together |
+| heal | mends every body within a cell and a half by 3 every second - kill the mender first (priority WEAKEST finds it) |
+| burrow | untargetable and unhittable for its first eight cells of road - the towers deeper in see it |
+| charge | runs at double speed once under half hp - finish it, or slow it before the sprint |
+| frontshield | a shield facing the way it walks: hits from ahead do a third - flank it from beside the road |
+| sprint | runs 60% faster while unhit for two seconds - keep it under fire |
+| bulwark | every body within two and a half cells takes 30% less while it lives - the boss to kill first |
 <!-- /generated -->
 
 ## Relics *(generated)*
