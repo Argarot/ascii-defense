@@ -491,7 +491,8 @@ async function main(): Promise<void> {
   // footer 2.
   // The loadout page lives on the fullscreen terminal now: it pages at
   // what THAT screen can show.
-  const TILES_PER_PAGE = tileCapacity(screenCols, screenRows, 4 + 1 + 8 + 2);
+  // Mini previews (session 33, PR 8): a dozen a page at one glyph a cell; the Smith keeps the board's scale.
+  const TILES_PER_PAGE = tileCapacity(screenCols, screenRows, 4 + 1 + 8 + 2, true);
   let loadoutPage = 0;
   // Delete mode (playtest 18): armed, clicking a MINTED tile removes it
   // permanently - the pool is the player's content, so pruning it is a
@@ -721,6 +722,7 @@ async function main(): Promise<void> {
             ...problems.slice(0, 4).map((p) => `not offered: ${p.id} - ${p.problem}`),
             ...(problems.length > 4 ? [`and ${problems.length - 4} more - fix them in the tile smith`] : []),
           ],
+          tileScale: 'mini',
           tiles: shown.map((t) => { const loaded = setupLoadout.filter((x) => x === t.id).length; const copies = shippedSpecials.some((s) => s.id === t.id) ? (meta.owned[t.id] ?? 0) : 1; return { id: t.id, cells: t.cells, selected: loaded > 0, badge: copies > 1 ? `${loaded}/${copies}` : undefined }; }),
           items: [
             ...(pages > 1
@@ -767,6 +769,7 @@ async function main(): Promise<void> {
               }),
             ],
             // A vein tile wears its tier as a frame colour (session 30): tier 2 rare-blue, tier 3 epic-purple.
+            tileScale: 'mini',
             tiles: forSale.map((t) => { const tier = Math.max(1, ...(t.deposits ?? []).map((d) => d.tier ?? 1)); const copies = meta.owned[t.id] ?? 0; return { id: t.id, cells: t.cells, selected: copies > 0, badge: copies > 1 ? `x${copies}` : undefined, tone: tier >= 3 ? 'rarity.epic' : tier === 2 ? 'rarity.rare' : undefined }; }),
             items: [
               { id: 'smith', label: 'THE TILE SMITH', note: smith.open ? 'author a tile >' : `locked - own every tile (${smith.owned}/${smith.total})`, disabled: !smith.open },

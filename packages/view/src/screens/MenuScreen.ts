@@ -66,6 +66,8 @@ export interface MenuSpec {
   title: string;
   /** Lines under the title - flavour, stats, warnings. '' makes a gap. */
   body?: readonly string[];
+  /** Mini tile previews (session 33, PR 8): one glyph a cell, a dozen a page. */
+  tileScale?: 'full' | 'mini';
   /** Tile previews rendered between body and items; clicking reports 'tile:<id>'. */
   tiles?: readonly MenuTile[];
   /** The tree drawn as a tree (feedback 2026-09-08, item 5): rows of linked plates with sprites, between the body and the columns. */
@@ -105,10 +107,33 @@ const COLUMN_GAP = 3;
  * a count that fits THIS screen instead of a literal (playtest 18 found the
  * overflow at 5x3; at 8x5 a tile preview is 40x25 glyphs and far fewer fit).
  */
-export function tileCapacity(cols: number, rows: number, reservedRows: number): number {
-  const perRow = Math.max(1, Math.floor((cols - 10) / (TILE_GW + 3)));
-  const rowsFit = Math.floor((rows - 2 - reservedRows) / (TILE_GH + 3));
+export function tileCapacity(cols: number, rows: number, reservedRows: number, mini = false): number {
+  const gw = mini ? MINI_GW : TILE_GW;
+  const gh = mini ? MINI_GH : TILE_GH;
+  const perRow = Math.max(1, Math.floor((cols - 10) / (gw + 3)));
+  const rowsFit = Math.floor((rows - 2 - reservedRows) / (gh + 3));
   return Math.max(1, perRow * Math.max(0, rowsFit));
+}
+
+/**
+ * Mini previews (session 33, PR 8; the register's "2x tile previews"): a
+ * tile drawn ONE GLYPH A CELL - the road as box-drawing, rock, ore, ground
+ * - so a page shows a dozen at once where three fitted at the board's
+ * scale. The board's scale stays for the Smith, where the cells are edited.
+ */
+export const MINI_GW = TILE_SIZE;
+export const MINI_GH = TILE_SIZE;
+const MINI_GLYPH: Record<string, [string, string]> = {
+  G: ['.', 'ui.dim'], R: ['#', 'ui.grid'], O: ['o', 'terrain.ore.lit'], C: ['C', 'ui.accent'], X: ['┼', 'ui.text'], B: ['=', 'ui.text'],
+  '-': ['─', 'ui.text'], '|': ['│', 'ui.text'], L: ['└', 'ui.text'], J: ['┘', 'ui.text'], F: ['┌', 'ui.text'], '7': ['┐', 'ui.text'],
+  T: ['┬', 'ui.text'], U: ['┴', 'ui.text'], E: ['├', 'ui.text'], '3': ['┤', 'ui.text'],
+};
+export function drawMiniTile(term: TermSurface, cells: readonly string[], x: number, y: number): void {
+  for (let cy = 0; cy < TILE_SIZE; cy++)
+    for (let cx = 0; cx < TILE_SIZE; cx++) {
+      const [g, r] = MINI_GLYPH[cells[cy]?.[cx] ?? 'G'] ?? ['?', 'ui.text'];
+      term.put(x + cx, y + cy, g, role(r), PLATE_BG);
+    }
 }
 
 /** Mix two hex colours; t = 0 is a, 1 is b. */
@@ -200,14 +225,17 @@ export class MenuScreen {
     // longest of title, body lines, items with notes, columns, footer, keys -
     // plus padding.
     const tiles = spec.tiles ?? [];
+    const mini = spec.tileScale === 'mini';
+    const tgw = mini ? MINI_GW : TILE_GW;
+    const tgh = mini ? MINI_GH : TILE_GH;
     // A body line longer than the widest plate wraps at a word (session 31:
     // the summary's "you met" line and its workshop sentence were cut
     // mid-word on a narrow screen).
     const body = (spec.body ?? []).flatMap((l) => wrapLine(l, W - 12));
-    const maxPerRow = Math.max(1, Math.floor((W - 10) / (TILE_GW + 3)));
+    const maxPerRow = Math.max(1, Math.floor((W - 10) / (tgw + 3)));
     const perRow = Math.min(tiles.length, maxPerRow);
     const tileRows = perRow > 0 ? Math.ceil(tiles.length / perRow) : 0;
-    const stripW = perRow > 0 ? perRow * (TILE_GW + 3) - 3 : 0;
+    const stripW = perRow > 0 ? perRow * (tgw + 3) - 3 : 0;
     const columns = spec.columns ?? [];
     const colWs = columns.map(columnW);
     // Columns wrap into rows that fit the screen (a five-branch tree on a
@@ -242,7 +270,7 @@ export class MenuScreen {
     const heroH = hero.length > 0 ? CELL_H + 2 : 0;
     const heroW = hero.length > 0 ? hero.length * (CELL_W + 2) - 2 : 0;
     const plateW = Math.min(W - 4, Math.max(widest + 8, heroW + 8));
-    const stripH = tileRows * (TILE_GH + 3);
+    const stripH = tileRows * (tgh + 3);
     const bodyH = body.length + (body.length ? 1 : 0);
     const treeH = tree.h > 0 ? tree.h + 1 : 0;
     const contentH = 2 + heroH + bodyH + treeH + stripH + columnsH + spec.items.length * 2 + (spec.footer ? 1 : 0);
@@ -285,19 +313,24 @@ export class MenuScreen {
         const col = i % perRow;
         const rowN = Math.floor(i / perRow);
         const rowCount = Math.min(perRow, tiles.length - rowN * perRow);
-        const rowW = rowCount * (TILE_GW + 3) - 3;
-        const tx = x0 + Math.max(1, Math.floor((plateW - rowW) / 2)) + col * (TILE_GW + 3);
-        const ty = y + 1 + rowN * (TILE_GH + 3);
+        const rowW = rowCount * (tgw + 3) - 3;
+        const tx = x0 + Math.max(1, Math.floor((plateW - rowW) / 2)) + col * (tgw + 3);
+        const ty = y + 1 + rowN * (tgh + 3);
         const tile = tiles[i];
         const frame = tile.selected || spec.cursor === `tile:${tile.id}` ? accent : tile.tone ? role(tile.tone) : grid;
         this.order.push(`tile:${tile.id}`);
-        for (let fy = -1; fy <= TILE_GH; fy++) {
-          for (let fx = -1; fx <= TILE_GW; fx++) {
-            if (fy !== -1 && fy !== TILE_GH && fx !== -1 && fx !== TILE_GW) continue;
+        for (let fy = -1; fy <= tgh; fy++) {
+          for (let fx = -1; fx <= tgw; fx++) {
+            if (fy !== -1 && fy !== tgh && fx !== -1 && fx !== tgw) continue;
             term.put(tx + fx, ty + fy, ' ', frame, frame);
           }
         }
-        if (tile.badge) term.write(tx + TILE_GW - tile.badge.length, ty - 1, tile.badge.slice(0, TILE_GW), role('ui.bg'), frame);
+        if (tile.badge) term.write(tx + tgw - tile.badge.length, ty - 1, tile.badge.slice(0, tgw), role('ui.bg'), frame);
+        if (mini) {
+          drawMiniTile(term, tile.cells, tx, ty);
+          this.regions.push({ row: ty - 1, rowEnd: ty + tgh, x0: tx - 1, x1: tx + tgw + 1, id: `tile:${tile.id}` });
+          continue;
+        }
         for (let cy = 0; cy < TILE_SIZE; cy++)
           for (let cx = 0; cx < TILE_SIZE; cx++)
             drawTerrainCell(term, tile.cells[cy][cx] as CellType, tx + cx * CELL_W, ty + cy * CELL_H, {

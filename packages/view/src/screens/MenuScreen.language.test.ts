@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { TextTerm } from '@ascii-defense/render';
-import { MenuScreen, type MenuSpec } from './MenuScreen';
+import { MenuScreen, type MenuSpec, tileCapacity } from './MenuScreen';
 
 describe('the menu language', () => {
   it('frames the plate, puts the title in the top band, lays columns side by side with links, and hints keys in the bottom band', () => {
@@ -68,5 +68,20 @@ describe('the keyboard on a page (session 31)', () => {
     const row = term.toText().split('\n').find((l) => l.includes('BACK'))!;
     expect(row.indexOf('>')).toBeGreaterThan(0); // the marker, inside the frame's edge
     expect(row.indexOf('>')).toBeLessThan(row.indexOf('BACK'));
+  });
+});
+
+describe('mini previews (session 33, PR 8)', () => {
+  it('a dozen tiles fit a page at one glyph a cell, each with a region', () => {
+    const term = new TextTerm({ cols: 120, rows: 50 });
+    const screen = new MenuScreen();
+    const tiles = Array.from({ length: 12 }, (_, i) => ({ id: `t${i}`, cells: ['GGGGG', 'GGRGG', '-----', 'GGOGG', 'GGGGG'], selected: i === 0, badge: i === 1 ? '1/2' : undefined }));
+    screen.render(term, { title: 'LOADOUT', tiles, tileScale: 'mini', items: [{ id: 'back', label: 'BACK' }] });
+    expect(screen.itemIds().filter((id) => id.startsWith('tile:'))).toHaveLength(12);
+    const text = term.toText();
+    expect((text.match(/─────/g) ?? []).length).toBeGreaterThanOrEqual(12); // every tile's road, one glyph a cell
+    expect(text).toContain('1/2');
+    expect(tileCapacity(120, 50, 15, true)).toBeGreaterThanOrEqual(12);
+    expect(tileCapacity(120, 50, 15, false)).toBeLessThan(6);
   });
 });
