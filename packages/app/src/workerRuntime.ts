@@ -156,7 +156,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         nextMap = resume.map;
       } else {
         // EVERY chosen id is a special to guarantee - minted or shipped.
-        const specials = [...new Set(wantLoadout.map((t) => t.id))];
+        // Every loaded COPY is guaranteed (session 33, PR 7: the multiset) - two copies of a tile, two placements.
+        const specials = wantLoadout.map((t) => t.id);
         // Generation failures reroll the seed - the map the player asked
         // for is "one containing my specials", and a fresh carve usually
         // obliges. Bounded: a loadout no carve can host must SAY so.

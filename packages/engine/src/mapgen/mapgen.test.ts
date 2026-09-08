@@ -377,6 +377,18 @@ describe('special tiles (2.21) - chosen, guaranteed, never rolled', () => {
   const libWith = (): TileLibrary =>
     new TileLibrary([...LIB.ids().map((id) => ({ id, cells: [...LIB.resolved(id, 0).cells] })), SPECIAL_ORE, SPECIAL_ROAD]);
 
+  it('two copies of a loaded special are two placements (session 33, PR 7: the multiset)', () => {
+    let placedTwice = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      try {
+        const map = generateMap(createRng(seed * 11).stream('map'), libWith(), { ...OPTS, width: Math.max(OPTS.width, 8), height: Math.max(OPTS.height, 5), specials: ['sp_vein', 'sp_vein'] });
+        const placed = map.board.slots.filter(Boolean).map((p) => p!.tileId);
+        if (placed.filter((id) => id === 'sp_vein').length === 2) placedTwice++;
+      } catch { /* a board with no room for two is a reroll in the app */ }
+    }
+    expect(placedTwice).toBeGreaterThan(0);
+  });
+
   it('a loaded special is on the map, its authored overlay honoured', () => {
     for (let seed = 1; seed <= 8; seed++) {
       const map = generateMap(createRng(seed * 5).stream('map'), libWith(), { ...OPTS, specials: ['sp_vein', 'sp_road'] });

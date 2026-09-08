@@ -20,7 +20,7 @@ export interface VerifyIssue {
 }
 
 export interface VerifyMapOptions {
-  /** The run's loaded specials — each must appear exactly once (Tier 0). */
+  /** The run's loaded specials — each must appear exactly as many times as it was loaded (Tier 0; a copy per copy since session 33, PR 7). */
   specials?: readonly string[];
   /** When > 0 the relic layer is on: rocks must carry dealt contents. */
   relicPoolSize?: number;
@@ -92,9 +92,12 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
     placedCounts.set(p.tileId, (placedCounts.get(p.tileId) ?? 0) + 1);
     if (!knownIds.has(p.tileId)) bad('tier0/pool', `placed tile '${p.tileId}' is not in the library`);
   }
-  for (const id of opts.specials ?? []) {
+  // A loaded COPY is a placement (session 33, PR 7: the multiset): two copies, two placements - never one, never three.
+  const wanted = new Map<string, number>();
+  for (const id of opts.specials ?? []) wanted.set(id, (wanted.get(id) ?? 0) + 1);
+  for (const [id, want] of wanted) {
     const n = placedCounts.get(id) ?? 0;
-    if (n !== 1) bad('tier0/specials-exactly-once', `special '${id}' placed ${n} times`);
+    if (n !== want) bad('tier0/specials-exactly-once', `special '${id}' placed ${n} times, loaded ${want}`);
   }
 
   // ---- Tier 1: entries are distinct road cells on the border -------------
