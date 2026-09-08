@@ -49,6 +49,8 @@ export interface MetaSave {
   owned: Record<string, number>;
   /** Fusion results reached at least once, for the codex (item 23). */
   discovered: string[];
+  /** What the player has MET (feedback 2026-09-08, items 3 and 8): a card pops on the first meeting, the codex fills in. */
+  met: { enemies: string[]; towers: string[]; chest: boolean; boon: boolean };
   settings: {
     reducedMotion: boolean | null; // null = follow the OS
     /** The HUD's and menus' font multiple; 1 or 2 (session 27). Applied at boot. */
@@ -65,7 +67,7 @@ export interface MetaSave {
   history: { seed: number; threat: string; wave: number; status: string; kills: number }[];
 }
 
-export const defaultMeta = (): MetaSave => ({ version: META_VERSION, ore: Array.from({ length: ORE_TIERS }, () => 0), unlocks: [], earned: [], forged: {}, owned: {}, discovered: [], settings: { reducedMotion: null, hudScale: 2, palette: 'default', spriteSet: 'current', onboarded: false, tutorialStep: 0 }, history: [] });
+export const defaultMeta = (): MetaSave => ({ version: META_VERSION, ore: Array.from({ length: ORE_TIERS }, () => 0), unlocks: [], earned: [], forged: {}, owned: {}, discovered: [], met: { enemies: [], towers: [], chest: false, boon: false }, settings: { reducedMotion: null, hudScale: 2, palette: 'default', spriteSet: 'current', onboarded: false, tutorialStep: 0 }, history: [] });
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -92,6 +94,9 @@ function shapeMeta(m: Record<string, unknown>): MetaSave | null {
   const owned = m.owned ?? {};
   if (!isStrings(unlocks) || !isStrings(earned) || !isStrings(discovered) || !isNumRecord(forged) || !isNumRecord(owned)) return null;
   const history = m.history ?? [];
+  // Absent before 2026-09-08: nothing met yet, so the cards come once.
+  const metRaw = isRecord(m.met) ? m.met : {};
+  const met = { enemies: isStrings(metRaw.enemies) ? metRaw.enemies : [], towers: isStrings(metRaw.towers) ? metRaw.towers : [], chest: metRaw.chest === true, boon: metRaw.boon === true };
   const settings = isRecord(m.settings) ? m.settings : { reducedMotion: null };
   if (!Array.isArray(history) || !history.every(isRecord)) return null;
   const rm = settings.reducedMotion ?? null;
@@ -110,6 +115,7 @@ function shapeMeta(m: Record<string, unknown>): MetaSave | null {
     forged,
     owned,
     discovered,
+    met,
     settings: { reducedMotion: rm, hudScale, palette, spriteSet, onboarded, tutorialStep },
     history: history as MetaSave['history'],
   };

@@ -79,6 +79,16 @@ describe('meta save', () => {
   });
 });
 
+describe('what the player has met (feedback 2026-09-08)', () => {
+  it('a save from before the cards loads with nothing met; a met list round-trips', () => {
+    const s = store({ [META_KEY]: JSON.stringify({ version: META_VERSION, ore: [1, 0, 0], unlocks: [], earned: [], forged: {}, owned: {}, discovered: [], settings: { reducedMotion: null }, history: [] }) });
+    expect(loadMetaFrom(s).meta.met).toEqual({ enemies: [], towers: [], chest: false, boon: false });
+    const meta = { ...defaultMeta(), met: { enemies: ['grunt', 'mole'], towers: ['bolt'], chest: true, boon: false } };
+    saveMetaTo(s, meta);
+    expect(loadMetaFrom(s).meta.met).toEqual(meta.met);
+  });
+});
+
 describe('run save', () => {
   const run = { version: SAVE_VERSION, seed: 5, threatIdx: 1, tick: 10, inputs: [], contentHash: 1, loadout: [], map: { board: {} }, meta: { unlocks: [], earned: [], forged: {} } };
 
