@@ -47,6 +47,7 @@ const OVERRIDE_SETS: Record<string, Record<string, string>> = {
     'rarity.legendary': '#f2c14e',
     // The Laser's paths (session 30, PR 4; item 27): Chill cold, Capacitor hot.
     'beam.cold': '#9fe8ff',
+    'fx.heal': '#5fd88a',
     // The tutorial's box (session 31): a yellow the board never uses for anything else.
     'tutorial.box': '#f2d64e',
     'beam.hot': '#ffb070',

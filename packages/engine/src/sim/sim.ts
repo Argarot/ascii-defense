@@ -168,6 +168,7 @@ export function waveCount(d: DifficultySpec, wave: number): number {
  */
 export type SimEvent =
   | { kind: 'pulse'; x: number; y: number; r: number }
+  | { kind: 'heal'; x: number; y: number; r: number } // a mender's field (feedback 2026-09-08, item 9): a green pulse each second
   | { kind: 'strike'; x: number; y: number; r: number } // the orbital: a column from the sky, then a blast of radius r (session 25)
   | { kind: 'arc'; pts: readonly { x: number; y: number }[] } // a chain: the tower's centre, then every body hit in order (session 25)
   | { kind: 'beam'; x0: number; y0: number; x1: number; y1: number; w: number; heat: number; every: number; path?: number } // a lance firing down its corridor (session 26); every = ticks to its next pulse, the view's pulse length; path = its tier-1 choice, for the beam's colour (session 30)
@@ -261,7 +262,7 @@ const LOOT_FALLBACK_SCRAP = 60;
 /** Scrap price of prospecting a rock cell (PRD sec 4.6). */
 export const PROSPECT_COST = 25;
 /** Void chests (PRD sec 4.9; session 28, PR 5): a roll every this many ticks, a window this long, this many at once. */
-export const CHEST_EVERY = 300;
+export const CHEST_EVERY = 600; // 300 -> 600 (feedback 2026-09-08, item 6: "void chests appear a bit too frequently")
 export const CHEST_WINDOW = 240;
 export const CHEST_MAX = 2;
 /** What a chest of each rarity pays, on its Scrap and Ore outcomes (session 30, PR 4). */
@@ -1691,13 +1692,15 @@ export class Sim {
    * "next wave" call (item 18). Draws on the 'relics' stream, so map, waves
    * and combat draws are untouched by the relic layer existing.
    */
-  private maybeOffer(): void {
+  private maybeOffer(upToWave = this.wave): void {
     const defs = this.opts.relicDefs;
     if (!defs || this.offer !== null) return;
     // The newest offer wave launched so far is owed until dealt; it is dealt
     // once, at the first quiet after it - however many waves were called
-    // over the debt (2026-09-06 thought dump item 18).
-    const owed = this.wave - (this.wave % OFFER_EVERY_WAVES);
+    // over the debt (2026-06 thought dump item 18) - and at the LATEST when
+    // the wave after it launches (feedback 2026-09-08, item 2: a Standard
+    // run whose board was never quiet saw no offer at all).
+    const owed = upToWave - (upToWave % OFFER_EVERY_WAVES);
     if (owed === 0 || owed <= this.offerWave) return;
     const pool = this.unheldPool();
     if (pool.length === 0) return; // the debt stands until something is dealable (session 31, PR 8: it was marked paid first)
@@ -1961,7 +1964,7 @@ export class Sim {
     if (!this.canCallWave()) return false;
     this.scrap += this.callBonus();
     if (this.fold.callBonusMul !== 1 && this.callBonus() > 0) this.noteRelicUse('callBonusMul');
-    this.launchWave();
+    this.launchWave(true);
     this.inputs.push({ tick: this.tickCount, a: { t: 'callWave' } });
     return true;
   }
@@ -2184,8 +2187,13 @@ export class Sim {
   }
 
   /** The next wave starts NOW: by the clock or by the player's call. */
-  private launchWave(): void {
+  private launchWave(byCall = false): void {
     this.wave++;
+    // An offer owed by the waves before this one is dealt now if no quiet
+    // moment dealt it (feedback 2026-09-08, item 2) - by the CLOCK only; a
+    // player's call over living bodies still carries the debt (item 18 of
+    // the thought dump: never on a next-wave call).
+    if (!byCall) this.maybeOffer(this.wave - 1);
     // War Chest (relic): Scrap at every launch; Masonry (set): the Core mends.
     if (this.econFold.waveScrap > 0) { this.scrap += this.econFold.waveScrap; this.noteRelicUse('waveScrap'); }
     if (this.econFold.coreHealPerWave > 0) this.coreHp = Math.min(this.coreHpMax, this.coreHp + this.econFold.coreHealPerWave);
@@ -2850,6 +2858,7 @@ export class Sim {
         if (dx * dx + dy * dy > r2) continue;
         this.hp[j] = Math.min(this.spawnHp[j], this.hp[j] + TRAIT_RULES.heal.amount);
       }
+      this.emit({ kind: 'heal', x: this.posX[i], y: this.posY[i], r: TRAIT_RULES.heal.radius });
     }
   }
 

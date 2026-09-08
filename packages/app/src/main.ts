@@ -671,7 +671,7 @@ async function main(): Promise<void> {
           return {
             title: 'WORKSHOP - TILES',
             body: [
-              `banked ore: ${ore[0]} tier 1 \u2802 ${ore[1]} tier 2 \u2802 ${ore[2]} tier 3`,
+              `ORE  tier 1: ${ore[0]}   tier 2: ${ore[1]}   tier 3: ${ore[2]}`,
               'a bought tile joins the loadout pool; a loaded tile is guaranteed on the map',
               smith.open ? 'every tile is yours: THE TILE SMITH IS OPEN (the link under the board)' : `the tile smith opens when every tile is owned (${smith.owned}/${smith.total})`,
               '',
@@ -698,15 +698,18 @@ async function main(): Promise<void> {
         const focusWhy = focus ? whyNot(TREE, meta, meta.ore, focus.id) : null;
         const smith = smithOpen(TREE, meta.owned);
         return {
-          title: 'WORKSHOP',
+          // The purse in the lit title band (feedback 2026-09-08, item 1: 'I don't see how much ore I actually have').
+          title: `WORKSHOP ⠂ ORE ${ore[0]} / ${ore[1]} / ${ore[2]}`,
           body: [
-            `banked ore: ${ore[0]} tier 1 \u2802 ${ore[1]} tier 2 \u2802 ${ore[2]} tier 3`,
+            `ORE  tier 1: ${ore[0]}   tier 2: ${ore[1]}   tier 3: ${ore[2]}`,
             `towers ${u.towers.size}/${TOWER_COUNT} \u2802 relics in the pool ${u.relics.size}/${RELIC_POOL.length} \u2802 relic slots ${u.relicSlots} \u2802 tile slots ${u.tileSlots} \u2802 tiles owned ${smith.owned}/${smith.total}`,
             '',
             ...(focus
-              ? [...wrapLine(`${focus.name.toUpperCase()}: ${focus.desc}`, Math.min(100, screenCols - 12)), focusWhy === 'already bought' ? 'bought' : focusWhy ? `cannot buy yet: ${focusWhy}` : `click it again to buy for ${focus.cost.ore} tier-${focus.cost.tier} ore`]
+              ? [...wrapLine(`${focus.name.toUpperCase()}: ${focus.desc}`, Math.min(100, screenCols - 12)), focusWhy === 'already bought' ? 'bought' : focusWhy ? `cannot buy yet: ${focusWhy}${focusWhy.includes('ore') && focus.cost.tier > 1 && (meta.ore[focus.cost.tier - 1] ?? 0) === 0 ? ` - tier-${focus.cost.tier} ore is mined from a tier-${focus.cost.tier} vein: the ORE branch opens its tile, load it, build a Refinery on it` : ''}` : `click it again to buy for ${focus.cost.ore} tier-${focus.cost.tier} ore`]
               : ['click a node to read it; click it again to buy']),
           ],
+          // The purse in the frame's bottom band (feedback item 1: "I don't see how much ore I actually have").
+          keys: [{ key: 'ORE', does: `${ore[0]} tier 1 \u2802 ${ore[1]} tier 2 \u2802 ${ore[2]} tier 3` }, { key: 'Esc', does: 'back' }],
           columns: BRANCHES.filter((b) => b.id !== 'tiles').map((b) => {
             const nodes = branchNodes(TREE, b.id as TreeNode['branch']);
             return {
@@ -731,7 +734,6 @@ async function main(): Promise<void> {
             { id: 'history', label: 'RUN HISTORY', note: `${meta.history.length} runs` },
             { id: 'back', label: 'BACK' },
           ],
-          keys: [{ key: 'Esc', does: 'back' }],
           footer: 'a node is bought once; a node hangs from the one it needs; higher nodes want rarer ore; wins earn the rarer relics of an open branch',
         };
       }
@@ -1311,9 +1313,10 @@ async function main(): Promise<void> {
         if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); moveCursor(-1); return; }
         if (e.key === 'Enter' && menuCursor !== null && menu.itemIds().includes(menuCursor)) { e.preventDefault(); menuAction(menuCursor); return; }
       }
-      if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup' || mode === 'loadout')) {
+      // Esc leaves every page (feedback 2026-09-08, item 1: "pressing esc does nothing" in the workshop).
+      if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup' || mode === 'loadout' || mode === 'workshop' || mode === 'history')) {
         const leavingPause = mode === 'paused';
-        mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : leavingPause ? 'playing' : 'title';
+        mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : mode === 'history' ? 'workshop' : leavingPause ? 'playing' : 'title';
         if (leavingPause) send({ t: 'speed', idx: mirroredSpeed });
       }
       return;
@@ -1480,12 +1483,12 @@ async function main(): Promise<void> {
         modalTerm.canvas.style.display = '';
       } else if (fullscreen && spec) {
         screenTerm.clear();
-        menu.render(screenTerm, { ...spec, phase: animPhase, cursor: menuCursor ?? undefined });
+        menu.render(screenTerm, { ...spec, phase: animPhase, animMs: still ? 0 : now, cursor: menuCursor ?? undefined });
         screenTerm.flush();
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else if (spec) {
-        menu.render(modalTerm, { ...spec, phase: animPhase, cursor: menuCursor ?? undefined });
+        menu.render(modalTerm, { ...spec, phase: animPhase, animMs: still ? 0 : now, cursor: menuCursor ?? undefined });
         modalTerm.flush();
         modalTerm.canvas.style.display = '';
       } else if (snap.offer && inGame()) {

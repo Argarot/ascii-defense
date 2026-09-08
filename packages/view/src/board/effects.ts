@@ -18,7 +18,7 @@ import { isReducedMotion } from '../motion';
 import { CELL_H, CELL_W, hash2 } from './style';
 
 interface Effect {
-  kind: 'pulse' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'orbital' | 'frost' | 'arc' | 'lance';
+  kind: 'pulse' | 'heal' | 'blast' | 'spark' | 'death' | 'breach' | 'dust' | 'orbital' | 'frost' | 'arc' | 'lance';
   x: number; // continuous cell units, same space the sim speaks
   y: number;
   r: number;
@@ -46,6 +46,7 @@ const EFFECT_CAP = 128;
 
 const TTL: Record<Effect['kind'], number> = {
   pulse: 10,
+  heal: 10,
   blast: 9,
   spark: 4,
   death: 6,
@@ -146,6 +147,9 @@ export class EffectsLayer {
         case 'pulse':
           this.add({ kind: 'pulse', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.pulse });
           break;
+        case 'heal':
+          this.add({ kind: 'heal', x: e.x, y: e.y, r: e.r, start: e.tick, ttl: TTL.pulse });
+          break;
         case 'strike':
           // The orbital (6.10; reworked 2026-09-06, item 5): a column of
           // light from the top edge to the cell, then the blast of the
@@ -237,6 +241,7 @@ export class EffectsLayer {
       this.drawnLast++;
       switch (e.kind) {
         case 'pulse': this.drawPulse(term, e, age01, still); break;
+        case 'heal': this.drawHeal(term, e, age01, still); break;
         case 'blast': this.drawBlast(term, e, age01, still); break;
         case 'spark': this.drawSpark(term, e, age01); break;
         case 'death': this.drawDeath(term, e, age01, still); break;
@@ -278,6 +283,12 @@ export class EffectsLayer {
    * the tower, dying out toward the full reach, and its peak is well under
    * half what it was, so overlapping pulses add up to a glow, never a flash.
    */
+  /** A mender's field (feedback 2026-09-08, item 9): the Frost pulse's ring, in green - what it touches, it mends. */
+  private drawHeal(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    const rNow = still ? e.r : e.r * age01;
+    this.ring(term, e.x, e.y, rNow, 0.3, (gx, gy) => term.tint(gx, gy, role('fx.heal')));
+  }
+
   private drawPulse(term: TermSurface, e: Effect, age01: number, still: boolean): void {
     const rNow = still ? e.r : e.r * age01;
     const far = e.r > 0 ? Math.min(1, rNow / e.r) : 1; // 0 at the tower, 1 at the reach
