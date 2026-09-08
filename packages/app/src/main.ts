@@ -359,7 +359,7 @@ async function main(): Promise<void> {
   // or a boon cell is on the map, a card pops over the board the way an
   // offer does, the game paused under it; ONCE ever, remembered in the meta
   // save (item 8: the codex fills in from what was met).
-  let cardQueue: import('@ascii-defense/view').MenuSpec[] = [];
+  const cardQueue: import('@ascii-defense/view').MenuSpec[] = [];
   const cardOf = (title: string, hero: Sprite[], body: string[]): import('@ascii-defense/view').MenuSpec => ({
     title, hero, body: body.flatMap((l) => wrapLine(l, Math.min(72, screenCols - 16))),
     items: [{ id: 'card:ok', label: cardQueue.length > 0 ? 'NEXT CARD' : 'GOT IT' }],
