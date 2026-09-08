@@ -1570,6 +1570,23 @@ reload resumes; done or skipped sets `onboarded`, and SETTINGS → TUTORIAL
 replays it. The run never pauses for it: the sim is the sim, the tutorial
 is a lens. It replaced the three first-run prompts of session 27.
 
+**Encounter cards and the Codex (feedback 2026-09-08, items 3 and 8;
+session 33, PR 2).** Daniil: "how to play should be part of the actual
+gameplay, with relevant cards popping up on the screen, similar to how
+relics are presented; how to play as a button in the menu will always be
+ignored" - and "the codex is the wiki of everything in the game, a
+player's guide to know detailed stats about what they have already
+encountered". So: the first time a kind of enemy walks in sight (a
+burrowed mole is not yet in sight), a kind of tower stands, a chest
+surfaces, or a boon cell is on the map once a tower stands, **a card pops
+over the board** - the sprite, the name, the facts and the rules with
+their answers - and the run pauses under it until GOT IT, Enter or Esc;
+cards queue when several come at once. Every first meeting is remembered
+in the meta save (`met`), so a card comes once, ever. The title's HOW TO
+PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
+enemy not yet met is a `???` page that says when it walks; a tower or
+relic the tree has not opened stays LOCKED with what opens it, as before.
+
 ## 19. The thought dump of 2026-09-06 — filed *(Daniil, late evening)*
 
 Thirty-two items, absorbed here so nothing lives only in chat. Each row

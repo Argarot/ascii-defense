@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, smithOpen, priceTile, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
+import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, smithOpen, priceTile, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
 import { TUTORIAL_STEPS, goodGround, nearRock, nextStep, type TutorialCtx } from './tutorial';
 import type { TreeNode, CellType } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
@@ -346,13 +346,62 @@ async function main(): Promise<void> {
   if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
   setPaletteSet(meta.settings.palette);
 
-  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary' | 'workshop' | 'history' | 'smith';
+  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary' | 'workshop' | 'history' | 'smith' | 'card';
   // The workshop (session 29, PR 2; PRD sec 11): the tree's branches as
   // pages, banked Ore as the currency, a node bought with one click.
   type WorkshopPage = TreeNode['branch'] | 'tiles';
   let workshopBranch: WorkshopPage = 'arsenal';
   /** The node last clicked (session 30): its sentence and its reason show in the body; a second click buys. */
   let workshopFocus: string | null = null;
+  // Encounter cards (feedback 2026-09-08, item 3: "how to play should be part
+  // of the actual gameplay, with relevant cards popping up"): the first time
+  // a kind of enemy walks in sight, a kind of tower stands, a chest surfaces
+  // or a boon cell is on the map, a card pops over the board the way an
+  // offer does, the game paused under it; ONCE ever, remembered in the meta
+  // save (item 8: the codex fills in from what was met).
+  const cardQueue: import('@ascii-defense/view').MenuSpec[] = [];
+  const cardOf = (title: string, hero: Sprite[], body: string[]): import('@ascii-defense/view').MenuSpec => ({
+    title, hero, body: body.flatMap((l) => wrapLine(l, Math.min(72, screenCols - 16))),
+    items: [{ id: 'card:ok', label: cardQueue.length > 0 ? 'NEXT CARD' : 'GOT IT' }],
+    keys: [{ key: 'Enter', does: 'continue' }, { key: 'Esc', does: 'continue' }],
+    footer: 'first meeting - the CODEX on the title page keeps every card',
+  });
+  const enemyCardBody = (e: (typeof CODEX.enemies)[number]): string[] => [
+    [`hp ${e.hp}`, `speed ${e.speed} cells/s`, `breach ${e.breach}`, `bounty ${e.bounty}`, `from wave ${e.fromWave}`].join('  \u2802  '),
+    [e.armour ? `armour ${e.armour}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type in full',
+    ...e.traits,
+  ];
+  const detectEncounters = (): void => {
+    if (!snap || !currentMap) return;
+    let changed = false;
+    for (const en of snap.board.enemies ?? []) {
+      if (!en.id || en.m === 'b' || meta.met.enemies.includes(en.id)) continue; // a burrowed body is not yet met
+      const e = CODEX.enemies.find((x) => x.id === en.id);
+      if (!e) continue;
+      meta.met.enemies.push(en.id); changed = true;
+      const sp = SPRITES.find((s) => s.id === `enemy_${e.id}`);
+      cardQueue.push(cardOf(`NEW ENEMY: ${e.name.toUpperCase()}`, sp ? [sp] : [], enemyCardBody(e)));
+    }
+    for (const t of snap.board.towers ?? []) {
+      if (!t.id || meta.met.towers.includes(t.id)) continue;
+      const c = CODEX.towers.find((x) => x.id === t.id);
+      if (!c) continue;
+      meta.met.towers.push(t.id); changed = true;
+      const sp = SPRITES.find((s) => s.id === c.id);
+      cardQueue.push(cardOf(`YOUR FIRST ${c.name.toUpperCase()}`, sp ? [sp] : [], [c.desc, c.shape, ...c.tiers.map((tier, i) => `T${i + 1}: ${tier[0].name} (${tier[0].desc}) or ${tier[1].name} (${tier[1].desc})`), `next to the Core: ${c.coreBoon}`]));
+    }
+    if (!meta.met.chest && (snap.board.chests?.length ?? 0) > 0) {
+      meta.met.chest = true; changed = true;
+      cardQueue.push(cardOf('A CHEST SURFACED', [], ['a chest rises on the water or on empty ground now and then and sinks after twelve seconds. select it and CLAIM: Scrap, Ore, a consumable - now and then a relic. a rarer chest pays more; a boss leaves one where it dies.']));
+    }
+    // The boon card waits for the first tower (the tutorial owns the first minute of a first run).
+    if (!meta.met.boon && (snap.board.boons?.length ?? 0) > 0 && (snap.board.towers?.length ?? 0) > 0) {
+      meta.met.boon = true; changed = true;
+      cardQueue.push(cardOf('BOON GROUND', [], ['some ground carries a boon: corner marks on the cell say its tier, the colour says what it gives - reach (green), damage (red) or fire rate (gold). a tower built on it keeps the boon: ' + [1, 2, 3, 4].map((t) => `tier ${t} ${Sim.boonEffect('damage', t).text}`).join(', ') + ' for damage and rate; +1 range a tier for reach. rock may hide more.']));
+    }
+    if (changed) saveMeta(meta);
+  };
+  let cardResumeSpeed = 1;
   // The keyboard on every page (session 31; WBS 4.24's other half): the
   // arrows walk the page's clickable rows, Enter clicks the one they are on;
   // the cursor resets when the page changes.
@@ -386,7 +435,7 @@ async function main(): Promise<void> {
   // the same generated facts as docs/CATALOGUE.md; reachable from the
   // title and from pause, and it returns where it came from.
   let howtoFrom: Mode = 'title';
-  type CodexSection = 'basics' | 'towers' | 'enemies' | 'relics';
+  type CodexSection = 'basics' | 'towers' | 'enemies' | 'relics' | 'boons';
   let codexSection: CodexSection = 'basics';
   let codexPage = 0;
   let wipeArmed = false;
@@ -589,7 +638,7 @@ async function main(): Promise<void> {
             { id: 'continue', label: 'CONTINUE', disabled: runSave.run === null, note: runSave.run ? `wave-era tick ${runSave.run.tick}` : runSave.problem ? 'unreadable' : 'no save' },
             { id: 'workshop', label: 'WORKSHOP', note: `${meta.unlocks.length}/${TREE.nodes.length} bought \u2802 ${meta.ore[0]} ore` },
             { id: 'settings', label: 'SETTINGS' },
-            { id: 'howto', label: 'HOW TO PLAY' },
+            { id: 'howto', label: 'CODEX' },
           ],
           footer: `runs played ${meta.history.length}`,
         };
@@ -778,6 +827,8 @@ async function main(): Promise<void> {
             { id: 'back', label: 'BACK' },
           ],
         };
+      case 'card':
+        return cardQueue[0] ? { ...cardQueue[0], items: [{ id: 'card:ok', label: cardQueue.length > 1 ? `NEXT CARD (${cardQueue.length - 1} more)` : 'GOT IT' }] } : null;
       case 'paused':
         return {
           title: 'PAUSED',
@@ -790,7 +841,7 @@ async function main(): Promise<void> {
             { id: 'resume', label: 'RESUME' },
             { id: 'copycode', label: copyLabel('code', 'COPY RUN CODE') },
             { id: 'copyseed', label: copyLabel('seed', `COPY SEED ${seed}`) },
-            { id: 'howto', label: 'HOW TO PLAY' },
+            { id: 'howto', label: 'CODEX' },
             { id: 'settings', label: 'SETTINGS' },
             { id: 'abandon', label: 'SAVE & EXIT TO TITLE' },
           ],
@@ -876,13 +927,25 @@ async function main(): Promise<void> {
       { id: 'towers', label: `TOWERS ${CODEX.towers.length}`, count: CODEX.towers.length },
       { id: 'enemies', label: `ENEMIES ${CODEX.enemies.length}`, count: CODEX.enemies.length },
       { id: 'relics', label: `RELICS ${CODEX.relics.length}`, count: CODEX.relics.length },
+      { id: 'boons', label: 'BOONS', count: 1 },
     ];
     const count = sections.find((s) => s.id === codexSection)!.count;
     const page = Math.min(codexPage, count - 1);
-    let title = 'HOW TO PLAY';
+    let title = 'CODEX - HOW TO PLAY';
     let hero: Sprite[] = [];
     let body: string[] = [];
-    if (codexSection === 'basics') {
+    if (codexSection === 'boons') {
+      // Boon ground (feedback 2026-09-08, item 8: "all boons, everything").
+      title = 'CODEX - BOONS';
+      body = [
+        'some ground carries a boon: corner marks on the cell say its tier (one to four), the colour says what it gives. a tower built on it keeps the boon for as long as it stands; sell it and the ground keeps its boon.',
+        'REACH (green): ' + [1, 2, 3, 4].map((t) => `tier ${t} ${Sim.boonEffect('range', t).text}`).join(', '),
+        'DAMAGE (red): ' + [1, 2, 3, 4].map((t) => `tier ${t} ${Sim.boonEffect('damage', t).text}`).join(', '),
+        'FIRE RATE (gold): ' + [1, 2, 3, 4].map((t) => `tier ${t} ${Sim.boonEffect('rate', t).text}`).join(', '),
+        'a map deals two boon cells; a prospected rock may open a cache whose loot turns the cell into boon ground (tier 2, one time in five); the Tile Smith paints boons onto a minted tile at a tier the tree allows.',
+        'the Core boon is a different thing: every tower has one, and it wakes when the tower stands next to the Core - each tower\'s codex page names it.',
+      ].flatMap((l) => wrapLine(l));
+    } else if (codexSection === 'basics') {
       body = [
         'enemies march the road toward the Core at the east edge; if it falls, the run ends.',
         'select ground, then a tower in the strip under the board, to build. hover a button for its card.',
@@ -912,6 +975,11 @@ async function main(): Promise<void> {
         '',
         ...wrapLine(`next to the Core: ${t.coreBoon}`),
       ];
+    } else if (codexSection === 'enemies' && !meta.met.enemies.includes(CODEX.enemies[page].id)) {
+      // Not yet met (item 8): the page keeps its secret but says when it walks.
+      const e = CODEX.enemies[page];
+      title = `???  ${page + 1}/${count}`;
+      body = [`not yet met - it walks from wave ${e.fromWave} on Standard (three waves later on Calm); meet it in a run and this page fills in`, `${meta.met.enemies.length} of ${CODEX.enemies.length} enemies met`];
     } else if (codexSection === 'enemies') {
       const e = CODEX.enemies[page];
       title = `${e.name.toUpperCase()}  ${page + 1}/${count}`;
@@ -961,7 +1029,7 @@ async function main(): Promise<void> {
         ...sections.map((s) => ({ id: `sec:${s.id}`, label: s.label, selected: s.id === codexSection })),
         { id: 'back', label: 'BACK' },
       ],
-      footer: 'the same facts as docs/CATALOGUE.md',
+      footer: 'the codex is the wiki of everything met: every first meeting in a run pops its card here',
     };
   };
 
@@ -1135,6 +1203,10 @@ async function main(): Promise<void> {
         break;
       }
       case 'resume': mode = 'playing'; send({ t: 'speed', idx: 0 }); send({ t: 'speed', idx: mirroredSpeed }); break;
+      case 'card:ok':
+        cardQueue.shift();
+        if (cardQueue.length === 0 && mode === 'card') { mode = 'playing'; send({ t: 'speed', idx: cardResumeSpeed }); }
+        break;
       case 'abandon': void persistRun().then(() => { mode = 'title'; send({ t: 'speed', idx: 0 }); }); break;
       // GO AGAIN keeps the loadout: "the same run again" includes the tiles
       // it was set up with, not just the threat (playtest 12).
@@ -1314,6 +1386,7 @@ async function main(): Promise<void> {
         if (e.key === 'Enter' && menuCursor !== null && menu.itemIds().includes(menuCursor)) { e.preventDefault(); menuAction(menuCursor); return; }
       }
       // Esc leaves every page (feedback 2026-09-08, item 1: "pressing esc does nothing" in the workshop).
+      if (mode === 'card' && (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); menuAction('card:ok'); return; }
       if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup' || mode === 'loadout' || mode === 'workshop' || mode === 'history')) {
         const leavingPause = mode === 'paused';
         mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : mode === 'history' ? 'workshop' : leavingPause ? 'playing' : 'title';
@@ -1424,6 +1497,11 @@ async function main(): Promise<void> {
       // the step advances on the player's action or on NEXT, its sentence is
       // the column's prompt, its target a pulsing box; the meta save keeps
       // the step and, at the end, the fact that it is done.
+      // Encounter cards (item 3): detected while playing with no offer up; the first card pauses the run under it.
+      if (mode === 'playing' && snap.offer === null) {
+        detectEncounters();
+        if (cardQueue.length > 0) { cardResumeSpeed = mirroredSpeed; mode = 'card'; send({ t: 'speed', idx: 0 }); }
+      }
       let prompt = '';
       let promptButtons: HudState['promptButtons'];
       let tutTarget: ReturnType<typeof tutorialTarget> = null;
