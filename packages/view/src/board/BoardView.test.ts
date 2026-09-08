@@ -121,6 +121,22 @@ describe('the board as text', () => {
     for (const gy of [headRow, feetRow]) expect(statusRows[gy].slice(x0 - 3, x0)).toBe(plainRows[gy].slice(x0 - 3, x0));
   });
 
+  it('a burrower is a mound and a mender wears its cross (Enemies II marks, session 32, PR 3)', () => {
+    const { term, view } = world();
+    const base = (extra: Record<string, unknown>): RenderState => ({
+      hover: null, selected: null, towers: [], caches: [], boons: [], animMs: 0, drift: 0, phase: 0,
+      enemies: [{ x: 3.5, y: 2.5, id: 'grunt', hp01: 1, ...extra }],
+    });
+    view.render(base({ m: 'b' }));
+    const rows = term.toText().split('\n');
+    expect(rows.some((r) => r.includes('_^_'))).toBe(true);
+    view.render(base({}));
+    expect(term.toText().split('\n').some((r) => r.includes('_^_'))).toBe(false);
+    view.render(base({ m: 'h' }));
+    const plain = term.toText();
+    expect(plain.includes('+')).toBe(true);
+  });
+
   it('a tower sprite lands at its cell and its state follows its choices', () => {
     const { cells, W, H, term, view } = world();
     const a = firstGround(cells, W, H, 0);

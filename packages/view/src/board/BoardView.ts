@@ -159,7 +159,7 @@ export interface RenderState {
    *  state (WBS 2.14): shield bracket, health mark, slow tint. No tooltips -
    *  the enemy itself is the readout (PRD sec 8). */
   /** frozen, burning and slows (distinct sources) colour the ground under the walker (WBS 2.31; 2026-09-06, item 2: colour, not glyphs). */
-  enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean; frozen?: boolean; burning?: boolean; slows?: number; k?: number; g?: number }[];
+  enemies?: readonly { x: number; y: number; id?: string; hp01?: number; shielded?: boolean; slowed?: boolean; frozen?: boolean; burning?: boolean; slows?: number; k?: number; g?: number; /** A trait's mark (session 32, PR 3): b burrowed, c charging, s sprinting, h mender, w bulwark, p front shield. */ m?: string; /** Facing 0-3 (N E S W) for the front shield's plank. */ f?: number }[];
   /** Live towers, in cell coordinates, with their def id for per-type art and
    *  their committed choices for per-state art (sprite v2). */
   /** cooldown01 runs 1 (just fired) to 0 (ready); sinceFire is ticks since the last shot, -1 before the first (session 25). */
@@ -528,6 +528,14 @@ export class BoardView {
       let left = gx;
       let right = gx;
       let top = gy;
+      if (e.m === 'b') {
+        // A burrower (session 32, PR 3): a mound where it walks, nothing to shoot - the mark IS the rule.
+        term.put(gx - 1, gy, '_', role('enemy.limb'));
+        term.put(gx, gy, '^', role('enemy.husk'));
+        term.put(gx + 1, gy, '_', role('enemy.limb'));
+        walker++;
+        continue;
+      }
       if (sp) {
         const [w, h] = sp.cell;
         left = gx - Math.floor(w / 2);
@@ -544,6 +552,17 @@ export class BoardView {
       if (e.shielded) {
         term.put(left - 1, gy, '(', role('enemy.shell'));
         term.put(right + 1, gy, ')', role('enemy.shell'));
+      }
+      // Enemies II marks (session 32, PR 3): every rule shows on the body.
+      if (e.m === 'h') term.put(gx, top - 1, '+', role('enemy.shell'));
+      else if (e.m === 'w') { term.put(left - 1, gy, '{', role('enemy.boss')); term.put(right + 1, gy, '}', role('enemy.boss')); }
+      else if (e.m === 'c') { term.put(left - 2, gy, '>', role('enemy.fast')); term.put(left - 1, gy, '>', role('enemy.fast')); }
+      else if (e.m === 's') { term.put(left - 1, gy, '~', role('enemy.fast')); }
+      else if (e.m === 'p') {
+        const f = e.f ?? 1;
+        if (f === 1) term.put(right + 1, gy, '|', role('enemy.shell'));
+        else if (f === 3) term.put(left - 1, gy, '|', role('enemy.shell'));
+        else term.put(gx, f === 0 ? top - 1 : gy + 1, '-', role('enemy.shell'));
       }
       if (e.hp01 !== undefined && e.hp01 < 0.995) {
         // Glyph AND colour carry the bar (2.25, playtest 9): two braille
