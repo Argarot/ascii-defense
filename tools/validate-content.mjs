@@ -100,6 +100,8 @@ function lintSprite(relPath, sprite, palette, grid) {
     if (w < 1 || w > 5 || h < 1 || h > 3) findings.push(`${relPath}: enemy cell [${w}, ${h}] is outside 1x1..5x3 - a walker must fit on the road`);
   } else if (kind === 'relic') {
     if (w !== 4 || h !== 3) findings.push(`${relPath}: relic cell [${w}, ${h}] is not 4x3 - the inventory slot's interior`);
+  } else if (kind === 'chest') {
+    if (w !== 4 || h !== 3) findings.push(`${relPath}: chest cell [${w}, ${h}] is not 4x3 - the box the view draws (ASSETS sec 3)`);
   } else if (grid && (w !== grid.cell[0] || h !== grid.cell[1])) {
     findings.push(`${relPath}: cell [${w}, ${h}] does not match grid.json [${grid.cell}] - the view would index past its art`);
   }

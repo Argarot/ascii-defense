@@ -102,7 +102,7 @@ roles. A sprite is a map of **states**, keyed by a string the view chooses:
 - **terrain**: the cell letter (`"|"`, `"L"`, `"B"` …).
 - **the Core face** (`kind: "face"`): `"top"`, `"mid"`, `"bot"` — the three
   stacked cells past the east border; the road arrives at the middle one.
-- **enemies** (`kind: "enemy"`), **relics** (`kind: "relic"`) and **the chest** (`kind: "chest"`): `""` alone.
+- **enemies** (`kind: "enemy"`), **relics** (`kind: "relic"`) and **the chests** (`kind: "chest"`, 4×3: `chest` for a void chest, `chest_boss` for the crowned one a boss leaves; the view draws them flat in the rarity's colour and shows the second frame as the window closes): `""` alone.
 
 **`kind` decides the cell rule** *(session 25)*. Towers, terrain and the
 face are board cells (`cell` equals grid.json). An **enemy** is a small

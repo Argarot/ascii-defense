@@ -1700,6 +1700,8 @@ async function main(): Promise<void> {
     surfaceChest: (x: number, y: number, rarity = 0) => debug('surfaceChest', x, y, rarity),
     killAll: () => debug('killAll'),
     preview: () => debug('preview'),
+    spawn: (id: string, boss = false) => debug('spawn', id, boss),
+    give: (what: 'scrap' | 'ore', amount: number, tier = 0) => debug('give', what, amount, tier),
     choose: (x: number, y: number, tier: number, option: number) => debug('choose', x, y, tier, option),
     sell: (x: number, y: number) => debug('sell', x, y),
     stats: (x: number, y: number) => debug('stats', x, y),

@@ -277,7 +277,14 @@ one time in two a chest surfaces on a random water cell for twelve
 seconds, at most two at once; it blinks faster as it sinks; selecting it shows a CLAIM card
 and the claim pays through `void_chest` (Scrap 40%, Ore 30%, a
 consumable 18%, a relic 12%). The claim is a replayed input; the chests
-are hashed. **Found while building it**: the session-24 boards are nine
+are hashed. **A boss leaves a chest, not a cache (feedback 2026-09-08,
+item 7; session 33, PR 4)**: where it falls, a crowned chest in its
+rarity's colour - rare before wave 10, epic before 20, legendary from 20 -
+stands a minute and pays through the boss table at that rarity's
+multiplier (×1.5, ×2, ×3). The chest and the boss's chest are 4×3 sprites
+of kind `chest` (placeholders from the generator; the view draws them
+flat in the rarity's colour and blinks their second frame as the window
+closes); a boss's chest takes no void slot. **Found while building it**: the session-24 boards are nine
 tenths road and carry no water on 17 of 18 measured seeds, so "the void"
 of this section barely exists any more. Until Daniil decides whether the
 generator should leave water, a board with no water gives the chests

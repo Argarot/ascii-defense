@@ -124,7 +124,7 @@ export interface HudState {
   /** The cache card, when an unopened cache is selected (PRD sec 4.6): its source. */
   cache: { source: string } | null;
   /** The chest card, when a surfaced void chest is selected (PRD sec 4.9): seconds before it sinks. */
-  chest?: { seconds: number; home: 'water' | 'rock' | 'ground'; /** The chest's rarity and what it multiplies its loot by (session 30, PR 4). */ rarity?: string; mul?: number } | null;
+  chest?: { seconds: number; home: 'water' | 'rock' | 'ground'; /** The chest's rarity and what it multiplies its loot by (session 30, PR 4). */ rarity?: string; mul?: number; /** A boss's chest (feedback 2026-09-08, item 7). */ boss?: boolean } | null;
   /** What the last opened cache gave, shown briefly; null otherwise. */
   loot: string | null;
   /** The prospect card, when a rock cell is selected. */
@@ -469,10 +469,10 @@ export class HudPanel {
     } else if (s.chest) {
       // ---- the void chest (PRD sec 4.9; session 28, PR 5): claim it before it sinks ----
       const cr = rarityRole(s.chest.rarity);
-      term.write(0, y++, `VOID CHEST${s.chest.rarity && s.chest.rarity !== 'common' ? ` - ${s.chest.rarity.toUpperCase()}` : ''}`, cr ? role(cr) : role('terrain.ore.lit'));
+      term.write(0, y++, `${s.chest.boss ? "A BOSS'S CHEST" : 'VOID CHEST'}${s.chest.rarity && s.chest.rarity !== 'common' ? ` - ${s.chest.rarity.toUpperCase()}` : ''}`, cr ? role(cr) : role('terrain.ore.lit'));
       term.write(0, y++, `sinks in ${s.chest.seconds}s${(s.chest.mul ?? 1) > 1 ? ` \u2802 pays x${s.chest.mul}` : ''}`, s.chest.seconds <= 3 ? role('enemy.fast') : role('ui.dim'));
       y++;
-      for (const line of this.wrap(`Surfaced on the ${s.chest.home}. Claiming it costs nothing but the click: Scrap, Ore, a consumable - now and then a relic.`, W, 5)) {
+      for (const line of this.wrap(s.chest.boss ? 'Left where the boss fell. Claiming it costs nothing but the click: the boss table - Scrap, Ore, a consumable, a relic - paid at its rarity.' : `Surfaced on the ${s.chest.home}. Claiming it costs nothing but the click: Scrap, Ore, a consumable - now and then a relic.`, W, 5)) {
         term.write(0, y++, line, role('ui.text'));
       }
       y++;

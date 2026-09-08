@@ -662,7 +662,7 @@ describe('caches and loot tables (design round 1, 2026-09-03)', () => {
     expect(sim.cacheAt(found!.x, found!.y)?.table).toBe('rock_cache');
   });
 
-  it('a boss drops a cache where it dies, and the drop rolls the boss table', () => {
+  it('a boss leaves a chest where it dies - rare on an early wave, paid through the boss table at its rarity', () => {
     const CANNON: TowerDef = { id: 'bolt', cost: 20, range: 60, fireEveryTicks: 1, projectile: { damage: 100000, speed: 5, homing: true } };
     const { cells, cellsW, cellsH, simOpts } = makeWorld(83, { mode: 'waves', coreHp: 100000, finalWave: 1, startingScrap: 100, towerDefs: [CANNON], lootTables: TABLES });
     const sim = new Sim(83, simOpts);
@@ -671,10 +671,13 @@ describe('caches and loot tables (design round 1, 2026-09-03)', () => {
     expect(sim.nextWavePreview()?.boss).toBe(true); // the final wave is a boss wave
     sim.callWave();
     let guard = 0;
-    while (guard++ < 5000 && !sim.caches.some((c) => c.table === 'boss_drop')) sim.tick();
-    const drop = sim.caches.find((c) => c.table === 'boss_drop');
+    while (guard++ < 5000 && !sim.voidChests.some((c) => c.boss)) sim.tick();
+    const drop = sim.voidChests.find((c) => c.boss);
     expect(drop).toBeDefined();
-    expect(sim.openCache(drop!.x, drop!.y)).toBe(true);
-    expect(sim.ore[0]).toBe(5);
+    expect(drop!.rarity).toBe(1); // wave 1: rare
+    expect(drop!.until - sim.tickCount).toBeGreaterThan(1000); // a minute to claim
+    expect(sim.claimChest(drop!.x, drop!.y)).toBe(true);
+    expect(sim.ore[0]).toBeGreaterThanOrEqual(7); // 5 at x1.5, rounded
+    expect(sim.caches.some((c) => c.table === 'boss_drop')).toBe(false);
   });
 });
