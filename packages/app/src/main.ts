@@ -354,6 +354,28 @@ async function main(): Promise<void> {
   let workshopBranch: WorkshopPage = 'arsenal';
   /** The node last clicked (session 30): its sentence and its reason show in the body; a second click buys. */
   let workshopFocus: string | null = null;
+  /** Short names for the tree's plates (eleven glyphs under a small plate). */
+  const TREE_SHORT: Record<string, string> = {
+    branch_damage: 'Damage', branch_cold: 'Cold', branch_economy: 'Economy', branch_core: 'Core', branch_kinetic: 'Kinetic', branch_energy: 'Energy', branch_reach: 'Reach', branch_rate: 'Rate', branch_support: 'Support',
+    slots_8: 'Slots: 8', slots_10: 'Slots: 10', slots_12: 'Slots: 12', loadout_2: 'Tiles: 2', loadout_3: 'Tiles: 3', loadout_5: 'Tiles: 5',
+    grim: 'GRIM', endless: 'ENDLESS', ore_t2: 'Rich vein', ore_t3: 'Mother lode', tiles_all: 'Every tile',
+  };
+  /** What a plate shows: the tower's sprite, the branch's first relic icon, or a drawn glyph icon. */
+  const treeIcon = (n: TreeNode): { sprite?: Sprite; icon?: readonly string[]; iconRole?: string } => {
+    const tower = n.grants.towers?.[0];
+    if (tower) { const sp = SPRITES.find((s) => s.id === tower); return sp ? { sprite: sp } : { icon: ['/^\\', '|T|', '/_\\'] }; }
+    const tag = n.grants.relicTags?.[0];
+    if (tag) {
+      const relic = RELIC_POOL.find((r) => (r.tags ?? []).some((t) => t === tag) && !r.fusionOnly && r.rarity === 'common') ?? RELIC_POOL.find((r) => (r.tags ?? []).some((t) => t === tag));
+      const sp = relic ? SPRITES.find((s) => s.id === `relic_${relic.id}`) : undefined;
+      return sp ? { sprite: sp } : { icon: [' /\\ ', '<##>', ' \\/ '], iconRole: 'relic.gold' };
+    }
+    if (n.grants.relicSlots) return { icon: ['┌┐┌┐', '└┘└┘', ' ++ '], iconRole: 'ui.accent' };
+    if (n.grants.tileSlots) return { icon: ['┌──┐', '│##│', '└──┘'], iconRole: 'ui.accent' };
+    if (n.grants.threat) return n.id === 'endless' ? { icon: [' oo ', 'o  o', ' oo '], iconRole: 'enemy.fast' } : { icon: ['\\!!/', ' !! ', '/!!\\'], iconRole: 'enemy.fast' };
+    if (n.grants.oreTier) return { icon: ['.o.o', 'o.o.', '.o.o'], iconRole: n.grants.oreTier >= 3 ? 'rarity.epic' : 'rarity.rare' };
+    return { icon: ['┌┬┬┐', '├┼┼┤', '└┴┴┘'], iconRole: 'terrain.ore.lit' };
+  };
   // Encounter cards (feedback 2026-09-08, item 3: "how to play should be part
   // of the actual gameplay, with relevant cards popping up"): the first time
   // a kind of enemy walks in sight, a kind of tower stands, a chest surfaces
@@ -771,25 +793,32 @@ async function main(): Promise<void> {
           ],
           // The purse in the frame's bottom band (feedback item 1: "I don't see how much ore I actually have").
           keys: [{ key: 'ORE', does: `${ore[0]} tier 1 \u2802 ${ore[1]} tier 2 \u2802 ${ore[2]} tier 3` }, { key: 'Esc', does: 'back' }],
-          columns: BRANCHES.filter((b) => b.id !== 'tiles').map((b) => {
-            const nodes = branchNodes(TREE, b.id as TreeNode['branch']);
-            return {
-              heading: `${b.label} ${nodes.filter((n) => meta.unlocks.includes(n.id)).length}/${nodes.length}`,
-              items: nodes.map((n, i) => {
+          // The tree as plates with sprites (feedback 2026-09-08, item 5): a
+          // row per branch, chains of plates linked by a rail where a node
+          // hangs from the one before it, the tower's own sprite or a relic
+          // icon inside, the price under.
+          tree: {
+            rows: BRANCHES.filter((b) => b.id !== 'tiles').map((b) => {
+              const nodes = branchNodes(TREE, b.id as TreeNode['branch']);
+              const chains: { plates: import('@ascii-defense/view').TreePlate[] }[] = [];
+              for (const n of nodes) {
                 const why = whyNot(TREE, meta, meta.ore, n.id);
                 const bought = meta.unlocks.includes(n.id);
-                const prev = nodes[i - 1];
-                return {
+                const plate: import('@ascii-defense/view').TreePlate = {
                   id: `node:${n.id}`,
-                  label: n.name,
-                  note: bought ? 'BOUGHT' : why === null ? (workshopFocus === n.id ? 'BUY' : `${n.cost.ore} t${n.cost.tier}`) : why.startsWith('needs') && !why.includes('ore') ? 'locked' : `${n.cost.ore} t${n.cost.tier}`,
-                  link: prev !== undefined && (n.requires ?? []).includes(prev.id),
+                  name: TREE_SHORT[n.id] ?? n.name,
+                  note: bought ? 'BOUGHT' : why === null ? (workshopFocus === n.id ? 'click: BUY' : `${n.cost.ore} ore t${n.cost.tier}`) : why.startsWith('needs') && !why.includes('ore') ? 'locked' : `${n.cost.ore} ore t${n.cost.tier}`,
+                  state: bought ? 'bought' : why === null ? 'open' : 'locked',
                   selected: workshopFocus === n.id,
-                  tone: bought ? 'rarity.legendary' : why === null ? undefined : 'ui.dim',
+                  ...treeIcon(n),
                 };
-              }),
-            };
-          }),
+                const req = (n.requires ?? []).find((r) => nodes.some((x) => x.id === r));
+                const chain = req ? chains.find((c) => c.plates[c.plates.length - 1].id === `node:${req}`) : undefined;
+                if (chain) chain.plates.push(plate); else chains.push({ plates: [plate] });
+              }
+              return { heading: `${b.label} ${nodes.filter((n) => meta.unlocks.includes(n.id)).length}/${nodes.length}`, chains, big: b.id === 'arsenal' };
+            }),
+          },
           items: [
             { id: 'br:tiles', label: 'TILES', note: `${smith.owned}/${smith.total} owned >` },
             { id: 'history', label: 'RUN HISTORY', note: `${meta.history.length} runs` },

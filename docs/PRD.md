@@ -1594,6 +1594,26 @@ PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
 enemy not yet met is a `???` page that says when it walks; a tower or
 relic the tree has not opened stays LOCKED with what opens it, as before.
 
+## 22. The tree drawn as a tree *(Daniil, 2026-09-08, item 5; session 33, PR 5)*
+
+"The tech tree needs to actually visually look like a tree, with sprites
+for the things you buy, not just text boxes. Visual language needs to be
+appealing as well."
+
+**Built.** The workshop's page draws the tree as rows of PLATES
+(`view/screens/treePlates.ts`): a row per branch; in a row, chains of
+plates linked left to right by a rail where a node hangs from the one
+before it (Damage ─ Kinetic ─ Energy; Slots 8 ─ 10 ─ 12; Grim ─ Endless;
+Rich vein ─ Mother lode); a plate is a single-line ring in the state's
+colour - gold with diamond corners when bought, the accent when it can be
+bought now, dim when it cannot - around the thing it buys: the tower's own
+8×5 sprite in the arsenal's big plates, the branch's first relic icon (4×3)
+in the reliquary's, a drawn glyph icon for slots, tile slots, Grim,
+Endless, the vein tiers and the tile node; the name and the price (or
+BOUGHT, or "locked") under it; the focused plate breathes; the keyboard's
+cursor lands on plates in draw order. The first click still reads the node
+into the body, the second buys. The purse stays in the title band.
+
 ## 21. The creative page *(Daniil, 2026-09-08, item 10; session 33, PR 3)*
 
 "We're getting to a point where I need a debug mode, where I can toggle
