@@ -2003,6 +2003,16 @@ export class Sim {
     return this.opts.enemyDefs[this.enemyDefIdx[slot]];
   }
 
+  /** The way a body walks (0 N, 1 E, 2 S, 3 W): the front shield's plank faces it (session 32, PR 3). */
+  enemyFacing(slot: number): number {
+    return this.walkDir[slot];
+  }
+
+  /** Ticks since a body was last hit: a sprinter runs once this passes its threshold (session 32, PR 3). */
+  enemyUnhitTicks(slot: number): number {
+    return this.tickCount - this.lastHit[slot];
+  }
+
   aliveCount(): number {
     let n = 0;
     for (let i = 0; i < this.enemyHigh; i++) n += this.alive[i];

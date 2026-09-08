@@ -50,6 +50,7 @@ import {
   resolveUnlocks,
   relicApplies,
   relicEffectsAt,
+  TRAIT_RULES,
  effectiveStats, DAMAGE_TYPES } from '@ascii-defense/engine';
 import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
@@ -295,12 +296,17 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       const owner = s.towers[s.projTowerIdx[i]];
       projectiles.push({ x: s.projX[i], y: s.projY[i], vx: s.projVX[i], vy: s.projVY[i], kind: owner ? s.towerDef(owner).id : '', k: i });
     }
-    const enemies: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean; frozen: boolean; burning: boolean; slows: number; k: number; g: number }[] = [];
+    const enemies: { x: number; y: number; id: string; hp01: number; shielded: boolean; slowed: boolean; frozen: boolean; burning: boolean; slows: number; k: number; g: number; m?: string; f?: number }[] = [];
     for (let i = 0; i < s.posX.length; i++) {
       if (!s.alive[i]) continue;
       const statuses = s.enemyStatuses(i);
+      const edef = s.enemyDefOf(i);
+      // The trait's mark (session 32, PR 3): the state that matters now, one letter.
+      const tr = edef.traits ?? [];
+      const mark = s.burrowLeft[i] > 0 ? 'b' : tr.includes('charge') && s.spawnHp[i] > 0 && s.hp[i] / s.spawnHp[i] < TRAIT_RULES.charge.below ? 'c' : tr.includes('sprint') && s.enemyUnhitTicks(i) > TRAIT_RULES.sprint.unhitTicks ? 's' : tr.includes('heal') ? 'h' : tr.includes('bulwark') ? 'w' : tr.includes('frontshield') ? 'p' : undefined;
       enemies.push({
-        x: s.posX[i], y: s.posY[i], id: s.enemyDefOf(i).id, k: i, g: s.enemyGen(i),
+        ...(mark ? { m: mark } : {}), ...(mark === 'p' ? { f: s.enemyFacing(i) } : {}),
+        x: s.posX[i], y: s.posY[i], id: edef.id, k: i, g: s.enemyGen(i),
         hp01: s.spawnHp[i] > 0 ? s.hp[i] / s.spawnHp[i] : 1,
         shielded: s.shield[i] > 0,
         slowed: s.slowTicks[i] > 0,
@@ -509,6 +515,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             canCall: s.canCallWave(),
             callBonus: s.callBonus(),
             waiting: s.waitingForCall(),
+            // How the packs walk (session 32, PR 3): counted by formation, in the composer's order of first appearance.
+            formations: (() => { const out: { name: string; n: number }[] = []; for (const k of p.packs) { const f = out.find((o) => o.name === k.formation); if (f) f.n++; else out.push({ name: k.formation, n: 1 }); } return out; })(),
           };
         })(),
         gameOver: s.status === 'lost',

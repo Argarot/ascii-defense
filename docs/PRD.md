@@ -1017,6 +1017,18 @@ cells are hashed. Placeholder sprites from the generator, each drawn as
 its rule (a mole under a mound, a pavise behind its plank), until the art
 agent's studies replace them.
 
+**Counter legibility (session 32, PR 3).** Every rule shows where it
+acts: on the body (a burrowed mole is a mound `_^_` with nothing to
+shoot; a mender wears a cross; the Warden wears braces; a charging ram a
+`>>` trail; a sprinting courser a `~`; a pavise its plank on the side it
+faces), in the strip's NOW and NEXT (a word per trait when the row has
+room, a two-glyph mark when it has not - `/2 ++ __ >! [| ~> {}` - and a
+line under NEXT saying how the packs walk: "2 wedges ⠂ 1 wall"), and in
+the column under the next wave's composition, **the answer**: the first
+kind with a trait and what answers it ("pavise: flank it from beside the
+road"; `view/hud/traitAnswers.ts` is the one table). The tutorial's NEXT
+step says so. The codex's trait legend carries the same answers.
+
 ### 9.2 Wave tempo *(Daniil, design round 1, 2026-09-03 — D17)*
 
 The wave clock runs **from one launch to the next** and never waits for the

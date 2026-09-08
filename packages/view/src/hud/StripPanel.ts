@@ -44,6 +44,13 @@ const TRAIT_WORD: Record<string, string> = {
   shielded: 'shielded',
   fast: 'fast',
   swarm: 'swarm x3',
+  split: 'splits',
+  heal: 'mends',
+  burrow: 'burrows',
+  charge: 'charges',
+  frontshield: 'front shield',
+  sprint: 'sprints',
+  bulwark: 'bulwark',
   'resists-kinetic': 'resists kinetic',
   'resists-energy': 'resists energy',
   'weak-kinetic': 'weak to kinetic',
@@ -55,6 +62,13 @@ const TRAIT_MARK: Record<string, string> = {
   shielded: '()',
   fast: '>>',
   swarm: 'x3',
+  split: '/2',
+  heal: '++',
+  burrow: '__',
+  charge: '>!',
+  frontshield: '[|',
+  sprint: '~>',
+  bulwark: '{}',
   'resists-kinetic': 'K-',
   'resists-energy': 'E-',
   'weak-kinetic': 'K+',
@@ -196,6 +210,10 @@ export class StripPanel {
         term.write(nx, 2 + i, line, text);
         term.write(nx + KIND_W, 2 + i, traitText(k.traits ?? [], colW - KIND_W - 1), dim);
       });
+      // The formations (session 32, PR 3): how the packs walk, under the kinds, when a row is free.
+      const fr = nw.formations ?? [];
+      const row = 2 + Math.min(nw.kinds.length, H - 2);
+      if (fr.length > 0 && row < H - 1) term.write(nx, row, fr.map((f) => `${f.n} ${f.name}${f.n === 1 ? '' : 's'}`).join(' \u2802 ').slice(0, colW - 1), role('ui.accent'));
     } else {
       term.write(nx, 1, 'NEXT', dim);
       term.write(nx, 2, 'the last wave is out', dim);

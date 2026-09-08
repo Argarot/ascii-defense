@@ -14,6 +14,7 @@ import type { Sprite } from '@ascii-defense/content';
 import { drawRelicPlate, RELIC_PLATE_W } from '../board/relicPlate';
 import { FACING_NAME, PRIORITIES, type Priority } from '@ascii-defense/engine';
 import { role, rarityRole } from '../palette';
+import { waveAnswer } from './traitAnswers';
 
 export interface HudChoiceInfo {
   name: string;
@@ -92,7 +93,7 @@ export interface HudState {
    * `canCall` = the current wave has finished spawning, `callBonus` = Scrap
    * for calling now. null once the final wave is out.
    */
-  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number; traits?: readonly string[] }[]; canCall: boolean; callBonus: number; waiting: boolean } | null;
+  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number; traits?: readonly string[] }[]; canCall: boolean; callBonus: number; waiting: boolean; /** How the packs walk (session 32, PR 3). */ formations?: readonly { name: string; n: number }[] } | null;
   /** The strip (4.27): every tower in the roster, whether the player can pay and whether it fits the selected tile. */
   roster?: readonly { id: string; name: string; short?: string; cost: number; affordable: boolean; buildable: boolean }[];
   /** The strip: alive enemies by kind, with each kind's traits. */
@@ -371,6 +372,9 @@ export class HudPanel {
       term.write(0, y++, head, nw.boss ? role('enemy.fast') : role('ui.text'));
       // Three lines for the composition (session 31: two cut "2 shellback" to "2 shellb" on a five-kind wave).
       for (const line of this.wrap(kinds, W, 3)) term.write(0, y++, line, role('ui.dim'));
+      // The answer (session 32, PR 3): the first kind with a trait, and what answers it.
+      const answer = waveAnswer(nw.kinds);
+      if (answer) for (const line of this.wrap(answer, W, 2)) term.write(0, y++, line, role('ui.accent'));
       const label = nw.waiting ? `CALL WAVE 1` : nw.canCall ? `CALL WAVE ${nw.wave} +${nw.callBonus} scrap` : 'wave still arriving';
       this.button(0, y, W - 4, label, nw.canCall ? role('ui.bg') : role('ui.dim'), nw.canCall ? role('ui.accent') : role('ui.grid'));
       if (nw.canCall) this.regions.push({ row: y, x0: 0, x1: W - 4, action: { kind: 'callWave' } });
