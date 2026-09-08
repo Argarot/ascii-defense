@@ -77,7 +77,10 @@ describe('the balance lab (session 12 gate)', () => {
     // Core at the edge (session 24): every lane now shares the tail past
     // the root, so towers there see every enemy and contention grows again.
     // The mixed-build lab (session 24, PR 4) is the ruler that replaces this.
-    expect(Math.abs(pred.deathWave! - report.deathWave!)).toBeLessThanOrEqual(8);
+    // Widened 8 to 10 with packs and formations (session 32, PR 2): a wall puts a
+    // whole pack in a tower's range at once, the contention term the model has
+    // never had; the register says only the headless runner is trusted.
+    expect(Math.abs(pred.deathWave! - report.deathWave!)).toBeLessThanOrEqual(10);
   });
 
   it('a stronger build strictly outlives a weaker one under the same curve', () => {

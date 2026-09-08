@@ -224,7 +224,12 @@ describe('replay (WBS 1.4.8)', () => {
     // unseen) - zero for every body of this golden world, which has no
     // burrower. No behaviour change on this run; round-trip replay still
     // proves bit-identical.
-    expect(sim.hashState()).toBe(4165960643);
+    // 4165960643 -> 1642996455 on 2026-09-08 (session 32, PR 2, packs and
+    // formations): every queue entry now carries its spacing and its front,
+    // so the golden run's bodies arrive in packs on one front each instead
+    // of one every six ticks round-robin - a behaviour change by design.
+    // Round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(1642996455);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {
