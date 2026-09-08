@@ -8,6 +8,7 @@ import { computeFlowField } from './flow';
 import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, bossHpMul, ARMOR_FLOOR, BOSS_HP_MUL, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
 import { effectiveStats, relicDescAt } from './defs';
 import { TRAIT_RULES, frontShieldMul, traitSpeedMul } from './traits';
+import { FORMATIONS, queueDef, queueFront, queueGap, queueBoss } from './sim';
 import type { EnemyDef, RecipeDef, RelicDef, SetDef, TowerDef } from './defs';
 
 const g = (...rows: string[]): string[] => rows;
@@ -1331,7 +1332,11 @@ describe('wave tempo and traits (design round 1, 2026-09-03)', () => {
     const { simOpts } = makeWorld(61, { mode: 'waves', coreHp: 100000, enemyDefs: [swarm] });
     const sim = new Sim(61, simOpts);
     const preview = sim.nextWavePreview()!;
-    expect(preview.kinds[0].count).toBe(waveCount(DEFAULT_DIFFICULTY, 1) * 3);
+    // Since session 32 (PR 2) a swarm entry counts its three bodies toward the count: the wave is the count in BODIES, to a pack's overshoot.
+    const count = waveCount(DEFAULT_DIFFICULTY, 1);
+    expect(preview.kinds[0].count).toBeGreaterThanOrEqual(count);
+    expect(preview.kinds[0].count).toBeLessThanOrEqual(count + 2);
+    expect(preview.kinds[0].count % 3).toBe(0);
     sim.callWave();
     let guard = 0;
     while (sim.spawnRemaining() > 0 && guard++ < 1000) sim.tick();
@@ -1834,10 +1839,12 @@ describe('session 31, PR 2 - the early game', () => {
       const sim = new Sim(53, { ...simOpts, mode: 'waves', firstWaveWaits: true, enemyDefs: [WALKER, late], towerDefs: [BOLT], difficulty: { ...DEFAULT_DIFFICULTY, unlockDelay: delay } });
       return (sim as unknown as { composeWave(w: number): number[] }).composeWave(w);
     };
-    const hasLate = (q: number[]): boolean => q.some((x) => (x & ~(1 << 8)) === 1); // the boss flag is bit 8
-    expect(hasLate(compose(0, 4))).toBe(true);
-    expect(hasLate(compose(2, 4))).toBe(false);
-    expect(hasLate(compose(2, 6))).toBe(true);
+    // Read through the boss of a boss wave (session 32: waves compose from a few packs, so the escort's kinds are a roll; the boss pick is not).
+    const bossDef = (q: number[]): number => queueDef(q.find((x) => queueBoss(x))!);
+    expect(bossDef(compose(0, 5))).toBe(1); // late is unlocked at 4 and is the heaviest
+    expect(bossDef(compose(2, 5))).toBe(0); // delayed to 6: the walker is the boss
+    expect(bossDef(compose(2, 10))).toBe(1);
+    expect(compose(2, 4).some((x) => queueDef(x) === 1)).toBe(false); // and never in the escort before its wave
   });
 });
 
@@ -2006,7 +2013,60 @@ describe('Enemies II (session 32, PR 1) - seven bodies, each a rule', () => {
     const BOSS = 1 << 8; // BOSS_QUEUE_FLAG
     const escort = q.filter((e) => (e & BOSS) === 0);
     expect(escort.length).toBeGreaterThan(0);
-    expect(escort.every((e) => e === 0)).toBe(true);
-    expect(q.some((e) => (e & BOSS) !== 0 && (e & ~BOSS) === 1)).toBe(true);
+    expect(escort.every((e) => queueDef(e) === 0)).toBe(true);
+    expect(q.some((e) => (e & BOSS) !== 0 && queueDef(e) === 1)).toBe(true);
+  });
+});
+
+describe('packs and formations (session 32, PR 2)', () => {
+  type Priv = { composeWave(w: number): number[] };
+  const world = (seed: number, defs: EnemyDef[]) => {
+    const { simOpts } = makeWorld(seed, {});
+    const sim = new Sim(seed, { ...simOpts, mode: 'waves', firstWaveWaits: true, interWaveTicks: 100000, enemyDefs: defs, towerDefs: [BOLT] });
+    return { sim, priv: sim as unknown as Priv, entries: simOpts.map.entries.length };
+  };
+  const GRUNT: EnemyDef = { ...WALKER, id: 'grunt', hp: 30 };
+  const SWARM: EnemyDef = { ...WALKER, id: 'swarmling', hp: 6, minWave: 3, traits: ['swarm'] };
+  const HEAVY: EnemyDef = { ...WALKER, id: 'husk', hp: 160, minWave: 6 };
+
+  it('a wave is packs of one kind on one front, and its bodies fill the count (a swarm counts its pack)', () => {
+    for (const seed of [11, 12, 13, 14]) {
+      const { priv } = world(seed, [GRUNT, SWARM, HEAVY]);
+      for (const w of [1, 5, 12, 30]) {
+        const q = priv.composeWave(w).filter((e) => !queueBoss(e));
+        const count = waveCount(DEFAULT_DIFFICULTY, w);
+        const bodies = q.reduce((n, e) => n + ([GRUNT, SWARM, HEAVY][queueDef(e)].traits?.includes('swarm') ? 3 : 1), 0);
+        expect(bodies).toBeGreaterThanOrEqual(count);
+        expect(bodies).toBeLessThanOrEqual(count + 2);
+        // Every entry carries a spacing; a pack is a run of one def on one front.
+        for (const e of q) expect(queueGap(e)).toBeGreaterThan(0);
+        if (w < FORMATIONS.wedge.fromWave) for (const e of q) expect([FORMATIONS.column.gap, FORMATIONS.column.after]).toContain(queueGap(e));
+      }
+    }
+  });
+
+  it('later waves wear wedges and walls; the boss comes last after a beat', () => {
+    let walls = 0;
+    let wedges = 0;
+    for (const seed of [21, 22, 23, 24, 25]) {
+      const { priv } = world(seed, [GRUNT, SWARM, HEAVY]);
+      const q = priv.composeWave(10);
+      for (const e of q) { if (queueGap(e) === FORMATIONS.wall.gap) walls++; if (queueGap(e) === FORMATIONS.wedge.gap) wedges++; }
+      expect(queueBoss(q[q.length - 1])).toBe(true);
+      expect(queueGap(q[q.length - 2])).toBe(30); // the beat before the boss
+      expect(queueFront(q[q.length - 1])).toBe(0);
+    }
+    expect(walls).toBeGreaterThan(0);
+    expect(wedges).toBeGreaterThan(0);
+  });
+
+  it('the preview names the packs and their formations', () => {
+    const { sim } = world(31, [GRUNT, SWARM, HEAVY]);
+    const p = sim.nextWavePreview()!;
+    expect(p.packs.length).toBeGreaterThan(0);
+    expect(p.packs.reduce((n, k) => n + k.size, 0)).toBe(p.kinds.reduce((n, k) => n + k.count, 0));
+    expect(p.packs.length).toBeLessThan(p.kinds.reduce((n, k) => n + k.count, 0)); // packs, not one body each
+    expect(p.packs.some((k) => k.size >= 3)).toBe(true);
+    for (const k of p.packs) expect(['column', 'wedge', 'wall']).toContain(k.formation);
   });
 });

@@ -1030,6 +1030,21 @@ for the call**: a fresh map deserves a look before the first front opens.
 and shown by kind and count, so "which tower answers this" is a decision
 made with the information it needs.
 
+**Packs and formations (session 32, PR 2).** A wave is composed from
+**packs** - one kind, one front, one formation - until its count of BODIES
+is filled (a swarm entry counts its three; `countMax` is a ceiling on
+bodies now). A **formation** is the spacing of a pack's bodies and the
+pause after it: a **column** walks one body every six ticks (the old
+cadence, every wave); a **wedge** (from wave 4) is a lead body then a burst
+two ticks apart, then a long pause; a **wall** (from wave 8) is the whole
+pack a tick apart, then a longer pause. A heavy kind (100 hp and up) walks
+in half packs. The boss walks the first front after a beat of a second and
+a half, the escort ahead of it. Every queue entry carries its def, its
+spacing and its front (a resumed save's bare entries walk the old way), and
+the preview names the packs (`nextWavePreview().packs`) for the strip. So
+wave 10 reads unlike wave 5 by shape: a wall of rams on one front and a
+wedge of coursers on another, not eighteen bodies round-robin.
+
 **The early game, measured (session 31, PR 2;
 docs/lab/base-sweep-2026-09-07.md).** Every level carries its own curve
 (`THREAT_LEVELS[].difficulty`): Calm grows hp 8% a wave and ×1.03, six

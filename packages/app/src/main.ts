@@ -1541,6 +1541,7 @@ async function main(): Promise<void> {
     chests: () => debug('chests'),
     surfaceChest: (x: number, y: number, rarity = 0) => debug('surfaceChest', x, y, rarity),
     killAll: () => debug('killAll'),
+    preview: () => debug('preview'),
     choose: (x: number, y: number, tier: number, option: number) => debug('choose', x, y, tier, option),
     sell: (x: number, y: number) => debug('sell', x, y),
     stats: (x: number, y: number) => debug('stats', x, y),

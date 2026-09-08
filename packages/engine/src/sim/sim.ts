@@ -122,7 +122,8 @@ export interface DifficultySpec {
    * The most bodies one wave may hold (session 31): the count grows
    * linearly and an endless run past wave 40 was composing waves of 160
    * that took longer to walk in than the clock between them. Past the
-   * ceiling the ramp is the hp curve's alone. Absent = no ceiling.
+   * ceiling the ramp is the hp curve's alone. Absent = no ceiling. Since
+   * session 32 a swarm entry counts its three bodies toward it.
    */
   countMax?: number;
 }
@@ -295,6 +296,46 @@ export const BOSS_BOUNTY_MUL = 5;
 export const BOSS_DAMAGE_MUL = 3;
 /** Queue encoding: a boss entry is its defIdx OR this flag. */
 const BOSS_QUEUE_FLAG = 1 << 8;
+/**
+ * A queue entry (session 32, PR 2 - packs and formations): the def index in
+ * the low byte, the boss flag at bit 8, the ticks to wait AFTER this body
+ * before the next in bits 9-15 (0 = the default cadence), and the front the
+ * body walks in from in bits 16-19 (an index into the wave's entries) - so a
+ * pack walks ONE front, and a formation is the spacing of its bodies.
+ */
+const QUEUE_DEF_MASK = 0xff;
+const QUEUE_GAP_SHIFT = 9;
+const QUEUE_GAP_MASK = 0x7f;
+const QUEUE_FRONT_SHIFT = 16;
+const QUEUE_FRONT_MASK = 0xf;
+const DEFAULT_SPAWN_GAP = 6;
+export function queueEntry(defIdx: number, boss: boolean, gap: number, front: number): number {
+  return (defIdx & QUEUE_DEF_MASK) | (boss ? BOSS_QUEUE_FLAG : 0) | ((gap & QUEUE_GAP_MASK) << QUEUE_GAP_SHIFT) | ((front & QUEUE_FRONT_MASK) << QUEUE_FRONT_SHIFT);
+}
+export function queueDef(q: number): number { return q & QUEUE_DEF_MASK; }
+export function queueGap(q: number): number { return (q >>> QUEUE_GAP_SHIFT) & QUEUE_GAP_MASK; }
+export function queueFront(q: number): number { return (q >>> QUEUE_FRONT_SHIFT) & QUEUE_FRONT_MASK; }
+export function queueBoss(q: number): boolean { return (q & BOSS_QUEUE_FLAG) !== 0; }
+
+/**
+ * Formations (session 32, PR 2): a pack is one kind walking one front; its
+ * formation is the spacing of its bodies - a COLUMN one every six ticks (the
+ * old cadence), a WEDGE a lead then a burst, a WALL all at once - and the
+ * pause after it. Waves compose from packs, the boss behind on a long beat,
+ * so wave 10 reads unlike wave 5 by shape, not only by count. A body counts
+ * as one toward the wave's count; a swarm entry counts its pack.
+ */
+export const FORMATIONS = {
+  column: { fromWave: 1, gap: 6, after: 6, size: [3, 5] },
+  wedge: { fromWave: 4, gap: 2, after: 18, size: [3, 6] },
+  wall: { fromWave: 8, gap: 1, after: 24, size: [4, 6] },
+} as const;
+export type FormationName = keyof typeof FORMATIONS;
+const FORMATION_NAMES = Object.keys(FORMATIONS) as FormationName[];
+/** A heavy kind walks in half packs: hp at or above this splits the size. */
+const HEAVY_HP = 100;
+/** The beat before the boss, in ticks. */
+const BOSS_BEAT = 30;
 
 export interface Tower {
   cellX: number;
@@ -1926,20 +1967,32 @@ export class Sim {
   }
 
   /** What the next wave holds, for the HUD (composed one wave ahead). */
-  nextWavePreview(): { wave: number; boss: boolean; kinds: { id: string; count: number }[] } | null {
+  nextWavePreview(): { wave: number; boss: boolean; kinds: { id: string; count: number }[]; packs: { id: string; size: number; formation: FormationName; front: number }[] } | null {
     if (this.mode !== 'waves' || this.lastWaveLaunched()) return null;
     const counts = new Map<number, number>();
     let boss = false;
+    const packs: { id: string; size: number; formation: FormationName; front: number }[] = [];
+    let run: { id: string; size: number; formation: FormationName; front: number } | null = null;
     for (const q of this.nextQueue) {
-      if ((q & BOSS_QUEUE_FLAG) !== 0) { boss = true; continue; }
-      counts.set(q, (counts.get(q) ?? 0) + 1);
+      if (queueBoss(q)) { boss = true; continue; }
+      const idx = queueDef(q);
+      counts.set(idx, (counts.get(idx) ?? 0) + 1);
+      // Packs (session 32, PR 2): a run of one kind on one front; its formation read from the spacing.
+      const def = this.opts.enemyDefs[idx];
+      const gap = queueGap(q);
+      const formation: FormationName = gap === FORMATIONS.wall.gap || gap === FORMATIONS.wall.after ? 'wall' : gap === FORMATIONS.wedge.gap || gap === FORMATIONS.wedge.after ? 'wedge' : 'column';
+      const per = hasTrait(def, 'swarm') ? TRAIT_RULES.swarm.packSize : 1;
+      if (run && run.id === def.id && run.front === queueFront(q)) run.size += per;
+      else { run = { id: def.id, size: per, formation, front: queueFront(q) }; packs.push(run); }
+      // A pack ends on its longer gap: the next body, even of the same kind on the same front, starts a new pack.
+      if (gap !== FORMATIONS[formation].gap) run = null;
     }
     const kinds: { id: string; count: number }[] = [];
     for (const [idx, n] of counts) {
       const def = this.opts.enemyDefs[idx];
       kinds.push({ id: def.id, count: n * (hasTrait(def, 'swarm') ? TRAIT_RULES.swarm.packSize : 1) });
     }
-    return { wave: this.wave + 1, boss, kinds };
+    return { wave: this.wave + 1, boss, kinds, packs };
   }
 
   static isBossWave(wave: number, finalWave: number): boolean {
@@ -2080,20 +2133,42 @@ export class Sim {
     // Unreachable given the constructor's minWave check (minWave never
     // rises mid-run), kept as the invariant's local witness.
     if (available.length === 0 || totalW <= 0) throw new Error(`wave ${w}: no enemy def is unlocked`);
+    // Packs and formations (session 32, PR 2): fill the count with packs, each
+    // one kind on one front in one formation; the boss behind on a beat.
     const queue: number[] = [];
-    for (let n = 0; n < count; n++) {
+    const fronts = Math.max(1, this.nextWaveEntries.length || this.opts.map.entries.length);
+    const open = FORMATION_NAMES.filter((f) => FORMATIONS[f].fromWave <= w);
+    let bodies = 0;
+    let packNo = 0;
+    while (bodies < count) {
       let roll = waves.int(0, totalW - 1);
       let pick = available[0].idx;
       for (const a of available) {
         if (roll < a.w) { pick = a.idx; break; }
         roll -= a.w;
       }
-      queue.push(pick);
+      const def = this.opts.enemyDefs[pick];
+      const formation = open[waves.int(0, open.length - 1)];
+      const spec = FORMATIONS[formation];
+      let size = waves.int(spec.size[0], spec.size[1]);
+      if (def.hp >= HEAVY_HP) size = Math.max(2, Math.floor(size / 2));
+      const per = hasTrait(def, 'swarm') ? TRAIT_RULES.swarm.packSize : 1;
+      // The last pack is cut to the count (a swarm entry may overshoot by its pack).
+      size = Math.max(1, Math.min(size, Math.ceil((count - bodies) / per)));
+      const front = packNo % fronts;
+      for (let n = 0; n < size; n++) {
+        const last = n === size - 1;
+        queue.push(queueEntry(pick, false, last ? spec.after : spec.gap, front));
+        bodies += per;
+      }
+      packNo++;
     }
     if (Sim.isBossWave(w, this.finalWave)) {
       let heavy = bossPool[0];
       for (const idx of bossPool) if (this.opts.enemyDefs[idx].hp > this.opts.enemyDefs[heavy].hp) heavy = idx;
-      queue.push(heavy | BOSS_QUEUE_FLAG);
+      // The boss walks the first front after a beat: the escort ahead of it, on purpose.
+      if (queue.length > 0) queue[queue.length - 1] = queueEntry(queueDef(queue[queue.length - 1]), false, BOSS_BEAT, queueFront(queue[queue.length - 1]));
+      queue.push(queueEntry(heavy, true, DEFAULT_SPAWN_GAP, 0));
     }
     return queue;
   }
@@ -2128,11 +2203,13 @@ export class Sim {
     // The clock runs from the previous launch, whoever is still walking.
     if (this.waveTimer > 0 && --this.waveTimer === 0) this.launchWave();
     if (this.spawnQueue.length > 0 && --this.intraTimer <= 0) {
-      this.intraTimer = 6;
       const q = this.spawnQueue.shift()!;
-      const defIdx = q & ~BOSS_QUEUE_FLAG;
-      const entry = this.waveEntries[(this.spawned + this.wave) % this.waveEntries.length];
-      const boss = (q & BOSS_QUEUE_FLAG) !== 0;
+      // The entry carries its own spacing and front (session 32, PR 2); a bare index (an old save's queue) walks the old way.
+      const gap = queueGap(q);
+      this.intraTimer = gap > 0 ? gap : DEFAULT_SPAWN_GAP;
+      const defIdx = queueDef(q);
+      const entry = this.waveEntries[gap > 0 ? queueFront(q) % this.waveEntries.length : (this.spawned + this.wave) % this.waveEntries.length];
+      const boss = queueBoss(q);
       // Swarm (traits.ts): one queue entry, a pack of bodies from one entry.
       const pack = hasTrait(this.opts.enemyDefs[defIdx], 'swarm') ? TRAIT_RULES.swarm.packSize : 1;
       for (let n = 0; n < pack; n++) {
