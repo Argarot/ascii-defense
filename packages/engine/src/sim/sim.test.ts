@@ -2096,3 +2096,25 @@ describe('feedback 2026-09-08', () => {
     expect(sim.events.filter((e) => e.kind === 'heal').length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('feedback 2026-09-08, item 10: the creative verbs', () => {
+  it('spawn a kind, give Scrap and Ore, grant a relic at a rarity - none of them recorded', () => {
+    const { simOpts } = makeWorld(53, {});
+    const RELICS: RelicDef[] = [{ id: 'a', name: 'A', kind: 'passive', rarity: 'common', desc: '', effects: { rangeAdd: 1 } }];
+    const MENDER: EnemyDef = { ...WALKER, id: 'mender', hp: 40, speed: 0.0001, traits: ['heal'] };
+    const sim = new Sim(53, { ...simOpts, mode: 'waves', firstWaveWaits: true, interWaveTicks: 100000, enemyDefs: [WALKER, MENDER], towerDefs: [BOLT], relicDefs: RELICS });
+    const inputsBefore = sim.inputs.length;
+    expect(sim.debugSpawn('mender')).toBe(true);
+    expect(sim.debugSpawn('nobody')).toBe(false);
+    expect(sim.aliveCount()).toBe(1);
+    expect(sim.enemyDefOf(0).id).toBe('mender');
+    const scrap = sim.scrap;
+    sim.debugGive('scrap', 100);
+    sim.debugGive('ore', 50, 2);
+    expect(sim.scrap).toBe(scrap + 100);
+    expect(sim.ore[2]).toBe(50);
+    expect(sim.debugGrantRelic('a', 2)).toBe(true);
+    expect(sim.heldRelicInfo()[0].rarity).toBe(2);
+    expect(sim.inputs.length).toBe(inputsBefore); // nothing recorded: a replay of such a run diverges, by design
+  });
+});

@@ -252,6 +252,7 @@ async function main(): Promise<void> {
   // draws it, MINT pays the shared price into the owned pool.
   const smithScreen = new SmithScreen();
   const DEV = new URLSearchParams(location.search).has('dev');
+  const ENEMY_POOL = CODEX.enemies; // the spawn column: every kind the codex knows
   const BLANK_TILE = ['GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG'];
   type SmithDeposit = { x: number; y: number; amount: number; tier?: number };
   type SmithBoon = { x: number; y: number; boon: 'range' | 'damage' | 'rate'; tier: 1 | 2 | 3 | 4 };
@@ -346,7 +347,7 @@ async function main(): Promise<void> {
   if (meta.settings.reducedMotion !== null) setReducedMotion(meta.settings.reducedMotion);
   setPaletteSet(meta.settings.palette);
 
-  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary' | 'workshop' | 'history' | 'smith' | 'card';
+  type Mode = 'title' | 'setup' | 'loadout' | 'howto' | 'settings' | 'playing' | 'paused' | 'summary' | 'workshop' | 'history' | 'smith' | 'card' | 'debug';
   // The workshop (session 29, PR 2; PRD sec 11): the tree's branches as
   // pages, banked Ore as the currency, a node bought with one click.
   type WorkshopPage = TreeNode['branch'] | 'tiles';
@@ -402,6 +403,17 @@ async function main(): Promise<void> {
     if (changed) saveMeta(meta);
   };
   let cardResumeSpeed = 1;
+  // The creative page (feedback 2026-09-08, item 10: "a debug mode where I
+  // can toggle researched stuff on and off, select specific relics and
+  // their rarity, spawn scrap and ore, spawn enemies of specific type").
+  // Never a player's surface: it opens from the pause menu behind ?dev or
+  // after Ctrl+Shift+D; everything it does goes through the debug verbs
+  // (never recorded inputs - a replay of such a run diverges, and the
+  // page says so).
+  let devUnlocked = DEV;
+  let debugRarity = 0;
+  let debugRelicPage = 0;
+  const DEBUG_RELICS_PER_PAGE = 14;
   // The keyboard on every page (session 31; WBS 4.24's other half): the
   // arrows walk the page's clickable rows, Enter clicks the one they are on;
   // the cursor resets when the page changes.
@@ -829,6 +841,45 @@ async function main(): Promise<void> {
         };
       case 'card':
         return cardQueue[0] ? { ...cardQueue[0], items: [{ id: 'card:ok', label: cardQueue.length > 1 ? `NEXT CARD (${cardQueue.length - 1} more)` : 'GOT IT' }] } : null;
+      case 'debug': {
+        const pool = RELIC_POOL.filter((r) => !r.fusionOnly);
+        const pages = Math.max(1, Math.ceil(pool.length / DEBUG_RELICS_PER_PAGE));
+        const rp = Math.min(debugRelicPage, pages - 1);
+        const shown = pool.slice(rp * DEBUG_RELICS_PER_PAGE, (rp + 1) * DEBUG_RELICS_PER_PAGE);
+        return {
+          title: 'DEBUG - CREATIVE',
+          body: [
+            'not a player\'s page: every verb here is unrecorded, so a replay of this run diverges from here on',
+            `scrap ${snap?.hud.scrap ?? 0} \u2802 ore ${(snap?.hud.oreTiers ?? [snap?.hud.ore ?? 0]).join(' / ')} \u2802 wave ${snap?.hud.wave ?? 0} \u2802 relics ${snap?.hud.relicCount ?? 0}`,
+            'TREE toggles take effect on the next run; the rest acts now',
+          ],
+          columns: [
+            { heading: 'PURSE', items: [
+              { id: 'dbg:scrap', label: '+100 scrap' }, { id: 'dbg:ore:0', label: '+50 tier-1 ore' }, { id: 'dbg:ore:1', label: '+50 tier-2 ore' }, { id: 'dbg:ore:2', label: '+50 tier-3 ore' },
+              { id: 'dbg:bank', label: '+100 banked ore, every tier', note: 'meta' },
+            ] },
+            { heading: 'BOARD', items: [
+              { id: 'dbg:kill', label: 'kill every body' }, { id: 'dbg:wave', label: 'call the next wave' }, { id: 'dbg:chest', label: 'surface a chest', note: RARITIES[debugRarity] },
+            ] },
+            { heading: 'SPAWN (at the first entry)', items: [
+              ...ENEMY_POOL.map((e) => ({ id: `dbg:spawn:${e.id}`, label: e.name })),
+              { id: 'dbg:boss', label: 'a BOSS of the heaviest kind', tone: 'enemy.fast' },
+            ] },
+            { heading: `RELICS - grant at ${RARITIES[debugRarity].toUpperCase()} (${rp + 1}/${pages})`, items: [
+              { id: 'dbg:rarity', label: 'rarity: ' + RARITIES[debugRarity], note: 'click to cycle' },
+              { id: 'dbg:rprev', label: '< prev', disabled: rp === 0 }, { id: 'dbg:rnext', label: 'next >', disabled: rp === pages - 1 },
+              ...shown.map((r) => ({ id: `dbg:grant:${r.id}`, label: r.name, note: r.rarity })),
+            ] },
+            { heading: 'TREE (meta, next run)', items: [
+              ...TREE.nodes.map((n) => ({ id: `dbg:node:${n.id}`, label: n.name, note: meta.unlocks.includes(n.id) ? 'ON' : 'off', tone: meta.unlocks.includes(n.id) ? 'rarity.legendary' : undefined })),
+              { id: 'dbg:all', label: 'everything ON' }, { id: 'dbg:none', label: 'everything off' },
+            ] },
+          ],
+          items: [{ id: 'back', label: 'BACK TO PAUSE' }],
+          keys: [{ key: 'Esc', does: 'back' }],
+          footer: 'Ctrl+Shift+D unlocks this page on a build without ?dev',
+        };
+      }
       case 'paused':
         return {
           title: 'PAUSED',
@@ -844,6 +895,7 @@ async function main(): Promise<void> {
             { id: 'howto', label: 'CODEX' },
             { id: 'settings', label: 'SETTINGS' },
             { id: 'abandon', label: 'SAVE & EXIT TO TITLE' },
+            ...(devUnlocked ? [{ id: 'debug', label: 'DEBUG - CREATIVE', tone: 'enemy.fast' }] : []),
           ],
         };
       case 'summary':
@@ -1039,6 +1091,14 @@ async function main(): Promise<void> {
       setupThreat = Number(id.slice('threat:'.length));
       return;
     }
+    if (id.startsWith('dbg:spawn:')) { void debug('spawn', id.slice('dbg:spawn:'.length), false); return; }
+    if (id.startsWith('dbg:grant:')) { void debug('grant', id.slice('dbg:grant:'.length), debugRarity); return; }
+    if (id.startsWith('dbg:node:')) {
+      const nid = id.slice('dbg:node:'.length);
+      meta.unlocks = meta.unlocks.includes(nid) ? meta.unlocks.filter((x) => x !== nid) : [...meta.unlocks, nid];
+      saveMeta(meta);
+      return;
+    }
     if (id.startsWith('br:')) {
       workshopBranch = id.slice('br:'.length) as WorkshopPage;
       return;
@@ -1125,7 +1185,7 @@ async function main(): Promise<void> {
       }
       case 'settings': settingsFrom = mode; mode = 'settings'; break;
       case 'howto': howtoFrom = mode; codexSection = 'basics'; codexPage = 0; mode = 'howto'; break;
-      case 'back': mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : mode === 'history' ? 'workshop' : 'title'; break;
+      case 'back': mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : mode === 'history' ? 'workshop' : mode === 'debug' ? 'paused' : 'title'; break;
       case 'workshop': mode = 'workshop'; break;
       case 'smith': if (smithOpen(TREE, meta.owned).open || DEV) { mode = 'smith'; smithNote = 'a blank tile: paint roads with the brushes, then MINT'; } break;
       case 'history': mode = 'history'; break;
@@ -1203,6 +1263,21 @@ async function main(): Promise<void> {
         break;
       }
       case 'resume': mode = 'playing'; send({ t: 'speed', idx: 0 }); send({ t: 'speed', idx: mirroredSpeed }); break;
+      case 'debug': mode = 'debug'; break;
+      case 'dbg:scrap': void debug('give', 'scrap', 100); break;
+      case 'dbg:ore:0': void debug('give', 'ore', 50, 0); break;
+      case 'dbg:ore:1': void debug('give', 'ore', 50, 1); break;
+      case 'dbg:ore:2': void debug('give', 'ore', 50, 2); break;
+      case 'dbg:bank': meta.ore = meta.ore.map((o) => o + 100); saveMeta(meta); break;
+      case 'dbg:kill': void debug('killAll'); break;
+      case 'dbg:wave': act({ k: 'callWave' }); break;
+      case 'dbg:chest': { const cm = currentMap; if (cm) { const spot = [...Array(cm.cellsH).keys()].flatMap((y) => [...Array(cm.cellsW).keys()].map((x) => ({ x, y }))).find((c) => tutCells[c.y * cm.cellsW + c.x] === 'G') ?? cm.entries[0]; if (spot) void debug('surfaceChest', spot.x, spot.y, debugRarity); } break; }
+      case 'dbg:boss': { const heavy = ENEMY_POOL.reduce((a, b) => (b.hp > a.hp ? b : a)); void debug('spawn', heavy.id, true); break; }
+      case 'dbg:rarity': debugRarity = (debugRarity + 1) % RARITIES.length; break;
+      case 'dbg:rprev': debugRelicPage = Math.max(0, debugRelicPage - 1); break;
+      case 'dbg:rnext': debugRelicPage += 1; break;
+      case 'dbg:all': meta.unlocks = TREE.nodes.map((n) => n.id); saveMeta(meta); break;
+      case 'dbg:none': meta.unlocks = []; saveMeta(meta); break;
       case 'card:ok':
         cardQueue.shift();
         if (cardQueue.length === 0 && mode === 'card') { mode = 'playing'; send({ t: 'speed', idx: cardResumeSpeed }); }
@@ -1373,6 +1448,7 @@ async function main(): Promise<void> {
   });
 
   window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) { e.preventDefault(); devUnlocked = !devUnlocked; return; }
     if (mode !== 'playing') {
       if (mode === 'smith') {
         if (e.key === 'Escape') smithAction('back');
@@ -1387,6 +1463,7 @@ async function main(): Promise<void> {
       }
       // Esc leaves every page (feedback 2026-09-08, item 1: "pressing esc does nothing" in the workshop).
       if (mode === 'card' && (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); menuAction('card:ok'); return; }
+      if (mode === 'debug' && e.key === 'Escape') { mode = 'paused'; return; }
       if (e.key === 'Escape' && (mode === 'paused' || mode === 'settings' || mode === 'howto' || mode === 'setup' || mode === 'loadout' || mode === 'workshop' || mode === 'history')) {
         const leavingPause = mode === 'paused';
         mode = mode === 'settings' ? settingsFrom : mode === 'howto' ? howtoFrom : mode === 'loadout' ? 'setup' : mode === 'history' ? 'workshop' : leavingPause ? 'playing' : 'title';
