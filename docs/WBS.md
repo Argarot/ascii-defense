@@ -534,7 +534,7 @@ Verified findings not yet fixed, most material first. Each is a candidate for a 
 - **Game rules in `app`**: `THREAT_LEVELS` with `hpGeometric`/`waveSeconds` in `protocol.ts`, `coreHp` and the difficulty literals in `workerRuntime.ts`; ARCHITECTURE puts those in content.
 - **`hashState` truncates fractional lanes** (`u32` on scrap/coreHp) — safe only while content keeps them integral (Bounty Board rounds for this reason).
 - **Terminals are created once per session** (`main.ts`): a save made for another board size is refused instead of the board being rebuilt on `ready`.
-- **The loadout picker draws tile previews at the 2× UI scale** (400×400 px each at 8×5): about three fit a page. A 1× preview surface inside the modal is the fix.
+- ~~**The loadout picker draws tile previews at the 2× UI scale**~~ *(session 33, PR #202: mini previews, one glyph a cell, a dozen a page.)*
 - **The lab's analytic model** knows nothing of volleys, pierce, min range or the wave clock; only the headless runner and the sweep are trusted.
 - **The lab's gate tolerance sits at 8 waves** after two geometry changes; the build sweep (2.36) is the ruler now and the analytic gate should be retired or re-derived.
 - **Entries are many on a filled board** (8–12 on 7×5): a knob question (`COVERAGE_TARGET`, `MAX_LANE_SHARE`, `EXTRA_WALKS`) for Daniil's playtest, not a defect.
@@ -592,6 +592,7 @@ withdrawn before it got an entry (PRD §14). Do not reuse any of these numbers.
 - [x] 4.20 *(session 18)* **Persistence** (PRD §15.2): meta state (Ore, unlocks, history, settings) in localStorage; run state as seed + input log (**a save IS a replay**). Schema versioned, migrate-or-say-so, never wipe silently.
 - [x] 4.21 *(session 18)* **Save export / import** — a file. Cheap, moves progress between machines, and gives us reproducible bug reports for free.
 - [~] 4.22 *(session 18: reduced motion, export/import, two-click wipe)* **Settings screen**. Remaining for session 22: colourblind palette, text scale, keybinds.
+- [x] 4.48 *(session 33, PR #202; PRD §25)* **Mini tile previews** (the plan's PR 3; the register's "2× tile previews"): the loadout and the shop draw tiles one glyph a cell, a dozen a page; the Smith keeps the board's scale.
 - [x] 4.47 *(session 33, PR #201; PRD §24)* **The multiset of copies** (the plan's PR 2; the register since session 29): a second and a third copy at a rising price, three at most; badges in the shop and the loadout; a click loads one more copy; the carve places every loaded copy; tests in the tree and the carve.
 - [x] 4.46 *(session 33, PR #200; PRD §23; docs/lab/tile-sweep-2026-09-08.md)* **The library's breadth** (the plan's "generator's hundred"): the enumerator finds every legal routing shape (nine on a 5×5 under the touching law; five new), names by family; forty fillers and twenty decorated roads; eighty-two tiles, ids stable, the tool idempotent; `map-sweep` as the guard (75 tile ids used where 15 were).
 - [x] 4.45 *(session 33, PR #199; PRD §22)* **The tree drawn as a tree** (feedback item 5): rows of ringed plates with the tower sprites and relic icons, chains linked by rails, the state in the ring's colour, the price under; `treePlates.ts` with its test; the workshop page uses it.

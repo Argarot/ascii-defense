@@ -20,6 +20,7 @@ export { SmithScreen, BRUSH_GRID, BRUSH_GLYPH, BRUSH_NAME } from './screens/Smit
 export { drawRelicPlate, RELIC_PLATE_W, RELIC_PLATE_H } from './board/relicPlate';
 export { TRAIT_ANSWER, waveAnswer } from './hud/traitAnswers';
 export { drawTree, treeSize, type TreeSpec, type TreeRow, type TreeChain, type TreePlate } from './screens/treePlates';
+export { drawMiniTile, MINI_GW, MINI_GH } from './screens/MenuScreen';
 export { drawPulseBox } from './board/tutorialBox';
 export type { GlyphRect } from './board/tutorialBox';
 export type { RelicPlateKind, RelicPlateOpts } from './board/relicPlate';

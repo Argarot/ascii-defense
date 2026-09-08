@@ -1594,6 +1594,15 @@ PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
 enemy not yet met is a `???` page that says when it walks; a tower or
 relic the tree has not opened stays LOCKED with what opens it, as before.
 
+## 25. Mini tile previews *(session 33, PR 8; the register's "2× tile previews")*
+
+The loadout and the shop drew tile previews at the board's scale - 40×25
+glyphs each at the 2× HUD scale, three to a page. They now draw **one
+glyph a cell**: the road as box-drawing, rock as `#`, ore as `o`, ground
+as a dot, in a 5×5 frame with the tile's badge on its top edge - a dozen
+a page, paged by the keyboard too. The board's scale stays for the Tile
+Smith, where the cells are edited.
+
 ## 24. The multiset of copies *(session 33, PR 7; the register since session 29)*
 
 The pool holds **the number of copies you actually own** (§11.1 said so
