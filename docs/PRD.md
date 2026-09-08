@@ -1594,6 +1594,19 @@ PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
 enemy not yet met is a `???` page that says when it walks; a tower or
 relic the tree has not opened stays LOCKED with what opens it, as before.
 
+## 23. The tile library's breadth *(session 33, PR 6; docs/lab/tile-sweep-2026-09-08.md)*
+
+The plan's "generator's hundred" met the one law: a 5×5 tile holds
+**nine** legal routing shapes once a road that touches itself is a
+special. The enumerator (`packages/harness/src/tilegen/generate.ts`)
+walks them all and names them by family (Lane, Bend, Dogleg, Staircase,
+Meander; Fork; Cross); the breadth is the land - forty fillers (scree,
+outcrops, veins with the ore inside the rock) and a decorated road for
+every routing shape - eighty-two tiles, ids stable, the tool idempotent,
+the map sweep (`tools/map-sweep.mjs`) the guard: forty seeds per Threat
+carve at the same coverage with seventy-five distinct tile ids instead of
+fifteen. The road's variety beyond that is the carve's and the specials'.
+
 ## 22. The tree drawn as a tree *(Daniil, 2026-09-08, item 5; session 33, PR 5)*
 
 "The tech tree needs to actually visually look like a tree, with sprites

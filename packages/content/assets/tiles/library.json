@@ -244,6 +244,721 @@
         "tier": 2,
         "ore": 50
       }
+    },
+    {
+      "id": "t_ns_2",
+      "cells": [
+        "GF-7G",
+        "G|G|G",
+        "-JGL-",
+        "GGGGG",
+        "GGGGG"
+      ],
+      "name": "Meander I"
+    },
+    {
+      "id": "t_ne_3",
+      "cells": [
+        "F--7G",
+        "|GG|G",
+        "|GGL-",
+        "L-7GG",
+        "GG|GG"
+      ],
+      "name": "Meander III"
+    },
+    {
+      "id": "t_ne_4",
+      "cells": [
+        "GF-7G",
+        "G|G|G",
+        "-JG|G",
+        "GGFJG",
+        "GG|GG"
+      ],
+      "name": "Meander IV"
+    },
+    {
+      "id": "t_ne_5",
+      "cells": [
+        "GGGGG",
+        "GF-7G",
+        "-JG|G",
+        "GGFJG",
+        "GG|GG"
+      ],
+      "name": "Meander V"
+    },
+    {
+      "id": "t_ne_6",
+      "cells": [
+        "GF-7G",
+        "FJG|G",
+        "|GGL-",
+        "L-7GG",
+        "GG|GG"
+      ],
+      "name": "Meander VI"
+    },
+    {
+      "id": "f_1",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGRRG",
+        "GRRRG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_2",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GRGRG",
+        "RRRRG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_3",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GRRGG",
+        "RRRRR",
+        "GRRRG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_4",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "ORGGR",
+        "RGGGO",
+        "RGGGR"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_5",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGOR",
+        "GGGRO"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_6",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GROGG",
+        "RORRG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_7",
+      "cells": [
+        "GGGGG",
+        "RRORG",
+        "GRRGG",
+        "GGGGG",
+        "GGGRR"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_8",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GRRRG",
+        "GROGG",
+        "GRRRG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_9",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "RRGGG",
+        "RORGG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_10",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGGR",
+        "GGGRR"
+      ],
+      "name": "Outcrop"
+    },
+    {
+      "id": "f_11",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGRG",
+        "GGRRG",
+        "GRRGG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_12",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGRR"
+      ],
+      "name": "Outcrop"
+    },
+    {
+      "id": "f_13",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGR",
+        "GGORR",
+        "GGROR"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_14",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GRRRG",
+        "RRRRG",
+        "RRGGG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_15",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGROG",
+        "GGRRR",
+        "GGORG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_16",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GRRGG",
+        "GGROR",
+        "GGRRG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_17",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "RRRGG",
+        "GRRRG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_18",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGRGG",
+        "GRORG",
+        "GGRRG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_19",
+      "cells": [
+        "GGGGG",
+        "GGRGG",
+        "GRRRG",
+        "GRRRO",
+        "GGROR"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_20",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GRGGG",
+        "RRRGG"
+      ],
+      "name": "Outcrop"
+    },
+    {
+      "id": "f_21",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGGR",
+        "GGGRO"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_22",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GRROG",
+        "ROORG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_23",
+      "cells": [
+        "GGGGG",
+        "GGGRG",
+        "GRRRR",
+        "RGROG",
+        "RGGGG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_24",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GRRGG",
+        "GGRRR",
+        "GGGGR"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_25",
+      "cells": [
+        "GGGGG",
+        "GGRGG",
+        "GRORG",
+        "GGRRG",
+        "GGGRG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_26",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGRG",
+        "GGROR"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_27",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "RRRGG",
+        "RRRRG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_28",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGGRR",
+        "GGGGG"
+      ],
+      "name": "Outcrop"
+    },
+    {
+      "id": "f_29",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGRGG",
+        "GGORG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_30",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGROG",
+        "GGGRG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_31",
+      "cells": [
+        "GGGGG",
+        "GGGRG",
+        "GGGOG",
+        "GGROR",
+        "RRGRG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_32",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGRG",
+        "RRORG",
+        "GGGGG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_33",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "RRGGG",
+        "GRGGG",
+        "GRORG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_34",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGRR",
+        "GGGRO",
+        "GGRRR"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_35",
+      "cells": [
+        "GGGGG",
+        "RORGG",
+        "ROGGR",
+        "GRGGR",
+        "GGGGR"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_36",
+      "cells": [
+        "GGGGR",
+        "GGRRR",
+        "RRRRR",
+        "RGGRG",
+        "RGGGG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_37",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GGRGG",
+        "GRORG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_38",
+      "cells": [
+        "GGGGG",
+        "GGGGR",
+        "GRRRR",
+        "GGRGR",
+        "GGGGG"
+      ],
+      "name": "Scree"
+    },
+    {
+      "id": "f_39",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGGG",
+        "GOORG",
+        "GRGGG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "f_40",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GRORR",
+        "GGGGR",
+        "GGGGG"
+      ],
+      "name": "Vein"
+    },
+    {
+      "id": "straightr1",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-----",
+        "GGGGG",
+        "GGROR"
+      ],
+      "name": "Lane I"
+    },
+    {
+      "id": "straightr2",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-----",
+        "GGGGG",
+        "GRROR"
+      ],
+      "name": "Lane II"
+    },
+    {
+      "id": "cornerr1",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "--7GR",
+        "GG|GR",
+        "GG|GR"
+      ],
+      "name": "Bend I"
+    },
+    {
+      "id": "cornerr2",
+      "cells": [
+        "GGRRG",
+        "GGGRO",
+        "--7GR",
+        "GG|GG",
+        "GG|GG"
+      ],
+      "name": "Bend II"
+    },
+    {
+      "id": "teer1",
+      "cells": [
+        "GGGRR",
+        "GGGGG",
+        "--X--",
+        "GG|GG",
+        "GG|GG"
+      ],
+      "name": "Fork I"
+    },
+    {
+      "id": "teer2",
+      "cells": [
+        "GGROR",
+        "GGGGG",
+        "--X--",
+        "GG|GG",
+        "GG|GG"
+      ],
+      "name": "Fork II"
+    },
+    {
+      "id": "scurver1",
+      "cells": [
+        "GGGGG",
+        "GF-7G",
+        "-JGL-",
+        "GGGGG",
+        "RORGG"
+      ],
+      "name": "Meander I"
+    },
+    {
+      "id": "scurver2",
+      "cells": [
+        "GGGGG",
+        "GF-7G",
+        "-JGL-",
+        "GGRGG",
+        "GGRGG"
+      ],
+      "name": "Meander II"
+    },
+    {
+      "id": "rock_cornerr1",
+      "cells": [
+        "GG|GG",
+        "RG|RR",
+        "--JGR",
+        "GGGRG",
+        "GGGOR"
+      ],
+      "name": "Bend III"
+    },
+    {
+      "id": "rock_cornerr2",
+      "cells": [
+        "GG|GG",
+        "RG|RR",
+        "--JGR",
+        "GGGOR",
+        "GGGRG"
+      ],
+      "name": "Bend IV"
+    },
+    {
+      "id": "t_ns_1r1",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-----",
+        "GGGGG",
+        "GGGRR"
+      ],
+      "name": "Lane III"
+    },
+    {
+      "id": "t_ns_1r2",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "-----",
+        "GGGGG",
+        "GRRGG"
+      ],
+      "name": "Lane IV"
+    },
+    {
+      "id": "t_ns_2r1",
+      "cells": [
+        "GF-7G",
+        "G|G|G",
+        "-JGL-",
+        "GGGGG",
+        "RRORG"
+      ],
+      "name": "Meander III"
+    },
+    {
+      "id": "t_ns_2r2",
+      "cells": [
+        "GF-7G",
+        "G|G|G",
+        "-JGL-",
+        "GGGGG",
+        "GGRRR"
+      ],
+      "name": "Meander IV"
+    },
+    {
+      "id": "t_ns_3r1",
+      "cells": [
+        "GGGGG",
+        "GF-7G",
+        "-JGL-",
+        "GGRGG",
+        "GROGG"
+      ],
+      "name": "Meander V"
+    },
+    {
+      "id": "t_ns_3r2",
+      "cells": [
+        "GGGGG",
+        "GF-7G",
+        "-JGL-",
+        "GGGGG",
+        "GGGRR"
+      ],
+      "name": "Meander VI"
+    },
+    {
+      "id": "t_ne_1r1",
+      "cells": [
+        "GGGGG",
+        "RRGGG",
+        "GGF--",
+        "GG|GG",
+        "GG|GG"
+      ],
+      "name": "Bend V"
+    },
+    {
+      "id": "t_ne_1r2",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "--7GG",
+        "GG|GR",
+        "GG|GR"
+      ],
+      "name": "Bend VI"
+    },
+    {
+      "id": "t_ne_2r1",
+      "cells": [
+        "GGGGG",
+        "RGGGG",
+        "RGGF-",
+        "GGFJG",
+        "GG|GG"
+      ],
+      "name": "Staircase I"
+    },
+    {
+      "id": "t_ne_2r2",
+      "cells": [
+        "GGGGG",
+        "GGGGG",
+        "GGGF-",
+        "RGFJG",
+        "RG|GG"
+      ],
+      "name": "Staircase II"
     }
   ]
 }

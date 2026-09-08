@@ -20,7 +20,11 @@ const must = <T,>(r: { ok: true; value: T } | { ok: false; errors: unknown[] }):
 };
 
 const content: LabContent = {
-  lib: new TileLibrary(libraryJson.tiles),
+  // The hand-authored tiles only (session 33, PR 6): the analytic gate
+  // measures the model against a FIXED world; the enumerated fillers and
+  // decorated roads (t_, f_, <base>r<k>) grew the library and moved the
+  // seed-4242 map under it, which is not what this gate reads.
+  lib: new TileLibrary(libraryJson.tiles.filter((t) => !/^(t_|f_)/.test(t.id) && !/r\d+$/.test(t.id))),
   towerDefs: must(validateTowers.check(towersJson)).towers,
   enemyDefs: must(validateEnemies.check(enemiesJson)).enemies,
   relicDefs: must(validateRelics.check(relicsJson)).relics,
