@@ -21,6 +21,7 @@ import { TILE_SIZE, tileRimMask, type CellType } from '@ascii-defense/engine';
 import { CELL_H, CELL_W, drawTerrainCell } from '../board/style';
 import { spriteState } from '../board/BoardView';
 import { drawSpriteFrame, idleFrame } from '../board/sprites';
+import { drawTree, treeSize, type TreeSpec } from './treePlates';
 import { role } from '../palette';
 
 export interface MenuItem {
@@ -65,6 +66,8 @@ export interface MenuSpec {
   body?: readonly string[];
   /** Tile previews rendered between body and items; clicking reports 'tile:<id>'. */
   tiles?: readonly MenuTile[];
+  /** The tree drawn as a tree (feedback 2026-09-08, item 5): rows of linked plates with sprites, between the body and the columns. */
+  tree?: TreeSpec;
   /** Columns of items side by side, between the body and the main items (session 30). */
   columns?: readonly MenuColumn[];
   items: readonly MenuItem[];
@@ -222,7 +225,9 @@ export class MenuScreen {
     const columnsW = rowsOfCols.length ? Math.max(...rowsOfCols.map(rowWidth)) : 0;
     const columnsH = rowsOfCols.reduce((a, r) => a + rowHeight(r), 0);
     const keysText = (spec.keys ?? []).map((k) => `[${k.key}] ${k.does}`).join('   ');
+    const tree = spec.tree ? treeSize(spec.tree) : { w: 0, h: 0 };
     const widest = Math.max(
+      tree.w,
       spec.title.length + 6,
       ...body.map((l) => l.length),
       ...spec.items.map(itemW),
@@ -237,7 +242,8 @@ export class MenuScreen {
     const plateW = Math.min(W - 4, Math.max(widest + 8, heroW + 8));
     const stripH = tileRows * (TILE_GH + 3);
     const bodyH = body.length + (body.length ? 1 : 0);
-    const contentH = 2 + heroH + bodyH + stripH + columnsH + spec.items.length * 2 + (spec.footer ? 1 : 0);
+    const treeH = tree.h > 0 ? tree.h + 1 : 0;
+    const contentH = 2 + heroH + bodyH + treeH + stripH + columnsH + spec.items.length * 2 + (spec.footer ? 1 : 0);
     const frameH = contentH + 2; // the top band and the bottom band
     const y0 = Math.max(1, Math.floor((term.rows - frameH) / 2));
     const x0 = Math.floor((W - plateW) / 2);
@@ -264,6 +270,12 @@ export class MenuScreen {
       term.write(x0 + Math.floor((plateW - l.length) / 2), y++, l, dim, PLATE_BG);
     }
     if (body.length) y++;
+    if (spec.tree && tree.h > 0) {
+      const treeRegions: { row: number; rowEnd: number; x0: number; x1: number; id: string }[] = [];
+      drawTree(term, spec.tree, x0 + Math.floor((plateW - tree.w) / 2), y, phase, spec.cursor, treeRegions, this.order);
+      for (const r of treeRegions) this.regions.push(r);
+      y += treeH;
+    }
     if (tiles.length > 0) {
       // The pool is a VISUAL surface (PRD sec 4.8): each special drawn by the
       // same renderer the board uses, framed in accent when loaded.
