@@ -1076,6 +1076,14 @@ took longer to walk in than the clock between them; past the ceiling the
 ramp is the hp curve's alone. And **a body the slot cap refuses waits in
 the queue** instead of vanishing (a dropped body was a free wave).
 
+**The curve after Enemies II (session 32, PRs 4-5;
+docs/lab/enemy-sweep-2026-09-08.md).** Waves are packs and the count is
+bodies, so Standard grows **five a wave** (6 + 5) at **+15% ×1.07** and Grim
+**×1.09**: the reference build dies at 22-24 on every seed (the target band
+16-24); on the old 6 + 4 the Refinery-first build starved on half the seeds.
+Calm keeps its own curve. The enemy sweep (every body alone against every
+line) is the counter table; its reading is in the document.
+
 **Boss waves** come every fifth wave **and on the final wave, by rule**: one
 boss — the heaviest enemy unlocked, scaled up in health, bounty and Core
 damage — behind a normal escort. *(The former elite surge happened to land

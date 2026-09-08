@@ -36,7 +36,7 @@ const baseContent: LabContent = {
 };
 
 /** Standard, as protocol.ts ships it after PR 2 of session 23. */
-const STANDARD: DifficultySpec = { hpLinear: 0.15, hpGeometric: 1.05, countBase: 6, countLinear: 4, countGeometric: 1 };
+const STANDARD: DifficultySpec = { hpLinear: 0.15, hpGeometric: 1.07, countBase: 6, countLinear: 5, countGeometric: 1, countMax: 60 }; // five a wave and x1.07 since session 32 (the count is bodies; docs/lab/enemy-sweep-2026-09-08.md)
 const MAX_WAVES = 40;
 const BOARDS = [{ w: 7, h: 4 }, { w: 7, h: 5 }, { w: 12, h: 7 }];
 const argSeeds = process.argv.slice(2).map(Number).filter((n) => Number.isInteger(n) && n > 0);
@@ -142,6 +142,46 @@ const RELIC_BOARD = { w: 7, h: 5 };
 const RELICS_ONLY = process.argv.includes('--relics');
 const TREE_ONLY = process.argv.includes('--tree');
 const BASE_ONLY = process.argv.includes('--base');
+const ENEMIES_ONLY = process.argv.includes('--enemies');
+
+/**
+ * Session 32, PR 4-5: the ENEMY SWEEP. Every body alone (its minWave set to
+ * 1, its boss-only flag off; a splitter brings its halves) against every
+ * tower LINE at the Standard curve on the 7x5 board - the counter table:
+ * which line answers which rule, in death waves. A held run reads ">40".
+ */
+const LINES: { name: string; towers: TowerPlacement[] }[] = [
+  { name: 'Bolt line (Railbore)', towers: [P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE)] },
+  { name: 'Frost + Bolts', towers: [P('frost', [1, 0, 1]), P('bolt', RAILBORE), P('frost', [1, 0, 1]), P('bolt', RAILBORE)] },
+  { name: 'Mortars', towers: [P('mortar', [1, 1, 0]), P('mortar', [1, 1, 0]), P('mortar', [1, 1, 0])] },
+  { name: 'Tesla', towers: [P('tesla', [0, 0, 0]), P('tesla', [0, 0, 0]), P('tesla', [0, 0, 0])] },
+  { name: 'Missiles', towers: [P('missile', [0, 1, 0]), P('missile', [0, 1, 0]), P('missile', [0, 1, 0])] },
+  { name: 'Lasers inline + Bolt', towers: [P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), A('laser', [0, 0, 0], 'inline')] },
+  { name: 'Bastion + Bolts', towers: [P('bolt', RAILBORE), P('bolt', RAILBORE), A('bastion', [0, 0, 0], 'adjacent'), P('bolt', RAILBORE)] },
+];
+if (ENEMIES_ONLY) {
+  const ENEMY_SEEDS = SEEDS.slice(0, 2);
+  console.log(`## every body alone against every line - Standard curve, ${RELIC_BOARD.w}x${RELIC_BOARD.h}, seeds ${ENEMY_SEEDS.join(', ')}, horizon ${MAX_WAVES}; a cell is the mean death wave (>${MAX_WAVES} = held)\n`);
+  console.log('| body (rule) | ' + LINES.map((l) => l.name).join(' | ') + ' |');
+  console.log('|---|' + LINES.map(() => '---').join('|') + '|');
+  for (const body of baseContent.enemyDefs) {
+    const alone = { ...body, minWave: 1, bossOnly: false };
+    const defs = [alone, ...(body.splitInto ? baseContent.enemyDefs.filter((d) => d.id === body.splitInto).map((d) => ({ ...d, minWave: 99 })) : [])];
+    const content: LabContent = { ...baseContent, enemyDefs: defs };
+    const cells: string[] = [];
+    for (const line of LINES) {
+      const deaths: number[] = [];
+      for (const seed of ENEMY_SEEDS) {
+        const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: line.towers, relicIds: [], unlocks: ['*'], difficulty: STANDARD, maxWaves: MAX_WAVES };
+        try { const r = runLab(spec, content); deaths.push(r.deathWave ?? MAX_WAVES + 1); } catch { deaths.push(0); }
+      }
+      const mean = deaths.reduce((a, c) => a + c, 0) / deaths.length;
+      cells.push(mean > MAX_WAVES ? `>${MAX_WAVES}` : mean.toFixed(0));
+    }
+    console.log(`| **${body.name ?? body.id}** (${(body.traits ?? []).join(', ') || 'plain'}) | ${cells.join(' | ')} |`);
+  }
+  console.log('');
+}
 
 /**
  * Session 31, PR 2: the EARLY GAME. The base world (four towers, sixteen
@@ -250,8 +290,8 @@ if (TREE_ONLY) {
   console.log('');
 }
 
-if (!RELICS_ONLY && !TREE_ONLY && !BASE_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
-for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY ? [] : BOARDS) {
+if (!RELICS_ONLY && !TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
+for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY || ENEMIES_ONLY ? [] : BOARDS) {
   console.log(`## board ${board.w}x${board.h}\n`);
   console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | crowd kills | all kills |');
   console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
@@ -285,7 +325,7 @@ for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY ? [] : BOARDS) {
 }
 
 // ---- the relic sweep (session 28, PR 6) ----
-if (!TREE_ONLY && !BASE_ONLY) {
+if (!TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY) {
 console.log(`## relic sets on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - the reference build (Railbore line + Frost + Mortar, choke, economy) with six held relics\n`);
 console.log('| set | relics (rarity) | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean |');
 console.log('|---|---|' + SEEDS.map(() => '---').join('|') + '|---|');
