@@ -5,6 +5,9 @@
 > request index. Anything restated here is a drift surface.
 
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
+[docs/WORKING-AGREEMENT.md](docs/WORKING-AGREEMENT.md) (how a session runs:
+the three buckets, one decision window, defaults that mint themselves, two
+rounds then a spec) →
 [docs/PRD.md](docs/PRD.md) (§20 the tutorial and the encounter cards; §21
 the creative page; §22 the tree as plates; §23 the library's breadth; §24
 the multiset; §25 mini previews; §4.9 boss chests; §9.2 the clock deals an
@@ -78,11 +81,13 @@ says why); the stranger test itself (his hands); Grim and relics against
 the seven; the art agent's studies for the seven and the chests; the
 register's rows below.
 
-**Readings for Daniil, his calls:** whether the encounter cards should
-pause the run (they do, like an offer) or float; the boss chest's rarity
-ladder (10/20); the copy prices (20/30/40, three at most); whether nine
-road shapes is enough once the land varies (the carve is the next lever);
-the seven's names; the curve.
+**His calls live in the tracker now**, not here — each with a stated default
+and a deadline ([the working agreement](docs/WORKING-AGREEMENT.md), rule 3).
+What beta waits on is three questions:
+
+```bash
+gh issue list --label call --label blocks-ship
+```
 
 **Gate:** his eye on the live build — a fresh save: the first card, the
 CODEX with `???` pages, the workshop as plates, a boss's chest at wave 5,
@@ -174,19 +179,17 @@ resemblance metric (a wrong one steers every later tuning).
 
 ## Standing open items
 
-- Daniil's big feedback session, continued: the ten items are answered;
-  "there will be more".
-- His calls: the cards' pause; the boss chest ladder; the copy prices;
-  the seven's names and looks; the curve; Calm's ease; the tier-2 purse;
-  the Smith's prices; four or eight cells; the unlock split; the Laser at
-  21.5; Hailstorm.
-- The art brief's additions for the agent: 6×5 relic sprites with a ring,
-  the chests (shape only), the seven bodies with their marks.
-- Repo settings: the homepage is empty and the token cannot set it.
-- D25 multi-cell towers, D27 monetization, D28 where the meta lives — open.
-- 2.27 gate — his.
-- Technical-debt register: terminals once per session; the lab's analytic
-  model (pinned to the hand tiles, still in the gate); the dead
-  `fireRateMul`/`rangeAdd` seams; a pack's members dropped when the slot
-  cap refuses its second body; Grim and relics against the seven unread;
-  the carve's variety (row 34).
+**Moved to the tracker on 2026-09-11.** A handover is state; a list of open
+items is a queue, and the two must not share a document ([the working
+agreement](docs/WORKING-AGREEMENT.md), rule 6). Forty-one items — the
+technical-debt register, every one of his calls, the art brief's additions,
+the open decisions D25 and D27 — are GitHub Issues:
+
+```bash
+gh issue list --label call --label blocks-ship   # his queue: three
+gh issue list --label blocks-ship                # what beta waits for
+gh issue list --label defect                     # the dev's queue
+gh issue list --label scope                      # frozen until the freeze lifts
+```
+
+This section does not come back. The `wrap-session` skill's step 2 says so.

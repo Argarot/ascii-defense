@@ -110,9 +110,12 @@ Two label axes, and only two:
 - `defect` · `call` · `scope` — the bucket from rule 1.
 - `blocks-ship` · `later` — whether beta waits for it.
 
-What lives in Issues: the request-index rounds, the standing open items, the
-technical-debt register, every call. What does **not**: milestones, gates,
-decisions once minted.
+What lives in Issues: every open item — the technical-debt register, the
+standing open items, every call, and each new feedback round from round 34
+(titled `[r34.3] …`, his numbering kept). What does **not**: milestones,
+gates, decisions once minted, and the **closed** history — the request index's
+rounds 1–33 stay in the WBS as the record, because PRs and commits cite them.
+The rule is about the live queue, not the archive.
 
 His whole queue is one query:
 

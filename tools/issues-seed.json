@@ -1,0 +1,330 @@
+[
+  {
+    "title": "docs drift: ARCHITECTURE and ASSETS describe what does not exist",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**Docs drift.** ARCHITECTURE §2 lists a repository layout that mostly does not exist (`engine/{enemies,difficulty,economy,meta,replay,run}`, `content/balance`, `render/config.ts`…); §10 says `ci.yml` is not built; §11 says the REXPaint pipeline is verified while `tools/art/README.md` says it is unproven. ASSETS.md describes a glyph-existence linter and a sprite-reference check that were never written, says no frames are authored (bolt.json has one), and carries 5×3/15×9 numbers. `PATH` ink resolves to plain white (`BoardView.ts`).\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "no view tests: BoardView, HudPanel, OfferModal, effects, style",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**No view tests.** BoardView, HudPanel, OfferModal, effects, style have zero coverage; ARCHITECTURE §9's text-snapshot backbone has one golden (GLTerm's own). A ~40-line array-backed terminal double would let all of them run as Node golden tests — the net the geometry migration needs.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "engine sim tests never walk a directional road",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**Engine sim tests never walk a directional road**: all fixture libraries are omni-`X` worlds; the shipped library is bends and straights; the golden hash pins a world the game never plays; the bridge walk has no sim-level test.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "Pages deploys main without running tests; no branch protection",
+    "labels": [
+      "defect",
+      "blocks-ship"
+    ],
+    "body": "**Pages deploys `main` without running tests** (`pages.yml` is not gated on `ci.yml`); no branch protection.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "three BDF parsers, two dead atlases, a duplicated ASSET_V",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**Three BDF parsers** for one glyph order (`build-fonts.mjs`, `glyphs.py`, `fonts.py`); two dead atlases (`glyphset.json`, `glyphset-cp437.json`) and `vendor/unscii` ship for nothing; `ASSET_V` is duplicated in `main.ts` and `tilesmith.ts`.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "a schema-valid sprite can crash the view",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**A schema-valid sprite can crash the view**: tier keys other than `\"0\"` (`tiers['0']` is the only one read) and a `cell` that differs from the view's. Two one-line linter rules.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "god files: sim.ts, main.ts, tilesmith.ts, HudPanel.render",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**God files**: `sim.ts` ~1,700 lines / six subsystems; `main.ts` five modules' worth; `tilesmith.ts` duplicates the view's glyph scale, asset version, boon tints and cell vocabulary; `HudPanel.render` is one 300-line method.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "duplicated primitives: CENTER five times, the strand-edge rule twice",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**Duplicated primitives**: `CENTER` defined five times, direction tables four ways, the slot-distance BFS three times, the strand-edge rule twice (`tile.ts nodeStep` / `flow.ts strandStep` — a divergence would make validity and routing disagree).\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "verifyMap runs inside a 25-attempt retry nothing measures",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**`verifyMap` runs inside a 25-attempt retry**; nothing measures attempt count, so a generator failing 24 in 25 passes every sweep.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "two placement predicates disagree: hover says buildable, the build refuses",
+    "labels": [
+      "defect",
+      "blocks-ship"
+    ],
+    "body": "**Two placement predicates disagree** (`canBuildAt` vs `canBuildDefAt`): hover says buildable on ore for a Bolt, the build silently returns false.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "game rules live in app: THREAT_LEVELS, coreHp, the difficulty literals",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**Game rules in `app`**: `THREAT_LEVELS` with `hpGeometric`/`waveSeconds` in `protocol.ts`, `coreHp` and the difficulty literals in `workerRuntime.ts`; ARCHITECTURE puts those in content.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "hashState truncates fractional lanes",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**`hashState` truncates fractional lanes** (`u32` on scrap/coreHp) — safe only while content keeps them integral (Bounty Board rounds for this reason).\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "terminals are created once per session; a save for another board size is refused",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**Terminals are created once per session** (`main.ts`): a save made for another board size is refused instead of the board being rebuilt on `ready`.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "the lab's analytic model knows nothing of volleys, pierce, min range or the clock",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**The lab's analytic model** knows nothing of volleys, pierce, min range or the wave clock; only the headless runner and the sweep are trusted.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "the lab's gate tolerance sits at 8 waves; retire it or re-derive it",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**The lab's gate tolerance sits at 8 waves** after two geometry changes; the build sweep (2.36) is the ruler now and the analytic gate should be retired or re-derived.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "entries are many on a filled board — a knob question",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**Entries are many on a filled board** (8–12 on 7×5): a knob question (`COVERAGE_TARGET`, `MAX_LANE_SHARE`, `EXTRA_WALKS`) for Daniil's playtest, not a defect.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "the strip is cramped below seven tiles wide",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**The strip is cramped below seven tiles wide**: at 6×4 the wave columns truncate; a second row or a narrower button would fix it.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "the Tile Smith is still its own page, not a spec on the shell",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**The Tile Smith is still its own page**, not a spec on the shell's terminal (session 27 had no room).\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "full keyboard operation (4.24 second half)",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**Full keyboard operation** (4.24's second half): the menus take clicks; the board takes keys for speed, sell, rotate, grid, the wave.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "the Loadbearing relic's flat triple range beside the Core gifts",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The Loadbearing relic's flat triple range** stands beside the Core gifts (2.35); retiring it is Daniil's call.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "the Laser wears an arrow for its facing",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**The Laser wears an arrow** for its facing; a per-facing art slot in the sprite format waits for the art agent's need.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "the offer modal shows relics as text while their icons exist",
+    "labels": [
+      "defect",
+      "later"
+    ],
+    "body": "**The offer modal shows relics as text** while their icons exist (6.7); the card should draw the icon.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "the derived attack placeholder paints the whole tower",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**The derived attack placeholder paints the whole tower** in the flash colour for 60 ms; loud on a Gatling. The art agent's sequences replace it; until then a per-role brighten would be kinder.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "misc hygiene bundle: colour literals, dead exports, stale comments",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "**Misc**: `role()` bypassed by ~16 colour literals in view; `loadRun()` parses the whole save every frame from `menuSpec()`; `pagehide` autosave cannot complete its worker round-trip; `towers[]` never recycles sold slots; `HudPanel.scroll` not re-clamped on render; Tile Smith Ctrl+Z hijacks text inputs; WIPE DATA leaves the minted pool; `clearMintedTiles`, `lanesJoin`, `streamFromState`, `FILL_RADIUS` dead; stale comments in `replay.ts`, `verify.ts`, `mapgen.ts` header; the lab's analytic model knows nothing of volleys, pierce, min range or the wave clock.\n\n---\n*Migrated 2026-09-11 from the technical-debt register in `docs/WBS.md` (fresh-eyes audit, 2026-09-03). Text verbatim.*"
+  },
+  {
+    "title": "should encounter cards pause the run, or float?",
+    "labels": [
+      "call",
+      "blocks-ship"
+    ],
+    "body": "**The call:** should encounter cards pause the run, or float?\n\n**Default if unanswered:** they pause, like a relic offer\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nShipped paused in session 33 (PR #196). A stranger meets a card in the first minute, so this is on the stranger test's path.\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the curve — is the ramp right?",
+    "labels": [
+      "call",
+      "blocks-ship"
+    ],
+    "body": "**The call:** the curve — is the ramp right?\n\n**Default if unanswered:** Standard 6 + 5 a wave at ×1.07, Grim ×1.09, the reference dying at 22–24\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nMeasured in `docs/lab/enemy-sweep-2026-09-08.md`. His eye is the last word.\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "Calm's ease — is Calm easy enough for a first run?",
+    "labels": [
+      "call",
+      "blocks-ship"
+    ],
+    "body": "**The call:** Calm's ease — is Calm easy enough for a first run?\n\n**Default if unanswered:** Calm's own curve as re-derived in session 31 (`docs/lab/base-sweep-2026-09-07.md`)\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nThe stranger test runs on Calm to wave 5, so the test itself will answer this.\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the boss chest rarity ladder",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** the boss chest rarity ladder\n\n**Default if unanswered:** rare before wave 10, epic before 20, legendary from 20\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nShipped at these numbers in session 33 (PR #198).\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the copy prices for a tile multiset",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** the copy prices for a tile multiset\n\n**Default if unanswered:** the first price plus half per copy (20/30/40), three copies at most\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nShipped at these numbers in session 33 (PR #201).\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "is nine road shapes enough once the land varies?",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** is nine road shapes enough once the land varies?\n\n**Default if unanswered:** yes — the carve's walk is the lever, not the shape count\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nThe enumerator proved nine is the law's count (`docs/lab/tile-sweep-2026-09-08.md`).\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the seven's names",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** the seven's names\n\n**Default if unanswered:** the generator's names as shipped (courser, ram, blob, mender, mole, pavise, the Warden)\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the tier-2 purse — where does tier-2 ore come from?",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** the tier-2 purse — where does tier-2 ore come from?\n\n**Default if unanswered:** as shipped: the workshop names the source when the purse lacks the tier\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the Smith's prices against shipped tile prices",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** the Smith's prices against shipped tile prices\n\n**Default if unanswered:** the shared price as shipped\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "four or eight cells",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** four or eight cells\n\n**Default if unanswered:** as shipped\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nFrom the thought dump of 2026-09-06, item 9. Never answered.\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the unlock split",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** the unlock split\n\n**Default if unanswered:** as shipped in the run code's fifth segment\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the Laser at 21.5 — still the strongest line?",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** the Laser at 21.5 — still the strongest line?\n\n**Default if unanswered:** leave it; the choke instrument measured 21.5 and it was not retuned\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nFrom `docs/lab/build-sweep-2026-09-06-relics.md`.\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "Hailstorm as a role",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** Hailstorm as a role\n\n**Default if unanswered:** 3 shots at 45% each, as amended in D23\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nFlagged as a role problem in the session 23 build sweep (WBS 2.37).\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "D25 — towers larger than one cell",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** D25 — towers larger than one cell\n\n**Default if unanswered:** no multi-cell towers; PRD §5.1's one-cell footprint stands\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nOpen decision in `docs/WBS.md`. Blocks nothing currently building.\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "D27 — monetization and accounts",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "**The call:** D27 — monetization and accounts\n\n**Default if unanswered:** defer to beta hardening; nothing pay-to-win (PRD §18)\n\n**Deadline:** the start of the next session. Unanswered by then, the default is minted as a decision in `docs/WBS.md`'s table with the date and \"by default, unanswered\".\n\nOpen decision in `docs/WBS.md`. No build work depends on it.\n\n---\n*Migrated 2026-09-11 from HANDOVER's \"readings for Daniil\" and \"standing open items\".*"
+  },
+  {
+    "title": "the token cannot write to the repo — pushes and issues both 403",
+    "labels": [
+      "defect",
+      "blocks-ship"
+    ],
+    "body": "The fine-grained PAT can read the repo but not write it. Both fail:\n\n```\ngh issue create → GraphQL: Resource not accessible by personal access token (createIssue)\ngit push       → remote: Permission to Argarot/ascii-defense.git denied to Argarot (403)\n```\n\nToken expires 2026-12-10. The fix is in GitHub → Settings → Developer settings → Personal access tokens → Fine-grained → this token → Repository permissions: **Contents: Read and write**, **Pull requests: Read and write**, **Issues: Read and write**, **Administration: Read and write** (the last one so the repo homepage can finally be set).\n\nThe empty repo homepage — a standing item since session 29 — is the same root cause.\n\n---\n*Found 2026-09-11 while proving the Issues path before migrating the queue onto it.*"
+  },
+  {
+    "title": "the art brief's additions: relic sprites, the chests, the seven bodies",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "6×5 relic sprites with a ring; the chests (shape only); the seven bodies with their marks.\n\nThe brief is `docs/ART-AGENT.md` §2 item 3 and 3b. Placeholders stand until the agent's studies are imported.\n\n---\n*Migrated 2026-09-11 from HANDOVER's standing open items.*"
+  }
+]
