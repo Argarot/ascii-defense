@@ -122,7 +122,7 @@ loadout at one glyph a cell.
 - **The font decides the language**: spleen has `┌┐└┘─│├┤┬┴┼`, `◆`,
   braille — no double lines, no blocks.
 
-## Next session, proposed — 34 (ledger row 34): The stranger's round and the carve's variety
+## Next session, proposed — The stranger's round and the carve's variety
 
 *(Row 33 shipped everything but the one thing that needs a person: the
 stranger test. Its scorecard is the gate, and the road's variety turned
