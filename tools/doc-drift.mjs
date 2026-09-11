@@ -5,7 +5,8 @@
  * holds the seams where a wrap has drifted before:
  *
  *   1. HANDOVER's "Next session, proposed" names the same theme as the
- *      roadmap ledger's NEXT row, and cites that row's number.
+ *      roadmap ledger's NEXT row, by name - planned rows carry no number -
+ *      and no ledger row identity is used twice.
  *   2. README's newest "Session N" paragraph is the session the ledger's
  *      newest DONE row says it was.
  *   3. README's top paragraph does not describe a map the game no longer
@@ -32,18 +33,26 @@ const readme = read('README.md');
 const assets = read('docs/ASSETS.md');
 const spriteSchema = JSON.parse(read('packages/content/schema/sprite.schema.json'));
 
-// 1. HANDOVER's next session vs the ledger's NEXT row.
-const nextRow = roadmap.split('\n').find((l) => /^\| \d+ \| \*\*[^*]+\*\* \*\([^)]*NEXT/.test(l));
-const proposed = /^## Next session, proposed — (\d+)(?: \(ledger row (\d+)\))?: (.+)$/m.exec(handover);
-if (!nextRow) problems.push('ROADMAP: no ledger row is marked NEXT');
-if (!proposed) problems.push('HANDOVER: no "## Next session, proposed — N (ledger row M): Title" heading');
+// 1. HANDOVER's next session vs the ledger's NEXT row - matched by NAME.
+//    Planned rows are named, never numbered (WORKING-AGREEMENT rule 5); the
+//    old "(ledger row N)" citation is where two rows numbered 33 and three
+//    numbered 34 came from.
+const nextRow = roadmap.split('\n').find((l) => /^\| \*\*[^*]+\*\* \|.*\(NEXT/.test(l));
+const proposed = /^## Next session, proposed — (.+)$/m.exec(handover);
+if (!nextRow) problems.push('ROADMAP: no ledger row is marked NEXT (expected "| **Title** | ... (NEXT")');
+if (!proposed) problems.push('HANDOVER: no "## Next session, proposed — Title" heading');
 if (nextRow && proposed) {
-  const rowNum = /^\| (\d+) \|/.exec(nextRow)[1];
   const rowTitle = /\*\*([^*]+)\*\*/.exec(nextRow)[1].trim();
-  const [, , citedRow, title] = proposed;
-  if (title.trim() !== rowTitle) problems.push(`HANDOVER proposes "${title.trim()}" but the ledger's NEXT row ${rowNum} is "${rowTitle}"`);
-  if (citedRow !== rowNum) problems.push(`HANDOVER's proposed session cites ledger row ${citedRow ?? '(none)'}; the NEXT row is ${rowNum} - write "— N (ledger row ${rowNum}): ${rowTitle}"`);
+  const title = proposed[1].trim();
+  if (title !== rowTitle) problems.push(`HANDOVER proposes "${title}" but the ledger's NEXT row is "${rowTitle}"`);
+  if (/ledger row \d+/.test(handover)) problems.push('HANDOVER cites a "ledger row N": planned rows are named, not numbered (WORKING-AGREEMENT rule 5)');
 }
+
+// 1b. No ledger row identity is used twice. This is the check that was missing
+//     when the ledger grew a second row 33 and a third row 34.
+const rowIds = [...roadmap.matchAll(/^\| (?:~~)?(\d+(?:–\d+)?)(?:~~)? \|/gm)].map((m) => m[1]);
+const dupeIds = [...new Set(rowIds.filter((id, i) => rowIds.indexOf(id) !== i))];
+if (dupeIds.length) problems.push(`ROADMAP ledger: row identity used twice - ${dupeIds.join(', ')}. Done rows keep the number they shipped under; planned rows are named`);
 
 // 2. README's newest session paragraph vs the ledger's newest DONE row.
 const readmeSession = /^\*\*Session (\d+) \(/m.exec(readme);
