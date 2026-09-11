@@ -17,6 +17,13 @@ Conventions:
 
 ## Open decisions (block future work — resolve by the deadline, not before)
 
+*Minted decisions stay here — they are the plan. The **open** ones (D25, D27)
+are also `call` issues in the tracker, because an unanswered decision is a
+queue item: `gh issue list --label call`. When one is answered, its row here
+is the record and the issue closes. A call answered by silence is minted here
+too, with the date and "by default, unanswered" ([the working
+agreement](WORKING-AGREEMENT.md), rule 3).*
+
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
 | D25 | **Towers larger than one cell** — Daniil wants to brainstorm them (2026-09-05). PRD §5.1's one-cell footprint is load-bearing for occupancy, placement and upgrades; a multi-cell tower is either a footprint rule (which cells, which anchor, what blocks) or a visual-only size like 4.14. Decide before the new towers (25) are built | before session 25 | Daniil + dev |
@@ -54,6 +61,17 @@ Daniil's numbered feedback → where it landed. Compact on purpose: the item
 text lives in the WBS entry, declines in PRD §14, deferrals in the table above.
 *(Replaced a separate FEEDBACK.md on 2026-08-16 — a third copy of the same facts
 was a drift surface, not an aid.)*
+
+**From round 34 onward this section is history, not a queue.** A new round is
+triaged by the `triage-round` skill and filed as issues titled
+`[r<round>.<his number>] …`; when the round closes, one paragraph lands here
+saying where it went. Rounds 1–33 below stay as the record — PRs and commits
+cite them.
+
+```bash
+gh issue list --search '[r34.'        # one round
+gh issue list --label call            # every open call, any round
+```
 
 **Round 1, mechanics:** 1→2.6 · 2→2.11 · 3→1.7.3+2.1 · 4→2.7 · 5→2.7 · 6→2.13 ·
 7→1.7.2 *(diagnosed: pool exhaustion, not a missing button)* · 8→2.16 · 9→4.9 ·
@@ -519,36 +537,23 @@ scheduled** — it joins 2.21 in session 19, since both rework the tile format.
 - [x] 2.35 *(session 26, PR #135: every tower has a `coreBoon` folded like a tier on the cells touching the face and printed on its card — the eight gifts are in PRD §4.5; the Refinery may stand on plain ground there; Loadbearing still exists beside them, retiring it is Daniil's call)* **Cells next to the Core are precious** *(Daniil, 2026-09-05; PRD §4.5 — design intent, own session)*. With the Core a face at the east edge, at most four buildable cells touch it. The rules and the towers will make those cells the most valuable ground on the map: **every tower gets a unique boon when placed next to the Core**, not one shared multiplier. Replaces the Loadbearing relic's flat triple range once designed. Exact details are a design conversation before the new towers (25).
 - [x] 2.34 *(session 26, PR #134: facing as replayed, hashed tower state; chosen on build toward the most road; ROTATE on the card and the R key; the corridor drawn instead of rings; the golden moved 1486502285 → 3921408197 for the two new hashed numbers)* **Tower facing** *(Daniil, 2026-09-05; PRD §5.5)*. A direction as tower state for line-shaped attacks (the laser): set on build, rotated on demand, saved and replayed as a choice. Radial towers show none. Prerequisite for 5.1's laser; built with 4.10 in session 25.
 
-### Technical-debt register *(fresh-eyes audit, 2026-09-03 — "everything else later", Daniil)*
+### Technical-debt register — moved to the tracker *(2026-09-11)*
 
-Verified findings not yet fixed, most material first. Each is a candidate for a hygiene round; none is a rule change.
+The register's twenty-four live findings are now **GitHub Issues**, labelled
+`defect`/`scope` and `later`/`blocks-ship`. A plan and a tracker must not be
+the same document ([the working agreement](WORKING-AGREEMENT.md), rule 6) —
+this file is read end to end; the register was queried.
 
-- **Docs drift.** ARCHITECTURE §2 lists a repository layout that mostly does not exist (`engine/{enemies,difficulty,economy,meta,replay,run}`, `content/balance`, `render/config.ts`…); §10 says `ci.yml` is not built; §11 says the REXPaint pipeline is verified while `tools/art/README.md` says it is unproven. ASSETS.md describes a glyph-existence linter and a sprite-reference check that were never written, says no frames are authored (bolt.json has one), and carries 5×3/15×9 numbers. `PATH` ink resolves to plain white (`BoardView.ts`).
-- **No view tests.** BoardView, HudPanel, OfferModal, effects, style have zero coverage; ARCHITECTURE §9's text-snapshot backbone has one golden (GLTerm's own). A ~40-line array-backed terminal double would let all of them run as Node golden tests — the net the geometry migration needs.
-- **Engine sim tests never walk a directional road**: all fixture libraries are omni-`X` worlds; the shipped library is bends and straights; the golden hash pins a world the game never plays; the bridge walk has no sim-level test.
-- **Pages deploys `main` without running tests** (`pages.yml` is not gated on `ci.yml`); no branch protection.
-- **Three BDF parsers** for one glyph order (`build-fonts.mjs`, `glyphs.py`, `fonts.py`); two dead atlases (`glyphset.json`, `glyphset-cp437.json`) and `vendor/unscii` ship for nothing; `ASSET_V` is duplicated in `main.ts` and `tilesmith.ts`.
-- **A schema-valid sprite can crash the view**: tier keys other than `"0"` (`tiers['0']` is the only one read) and a `cell` that differs from the view's. Two one-line linter rules.
-- **God files**: `sim.ts` ~1,700 lines / six subsystems; `main.ts` five modules' worth; `tilesmith.ts` duplicates the view's glyph scale, asset version, boon tints and cell vocabulary; `HudPanel.render` is one 300-line method.
-- **Duplicated primitives**: `CENTER` defined five times, direction tables four ways, the slot-distance BFS three times, the strand-edge rule twice (`tile.ts nodeStep` / `flow.ts strandStep` — a divergence would make validity and routing disagree).
-- **`verifyMap` runs inside a 25-attempt retry**; nothing measures attempt count, so a generator failing 24 in 25 passes every sweep.
-- **Two placement predicates disagree** (`canBuildAt` vs `canBuildDefAt`): hover says buildable on ore for a Bolt, the build silently returns false.
-- **Game rules in `app`**: `THREAT_LEVELS` with `hpGeometric`/`waveSeconds` in `protocol.ts`, `coreHp` and the difficulty literals in `workerRuntime.ts`; ARCHITECTURE puts those in content.
-- **`hashState` truncates fractional lanes** (`u32` on scrap/coreHp) — safe only while content keeps them integral (Bounty Board rounds for this reason).
-- **Terminals are created once per session** (`main.ts`): a save made for another board size is refused instead of the board being rebuilt on `ready`.
-- ~~**The loadout picker draws tile previews at the 2× UI scale**~~ *(session 33, PR #202: mini previews, one glyph a cell, a dozen a page.)*
-- **The lab's analytic model** knows nothing of volleys, pierce, min range or the wave clock; only the headless runner and the sweep are trusted.
-- **The lab's gate tolerance sits at 8 waves** after two geometry changes; the build sweep (2.36) is the ruler now and the analytic gate should be retired or re-derived.
-- **Entries are many on a filled board** (8–12 on 7×5): a knob question (`COVERAGE_TARGET`, `MAX_LANE_SHARE`, `EXTRA_WALKS`) for Daniil's playtest, not a defect.
-- **The strip is cramped below seven tiles wide**: at 6×4 the wave columns truncate; a second row or a narrower button would fix it.
-- ~~The 'inline' lab placement has no distance term~~ *(session 28, PR 6: road covered minus a quarter of the corridor's route distance - the laser goes to the choke)*.
-- **The Tile Smith is still its own page**, not a spec on the shell's terminal (session 27 had no room).
-- **Full keyboard operation** (4.24's second half): the menus take clicks; the board takes keys for speed, sell, rotate, grid, the wave.
-- **The Loadbearing relic's flat triple range** stands beside the Core gifts (2.35); retiring it is Daniil's call.
-- **The Laser wears an arrow** for its facing; a per-facing art slot in the sprite format waits for the art agent's need.
-- **The offer modal shows relics as text** while their icons exist (6.7); the card should draw the icon.
-- **The derived attack placeholder paints the whole tower** in the flash colour for 60 ms; loud on a Gatling. The art agent's sequences replace it; until then a per-role brighten would be kinder.
-- **Misc**: `role()` bypassed by ~16 colour literals in view; `loadRun()` parses the whole save every frame from `menuSpec()`; `pagehide` autosave cannot complete its worker round-trip; `towers[]` never recycles sold slots; `HudPanel.scroll` not re-clamped on render; Tile Smith Ctrl+Z hijacks text inputs; WIPE DATA leaves the minted pool; `clearMintedTiles`, `lanesJoin`, `streamFromState`, `FILL_RADIUS` dead; stale comments in `replay.ts`, `verify.ts`, `mapgen.ts` header; the lab's analytic model knows nothing of volleys, pierce, min range or the wave clock.
+```bash
+gh issue list --label defect          # what lies or contradicts a rule
+gh issue list --label scope           # new work waiting for a session
+gh issue list --label blocks-ship     # what beta waits for
+```
+
+The migration is `tools/seed-issues.mjs` reading `tools/issues-seed.json`;
+the seed carries every bullet's text verbatim, so nothing was lost in the
+move. The struck-through (fixed) findings were not migrated — they are in
+this file's history.
 
 ## M3 — Trustworthy difficulty *(sequenced after M4/M5: calibrating before the
 content and the shell settle would produce curves we throw away)*
