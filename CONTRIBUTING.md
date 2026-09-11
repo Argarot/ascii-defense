@@ -3,6 +3,10 @@
 Read this before writing code or debugging anything. Everything here was learned
 the expensive way.
 
+This file owns the **code** invariants. How a session runs — how an incoming
+item is bucketed, when Daniil is asked, what a repeated fix round means — is
+[docs/WORKING-AGREEMENT.md](docs/WORKING-AGREEMENT.md). Read that too.
+
 ---
 
 ## 1. Invariants — do not break these
@@ -86,6 +90,8 @@ Windows 10, PowerShell 5.1, Node v22.23.2, npm 12.0.2, git 2.33.0.
 | How it is built | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | How it looks, and the art pipeline | [docs/ASSETS.md](docs/ASSETS.md) |
 | What happens next, session by session | [docs/ROADMAP.md](docs/ROADMAP.md) |
-| The work checklist, and where each request landed | [docs/WBS.md](docs/WBS.md) |
+| The work checklist, and the decisions | [docs/WBS.md](docs/WBS.md) |
+| How a session is run | [docs/WORKING-AGREEMENT.md](docs/WORKING-AGREEMENT.md) |
+| The live queue — requests, calls, debt | GitHub Issues (`gh issue list --label call`) |
 
 Read the PRD before the architecture; read this file before touching anything.
