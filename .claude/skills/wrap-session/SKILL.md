@@ -11,6 +11,10 @@ committed doc **did not happen**. Work through the checklist in order; each
 step names its file and its owner-of-truth. Do not restate content across
 files — that is how drift starts.
 
+**[docs/WORKING-AGREEMENT.md](../../../docs/WORKING-AGREEMENT.md) governs this
+skill.** The `triage-round` skill executes its rules 1–3 at a session's start;
+this one enforces 3–6 at the end. Where the two disagree, the agreement wins.
+
 ## 1. Verify the ground truth
 
 - `git status` clean, on `main`, synced with origin. All PRs merged green
@@ -39,26 +43,69 @@ files — that is how drift starts.
   pane fires no animation frames, so a probe that waits for them proves
   nothing (motion v2 shipped with every effect dead, 2026-09-06).
 
+## 1b. Close the queue before the docs
+
+The tracker is GitHub Issues, not a document (agreement rule 6). Before
+writing anything:
+
+- **Close what shipped.** `gh issue close N --comment "<PR>"` for every issue
+  today's PRs answered. An issue left open after its fix merged is worse than
+  no tracker.
+- **Mint the unanswered defaults.** Every `call` issue asked in a previous
+  session and still unanswered is closed now: its default goes into
+  **docs/WBS.md**'s decision table with today's date and the words "by
+  default, unanswered", and the issue closes citing that row. It is a decision
+  from this moment — reversible like any other, never again an open question.
+  This is the step that stops his queue accreting; skipping it is how
+  twenty-five items tagged "his judgement" happened.
+- **File what today produced.** New defects and scope born today become
+  issues, not HANDOVER bullets. Under the **content freeze** scope gets
+  `later` and does not enter the ledger.
+- Check the queue is short: `gh issue list --label call --label blocks-ship`.
+  If that is more than a handful, say so in the final reply — it means calls
+  are being created faster than they are minted.
+
+## 1c. Count the rounds
+
+Agreement rule 4: **two rounds of fixes on one subsystem in one day, then a
+spec — never a third patch.** At the wrap, state for the record how many
+rounds each subsystem took today (carve/mapgen · tiles · sim/combat ·
+economy · relics · enemies · shell & menus · HUD · art pipeline · save/meta).
+
+If any subsystem reached two and a third patch shipped anyway, that is a
+**postmortem entry and a spec row in the next session's plan**, not a line to
+leave out. Sessions 20 and 21 are the evidence for both halves of this rule.
+
 ## 2. Docs, in dependency order
 
 Each file has ONE job. Update in this order so later files can reference
 earlier ones:
 
 1. **docs/WBS.md** — mark `[x]` with PR numbers on every finished item; add
-   new items born today; append today's feedback round to the **request
-   index** (item → WBS id, deferrals with triggers, declines with reasons —
-   indexed by DANIIL'S numbering, never by the plan's).
+   new items born today; add one paragraph to the **request index** saying
+   where today's round went, **indexed by DANIIL'S numbering, never by the
+   plan's**. From round 34 the round's items are issues (`[r34.3] …`) and the
+   index paragraph is the summary, not the list. Minted defaults go in the
+   decision table (step 1b).
 2. **docs/ROADMAP.md** — strike completed ledger rows (`~~N~~ DONE (PRs)`);
    ensure the next open row states contents AND gate, concretely enough that
-   Daniil can just say "go".
+   Daniil can just say "go". **Planned rows are NAMED, never numbered**
+   (agreement rule 5) — do not renumber anything, do not add a number to a
+   planned row, and never let one identity appear twice. `doc-drift` fails on
+   both.
 3. **docs/PRD.md** — only if the day changed what the game IS (mechanics,
    rejections, acceptance criteria). Rejections go to §14 with reasons.
 4. **README.md** — if any player-facing claim drifted. Read it END TO END
    before editing; patching the top of a drifted doc produced a
    self-contradicting README once already.
 5. **HANDOVER.md** — full rewrite, not a patch (it is a daily document):
-   state, fresh-context warnings, **"Next session, proposed"** (see below),
-   standing open items. No sequencing, no checklists.
+   state, fresh-context warnings, **"Next session, proposed"** (see below).
+   No sequencing, no checklists, and **no list of open items or "readings for
+   Daniil"** — those moved to the tracker on 2026-09-11 and must not grow
+   back. A handover is state; a list of open items is a queue, and the two do
+   not share a document. Where the sections were, HANDOVER carries the
+   queries. The proposed-session heading is `## Next session, proposed —
+   <Title>`: a name, no number, no "(ledger row N)".
 6. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings
    with tags (`[process] [comms] [claude-weakness] [claude-strength]
    [daniil] [tooling]`). Corrections Daniil had to repeat get an entry.
@@ -91,13 +138,19 @@ earlier ones:
   green. Never commit to main directly — check `git branch --show-current`
   BEFORE committing (a failed compound command once stranded a commit on
   main).
-- Final reply to Daniil, in this shape:
+- Final reply to Daniil, in this shape (agreement rule 1 decides what he
+  reads and what he only counts):
   1. the cache-busted live link first;
-  2. what shipped today, indexed by HIS feedback numbering where it answers
-     feedback;
-  3. anything planned-but-NOT-BUILT marked explicitly (absence otherwise
+  2. **defects as ONE rolled-up line** — *"nine defects fixed: his 1, 2, 4,
+     9, 11 and four found in passing (#210)"* — never itemised. He does not
+     audit these; itemising them is what made every item cost the same
+     attention;
+  3. **calls itemised in HIS numbering**, each with what was decided and
+     whether that was his answer or the default taken;
+  4. **scope as a count and a query**, not a list;
+  5. anything planned-but-NOT-BUILT marked explicitly (absence otherwise
      reads as a bug);
-  4. **the next session's plan** — see "The next-session plan" below. His
+  6. **the next session's plan** — see "The next-session plan" below. His
      entire next input must be able to be the word "go".
 
 ## The next-session plan (Daniil, 2026-09-05 — stated twice, now a rule)
@@ -113,8 +166,10 @@ names:
   meaningful progress every time, not just minor cosmetic stuff". Six
   small fixes are not a session; one theme with visible results is;
 - the gate, as his judgement on the live build;
-- what he has to do (art, decisions), with defaults stated so "go" is
-  enough when he has no amendment;
+- what he has to do (art, decisions), **every one with a stated default** so
+  "go" is enough when he has no amendment. A call with no default may not
+  ship in a plan (agreement rule 3); each is also a `call` issue, and it
+  mints itself at the next wrap if he says nothing;
 - the biggest risk and what it makes expensive later if built wrong.
 
 The ledger row and this section say the same thing; the reply repeats it.
@@ -130,7 +185,12 @@ generated board (`demoMap` in the lab, or `__ad.cellAt` in the pane). PRD
   partial. "Part 2" requires consent, never a summary announcement.
 - A repeated identical request from Daniil is an escalation, not a fresh
   go-ahead. Two corrections on one topic = stop proposing, go read the code
-  that creates his constraint.
+  that creates his constraint. *(Rule 4 of the agreement is the same finding
+  applied to code: two rounds, then a spec.)*
+- **The finish line is a scene, not a count**: a stranger played, lost, and
+  started again. "All bugs fixed" is unreachable and grinds. What a stranger
+  did not notice is not ship-blocking — which is why the scorecard, not the
+  issue count, decides what a session contains.
 - Ask at genuine forks with the question tool BEFORE building. Producing a
   wrong artifact costs a round-trip; asking costs a sentence.
 - Sessions end with something Daniil can SEE at the live URL, led by that
