@@ -110,7 +110,18 @@ earlier ones:
    name, and one name in two places is the drift that was just removed.
 5. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings with
    tags (`[process] [comms] [claude-weakness] [claude-strength] [daniil]
-   [tooling]`). Corrections Daniil had to repeat get an entry. Two rules make
+   [tooling]`). Corrections Daniil had to repeat get an entry.
+
+   **Write it as source material, not as notes.** Daniil is using this project
+   to assess how Claude handles a multi-stage build, and the deliverable is a
+   detailed retrospective at the end — what worked, what did not, and how to
+   structure a future collaboration, possibly as a skill. That retrospective
+   will be written from these entries and from `POSTMORTEM-ARCHIVE.md`, so an
+   entry that would be unreadable to a stranger in three months has failed at
+   its main job even if it helped tomorrow. Append **as findings happen**,
+   during the session — one reconstructed at the wrap from memory is fiction.
+
+   Two further rules make
    the difference between a log that changes behaviour and one that only grows
    — it reached 2,141 lines and 314 findings while the checklist said to read
    "the last two sections", which is 1.5% of it:
