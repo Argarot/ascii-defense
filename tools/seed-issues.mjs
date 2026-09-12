@@ -10,6 +10,7 @@
  *
  *   node tools/seed-issues.mjs --dry-run    # print what it would do
  *   node tools/seed-issues.mjs              # create labels and issues
+ *   node tools/seed-issues.mjs <seed.json>  # a different seed file
  *
  * Needs a token with Issues: read and write. Without it every create returns
  * "Resource not accessible by personal access token" and the script stops on
@@ -55,7 +56,9 @@ function existingTitles() {
   return new Set(raw ? JSON.parse(raw).map((i) => i.title) : []);
 }
 
-const issues = JSON.parse(readFileSync(join(root, 'tools/issues-seed.json'), 'utf8'));
+const seedArg = process.argv.slice(2).find((a) => !a.startsWith('--'));
+const seedPath = join(root, seedArg ?? 'tools/issues-seed.json');
+const issues = JSON.parse(readFileSync(seedPath, 'utf8'));
 
 console.log(`labels:`);
 ensureLabels();
