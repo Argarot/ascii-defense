@@ -95,3 +95,31 @@ Windows 10, PowerShell 5.1, Node v22.23.2, npm 12.0.2, git 2.33.0.
 | The live queue — requests, calls, debt | GitHub Issues (`gh issue list --label call`) |
 
 Read the PRD before the architecture; read this file before touching anything.
+
+## 5. Traps a fresh context falls into
+
+- **The local gate is five things and EVERY exit code goes into the RED
+  check, lint included** — a printed "LINT" line once passed a
+  `prefer-const` that CI caught.
+- **No backtick inside a bash-quoted `node -e` string, ever**; patch
+  scratch scripts with the Edit tool, run them by path.
+- **A generator that merges into the file it reads is tested by its
+  second run** (tilegen accumulated 82 → 111 until its id filter matched
+  every id it makes).
+- **Vite's eager glob of sprite JSON needs a dev-server restart for NEW
+  files**; a new export needs one too. `preview_start` by name when the
+  pane's server is not running; the tab id changes.
+- **A gate that reads the analytic model reads a fixed world** (the hand
+  tiles); widening its tolerance a fourth time was the wrong fix.
+- **After the last merge of a day: `git fetch` and `git checkout -B main
+  origin/main`.** Between PRs: merge without `--delete-branch`, `git
+  reset -q origin/main` on the branch, `checkout -q -b <next>`, delete
+  the remote branch by name.
+- **`git add` with one nonexistent path stages nothing.**
+- **The pane at 1920×1080** (`resize_window`) is how the workshop's plates
+  fit; the hidden pane's default is far smaller and clips tall pages.
+- **Two agents share this working tree**: `git add` by explicit path,
+  never `stash`/`checkout .`/`reset --hard`; the placeholder-sprite tool
+  rewrites palette.json's key order — restore it by path.
+- **The font decides the language**: spleen has `┌┐└┘─│├┤┬┴┼`, `◆`,
+  braille — no double lines, no blocks.

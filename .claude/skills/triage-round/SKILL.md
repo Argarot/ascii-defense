@@ -124,6 +124,5 @@ these rules. It was worked as ten prose items; it sorts into three buckets:
 **Three defects he never needed to see. Six scope items, none of which had to
 happen that day. Two calls — one question.**
 
-Both calls shipped on their defaults and both are *still* sitting in
-HANDOVER's "readings for Daniil" a round later, because nothing closed them.
-Step 5 is what closes them.
+Both calls shipped on their defaults and both sat unclosed a round later,
+because nothing forced them shut. Step 5 is what closes them.

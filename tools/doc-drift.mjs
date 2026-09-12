@@ -4,9 +4,8 @@
  * each other"). The docs each own one job and REFERENCE each other; this
  * holds the seams where a wrap has drifted before:
  *
- *   1. HANDOVER's "Next session, proposed" names the same theme as the
- *      roadmap ledger's NEXT row, by name - planned rows carry no number -
- *      and no ledger row identity is used twice.
+ *   1. The roadmap names exactly one NEXT ledger row, has a plan section for
+ *      it, cites no "ledger row N", and uses no row identity twice.
  *   2. README's newest "Session N" paragraph is the session the ledger's
  *      newest DONE row says it was.
  *   3. README's top paragraph does not describe a map the game no longer
@@ -27,26 +26,21 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const problems = [];
 
-const handover = read('HANDOVER.md');
 const roadmap = read('docs/ROADMAP.md');
 const readme = read('README.md');
 const assets = read('docs/ASSETS.md');
 const spriteSchema = JSON.parse(read('packages/content/schema/sprite.schema.json'));
 
-// 1. HANDOVER's next session vs the ledger's NEXT row - matched by NAME.
-//    Planned rows are named, never numbered (WORKING-AGREEMENT rule 5); the
-//    old "(ledger row N)" citation is where two rows numbered 33 and three
-//    numbered 34 came from.
-const nextRow = roadmap.split('\n').find((l) => /^\| \*\*[^*]+\*\* \|.*\(NEXT/.test(l));
-const proposed = /^## Next session, proposed — (.+)$/m.exec(handover);
-if (!nextRow) problems.push('ROADMAP: no ledger row is marked NEXT (expected "| **Title** | ... (NEXT")');
-if (!proposed) problems.push('HANDOVER: no "## Next session, proposed — Title" heading');
-if (nextRow && proposed) {
-  const rowTitle = /\*\*([^*]+)\*\*/.exec(nextRow)[1].trim();
-  const title = proposed[1].trim();
-  if (title !== rowTitle) problems.push(`HANDOVER proposes "${title}" but the ledger's NEXT row is "${rowTitle}"`);
-  if (/ledger row \d+/.test(handover)) problems.push('HANDOVER cites a "ledger row N": planned rows are named, not numbered (WORKING-AGREEMENT rule 5)');
-}
+// 1. The ledger names exactly one NEXT row, and the plan for it exists.
+//    This used to compare HANDOVER's proposed session with the ledger's NEXT
+//    row across two files; HANDOVER was folded into the roadmap on 2026-09-12
+//    precisely so that the two could not disagree. The NEXT row owns the name
+//    and "## The next session" owns the plan - neither repeats the other, so
+//    there is nothing left to keep in sync, only to exist.
+const nextRows = roadmap.split('\n').filter((l) => /^\| \*\*[^*]+\*\* \|.*\(NEXT/.test(l));
+if (nextRows.length !== 1) problems.push(`ROADMAP: ${nextRows.length} ledger rows marked NEXT, expected exactly 1`);
+if (!/^## The next session$/m.test(roadmap)) problems.push('ROADMAP: no "## The next session" section - Daniil\'s next input must be able to be "go"');
+if (/ledger row \d+/.test(roadmap)) problems.push('ROADMAP cites a "ledger row N": planned rows are named, not numbered (WORKING-AGREEMENT rule 5)');
 
 // 1b. No ledger row identity is used twice. This is the check that was missing
 //     when the ledger grew a second row 33 and a third row 34.
@@ -77,8 +71,8 @@ const codex = spawnSync(process.execPath, ['tools/codex.mjs', '--check'], { cwd:
 if (codex.status !== 0) problems.push('the catalogue or the codex twin is stale: node tools/codex.mjs');
 
 // 6. The GitHub description and homepage (local only: needs gh). A WARNING,
-//    not a failure: the repo-scoped token cannot edit them (403 on
-//    2026-09-06), so the fix is Daniil's hand in the repo settings.
+//    not a failure: CI has no token. Since 2026-09-11 the project's token
+//    carries Administration write, so the wrap can fix it with `gh repo edit`.
 const warnings = [];
 if (!process.env.CI) {
   const gh = spawnSync('gh', ['repo', 'view', '--json', 'description,homepageUrl'], { cwd: ROOT, encoding: 'utf8', shell: true });
@@ -87,7 +81,7 @@ if (!process.env.CI) {
       const { description, homepageUrl } = JSON.parse(gh.stdout);
       const firstSentence = /^A (.+?)\./m.exec(readme.replace(/\n/g, ' '))?.[1] ?? '';
       if (!description || !description.toLowerCase().includes('tower defense')) warnings.push(`GitHub description "${description}" does not describe the game; README's first sentence: "A ${firstSentence}."`);
-      if (!/argarot\.github\.io\/ascii-defense/.test(homepageUrl ?? '')) warnings.push(`GitHub homepage is "${homepageUrl || '(empty)'}"; set it to https://argarot.github.io/ascii-defense/ in the repo settings (the token cannot)`);
+      if (!/argarot\.github\.io\/ascii-defense/.test(homepageUrl ?? '')) warnings.push(`GitHub homepage is "${homepageUrl || '(empty)'}"; run: gh repo edit --homepage https://argarot.github.io/ascii-defense/`);
     } catch {
       /* gh answered something unparseable: not a drift */
     }
@@ -100,4 +94,4 @@ if (problems.length) {
   for (const p of problems) console.error('  - ' + p);
   process.exit(1);
 }
-console.log('docs agree: HANDOVER/ROADMAP/README/ASSETS/CATALOGUE' + (process.env.CI ? '' : warnings.length ? ' (GitHub warnings above)' : ' and the GitHub description'));
+console.log('docs agree: ROADMAP/README/ASSETS/CATALOGUE' + (process.env.CI ? '' : warnings.length ? ' (GitHub warnings above)' : ' and the GitHub description'));

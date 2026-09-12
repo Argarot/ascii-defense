@@ -118,9 +118,9 @@ earlier ones:
    node tools/doc-drift.mjs    # the seams that are not generated
    ```
 
-   `doc-drift` holds HANDOVER's proposed session against the ledger's NEXT row
-   **by name**, no ledger row identity used twice, README's newest session
-   against the ledger's newest DONE row, the catalogue and codex twin, and the
+   `doc-drift` holds that the ledger names exactly one NEXT row and that the
+   section planning it exists, that no row identity is used twice, README's
+   newest session against the ledger's newest DONE row, the catalogue twin, the
    **GitHub description and homepage** (`gh repo edit --description …
    --homepage …` when they do not match). CI runs it minus the GitHub and
    issue halves, which need a token.
