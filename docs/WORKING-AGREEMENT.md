@@ -87,8 +87,9 @@ up with two rows numbered 33 and three numbered 34.
 
 - **Done rows** are keyed by their **date** and their name.
 - **Planned rows** are keyed by a **stable name** only. No number.
-- "Next" is a name. `HANDOVER`'s proposed session names the ledger's next row
-  by that name; `tools/doc-drift.mjs` matches on it.
+- "Next" is a name, written **once**: the ledger's NEXT row owns it and
+  `## The next session` plans it without repeating it. `tools/doc-drift.mjs`
+  checks that exactly one row is NEXT and that the section exists.
 
 A number may appear as a *count* ("about eight sessions to beta"). It is never
 an identifier.
@@ -111,7 +112,8 @@ Two label axes, and only two:
 - `blocks-ship` · `later` — whether beta waits for it.
 
 What lives in Issues: every open item — the technical-debt register, the
-standing open items, every call, and each new feedback round from round 34
+the standing open items, every call, every item of the plan's tree whose
+work is not done, and each new feedback round from round 34
 (titled `[r34.3] …`, his numbering kept). What does **not**: milestones,
 gates, decisions once minted, and the **closed** history — rounds 1–33 and
 every shipped item are frozen in `docs/history/`, because PRs and commits
