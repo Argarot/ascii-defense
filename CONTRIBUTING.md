@@ -7,6 +7,23 @@ Sections 1–5 own the **code** invariants and the traps. **Section 6 owns how a
 session runs** — how an incoming item is bucketed, when Daniil is asked, what a
 repeated fix round means. Read both.
 
+## Before writing any code today
+
+1. This file, end to end.
+2. **`POSTMORTEM.md`, its last two sections.** Gitignored, so it is on this
+   machine only. It is where the current fragilities are recorded — what broke
+   last session and what is half-fixed. Read it again at two other moments:
+   **before pushing back on Daniil** (to find out whether that argument has
+   already been had and settled), and **when a second fix round on one
+   subsystem is starting** (§6 rule 4 says stop and write a spec — the log is
+   where you find out whether that subsystem has a history of exactly this).
+3. [docs/ROADMAP.md](docs/ROADMAP.md) — "Where the project is today" and "The
+   next session", then the ledger's NEXT row.
+
+Everything else is reference: read [docs/PRD.md](docs/PRD.md) for what the game
+is, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it is built,
+[docs/CATALOGUE.md](docs/CATALOGUE.md) (generated) for what is in it today.
+
 ---
 
 ## 1. Invariants — do not break these
