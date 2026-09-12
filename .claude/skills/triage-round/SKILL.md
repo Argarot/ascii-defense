@@ -10,7 +10,7 @@ every item costs him the same attention — and most of them should cost him
 none. This skill is the intake: it sorts the round, opens the tracker's
 items, asks him **one** batched question, and starts work.
 
-Rules 1–3 of [docs/WORKING-AGREEMENT.md](../../../docs/WORKING-AGREEMENT.md)
+Rules 1–3 of [CONTRIBUTING.md §6](../../../CONTRIBUTING.md)
 are what this executes. Read them if any judgement below is unclear.
 
 **Do not begin any fix before the whole round is sorted.** Sorting takes

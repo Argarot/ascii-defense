@@ -84,130 +84,18 @@ save doubles as an exact replay.
 ## Where the project is
 
 **M1 passed its gate** ("is it fun?" — yes); M2 and the product shell are under
-way.
-**Session 33 (2026-09-08)** was Daniil's feedback round and the plan's
-five: Esc leaves every page and the workshop's purse sits in its title
-band; the clock deals a relic offer the board never went quiet for;
-**encounter cards** pop on every first meeting and the title's **CODEX**
-is the wiki of what was met; the title's towers animate; **the tree is
-drawn as a tree** of ringed plates with the towers' sprites; chests come
-half as often and **a boss leaves a crowned chest** rarer with the wave;
-the mender's field is a green pulse; a **creative page** behind `?dev` or
-Ctrl+Shift+D spawns anything; the tile library goes to eighty-two (every
-legal road shape, sixty land tiles) with a map sweep as the guard; a
-second and third copy of a special can be bought and every copy is
-placed; tile previews are one glyph a cell; and a stranger-test protocol
-waits for hands. **Session 32 (2026-09-08)** was Enemies II: seven more bodies, each a
-rule the towers answer (a courser that sprints while unhit, a ram that
-charges under half hp, a blob that dies into two, a mender that heals its
-neighbours, a mole that surfaces past the entry, a pavise whose shield
-faces the way it walks, and the Warden, a boss whose cover softens every
-hit around it); waves composed from **packs** of one kind on one front in
-a column, a wedge or a wall, the boss on a beat behind; every rule shown on
-the body, in the strip and as **the answer** under the next wave; and a
-balance pass with an enemy sweep (every body alone against every tower
-line) that set Standard at five bodies a wave on a steeper hp curve.
-**Session 31 (2026-09-07 night into 2026-09-08)** was Daniil's "make this
-session big": a **tutorial** for new players (thirteen steps, a pulsing
-box on the thing to look at, the Core's ground and the first fork among
-them), the **early game measured** on the base world and re-curved (armour
-never strips more than 65% of a hit, a boss's multiplier shrinks with its
-own weight, Calm has its own curve and meets the heavier kinds three waves
-later - a plain-Bolt player who forks holds it), the keyboard on every
-page, three comb passes over the pages and the HUD, relics that need a
-tower the run lacks left out of its pool, a **logic comb** over the sim
-against the relic cards (fourteen findings, all fixed - among them a
-repeatable Core heal, a sell refund at today's prices, and holes in the
-state hash), and personal bests on the history page.
-**Session 30 (2026-09-07)** gave the shell one face: every page is a
-framed plate with a lit title band, columns and key hints; the workshop is
-drawn as a tree with a node hanging from the one it needs; the Tile Smith
-is a page of the game behind its door; held and offered relics wear a ring
-in their rarity's colour with corners that say the kind; chests surface
-with a rarity that colours them and pays more; a Missile's blast looks
-unlike a Mortar's and a Laser's path colours its beam; and the lab read
-the tier-2 and tier-3 Ore a loaded vein tile banks.
-**Session 29 (2026-09-06 night into 2026-09-07)** built the meta tree
-in eight PRs: a fix bundle from Daniil's thought dump (the Bastion's reach
-as a plus, the build preview folding every modifier, the relic offer only
-at a quiet board, chests on ground, pierce within half a cell), then the
-tree as content and as a run's identity, the workshop page, Ore by tier,
-the tile shop and the Tile Smith's door, the lab at tree states (which
-priced the nodes), and the codex with locked entries, undiscovered fusions
-and the legendary lane. Working today: everything above, plus an **effects engine** (explosions
-with shockwaves, projectile trails, drifting terrain, void-as-water, tower idle
-frames — all of it respecting reduced motion, none of it able to touch the
-simulation), the **sim running in a Web Worker** so a hidden tab keeps playing,
-**saves that are replays** (seed + input log + the generated map, so resuming
-is bit-identical and survives generator changes), a balance lab
-(`node tools/lab.mjs`) that predicts a build's death wave and verifies it
-against the real headless sim, and full cross-machine determinism.
+way, and the project is working toward a stable beta.
 
-The map generator and worker lifecycle were **rebuilt against a written
-specification** (2026-08-19): every generated map is checked against the whole
-rule set — exactly one route per entry at the resolution enemies walk, so
-loops are impossible; a chosen special appears exactly once; a run start
-yields a fresh game or a stated error, never a silent fallback. The three
-bugs that forced the rebuild are named regression tests now.
+This section used to be a session-by-session changelog, and it was a copy of
+the roadmap's ledger that had to be kept in agreement with it by hand. It is a
+link now, because the ledger is the record:
 
-**Design round 1 (2026-09-03)** reworked the fundamentals a player's-eye
-review found flat: the wave clock and the call button, boss waves, traits as
-real rules, stackability and escalating prices for relics, caches that open
-free onto loot tables, a dead zone for the Mortar with the range drawn as a
-filled disc, and every tower fork rebuilt as two roles instead of two numbers.
-**Later that evening** Daniil's feedback on the build folded the passive
-layer back into the relic pool (passives are relics: one pool of
-fifty-two, the offer every second wave), gave combining its own window
-(the Forge), priced the Laser, Tesla and Missiles up, fixed the relic
-card, the HUD column's height and the copy buttons, and added a SPRITE
-PACK setting that loads the art agent's reworked pack beside the shipped
-one.
-**Session 28 (2026-09-06, evening)** built Relics II on Daniil's accepted
-defaults: a passive layer of six slots picked every second wave and
-folded into every tower; rarity with teeth (a wave-weighted roll on every
-draw, rare and epic copies with their own numbers), tags and set effects;
-replace, salvage and combine — two of a kind climb a rarity, five recipe
-pairs fuse; twenty more relics for forty-one; void chests claimed through
-one loot table; and a relic sweep that bounds the layer. The morning's
-feedback fixed the effects that died before the render clock reached
-them, statuses as the ground under the walker, a Laser with no range and
-a pulse a second, an Orbital column of light, and the paused board.
-**Session 27 (2026-09-06)** wrote the art agent's brief
-([docs/ART-AGENT.md](docs/ART-AGENT.md)) and the painted-study importer
-behind it, reworked the Laser into a pulsing background beam that reaches
-the road's turn, gave the picture a render clock, turned HOW TO PLAY into
-the codex (every tower, enemy and relic on pages with its sprite), added
-settings that persist, a summary that tells the run's story, first-run
-prompts, and the lab's three instruments.
-**Session 26 (2026-09-05, late night)** answered six feedback items (the
-strip at board scale, a build preview card, subtle attack sequences in
-every sprite, a curving continuous arc, interpolated movement) and gave the
-game its combat identity: kinetic and energy damage with resistances,
-statuses with sources, tower facing and the Laser Lance, the Bastion's
-aura and a unique gift for every tower next to the Core — **eight
-towers**.
-**Session 25 (2026-09-05, evening)** gave every enemy, relic and the Core
-face a generated placeholder sprite, taught the sprite format kinds and
-attack sequences (every tower flashes, recoils and charges on screen),
-drew the orbital as a beam, added two towers — the Tesla Coil's chain arcs
-and the Missile Rack — and wrote [docs/CATALOGUE.md](docs/CATALOGUE.md),
-every tower, enemy and relic in one table.
-**Sessions 23–24 (2026-09-05)** moved the Core to the east edge as a
-three-cell face with one entrance (Daniil's redesign), filled the board with
-road on a carve that no longer fails any loadout, put a strip under the board
-with the towers as sprite buttons and the Core's actives, measured the
-difficulty with an economy, and made the title a full-screen page.
-**Session 22 (2026-09-04)** grew the cell to 8×5 glyphs (a 40 px square) and
-made the board fit the screen; Daniil's own tower trees (fifteen states each,
-two idle frames) and cobbled roads (four variations, picked by position) are
-on the board through a sprite format that keys art by upgrade path. The
-variant sweep in `docs/lab/` measures every path; three forks still lose.
-
-**Not built yet**: the art agent's 6×5 relic sprites and chest sprite (the
-view draws its own ring and box until then), the enemies of Enemies II,
-copies of a tile as a multiset.
-The roadmap runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the
-item tree is in [docs/ROADMAP.md](docs/ROADMAP.md).
+- **what shipped, session by session, and what is next** —
+  [docs/ROADMAP.md](docs/ROADMAP.md)
+- **what is in the game right now** — [docs/CATALOGUE.md](docs/CATALOGUE.md),
+  generated from the content files, so it cannot be out of date
+- **what is still open** — the issue tracker:
+  `gh issue list --label scope`
 
 ## Design ideas worth knowing
 
