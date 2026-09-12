@@ -11,7 +11,7 @@ committed doc **did not happen**. Work through the checklist in order; each
 step names its file and its owner-of-truth. Do not restate content across
 files — that is how drift starts.
 
-**[docs/WORKING-AGREEMENT.md](../../../docs/WORKING-AGREEMENT.md) governs this
+**[CONTRIBUTING.md §6, how a session runs](../../../CONTRIBUTING.md) governs this
 skill.** The `triage-round` skill executes its rules 1–3 at a session's start;
 this one enforces 3–6 at the end. Where the two disagree, the agreement wins.
 
@@ -96,14 +96,14 @@ earlier ones:
 3. **README.md** — if any player-facing claim drifted. Read it END TO END
    before editing; patching the top of a drifted doc produced a
    self-contradicting README once already.
-4. **HANDOVER.md** — full rewrite, not a patch (it is a daily document):
-   state, fresh-context warnings, **"Next session, proposed"** (see below).
-   No sequencing, no checklists, and **no list of open items or "readings for
-   Daniil"** — those moved to the tracker on 2026-09-11 and must not grow
-   back. A handover is state; a list of open items is a queue, and the two do
-   not share a document. Where the sections were, HANDOVER carries the
-   queries. The proposed-session heading is `## Next session, proposed —
-   <Title>`: a name, no number, no "(ledger row N)".
+4. **docs/ROADMAP.md again, its two live sections** — rewrite **"Where the
+   project is today"** (what shipped, the golden hash, what was NOT built, the
+   gate) and **"The next session"** (see below). These were `HANDOVER.md` until
+   2026-09-12; it was folded in because a drift check existed solely to stop it
+   disagreeing with the ledger. Keep both free of **open-item lists** — a queue
+   in a plan document is what rule 6 forbids; link the query instead. The
+   next-session heading carries **no name**: the ledger's NEXT row owns the
+   name, and one name in two places is the drift that was just removed.
 5. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings
    with tags (`[process] [comms] [claude-weakness] [claude-strength]
    [daniil] [tooling]`). Corrections Daniil had to repeat get an entry.
@@ -119,8 +119,8 @@ earlier ones:
    ```
 
    `doc-drift` holds that the ledger names exactly one NEXT row and that the
-   section planning it exists, that no row identity is used twice, README's
-   newest session against the ledger's newest DONE row, the catalogue twin, the
+   section planning it exists, that no row identity is used twice, that README
+   has not grown a session changelog back, the catalogue twin, and the
    **GitHub description and homepage** (`gh repo edit --description …
    --homepage …` when they do not match). CI runs it minus the GitHub and
    issue halves, which need a token.

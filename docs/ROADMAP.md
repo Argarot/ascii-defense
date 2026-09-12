@@ -67,7 +67,7 @@ the seven; the art agent's studies for the seven and the chests; the
 register's rows below.
 
 **His calls live in the tracker now**, not here — each with a stated default
-and a deadline ([the working agreement](docs/WORKING-AGREEMENT.md), rule 3).
+and a deadline ([CONTRIBUTING §6](../CONTRIBUTING.md), rule 3).
 What beta waits on is three questions:
 
 ```bash
@@ -404,7 +404,7 @@ each. Sessions 12–15 all shipped in a single day, which is the evidence that t
 chunking was too cautious.
 
 **Planned rows are named, never numbered** ([the working
-agreement](WORKING-AGREEMENT.md), rule 5). Numbers that move cost more than they
+agreement](../CONTRIBUTING.md), rule 5). Numbers that move cost more than they
 explain: the rule they replace — *"positional, renumbered when the order changes,
 each row carrying its previous identity"* — produced two rows numbered 33 and
 three numbered 34, and the bookkeeping to cope with it. A **done** row keeps the
@@ -799,7 +799,7 @@ are also `call` issues in the tracker, because an unanswered decision is a
 queue item: `gh issue list --label call`. When one is answered, its row here
 is the record and the issue closes. A call answered by silence is minted here
 too, with the date and "by default, unanswered" ([the working
-agreement](WORKING-AGREEMENT.md), rule 3).*
+agreement](../CONTRIBUTING.md), rule 3).*
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
@@ -875,7 +875,7 @@ working, so the harness must only alarm on maps, never on draws.
 ## What Daniil has to do
 
 His queue is the tracker, never a section here — a list of open items in a
-plan document is the thing [the working agreement](WORKING-AGREEMENT.md)
+plan document is the thing [CONTRIBUTING §6](../CONTRIBUTING.md)
 rule 6 forbids.
 
 ```bash
