@@ -1,0 +1,554 @@
+[
+  {
+    "title": "[1.2.1] tools/build-rexpaint-font.mjs — spleen atlas as 16-column PNG, same in",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 1.2.1 `tools/build-rexpaint-font.mjs` — spleen atlas as 16-column PNG, same index order as runtime glyphset.\n\n---\n**M1** · 1.2 Phase 2 — art pipeline proof (~0.5 session, needs Daniil)\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[1.2.2] Install font into REXPaint (data/fonts/config.xt); verify braille rend",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 1.2.2 Install font into REXPaint (`data/fonts/_config.xt`); verify braille renders in the editor.\n\n---\n**M1** · 1.2 Phase 2 — art pipeline proof (~0.5 session, needs Daniil)\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[1.2.3] Author one tower sprite and one terrain tile in REXPaint (Daniil, hand",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 1.2.3 Author **one** tower sprite and **one** terrain tile in REXPaint (Daniil, hands-on).\n\n---\n**M1** · 1.2 Phase 2 — art pipeline proof (~0.5 session, needs Daniil)\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[1.2.4] tools/rexpaint-import.mjs — .xp → sprite JSON per ASSETS §3; commit .x",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 1.2.4 `tools/rexpaint-import.mjs` — `.xp` → sprite JSON per ASSETS §3; commit `.xp` sources.\n\n---\n**M1** · 1.2 Phase 2 — art pipeline proof (~0.5 session, needs Daniil)\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[1.2.5] Render the imported art in the browser; verify glyph-for-glyph fidelit",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 1.2.5 Render the imported art in the browser; verify glyph-for-glyph fidelity on the deployed page (cache-busted).\n\n---\n**M1** · 1.2 Phase 2 — art pipeline proof (~0.5 session, needs Daniil)\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[1.3.2] Three-level grid model ✓; subcell entity coordinates ✓ (continuous cel",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [~] 1.3.2 Three-level grid model ✓; **subcell entity coordinates** ✓ (continuous cell units in SoA arrays). Occupancy `Uint16Array` arrives with towers (Phase 4).\n\n---\n**M1** · 1.3 Phase 3 — the board (~2–3 sessions) · **partially built**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[1.6.3] Relic content",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [~] 1.6.3 **Relic content** *(PR #36)*: the eleven-relic starter pool shipped and effect-tested (`overflow`, `frostbite`, `tithe`, `splinter`, `vein_tap`, `loadbearing`, `ballistics`, `foundry`, `orbital`, `stasis`, `deep_vein`). Grows toward ~20 with 1.6.6 (prospecting-adjacent relics land with their mechanics).\n\n---\n**M1** · 1.6 Phase 6 — the power layer (~2 sessions) — runs before 1.5 · **partially built**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[1.5.1] Crude bot policy",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 1.5.1 ~~Crude bot policy~~ **DEFERRED** until systems settle — build/upgrade heuristic plus relic picks.\n\n---\n**M1** · 1.5 Phase 5 — smoke harness (~0.5–1 session)\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[1.5.2] `harness calibrate` / `check` CLI",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 1.5.2 ~~`harness calibrate` / `check` CLI~~ **DEFERRED** with 1.5.1. Calibration targets a distribution over relic draws, not a point (PRD §9).\n\n---\n**M1** · 1.5 Phase 5 — smoke harness (~0.5–1 session)\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[2.1] (PR #54, first shaped pass) The difficulty arc: the run ENDS — finalWa",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [~] 2.1 *(PR #54, first shaped pass)* **The difficulty arc**: the run ENDS — finalWave 20 (lab-chosen), THE CORE STANDS victory, WAVE X/20; composition escalates in kind (weighted picks), every 5th wave carries an elite surge, Juggernaut anchors the late game. Remaining for M2: full board scale, front escalation, threat levels as data.\n\n---\n**M2** · **partially built**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[2.2] Draft flow between tiles",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 2.2 ~~Draft flow between tiles~~ **CUT 2026-08-16** — a survivor of the pre-pivot design that should have died with player tile-laying on 2026-08-15. Replaced by relic pool expansion on the Phase 6 machinery.\n\n---\n**M2**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[2.3] Save/resume (must serialise relic state + the input log); run summary",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 2.3 Save/resume (must serialise relic state + the input log); run summary screen listing the relics the run was built on.\n\n---\n**M2**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[2.4] Ore banking → persistent meta store; relic pool unlock set persisted a",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 2.4 Ore banking → persistent meta store; relic pool unlock set persisted alongside it.\n\n---\n**M2**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[2.5] +4 towers, +~8 enemies, +relics (content, on the proven pipeline).",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 2.5 +4 towers, +~8 enemies, +relics (content, on the proven pipeline).\n\n---\n**M2**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[2.12] The naming pass",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 2.12 **The naming pass** (PRD §13, D8): printing-trade vocabulary across towers, enemies, upgrades, currencies. Before any art.\n\n---\n**M2**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[2.13] UI infrastructure",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [~] 2.13 **UI infrastructure** *(session 17: scrollable panel (wheel, click-safe regions) and square relic slots shipped)*. Remaining: illustrated relic cards ride the art pass (6.7); hidden-tab behaviour (D7, the worker) took the pre-approved cut line to the head of session 18.\n\n---\n**M2** · **partially built**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[2.27] The backbone reassessment",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 2.27 **The backbone reassessment** *(Daniil, playtest 16 — \"pile of patches\" verdict; session 20, agreed as a fresh-context session)*. The map generator is ~nine sequential passes, each a playtest response, none written against a shared specification — playtest 16's bugs are all pass-interaction failures. Scope, in order: **(a)** a written generator SPECIFICATION — Daniil's six rules (one core near center; specials guaranteed; all roads entry→core; exactly one route per entry, no loops; entries may move/appear/disappear during generation; void only >3 from road) plus the deal-phase guarantees (authored overlays, boons on ground only, ore floor, caches) — with every invariant **checked in one place at the end**, not implied by pass order; rebuild constraint-first where the pipeline cannot satisfy the spec cleanly. **(b)** the worker lifecycle (init/resume/save/genError) as an explicit state machine — \"new run\" provably yields a fresh sim or a surfaced error, never a silent fallback to the old one. **(c)** deterministic run/map identity designed (seed+loadout+modifiers → a shareable code; URL seeds rejected by Daniil as non-viable for a roguelite). **(d)** playtest 16's three bugs (boon-on-void, dropped bridge specials, phantom resume) written as named regression tests against the spec BEFORE the rebuild, so the redesign provably kills them. Gate: spec committed as a doc; all invariant checks and the three regression tests green; Daniil generates and plays loadout-heavy runs without a defect list.\n  **Session 20 (2026-08-19) progress:** spec conversation held; rules re-examined against the code, corrected by Daniil (D11–D16), and committed as **ARCHITECTURE §12** with `verifyMap()` checking every invariant in one place (PR 1). Amended plan, approved: **(1)** spec + verifyMap + measured baseline ✓, **(2)** road-half rebuild (carve/anchors/cell-denominated paths), **(3)** terrain+deal-half rebuild (void curve, ore bias, caches, authored-boon enforcement), **(4)** worker lifecycle + map-in-save + phantom-resume/dropped-specials regressions, **(5)** run code. Baseline measured: the old generator's *output* passes every checkable invariant across 145-map sweeps (tunnels included); the violations live in the authored-boon hole (pinned as an `it.fails` regression), the process rules (relaxation ladders, joint availability), and the slot-denominated knob.\n  **PRs 2–5 built and verified the same session:** **(2)** carve rebuilt constraint-first in `engine/mapgen/carve.ts` — cells-per-entry floor by construction (binds anchor arms too, per Daniil), relaxation ladders deleted, availability gated at tunnels/branch-starts/joints; **(3)** terrain+deal to spec — D14 drawn void curve (`voidShareTarget` rides the map), D11 enclosure pass deleted, D12 floor deleted, caches uniform, authored overlays refused loudly, `verifyMap` wired into every generation; **(4)** worker lifecycle as a transactional state machine (`workerRuntime.ts`, testable in Node) — init yields exactly ready|genError, `playing` begins on ready, RunSave v3 carries the map (resume never regenerates), the three playtest-16 bugs are named green regression tests; **(5)** displayed run code (`AD<genver>-<seed>-<threat>-<loadout hash>`) on pause and summary, copyable. Golden hash moved twice with reasons (carve, terrain). **All merged 2026-08-19/20: #88 (spec+verifyMap), #89 (carve), #93 (terrain+lifecycle+run code, 3-in-1 after the stacked-squash orphaning), #94/#95/#96 (playtest rounds 19–21: route-uniqueness law, special-shape law, 5 slots, paging, mirror dedup, minted deletion).** 167 tests green. **Gate remains open: Daniil generates and plays loadout-heavy runs without a defect list — his verdict.**\n\n---\n**M2**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[3.1] Real bot policy; calibration runs across seed corpus.",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 3.1 Real bot policy; calibration runs across seed corpus.\n\n---\n**M3**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[3.2] Calibrated curves committed as data; balance.yml CI gate.",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 3.2 Calibrated curves committed as data; `balance.yml` CI gate.\n\n---\n**M3**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[3.3] Human offset measured from Daniil's recorded replays.",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 3.3 Human offset measured from Daniil's recorded replays.\n\n---\n**M3**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[3.4] Unwinnable/trivial seed detection across ≥500 runs, measured with the",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 3.4 Unwinnable/trivial seed detection across ≥500 runs, measured with the relic layer held fixed — trivial-by-relic is the feature, trivial-by-map is the defect (PRD §9).\n\n---\n**M3**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[3.5] Tech tree stage 1 (~5 nodes); in-game autopilot.",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 3.5 Tech tree stage 1 (~5 nodes); in-game autopilot.\n\n---\n**M3**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[3.6] Calibration II",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 3.6 **Calibration II** *(Daniil, 2026-08-17; session 27)*: re-baseline after meta progression — tech-tree multipliers and pool unlocks move player power underneath the calibrated curves, so `balance.yml` is re-fixed and the seed corpus re-swept at several tree states. Gate: no trivial or unwinnable seed at any tree state the player can actually hold.\n\n---\n**M3**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[4.10] Attack shapes",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 4.10 **Attack shapes** (PRD §5.5) *(session 19; request 11)*: chain, beam along a run of road, arc/wedge AoE. Needs the effects engine (4.1) to be legible, which is why 4.1 comes first.\n\n---\n**M4**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[4.11] Per-upgrade tower visual identity",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 4.11 **Per-upgrade tower visual identity** *(sessions 28–30; requests V7, V11)*: the 14 defined tower forms read as distinct. Cited by 6.2. The open question D3 was closed as unanswerable in the abstract — it is answered here, with sprites in front of us, as \"what compositional rule makes 14 variants legible\".\n\n---\n**M4**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[4.12] Unrecovered",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 4.12 **Unrecovered** — requests V8 and V9 mapped here, and the item text was lost when FEEDBACK.md was deleted (PR #48) without the numbered items being copied into the WBS entries. Visual, from playtest round 1. **Ask Daniil to restate V8/V9 at the next playtest, then write this entry or retire the ID.** Recorded rather than silently dropped: an untracked request is how scope quietly shrinks.\n\n---\n**M4**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[4.13] UI art pass",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 4.13 **UI art pass** *(sessions 28–30; requests V1, V2)*: illustrated relic and upgrade cards, panel chrome. The structural half (scrollable panels, larger card geometry) is 2.13 in session 17; this is the art that fills it. *Reconstructed from the V1→2.13+4.13 split — confirm against V1/V2 when they are restated.*\n\n---\n**M4**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[4.14] Enemies drawn wider than one cell",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 4.14 **Enemies drawn wider than one cell** *(sessions 28–30; request V12)*: a boss drawn three glyphs wide keeps a one-cell footprint. Visual size yes, mechanical size no — the mechanical version is rejected in PRD §14, and this entry is the half that was accepted.\n\n---\n**M4**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[4.22] (session 18: reduced motion, export/import, two-click wipe) Settings s",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [~] 4.22 *(session 18: reduced motion, export/import, two-click wipe)* **Settings screen**. Remaining for session 22: colourblind palette, text scale, keybinds.\n\n---\n**M4** · **partially built**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[5.2] Enemies to ~14, covering the trait matrix and both damage types with r",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 5.2 Enemies to **~14**, covering the trait matrix and both damage types with real resistances.\n\n---\n**M5**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[5.3] Relics to ~40, weighted by rarity, with fusion recipes that make sense",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 5.3 Relics to **~40**, weighted by rarity, with fusion recipes that make sense.\n\n---\n**M5**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[5.4] Tile pool to ~100+ via generation (2.15) plus authored specials.",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 5.4 Tile pool to **~100+** via generation (2.15) plus authored specials.\n\n---\n**M5**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[5.5] Threat levels as data — the generator knobs bound into named difficult",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 5.5 Threat levels as data — the generator knobs bound into named difficulties.\n\n---\n**M5**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[5.6] Single-use, high-damage relics",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 5.6 **Single-use, high-damage relics** *(Daniil, 2026-09-05; PRD §7.8)*: a nuke or its kin in the consumable tier — one moment that turns a wave; loot-table weighted so it is a find, not a plan.\n\n---\n**M5**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[6.1] Art round-trip proof (Phase 2 gate) — opens the art-polish block. Neit",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 6.1 Art round-trip **proof** (Phase 2 gate) — opens the art-polish block. Neither REXPaint tool exists yet (`tools/build-rexpaint-font.mjs`, `tools/rexpaint-import.mjs` — confirmed absent 2026-08-17). **RISK FORMALLY ACCEPTED by Daniil, 2026-08-17**, and his reasoning reframes it: *\"REXPaint is just a way to improve graphics. If this tool doesn't work, we'll find another one — it will not make or break the project.\"* The dependency is on **some** authoring path, not on REXPaint, and 4.1's frame model is deliberately format-agnostic (plain grids in sprite JSON, nothing importer-specific), so swapping tools costs an importer and touches no schema, no content and no engine code. This is therefore a tool choice with alternatives, **not** an unverified foundation — the dev's \"prove the path first\" instinct misapplied a rule meant for load-bearing infrastructure (hosting, runtime, API). Art quality gets its own dedicated polish block regardless of which tool wins.\n\n---\n**M6**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[6.2] Full art pass: towers with per-upgrade visual identity (V11), enemies",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 6.2 Full art pass: towers with per-upgrade visual identity (V11), enemies with trait markers, terrain, UI.\n\n---\n**M6**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[6.3] Effects at scale: every attack shape, impact and death authored agains",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 6.3 Effects at scale: every attack shape, impact and death authored against the engine from 4.1.\n\n---\n**M6**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[6.4] Biomes — palette and tile-pool variants per threat level.",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 6.4 Biomes — palette and tile-pool variants per threat level.\n\n---\n**M6**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[6.5] Minimal SFX",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 6.5 **Minimal SFX** (Daniil, 2026-08-16 — PRD §16): impacts, builds, wave start, UI. Not music, not a mix. Includes sourcing and licence clearance, which is the part that is not free.\n\n---\n**M6**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[6.7] (session 25, PR #125: every relic has a 4×3 placeholder icon drawn in",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [~] 6.7 *(session 25, PR #125: every relic has a 4×3 placeholder icon drawn in its slot in the strip and the column, from `tools/placeholder-sprites.mjs`; the art agent's replace them; the offer modal still shows text)* **Relic art at board-glyph scale** (PRD §13) *(Daniil, 2026-08-17)*: relics drawn as sprites in the *board's* 5×8 font rather than the HUD's 2× font — the smaller cell buys the detail that makes a relic read as an object. Needs the HUD to host a board-scale sub-surface. *(The **square slots** half is cheap and rides 2.13 in session 17; only the art waits for the pass.)*\n\n---\n**M6** · **partially built**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[6.8] Smoothness via spatial phase",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 6.8 **Smoothness via spatial phase** (PRD §13) *(Daniil, 2026-08-17)*: waves that travel across ground and water — each glyph's phase offset by its position — plus finer effect interpolation. **Explicitly not** \"redraw less\": the full board redraw is already well under a millisecond, so partial redraw optimises the wrong quantity. Recorded so a future session does not spend itself on the intuitive-but-wrong mechanism.\n\n---\n**M6**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[6.11] Smoothness, the remaining levers",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 6.11 **Smoothness, the remaining levers** *(from Daniil's round 25, item 4; the render clock is in)*. What Stone Story and Cogmind have that this does not, in order of cost: (a) **many-frame sprites at a fast cadence** — every placeholder has two frames at 360–900 ms; four to eight at 120–200 ms is the art agent's job (the brief says so); (b) **a particle layer on the world clock** — sparks, motes and trails as many small glyphs each moving one cell per frame at 60 Hz, instead of tick-anchored effects with a few glyphs; (c) **sub-glyph movement is impossible** in a glyph grid, so a walker steps a glyph at a time — at 0.06 cells/tick that is one step every two ticks horizontally and every four vertically; a faster world (more cells per second) or larger walkers reads smoother, and the vertical step (8 px) is the coarser of the two; (d) **the wall-clock idle cycle phase-offset** is right; the strip and HUD redraw every frame already. A session's worth, mostly (a) and (b).\n\n---\n**M6**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[7.1] Tech tree stage 2 — five disciplines, alternate tier-5s, capped econom",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 7.1 Tech tree stage 2 — five disciplines, alternate tier-5s, capped economy nodes (PRD §11).\n\n---\n**M7**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[7.2] Relic pool and tile pool unlocks wired to the tree.",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 7.2 Relic pool and tile pool unlocks wired to the tree.\n\n---\n**M7**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[7.3] Run history and personal bests — the reason to open the game on day ni",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 7.3 Run history and personal bests — the reason to open the game on day nine. *(The history page shipped in session 29, PR #169 - 7.9.2; personal bests remain.)*\n\n---\n**M7**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[7.4] Daily challenges (a fixed seed per day) and replay sharing — both near",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 7.4 Daily challenges (a fixed seed per day) and replay sharing — both nearly free given determinism.\n\n---\n**M7**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[7.5] Tile Smith as an in-game meta feature (PRD §11) — the authorship endga",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 7.5 Tile Smith as an in-game meta feature (PRD §11) — the authorship endgame. **Features price the tile** (richer nodes cost more to mint), so the tool and the shop share one pricing function. Now also owns the **loadout slot economy** *(Daniil, 2026-08-17)*: the number of special-tile slots a run may carry is a tree upgrade, locked slots render as locked rather than hidden, and the minted-tile collection persists. The slot *mechanic* ships in session 19 (2.21) with a fixed count and everything unlocked; this is the economy on top.\n\n---\n**M7**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[7.6] Tech tree stage 3, Potency — optional, and the trigger for seeds × met",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 7.6 Tech tree stage 3, Potency — **optional**, and the trigger for `seeds × meta tiers` in CI.\n\n---\n**M7**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[7.8] Monetization — the door stays open",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 7.8 **Monetization — the door stays open** *(D27; PRD §18)*: no build work; a checklist that nothing in persistence, identity or content licensing forecloses a Stone-Story-style paid layer later.\n- **7.9 The tree, stage 1** *(session 29, 2026-09-06; Daniil's answers: a tree with branches, only Ore in tiers, ~5 runs to the towers, unlocks in the run code, the Tile Smith after every tile is bought; PRD §11 \"Built\")*:\n\n---\n**M7**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[8.1] Performance budget enforced: 60 fps at full board, bundle and asset bu",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 8.1 Performance budget enforced: 60 fps at full board, bundle and asset budgets tracked in CI.\n\n---\n**M8**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[8.2] Browser support matrix; WebGL2 absence handled with an honest message.",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 8.2 Browser support matrix; WebGL2 absence handled with an honest message.\n\n---\n**M8**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[8.3] Error handling audit — every throw reachable from a player path gets a",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 8.3 Error handling audit — every throw reachable from a player path gets a recovery story.\n\n---\n**M8**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[8.4] Save migration tested across versions, including the corrupt-save path",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 8.4 Save migration tested across versions, including the corrupt-save path.\n\n---\n**M8**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[8.5] External playtest",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 8.5 **External playtest** — strangers, no explanation offered, observed. The first evidence that is not Daniil.\n\n---\n**M8**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[8.6] Release process: versioning, changelog, tagged beta, a way for players",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 8.6 Release process: versioning, changelog, tagged beta, a way for players to send a replay file back.\n\n---\n**M8**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[8.7] Licences and attribution verified (Apache-2.0; spleen BSD-2-Clause).",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 8.7 Licences and attribution verified (Apache-2.0; spleen BSD-2-Clause).\n\n---\n**M8**\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.2] Higher tiers unlock by forging",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.2 **Higher tiers unlock by forging**: the meta save records the tier a relic was forged to; the pool deals a tier only once forged.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.3] Relics earned by wins",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.3 **Relics earned by wins**: difficulty (Threat) sets the rarity granted at a win; the tree gates branches and capacity; paid chests are §18's door.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.5] Core gifts as global powerups",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.5 **Core gifts as global powerups** (§4.5 rework): a tower kind beside the Core changes a run-wide rule (Laser: the Orbital doubles and recharges faster).\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.6] Ignore-armour reads too strong: a balance reading against armoured wa…",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.6 Ignore-armour reads too strong: a balance reading against armoured waves, then the number. *(Half answered in session 31, PR #182: the armour floor - armour strips at most 65% of a hit - narrows the gap; the fork's own number is still to read.)*\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.16] Consumable: place boon ground on an empty ground cell",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.16 Consumable: place boon ground on an empty ground cell.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.17] Consumable: god mode for one tower (a timed +100% to everything) with…",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.17 Consumable: god mode for one tower (a timed +100% to everything) with an epic sequence.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.20] Neutral structures - debated, open (the reply argues the Tile Smith's…",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "- [ ] 9.20 Neutral structures - **debated, open** (the reply argues the Tile Smith's placeables and boon ground already own this).\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.22] Endless mode as the tree's last unlock",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.22 Endless mode as the tree's last unlock.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.26] Slows stacking multiplicatively with a floor - debated, open; the swe…",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "- [ ] 9.26 Slows stacking multiplicatively with a floor - **debated, open**; the sweep decides.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.28] The burn ignores armour and stacks per source: the Laser's control pa…",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.28 The burn ignores armour and stacks per source: the Laser's control path becomes the anti-armour path.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.29] Towers that exist only as relics (single-build)",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.29 Towers that exist only as relics (single-build).\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.30] The menus reworked",
+    "labels": [
+      "scope",
+      "later"
+    ],
+    "body": "- [ ] 9.30 **The menus reworked** to Stone-Story quality: frames, ornament, animated titles, a design pass on every page.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  },
+  {
+    "title": "[9.32] Frames per sprite vs procedural animation: an experiment sprite at 4/…",
+    "labels": [
+      "call",
+      "later"
+    ],
+    "body": "- [ ] 9.32 Frames per sprite vs procedural animation: an experiment sprite at 4/8/16 frames for his eye; the reply's recommendation is 4–8 authored frames plus procedural light.\n\n---\n**Backlog** · the thought dump of 2026-09-06\n\n*Migrated 2026-09-12 from the work-breakdown structure. Text verbatim; the frozen original is `docs/history/wbs-2026-09-11.md`. The ID is stable and is cited by PRs and commits — the plan's item tree in `docs/ROADMAP.md` lists it, and this issue being open is what makes it open.*"
+  }
+]
