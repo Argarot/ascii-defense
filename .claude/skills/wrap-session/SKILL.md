@@ -53,7 +53,7 @@ writing anything:
   no tracker.
 - **Mint the unanswered defaults.** Every `call` issue asked in a previous
   session and still unanswered is closed now: its default goes into
-  **docs/WBS.md**'s decision table with today's date and the words "by
+  **docs/ROADMAP.md**'s decision table with today's date and the words "by
   default, unanswered", and the issue closes citing that row. It is a decision
   from this moment — reversible like any other, never again an open question.
   This is the step that stops his queue accreting; skipping it is how
@@ -81,24 +81,22 @@ leave out. Sessions 20 and 21 are the evidence for both halves of this rule.
 Each file has ONE job. Update in this order so later files can reference
 earlier ones:
 
-1. **docs/WBS.md** — mark `[x]` with PR numbers on every finished item; add
-   new items born today; add one paragraph to the **request index** saying
-   where today's round went, **indexed by DANIIL'S numbering, never by the
-   plan's**. From round 34 the round's items are issues (`[r34.3] …`) and the
-   index paragraph is the summary, not the list. Minted defaults go in the
-   decision table (step 1b).
-2. **docs/ROADMAP.md** — strike completed ledger rows (`~~N~~ DONE (PRs)`);
-   ensure the next open row states contents AND gate, concretely enough that
-   Daniil can just say "go". **Planned rows are NAMED, never numbered**
-   (agreement rule 5) — do not renumber anything, do not add a number to a
-   planned row, and never let one identity appear twice. `doc-drift` fails on
-   both.
-3. **docs/PRD.md** — only if the day changed what the game IS (mechanics,
+1. **docs/ROADMAP.md** — the one plan document. Add items born today to the
+   **item tree** with a fresh id (ids are stable forever); **never write an
+   item's state** — `node tools/plan-state.mjs` renders done-vs-open from the
+   tracker, and a hand-typed checkbox is the drift this merge removed. Minted
+   defaults go in the decision table (step 1b). Strike completed ledger rows
+   (`~~N~~ DONE (PRs)`) and ensure the next open row states contents AND gate,
+   concretely enough that Daniil can just say "go". **Planned rows are NAMED,
+   never numbered** (agreement rule 5) — do not renumber anything, do not add a
+   number to a planned row, and never let one identity appear twice.
+   `doc-drift` fails on both.
+2. **docs/PRD.md** — only if the day changed what the game IS (mechanics,
    rejections, acceptance criteria). Rejections go to §14 with reasons.
-4. **README.md** — if any player-facing claim drifted. Read it END TO END
+3. **README.md** — if any player-facing claim drifted. Read it END TO END
    before editing; patching the top of a drifted doc produced a
    self-contradicting README once already.
-5. **HANDOVER.md** — full rewrite, not a patch (it is a daily document):
+4. **HANDOVER.md** — full rewrite, not a patch (it is a daily document):
    state, fresh-context warnings, **"Next session, proposed"** (see below).
    No sequencing, no checklists, and **no list of open items or "readings for
    Daniil"** — those moved to the tracker on 2026-09-11 and must not grow
@@ -106,20 +104,33 @@ earlier ones:
    not share a document. Where the sections were, HANDOVER carries the
    queries. The proposed-session heading is `## Next session, proposed —
    <Title>`: a name, no number, no "(ledger row N)".
-6. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings
+5. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings
    with tags (`[process] [comms] [claude-weakness] [claude-strength]
    [daniil] [tooling]`). Corrections Daniil had to repeat get an entry.
-7. **`node tools/doc-drift.mjs`** (Daniil, 2026-09-06: "make sure the docs
-   don't drift from each other, and that the repo description is
-   up-to-date") — HANDOVER's proposed session names the ledger's NEXT row
-   (by row number and title), README's newest session paragraph is the
-   ledger's newest DONE row, README's top paragraph describes the map the
-   game makes, ASSETS names every sprite kind, the catalogue and codex twin
-   are current, and the **GitHub description and homepage** match (`gh repo
-   edit --description … --homepage …` when they do not). CI runs the same
-   check minus the GitHub half. A drift it cannot express (a number quoted
-   in two files, a rejected design still described as live) is still yours
-   to read for: grep the day's changed nouns across docs/ before shipping.
+6. **Run the generators, then the drift gate** (Daniil, 2026-09-06: "make sure
+   the docs don't drift from each other, and that the repo description is
+   up-to-date"). **A generated section is never edited by hand** — that is the
+   whole reason it is generated:
+
+   ```bash
+   node tools/codex.mjs        # docs/CATALOGUE.md from content JSON
+   node tools/plan-state.mjs   # ROADMAP's item state from open issues
+   node tools/doc-drift.mjs    # the seams that are not generated
+   ```
+
+   `doc-drift` holds HANDOVER's proposed session against the ledger's NEXT row
+   **by name**, no ledger row identity used twice, README's newest session
+   against the ledger's newest DONE row, the catalogue and codex twin, and the
+   **GitHub description and homepage** (`gh repo edit --description …
+   --homepage …` when they do not match). CI runs it minus the GitHub and
+   issue halves, which need a token.
+
+   A drift it cannot express — a number quoted in two documents, a rejected
+   design still described as live — is still yours to read for: grep the day's
+   changed nouns across `docs/` before shipping. **Better: if you find yourself
+   keeping two files in agreement by hand, that is a signal to merge them or
+   generate one of them,** which is how the doc set went from seven
+   hand-edited files to three.
 
 ## 3. Invariant hygiene
 

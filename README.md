@@ -207,7 +207,7 @@ variant sweep in `docs/lab/` measures every path; three forks still lose.
 view draws its own ring and box until then), the enemies of Enemies II,
 copies of a tile as a multiset.
 The roadmap runs to a stable beta at [docs/ROADMAP.md](docs/ROADMAP.md); the
-checklist is [docs/WBS.md](docs/WBS.md).
+item tree is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Design ideas worth knowing
 

@@ -20,7 +20,7 @@ Live: <https://argarot.github.io/ascii-defense/>
 
 ---
 
-## M1 — The fun test *(11–14 sessions)*
+## M1 — The fun test
 
 One board. Lay tiles, build towers, survive waves. Everything needed to answer
 "is this fun?" and nothing else.
@@ -130,7 +130,7 @@ of whether to keep building is settled.
 > authored twice. Read a milestone below for *what it contains and why*; read
 > the ledger for *when*.
 
-## M2 — A complete run *(sessions 12–21, interleaved)*
+## M2 — A complete run
 
 Reshaped 2026-08-16 by the first playtest. The headline is not "more content"
 but **making the existing systems demand decisions**: an economy that runs dry,
@@ -140,7 +140,7 @@ one tower the wrong answer, and a difficulty curve that ends every run in death.
 **Gate:** a full run, start to victory or death, that demands decisions
 throughout.
 
-## M4 — The shell *(sessions 16, 18, 22)*
+## M4 — The shell
 
 The game stops being a simulation with a URL parameter and becomes something a
 stranger can be handed: title, run setup, pause, run summary, settings,
@@ -158,13 +158,13 @@ version before content churn and expensive after.
 **Gate:** a stranger opens the link, plays a run, loses, reads why, starts
 another; progress survives a reload.
 
-## M5 — Content completeness *(sessions 23–24)*
+## M5 — Content completeness
 
 8 towers, ~14 enemies, ~40 relics, ~100 tiles, threat levels as data.
 
 **Gate:** two runs do not resemble each other.
 
-## M3 — Trustworthy difficulty *(sessions 25 and 28)*
+## M3 — Trustworthy difficulty
 
 Two passes, deliberately: calibration I (session 25) fixes the curves once
 content is complete; calibration II (session 28) re-baselines them after meta
@@ -182,7 +182,7 @@ curves we would immediately throw away.
 **Gate:** the harness catches an injected regression; no unwinnable or trivial
 seed across ≥500 runs.
 
-## M6 — Presentation at scale *(sessions 29–31)*
+## M6 — Presentation at scale
 
 Full art pass with per-upgrade tower identity, effects for every attack shape,
 biomes. Sequenced after meta progression *(Daniil, 2026-08-17)*: visuals come
@@ -192,14 +192,14 @@ pipeline's first real test, a stated and accepted risk until then.
 
 **Gate:** the board reads as a place, not a diagram.
 
-## M7 — Meta progression, full *(sessions 26–27)*
+## M7 — Meta progression, full
 
 Tech tree stage 2, pool unlocks, run history, dailies, replay sharing, Tile
 Smith as an in-game feature.
 
 **Gate:** finishing a run visibly changes the next one.
 
-## M8 — Beta hardening and release *(sessions 32–33)*
+## M8 — Beta hardening and release
 
 Performance and bundle budgets in CI, browser matrix, error-path audit, save
 migration testing, **external playtest with strangers**, release process.
@@ -357,6 +357,348 @@ all moved earlier — each was mis-filed as "expansion" when it was really
 
 ---
 
+## The item tree
+
+Every work package, with a **stable id** that PRs and commits cite. This is
+*scope*: what the project is made of, independent of when it is built — the
+ledger above owns the order.
+
+**No item's state is written here.** An id is **open** when a GitHub issue
+titled `[<id>] …` is open, and **done** otherwise; the block below is
+rendered from the tracker by `node tools/plan-state.mjs`. That replaces 144
+checkboxes maintained by hand across 122 commits, which is where this
+project's doc drift mostly came from.
+
+```bash
+gh issue list --search '[4.'          # one milestone's open items
+gh issue view <n>                     # an item's full text
+```
+
+The verbatim pre-merge text of every item — including the 127 already done —
+is frozen in [docs/history/wbs-2026-09-11.md](history/wbs-2026-09-11.md).
+
+<!-- generated:state -->
+*Rendered from open issues by `node tools/plan-state.mjs` — do not edit by hand.*
+
+**144 of 216 items done; 72 open.**
+
+| | done | open | the open ids |
+|---|---:|---:|---|
+| **M1** | 42 | 9 | 1.2.1 (#251) · 1.2.2 (#252) · 1.2.3 (#253) · 1.2.4 (#254) · 1.2.5 (#255) · 1.3.2 (#256) · 1.5.1 (#258) · 1.5.2 (#259) · 1.6.3 (#257) |
+| **M2** | 29 | 8 | 2.1 (#260) · 2.2 (#261) · 2.3 (#262) · 2.4 (#263) · 2.5 (#264) · 2.12 (#265) · 2.13 (#266) · 2.27 (#267) |
+| **M3** | 0 | 6 | 3.1 (#268) · 3.2 (#269) · 3.3 (#270) · 3.4 (#271) · 3.5 (#272) · 3.6 (#273) |
+| **M4** | 38 | 7 | 4.10 (#274) · 4.11 (#275) · 4.12 (#276) · 4.13 (#277) · 4.14 (#278) · 4.22 (#279) · 4.24 (#227) |
+| **M5** | 2 | 5 | 5.2 (#280) · 5.3 (#281) · 5.4 (#282) · 5.5 (#283) · 5.6 (#284) |
+| **M6** | 3 | 8 | 6.1 (#285) · 6.2 (#286) · 6.3 (#287) · 6.4 (#288) · 6.5 (#289) · 6.7 (#290) · 6.8 (#291) · 6.11 (#292) |
+| **M7** | 13 | 7 | 7.1 (#293) · 7.2 (#294) · 7.3 (#295) · 7.4 (#296) · 7.5 (#297) · 7.6 (#298) · 7.8 (#299) |
+| **M8** | 0 | 7 | 8.1 (#300) · 8.2 (#301) · 8.3 (#302) · 8.4 (#303) · 8.5 (#304) · 8.6 (#305) · 8.7 (#306) |
+| **Backlog** | 17 | 15 | 9.2 (#307) · 9.3 (#308) · 9.5 (#309) · 9.6 (#310) · 9.16 (#311) · 9.17 (#312) · 9.20 (#313) · 9.21 (#246) · 9.22 (#314) · 9.26 (#315) · 9.28 (#316) · 9.29 (#317) · 9.30 (#318) · 9.31 (#247) · 9.32 (#319) |
+
+<!-- /generated:state -->
+
+### M1 — The fun test
+
+| id | item | shipped |
+|---|---|---|
+| `1.1.1` | Convert repo to npm workspaces: `packages/{engine,content,render,view,bot,harn… | #1 |
+| `1.1.2` | TypeScript project references / per-package tsconfig; `typecheck` covers all… | #1 |
+| `1.1.3` | invariant rules | #2 |
+| `1.1.4` | Vitest 4 for Node-side unit tests; 11 RNG tests | #3 |
+| `1.1.5` | `pure-rand` seeded PRNG with named streams (`map\|drafts\|waves\|combat` as a… | #3 |
+| `1.1.6` | Vitest Browser Mode + Playwright provider; 5 GLTerm tests in real Chromium… | #5 |
+| `1.1.7` | Text-snapshot infrastructure on `GLTerm.toText()`; `hud-frame.golden.txt`… | #5 |
+| `1.1.8` | Content pipeline: palette + sprite schemas, codegen with embedded schema… | #6 |
+| `1.1.9` | `ci.yml` complete: lint, typecheck, unit, browser (Playwright cached)… | #4-#6 |
+| `1.2.1` | `tools/build-rexpaint-font.mjs` — spleen atlas as 16-column PNG, same index… |  |
+| `1.2.2` | Install font into REXPaint (`data/fonts/_config.xt`); verify braille renders… |  |
+| `1.2.3` | one |  |
+| `1.2.4` | `tools/rexpaint-import.mjs` — `.xp` → sprite JSON per ASSETS §3; commit `.xp`… |  |
+| `1.2.5` | Render the imported art in the browser; verify glyph-for-glyph fidelity on… |  |
+| `1.3.1` | Fixed 20 Hz tick loop; pause / 1× / 2× / 4× as tick frequency in the app's… | #13 |
+| `1.3.2` | subcell entity coordinates |  |
+| `1.3.3` | derived center-or-nothing connectors | #8 |
+| `1.3.4` | road-join rule | #8 |
+| `1.3.5` | Starter library: 11 tiles authored native 5×5 in… | #8 |
+| `1.3.6` | Flow field (uniform-cost BFS — Dijkstra unneeded at cost 1) toward Core… | #13 |
+| `1.3.7` | Terrain rendering: weighted glyph pools, mixing hash, boundary shading (lit… | #14 |
+| `1.3.8` | Connectivity tests: 35 seeded boards over sizes 2×1…14×7 + adversarial… | #8 |
+| `1.3.9` | Tile Smith | #10 |
+| `1.3.10` | Map generator | #12 |
+| `1.3.11` | Sim skeleton: SoA walker enemies marching entries→Core, deterministic to the… | #13 |
+| `1.4.1` | Tower framework complete: one-cell footprint, occupancy, build/sell, 3×5… | #17 |
+| `1.4.2` | Bolt, Mortar (explosive AoE), Frost (slow) with full paths as content… | #16 |
+| `1.4.3` | Six enemies across the trait matrix (armor blunts, shields burn first… | #16 |
+| `1.4.4` | Targeting (first-on-path, deterministic ties) + subcell projectiles + damage… | #17 |
+| `1.4.5` | Scrap economy + waves with telegraphed widening fronts + Core health and… | #19 |
+| `1.4.6` | Refinery + Ore | #32 |
+| `1.4.7` | HUD complete for M1: 2× panel, build palette, tower inspector w/… | #9 |
+| `1.4.8` | Replay + golden hash | #33 |
+| `1.5.1` | DEFERRED |  |
+| `1.5.2` | DEFERRED |  |
+| `1.5.3` | Balance lab — headless runner | #52 |
+| `1.5.4` | Balance lab — analytic model | #52 |
+| `1.6.1` | Hook layer | #36 |
+| `1.6.2` | Acquisition B | #36 |
+| `1.6.3` | Relic content | #36 |
+| `1.6.4` | Core as vessel | #40 |
+| `1.6.5` | Acquisition C then A | #41 |
+| `1.6.6` | Prospecting | #42 |
+| `1.7.1` | Preview fold bug | #51 |
+| `1.7.2` | The pool runs dry silently | s28 |
+| `1.7.3` | Difficulty shape, first pass | #52, s13 |
+| `1.7.4` | Speed control gains 8× (the frame loop already tolerates it: 32 ticks/frame ≈… | #51 |
+| `1.7.5` | Refinery card shows remaining deposit instead of kills. | #54 |
+| `1.7.6` | A used consumable frees its slot. | #51 |
+| `1.7.7` | Cut the `foundry` relic | #51 |
+| `1.7.8` | Mining 10× slower, landed with finite deposits. | #54 |
+
+### M2 — A complete run
+
+| id | item | shipped |
+|---|---|---|
+| `2.1` | The difficulty arc | #54 |
+| `2.2` | CUT 2026-08-16 |  |
+| `2.3` | Save/resume (must serialise relic state + the input log); run summary screen… |  |
+| `2.4` | Ore banking → persistent meta store; relic pool unlock set persisted… |  |
+| `2.5` | +4 towers, +~8 enemies, +relics (content, on the proven pipeline). |  |
+| `2.6` | Finite ore deposits | #54 |
+| `2.7` | Relic economy | s28 |
+| `2.8` | Damage types decide fights | #132, s26 |
+| `2.9` | Boon ground | #61 |
+| `2.10` | Tower legibility | s17 |
+| `2.11` | Prospecting rework | #57 |
+| `2.12` | The naming pass |  |
+| `2.13` | UI infrastructure | s17 |
+| `2.14` | Enemy readouts | s17 |
+| `2.15` | Generated tile library | #60 |
+| `2.16` | Roads that touch without connecting | #55 |
+| `2.17` | Carve v3 — edge partitions + turning tunnels | #60 |
+| `2.18` | Tile Smith overlay authoring | s19 |
+| `2.19` | Combat truth | s17 |
+| `2.20` | Tile Smith cannot mint an unplaceable tile — by construction | s17 |
+| `2.21` | Basic and special tiles | s19 |
+| `2.22` | Loot tables + void chests | s28 |
+| `2.23` | Tile Smith: explicit segment brushes in a matrix | s19 |
+| `2.24` | Rotation-canonical tiles | s19 |
+| `2.25` | Health pips carry colour |  |
+| `2.26` | Validity: no roads to nowhere | s19 |
+| `2.27` | The backbone reassessment | s20 |
+| `2.28` | Session 21 (2026-09-03): the audit, the hygiene round, design round 1 | #98–#103, s21 |
+| `2.29` | Geometry migration: 8×5-glyph cells | #105–#109, s22 |
+| `2.30` | The board fills | s24 |
+| `2.31` | Statuses visible, every effect source tracked, every rule printed | #133, s26 |
+| `2.32` | Sprite contrast lint | s24 |
+| `2.34` | Tower facing | #134, s26 |
+| `2.35` | Cells next to the Core are precious | #135, s26 |
+| `2.36` | The build sweep | s24 |
+| `2.37` | Hailstorm as a role | #136, s26 |
+| `4.26` | A blast reads as a blast |  |
+
+### M3 — Trustworthy difficulty
+
+| id | item | shipped |
+|---|---|---|
+| `3.1` | Real bot policy; calibration runs across seed corpus. |  |
+| `3.2` | Calibrated curves committed as data; `balance.yml` CI gate. |  |
+| `3.3` | Human offset measured from Daniil's recorded replays. |  |
+| `3.4` | Unwinnable/trivial seed detection across ≥500 runs, measured with the relic… |  |
+| `3.5` | Tech tree stage 1 (~5 nodes); in-game autopilot. |  |
+| `3.6` | Calibration II | s27 |
+
+### M4 — The shell, and what the player sees
+
+| id | item | shipped |
+|---|---|---|
+| `4.1` | Effects & animation engine | s16 |
+| `4.9` | Bridges | s19 |
+| `4.10` | Attack shapes | s19 |
+| `4.11` | Per-upgrade tower visual identity | s28–30 |
+| `4.12` | Unrecovered | #48 |
+| `4.13` | UI art pass | s28–30 |
+| `4.14` | Enemies drawn wider than one cell | s28–30 |
+| `4.15` | Screen stack | s18 |
+| `4.16` | Title / main menu | s18 |
+| `4.17` | Run setup | s18 |
+| `4.18` | Pause overlay | s18 |
+| `4.19` | Run summary screen | s18 |
+| `4.20` | Persistence | s18 |
+| `4.21` | Save export / import | s18 |
+| `4.22` | Settings screen | s18 |
+| `4.23` | Onboarding | #142, s27 |
+| `4.24` | Accessibility | #142, s27 |
+| `4.25` | World motion rides sim time, UI motion rides the wall clock | s17 |
+| `4.27` | The bottom strip | s24 |
+| `4.28` | The shell owns the whole screen | s24 |
+| `4.29` | Boon ground wears its colour | s24 |
+| `4.30` | The tutorial | #181, s31 |
+| `4.30` | The catalogue | #124, s25 |
+| `4.31` | The early game | #182, s31 |
+| `4.31` | Sprite kinds and placeholder art | #125, s25 |
+| `4.32` | The keyboard on every page | #184, s31 |
+| `4.32` | Three strip fixes | #123, s25 |
+| `4.33` | The sim's edges | #185, s31 |
+| `4.34` | Comb pass two | #186, s31 |
+| `4.35` | Applicable relics | #187, s31 |
+| `4.36` | The logic comb and comb pass three | #188, s31 |
+| `4.37` | Enemies II, the bodies | #190, s32 |
+| `4.38` | Packs and formations | #191, s32 |
+| `4.39` | Counter legibility | #192, s32 |
+| `4.40` | The balance pass and the enemy sweep | #193, s32 |
+| `4.41` | Feedback 2026-09-08, the fix bundle | #195, s33 |
+| `4.42` | Encounter cards and the Codex | #196, s33 |
+| `4.43` | The creative page | #197, s33 |
+| `4.44` | Boss chests | #198, s33 |
+| `4.45` | The tree drawn as a tree | #199, s33 |
+| `4.46` | The library's breadth | #200, s33 |
+| `4.47` | The multiset of copies | #201, s33 |
+| `4.48` | Mini tile previews | #202, s33 |
+| `4.49` | The stranger test protocol | #203, s33 |
+| `4.50` | The art brief for the seven | #203, s33 |
+
+### M5 — Content completeness
+
+| id | item | shipped |
+|---|---|---|
+| `5.1` | Laser Lance | #127, s25 |
+| `5.2` | ~14 |  |
+| `5.3` | ~40 |  |
+| `5.4` | ~100+ |  |
+| `5.5` | Threat levels as data — the generator knobs bound into named difficulties. |  |
+| `5.6` | Single-use, high-damage relics |  |
+| `5.7` | Rarity with power, and relics you can replace, remove and combine | s28 |
+
+### M6 — Presentation at scale
+
+| id | item | shipped |
+|---|---|---|
+| `6.1` | proof |  |
+| `6.2` | Full art pass: towers with per-upgrade visual identity (V11), enemies with… |  |
+| `6.3` | Effects at scale: every attack shape, impact and death authored against the… |  |
+| `6.4` | Biomes — palette and tile-pool variants per threat level. |  |
+| `6.5` | Minimal SFX |  |
+| `6.6` | The shoreline | s19 |
+| `6.7` | Relic art at board-glyph scale | #125, s25 |
+| `6.8` | Smoothness via spatial phase |  |
+| `6.9` | positional interpolation | #125–#126, s25 |
+| `6.10` | Ability graphics | #126, s25 |
+| `6.11` | Smoothness, the remaining levers |  |
+
+### M7 — Meta progression, full
+
+| id | item | shipped |
+|---|---|---|
+| `7.1` | Tech tree stage 2 — five disciplines, alternate tier-5s, capped economy nodes… |  |
+| `7.2` | Relic pool and tile pool unlocks wired to the tree. |  |
+| `7.3` | Run history and personal bests — the reason to open the game on day nine | #169, s29 |
+| `7.4` | Daily challenges (a fixed seed per day) and replay sharing — both nearly free… |  |
+| `7.5` | Features price the tile | s19 |
+| `7.6` | optional |  |
+| `7.7` | The tile shop | #171, s29 |
+| `7.8` | Monetization — the door stays open | s29 |
+| `7.9.1` | The tree as content and identity | #168 |
+| `7.9.2` | The workshop page | #169 |
+| `7.9.3` | Ore tiers in the sim | #170 |
+| `7.9.4` | The tile shop and the Tile Smith gate | #171 |
+| `7.9.5` | The lab at tree states | #172 |
+| `7.9.6` | The codex with locked entries | #173 |
+| `7.9.7` | Legendary | #173 |
+| `7.10.1` | The menu language | #175, s30 |
+| `7.10.2` | The Tile Smith as a page | #176, s30 |
+| `7.10.3` | The relic surfaces in the language | #177, s30 |
+| `7.10.4` | Chests by rarity, blasts by tower, beams by path | #178, s30 |
+| `7.10.5` | The tree sweep with a loadout | #179, s30 |
+
+### M8 — Beta hardening and release
+
+| id | item | shipped |
+|---|---|---|
+| `8.1` | Performance budget enforced: 60 fps at full board, bundle and asset budgets… |  |
+| `8.2` | Browser support matrix; WebGL2 absence handled with an honest message. |  |
+| `8.3` | Error handling audit — every throw reachable from a player path gets a… |  |
+| `8.4` | Save migration tested across versions, including the corrupt-save path. |  |
+| `8.5` | External playtest |  |
+| `8.6` | Release process: versioning, changelog, tagged beta, a way for players to… |  |
+| `8.7` | Licences and attribution verified (Apache-2.0; spleen BSD-2-Clause). |  |
+
+### Backlog — The thought dump of 2026-09-06 — Daniil's numbering
+
+| id | item | shipped |
+|---|---|---|
+| `9.1` | Legendary rarity | #173, s29 |
+| `9.2` | Higher tiers unlock by forging |  |
+| `9.3` | Relics earned by wins |  |
+| `9.4` | One Refinery, every ore tier | #170, s29 |
+| `9.5` | Core gifts as global powerups |  |
+| `9.6` | Ignore-armour reads too strong: a balance reading against armoured waves… | #182, s31 |
+| `9.7` | Loadbearing ×3 → ×1.5. | #167, s29 |
+| `9.8` | The Bastion's reach takes no modifier but its own: its range IS its reach. | #167, s29 |
+| `9.9` | The Bastion's reach as a plus, previewed as one. | #167, s29 |
+| `9.10` | The build preview folds every modifier at the selected cell. | #167, s29 |
+| `9.11` | The pulse muted and fading with radius. | #167, s29 |
+| `9.12` | Void chests surface on water and empty ground, not rock. | #167, s29 |
+| `9.13` | A chest sprite kind, bigger, coloured by a rolled rarity. | #178, s30 |
+| `9.14` | Relic sprites 6×5: the icon plus a rarity ring; strip and Forge plates follow. | #177, s30 |
+| `9.15` | The codex | #173, s29 |
+| `9.16` | Consumable: place boon ground on an empty ground cell. |  |
+| `9.17` | Consumable: god mode for one tower (a timed +100% to everything) with an epic… |  |
+| `9.18` | The relic offer only when the board is quiet; a call over living bodies… | #167, s29 |
+| `9.19` | Actives and passives look different in the slot (a plate shape per kind). | #177, s30 |
+| `9.20` | debated, open |  |
+| `9.21` | debated, open |  |
+| `9.22` | Endless mode as the tree's last unlock. |  |
+| `9.23` | More recipes; fusions discovered are recorded in the meta save and listed in… | #173, s29 |
+| `9.24` | Pierce continues into bodies within half a cell of the impact, never across… | #167, s29 |
+| `9.25` | Per-tower projectile and blast looks (Mortar vs Missile). | #178, s30 |
+| `9.26` | debated, open |  |
+| `9.27` | A Laser path changes the beam's colour. | #178, s30 |
+| `9.28` | The burn ignores armour and stacks per source: the Laser's control path… |  |
+| `9.29` | Towers that exist only as relics (single-build). |  |
+| `9.30` | The menus reworked |  |
+| `9.31` | D28: where meta progression and money live (browser plus backend, a desktop… |  |
+| `9.32` | Frames per sprite vs procedural animation: an experiment sprite at 4/8/16… |  |
+
+## Decisions (block future work — resolve by the deadline, not before)
+
+*Minted decisions stay here — they are the plan. The **open** ones (D25, D27)
+are also `call` issues in the tracker, because an unanswered decision is a
+queue item: `gh issue list --label call`. When one is answered, its row here
+is the record and the issue closes. A call answered by silence is minted here
+too, with the date and "by default, unanswered" ([the working
+agreement](WORKING-AGREEMENT.md), rule 3).*
+
+| ID | Decision | Deadline | Owner |
+|---|---|---|---|
+| D25 | **Towers larger than one cell** — Daniil wants to brainstorm them (2026-09-05). PRD §5.1's one-cell footprint is load-bearing for occupancy, placement and upgrades; a multi-cell tower is either a footprint rule (which cells, which anchor, what blocks) or a visual-only size like 4.14. Decide before the new towers (25) are built | before session 25 | Daniil + dev |
+| ~~D26~~ | **Reversed 2026-09-06 evening (Daniil): passives are relics.** The separate layer built in session 28 PR 1 folded back into the relic pool the same day - tower-mod relics with tiers, one pool, twelve slots, the relic offer every second wave (PRD §7.8) | — | Daniil |
+| D27 | **Monetization and accounts** — intent recorded (PRD §18): Stone Story's model, lighter; nothing pay-to-win. Needs an identity story that §16 rules out today. No build work depends on it; decide before beta hardening | before session 37 | Daniil |
+| D28 | **The filled board's rules** (PRD §4.3.1): coverage target (~90%?), the leaf rule (every dead end is an entrance — forced by "no dead-end spurs" once the board fills), entries emergent within the threat's range, lane balance band (within what fraction of the longest?). **Daniil's amendment 2026-09-05: the Core moves to the EAST EDGE first** (a face past the border, one entrance, no spawns on that side — PRD §4.5, shipped as session 24 PR 1); the defaults he did not amend stand: 90% coverage, lanes ≥ 70% of the longest | ~~before 2.30 starts~~ resolved 2026-09-05 (go) | closed |
+| D1 | ~~Buildable density~~ **RESOLVED 2026-08-15**: the map generator controls ground amount/placement directly; density is a generation knob tuned as data (PRD §4.4) | — | closed |
+| D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |
+| D3 | ~~Material language~~ **CLOSED 2026-08-16 as obsolete.** "Which glyphs mean metal vs stone" was a question from when we expected hand-authored art at volume. The live remnant is narrower — *what compositional rule makes 14 tower variants legible* (V11) — and it is not answerable in the abstract; it moves into the art session as a concrete question with sprites in front of us | — | closed |
+| D4 | ~~Wave-clear offer cadence~~ **RESOLVED 2026-08-16**: every **3 waves**, pick 1 of 3. ~6 guaranteed picks in a 20-wave run, ~11 acquisitions once caches and Ore draws are counted — above the ~6–10 floor at which combinations start happening (PRD §7.1) | — | closed |
+| D5 | ~~Relic rarity tiers~~ **RESOLVED 2026-08-16 (second pass)**: yes — rarity weights the pool so run-breaking relics are rare and filler is common. The flat pool was correct until play evidence existed; it now does. Weighting lands in 2.7 | — | closed |
+| D6 | ~~Does a run end?~~ **RESOLVED 2026-08-16**: **finite** — a final wave and a victory. Simpler to playtest and to calibrate against; endless-scored-by-depth may return later as a separate mode | — | closed |
+| D7 | ~~Hidden-tab behaviour~~ **RESOLVED 2026-08-16**: the **simulation keeps running** in a Web Worker; an explicit PAUSED indicator covers deliberate pauses only. Also buys in-browser bot runs without freezing the UI | — | closed |
+| D8 | **The printing-trade lexicon** — own mini-session, **before more towers/enemies** (Daniil). Dev's position to argue there: theme the *flavour* layer hard (enemies, relics, tier names, currencies) but keep **tower** names functionally readable — "Frost Emitter" tells you it slows, "Quoin" does not, and towers are picked under pressure | closed 2026-09-05 (Daniil: "ok for all except the print trade stuff. Keep as is") | closed |
+| D9 | ~~Ore tier driver~~ **RESOLVED 2026-08-16**: there is no generator driver — **ore tiers are tiles you buy** (PRD §11.1). Rarity is economic: expensive tiles, owned in finite copies, with tier-N nodes bought using tier-(N-1) ore. Appearance likelihood is a calibration knob. Engine keeps only the shape (tiered cells, per-tier costs); the economy lands in M7 |
+| D10 | ~~Road-shape variance~~ **RESOLVED 2026-08-16**: the constraint was never tile size — it was the validity rule confining roads to the interior 3×3 (PRD §4.2.1). Drop that, add route-as-a-graph (2.16), then generate variants (2.15). 7×7 stays a fallback only if the widened vocabulary still reads samey | — | closed |
+| D11 | ~~Enclosed void~~ **RESOLVED 2026-08-19 (Daniil)**: **legal** when it satisfies the void-distance and void-share rules. The no-enclosed-void repair pass was never his rule (its only provenance was a code comment); removed from the spec so it cannot creep back (ARCHITECTURE §12 Tier 2) | — | closed |
+| D12 | ~~Ore floor~~ **RESOLVED 2026-08-19 (Daniil)**: **no guarantee** — heavy bias toward some ore, rare ore-less maps legal. The only guaranteed ore is authored ore on a chosen special. Existing fill odds already deliver ~1-in-thousands ore-less maps, so removal is behaviour-safe | — | closed |
+| D13 | ~~Path-length denomination~~ **RESOLVED 2026-08-19**: the threat knob is in **road cells, per-entry minimum** (the shortest lane sets difficulty), converted at carve time via the minimum cells any pool tile expresses per shape — floor by construction, overshoot legal, **never relaxed by retries** (the relaxation ladders were a dev invention, removed) | — | closed |
+| D14 | ~~Void share~~ **RESOLVED 2026-08-19 (Daniil)**: a **probability curve**, not a hard cap — target share drawn low-biased on the map stream, emergent void trimmed to it; >~22% vanishingly rare. The curve shapes an upper bound (actual share = min(emergent, drawn)) | — | closed |
+| D15 | ~~Run/map identity~~ **RESOLVED 2026-08-19**: seed is law within a generator version; **the run save stores the generated map itself** (resume never re-generates, so saves survive generator changes); the shareable run code = seed+threat+loadout+generator-version stamp, stale codes refused loudly. Seed-from-map rejected: generation is one-way, no seed can be derived from an existing map | — | closed |
+| D16 | ~~2.27 rebuild depth~~ **RESOLVED 2026-08-19 (Daniil)**: **full constraint-first rebuild** of `generateMapOnce` — the pile itself is the problem, not only its bugs. Tile validity layer, library and view stay. Caches: uniform over all ground, no distance shaping. `TILE_SIZE` must stay odd (center-or-nothing connectors need a center cell) — a design property, in the spec | — | closed |
+| D17 | ~~Wave tempo~~ **RESOLVED 2026-09-03 (Daniil, design round 1)**: the wave clock runs **launch to launch** (Standard 40 s, Calm 55, Grim 30) and never waits for the last enemy — killing faster buys quiet, dawdling stacks waves. A **CALL NEXT WAVE** button banks the remaining clock as Scrap (1/s), allowed once the current wave has finished spawning. **Wave 1 waits for the call.** Boss waves are every 5th wave **and the final wave by rule** — the old elite surge landed on the victory wave by arithmetic coincidence. The next wave is composed one wave ahead and shown on the HUD by kind and count | — | closed |
+| D18 | ~~Path length and difficulty~~ **RESOLVED 2026-09-03**: PRD §9's `L` offset is live — enemy hp scales by `sqrt(mean lane cells / the threat's floor)`, never below 1. `sqrt` because the PRD's exponent is 0.5 and `Math.pow` is banned | — | closed |
+| D24 | ~~Cell geometry~~ **RESOLVED 2026-09-04 (Daniil, option 1)**: the cell is **8×5 glyphs** of the 5×8 font = **40×40 px, exactly square**; tiles stay 5×5 cells; **the board is sized to the viewport** at boot (`app/boardSize.ts`: 7×5 tiles at 1920×1080, clamped 6×4…12×7) and sent to the worker with every init; a saved run continues only on a screen that fits its map. The cell is declared once in `content/assets/grid.json`, read by the view and enforced on every sprite by the content linter. Sprite format v2 (states by choice path, frames, variations, bgInk) and the importer for Daniil's generator studies came with it | — | closed |
+| D23 | ~~Tower trees~~ **RESOLVED 2026-09-03 (Daniil, design round 1)**: every fork is **two roles, never two numbers** (PRD §5.3 table). Daniil's amendments applied: Marksman is reach only (targeting is a setting); Hailstorm is 3 shots at 45% each; Mortar tier 1 = more damage in a smaller blast vs a bigger blast, Concussive at tier 3, no Incendiary; Frost = a slow path and a damage path; the Refinery mines slower overall (1 Ore / 40 s base) and its deep choices grow the vein at the price of a slower cycle. New engine knobs: `damageMul`, `shots`+`spread` (homing volleys spray across targets, ballistic volleys scatter), `pierceCount`, `shieldMul`, `slowedBonusMul`, `freezeEvery`, `slowMul` as a stat, `ignoreArmor` / `deepBore50` / `deepBore100` unlocks | — | closed |
+| D22 | ~~Minimum range~~ **RESOLVED 2026-09-03 (Daniil, design round 1)**: `minRange` is a folded tower stat (schema, mods, `EffectiveStats`); targeting skips anything inside it; the Mortar ships with 2.5 cells. The range overlay draws the covered area as **concentric one-cell rings fading inward** and the dead zone **darker with a red rim**, for every tower | — | closed |
+| D21 | ~~Caches~~ **RESOLVED 2026-09-03 (Daniil, design round 1)**: caches are **not generated** and **not paid for**. They come out of **prospected rock** (rare, at most 3 per map, dealt at generation) and **off every boss, where it dies** (on the road, usually). Opening is free — select, OPEN — and the contents come from a **loot table** (2.22 pulled forward): Scrap, Ore, a consumable, rarely a relic, or the cell becomes tier-2 **boon ground**. The old claim-for-Scrap caches were an auto-claim with pure upside | — | closed |
+| D20 | ~~Relic duplicates and the Ore price~~ **RESOLVED 2026-09-03 (Daniil, design round 1)**: a relic is **stackable or not, per relic** (`stackable` in the schema): multipliers and charges stack, a boolean rule held twice was a dead card and now leaves the pool once held. Flat global numbers are not relics (Ballistics Lab cut, by PRD §7.1's own test); no flat "triple" effects. **Buying relics gets dearer non-linearly**: the first draw costs 50 Ore and each purchase multiplies the next by 1.5 (50, 75, 113, 169…); rerolls start at 15 and escalate the same way | — | closed |
+| D19 | ~~Enemy traits~~ **RESOLVED 2026-09-03 (Daniil)**: traits are rules, one table (`engine/sim/traits.ts`): **armoured** ignores slows · **shielded** regrows its shield after 2 s unhit · **fast** halves slow duration · **swarm** spawns in packs of three. Damage types (2.8) extend the same table | — | closed |
+
+---
+
 ## Risks
 
 **1 — Calibration may not transfer from bot to human.** The bot will play worse
@@ -395,27 +737,16 @@ working, so the harness must only alarm on maps, never on draws.
 
 ---
 
-## Daniil's actions
+## What Daniil has to do
 
-**Done:** GitHub, scoped token, repo, Pages, REXPaint installed, and every
-presentation decision.
+His queue is the tracker, never a section here — a list of open items in a
+plan document is the thing [the working agreement](WORKING-AGREEMENT.md)
+rule 6 forbids.
 
-**Phase 2, revised 2026-08-16.** Daniil: *"I think you put way too much faith on
-my ability to REXPaint."* Fair, and the dependency was avoidable. `.xp` is a
-documented, gzipped binary format, so **the tooling can author it directly** —
-sprites get generated as `.xp` files, opened in REXPaint for review and taste
-edits, and imported back. That inverts the bottleneck: Daniil judges and adjusts
-art rather than producing it from scratch, and the round trip is still proven
-end to end (the gate is unchanged).
+```bash
+gh issue list --label call --label blocks-ship   # what beta waits on
+gh issue list --label call                       # everything awaiting his taste
+```
 
-A dedicated art session remains worthwhile — but as a pairing session over
-generated candidates, not a drawing lesson.
-
-**Before Phase 4:** define the material language jointly — which glyph
-combinations mean metal, stone, energy. It is the highest-leverage art decision
-and a taste call.
-
-**At the M1 gate:** play it, and record a few runs — those replays become the
-human offset in M3.
-
-Running cost remains **$0**.
+Every call carries a stated default and is minted as a decision above if it
+goes unanswered past the next session (rule 3), so work never waits on him.
