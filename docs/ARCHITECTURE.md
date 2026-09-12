@@ -1,6 +1,6 @@
 # ASCII Defense — Architecture
 
-Status: **M1 Phase 4 in flight; see docs/WBS.md for live state.**
+Status: **live state is the tracker** — `gh issue list --label scope`; the plan is [ROADMAP.md](ROADMAP.md).
 
 ---
 

@@ -1,8 +1,9 @@
 # Handover — state as of 2026-09-08, night (session 33 shipped the feedback round and the plan's five; The stranger's round and the carve's variety is next)
 
-> **Updated once per working day** (Daniil). State and seams only; sequencing
-> lives in the roadmap ledger, the checklist in the WBS, requests in the WBS
-> request index. Anything restated here is a drift surface.
+> **Updated once per working day** (Daniil). State and seams only; the plan —
+> sequencing, the item tree, the decisions — is [docs/ROADMAP.md](docs/ROADMAP.md),
+> and every open item is a GitHub issue. Anything restated here is a drift
+> surface.
 
 **Read order for a fresh context:** [CONTRIBUTING.md](CONTRIBUTING.md) →
 [docs/WORKING-AGREEMENT.md](docs/WORKING-AGREEMENT.md) (how a session runs:
@@ -17,8 +18,8 @@ owed offer) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) →
 [docs/CATALOGUE.md](docs/CATALOGUE.md) → [docs/lab/](docs/lab/) (the tile
 sweep of 2026-09-08: nine road shapes is the law's count) →
 [docs/STRANGER-TEST.md](docs/STRANGER-TEST.md) (the protocol, not yet
-run) → [docs/WBS.md](docs/WBS.md) (4.41–4.50; the request index's round
-33 by HIS numbering) → this file → the roadmap ledger's next open row
+run) → [docs/ROADMAP.md](docs/ROADMAP.md) (the ledger's next row, the item
+tree, the decisions) → this file → the roadmap ledger's next open row
 (34). The gitignored `POSTMORTEM.md` holds collaboration findings — **read
 its last two sections before writing any code today.** End every working
 day with the `wrap-session` skill.

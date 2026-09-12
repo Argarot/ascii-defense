@@ -100,9 +100,9 @@ an identifier.
 > Never let a doc be both the plan and the tracker. That is the specific thing
 > that produces "scattered and disorganised".
 
-- **The plan** is `docs/ROADMAP.md` (sequencing and rationale) and
-  `docs/WBS.md` (milestone decomposition, the decision table). Plans get read
-  end to end.
+- **The plan** is `docs/ROADMAP.md` — sequencing, the item tree with its
+  stable ids, the decisions, the ledger. One document, because two of them
+  drifted from each other (2026-09-12). Plans get read end to end.
 - **The tracker** is **GitHub Issues**. Trackers get queried, never read.
 
 Two label axes, and only two:
@@ -113,9 +113,13 @@ Two label axes, and only two:
 What lives in Issues: every open item — the technical-debt register, the
 standing open items, every call, and each new feedback round from round 34
 (titled `[r34.3] …`, his numbering kept). What does **not**: milestones,
-gates, decisions once minted, and the **closed** history — the request index's
-rounds 1–33 stay in the WBS as the record, because PRs and commits cite them.
-The rule is about the live queue, not the archive.
+gates, decisions once minted, and the **closed** history — rounds 1–33 and
+every shipped item are frozen in `docs/history/`, because PRs and commits
+cite them. The rule is about the live queue, not the archive.
+
+An item's **state** is part of the tracker too: `docs/ROADMAP.md` lists the
+ids and never says whether one is done. `node tools/plan-state.mjs` renders
+that from open issues, so it cannot go stale by hand.
 
 His whole queue is one query:
 

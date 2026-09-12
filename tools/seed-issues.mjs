@@ -3,8 +3,9 @@
  * Seed the tracker from tools/issues-seed.json.
  *
  * The queue lives in GitHub Issues, not in a doc (working agreement, rule 6).
- * This script performs the one-way migration off docs/WBS.md's technical-debt
- * register and HANDOVER's standing open items, and is **idempotent**: it skips
+ * This script performed the one-way migration off the old docs/WBS.md (now
+ * frozen in docs/history/) and HANDOVER's standing open items, and is
+ * **idempotent**: it skips
  * any issue whose exact title already exists in any state, so a re-run after a
  * partial failure costs nothing.
  *

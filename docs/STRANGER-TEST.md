@@ -43,8 +43,9 @@ said when the run ended.
 ## After
 
 - The scorecard total (0-20) and the ten rows go into
-  docs/WBS.md's request index as **round 33**, every "0" and "1" as an
-  item with the stranger's words, indexed by the row number above.
+  the tracker as **round 34**, every "0" and "1" as an issue titled
+  `[r34.<row>] …` with the stranger's words, indexed by the row number above
+  (the `triage-round` skill files them).
 - A "2" on rows 5, 6 and 10 is the gate; anything else is the next
   session's list.
 - The stranger's screen size and browser go in the round's header; a
