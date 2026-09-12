@@ -4,8 +4,12 @@ dist-types/
 .vite/
 *.local
 
-# Collaboration assessment log — deliberately not part of the project
+# Collaboration assessment log — deliberately not part of the project.
+# The archive is rotated-out history; the digest is the [daniil] findings
+# pulled together for him. Same reason, same treatment.
 POSTMORTEM.md
+POSTMORTEM-ARCHIVE.md
+POSTMORTEM-DANIIL.md
 
 # Claude Code local permission grants are per-machine
 .claude/settings.local.json

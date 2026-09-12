@@ -20,8 +20,12 @@ this one enforces 3–6 at the end. Where the two disagree, the agreement wins.
 - `git status` clean, on `main`, synced with origin. All PRs merged green
   **on `gh`'s own exit code** (never through a pipe; "no checks reported"
   right after PR creation means *pending*, not failed — wait and re-watch).
-- Full gate locally: `npm run typecheck && npm run lint && npm test &&
-  npm run build`.
+- Full gate locally: **`npm run gate`** — typecheck, lint, vitest, build and
+  doc-drift chained on their real exit codes, so one command either passes or
+  does not. It exists because "the exit code was not actually checked" is a
+  finding this log recorded **nine separate times**; a recurrence is answered
+  with a mechanism, not a tenth entry. Do not hand-chain the steps again, and
+  do not read its verdict off printed output.
 - **The branch check is a gate, not a print**: `test "$(git branch
   --show-current)" != main || exit 1` before any commit (a failed compound
   command stranded a wrap commit on local main on 2026-09-06).
@@ -104,9 +108,30 @@ earlier ones:
    in a plan document is what rule 6 forbids; link the query instead. The
    next-session heading carries **no name**: the ledger's NEXT row owns the
    name, and one name in two places is the drift that was just removed.
-5. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings
-   with tags (`[process] [comms] [claude-weakness] [claude-strength]
-   [daniil] [tooling]`). Corrections Daniil had to repeat get an entry.
+5. **POSTMORTEM.md** (gitignored, no PR needed) — append today's findings with
+   tags (`[process] [comms] [claude-weakness] [claude-strength] [daniil]
+   [tooling]`). Corrections Daniil had to repeat get an entry. Two rules make
+   the difference between a log that changes behaviour and one that only grows
+   — it reached 2,141 lines and 314 findings while the checklist said to read
+   "the last two sections", which is 1.5% of it:
+
+   - **A finding is not done until it is installed.** Every `[process]`,
+     `[claude-weakness]` or `[tooling]` finding either **names the rule it
+     created** — the file and section it now lives in (CONTRIBUTING §1–6, a
+     skill, a memory file, a lint, a gate) — or is marked **`(narrative)`**
+     because it is a record of what happened and nothing should change. A
+     finding filed without either is a lesson that will be learned again.
+   - **A recurrence is an escalation, not an entry.** If today's finding
+     repeats one already in the log, the rule exists and is not working. Do not
+     write it a second time — **build the mechanism that makes it impossible**
+     and name that mechanism in the entry. The evidence: shell-escaping was
+     written up in seven separate sections, got a memory file on 2026-09-08,
+     and recurred anyway on 2026-09-12 in heredoc form. Prose lost to that
+     failure eight times; a check would not have.
+
+   When the live file passes ~400 lines, move everything older than the last
+   two working weeks to `POSTMORTEM-ARCHIVE.md` (also gitignored). The archive
+   is for forensics; the live file is for reading.
 6. **Run the generators, then the drift gate** (Daniil, 2026-09-06: "make sure
    the docs don't drift from each other, and that the repo description is
    up-to-date"). **A generated section is never edited by hand** — that is the
@@ -181,7 +206,14 @@ names:
   "go" is enough when he has no amendment. A call with no default may not
   ship in a plan (agreement rule 3); each is also a `call` issue, and it
   mints itself at the next wrap if he says nothing;
-- the biggest risk and what it makes expensive later if built wrong.
+- the biggest risk and what it makes expensive later if built wrong — and
+  **ask him to rule on that risk specifically**, in one sentence: *"that risk
+  is real, do X instead"* or *"accepted"*. Agreed with him on 2026-08-17, used
+  once the day it was agreed, then written into every plan for three weeks
+  without ever being put to him. The risk paragraph is where the dev is least
+  certain and where his instincts have repeatedly been better; asking converts
+  a guess into a decision with an owner. A plan whose risk line nobody ruled on
+  is a plan that was skimmed.
 
 The ledger row and this section say the same thing; the reply repeats it.
 
