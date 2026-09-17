@@ -25,7 +25,7 @@ import type { RngStream } from '../rng/rng';
 import { EDGES, TILE_SIZE, partitionKey, rotatePoint, tilePartition, type Edge, type Rotation } from './../tiles/tile';
 import { TileLibrary, createBoard, place, resolveCells, slotAt, type Board } from '../tiles/board';
 import type { CellType } from '../grid/cells';
-import { EDGE_DELTA, carveRoads, sigKey, type RoadSpecialSpec } from './carve';
+import { EDGE_DELTA, carveRoads, sigKey, type RoadSpecialSpec, type WalkCharacterSpec } from './carve';
 import { verifyMap } from './verify';
 
 export interface MapGenOptions {
@@ -61,6 +61,15 @@ export interface MapGenOptions {
   coverage?: number;
   /** Shortest lane over longest, at least (D28; default LANE_BAND). */
   laneBand?: number;
+  /**
+   * The land in REGIONS (session 36): the map draws this many region centres, each of one land family (plain, rock, ore -
+   * what stands on a tile), and a tile of its slot's family is `bias` times likelier to be dealt there. Absent = the land as
+   * it always was: every slot its own dice, and adjacent tiles matching no more often than chance (the map sweep measured
+   * 0.33 against a chance of 0.34). The shares of each family do not move, only where they sit.
+   */
+  land?: LandSpec;
+  /** The walk's character (session 36; carve.ts): the Threat's taste for straight road, how far a map may stray from it, the pull toward unused headings. Absent = the walk as it always was. */
+  walk?: WalkCharacterSpec;
   /**
    * The highest Ore tier the map's own veins may roll (PRD sec 26, D30):
    * what the workshop's ORE branch has opened. 1 or absent = every dealt
@@ -172,7 +181,7 @@ export const ORE_REACH = 3;
  * A code from another version is refused loudly, never silently
  * regenerated into a different map.
  */
-export const GENERATOR_VERSION = 3; // 2: the Core at the east edge (session 24); 3: the ore ladder - a tree with a tier open deals different veins (D30)
+export const GENERATOR_VERSION = 4; // 2: the Core at the east edge (session 24); 3: the ore ladder - a tree with a tier open deals different veins (D30); 4: the walk has a character and the land has regions (session 36) - every app map is a different map
 /**
  * Extra cell columns past the east border that hold the Core FACE (session
  * 24, Daniil): the board's slots stay TILE_SIZE-square, and the Core lives
@@ -225,6 +234,19 @@ export const DEPOSIT_MAX = 90;
 export const ORE_TIER_SPAWN: readonly number[] = [1, 0.03, 0.011];
 /** A higher tier's vein is smaller (sec 26): the dealt amount, scaled. Tier 2 half, tier 3 a third. */
 export const ORE_TIER_VEIN: readonly number[] = [1, 0.5, 1 / 3];
+
+export interface LandSpec {
+  regions: number;
+  bias: number;
+}
+
+/** What stands on a tile, as the eye groups it: ore beats rock beats plain. Read off the cells - no content field to drift. */
+export type LandFamily = 'plain' | 'rock' | 'ore';
+const LAND_FAMILIES: readonly LandFamily[] = ['plain', 'rock', 'ore'];
+export function landFamilyOf(cells: readonly string[]): LandFamily {
+  const text = cells.join('');
+  return text.includes('O') ? 'ore' : text.includes('R') ? 'rock' : 'plain';
+}
 
 /** Weighted deterministic pick (tile weights, playtest 5 item 6). */
 function pickWeighted<T extends { weight: number }>(rng: RngStream, pool: readonly T[]): T {
@@ -351,11 +373,53 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   const plan = carveRoads(
     rng,
     { hasRoad: (k) => index.road.has(k) },
-    { width, height, entries: opts.entries, targetPathCells: opts.targetPathCells, roadSpecials, coverage: opts.coverage, laneBand: opts.laneBand },
+    { width, height, entries: opts.entries, targetPathCells: opts.targetPathCells, roadSpecials, coverage: opts.coverage, laneBand: opts.laneBand, walk: opts.walk },
   );
   const { rootK, roadEdges, secondSegment, forced } = plan;
   const entryCells = plan.entries;
   const rootY = Math.floor(rootK / width);
+
+  // The land's regions (session 36). Drawn only when asked for, so a map with no `land` spends the stream exactly as it
+  // always did. A few centres, each of one family - every family present once there are three - and a slot leans toward
+  // the family of its nearest centre: a rocky pass, an ore valley, open ground, instead of salt and pepper.
+  const land = opts.land;
+  let familyAt: ((k: number) => LandFamily) | null = null;
+  const familyOfTile = new Map<string, LandFamily>();
+  if (land && land.regions > 0) {
+    const all = Array.from({ length: width * height }, (_, k) => k);
+    const centres = rng.shuffle(all).slice(0, Math.min(land.regions, all.length));
+    const order = rng.shuffle(LAND_FAMILIES);
+    const families = centres.map((_, i) => order[i % order.length]);
+    // The Core's own region is never rock: rock cannot be built on, the ground by the Core is where every tower has its
+    // gift (PRD sec 5) and where the tutorial sends a first-time player, and a rocky pass THERE is a map with its best
+    // ground missing. The rock goes to another region - a swap, so the mix and the dice are untouched.
+    /** The region a slot belongs to: its nearest centre, by slots (ties to the earlier centre). */
+    const regionOf = (k: number): number => {
+      let best = 0;
+      let bestD = Infinity;
+      centres.forEach((c, i) => {
+        const d = Math.abs((c % width) - (k % width)) + Math.abs(Math.floor(c / width) - Math.floor(k / width));
+        if (d < bestD) { bestD = d; best = i; }
+      });
+      return best;
+    };
+    const coreRegion = regionOf(rootK);
+    if (families[coreRegion] === 'rock') {
+      const other = families.findIndex((f) => f !== 'rock');
+      if (other >= 0) [families[coreRegion], families[other]] = [families[other], families[coreRegion]];
+    }
+    familyAt = (k: number): LandFamily => families[regionOf(k)];
+  }
+  /** The pool as this slot sees it: a tile of the slot's family `bias` times likelier. The same pool when the land has no regions. */
+  const leaning = <T extends { tileId: string; weight: number }>(pool: readonly T[], k: number): readonly T[] => {
+    if (!familyAt || !land) return pool;
+    const want = familyAt(k);
+    return pool.map((p) => {
+      let f = familyOfTile.get(p.tileId);
+      if (!f) { f = landFamilyOf(lib.def(p.tileId).cells); familyOfTile.set(p.tileId, f); }
+      return f === want ? { ...p, weight: p.weight * land.bias } : p;
+    });
+  };
 
   let board = createBoard(width, height);
   for (const [k, edges] of roadEdges) {
@@ -377,7 +441,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
           'the generator needs every routed shape (see content/assets/tiles/library.json)',
       );
     }
-    const pick = pickWeighted(rng, pool);
+    const pick = pickWeighted(rng, leaning(pool, k));
     board = place(board, pick.tileId, pick.rotation, x, y);
   }
 
@@ -470,12 +534,13 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       // deals about twelve veins (docs/lab/ore-sweep-2026-09-17.md; the
       // "one time in ten" this comment used to claim predates D28). Rock
       // prospecting and authored specials are the other two sources.
-      const oreChance = 0.5;
+      // In a region the odds lean the region's way and keep their mean: 0.9 in an ore region, 0.3 in the other two.
+      const oreChance = familyAt ? (familyAt(k) === 'ore' ? 0.9 : 0.3) : 0.5;
       const pool =
         index.filler.ore.length > 0 && rng.chance(oreChance)
           ? index.filler.ore
           : index.filler.plain;
-      board = place(board, pickWeighted(rng, pool).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
+      board = place(board, pickWeighted(rng, leaning(pool, k)).tileId, rng.pick([0, 1, 2, 3] as const), x, y);
     }
 
   // ---- 5+6. deal the relic layer's map half (PRD sec 4.6) -----------------

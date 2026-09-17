@@ -16,8 +16,8 @@
  *    run's map.
  */
 import { describe, expect, it } from 'vitest';
-import type { EnemyDef, RelicDef, TileDef, TowerDef } from '@ascii-defense/engine';
-import type { FromWorker, RunSave, UiState } from './protocol';
+import { THREAT_LEVELS, TileLibrary, createRng, generateMap, threatKnobs, type EnemyDef, type RelicDef, type TileDef, type TowerDef } from '@ascii-defense/engine';
+import { BOARD_SLOTS, type FromWorker, type RunSave, type UiState } from './protocol';
 import { createWorkerRuntime } from './workerRuntime';
 
 const g = (...rows: string[]): string[] => rows;
@@ -245,5 +245,21 @@ describe('the ore ladder reaches the run (PRD sec 26, D30)', () => {
     const rich = last('snapshot')!.s.board.oreRichness ?? [];
     expect(rich.length).toBeGreaterThan(0);
     for (const r of rich) { expect(r.tier).toBeGreaterThanOrEqual(1); expect(r.frac).toBeLessThanOrEqual(1); }
+  });
+});
+
+describe('the worker deals the engine\'s map (session 36: one source for a Threat)', () => {
+  it('a run\'s map is generateMap over threatKnobs - knobs, walk and land - so a sweep that spreads threatKnobs measures the app\'s own maps', () => {
+    for (const threatIdx of [0, 1, 2]) {
+      const { rt, last } = makeRt();
+      rt.handle({ t: 'init', seed: 11, threatIdx, loadout: [], meta: { unlocks: [], earned: [], forged: {} } });
+      rt.handle({ t: 'save', id: 1 });
+      const dealt = last('saved')!.save.map;
+      const knobs = createRng(11).stream('map');
+      const expected = generateMap(knobs, new TileLibrary(BASICS), { width: BOARD_SLOTS.w, height: BOARD_SLOTS.h, ...threatKnobs(knobs, THREAT_LEVELS[threatIdx]), relicPoolSize: POOL.length, specials: [], oreTierMax: 1 });
+      expect(dealt, THREAT_LEVELS[threatIdx].name).toEqual(expected);
+      // The Threat's walk is in that spread: a worker that dropped it would deal the legacy map and fail here.
+      expect(threatKnobs(createRng(11).stream('map'), THREAT_LEVELS[threatIdx]).walk).toBe(THREAT_LEVELS[threatIdx].walk);
+    }
   });
 });

@@ -1769,7 +1769,7 @@ now also opens the tier on the map and in the Smith.
 | | tier 1 | tier 2 | tier 3 | the target it was derived from |
 |---|---|---|---|---|
 | colour | gold | blue (the rare blue) | violet (the epic violet) | the rarity language the game already speaks; the rock carrying the ore is tinted too, because the ore alone is a few specks and did not read at a glance |
-| maps that carry one | every map (~12 veins) | **about one in three** (3% a vein) | **about one in nine** (1.1% a vein) | "much rarer": each rung a third as common as the one below |
+| maps that carry one | every map (~12 veins) | **about one in three** (3% a vein) | **about one in eight** (1.1% a vein: 13% of maps by the census, 8-16% as dealt) | "much rarer": each rung a third as common as the one below |
 | vein size | 30–90 | **half** (15–45) | **a third** (10–30) | smaller, but it must still outlast one Refinery for most of a run |
 | mining cycle | ×1 | ×1.5 | ×2 | kept from session 29: a tier-2 run banks ~27 where a tier-1 run banks ~51 |
 | the Smith's cell | — | **+⅓ tier-2 Ore per Ore in the vein**, on top (§27) | the same, in tier-3 Ore | you must have mined some to author with it; the smallest vein is under half of one lucky find |
@@ -1993,3 +1993,59 @@ under pressure.
 replays and the golden hash. Only the display `name` moves, plus the codex
 entries and any doc naming them. A rename that touched ids would move the
 golden hash for no reason.
+
+## 31. The walk has a character, and the land has regions *(session 36, 2026-09-17; the ledger's "the carve's variety"; docs/lab/map-sweep-2026-09-17.md)*
+
+**The problem it answers.** §23 closed the road's shapes at nine and said the
+eye's variety must come "from the land and from the carve: where the roads
+run (the walk), what stands beside them". Measured, neither varied. Two maps
+of a Threat already disagreed on 86% of their slots — layouts never repeated —
+but every map on every Threat turned on 55% of its slots, never ran straight
+for three, and sat on land that was salt and pepper to within a point of
+chance. Calm was *knottier* than Grim. The sameness was of character.
+
+**The walk.** Each Threat has a taste for straight road, and **each map rolls
+its own** around it and keeps it for every walk:
+
+| | taste | a map's roll | reads as |
+|---|---|---|---|
+| Calm | 6 | 3 – 12 | avenues: long and gentle. Half of Calm's maps run straight for four slots or more (one in seven before); two in five are a few long winding lanes |
+| Standard | 1 | 0.08 – 12 | no taste of its own and the widest roll: about one map in five runs in avenues, the rest knot to their own degree |
+| Grim | 0.2 | 0.08 – 0.5 | knots: short and turning, always |
+
+A walk also leans toward the heading its map has used least. **None of this
+is a rule**: it re-weights which *legal* inward move a wandering walk
+prefers, and ARCHITECTURE §12's topology — the tree, the floor, the band, the
+exits, the availability gates — reads nothing from it.
+
+**The land.** A map draws three region centres, one of each land family
+(plain, rock, ore — what stands on a tile), and a tile of its region's family
+is six times likelier to be dealt there: an ore valley, a rocky pass, open
+ground. How much of each there is barely moves (the ore economy of §26 was
+priced on it); where it sits does. **The Core's own region is never rock** —
+rock cannot be built on, and the ground by the Core is where every tower has
+its gift (§5) and where the tutorial sends a first-time player.
+
+**What it costs.** Standard is about half a wave harder for the reference
+build and won three points less often (91% against 94%), because a wider
+spread of maps has a longer bad tail; every rung of the difficulty ladder
+still holds (docs/lab/balance-debt-2026-09-17.md).
+
+**What it did not do, stated plainly.** The ledger's gate — *two Standard
+runs do not resemble each other by the road's walk* — is **moved, not met**.
+The walk's taste only steers a walk that is free to wander, and on a 7×5
+board filled to 84% by eight or nine lanes each lane has three or four slots
+of its own. Widening Standard's roll from 12 to 30 changed nothing. **What a
+Standard map looks like is decided by how many lanes it has, and that is
+decided by the fill target — D28's 0.9 — not by the walk.** A per-map fill
+target would differ maps in kind far more than any walk can, and it is
+Daniil's decision and a difficulty lever both, so it is a call and not a
+commit (the lab doc shows what 0.6 looks like).
+
+**For the builder.** `MapGenOptions.walk` and `.land`, both absent by default
+— with neither, the generator spends its stream exactly as it always did, so
+the engine's default is the old generator and the golden hash does not move.
+The app, the worker and every sweep get both from `threatKnobs()`
+(`engine/src/sim/threat.ts`), which is why `GENERATOR_VERSION` is 4: every
+app map is a different map, and an old run code is refused with a sentence.
+A saved run carries its map (D15) and is untouched.

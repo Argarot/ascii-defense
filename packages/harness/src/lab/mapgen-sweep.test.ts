@@ -39,8 +39,8 @@ function appMap(seed0: number, lib: TileLibrary, specials?: string[], threatIdx 
     try {
       const T = THREATS[threatIdx];
       const knobs = createRng(seed).stream('map');
-      const { entries, targetPathCells } = threatKnobs(knobs, T);
-      return generateMap(knobs, lib, { width: 12, height: 7, entries, targetPathCells, relicPoolSize: 11, specials });
+      // The worker's exact call: the Threat's knobs, walk and land in one spread (session 36).
+      return generateMap(knobs, lib, { width: 12, height: 7, ...threatKnobs(knobs, T), relicPoolSize: 11, specials });
     } catch (e) {
       if (attempt >= 60) throw e;
       seed = (seed + 1) % 1_000_000;

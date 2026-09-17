@@ -54,8 +54,8 @@ function appGen(seed0: number, w: number, h: number, specials: string[]): Outcom
   for (let attempt = 0; ; attempt++) {
     try {
       const knobs = createRng(seed).stream('map');
-      const { entries, targetPathCells } = threatKnobs(knobs, T);
-      const map = generateMap(knobs, lib, { width: w, height: h, entries, targetPathCells, relicPoolSize: 11, specials });
+      // The SHIPPED map: the Threat's knobs, walk and land together - this sweep guards the maps the app deals, so it must deal them.
+      const map = generateMap(knobs, lib, { width: w, height: h, ...threatKnobs(knobs, T), relicPoolSize: 11, specials });
       return { ok: true, rerolls: attempt, ms: performance.now() - t0, map };
     } catch (e) {
       if (attempt >= 60) return { ok: false, rerolls: attempt, ms: performance.now() - t0, err: (e as Error).message.slice(0, 70) };

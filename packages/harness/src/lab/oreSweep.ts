@@ -47,9 +47,8 @@ const pct = (x: number): string => (100 * x).toFixed(1) + '%';
 
 function mapFor(seed: number, t: (typeof THREATS)[number], oreTierMax: number): GeneratedMap | null {
   const knobs = createRng(seed).stream('map');
-  const { entries, targetPathCells } = threatKnobs(knobs, t);
   try {
-    return generateMap(knobs, content.lib, { width: BOARD.w, height: BOARD.h, entries, targetPathCells, relicPoolSize: pool, specials: [], oreTierMax });
+    return generateMap(knobs, content.lib, { width: BOARD.w, height: BOARD.h, ...threatKnobs(knobs, t), relicPoolSize: pool, specials: [], oreTierMax });
   } catch { return null; }
 }
 
@@ -102,8 +101,7 @@ const banked: { has2: boolean; ore: number[]; death: number }[] = [];
 for (let i = 1; i <= INCOME_SEEDS; i++) {
   const seed = i * 7919 + 13;
   const knobs = createRng(seed).stream('map');
-  const { entries, targetPathCells } = threatKnobs(knobs, std);
-  const mapOpts = { width: BOARD.w, height: BOARD.h, entries, targetPathCells };
+  const mapOpts = { width: BOARD.w, height: BOARD.h, ...threatKnobs(knobs, std) };
   const spec: LabSpec = { seed, map: mapOpts, towers: BASE_BUILD, relicIds: [], unlocks: ['ore_t2'], difficulty: STANDARD, maxWaves: 40, economy: { startingScrap: 100 } };
   try {
     const rep = runLab(spec, content);
