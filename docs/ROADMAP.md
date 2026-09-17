@@ -87,58 +87,65 @@ loadout at one glyph a cell.
 section owns the plan. Daniil's entire next input should be able to be the
 word "go".*
 
-*(Row 33 shipped everything but the one thing that needs a person: the
-stranger test. Its scorecard is the gate, and the road's variety turned
-out to be the carve's, not the shape count's — the enumerator settled
-that. So the next session runs the test, answers what it finds, and
-gives the carve the variety the tiles cannot.)*
+*(Replaced 2026-09-17. The previous plan here was session 34's, written
+2026-09-08: it still told the builder to file the stranger round into
+`docs/WBS.md`'s request index, which no longer exists, and it predated every
+decision D29–D34. The stranger round is not gone — it moved to its own ledger
+row, because it waits on a person and a building session should not.)*
 
-**Theme.** A stranger plays unaided and the round is filed; two Standard
-runs stop resembling each other by how the road WALKS; the seven bodies
-get their studies; the register empties.
+**Theme.** The meta economy has had prices without income since session 29.
+Daniil's round of 2026-09-17 specified every missing rung; this session builds
+them, and clears the balance debt that was wrongly sitting in his queue.
 
 **PR list (a full day):**
 
-1. **The stranger's round** — Daniil (or his friend) runs
-   docs/STRANGER-TEST.md on the live build; the ten rows go into the WBS
-   request index as round 34; every 0 and 1 becomes a fix PR the same
-   session, in his numbering. Proof: the filed round; the fixes' pane
-   proofs.
-2. **The carve's variety** — lane length and turn preference by Threat
-   (Calm long and gentle, Grim short and knotted), a walk that prefers
-   unused directions, and the fill's land grouped by family (a scree
-   field, not a scatter); the map sweep gains a "resemblance" column
-   (shared tile ids between two seeds). Proof: the sweep, forty seeds,
-   before and after; two seeds in the pane side by side.
-3. **Grim and relics against the seven** — the enemy sweep at Grim and
-   with six relics per state; the counter table's second page; a retune
-   of the seven's numbers only where a line cannot answer a body at all.
-   Proof: docs/lab/enemy-sweep-<date>-grim.md.
-4. **The art agent's studies for the seven and the chests** — run the
-   agent on the brief (docs/ART-AGENT.md §2 item 3 and 3b); import;
-   the view's marks retired where a study owns them. Proof: the sprites
-   in the pane, the placeholder generator skipping them.
-5. **The register's rows** — terminals once per session (a save for
-   another board size rebuilds the terminals instead of refusing); the
-   analytic model retired from the gate (the mixed-build lab is the
-   ruler); a pack's members no longer dropped when the slot cap refuses
-   its second body. Proof: tests; the register empty.
+1. **The ore ladder** — PRD §26, D30, issue #328. The shop upgrade; the new
+   ore on the map (its own colour, slower mining, smaller vein, much rarer
+   spawn, nothing else different); the Tile Smith cell that costs tier-N ore on
+   top of the lower tier. *Proof:* a run in which tier-2 ore is actually
+   obtainable, and a sweep giving the spawn/vein/cycle numbers — **derived, not
+   asked for** (§6 rule 7).
+2. **The Smith prices by contents** — PRD §27, D31, issue #329. One function
+   over a tile's cells, used by both the Smith and the shop. *Proof:* a plain
+   straight road priced like a shipped tile of similar quality; a tile of
+   high-tier veins and top boon ground priced prohibitively; the two paths
+   agreeing on identical contents.
+3. **The reliquary rework** — PRD §28 and §28.1, D29 and D34. A node per
+   **rarity band**, bought with Ore; **specific relics unlocked by winning**;
+   no named relic behind a node, and none for sale. Replaces session 29's
+   tag-node design. *Proof:* the codex showing a relic you have not won and
+   naming the win that grants it, not a node.
+4. **The seven get their names** — PRD §30. `harrier · lunge · brood · stitch ·
+   delve · buckler · the Warden`, display names only. *Proof:* the strip, the
+   codex and the catalogue agreeing; **the golden hash unmoved**, because ids
+   do not change.
+5. **The balance debt, measured** — issues #234 and #235, the two that were
+   `blocks-ship` in his queue until rule 7 moved them. Re-run the enemy sweep
+   against current content and confirm the reference build still dies at 22–24
+   on Standard; run a naive build against Calm across a seed corpus and confirm
+   it holds to wave 5. *Proof:* two sweep documents and two numbers. **Nothing
+   here reaches Daniil unless a number is outside its stated target.**
 
-**Gate — his judgement:** the filed round's zeros are answered; two
-Standard runs do not resemble each other by the road's walk; the seven
-have faces.
+**Gate — his eye on the live build:** tier-2 ore is reachable in a run without
+reading a doc; minting a loaded tile is visibly ruinous and a plain one is not;
+a relic arrives from a win while a rarity arrives from a purchase.
 
-**His part:** the stranger (default: he runs the protocol himself as a
-fresh reader, thirty minutes); a word on whether cards should pause the
-run (default: they do); the carve's Threat character in a phrase each
-(default: Calm long and gentle, Standard as measured, Grim short and
-knotted). "Go" is enough.
+**His part: nothing.** Every call this session needs is already decided
+(D29–D34). If he wants to amend the seven's names, that is a content edit and
+does not block.
 
-**Biggest risk:** the carve's variety re-baselines every lab sweep and
-moves the golden hash again; a walk that prefers novelty can starve
-coverage — the sweep at forty seeds is the guard. **Expensive if wrong:**
-the carve's rules (every map, save and replay hangs on them) and the
-resemblance metric (a wrong one steers every later tuning).
+**Biggest risk — and this one wants his verdict, not his silence.** The ore
+ladder touches four subsystems at once: generation (spawn weighting), the
+palette (a new ore's colour roles), the Tile Smith (a new cell) and the economy
+(two prices). Rule 4 says two rounds on one subsystem then a spec — the spec
+exists in advance here, which is the mitigation, but four subsystems moving
+together is exactly the shape that produced the pile-of-patches day. **The
+alternative is splitting it: ship the ore itself first, and the Smith cell that
+spends it in a second session.** *Default: build it whole, because the Smith
+cell is what makes the tier scarce and shipping the ore without its sink gives
+a misleading first read.* **Expensive if wrong:** the pricing function (D31)
+is shared by the Smith and the shop, so a wrong shape there re-prices every
+tile in the game, and the ore's spawn rate re-baselines every map sweep.
 
 ---
 
@@ -449,7 +456,9 @@ The order is derived from *what causes rework if done late*:
 | ~~31~~ | **DONE** *(session 31, PRs #181–#189, 2026-09-07 night into 2026-09-08 — Daniil's "make this session big": the tutorial, the early game, the comb)* **The tutorial and the comb**: a thirteen-step tutorial with a pulsing box on the thing to look at; the early game measured on the base world and re-curved (the armour floor, the boss multiplier by weight, Calm's own curve; the live board says placement and forks decide, so the tutorial names the Core's ground and asks for a fork); the keyboard on every page; the sim's edges; three comb passes over the pages and the HUD; applicable relics; the logic comb (fourteen audit findings verified, the hash's holes closed); personal bests | — | Gate met on the build: a stranger's first run is walked, and a plain-Bolt player who forks holds Calm. His eye pending |
 | ~~32~~ | **DONE** *(session 32, PRs #190–#194, 2026-09-08 — Daniil's "go" on the plan)* **Enemies II**: seven bodies each a trait rule (courser, ram, blob, mender, mole, pavise, the Warden); waves composed from packs on one front in a column, a wedge or a wall, the boss on a beat; every rule on the body, in the strip and as the answer under the next wave; the balance pass (Standard 6 + 5 a wave at ×1.07, Grim ×1.09, the reference at 22–24) and the enemy sweep's counter table | — | Gate met on the build: wave 10 reads unlike wave 5 by shape, every body says its rule by standing there, no single line holds the heavies. His eye pending |
 | ~~33~~ | **DONE** *(session 33, PRs #195–#203, 2026-09-08 — Daniil's ten items first, then the plan; bar the stranger's hands)* **Content completeness, the rest, and the feedback round**: the ten items (Esc and the purse, the clock deals the owed offer, encounter cards, animated title, the tree as plates, chests halved, boss chests, the Codex, the mender's field, the creative page); every legal routing shape enumerated (nine - the law's count) with sixty land tiles and the map sweep as the guard; the multiset of copies; mini previews; the stranger test protocol written, **not yet run** | — | Gate: the stranger test's scorecard (rows 5, 6, 10 at 2) — his or his friend's hands on the live build |
-| **The stranger's round and the carve's variety** | *(NEXT; the PR list is HANDOVER's "Next session, proposed")* The stranger test run and filed as round 34; the carve's lane length and turn preference by Threat; Grim and relics against the seven; the art agent's studies for the seven and the chests; the register's rows (terminals once, the analytic model retired) | Two Standard runs do not resemble each other by the road's walk; the filed round's zeros are answered |
+| **The economy's missing rungs** | *(NEXT; the plan is "The next session" above)* The ore ladder (D30); the Smith's content-based pricing (D31); the reliquary rework to rarity-bought / relic-won (D29, D34); the seven's display names (PRD §30); the balance debt measured rather than asked about (#234, #235) | Tier-2 ore is reachable in a run; a loaded minted tile is ruinous and a plain one is not; a relic comes from a win and a rarity from a purchase |
+| **The stranger's round** | *(waits on a person, not on the build)* A stranger plays the live build unaided on Calm to wave 5 under `docs/STRANGER-TEST.md`; the ten scored rows are filed as issues `[r36.<row>] …`; every 0 and 1 becomes a fix the same session. This is the one question no sweep can answer, which is why it stays his — unlike balance, which §6 rule 7 moved back to the dev | A "2" on rows 5, 6 and 10 of the scorecard |
+| **The carve's variety** | Lane length and turn preference by Threat (Calm long and gentle, Grim short and knotted); a walk that prefers unused directions; the fill's land grouped by family; the map sweep gains a resemblance column | Two Standard runs do not resemble each other by the road's walk |
 | **Calibration I** | WBS 1.5.1/1.5.2 + 3.1–3.4: bot policy, `calibrate`/`check`, human offset from Daniil's replays, `balance.yml` gate, seed-corpus sweeps | Injected regression caught; no trivial or unwinnable seed in ≥500 runs |
 | **Meta progression, full** | *(plus 7.8, the monetization door — D27; the tree, run history with bests and the in-game Tile Smith landed in sessions 29–31)* | Tech tree stages 1–2 beyond the shipped tree, dailies, replay sharing, **the tile-loadout slot economy** (7.5) | Finishing a run visibly changes the next one |
 | **Calibration II** | WBS 3.6: recalibrate with the meta layer live — tech-tree multipliers, pool unlocks and chosen tile loadouts all move player power underneath the curves calibration I fixed. Re-baseline `balance.yml`, re-sweep the seed corpus at several tree states | No trivial or unwinnable seed at any tech-tree state the player can actually hold |
@@ -803,6 +812,7 @@ agreement](../CONTRIBUTING.md), rule 3).*
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
+| D34 | **A rarity band is bought; a relic is won** — **RESOLVED 2026-09-17 (Daniil)**, answering the sub-question D29 left open. The meta surface sells *access to a rarity* (rare for X Ore, epic for Y); **specific relics are unlocked by winning**, and a named relic is never for sale. Selling one for money is D27's territory and stays deferred. PRD §28.1. The default proposed alongside D29 - drop the win-earned half - was wrong and was corrected before anything was built on it |  | closed |
 | D29 | **The tree gates rarity, never a named relic** — **RESOLVED 2026-09-17 (Daniil)**, rejecting the tag-node + earned-by-wins reconciliation as *"convoluted"*. No named relic is locked behind the tree; the tree climbs a **rarity** ladder, and some relics exist only at a higher rarity. PRD §28. **One sub-question is open and tracked as a call**: whether rarity is bought on the tree, earned by wins, or both — do not rework the reliquary branch until it is answered | before the reliquary rework | Daniil |
 | D30 | **The ore ladder** — **RESOLVED 2026-09-17 (Daniil)**: a higher ore tier is a **shop upgrade** that unlocks (a) a new ore on the map — different colour, slower mining, smaller vein, much rarer spawn, everything else identical — and (b) a Tile Smith cell for that tier, whose placement costs tier-N ore **on top of** the lower-tier cost. PRD §26. Closes the dead end where tier-2 prices existed with no tier-2 income | — | closed |
 | D31 | **The Smith prices a tile by its contents** — **RESOLVED 2026-09-17 (Daniil)**: one pricing function over the tile's cells, shared by the Smith and the shop. A plain straight road costs no more than a shipped tile of similar quality; a tile of high-tier veins and top boon ground is *prohibitively* expensive by design. PRD §27, cashing §11.1's unkept promise | — | closed |

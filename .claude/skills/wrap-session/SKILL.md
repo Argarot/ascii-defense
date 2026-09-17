@@ -55,13 +55,12 @@ writing anything:
 - **Close what shipped.** `gh issue close N --comment "<PR>"` for every issue
   today's PRs answered. An issue left open after its fix merged is worse than
   no tracker.
-- **Mint the unanswered defaults.** Every `call` issue asked in a previous
-  session and still unanswered is closed now: its default goes into
-  **docs/ROADMAP.md**'s decision table with today's date and the words "by
-  default, unanswered", and the issue closes citing that row. It is a decision
-  from this moment — reversible like any other, never again an open question.
-  This is the step that stops his queue accreting; skipping it is how
-  twenty-five items tagged "his judgement" happened.
+- **Minting is not done here.** A call's deadline is *the start of the next
+  session* (§6 rule 3), so the `start-session` skill mints it, at the moment the
+  deadline actually falls due. This step used to duplicate that with different
+  timing, which meant the rule had two readings and neither was authoritative.
+  At the wrap, only **check** whether any call has now had its session of grace,
+  and say so in the reply so the next session knows what it inherits.
 - **File what today produced.** New defects and scope born today become
   issues, not HANDOVER bullets. Under the **content freeze** scope gets
   `later` and does not enter the ledger.

@@ -1812,13 +1812,43 @@ tree nodes and win-earned rarity — to express one idea. This has one. It also
 removes the failure a player actually feels: opening the codex, seeing a relic,
 and being unable to work out which node would let them have it.
 
-**For the builder — one thing is genuinely undecided.** Daniil said rarity
-unlocking is right; he did not say *what* unlocks it. The reading taken here is
-**the tree buys rarity tiers, and the win-earns-rarity mechanic from session 29
-is dropped** as part of the "convoluted" it was called. That is an inference,
-not his words, so it is tracked as an open call with that default rather than
-written as settled. Do not build the reliquary branch's rework until it is
-answered — the rest of this section is safe to build against.
+### 28.1 What unlocks a rarity, and what unlocks a relic *(Daniil, 2026-09-17. D34)*
+
+The sub-question §28 left open is answered, and the two halves are **different
+mechanisms on purpose**:
+
+| | unlocked by | what it is |
+|---|---|---|
+| **a rarity band** — rare, then epic, … | **bought**, with Ore, on the meta surface | "rare-tier items cost some X, then epic-tier items cost some Y". A price per band, paid once |
+| **a specific relic** | **won** | beating the game unlocks particular items. Nothing else does |
+
+**You never buy a named relic.** His words: *"So you don't 'buy' items in the
+shop (unless as a way of monetization, but that's a separate discussion)."*
+Selling a specific item for real money is **D27's territory and deferred** — it
+must not be designed into the meta economy now, even as a hook.
+
+**How this sits with §28.** D29 said no named relic is locked behind *the
+tree*, and that holds: a named relic is locked behind **a win**, which is a
+thing the player does rather than a node they buy. The tree sells only the
+band. The two rules compose — buying epic access does not hand you the epic
+relics, it makes the ones you have won at that rarity able to appear.
+
+**The one reading, stated as a reading.** He said "the shop". The build has two
+Ore-spending surfaces — the workshop's tree and the tile shop — and this is the
+**workshop's meta spend**, the same surface that already sells branches and
+capacity. **Do not build a third storefront.** If that is wrong it is a one-line
+move, which is why it is written here rather than asked as another call.
+
+**For the builder.** This replaces session 29's reliquary branch: a node per
+relic *tag* with rares earned by wins becomes a node per *rarity band*, bought,
+with the relic set behind wins. The branch's rework is no longer blocked.
+
+**The sub-question this section left open was answered the same day — see
+§28.1.** The default written here (drop the win-earned half entirely) was
+**wrong**, and he corrected it: wins keep a job, just a different one. Recorded
+because it is the case for flagging an inference as an inference rather than
+writing it into a spec as settled — had it been written as settled, the
+reliquary rework would have been built with the wrong mechanism.
 
 Superseded text lives in §11's tree description and in §19 item 3; both are
 marked.
