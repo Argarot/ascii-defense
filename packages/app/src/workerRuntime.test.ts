@@ -56,7 +56,7 @@ function makeRt() {
       { id: 'boss_drop', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },
     ],
     // A small tree (session 29, PR 1): the base has the Bolt and one relic; a node grants the second relic and two slots.
-    tree: { base: { towers: ['bolt'], relics: ['r1'], relicSlots: 4, threat: 1, tileSlots: 1, oreTier: 1 }, nodes: [{ id: 'more', name: 'More', branch: 'capacity', desc: '', cost: { tier: 1, ore: 10 }, grants: { relics: ['r2'], relicSlots: 2 } }] },
+    tree: { base: { towers: ['bolt'], relics: ['r1'], relicSlots: 4, threat: 1, tileSlots: 1, oreTier: 1 }, nodes: [{ id: 'more', name: 'More', branch: 'capacity', desc: '', cost: { tier: 1, ore: 10 }, grants: { relics: ['r2'], relicSlots: 2 } }, { id: 'lodes', name: 'Lodes', branch: 'ore', desc: '', cost: { tier: 1, ore: 10 }, grants: { oreTier: 3 } }] },
   });
   const last = <T extends FromWorker['t']>(t: T) =>
     [...posts].reverse().find((p): p is Extract<FromWorker, { t: T }> => p.t === t);
@@ -211,5 +211,34 @@ describe('the meta tree decides the world (session 29, PR 1)', () => {
     rt.handle({ t: 'frame', ui: UI });
     expect(last('snapshot')!.s.hud.coreCard?.relicSlots).toBe(6);
     expect((debug('pool') as unknown[]).length).toBe(2);
+  });
+});
+
+describe('the ore ladder reaches the run (PRD sec 26, D30)', () => {
+  const tiersOver = (unlocks: string[]): Set<number> => {
+    const { rt, last, debug } = makeRt();
+    const seen = new Set<number>();
+    for (let seed = 1; seed <= 60; seed++) {
+      rt.handle({ t: 'init', seed, threatIdx: 1, loadout: [], meta: { unlocks, earned: [], forged: {} } });
+      if (!last('ready')) continue;
+      for (const d of debug('deposits') as { tier: number }[]) seen.add(d.tier);
+    }
+    return seen;
+  };
+
+  it('a tree with no ore node deals tier-1 veins only', () => {
+    expect([...tiersOver([])]).toEqual([1]);
+  });
+
+  it('a tree that opened a tier deals it, rarely - and the snapshot carries the tier the board colours by', () => {
+    const seen = tiersOver(['lodes']);
+    expect(seen.has(1)).toBe(true);
+    expect(seen.has(2) || seen.has(3)).toBe(true);
+    const { rt, last } = makeRt();
+    rt.handle({ t: 'init', seed: 3, threatIdx: 1, loadout: [], meta: { unlocks: ['lodes'], earned: [], forged: {} } });
+    rt.handle({ t: 'frame', ui: UI });
+    const rich = last('snapshot')!.s.board.oreRichness ?? [];
+    expect(rich.length).toBeGreaterThan(0);
+    for (const r of rich) { expect(r.tier).toBeGreaterThanOrEqual(1); expect(r.frac).toBeLessThanOrEqual(1); }
   });
 });

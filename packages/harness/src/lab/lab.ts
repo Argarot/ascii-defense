@@ -131,9 +131,9 @@ export function demoMap(seed: number, lib: TileLibrary, poolSize: number, board 
   return { map, cellsW: map.cellsW, cellsH: map.cellsH, cells: mapCells(map, lib) };
 }
 
-function makeWorld(spec: LabSpec, content: LabContent) {
+function makeWorld(spec: LabSpec, content: LabContent, oreTierMax = 1) {
   if (spec.map === 'demo') return demoMap(spec.seed, content.lib, content.relicDefs.length);
-  const map = generateMap(createRng(spec.seed).stream('map'), content.lib, { ...spec.map, relicPoolSize: content.relicDefs.length, specials: spec.loadout ?? [] });
+  const map = generateMap(createRng(spec.seed).stream('map'), content.lib, { ...spec.map, relicPoolSize: content.relicDefs.length, specials: spec.loadout ?? [], oreTierMax });
   return { map, cellsW: map.cellsW, cellsH: map.cellsH, cells: mapCells(map, content.lib) };
 }
 
@@ -270,9 +270,9 @@ function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: n
 }
 
 export function runLab(spec: LabSpec, content: LabContent): LabReport {
-  const { map, cellsW, cellsH, cells } = makeWorld(spec, content);
-  // The tree decides the world (session 29, PR 6), the way the worker does it.
+  // The tree decides the world (session 29, PR 6), the way the worker does it - the map's veins included (the ore ladder, D30).
   const unlocked = content.tree && spec.unlocks ? resolveUnlocks(content.tree, { unlocks: spec.unlocks, earned: [], forged: {} }, content.relicDefs) : null;
+  const { map, cellsW, cellsH, cells } = makeWorld(spec, content, unlocked?.oreTierMax ?? 1);
   const towerDefs = unlocked ? content.towerDefs.filter((d) => unlocked.towers.has(d.id)) : content.towerDefs;
   const relicDefs = (unlocked ? content.relicDefs.filter((d) => unlocked.relics.has(d.id)) : content.relicDefs).filter((d) => relicApplies(d, towerDefs.map((t) => t.id)));
   content = { ...content, towerDefs, relicDefs };

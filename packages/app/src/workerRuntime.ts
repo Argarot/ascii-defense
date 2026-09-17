@@ -20,6 +20,7 @@
  */
 import {
   DEPOSIT_MAX,
+  ORE_TIER_VEIN,
   PROSPECT_TICKS,
   REPLAY_VERSION,
   Sim,
@@ -166,7 +167,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             const knobs = createRng(nextSeed).stream('map');
             const entries = knobs.int(THREAT.entries[0], THREAT.entries[1]);
             const targetPathCells = (THREAT.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
-            nextMap = generateMap(knobs, nextLib, { width: MAP_X, height: MAP_Y, entries, targetPathCells, relicPoolSize: relicDefs.length, specials });
+            nextMap = generateMap(knobs, nextLib, { width: MAP_X, height: MAP_Y, entries, targetPathCells, relicPoolSize: relicDefs.length, specials, oreTierMax: unlocked.oreTierMax });
             break;
           } catch (e) {
             if (attempt >= 60 && specials.length > 0) {
@@ -318,10 +319,11 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         slows: new Set(statuses.filter((st) => st.kind === 'slow').map((st) => st.src)).size,
       });
     }
-    const oreRichness: { x: number; y: number; frac: number }[] = [];
+    const oreRichness: { x: number; y: number; frac: number; tier: number }[] = [];
     for (const d of map.deposits ?? []) {
       const dep = s.depositAt(d.x, d.y);
-      if (dep) oreRichness.push({ x: d.x, y: d.y, frac: dep.left / DEPOSIT_MAX });
+      // Richness is read against what a vein of ITS tier can hold (PRD sec 26): a full tier-2 vein is half a tier-1 vein's Ore and must still read as rich.
+      if (dep) oreRichness.push({ x: d.x, y: d.y, frac: Math.min(1, dep.left / (DEPOSIT_MAX * (ORE_TIER_VEIN[dep.tier - 1] ?? 1))), tier: dep.tier });
     }
     const caches: { x: number; y: number }[] = [];
     for (const c of s.caches) if (!c.opened) caches.push({ x: c.x, y: c.y });
@@ -462,7 +464,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       const c = selected ?? hover;
       if (!c) return '';
       const dep = s.depositAt(c.x, c.y);
-      if (dep && s.cellAt(c.x, c.y) === 'O') return ` \u2802 ore left ${dep.left}/${dep.initial}`;
+      // A higher tier says so in words (PRD sec 26): the colour is never the only carrier.
+      if (dep && s.cellAt(c.x, c.y) === 'O') return dep.tier > 1 ? ` \u2802 TIER-${dep.tier} ore left ${dep.left}/${dep.initial} - rarer, mined slower, banked as tier-${dep.tier} Ore` : ` \u2802 ore left ${dep.left}/${dep.initial}`;
       const boon = s.boonAt(c.x, c.y);
       const near = s.isNearCore(c.x, c.y) && s.cellAt(c.x, c.y) !== 'C' ? ' \u2802 NEXT TO THE CORE: every tower has a unique gift here' : '';
       return (boon ? ` \u2802 BOON t${boon.tier}: ${Sim.boonEffect(boon.boon, boon.tier).text} for whatever is built here` : '') + near;
@@ -566,7 +569,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           ? {
               name: def.name ?? def.id,
               kills: infoTower.kills,
-              deposit: def.production ? (s.depositAt(infoTower.cellX, infoTower.cellY) ?? { left: 0, initial: 1 }) : null,
+              deposit: def.production ? (s.depositAt(infoTower.cellX, infoTower.cellY) ?? { left: 0, initial: 1, tier: 1 }) : null,
               stats: toStats(eff, def),
               preview: effPreview ? toStats(effPreview, def) : null,
               offVein: def.production !== undefined && (def.production.ore ?? 0) > 0 && s.cellAt(infoTower.cellX, infoTower.cellY) !== 'O',
@@ -711,6 +714,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           case 'canBuild': result = s.canBuildAt(args[0], args[1]); break;
           case 'cellAt': result = s.cellAt(args[0], args[1]); break;
           case 'ore': result = s.ore[0]; break;
+          // The map's veins as the sim holds them (the ore ladder, PRD sec 26): where, how much is left, which tier.
+          case 'deposits': result = (map?.deposits ?? []).map((d) => ({ x: d.x, y: d.y, ...s.depositAt(d.x, d.y) })); break;
           case 'offer': result = s.offerDefs()?.map((d) => d.id) ?? null; break;
           case 'pick': result = s.pickRelic(args[0]); if (result) syncOfferPause(); break;
           case 'relics': result = s.heldRelicInfo().map((h) => h.def.id); break;

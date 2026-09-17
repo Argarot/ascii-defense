@@ -1757,6 +1757,26 @@ Tile Smith's cell vocabulary and its price function (§27), and the
 size and the cycle multiplier per tier are numbers for the lab to derive, not
 for Daniil to pick** — see §27's note and CONTRIBUTING §6 rule 7.
 
+**As built (2026-09-17; docs/lab/ore-sweep-2026-09-17.md).** The "shop
+upgrade" is the workshop's ORE branch — *Rich veins* (tier 2), then *Mother
+lodes* (tier 3) — which already existed and sold only a vein tile; buying one
+now also opens the tier on the map and in the Smith.
+
+| | tier 1 | tier 2 | tier 3 | the target it was derived from |
+|---|---|---|---|---|
+| colour | gold | blue (the rare blue) | violet (the epic violet) | the rarity language the game already speaks; the rock carrying the ore is tinted too, because the ore alone is a few specks and did not read at a glance |
+| maps that carry one | every map (~12 veins) | **about one in three** (3% a vein) | **about one in nine** (1.1% a vein) | "much rarer": each rung a third as common as the one below |
+| vein size | 30–90 | **half** (15–45) | **a third** (10–30) | smaller, but it must still outlast one Refinery for most of a run |
+| mining cycle | ×1 | ×1.5 | ×2 | kept from session 29: a tier-2 run banks ~27 where a tier-1 run banks ~51 |
+| the Smith's cell | — | **+0.5 tier-2 Ore per Ore in the vein**, on top | the same, in tier-3 Ore | you must have mined some to author with it |
+
+From the map alone a player banks about 7 tier-2 Ore a run — the tier-2 tree
+(135) in about eighteen runs, as long as tier 1 took; with a vein tile loaded,
+about five. **Opening a tier moves nothing but veins:** a seed's board, rock
+and boons are the same map with and without the upgrade (counted: 0 of 2,400).
+A vein says its tier in words as well as colour — on hover and on the
+Refinery's panel — so the colour is never the only carrier.
+
 ## 27. The Smith prices a tile by what is on it *(Daniil, 2026-09-17. D31)*
 
 **The rule.** A minted tile's price is a function of **its contents**, not a

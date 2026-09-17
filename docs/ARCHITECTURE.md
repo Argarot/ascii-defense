@@ -371,6 +371,17 @@ actually walk.
   2026-08-19).
 - Every ore cell carries a finite vein dealt at generation; when the relic
   layer is on, every rock cell's hidden contents are dealt at generation.
+- **A vein's tier is 1, 2 or 3** (`tier3/deposits-tier`), and **the ore
+  ladder moves nothing but veins** (PRD §26, D30): once the tree has opened
+  a tier (`MapGenOptions.oreTierMax`), each *dealt* vein may come up as that
+  tier - smaller by `ORE_TIER_VEIN`, at `ORE_TIER_SPAWN`'s chance - and an
+  authored vein keeps its author's word. The roll is the **last dice of a
+  map, after `verifyMap` has passed it**: a failed attempt therefore spends
+  the same dice with and without the upgrade, and a seed's board, rock and
+  boons are identical either way. Rolling it *before* verification broke
+  that on 13 of 400 seeds (docs/lab/ore-sweep-2026-09-17.md); the property
+  is counted by the sweep and held by `mapgen.test.ts`. With no tier open no
+  dice are spent, so every map from before the ladder is the same map.
 - Placement *preferences* (sector spread, walk eagerness, boon-near-road)
   are free implementation space, not rules.
 

@@ -10,7 +10,7 @@
  * clicks by id.
  */
 import type { TermSurface } from '@ascii-defense/render';
-import { TILE_SIZE, segmentRimMask, type CellType } from '@ascii-defense/engine';
+import { TILE_SIZE, canPay, costText, segmentRimMask, type CellType } from '@ascii-defense/engine';
 import { CELL_H, CELL_W, drawTerrainCell } from '../board/style';
 import { role } from '../palette';
 import { drawFrame } from './MenuScreen';
@@ -51,7 +51,8 @@ export interface SmithState {
   /** The engine's verdict and the shell's own rules; empty means the tile mints. */
   errors: readonly string[];
   id: string;
-  price: { tier: number; ore: number };
+  /** The mint price BY TIER (PRD sec 26): a tier-N vein costs tier-N Ore on top of the tile's lower-tier price. */
+  price: readonly number[];
   ore: readonly number[];
   canUndo: boolean;
   /** A line under MINT: what just happened, or what stops it. */
@@ -153,6 +154,7 @@ export class SmithScreen {
         drawTerrainCell(term, s.cells[cy][cx] as CellType, tx + cx * CELL_W, ty + cy * CELL_H, {
           rim: segmentRimMask(s.cells[cy][cx], cx, cy),
           richness: authored ? authored.amount / 90 : undefined,
+          oreTier: authored?.tier,
         });
         // A vein's tier as corner marks, a boon as tinted corners - what the board does.
         const gx = tx + cx * CELL_W;
@@ -179,13 +181,13 @@ export class SmithScreen {
     put(rx, ry++, `${s.deposits.length} vein(s), ${s.boons.length} boon(s), ${[...s.cells.join('')].filter((c) => c !== 'G' && c !== 'R' && c !== 'O' && c !== 'C').length} road cell(s)`, dim);
     ry++;
     put(rx, ry++, 'THE PRICE', accent);
-    put(rx, ry++, `${s.price.ore} tier-${s.price.tier} ore (have ${s.ore[s.price.tier - 1] ?? 0})`, text);
-    put(rx, ry++, 'the shop and the smith share one', dim);
-    put(rx, ry++, 'pricing function: roads, veins,', dim);
-    put(rx, ry++, 'boons, the vein tier', dim);
+    for (let i = 0; i < s.price.length; i++) if (s.price[i] > 0) put(rx, ry++, `${s.price[i]} ${i === 0 ? '' : `tier-${i + 1} `}ore (have ${s.ore[i] ?? 0})`, (s.ore[i] ?? 0) >= s.price[i] ? text : role('enemy.fast'));
+    put(rx, ry++, 'roads, veins, boons - and a vein', dim);
+    put(rx, ry++, 'above tier 1 costs its own', dim);
+    put(rx, ry++, "tier's ore on top", dim);
     ry++;
-    const canMint = s.errors.length === 0 && (s.ore[s.price.tier - 1] ?? 0) >= s.price.ore;
-    put(rx, ry, (' MINT - ' + s.price.ore + ' ore').padEnd(rightW - 4).slice(0, rightW - 4), canMint ? bg : grid, canMint ? accent : PLATE_BG);
+    const canMint = s.errors.length === 0 && canPay(s.ore, s.price);
+    put(rx, ry, (' MINT - ' + costText(s.price)).padEnd(rightW - 4).slice(0, rightW - 4), canMint ? bg : grid, canMint ? accent : PLATE_BG);
     if (canMint) this.regions.push({ row: ry, rowEnd: ry, x0: rx, x1: rx + rightW - 4, id: 'mint' });
     ry += 2;
     for (const line of wrap(s.note, rightW - 2).slice(0, 3)) put(rx, ry++, line, dim);

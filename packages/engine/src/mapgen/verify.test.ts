@@ -93,6 +93,14 @@ describe('verifyMap: the current generator against the spec (the baseline)', () 
     expect(issues.some((i) => i.rule === 'tier0/specials-exactly-once')).toBe(true);
   });
 
+  it('flags a vein of a tier no purse holds (the ore ladder, PRD sec 26)', () => {
+    const map = generateMap(createRng(5).stream('map'), LIB, CASES[1]);
+    expect(map.deposits.length).toBeGreaterThan(0);
+    const forged = { ...map, deposits: map.deposits.map((d, i) => (i === 0 ? { ...d, tier: 4 } : d)) };
+    expect(verifyMap(forged, LIB, {}).some((i) => i.rule === 'tier3/deposits-tier')).toBe(true);
+    expect(verifyMap(map, LIB, {}).some((i) => i.rule === 'tier3/deposits-tier')).toBe(false);
+  });
+
   it('catches a LOOP (the tree check itself works)', () => {
     // A hand-built 2x2 ring of corners: drivable, edge-legal, and exactly
     // the shape the no-loops rule exists to forbid. |E| = |V| here.

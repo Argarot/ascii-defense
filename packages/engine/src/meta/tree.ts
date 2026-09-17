@@ -230,20 +230,58 @@ export function buyTile(unlocked: Unlocked, owned: Readonly<Record<string, numbe
   return { owned: { ...owned, [tile.id]: (owned[tile.id] ?? 0) + 1 }, ore: next };
 }
 
+/** An Ore cost BY TIER, index tier - 1 (invariant 9: Ore is stored per tier, and so is what it buys). */
+export type OreCost = readonly number[];
+
+/** Can this purse pay this cost - every tier of it? */
+export function canPay(ore: readonly number[], cost: OreCost): boolean {
+  return cost.every((c, i) => c <= 0 || (ore[i] ?? 0) >= c);
+}
+
+/** The purse after paying; the caller checked canPay. Pure. */
+export function payCost(ore: readonly number[], cost: OreCost): number[] {
+  const next = [...ore];
+  cost.forEach((c, i) => { if (c > 0) next[i] = (next[i] ?? 0) - c; });
+  return next;
+}
+
+/** A cost in words: "34 ore", "34 ore + 15 tier-2 ore". */
+export function costText(cost: OreCost): string {
+  const parts = cost.map((c, i) => (c > 0 ? `${c} ${i === 0 ? '' : `tier-${i + 1} `}ore` : '')).filter((s) => s !== '');
+  return parts.length ? parts.join(' + ') : 'free';
+}
+
+/** The first tier this purse falls short in, in words, or null when it can pay. */
+export function shortfall(ore: readonly number[], cost: OreCost): string | null {
+  for (let i = 0; i < cost.length; i++) if (cost[i] > 0 && (ore[i] ?? 0) < cost[i]) return `needs ${cost[i]} tier-${i + 1} ore (have ${ore[i] ?? 0})`;
+  return null;
+}
+
+/** Tier-N Ore a vein of tier N costs to author, per Ore it holds (PRD sec 26: "on top of" the lower-tier price). */
+export const VEIN_TIER_PRICE = 0.5;
+
 /**
  * What a tile is worth (PRD sec 11.1: "features price the tile"; session
  * 30, PR 2) - the one function the Smith mints with. Road cells, veins by
- * their Ore, boons by their tier; the TIER of the price is one below the
- * richest vein (a tier-N vein is bought with tier-(N-1) Ore), tier 1
- * otherwise. Shipped specials keep their authored price; this is the
- * Smith's, and the shop's fallback.
+ * their Ore, boons by their tier, all in the tier BELOW the richest vein
+ * (a tier-N vein is bought with tier-(N-1) Ore), tier 1 otherwise - and,
+ * since the ore ladder (PRD sec 26, D30), every vein above tier 1 costs
+ * its OWN tier's Ore on top: you must have mined some before you can
+ * author with it, and the authoring sink is what keeps the tier scarce.
+ * Shipped specials keep their authored price; this is the Smith's.
  */
-export function priceTile(tile: { cells: readonly string[]; deposits?: readonly { amount: number; tier?: number }[]; boons?: readonly { tier: number }[] }): { tier: number; ore: number } {
+export function priceTile(tile: { cells: readonly string[]; deposits?: readonly { amount: number; tier?: number }[]; boons?: readonly { tier: number }[] }): OreCost {
   const road = [...tile.cells.join('')].filter((c) => !'GROC'.includes(c)).length;
   const veinTier = Math.max(1, ...(tile.deposits ?? []).map((d) => d.tier ?? 1));
   const veins = (tile.deposits ?? []).reduce((a, d) => a + Math.round(d.amount / 6), 0);
   const boons = (tile.boons ?? []).reduce((a, b) => a + b.tier * 8, 0);
-  return { tier: Math.max(1, Math.min(3, veinTier - 1)), ore: 10 + road * 2 + veins + boons };
+  const cost = [0, 0, 0];
+  cost[Math.max(1, Math.min(3, veinTier - 1)) - 1] += 10 + road * 2 + veins + boons;
+  for (const d of tile.deposits ?? []) {
+    const t = Math.min(3, d.tier ?? 1);
+    if (t > 1) cost[t - 1] += Math.max(1, Math.round(d.amount * VEIN_TIER_PRICE));
+  }
+  return cost;
 }
 
 /** Every tile the tree can ever sell - the base's and every node's. */

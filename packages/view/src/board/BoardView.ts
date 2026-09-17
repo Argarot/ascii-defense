@@ -189,7 +189,7 @@ export interface RenderState {
   /** Void chests (session 28, PR 5): surfaced on water, with the share of their window left (1 = just surfaced). */
   chests?: readonly { x: number; y: number; left01: number; /** Its rarity's colour (session 30, PR 4). */ rarity?: string; /** A boss's chest: the crowned sprite (feedback 2026-09-08, item 7). */ boss?: boolean }[];
   /** Ore cells' remaining richness 0..1 - scales the gold-speck density. */
-  oreRichness?: readonly { x: number; y: number; frac: number }[];
+  oreRichness?: readonly { x: number; y: number; frac: number; /** The vein's Ore tier (PRD sec 26): the substance's colour. Absent = 1. */ tier?: number }[];
   /** The sim's route graph (FlowField.allowed): legal steps per cell. Kerbs
    *  are drawn from ITS verdict, so what looks connected IS connected. */
   routeAllowed?: Uint8Array;
@@ -290,7 +290,7 @@ export class BoardView {
   render(state: RenderState, overlay?: (term: TermSurface) => void): void {
     const term = this.term;
     const richnessAt = state.oreRichness
-      ? new Map(state.oreRichness.map((r) => [r.y * this.cellsW + r.x, r.frac]))
+      ? new Map(state.oreRichness.map((r) => [r.y * this.cellsW + r.x, r]))
       : undefined;
     const offsetY = 0; // the board owns its whole surface; text lives in HudPanel
 
@@ -353,7 +353,8 @@ export class BoardView {
           bg: hoverBg,
           litTop: shaded && north !== kind,
           shadowBottom: shaded && south !== kind,
-          richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx) : undefined,
+          richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx)?.frac : undefined,
+          oreTier: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx)?.tier : undefined,
           rim: state.routeAllowed ? ~state.routeAllowed[cy * this.cellsW + cx] & 15 : 0,
           // Ground and the Core breathe; rock, roads and ore hold still -
           // moving glyphs on a cell the player reads for data would lie.

@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, priceTile, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
+import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, priceTile, shortfall, payCost, costText, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
 import { TUTORIAL_STEPS, goodGround, nearRock, nextStep, type TutorialCtx } from './tutorial';
 import type { TreeNode, CellType } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
@@ -326,12 +326,13 @@ async function main(): Promise<void> {
       if (errors.length) { smithNote = errors[0]; return; }
       const tile = smithTile();
       const price = priceTile(tile);
-      if ((meta.ore[price.tier - 1] ?? 0) < price.ore) { smithNote = `needs ${price.ore} tier-${price.tier} ore`; return; }
-      meta.ore[price.tier - 1] -= price.ore;
+      const short = shortfall(meta.ore, price);
+      if (short) { smithNote = short; return; }
+      meta.ore = payCost(meta.ore, price);
       addMintedTile(tile);
       meta.owned[tile.id] = 1;
       saveMeta(meta);
-      smithNote = `minted '${tile.id}' for ${price.ore} tier-${price.tier} ore - it is in the loadout pool now`;
+      smithNote = `minted '${tile.id}' for ${costText(price)} - it is in the loadout pool now`;
       smithUndo.length = 0;
       smithCells = [...BLANK_TILE]; smithDeposits = []; smithBoons = [];
       return;
@@ -794,7 +795,7 @@ async function main(): Promise<void> {
             `towers ${u.towers.size}/${TOWER_COUNT} \u2802 relics in the pool ${u.relics.size}/${RELIC_POOL.length} \u2802 relic slots ${u.relicSlots} \u2802 tile slots ${u.tileSlots} \u2802 tiles owned ${smith.owned}/${smith.total}`,
             '',
             ...(focus
-              ? [...wrapLine(`${focus.name.toUpperCase()}: ${focus.desc}`, Math.min(100, screenCols - 12)), focusWhy === 'already bought' ? 'bought' : focusWhy ? `cannot buy yet: ${focusWhy}${focusWhy.includes('ore') && focus.cost.tier > 1 && (meta.ore[focus.cost.tier - 1] ?? 0) === 0 ? ` - tier-${focus.cost.tier} ore is mined from a tier-${focus.cost.tier} vein: the ORE branch opens its tile, load it, build a Refinery on it` : ''}` : `click it again to buy for ${focus.cost.ore} tier-${focus.cost.tier} ore`]
+              ? [...wrapLine(`${focus.name.toUpperCase()}: ${focus.desc}`, Math.min(100, screenCols - 12)), focusWhy === 'already bought' ? 'bought' : focusWhy ? `cannot buy yet: ${focusWhy}${focusWhy.includes('ore') && focus.cost.tier > 1 && (meta.ore[focus.cost.tier - 1] ?? 0) === 0 ? ` - tier-${focus.cost.tier} ore is mined from a tier-${focus.cost.tier} vein: buy ${focus.cost.tier === 2 ? 'RICH VEINS' : 'MOTHER LODES'} on the ORE branch and the veins start turning up on maps (rarely - look for the ${focus.cost.tier === 2 ? 'blue' : 'violet'} ore), or load its vein tile; build a Refinery on one` : ''}` : `click it again to buy for ${focus.cost.ore} tier-${focus.cost.tier} ore`]
               : ['click a node to read it; click it again to buy']),
           ],
           // The purse in the frame's bottom band (feedback item 1: "I don't see how much ore I actually have").
@@ -1717,6 +1718,7 @@ async function main(): Promise<void> {
     canBuild: (x: number, y: number) => debug('canBuild', x, y),
     cellAt: (x: number, y: number) => debug('cellAt', x, y),
     ore: () => debug('ore'),
+    deposits: () => debug('deposits'),
     offer: () => debug('offer'),
     pick: (option: number) => debug('pick', option),
     relics: () => debug('relics'),
