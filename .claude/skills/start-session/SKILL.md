@@ -1,6 +1,6 @@
 ---
 name: start-session
-description: Open a working session on ASCII Defense — read the right three things, close the calls whose deadline has passed, prove the tree is green, and decide what this session is. Run at the start of every session, including one that opens with just "go".
+description: Open a working session on ASCII Defense — read the right three things, mint the calls whose deadline has passed, prove the tree is green, then BRIEF Daniil on what loaded and what is about to be built and WAIT for his go. Run at the start of every session, including one that opens with just "go".
 ---
 
 # Open the working day
@@ -81,11 +81,73 @@ If the gate is red *before* you have written anything, that is the state of
 | **a specific ask** | Do that. If it is more than a trivial edit, plan first and stop (CLAUDE.md) |
 | **nothing is planned** | The previous wrap failed its own rule. Propose a session, sized to a day, and wait |
 
-**Then name the session's scope out loud before building it**, because an
-approved scope is a contract: finishing it is the job, and splitting or
-deferring any part of it needs his consent first.
+## 5. Brief him, and STOP
 
-## 5. While building
+**This is a checkpoint, not a status line.** Print the brief below and wait.
+Do not start building, do not open a branch, do not "begin while he reads".
+
+Daniil, 2026-09-17: *"If I start a new chat in this space and just type 'go' I
+have no clue what's about to happen, no bueno."* He is not asking to make the
+decision again — the plan is already approved in the roadmap. He is asking to
+**see that the right context loaded** before a day's work runs on it. One round
+trip buys that, and "go" is still the whole of his reply.
+
+**Give evidence, never a claim.** "I read the postmortem" is worthless; the
+newest finding quoted back is proof. If a fact below is wrong, he spots it in
+seconds — which is the entire point.
+
+Keep it to roughly the shape and length below. It is scanned, not read.
+
+```
+## Session brief — <date>
+
+**Loaded**
+- CONTRIBUTING §6 — <n> rules, newest: <rule n, in five words>
+- POSTMORTEM — last session was <date>; newest finding: <one line>
+- ROADMAP — last shipped: <ledger row>; newest decision: <D-number, five words>
+- golden hash <n> · live <url>
+
+**Tree** — main @ <sha>, clean/dirty, `npm run gate` <green|RED>
+**Queue** — <n> calls (<n> blocks-ship) · <n> defects · <n> scope
+**Minted on open** — <the calls whose deadline passed, or "none">
+
+**This session** — <name from the ledger's NEXT row>
+1. <PR> — <its proof>
+2. …
+
+**Your part** — <"nothing", or the one thing>
+**Risk wanting your verdict** — <one line, or "none">
+
+Say "go", or amend.
+```
+
+**Anything that looks wrong goes at the top, not in its slot.** A red gate on a
+clean tree, a plan that cites a deleted document, a call overdue by three
+sessions, a golden hash that moved without a reason — these are the cases his
+visibility exists for. Lead with them and say what you propose to do about
+them; do not bury the finding under a tidy brief.
+
+**Where the four facts actually live**, because getting one wrong in the brief
+is worse than not printing it — a wrong fact reads as loaded context:
+
+```bash
+grep -c '^### [0-9]\.' CONTRIBUTING.md            # how many §6 rules
+grep '^## ' POSTMORTEM.md | tail -1               # the last session logged
+grep -o '^| D[0-9]* |' docs/ROADMAP.md \
+  | grep -o 'D[0-9]*' | sort -t D -k2 -n | tail -1   # newest decision
+grep -n 'hashState()).toBe' packages/engine/src/sim/replay.test.ts
+```
+
+Two traps, both hit while writing this: the decision table is **prepended**, so
+the newest D is the highest *number*, never the last *row*; and the golden hash
+is the `toBe(...)` in `replay.test.ts`, not `GOLDEN_SEED`, which is a different
+constant that looks like an answer.
+
+If he amends, the amendment is the session's scope and the roadmap's plan is
+superseded for the day — say so back in one line before building, because an
+approved scope is a contract and a silently-widened one is not approved.
+
+## 6. While building
 
 - **A branch and a PR per item**, never a commit to `main`. Check
   `git branch --show-current` *before* committing.
@@ -100,7 +162,7 @@ deferring any part of it needs his consent first.
 - **Append findings to `POSTMORTEM.md` as they happen**, each naming where it
   was installed or marked `(narrative)`. Not reconstructed at the end.
 
-## 6. Close with the wrap
+## 7. Close with the wrap
 
 Run the **`wrap-session`** skill. It is the other half of this one, and the
 session is not finished until it has run — a session whose findings were never
