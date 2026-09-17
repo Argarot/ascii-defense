@@ -50,6 +50,21 @@ describe('the walk has a character (session 36)', () => {
       }
   });
 
+  it('the first carve almost always verifies: the 25-attempt retry is a net, not a crutch (issue #217)', () => {
+    // generateMap retries a cornered carve or a failed verification on the same stream, and until `attempts` existed nothing
+    // counted them - a generator failing 24 times in 25 passed every sweep. Measured on 200 seeds a Threat: mean 1.04-1.05,
+    // never more than 2. The bounds leave room for a library change and none for a generator that has started to struggle.
+    for (const threat of THREAT_LEVELS) {
+      const attempts = SEEDS.map((seed) => {
+        const knobs = createRng(seed).stream('map');
+        return generateMap(knobs, lib, { width: 7, height: 5, ...threatKnobs(knobs, threat), relicPoolSize: 11, specials: [] }).attempts ?? 0;
+      });
+      expect(Math.min(...attempts), threat.name).toBeGreaterThanOrEqual(1);
+      expect(mean(attempts), threat.name).toBeLessThan(1.3);
+      expect(Math.max(...attempts), threat.name).toBeLessThanOrEqual(5);
+    }
+  });
+
   it('is the seed\'s: the same seed and the same Threat deal the same map', () => {
     for (const seed of SEEDS.slice(0, 8)) {
       const once = (): unknown => { const k = createRng(seed).stream('map'); return generateMap(k, lib, { width: 7, height: 5, ...threatKnobs(k, STANDARD), relicPoolSize: 11, specials: [] }); };

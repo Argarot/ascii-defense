@@ -164,7 +164,18 @@ export interface GeneratedMap {
   coverage: number;
   /** The lane band the carve achieved: LANE_BAND when the shortest lane is within it of the longest, else 0. */
   laneBand: number;
+  /**
+   * How many whole-map attempts this map took: 1 = the first carve verified
+   * (issue #217). generateMap retries a cornered carve or a verification
+   * failure up to GENERATE_ATTEMPTS times on the same stream, and until this
+   * existed nothing counted them - a generator failing 24 times in 25 would
+   * have passed every sweep. Absent on maps saved before session 36.
+   */
+  attempts?: number;
 }
+
+/** Whole-map attempts generateMap allows before it lets the last error through. */
+export const GENERATE_ATTEMPTS = 25;
 
 /** Roadless slots farther than this (in slots) from the road stay void. */
 export const FILL_RADIUS = 2;
@@ -324,9 +335,11 @@ export function generateMap(rng: RngStream, lib: TileLibrary, opts: MapGenOption
   // strength вЂ” the path target is never relaxed (D13); a board that cannot
   // hold the demand says so by throwing.
   let lastError: unknown;
-  for (let attempt = 0; attempt < 25; attempt++) {
+  for (let attempt = 0; attempt < GENERATE_ATTEMPTS; attempt++) {
     try {
-      return generateMapOnce(rng, lib, opts);
+      const map = generateMapOnce(rng, lib, opts);
+      map.attempts = attempt + 1;
+      return map;
     } catch (e) {
       lastError = e;
     }

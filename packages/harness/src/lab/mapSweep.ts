@@ -42,9 +42,9 @@ const tryFresh = flag('fresh') === undefined ? undefined : Number(flag('fresh'))
 const tryBias = flag('land-bias') === undefined ? undefined : Number(flag('land-bias'));
 const tryRegions = flag('land-regions') === undefined ? undefined : Number(flag('land-regions'));
 
-const byThreat: { name: string; maps: WalkCharacter[]; used: Set<string>; fails: number; floors: number[] }[] = [];
+const byThreat: { name: string; maps: WalkCharacter[]; used: Set<string>; fails: number; floors: number[]; attempts: number[] }[] = [];
 for (const t of THREATS) {
-  const maps: WalkCharacter[] = []; const used = new Set<string>(); const floors: number[] = []; let fails = 0;
+  const maps: WalkCharacter[] = []; const used = new Set<string>(); const floors: number[] = []; const attempts: number[] = []; let fails = 0;
   for (let i = 1; i <= N; i++) {
     const seed = i * 7919 + 13;
     const knobs = createRng(seed).stream('map');
@@ -55,22 +55,22 @@ for (const t of THREATS) {
     const opts = LEGACY ? { entries: drawn.entries, targetPathCells: drawn.targetPathCells } : { ...drawn, walk, land: NO_LAND ? undefined : { regions: tryRegions ?? drawn.land.regions, bias: tryBias ?? drawn.land.bias } };
     try {
       const m = generateMap(knobs, lib, { width: 7, height: 5, ...opts, relicPoolSize: pool, specials: [] });
-      maps.push(walkCharacter(m, lib)); floors.push(m.pathFloorCells);
+      maps.push(walkCharacter(m, lib)); floors.push(m.pathFloorCells); attempts.push(m.attempts ?? 1);
       for (const p of m.board.slots) if (p) used.add(p.tileId);
     } catch { fails++; }
   }
-  byThreat.push({ name: t.name, maps, used, fails, floors });
+  byThreat.push({ name: t.name, maps, used, fails, floors, attempts });
 }
 
 console.log(`## the map sweep - ${libraryJson.tiles.length} tiles in the library, ${N} seeds per Threat on the app's 7x5 board${LEGACY ? ' - LEGACY walk (no walk options: the generator as it was before session 36)' : ''}\n`);
-console.log('| threat | carved | coverage mean (min) | entries mean (min-max; sd) | maps with 5 entries or fewer | maps with a straight run of 4+ slots | path floor mean (cells) | tile ids used | failures |');
-console.log('|---|---|---|---|---|---|---|---|---|');
+console.log('| threat | carved | coverage mean (min) | entries mean (min-max; sd) | maps with 5 entries or fewer | maps with a straight run of 4+ slots | path floor mean (cells) | tile ids used | whole-map attempts: mean (max); maps that needed more than one | failures |');
+console.log('|---|---|---|---|---|---|---|---|---|---|');
 const share = (n: number, of: number): string => (of ? `${Math.round((100 * n) / of)}%` : '-');
 for (const t of byThreat) {
   const cov = t.maps.map((m) => m.coverage); const ents = t.maps.map((m) => m.entries);
   // The two map KINDS the eye tells apart at once: a few long winding lanes, and a road that runs in avenues.
   const few = t.maps.filter((m) => m.entries <= 5).length; const avenues = t.maps.filter((m) => m.longestStraight >= 4).length;
-  console.log(`| ${t.name} | ${N - t.fails}/${N} | ${f2(mean(cov))} (${cov.length ? f2(Math.min(...cov)) : '-'}) | ${f2(mean(ents))} (${ents.length ? Math.min(...ents) : '-'}-${ents.length ? Math.max(...ents) : '-'}; ${f2(sd(ents))}) | ${share(few, t.maps.length)} | ${share(avenues, t.maps.length)} | ${f2(mean(t.floors))} | ${t.used.size} | ${t.fails} |`);
+  console.log(`| ${t.name} | ${N - t.fails}/${N} | ${f2(mean(cov))} (${cov.length ? f2(Math.min(...cov)) : '-'}) | ${f2(mean(ents))} (${ents.length ? Math.min(...ents) : '-'}-${ents.length ? Math.max(...ents) : '-'}; ${f2(sd(ents))}) | ${share(few, t.maps.length)} | ${share(avenues, t.maps.length)} | ${f2(mean(t.floors))} | ${t.used.size} | ${f2(mean(t.attempts))} (${Math.max(...t.attempts)}); ${share(t.attempts.filter((a) => a > 1).length, t.attempts.length)} | ${t.fails} |`);
 }
 
 console.log(`\n## the walk's character - what the road looks like, and how much it differs from map to map (the spread is the variety)\n`);
