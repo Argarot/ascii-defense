@@ -21,7 +21,7 @@
  * Yields `L`, the effective road length feeding the difficulty model
  * (PRD sec 9): the longest entry-to-Core walk in cells.
  */
-import { isRoad, isRouteCell, roadsConnect, strandEntered, strandPorts, type CellType } from '../grid/cells';
+import { isRoad, isRouteCell, roadsConnect, strandEdge, type CellType } from '../grid/cells';
 import { TILE_SIZE } from '../tiles/tile';
 import type { CellRef } from '../mapgen/mapgen';
 
@@ -108,11 +108,7 @@ export function stepAllowed(
  * one the motion enters. Returns the target strand, or -1 for no edge.
  */
 export function strandStep(a: CellType, sa: number, b: CellType, d: number): number {
-  if (a === 'C') return b === 'C' ? 0 : strandEntered(b, DIR_BITS[d]);
-  if ((strandPorts(a)[sa] & DIR_BITS[d]) === 0 && !(b === 'C' && a !== 'B')) return -1;
-  if (b === 'C') return 0;
-  const sb = strandEntered(b, DIR_BITS[d]);
-  return (strandPorts(b)[sb] & DIR_BITS[(d + 2) % 4]) === 0 ? -1 : sb;
+  return strandEdge(a, sa, b, DIR_BITS[d], DIR_BITS[(d + 2) % 4]);
 }
 
 export function computeFlowField(

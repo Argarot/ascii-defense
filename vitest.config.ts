@@ -12,6 +12,12 @@ export default defineConfig({
           name: 'node',
           include: ['packages/*/src/**/*.test.ts'],
           exclude: ['**/*.browser.test.ts', '**/node_modules/**'],
+          // Issue #321: this suite is full of CORPUS tests - two hundred maps, forty runs - whose time is pure CPU and
+          // so scales with whatever else the machine is doing. Against vitest's 5s default eight of them went red
+          // together on a loaded machine (2026-09-12) and green again unloaded, and a gate that fails on load trains
+          // the next reader to ignore a red suite. Thirty seconds still fails a test that hangs; it no longer fails one
+          // that is merely waiting its turn. The slowest measures ~7.5s loaded.
+          testTimeout: 30_000,
         },
       },
       {

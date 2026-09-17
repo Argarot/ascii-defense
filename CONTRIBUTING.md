@@ -147,6 +147,14 @@ Read the PRD before the architecture; read this file before touching anything.
   origin/main`.** Between PRs: merge without `--delete-branch`, `git
   reset -q origin/main` on the branch, `checkout -q -b <next>`, delete
   the remote branch by name.
+- **After that dance, `git status` must list only files you mean to change.**
+  The mixed reset keeps the working tree, which is the point - and it is
+  also the trap: if you branched from `origin/main` *before* an open PR of
+  yours merged, the tree still holds that PR's files as they were **without**
+  it, and they show up as "modified". Staging them silently reverts a merged
+  PR (2026-09-17: four files of the placement fix, caught by reading the
+  status line by line). Anything you cannot explain, restore **by path**:
+  `git checkout -- <file>`.
 - **`git add` with one nonexistent path stages nothing.**
 - **The pane at 1920×1080** (`resize_window`) is how the workshop's plates
   fit; the hidden pane's default is far smaller and clips tall pages.

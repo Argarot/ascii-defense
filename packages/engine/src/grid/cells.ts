@@ -84,6 +84,28 @@ export function strandEntered(c: CellType, dirBit: number): number {
   return c === 'B' && (dirBit === 1 || dirBit === 4) ? 1 : 0;
 }
 
+/**
+ * THE strand-edge rule, in one place (issue #216). Leaving strand `sa` of
+ * route cell `a` toward adjacent route cell `b`, in the direction whose bit
+ * is `dirBit` (N=1 E=2 S=4 W=8; `oppBit` is the way back): the target
+ * strand, or -1 when the graph has no such edge. A strand leaves only
+ * through its own port - the Core welds ports-blind, except off a bridge,
+ * because a walker cannot turn off the deck - and lands on the strand its
+ * motion enters, which must have a port facing back.
+ *
+ * It used to be written twice, in tile.ts (tile VALIDITY: is this shape a
+ * tree?) and in flow.ts (ROUTING: where does a walker go?). The two copies
+ * were identical, and nothing held them so: a divergence would have made a
+ * tile the validator passes route differently from how it was judged.
+ */
+export function strandEdge(a: CellType, sa: number, b: CellType, dirBit: number, oppBit: number): number {
+  if (a === 'C') return b === 'C' ? 0 : strandEntered(b, dirBit);
+  if ((strandPorts(a)[sa] & dirBit) === 0 && !(b === 'C' && a !== 'B')) return -1;
+  if (b === 'C') return 0;
+  const sb = strandEntered(b, dirBit);
+  return (strandPorts(b)[sb] & oppBit) === 0 ? -1 : sb;
+}
+
 export function isRoad(c: CellType): boolean {
   return ROAD_PORTS[c] !== undefined;
 }

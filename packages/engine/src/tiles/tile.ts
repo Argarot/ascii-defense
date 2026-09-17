@@ -11,7 +11,7 @@
  * A declared connector cannot disagree with the drawn cells because there is
  * no declared connector.
  */
-import { ROAD_PORTS, isCellType, isRoad, isRouteCell, roadsConnect, strandEntered, strandPorts, type CellType } from '../grid/cells';
+import { ROAD_PORTS, isCellType, isRoad, isRouteCell, roadsConnect, strandEdge, strandEntered, strandPorts, type CellType } from '../grid/cells';
 
 export const TILE_SIZE = 5;
 // TILE_SIZE must be ODD: roads cross tile borders at edge centers (the
@@ -53,8 +53,8 @@ export interface TileDef {
   /** Authored overlays (2.18): deposits sit on ore cells, boons on ground. */
   deposits?: TileDeposit[];
   boons?: TileBoon[];
-  /** The workshop's price for one copy (PRD sec 11.1; session 29, PR 5): Ore of one tier. Absent = not for sale. */
-  price?: { tier: number; ore: number };
+  // No price here: a tile costs what priceTile() says its cells and overlays cost (PRD sec 27, D31). The field this
+  // comment replaces outlived the content it described by one PR.
 }
 
 export type Edge = 'n' | 'e' | 's' | 'w';
@@ -480,14 +480,9 @@ export function nodeStep(
   const a = cellAt(cells, x, y);
   const b = cellAt(cells, nx, ny);
   if (!isRouteCell(a) || !isRouteCell(b)) return null;
-  if (a === 'C') return [nx, ny, b === 'C' ? 0 : strandEntered(b, NODE_BIT[d])];
-  // The Core welds ports-blind - except a bridge, whose strands connect
-  // strictly through their own ports (a walker cannot turn off the deck).
-  if ((strandPorts(a)[s] & NODE_BIT[d]) === 0 && !(b === 'C' && a !== 'B')) return null;
-  if (b === 'C') return [nx, ny, 0];
-  const sb = strandEntered(b, NODE_BIT[d]);
-  if ((strandPorts(b)[sb] & NODE_OPP[d]) === 0) return null;
-  return [nx, ny, sb];
+  // The one strand-edge rule (grid/cells.ts): validity and routing judge a shape by the same edges.
+  const sb = strandEdge(a, s, b, NODE_BIT[d], NODE_OPP[d]);
+  return sb < 0 ? null : [nx, ny, sb];
 }
 
 /**
