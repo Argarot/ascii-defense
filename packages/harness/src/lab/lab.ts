@@ -99,6 +99,12 @@ export interface WaveRow {
   kills: number;
   breaches: number;
   coreHpEnd: number;
+  /** Scrap in hand when the wave ended, after the plan bought everything it could (session 36): a balance that only climbs is a currency with nothing left to buy. */
+  scrapEnd: number;
+  /** Scrap the plan has SPENT so far (session 36); with `scrapEnd` and the starting purse it gives what the run has EARNED. */
+  spentEnd: number;
+  /** Towers standing when the wave ended. */
+  towersEnd: number;
 }
 
 export interface LabReport {
@@ -321,6 +327,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   }
 
   const placed: LabReport['towersPlaced'] = [];
+  let spent = 0;
   /** Place the next tower of the plan; returns false when it cannot (no spot, or - with an economy - no scrap). */
   const placeNext = (p: TowerPlacement): boolean => {
     const def = content.towerDefs.find((d) => d.id === p.towerId);
@@ -349,7 +356,9 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     } else {
       spot = p.at;
     }
+    const purse = sim.scrap;
     if (!spot || !sim.buildTower(spot.x, spot.y, p.towerId)) throw new Error(`cannot place ${p.towerId}`);
+    spent += purse - sim.scrap;
     if (facing !== null) sim.setFacing(spot.x, spot.y, facing);
     placed.push({ towerId: p.towerId, x: spot.x, y: spot.y });
     return true;
@@ -368,7 +377,9 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
       const cost = sim.choiceCost(tower, tier, opt);
       if (cost === null) return false;
       if (spec.economy && sim.scrap < cost) return false;
+      const purse = sim.scrap;
       if (!sim.chooseTier(at.x, at.y, tier, opt)) throw new Error(`cannot choose t${tier} on ${p.towerId}`);
+      spent += purse - sim.scrap;
       return true;
     }
     return false;
@@ -414,6 +425,9 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
           kills: sim.kills - kills0,
           breaches: sim.breaches - breaches0,
           coreHpEnd: sim.coreHp,
+          scrapEnd: sim.scrap,
+          spentEnd: spent,
+          towersEnd: placed.filter((p) => p.x >= 0).length,
         });
       }
       kills0 = sim.kills;
@@ -430,6 +444,9 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
       kills: sim.kills - kills0,
       breaches: sim.breaches - breaches0,
       coreHpEnd: sim.coreHp,
+      scrapEnd: sim.scrap,
+      spentEnd: spent,
+      towersEnd: placed.filter((p) => p.x >= 0).length,
     });
   }
 
