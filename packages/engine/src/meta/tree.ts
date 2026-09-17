@@ -189,47 +189,6 @@ export function branchNodes(tree: TreeDef, branch: TreeNode['branch']): TreeNode
   return tree.nodes.filter((n) => n.branch === branch);
 }
 
-/** A tile the workshop may sell: its id and its price. */
-export interface ShopTile {
-  id: string;
-  price?: { tier: number; ore: number };
-}
-
-/**
- * Why a tile cannot be bought now, or null (PRD sec 11.1; session 29, PR 5).
- * One copy each: the generator guarantees a chosen id once, so a second
- * copy would buy nothing (the multiset of sec 11.1 waits for a generator
- * that places copies).
- */
-/** The most copies of one tile a player may hold (session 33, PR 7: the multiset): the carve places each loaded copy, and a loadout holds at most the tree's tile slots. */
-export const MAX_TILE_COPIES = 3;
-
-/** What the next copy of a tile costs (session 33, PR 7): the first price, plus half of it per copy already owned. */
-export function copyPrice(tile: ShopTile, owned: Readonly<Record<string, number>>): { tier: number; ore: number } | null {
-  if (!tile.price) return null;
-  const copies = owned[tile.id] ?? 0;
-  return { tier: tile.price.tier, ore: Math.round(tile.price.ore * (1 + 0.5 * copies)) };
-}
-
-export function whyNotTile(unlocked: Unlocked, owned: Readonly<Record<string, number>>, ore: readonly number[], tile: ShopTile): string | null {
-  if (!tile.price) return 'not for sale';
-  if ((owned[tile.id] ?? 0) >= MAX_TILE_COPIES) return `owned x${MAX_TILE_COPIES} - the most a tile may be held`;
-  if (!unlocked.tiles.has(tile.id)) return 'the tree has not opened it';
-  const price = copyPrice(tile, owned)!;
-  const have = ore[price.tier - 1] ?? 0;
-  if (have < price.ore) return `needs ${price.ore} tier-${price.tier} ore (have ${have})`;
-  return null;
-}
-
-/** Buy one copy (a second and a third at a rising price - the multiset of PRD sec 11.1): the new owned record and the Ore left, or null when whyNotTile says no. Pure - the caller saves. */
-export function buyTile(unlocked: Unlocked, owned: Readonly<Record<string, number>>, ore: readonly number[], tile: ShopTile): { owned: Record<string, number>; ore: number[] } | null {
-  if (whyNotTile(unlocked, owned, ore, tile) !== null) return null;
-  const price = copyPrice(tile, owned)!;
-  const next = [...ore];
-  next[price.tier - 1] -= price.ore;
-  return { owned: { ...owned, [tile.id]: (owned[tile.id] ?? 0) + 1 }, ore: next };
-}
-
 /** An Ore cost BY TIER, index tier - 1 (invariant 9: Ore is stored per tier, and so is what it buys). */
 export type OreCost = readonly number[];
 
@@ -257,31 +216,124 @@ export function shortfall(ore: readonly number[], cost: OreCost): string | null 
   return null;
 }
 
-/** Tier-N Ore a vein of tier N costs to author, per Ore it holds (PRD sec 26: "on top of" the lower-tier price). */
-export const VEIN_TIER_PRICE = 0.5;
+/** What the pricing function reads: a tile's cells and its authored overlays. Nothing else prices a tile (PRD sec 27). */
+export interface PricedTile {
+  cells: readonly string[];
+  deposits?: readonly { amount: number; tier?: number }[];
+  boons?: readonly { tier: number }[];
+}
+
+/** A tile the workshop may sell: its id and its CONTENTS - the price is a function of them (PRD sec 27, D31), never a number in the content file. */
+export interface ShopTile extends PricedTile {
+  id: string;
+}
 
 /**
- * What a tile is worth (PRD sec 11.1: "features price the tile"; session
- * 30, PR 2) - the one function the Smith mints with. Road cells, veins by
- * their Ore, boons by their tier, all in the tier BELOW the richest vein
- * (a tier-N vein is bought with tier-(N-1) Ore), tier 1 otherwise - and,
- * since the ore ladder (PRD sec 26, D30), every vein above tier 1 costs
- * its OWN tier's Ore on top: you must have mined some before you can
- * author with it, and the authoring sink is what keeps the tier scarce.
- * Shipped specials keep their authored price; this is the Smith's.
+ * The pricing function's coefficients (PRD sec 27, D31). The lab's, not
+ * Daniil's: docs/lab/price-sweep-2026-09-17.md states the targets and shows
+ * each number meeting them. The shape is the requirement - FLAT for plain
+ * authoring, STEEP to prohibitive for a loaded tile.
  */
-export function priceTile(tile: { cells: readonly string[]; deposits?: readonly { amount: number; tier?: number }[]; boons?: readonly { tier: number }[] }): OreCost {
-  const road = [...tile.cells.join('')].filter((c) => !'GROC'.includes(c)).length;
-  const veinTier = Math.max(1, ...(tile.deposits ?? []).map((d) => d.tier ?? 1));
-  const veins = (tile.deposits ?? []).reduce((a, d) => a + Math.round(d.amount / 6), 0);
-  const boons = (tile.boons ?? []).reduce((a, b) => a + b.tier * 8, 0);
-  const cost = [0, 0, 0];
-  cost[Math.max(1, Math.min(3, veinTier - 1)) - 1] += 10 + road * 2 + veins + boons;
-  for (const d of tile.deposits ?? []) {
-    const t = Math.min(3, d.tier ?? 1);
-    if (t > 1) cost[t - 1] += Math.max(1, Math.round(d.amount * VEIN_TIER_PRICE));
+export const TILE_PRICE = {
+  /** Any tile at all: the slot it takes in a loadout, the guarantee that it lands. */
+  base: 20,
+  /** Per road cell: path length is what a road tile is FOR (longer under fire is easier). Base + road is the least-squares line through the five road specials' shipped prices. */
+  road: 0.9,
+  /** Per rock cell: a prospecting roll (ore 30%, a cache 6%). */
+  rock: 1,
+  /** A vein, per Ore it holds, in the tile's lower purse (a 60-Ore vein: 10). An ore cell with no authored vein is dealt 30-90 by the dice and is priced as the mean, 60 - it used to be free. */
+  veinPerOre: 1 / 6,
+  dealtVeinOre: 60,
+  /** A vein above tier 1, per Ore it holds, in ITS OWN tier's Ore, on top (PRD sec 26). A 30-Ore tier-2 vein: 10 - less than half of one lucky run. */
+  veinTierPerOre: 1 / 3,
+  /** Boon ground by POWER, not by tier: power^1.5 / 3, power being the percent it adds (10/20/35/50 - Sim.boonEffect). 11 / 30 / 69 / 118: the strongest costs eleven of the weakest for five times the effect. */
+  boonExponent: 1.5,
+  boonDivisor: 3,
+  /** Crowding: every feature after the first raises the price of ALL of them by this share. One boon is a purchase; a kill-zone of them is worth far more than its sum, and is priced so. */
+  crowd: 0.15,
+} as const;
+
+/** The percent a boon of a tier adds (Sim.boonEffect's damage and rate ladder; a range boon's +tier cells is priced on the same rung). */
+export const BOON_POWER_PCT: readonly number[] = [10, 20, 35, 50];
+
+/** One line of a price: what is being paid for, and what it adds to which purse. */
+export interface PriceLine {
+  label: string;
+  /** Purse index (tier - 1). */
+  purse: number;
+  ore: number;
+}
+
+/**
+ * What a tile is worth, itemised (PRD sec 27, D31): the ONE pricing
+ * function - the Smith's MINT and the workshop's shop both charge its sum,
+ * so a minted tile and a bought tile of the same contents cost the same.
+ * The Smith shows the lines, which is what makes the price a dial rather
+ * than a verdict: the player sees what each feature costs before paying.
+ *
+ * Everything but a rare vein's own-tier Ore is charged in the purse one
+ * below the richest vein (a tier-N vein is bought with tier-(N-1) Ore);
+ * a vein above tier 1 also costs its own tier's Ore on top (sec 26).
+ */
+export function priceLines(tile: PricedTile): PriceLine[] {
+  const P = TILE_PRICE;
+  const cells = [...tile.cells.join('')];
+  const road = cells.filter((c) => !'GROC'.includes(c)).length;
+  const rock = cells.filter((c) => c === 'R').length;
+  const authored = tile.deposits ?? [];
+  const dealt = Math.max(0, cells.filter((c) => c === 'O').length - authored.length);
+  const boons = tile.boons ?? [];
+  const veinTier = Math.max(1, ...authored.map((d) => d.tier ?? 1));
+  const lower = Math.max(1, Math.min(3, veinTier - 1)) - 1;
+  const features = authored.length + dealt + boons.length;
+  const crowd = 1 + P.crowd * Math.max(0, features - 1);
+
+  const lines: PriceLine[] = [{ label: 'a tile', purse: lower, ore: P.base }];
+  if (road > 0) lines.push({ label: `${road} road cell${road === 1 ? '' : 's'}`, purse: lower, ore: road * P.road });
+  if (rock > 0) lines.push({ label: `${rock} rock`, purse: lower, ore: rock * P.rock });
+  const veinOre = authored.reduce((a, d) => a + d.amount, 0) + dealt * P.dealtVeinOre;
+  if (veinOre > 0) lines.push({ label: `${authored.length + dealt} vein${authored.length + dealt === 1 ? '' : 's'}, ${veinOre} Ore`, purse: lower, ore: veinOre * P.veinPerOre * crowd });
+  for (let t = 1; t <= 4; t++) {
+    const n = boons.filter((b) => b.tier === t).length;
+    if (n === 0) continue;
+    const each = Math.pow(BOON_POWER_PCT[t - 1] ?? BOON_POWER_PCT[0], P.boonExponent) / P.boonDivisor;
+    lines.push({ label: `${n} tier-${t} boon${n === 1 ? '' : 's'}`, purse: lower, ore: n * each * crowd });
   }
-  return cost;
+  for (let t = 2; t <= 3; t++) {
+    const ore = authored.filter((d) => Math.min(3, d.tier ?? 1) === t).reduce((a, d) => a + d.amount, 0);
+    if (ore > 0) lines.push({ label: `tier-${t} veins, on top`, purse: t - 1, ore: ore * P.veinTierPerOre * crowd });
+  }
+  if (features > 1) lines.push({ label: `${features} features: x${crowd.toFixed(2)} on each`, purse: lower, ore: 0 });
+  return lines;
+}
+
+/** The sum of priceLines, per purse, rounded once at the end - what is actually charged. */
+export function priceTile(tile: PricedTile): OreCost {
+  const cost = [0, 0, 0];
+  for (const l of priceLines(tile)) cost[l.purse] += l.ore;
+  return cost.map((c) => Math.round(c));
+}
+
+/** The most copies of one tile a player may hold (session 33, PR 7: the multiset): the carve places each loaded copy, and a loadout holds at most the tree's tile slots. */
+export const MAX_TILE_COPIES = 3;
+
+/** What the next copy of a tile costs (session 33, PR 7; D33): the tile's price, plus half of it per copy already owned - in every purse the price touches. */
+export function copyPrice(tile: ShopTile, owned: Readonly<Record<string, number>>): OreCost {
+  const copies = owned[tile.id] ?? 0;
+  return priceTile(tile).map((c) => Math.round(c * (1 + 0.5 * copies)));
+}
+
+/** Why a tile cannot be bought now, or null (PRD sec 11.1; session 29, PR 5). */
+export function whyNotTile(unlocked: Unlocked, owned: Readonly<Record<string, number>>, ore: readonly number[], tile: ShopTile): string | null {
+  if ((owned[tile.id] ?? 0) >= MAX_TILE_COPIES) return `owned x${MAX_TILE_COPIES} - the most a tile may be held`;
+  if (!unlocked.tiles.has(tile.id)) return 'the tree has not opened it';
+  return shortfall(ore, copyPrice(tile, owned));
+}
+
+/** Buy one copy (a second and a third at a rising price - the multiset of PRD sec 11.1): the new owned record and the Ore left, or null when whyNotTile says no. Pure - the caller saves. */
+export function buyTile(unlocked: Unlocked, owned: Readonly<Record<string, number>>, ore: readonly number[], tile: ShopTile): { owned: Record<string, number>; ore: number[] } | null {
+  if (whyNotTile(unlocked, owned, ore, tile) !== null) return null;
+  return { owned: { ...owned, [tile.id]: (owned[tile.id] ?? 0) + 1 }, ore: payCost(ore, copyPrice(tile, owned)) };
 }
 
 /** Every tile the tree can ever sell - the base's and every node's. */

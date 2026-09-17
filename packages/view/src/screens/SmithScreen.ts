@@ -45,6 +45,8 @@ export interface SmithState {
   /** The tier an authored vein gets (the tree's ore tier caps it). */
   veinTier: number;
   veinTierMax: number;
+  /** The tier a painted boon gets, 1-4 (PRD sec 27): nothing gates it but its price. */
+  boonTier: number;
   deposits: readonly { x: number; y: number; amount: number; tier?: number }[];
   boons: readonly { x: number; y: number; boon: string; tier: number }[];
   connectors: { n: boolean; e: boolean; s: boolean; w: boolean };
@@ -53,6 +55,8 @@ export interface SmithState {
   id: string;
   /** The mint price BY TIER (PRD sec 26): a tier-N vein costs tier-N Ore on top of the tile's lower-tier price. */
   price: readonly number[];
+  /** The price, itemised (PRD sec 27): what each feature adds, so the price is a dial and not a verdict. */
+  priceLines: readonly { label: string; purse: number; ore: number }[];
   ore: readonly number[];
   canUndo: boolean;
   /** A line under MINT: what just happened, or what stops it. */
@@ -129,6 +133,9 @@ export class SmithScreen {
       put(lx, ly++, `vein tier (the tree allows ${s.veinTierMax})`, dim);
       for (let t = 1; t <= 3; t++) modeBtn(`tier:${t}`, `T${t}`, s.veinTier === t, ly, lx + (t - 1) * 6, 5);
       ly += 2;
+      put(lx, ly++, 'boon tier (+10/20/35/50%)', dim);
+      for (let t = 1; t <= 4; t++) modeBtn(`boontier:${t}`, `B${t}`, s.boonTier === t, ly, lx + (t - 1) * 6, 5);
+      ly += 2;
     } else {
       put(lx, ly++, 'click a cell to paint it with', dim);
       put(lx, ly++, 'the held brush; terrain erases', dim);
@@ -182,9 +189,11 @@ export class SmithScreen {
     ry++;
     put(rx, ry++, 'THE PRICE', accent);
     for (let i = 0; i < s.price.length; i++) if (s.price[i] > 0) put(rx, ry++, `${s.price[i]} ${i === 0 ? '' : `tier-${i + 1} `}ore (have ${s.ore[i] ?? 0})`, (s.ore[i] ?? 0) >= s.price[i] ? text : role('enemy.fast'));
-    put(rx, ry++, 'roads, veins, boons - and a vein', dim);
-    put(rx, ry++, 'above tier 1 costs its own', dim);
-    put(rx, ry++, "tier's ore on top", dim);
+    // Itemised (PRD sec 27): what each thing on the tile adds - the shop charges the same sum for the same contents.
+    for (const l of s.priceLines.slice(0, 9)) {
+      const amount = l.ore > 0 ? `${l.ore < 10 ? l.ore.toFixed(1) : Math.round(l.ore)}${l.purse > 0 ? ` t${l.purse + 1}` : ''}` : '';
+      put(rx, ry++, ` ${l.label}`.padEnd(rightW - 12).slice(0, rightW - 12) + amount.padStart(7), dim);
+    }
     ry++;
     const canMint = s.errors.length === 0 && canPay(s.ore, s.price);
     put(rx, ry, (' MINT - ' + costText(s.price)).padEnd(rightW - 4).slice(0, rightW - 4), canMint ? bg : grid, canMint ? accent : PLATE_BG);

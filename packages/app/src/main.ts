@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, priceTile, shortfall, payCost, costText, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
+import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, everyShopTile, priceTile, priceLines, shortfall, payCost, costText, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
 import { TUTORIAL_STEPS, goodGround, nearRock, nextStep, type TutorialCtx } from './tutorial';
 import type { TreeNode, CellType } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
@@ -260,6 +260,8 @@ async function main(): Promise<void> {
   let smithBrush: CellType = 'G';
   let smithMode: 'cells' | 'overlay' = 'cells';
   let smithTier = 1;
+  /** The tier a painted boon gets (PRD sec 27): the Smith could only author tier-1 boons while the price function already charged by tier - a model its authoring surface could not produce. */
+  let smithBoonTier: SmithBoon['tier'] = 1;
   let smithDeposits: SmithDeposit[] = [];
   let smithBoons: SmithBoon[] = [];
   let smithNote = 'a blank tile: paint roads with the brushes, then MINT';
@@ -281,9 +283,9 @@ async function main(): Promise<void> {
   const smithState = (phase: number): SmithState => {
     const c = deriveConnectors(smithCells);
     return {
-      cells: smithCells, brush: smithBrush, mode: smithMode, veinTier: smithTier, veinTierMax: unlockedNow().oreTierMax,
+      cells: smithCells, brush: smithBrush, mode: smithMode, veinTier: smithTier, veinTierMax: unlockedNow().oreTierMax, boonTier: smithBoonTier,
       deposits: smithDeposits, boons: smithBoons, connectors: { n: c.n, e: c.e, s: c.s, w: c.w },
-      errors: smithErrors(), id: smithId(), price: priceTile(smithTile()), ore: meta.ore, canUndo: smithUndo.length > 0, note: smithNote, dev: DEV, phase,
+      errors: smithErrors(), id: smithId(), price: priceTile(smithTile()), priceLines: priceLines(smithTile()), ore: meta.ore, canUndo: smithUndo.length > 0, note: smithNote, dev: DEV, phase,
     };
   };
   const smithSetCell = (x: number, y: number, t: string): void => {
@@ -296,6 +298,7 @@ async function main(): Promise<void> {
     if (id.startsWith('brush:')) { smithBrush = id.slice(6) as CellType; smithMode = 'cells'; return; }
     if (id === 'mode:cells' || id === 'mode:overlay') { smithMode = id === 'mode:cells' ? 'cells' : 'overlay'; return; }
     if (id.startsWith('tier:')) { smithTier = Math.min(unlockedNow().oreTierMax, Number(id.slice(5))); return; }
+    if (id.startsWith('boontier:')) { smithBoonTier = Math.max(1, Math.min(4, Number(id.slice(9)))) as SmithBoon['tier']; return; }
     if (id === 'undo') { const prev = smithUndo.pop(); if (prev) { smithCells = prev.cells; smithDeposits = prev.deposits; smithBoons = prev.boons; } return; }
     if (id.startsWith('cell:')) {
       const [x, y] = id.slice(5).split(',').map(Number);
@@ -315,7 +318,9 @@ async function main(): Promise<void> {
           smithSnapshot();
           const cur = smithBoons.find((b) => b.x === x && b.y === y);
           const cycle: SmithBoon['boon'][] = ['range', 'damage', 'rate'];
-          if (!cur) smithBoons = [...smithBoons, { x, y, boon: cycle[0], tier: 1 }];
+          // A click paints the held tier; on a boon of another tier it re-tiers it first (the kind keeps), then cycles range / damage / rate / none.
+          if (!cur) smithBoons = [...smithBoons, { x, y, boon: cycle[0], tier: smithBoonTier }];
+          else if (cur.tier !== smithBoonTier) smithBoons = smithBoons.map((b) => (b === cur ? { ...b, tier: smithBoonTier } : b));
           else { const next = cycle[cycle.indexOf(cur.boon) + 1]; smithBoons = next === undefined ? smithBoons.filter((b) => b !== cur) : smithBoons.map((b) => (b === cur ? { ...b, boon: next } : b)); }
         }
       }
@@ -752,7 +757,9 @@ async function main(): Promise<void> {
           // The tile shop (PRD sec 11.1; session 29, PR 5): the specials the
           // tree has opened, SEEN as previews (sec 4.8), one copy each; a
           // click buys. The Smith's door opens when every one is owned.
-          const forSale = shippedSpecials.filter((t) => t.price);
+          // For sale = the tree lists it; the price is priceTile() over its contents (PRD sec 27, D31), the Smith's own function.
+          const sold = new Set(everyShopTile(TREE));
+          const forSale = shippedSpecials.filter((t) => sold.has(t.id));
           const smith = smithOpen(TREE, meta.owned);
           return {
             title: 'WORKSHOP - TILES',
@@ -766,7 +773,8 @@ async function main(): Promise<void> {
                 const copies = meta.owned[t.id] ?? 0;
                 const price = copyPrice(t, meta.owned);
                 // Copies (session 33, PR 7): a second and a third at a rising price; the loadout may carry them all.
-                return `${t.name ?? t.id}${copies > 0 ? ` (x${copies} owned)` : ''}: ${why === null ? `BUY${copies > 0 ? ' another copy' : ''} - ${price?.ore} tier-${price?.tier} ore - click the tile` : why}`;
+                // The whole price is always on the line - a vein tile costs two purses, and "needs" names only the first one short.
+                return `${t.name ?? t.id}${copies > 0 ? ` (x${copies} owned)` : ''}: ${costText(price)} - ${why === null ? `BUY${copies > 0 ? ' another copy' : ''}: click the tile` : why}`;
               }),
             ],
             // A vein tile wears its tier as a frame colour (session 30): tier 2 rare-blue, tier 3 epic-purple.

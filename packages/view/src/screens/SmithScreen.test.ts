@@ -19,7 +19,9 @@ const state = (over: Partial<SmithState> = {}): SmithState => ({
   connectors: { n: false, e: true, s: false, w: true },
   errors: [],
   id: 'tile_abc',
+  boonTier: 1,
   price: [20, 0, 0],
+  priceLines: [{ label: 'a tile', purse: 0, ore: 20 }],
   ore: [50, 0, 0],
   canUndo: true,
   note: '',
@@ -79,5 +81,31 @@ describe('the Tile Smith page', () => {
     expect(mintable()).toBe(false);
     screen.render(term, state({ price: [20, 15, 0], ore: [50, 15, 0] }));
     expect(mintable()).toBe(true);
+  });
+});
+
+describe('the Smith authors what the price function charges for (PRD sec 27, D31)', () => {
+  it('offers a boon tier, B1 to B4, in OVERLAYS - the held one lit', () => {
+    const term = new TextTerm({ cols: 140, rows: 60 });
+    const screen = new SmithScreen();
+    screen.render(term, state({ mode: 'overlay', boonTier: 3 }));
+    const ids = new Set<string>();
+    for (let y = 0; y < 60; y++) for (let x = 0; x < 140; x++) { const id = screen.itemAt(x * 8, y * 8, 8, 8); if (id) ids.add(id); }
+    for (const t of [1, 2, 3, 4]) expect(ids.has(`boontier:${t}`), `B${t}`).toBe(true);
+    expect(term.toText()).toContain('boon tier');
+  });
+
+  it('itemises the price: every line the function charged is on the page, with its purse', () => {
+    const term = new TextTerm({ cols: 140, rows: 60 });
+    const screen = new SmithScreen();
+    screen.render(term, state({
+      price: [68, 13, 0],
+      priceLines: [
+        { label: 'a tile', purse: 0, ore: 20 }, { label: '5 road cells', purse: 0, ore: 4.5 }, { label: '1 vein, 30 Ore', purse: 0, ore: 6.5 },
+        { label: '1 tier-2 boon', purse: 0, ore: 38.7 }, { label: 'tier-2 veins, on top', purse: 1, ore: 13 }, { label: '2 features: x1.15 on each', purse: 0, ore: 0 },
+      ],
+    }));
+    const text = term.toText();
+    for (const want of ['5 road cells', '4.5', '1 tier-2 boon', '39', 'tier-2 veins, on top', '13 t2', '2 features: x1.15 on each', 'MINT - 68 ore + 13 tier-2 ore', 'BACK']) expect(text, want).toContain(want);
   });
 });
