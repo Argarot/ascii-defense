@@ -103,9 +103,26 @@ export function hash2(x: number, y: number, s: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
+/**
+ * The role a vein of a tier wears (PRD sec 26): the procedural gold, and
+ * the authored slate's ore, mineral and shine, move to their tier's twin in
+ * the palette - and so does the ROCK that carries the ore (slate, facet,
+ * cleft, wall), tinted rather than lit. The ore alone is a few specks in a
+ * grey outline; seen live it did not read as another substance at a glance,
+ * which is the whole requirement. Soil, dust and shadow keep their roles.
+ */
+export function oreTierRole(name: string, tier: number | undefined): string {
+  if (!tier || tier <= 1) return name;
+  return name
+    .replace(/^terrain\.ore\.(mid|lit)$/, `terrain.ore${tier}.$1`)
+    .replace(/^terrain\.ore_slate\.(ore|mineral|ore_shine_\d|slate|facet|cleft|wall)$/, `terrain.ore_slate.t${tier}.$1`);
+}
+
 export interface TerrainShade {
   /** Ore only: remaining richness 0..1; scales the gold-speck density. */
   richness?: number;
+  /** Ore only: the vein's tier (PRD sec 26, D30) - a higher tier is a different SUBSTANCE, so it wears a different colour: tier 2 the rare blue, tier 3 the epic violet. Absent = 1. */
+  oreTier?: number;
   /** Road only: CLOSED sides as bits N=1 E=2 S=4 W=8 (kerbs).  */
   rim?: number;
   bg?: string;
@@ -149,14 +166,14 @@ export function drawTerrainCell(
       const fgRole = sprite.inkMap[frame.ink[y][x]];
       const bgRole = frame.bgInk ? sprite.inkMap[frame.bgInk[y][x]] : undefined;
       const visible = ch !== ' ' && !!fgRole;
-      term.put(gx0 + x, gy0 + y, visible ? ch : ' ', visible ? role(fgRole) : substrate,
-        shade.bg ?? (visible && bgRole ? role(bgRole) : substrate));
+      term.put(gx0 + x, gy0 + y, visible ? ch : ' ', visible ? role(oreTierRole(fgRole, shade.oreTier)) : substrate,
+        shade.bg ?? (visible && bgRole ? role(oreTierRole(bgRole, shade.oreTier)) : substrate));
     }
     return;
   }
   const pool = POOLS[kind];
-  const lit = role(`terrain.${TERRAIN_KEY[kind]}.lit`);
-  const mid = role(`terrain.${TERRAIN_KEY[kind]}.mid`);
+  const lit = role(oreTierRole(`terrain.${TERRAIN_KEY[kind]}.lit`, shade.oreTier));
+  const mid = role(oreTierRole(`terrain.${TERRAIN_KEY[kind]}.mid`, shade.oreTier));
   const dark = role(`terrain.${TERRAIN_KEY[kind]}.dark`);
   const mix = (h1: string, h2: string, t01: number): string => {
     const p = (h: string, i: number): number => parseInt(h.slice(i, i + 2), 16);

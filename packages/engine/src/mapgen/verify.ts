@@ -365,6 +365,8 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
       depositCells.add(key);
       if (cellAt(d.x, d.y) !== 'O') bad('tier3/deposits-on-ore', `deposit at (${d.x},${d.y}) sits on '${cellAt(d.x, d.y)}'`);
       if (d.amount <= 0) bad('tier3/deposits-finite', `deposit at (${d.x},${d.y}) has amount ${d.amount}`);
+      // The ore ladder (PRD sec 26): three tiers exist; a vein of any other is a purse nobody holds.
+      if (!Number.isInteger(d.tier) || d.tier < 1 || d.tier > 3) bad('tier3/deposits-tier', `deposit at (${d.x},${d.y}) has tier ${d.tier}`);
     }
     for (let i = 0; i < cells.length; i++) {
       if (cells[i] === 'O' && !depositCells.has(i)) {

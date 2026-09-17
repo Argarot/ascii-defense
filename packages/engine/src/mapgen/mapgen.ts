@@ -61,6 +61,13 @@ export interface MapGenOptions {
   coverage?: number;
   /** Shortest lane over longest, at least (D28; default LANE_BAND). */
   laneBand?: number;
+  /**
+   * The highest Ore tier the map's own veins may roll (PRD sec 26, D30):
+   * what the workshop's ORE branch has opened. 1 or absent = every dealt
+   * vein is tier 1 and no dice are spent on it, so a map from before the
+   * ladder is the same map. Authored veins keep their author's tier.
+   */
+  oreTierMax?: number;
 }
 
 export interface CellRef {
@@ -165,7 +172,7 @@ export const ORE_REACH = 3;
  * A code from another version is refused loudly, never silently
  * regenerated into a different map.
  */
-export const GENERATOR_VERSION = 2; // 2: the Core at the east edge (session 24)
+export const GENERATOR_VERSION = 3; // 2: the Core at the east edge (session 24); 3: the ore ladder - a tree with a tier open deals different veins (D30)
 /**
  * Extra cell columns past the east border that hold the Core FACE (session
  * 24, Daniil): the board's slots stay TILE_SIZE-square, and the Core lives
@@ -208,6 +215,16 @@ export const ROCK_CACHE_MAX = 3;
 /** Vein size range; dealt per ore cell. Rich veins are visibly rich. */
 export const DEPOSIT_MIN = 30;
 export const DEPOSIT_MAX = 90;
+/**
+ * The ore ladder's map half (PRD sec 26, D30): once the workshop has
+ * opened a tier, each dealt vein may come up as that tier instead - per
+ * vein, rolled highest tier first. "Much rarer": the numbers are the
+ * lab's (docs/lab/ore-sweep-2026-09-17.md) - about one Standard map in
+ * three carries a tier-2 vein, about one in eight a tier-3.
+ */
+export const ORE_TIER_SPAWN: readonly number[] = [1, 0.03, 0.011];
+/** A higher tier's vein is smaller (sec 26): the dealt amount, scaled. Tier 2 half, tier 3 a third. */
+export const ORE_TIER_VEIN: readonly number[] = [1, 0.5, 1 / 3];
 
 /** Weighted deterministic pick (tile weights, playtest 5 item 6). */
 function pickWeighted<T extends { weight: number }>(rng: RngStream, pool: readonly T[]): T {
@@ -448,9 +465,11 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       }
       // The board fills (D28, session 24): a map keeps three or four filler
       // slots, so each one carries real odds of ore - or most maps would
-      // have none. Ore is still a bias, not a guarantee (D12): a 7x5 board
-      // rolls ore-less about one time in ten; rock prospecting and
-      // authored specials are the other two sources.
+      // have none. Ore is still a bias, not a guarantee (D12) - though on
+      // the filled 7x5 board no map in 1,200 came out ore-less, and a map
+      // deals about twelve veins (docs/lab/ore-sweep-2026-09-17.md; the
+      // "one time in ten" this comment used to claim predates D28). Rock
+      // prospecting and authored specials are the other two sources.
       const oreChance = 0.5;
       const pool =
         index.filler.ore.length > 0 && rng.chance(oreChance)
@@ -466,6 +485,8 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   const caches: CacheRef[] = [];
   const rockContents: RockContent[] = [];
   const deposits: OreDeposit[] = [];
+  /** Indices into deposits of the veins the dice dealt - the ladder's candidates. */
+  let ladderVeins: number[] = [];
   const boons: BoonRef[] = [];
   const poolSize = opts.relicPoolSize ?? 0;
   {
@@ -502,6 +523,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
 
     const anyGround: CellRef[] = [];
     const rockCells: CellRef[] = [];
+    const dealtVeins: number[] = [];
     for (let cy = 0; cy < height * TILE_SIZE; cy++)
       for (let cx = 0; cx < cellsW; cx++) {
         const t = cellsNow[cy * cellsW + cx];
@@ -509,6 +531,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
           // Every vein is finite, dealt here so replays stay exact (sec 6).
           // An authored vein keeps its author's numbers and spends no dice.
           const authored = authoredDeposits.get(cy * cellsW + cx);
+          if (!authored) dealtVeins.push(deposits.length);
           deposits.push(
             authored
               ? { x: cx, y: cy, amount: authored.amount, tier: authored.tier }
@@ -554,6 +577,7 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
       const tier = (roll < 50 ? 1 : roll < 80 ? 2 : roll < 95 ? 3 : 4) as BoonRef['tier'];
       boons.push({ x: spot.x, y: spot.y, boon: BOONS[rng.int(0, BOONS.length - 1)], tier });
     }
+    ladderVeins = dealtVeins;
   }
 
   // The Core FACE: three cells in the strip past the east border, centred
@@ -590,5 +614,20 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
   if (issues.length > 0) {
     throw new Error(`mapgen: spec violation - ${issues.map((i) => `${i.rule}: ${i.detail}`).join('; ')}`);
   }
+  // The ore ladder (PRD sec 26, D30). The LAST dice of a map, after the
+  // verifier has passed it, and only when a tier is open: an attempt that
+  // fails spends the same dice either way, so the board, the rock and the
+  // boons of a seed are the same with and without the upgrade - only what
+  // a vein is made of moves (the ore sweep counts it). Highest tier first,
+  // so opening tier 3 does not thin tier 2.
+  const tierMax = Math.min(ORE_TIER_SPAWN.length, opts.oreTierMax ?? 1);
+  if (tierMax > 1)
+    for (const i of ladderVeins) {
+      for (let tier = tierMax; tier > 1; tier--) {
+        if (!rng.chance(ORE_TIER_SPAWN[tier - 1])) continue;
+        deposits[i] = { ...deposits[i], tier, amount: Math.max(1, Math.round(deposits[i].amount * ORE_TIER_VEIN[tier - 1])) };
+        break;
+      }
+    }
   return map;
 }

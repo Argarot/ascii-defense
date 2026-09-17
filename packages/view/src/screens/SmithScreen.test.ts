@@ -19,7 +19,7 @@ const state = (over: Partial<SmithState> = {}): SmithState => ({
   connectors: { n: false, e: true, s: false, w: true },
   errors: [],
   id: 'tile_abc',
-  price: { tier: 1, ore: 20 },
+  price: [20, 0, 0],
   ore: [50, 0, 0],
   canUndo: true,
   note: '',
@@ -37,7 +37,7 @@ describe('the Tile Smith page', () => {
     const lines = text.split('\n');
     expect(text).toContain('┤ THE TILE SMITH ├');
     expect(text).toContain('valid - the game would accept this');
-    expect(text).toContain('20 tier-1 ore (have 50)');
+    expect(text).toContain('20 ore (have 50)');
     expect(text).toContain('connectors: N -  E road  S -  W road');
     // The brush matrix: the '-' brush is a region; so is a cell of the tile; so are MINT and BACK.
     const ids = new Set<string>();
@@ -67,5 +67,17 @@ describe('the Tile Smith page', () => {
     for (let y = 0; y < 60; y++) for (let x = 0; x < 140; x++) { const id = screen.itemAt(x * 8, y * 8, 8, 8); if (id) ids.add(id); }
     expect(ids.has('mint')).toBe(false);
     expect(term.toText()).toContain('(have 5)');
+  });
+
+  it('prices a tier-2 vein in tier-2 ore on top, and withholds MINT until that tier is mined (PRD sec 26)', () => {
+    const term = new TextTerm({ cols: 140, rows: 60 });
+    const screen = new SmithScreen();
+    const mintable = (): boolean => { for (let y = 0; y < 60; y++) for (let x = 0; x < 140; x++) if (screen.itemAt(x * 8, y * 8, 8, 8) === 'mint') return true; return false; };
+    screen.render(term, state({ price: [20, 15, 0], ore: [50, 0, 0] }));
+    expect(term.toText()).toContain('15 tier-2 ore (have 0)');
+    expect(term.toText()).toContain('MINT - 20 ore + 15 tier-2 ore');
+    expect(mintable()).toBe(false);
+    screen.render(term, state({ price: [20, 15, 0], ore: [50, 15, 0] }));
+    expect(mintable()).toBe(true);
   });
 });

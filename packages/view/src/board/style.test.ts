@@ -8,7 +8,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { TextTerm } from '@ascii-defense/render';
 import { CELL_TYPES, type CellType } from '@ascii-defense/engine';
-import { CELL_H, CELL_W, ROAD_SPRITE, drawTerrainCell, drawVoidCell, roadVariation, setTerrainPack } from './style';
+import { CELL_H, CELL_W, ROAD_SPRITE, drawTerrainCell, drawVoidCell, oreTierRole, roadVariation, setTerrainPack } from './style';
 
 describe('terrain cells as text', () => {
   // These test the hashed texture; the approved pack's authored terrain (terrainSprites.test.ts) is cleared for them.
@@ -112,5 +112,32 @@ describe('roads are sprites (session 22): one state per letter, a variation per 
     const barPlain = new TextTerm({ cols: CELL_W, rows: CELL_H });
     drawTerrainCell(barPlain, '|', 0, 0, { rim: 0 });
     expect(bar.toText()).toBe(barPlain.toText());
+  });
+});
+
+describe('a vein wears its tier (PRD sec 26, D30)', () => {
+  it('moves the ore roles to the tier\'s twin and leaves every other role alone', () => {
+    expect(oreTierRole('terrain.ore.mid', 1)).toBe('terrain.ore.mid');
+    expect(oreTierRole('terrain.ore.mid', undefined)).toBe('terrain.ore.mid');
+    expect(oreTierRole('terrain.ore.mid', 2)).toBe('terrain.ore2.mid');
+    expect(oreTierRole('terrain.ore.dark', 2)).toBe('terrain.ore.dark');
+    expect(oreTierRole('terrain.ore_slate.ore_shine_3', 3)).toBe('terrain.ore_slate.t3.ore_shine_3');
+    expect(oreTierRole('terrain.ore_slate.slate', 3)).toBe('terrain.ore_slate.t3.slate'); // the rock that carries it is tinted too
+    expect(oreTierRole('terrain.ore_slate.soil', 3)).toBe('terrain.ore_slate.soil');
+  });
+
+  it('every tier role the mapping can name exists in the palette, and a tier-2 vein is not drawn in gold', () => {
+    const draw = (oreTier?: number): string[] => {
+      const term = new TextTerm({ cols: CELL_W, rows: CELL_H });
+      drawTerrainCell(term, 'O', 0, 0, { richness: 1, oreTier });
+      const fgs: string[] = [];
+      for (let y = 0; y < CELL_H; y++) for (let x = 0; x < CELL_W; x++) fgs.push(term.fgAt(x, y));
+      return fgs;
+    };
+    const gold = draw();
+    for (const tier of [2, 3]) {
+      const tinted = draw(tier); // throws on a missing palette role
+      expect(tinted).not.toEqual(gold);
+    }
   });
 });

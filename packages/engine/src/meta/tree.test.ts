@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_UNLOCKS, EMPTY_META, MAX_TILE_COPIES, buyNode, buyTile, copyPrice, everyShopTile, priceTile, relicApplies, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
+import { ALL_UNLOCKS, EMPTY_META, MAX_TILE_COPIES, buyNode, buyTile, copyPrice, everyShopTile, priceTile, canPay, payCost, costText, shortfall, relicApplies, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
 
 const TREE: TreeDef = {
   base: { towers: ['bolt'], relics: ['tithe'], relicSlots: 6, threat: 1, tileSlots: 1, oreTier: 1, tiles: ['twin'] },
@@ -112,10 +112,10 @@ describe('the tile shop and the Smith\'s door (session 29, PR 5)', () => {
 describe('priceTile (session 30, PR 2)', () => {
   it('prices roads, veins and boons; the tier is one below the richest vein', () => {
     const g = (...rows: string[]): string[] => rows;
-    expect(priceTile({ cells: g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG') })).toEqual({ tier: 1, ore: 10 });
-    expect(priceTile({ cells: g('GGGGG', 'GGGGG', '-----', 'GGGGG', 'GGGGG') })).toEqual({ tier: 1, ore: 20 });
-    expect(priceTile({ cells: g('GGGGG', 'GGOGG', 'GGGGG', 'GGGGG', 'GGGGG'), deposits: [{ amount: 60, tier: 2 }] })).toEqual({ tier: 1, ore: 20 });
-    expect(priceTile({ cells: g('GGGGG', 'GGOGG', 'GGGGG', 'GGGGG', 'GGGGG'), deposits: [{ amount: 90, tier: 3 }], boons: [{ tier: 2 }] })).toEqual({ tier: 2, ore: 41 });
+    expect(priceTile({ cells: g('GGGGG', 'GGGGG', 'GGGGG', 'GGGGG', 'GGGGG') })).toEqual([10, 0, 0]);
+    expect(priceTile({ cells: g('GGGGG', 'GGGGG', '-----', 'GGGGG', 'GGGGG') })).toEqual([20, 0, 0]);
+    expect(priceTile({ cells: g('GGGGG', 'GGOGG', 'GGGGG', 'GGGGG', 'GGGGG'), deposits: [{ amount: 60, tier: 2 }] })).toEqual([20, 30, 0]); // the ladder (PRD sec 26): tier-2 Ore ON TOP of the tier-1 price
+    expect(priceTile({ cells: g('GGGGG', 'GGOGG', 'GGGGG', 'GGGGG', 'GGGGG'), deposits: [{ amount: 90, tier: 3 }], boons: [{ tier: 2 }] })).toEqual([0, 41, 45]);
   });
 });
 
@@ -143,5 +143,17 @@ describe('the multiset of copies (session 33, PR 7)', () => {
     expect(ore[0]).toBe(100 - 20 - 30 - 40);
     expect(whyNotTile(uu, owned, ore, tile)).toContain('the most a tile may be held');
     expect(buyTile(uu, owned, ore, tile)).toBeNull();
+  });
+});
+
+describe('an Ore cost by tier (the ore ladder, PRD sec 26)', () => {
+  it('pays every tier or none, and says the first tier it is short in', () => {
+    expect(canPay([50, 0, 0], [20, 0, 0])).toBe(true);
+    expect(canPay([50, 0, 0], [20, 15, 0])).toBe(false);
+    expect(shortfall([50, 3, 0], [20, 15, 0])).toBe('needs 15 tier-2 ore (have 3)');
+    expect(shortfall([50, 15, 0], [20, 15, 0])).toBeNull();
+    expect(payCost([50, 15, 2], [20, 15, 0])).toEqual([30, 0, 2]);
+    expect(costText([20, 0, 0])).toBe('20 ore');
+    expect(costText([20, 15, 0])).toBe('20 ore + 15 tier-2 ore');
   });
 });

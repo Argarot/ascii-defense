@@ -2,7 +2,7 @@
 import { createRng } from '../rng/rng';
 import { TILE_SIZE, deriveConnectors, validateTileCells } from '../tiles/tile';
 import { TileLibrary, resolveCells, slotAt, type Board } from '../tiles/board';
-import { FILL_RADIUS, ORE_REACH, ROCK_CACHE_MAX, VOID_SHARE_CAP, generateMap, mapCells } from './mapgen';
+import { FILL_RADIUS, ORE_REACH, ORE_TIER_VEIN, ROCK_CACHE_MAX, VOID_SHARE_CAP, generateMap, mapCells } from './mapgen';
 import { computeFlowField } from '../sim/flow';
 
 // The same tile shapes the shipped library provides, inline so engine tests
@@ -544,5 +544,43 @@ describe('caches come from rock and bosses, never scattered (design round 1)', (
       expect(rockCaches, `seed ${seed}`).toBeLessThanOrEqual(ROCK_CACHE_MAX);
       for (const r of map.rockContents) expect('poolIdx' in r).toBe(false);
     }
+  });
+});
+
+describe('the ore ladder on the map (PRD sec 26, D30)', () => {
+  const opts = { width: 7, height: 5, entries: 3, targetPathCells: 40, relicPoolSize: 5 };
+  const gen = (seed: number, oreTierMax?: number) => generateMap(createRng(seed).stream('map'), LIB, { ...opts, oreTierMax });
+
+  it('no tier open: every dealt vein is tier 1, and the map is the map it always was', () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const map = gen(seed);
+      expect(map.deposits.every((d) => d.tier === 1), `seed ${seed}`).toBe(true);
+      expect(gen(seed, 1)).toEqual(map);
+    }
+  });
+
+  it('a tier open moves only what a vein is made of - the board, the rock and the boons stay', () => {
+    let rare = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      const base = gen(seed);
+      const open = gen(seed, 3);
+      expect(open.board, `seed ${seed}`).toEqual(base.board);
+      expect(open.rockContents).toEqual(base.rockContents);
+      expect(open.boons).toEqual(base.boons);
+      expect(open.deposits.map((d) => [d.x, d.y])).toEqual(base.deposits.map((d) => [d.x, d.y]));
+      open.deposits.forEach((d, i) => {
+        expect(d.tier).toBeGreaterThanOrEqual(1);
+        expect(d.tier).toBeLessThanOrEqual(3);
+        // Smaller, never richer: a higher tier's vein is the dealt vein scaled down.
+        if (d.tier > 1) { rare++; expect(d.amount).toBe(Math.max(1, Math.round(base.deposits[i].amount * ORE_TIER_VEIN[d.tier - 1]))); }
+        else expect(d.amount).toBe(base.deposits[i].amount);
+      });
+    }
+    // "Much rarer", but it happens: some of two hundred maps carry one.
+    expect(rare).toBeGreaterThan(0);
+  });
+
+  it('never deals a tier the tree has not opened', () => {
+    for (let seed = 1; seed <= 200; seed++) expect(gen(seed, 2).deposits.every((d) => d.tier <= 2), `seed ${seed}`).toBe(true);
   });
 });

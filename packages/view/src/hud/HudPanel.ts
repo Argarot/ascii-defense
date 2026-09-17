@@ -54,7 +54,7 @@ export interface HudTowerInfo {
   name: string;
   kills: number;
   /** Producers: the vein under the tower. null for fighters. */
-  deposit: { left: number; initial: number } | null;
+  deposit: { left: number; initial: number; /** The vein's Ore tier (PRD sec 26); absent = 1. */ tier?: number } | null;
   stats: HudStats;
   /** Post-purchase stats while hovering an available choice; else null. */
   preview: HudStats | null;
@@ -557,8 +557,10 @@ export class HudPanel {
       if (t.deposit) {
         // A refinery's kills are meaningless; its DEPOSIT is its life story.
         const frac = t.deposit.initial > 0 ? t.deposit.left / t.deposit.initial : 0;
-        const col = t.deposit.left === 0 ? role('enemy.fast') : role('terrain.ore.lit');
-        term.write(0, y++, t.deposit.left === 0 ? 'VEIN SPENT' : `deposit ${t.deposit.left}/${t.deposit.initial}`, col);
+        // A higher tier wears its substance's colour and says its tier (PRD sec 26).
+        const tier = t.deposit.tier ?? 1;
+        const col = t.deposit.left === 0 ? role('enemy.fast') : role(tier > 1 ? `terrain.ore${tier}.lit` : 'terrain.ore.lit');
+        term.write(0, y++, t.deposit.left === 0 ? 'VEIN SPENT' : `${tier > 1 ? `tier-${tier} ` : ''}deposit ${t.deposit.left}/${t.deposit.initial}`, col);
         term.write(0, y++, '='.repeat(Math.max(0, Math.round(frac * (W - 2)))), col);
       } else {
         term.write(0, y++, `kills ${t.kills}`, role('ui.dim'));

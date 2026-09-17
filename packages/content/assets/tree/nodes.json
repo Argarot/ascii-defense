@@ -365,7 +365,7 @@
       "id": "ore_t2",
       "name": "Rich veins",
       "branch": "ore",
-      "desc": "The workshop sells tiles carrying tier-2 veins; a Refinery on one mines tier-2 Ore, slower.",
+      "desc": "A new ore on the map: blue tier-2 veins turn up on about one map in three - smaller, and mined slower. The workshop sells a tile that carries them, and the Tile Smith gains the tier-2 vein cell.",
       "cost": {
         "tier": 1,
         "ore": 50
@@ -381,7 +381,7 @@
       "id": "ore_t3",
       "name": "Mother lodes",
       "branch": "ore",
-      "desc": "The workshop sells tiles carrying tier-3 veins; the rarest Ore, the slowest to mine.",
+      "desc": "The rarest ore: violet tier-3 veins turn up on about one map in nine - the smallest, the slowest to mine. The workshop sells a tile that carries one, and the Tile Smith gains the tier-3 vein cell.",
       "cost": {
         "tier": 2,
         "ore": 50

@@ -44,7 +44,7 @@ export {
 } from './tiles/board';
 export type { Board, Placement, PlaceOptions } from './tiles/board';
 
-export { generateMap, mapCells, CORE_STRIP, DEPOSIT_MAX, VOID_SHARE_CAP, GENERATOR_VERSION } from './mapgen/mapgen';
+export { generateMap, mapCells, CORE_STRIP, DEPOSIT_MAX, VOID_SHARE_CAP, GENERATOR_VERSION, ORE_TIER_SPAWN, ORE_TIER_VEIN } from './mapgen/mapgen';
 export { COVERAGE_TARGET, LANE_BAND } from './mapgen/carve';
 export type { GeneratedMap, MapGenOptions, CellRef, CacheRef, RockContent, OreDeposit, BoonRef } from './mapgen/mapgen';
 export { verifyMap } from './mapgen/verify';
@@ -87,5 +87,5 @@ export { BOSS_CHEST_WINDOW, bossChestRarity } from './sim/sim';
 export { FORMATIONS, queueEntry, queueDef, queueGap, queueFront, queueBoss, type FormationName } from './sim/sim';
 export { TRAIT_RULES, hasTrait, traitSpeedMul, frontShieldMul, type TraitName } from './sim/traits';
 export { MAX_TILE_COPIES, copyPrice } from './meta/tree';
-export { resolveUnlocks, whyNot, buyNode, relicForWin, relicApplies, branchNodes, whyNotTile, buyTile, everyShopTile, smithOpen, priceTile, ALL_UNLOCKS, EMPTY_META } from './meta/tree';
+export { resolveUnlocks, whyNot, buyNode, relicForWin, relicApplies, branchNodes, whyNotTile, buyTile, everyShopTile, smithOpen, priceTile, canPay, payCost, costText, shortfall, VEIN_TIER_PRICE, ALL_UNLOCKS, EMPTY_META } from './meta/tree';
 export type { TreeDef, TreeNode, TreeGrant, MetaState, Unlocked, ShopTile } from './meta/tree';
