@@ -64,13 +64,22 @@ export function fnv1a(text: string, h = 0x811c9dc5): number {
   return h >>> 0;
 }
 
+/** What a def SAYS rather than does: the words a player reads. The sim never branches on one (invariant 2's cousin), so none belongs in the receipt. */
+const PRESENTATION_KEYS: ReadonlySet<string> = new Set(['name', 'short', 'desc']);
+
 /**
  * Hash the combat content a run was played against. JSON.stringify key order
  * follows parse/insertion order, so identical roster files hash identically
  * on every machine.
+ *
+ * Display text is left out (session 36, PR 4): the hash is the receipt for
+ * "this save replays to the same state", and a rename cannot change a
+ * state. It used to hash the whole def, so PRD sec 30's renames - "a content
+ * edit and a codex line, nothing structural" - would have refused every
+ * run in progress as "made against different content".
  */
 export function contentHashOf(enemyDefs: readonly EnemyDef[], towerDefs: readonly TowerDef[]): number {
-  return fnv1a(JSON.stringify({ e: enemyDefs, t: towerDefs }));
+  return fnv1a(JSON.stringify({ e: enemyDefs, t: towerDefs }, (key, value: unknown) => (PRESENTATION_KEYS.has(key) ? undefined : value)));
 }
 
 /** The slice of Sim playback needs - structural, so this module never imports the class. */

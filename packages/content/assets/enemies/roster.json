@@ -101,7 +101,7 @@
     },
     {
       "id": "courser",
-      "name": "courser",
+      "name": "harrier",
       "hp": 20,
       "speed": 0.08,
       "damage": 1,
@@ -117,7 +117,7 @@
     },
     {
       "id": "ram",
-      "name": "ram",
+      "name": "lunge",
       "hp": 70,
       "speed": 0.05,
       "damage": 3,
@@ -133,7 +133,7 @@
     },
     {
       "id": "blob",
-      "name": "blob",
+      "name": "brood",
       "hp": 60,
       "speed": 0.05,
       "damage": 2,
@@ -146,7 +146,7 @@
     },
     {
       "id": "mender",
-      "name": "mender",
+      "name": "stitch",
       "hp": 40,
       "speed": 0.05,
       "damage": 1,
@@ -162,7 +162,7 @@
     },
     {
       "id": "mole",
-      "name": "mole",
+      "name": "delve",
       "hp": 50,
       "speed": 0.06,
       "damage": 3,
@@ -174,7 +174,7 @@
     },
     {
       "id": "pavise",
-      "name": "pavise",
+      "name": "buckler",
       "hp": 110,
       "speed": 0.04,
       "damage": 4,

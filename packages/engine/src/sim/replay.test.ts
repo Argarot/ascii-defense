@@ -252,4 +252,16 @@ describe('replay (WBS 1.4.8)', () => {
     c.setPriority(c.towers.find(Boolean)!.cellX, c.towers.find(Boolean)!.cellY, 'last');
     expect(c.hashState()).not.toBe(a.hashState());
   });
+
+  it('the content receipt ignores what a def SAYS and catches what it DOES (session 36, PR 4)', () => {
+    const { enemyDefs, towerDefs } = makeGoldenSim();
+    const receipt = contentHashOf(enemyDefs, towerDefs);
+    // A rename, a new blurb, a shorter button label - at any depth: the same receipt, so a run in progress still resumes (PRD sec 30).
+    const renamed = enemyDefs.map((e) => ({ ...e, name: `${e.name ?? e.id}-renamed` }));
+    const reworded = towerDefs.map((t) => ({ ...t, name: 'Another Name', short: 'AN', desc: 'other words', tiers: t.tiers?.map((tier) => ({ ...tier, choices: tier.choices.map((c) => ({ ...c, name: `${c.name}!`, desc: 'other words' })) })) }));
+    expect(contentHashOf(renamed, reworded)).toBe(receipt);
+    // One number: a different receipt.
+    expect(contentHashOf(enemyDefs.map((e, i) => (i === 0 ? { ...e, hp: e.hp + 1 } : e)), towerDefs)).not.toBe(receipt);
+    expect(contentHashOf(enemyDefs, towerDefs.map((t, i) => (i === 0 ? { ...t, cost: t.cost + 1 } : t)))).not.toBe(receipt);
+  });
 });

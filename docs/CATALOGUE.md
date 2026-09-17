@@ -128,12 +128,12 @@ The two ground cells touching the Core face (and the border cells beside it) are
 | **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 30 | x1.4 | x0.6 | shielded |
 | **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  |  | x1.4 | x0.6 |  |
 | **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  | x0.8 | x1.2 |  |
-| **courser** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  | x1.2 | x0.8 | sprint |
-| **ram** | ram | 70 | 1 | 3 | 8 | 6 |  |  | x0.8 | x1.2 | charge |
-| **blob** | blob | 60 | 1 | 2 | 6 | 7 |  |  |  |  | split |
-| **mender** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  | x1.4 | heal |
-| **mole** | mole | 50 | 1.20 | 3 | 8 | 9 |  |  |  |  | burrow |
-| **pavise** | pavise | 110 | 0.80 | 4 | 12 | 11 |  |  | x1.2 | x0.8 | frontshield |
+| **harrier** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  | x1.2 | x0.8 | sprint |
+| **lunge** | ram | 70 | 1 | 3 | 8 | 6 |  |  | x0.8 | x1.2 | charge |
+| **brood** | blob | 60 | 1 | 2 | 6 | 7 |  |  |  |  | split |
+| **stitch** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  | x1.4 | heal |
+| **delve** | mole | 50 | 1.20 | 3 | 8 | 9 |  |  |  |  | burrow |
+| **buckler** | pavise | 110 | 0.80 | 4 | 12 | 11 |  |  | x1.2 | x0.8 | frontshield |
 | **Warden** (boss only) | warden | 450 | 0.60 | 10 | 30 | 12 | 3 |  |  | x1.2 | bulwark |
 
 Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.

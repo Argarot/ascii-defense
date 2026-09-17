@@ -109,6 +109,12 @@ field says so) — **all of these want your version**, in this order:
    the view keeps drawing the plank on the facing side) and, for the
    mole, a second state `"burrowed"` for the mound. The view's marks stay
    until a study says it owns them.
+   **The player reads different names since 2026-09-17 (PRD §30); the sprite
+   files keep their ids**, which is what this brief uses: `courser` is shown
+   as *harrier*, `ram` as *lunge*, `blob` as *brood*, `mender` as *stitch*,
+   `mole` as *delve*, `pavise` as *buckler*; the Warden is the Warden. A
+   study is named for the id (`enemy_mole`), never for the display name — a
+   rename must not move a file.
 3b. **The chests** (`chest`, `chest_boss`; 4×3, `kind: "chest"`): a void
    chest and the crowned one a boss leaves; drawn flat in the rarity's
    colour by the view, so a study gives shape, not colour; a second frame

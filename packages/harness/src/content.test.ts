@@ -72,6 +72,15 @@ describe('shipped combat rosters - cross-content sanity', () => {
     expect(new Set(eIds).size).toBe(eIds.length);
     expect(new Set(tIds).size).toBe(tIds.length);
   });
+
+  it('the seven wear their names and keep their ids (PRD sec 30): a rename is a content edit, never an id', () => {
+    // Saves, replays, sprites (relic_*/enemy files), `meta.met` and the golden hash all key on the id.
+    const named = Object.fromEntries(enemies.enemies.map((e) => [e.id, e.name]));
+    expect(named).toMatchObject({ courser: 'harrier', ram: 'lunge', blob: 'brood', mender: 'stitch', mole: 'delve', pavise: 'buckler', warden: 'Warden' });
+    // The naming rule: one plain word; lowercase for a body, capitalised for the two that arrive as bosses.
+    for (const e of enemies.enemies) expect(e.name, e.id).toMatch(/^[A-Za-z]+$/);
+    expect(enemies.enemies.filter((e) => e.name !== e.name.toLowerCase()).map((e) => e.id).sort()).toEqual(['juggernaut', 'warden']);
+  });
 });
 
 // ---- sprites v2 (session 22): every tower state the sim can reach has art ----
