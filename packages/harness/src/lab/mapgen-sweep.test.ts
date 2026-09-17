@@ -10,7 +10,7 @@
  * every map.
  */
 import { describe, expect, it } from 'vitest';
-import { TILE_SIZE, TileLibrary, createRng, generateMap, mirrorCanonicalKey, tileIsSpecialShape, verifyMap, type TileDef } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary, createRng, generateMap, mirrorCanonicalKey, threatKnobs, tileIsSpecialShape, verifyMap, type TileDef } from '@ascii-defense/engine';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 
 const g = (...rows: string[]): string[] => rows;
@@ -28,12 +28,8 @@ const MINTED: TileDef[] = [
 ];
 const withMinted = (): TileLibrary => new TileLibrary([...libraryJson.tiles, ...MINTED]);
 
-/** The live app's knob derivation, threat table inlined (harness may not import app). */
-const THREATS = [
-  { entries: [2, 3] as const, pathBias: 12 },
-  { entries: [2, 5] as const, pathBias: 8 },
-  { entries: [3, 6] as const, pathBias: 5 },
-];
+/** The live app's knob derivation: the engine's Threat table and threatKnobs, the worker's own. */
+const THREATS = THREAT_LEVELS;
 
 function appMap(seed0: number, lib: TileLibrary, specials?: string[], threatIdx = 1) {
   // The worker's exact behaviour: generation failures reroll the seed,
@@ -43,8 +39,7 @@ function appMap(seed0: number, lib: TileLibrary, specials?: string[], threatIdx 
     try {
       const T = THREATS[threatIdx];
       const knobs = createRng(seed).stream('map');
-      const entries = knobs.int(T.entries[0], T.entries[1]);
-      const targetPathCells = (T.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+      const { entries, targetPathCells } = threatKnobs(knobs, T);
       return generateMap(knobs, lib, { width: 12, height: 7, entries, targetPathCells, relicPoolSize: 11, specials });
     } catch (e) {
       if (attempt >= 60) throw e;

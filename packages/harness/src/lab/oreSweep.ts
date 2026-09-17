@@ -15,7 +15,7 @@
  *
  *   node tools/ore-sweep.mjs [seeds=400]
  */
-import { ORE_TIER_SPAWN, ORE_TIER_VEIN, TILE_SIZE, TileLibrary, createRng, generateMap, type DifficultySpec, type GeneratedMap } from '@ascii-defense/engine';
+import { ORE_TIER_SPAWN, ORE_TIER_VEIN, THREAT_LEVELS, TileLibrary, createRng, generateMap, threatKnobs, type DifficultySpec, type GeneratedMap } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -41,14 +41,13 @@ const content: LabContent = {
 const pool = content.relicDefs.length;
 const N = Number(process.argv[2] ?? 400);
 const BOARD = { w: 7, h: 5 };
-const THREATS = [{ name: 'Calm', e: [2, 3] as const, bias: 12 }, { name: 'Standard', e: [2, 5] as const, bias: 8 }, { name: 'Grim', e: [3, 6] as const, bias: 5 }];
+const THREATS = THREAT_LEVELS;
 const mean = (a: number[]): number => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const pct = (x: number): string => (100 * x).toFixed(1) + '%';
 
 function mapFor(seed: number, t: (typeof THREATS)[number], oreTierMax: number): GeneratedMap | null {
   const knobs = createRng(seed).stream('map');
-  const entries = knobs.int(t.e[0], t.e[1]);
-  const targetPathCells = (t.bias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+  const { entries, targetPathCells } = threatKnobs(knobs, t);
   try {
     return generateMap(knobs, content.lib, { width: BOARD.w, height: BOARD.h, entries, targetPathCells, relicPoolSize: pool, specials: [], oreTierMax });
   } catch { return null; }
@@ -92,7 +91,7 @@ for (const t of THREATS)
   }
 
 // ---- 3. the income ----------------------------------------------------------
-const STANDARD: DifficultySpec = { hpLinear: 0.15, hpGeometric: 1.07, countBase: 6, countLinear: 5, countGeometric: 1, countMax: 60 };
+const STANDARD: DifficultySpec = THREAT_LEVELS[1].difficulty;
 const RAILBORE: [number, number, number] = [0, 0, 0];
 const at = (towerId: string, choices: [number, number, number], where: TowerPlacement['at']): TowerPlacement => ({ towerId, choices, at: where });
 const BASE_BUILD: TowerPlacement[] = [at('refinery', [0, 0, 0], 'vein'), at('bolt', RAILBORE, 'choke'), at('frost', [1, 0, 1], 'choke'), at('bolt', RAILBORE, 'choke'), at('mortar', [1, 1, 0], 'choke'), at('bolt', RAILBORE, 'choke')];
@@ -103,8 +102,7 @@ const banked: { has2: boolean; ore: number[]; death: number }[] = [];
 for (let i = 1; i <= INCOME_SEEDS; i++) {
   const seed = i * 7919 + 13;
   const knobs = createRng(seed).stream('map');
-  const entries = knobs.int(std.e[0], std.e[1]);
-  const targetPathCells = (std.bias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+  const { entries, targetPathCells } = threatKnobs(knobs, std);
   const mapOpts = { width: BOARD.w, height: BOARD.h, entries, targetPathCells };
   const spec: LabSpec = { seed, map: mapOpts, towers: BASE_BUILD, relicIds: [], unlocks: ['ore_t2'], difficulty: STANDARD, maxWaves: 40, economy: { startingScrap: 100 } };
   try {

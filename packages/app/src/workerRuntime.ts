@@ -25,12 +25,12 @@ import {
   REPLAY_VERSION,
   Sim,
   TICK_HZ,
-  TILE_SIZE,
   TileLibrary,
   contentHashOf,
   createRng,
   generateMap,
   mapCells,
+  threatKnobs,
   validateTile,
   type EnemyDef,
   type GeneratedMap,
@@ -165,8 +165,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         for (let attempt = 0; ; attempt++) {
           try {
             const knobs = createRng(nextSeed).stream('map');
-            const entries = knobs.int(THREAT.entries[0], THREAT.entries[1]);
-            const targetPathCells = (THREAT.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+            const { entries, targetPathCells } = threatKnobs(knobs, THREAT);
             nextMap = generateMap(knobs, nextLib, { width: MAP_X, height: MAP_Y, entries, targetPathCells, relicPoolSize: relicDefs.length, specials, oreTierMax: unlocked.oreTierMax });
             break;
           } catch (e) {

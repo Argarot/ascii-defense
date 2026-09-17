@@ -7,7 +7,7 @@
  *
  *   node tools/map-sweep.mjs [seeds=40]
  */
-import { TILE_SIZE, TileLibrary, createRng, generateMap } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary, createRng, generateMap, threatKnobs } from '@ascii-defense/engine';
 import { validateRelics } from '@ascii-defense/content';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
@@ -18,7 +18,7 @@ declare const process: { argv: string[] };
 const lib = new TileLibrary(libraryJson.tiles);
 const r = validateRelics.check(relicsJson);
 const pool = r.ok ? r.value.relics.length : 30;
-const THREATS = [{ name: 'Calm', e: [2, 3] as const, bias: 12 }, { name: 'Standard', e: [2, 5] as const, bias: 8 }, { name: 'Grim', e: [3, 6] as const, bias: 5 }];
+const THREATS = THREAT_LEVELS;
 const N = Number(process.argv[2] ?? 40);
 const mean = (a: number[]): string => (a.length ? (a.reduce((x, y) => x + y, 0) / a.length).toFixed(2) : '-');
 
@@ -30,8 +30,7 @@ for (const t of THREATS) {
   for (let i = 1; i <= N; i++) {
     const seed = i * 7919 + 13;
     const knobs = createRng(seed).stream('map');
-    const entries = knobs.int(t.e[0], t.e[1]);
-    const targetPathCells = (t.bias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+    const { entries, targetPathCells } = threatKnobs(knobs, t);
     try {
       const m = generateMap(knobs, lib, { width: 7, height: 5, entries, targetPathCells, relicPoolSize: pool, specials: [] });
       cov.push(m.coverage); ents.push(m.entries.length); lanes.push(m.pathFloorCells);

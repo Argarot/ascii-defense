@@ -14,7 +14,7 @@
  */
 declare const console: { log: (...args: unknown[]) => void };
 
-import { TileLibrary, type DifficultySpec } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary, type DifficultySpec } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
@@ -34,8 +34,8 @@ const content: LabContent = {
   relicDefs: must(validateRelics.check(relicsJson)).relics,
 };
 
-/** Standard, as protocol.ts ships it. */
-const STANDARD: DifficultySpec = { hpLinear: 0.15, hpGeometric: 1.05, countBase: 6, countLinear: 4, countGeometric: 1 };
+/** Standard as the game ships it - the engine's, never a copy. This line read x1.05 and four a wave for two sessions after the game moved to x1.07 and five (found session 36): every variant reading since session 32 measured a curve nobody plays. */
+const STANDARD: DifficultySpec = THREAT_LEVELS[1].difficulty;
 const MAX_WAVES = 40;
 const BOARDS = [{ w: 12, h: 7 }, { w: 7, h: 5 }];
 const PATHS: [number, number, number][] = [];

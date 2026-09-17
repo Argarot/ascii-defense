@@ -48,11 +48,16 @@ export interface TowerPlacement {
    *  27): the cell and facing whose straight corridor covers the most road
    *  - how a Laser is actually aimed; the tower is turned to that facing. */
   /** 'vein': a producer on the richest vein it may stand on (session 29, PR 6: the Ore-per-run reading). */
-  at: 'auto' | 'core' | 'choke' | 'adjacent' | 'inline' | 'vein' | { x: number; y: number };
+  /** 'entry' (session 36): best coverage among cells within ENTRY_REACH of the FIRST entry - where a first-time player builds,
+   *  because that is where the enemies appear. It guards one lane of two or three and sits far from the Core: every other
+   *  mode here is greedy-optimal, and "is Calm easy enough for a first run" cannot be read off an optimal player. */
+  at: 'auto' | 'core' | 'choke' | 'adjacent' | 'inline' | 'vein' | 'entry' | { x: number; y: number };
 }
 
 /** Road cells within this many cells of the Core (by route) are the choke. */
 export const CHOKE_REACH = 15;
+/** Ground within this many cells (Chebyshev) of the first entry is where the naive placement builds. */
+export const ENTRY_REACH = 6;
 
 export interface LabSpec {
   seed: number;
@@ -222,8 +227,13 @@ function inlineSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H:
 }
 
 /** Greedy best-coverage placement, the way a player actually builds. */
-function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, range: number, where: 'auto' | 'core' | 'choke' | 'adjacent' = 'auto', last?: { x: number; y: number }): { x: number; y: number } | null {
+function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, range: number, where: 'auto' | 'core' | 'choke' | 'adjacent' | 'entry' = 'auto', last?: { x: number; y: number }, entry?: { x: number; y: number }): { x: number; y: number } | null {
   const allowed = new Set<number>();
+  if (where === 'entry') {
+    if (!entry) where = 'auto';
+    else for (let y = Math.max(0, entry.y - ENTRY_REACH); y <= Math.min(H - 1, entry.y + ENTRY_REACH); y++)
+      for (let x = Math.max(0, entry.x - ENTRY_REACH); x <= Math.min(W - 1, entry.x + ENTRY_REACH); x++) allowed.add(y * W + x);
+  }
   if (where === 'adjacent' && last) {
     for (let dy = -1; dy <= 1; dy++)
       for (let dx = -1; dx <= 1; dx++) allowed.add((last.y + dy) * W + (last.x + dx));
@@ -335,7 +345,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
         }
       if (!spot) return false; // no vein: the plan goes on without its producer
     } else if (typeof p.at === 'string') {
-      spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, p.at, placed[placed.length - 1]) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE);
+      spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, p.at, placed[placed.length - 1], map.entries[0]) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE);
     } else {
       spot = p.at;
     }

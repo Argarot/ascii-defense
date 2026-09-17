@@ -20,16 +20,9 @@ export const BOARD_SLOTS = { w: 12, h: 7 } as const;
 
 /** Threat levels as data (session 15); shared so both threads agree. */
 /** `waveSeconds`: the wave clock, launch to launch (design round 1, item 10). */
-export const THREAT_LEVELS = [
-  // Each level carries its whole curve (session 31): Calm was the Standard curve with a slower clock, and a
-  // base-world build died at wave 10 on it (docs/lab/base-sweep-2026-09-07.md); now it grows slower and meets
-  // the heavier kinds three waves later - the reference line holds its fifteen on every seed, a plain Bolt
-  // builder on half of them, and relics come on top of that.
-  { name: 'Calm', entries: [2, 3] as const, pathBias: 12, finalWave: 15, waveSeconds: 55, difficulty: { hpLinear: 0.08, hpGeometric: 1.03, countBase: 6, countLinear: 3, countGeometric: 1, unlockDelay: 3, countMax: 60 } },
-  // Session 32 (Enemies II; docs/lab/enemy-sweep-2026-09-08.md): the count is BODIES since packs (a swarm entry counts its three), and bodies are Scrap - fewer of them starved the reference build on half the seeds - so Standard and Grim grow five a wave and their hp curves steepen (x1.07, x1.09): the reference line dies at 22-24 on every seed, the target band.
-  { name: 'Standard', entries: [2, 5] as const, pathBias: 8, finalWave: 20, waveSeconds: 40, difficulty: { hpLinear: 0.15, hpGeometric: 1.07, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 } },
-  { name: 'Grim', entries: [3, 6] as const, pathBias: 5, finalWave: 25, waveSeconds: 30, difficulty: { hpLinear: 0.15, hpGeometric: 1.09, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 } },
-] as const;
+// The Threat levels live in the engine since session 36 (one source for the worker, the setup page and the lab - the lab
+// could not import this file, and its hand copies drifted). Re-exported so the app's imports did not have to move.
+export { THREAT_LEVELS } from '@ascii-defense/engine';
 
 /** What the run IS, for saving: determinism makes this the whole state.
  *  The loadout is generation input (2.21), so it must ride the save - a

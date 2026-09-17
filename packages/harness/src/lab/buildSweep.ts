@@ -11,7 +11,7 @@
  *
  * Usage: node tools/build-sweep.mjs [seed ...]
  */
-import { TILE_SIZE, TileLibrary, createRng, resolveUnlocks, type DifficultySpec, type TowerDef } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary, createRng, resolveUnlocks, threatKnobs, type DifficultySpec, type TowerDef } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -35,8 +35,9 @@ const baseContent: LabContent = {
   tree: must(validateTree.check(treeJson)),
 };
 
-/** Standard, as protocol.ts ships it after PR 2 of session 23. */
-const STANDARD: DifficultySpec = { hpLinear: 0.15, hpGeometric: 1.07, countBase: 6, countLinear: 5, countGeometric: 1, countMax: 60 }; // five a wave and x1.07 since session 32 (the count is bodies; docs/lab/enemy-sweep-2026-09-08.md)
+/** The curves the game ships (engine/sim/threat.ts) - never a copy of them: a sweep that measures a hand-copied world measures a world that drifts. */
+const [CALM_T, STANDARD_T, GRIM_T] = THREAT_LEVELS;
+const STANDARD: DifficultySpec = STANDARD_T.difficulty;
 const MAX_WAVES = 40;
 const BOARDS = [{ w: 7, h: 4 }, { w: 7, h: 5 }, { w: 12, h: 7 }];
 const argSeeds = process.argv.slice(2).map(Number).filter((n) => Number.isInteger(n) && n > 0);
@@ -44,10 +45,7 @@ const SEEDS = argSeeds.length ? argSeeds : [945046, 12345, 777, 2024];
 
 /** The app's knob derivation for a seed (protocol.ts Standard), minus the board - as sweep.ts does it. */
 function demoKnobs(seed: number): { entries: number; targetPathCells: number } {
-  const knobs = createRng(seed).stream('map');
-  const entries = knobs.int(2, 5);
-  const targetPathCells = (8 + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
-  return { entries, targetPathCells };
+  return threatKnobs(createRng(seed).stream('map'), STANDARD_T);
 }
 
 /** Hailstorm at a different per-shot multiplier: the roster cloned with one number changed. */
@@ -247,10 +245,7 @@ if (BANDS_ONLY) {
  * were held - the number a first run must reach.
  */
 function calmKnobs(seed: number): { entries: number; targetPathCells: number } {
-  const knobs = createRng(seed).stream('map');
-  const entries = knobs.int(2, 3);
-  const targetPathCells = (12 + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
-  return { entries, targetPathCells };
+  return threatKnobs(createRng(seed).stream('map'), CALM_T);
 }
 const EARLY_BUILDS: { name: string; towers: TowerPlacement[] }[] = [
   { name: 'three plain Bolts', towers: [P('bolt', [-1, -1, -1]), P('bolt', [-1, -1, -1]), P('bolt', [-1, -1, -1])] },
@@ -261,9 +256,8 @@ const EARLY_BUILDS: { name: string; towers: TowerPlacement[] }[] = [
   { name: 'Refinery, then 4 Railbores + 2 Frost + Mortar, then 3 more Railbores', towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), P('frost', [1, 0, 1]), P('bolt', RAILBORE), P('mortar', [1, 1, 0]), P('bolt', RAILBORE), P('frost', [1, 0, 1]), P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE), P('bolt', RAILBORE)] },
 ];
 if (BASE_ONLY) {
-  /** Calm as protocol.ts ships it since session 31: slower growth, the heavier kinds two waves later. */
-  const CALM: DifficultySpec = { hpLinear: 0.08, hpGeometric: 1.03, countBase: 6, countLinear: 3, countGeometric: 1, unlockDelay: 3 };
-  for (const world of [{ name: 'CALM before session 31 (the Standard curve)', knobs: calmKnobs, clock: 55 * 20, final: 15, spec: STANDARD }, { name: 'CALM (session 31: hp +8%/wave x1.03, 6 + 3/wave, the heavier kinds three waves later)', knobs: calmKnobs, clock: 55 * 20, final: 15, spec: CALM }, { name: 'STANDARD', knobs: demoKnobs, clock: 40 * 20, final: 20, spec: STANDARD }]) {
+  const CALM: DifficultySpec = CALM_T.difficulty;
+  for (const world of [{ name: 'CALM before session 31 (the Standard curve)', knobs: calmKnobs, clock: CALM_T.waveSeconds * 20, final: CALM_T.finalWave, spec: STANDARD }, { name: 'CALM (session 31: hp +8%/wave x1.03, 6 + 3/wave, the heavier kinds three waves later)', knobs: calmKnobs, clock: CALM_T.waveSeconds * 20, final: CALM_T.finalWave, spec: CALM }, { name: 'STANDARD', knobs: demoKnobs, clock: STANDARD_T.waveSeconds * 20, final: STANDARD_T.finalWave, spec: STANDARD }]) {
     console.log(`## the base world at ${world.name} knobs on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - economy 100 scrap, no relics, horizon ${MAX_WAVES}; the run holds at wave ${world.final}\n`);
     console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | held the run | ore banked |');
     console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
@@ -281,6 +275,91 @@ if (BASE_ONLY) {
     }
     console.log('');
   }
+}
+
+/**
+ * Session 36, PR 5: THE BALANCE DEBT, measured (issues #234 "the curve" and
+ * #235 "Calm's ease" - both sat in Daniil's queue as blocks-ship calls until
+ * CONTRIBUTING sec 6 rule 7 moved them back: a question a sweep can answer
+ * is never a call). Every earlier reading of the curve used FOUR seeds; this
+ * one uses a corpus, the shipped Threat levels (never a copy), and states
+ * its targets in docs/lab/balance-debt-2026-09-17.md before reading them.
+ *
+ *   node tools/build-sweep.mjs --debt [corpus=60]
+ */
+const DEBT_ONLY = process.argv.includes('--debt');
+if (DEBT_ONLY) {
+  const N = Number(process.argv.slice(2).find((a) => /^\d+$/.test(a)) ?? 60);
+  const CORPUS = Array.from({ length: N }, (_, i) => (i + 1) * 7919 + 13);
+  const PLAIN: [number, number, number] = [-1, -1, -1];
+  /** The Core's health in the lab and in the app alike (the sim's default; nothing passes another). */
+  const CORE_HP = 50;
+  const naive = (n: number, at: TowerPlacement['at']): TowerPlacement[] => Array.from({ length: n }, () => ({ towerId: 'bolt', choices: PLAIN, at }));
+  const REFERENCE: TowerPlacement[] = [A('refinery', [0, 0, 0], 'vein'), ...mixed('choke', RAILBORE)];
+  const pct = (x: number): string => `${Math.round(100 * x)}%`;
+  const q = (sorted: number[], p: number): number => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+
+  /** unlocks: the tree state the row plays under ([] = the base world); band: the rarity band its six relics are dealt inside. */
+  interface Row { name: string; towers: TowerPlacement[]; relicSets?: boolean; unlocks?: string[]; band?: number }
+  const read = (threat: (typeof THREAT_LEVELS)[number], rows: Row[], marks: number[]): void => {
+    console.log(`## ${threat.name.toUpperCase()} - the shipped curve, ${RELIC_BOARD.w}x${RELIC_BOARD.h}, economy 100 scrap, the ${threat.waveSeconds}s clock, ${N} seeds, horizon ${MAX_WAVES}; the run is WON by holding wave ${threat.finalWave}\n`);
+    console.log(`| build | mean death | median | 10th - 90th pct | min | ${marks.map((m) => `holds wave ${m}`).join(' | ')} | WINS (holds ${threat.finalWave}) | first leak (median wave) | Core left at the win (median, of ${CORE_HP}) |`);
+    console.log(`|---|---|---|---|---|${marks.map(() => '---').join('|')}|---|---|---|`);
+    for (const row of rows) {
+      const deaths: number[] = [];
+      const firstLeaks: number[] = [];
+      const coreAtWin: number[] = [];
+      CORPUS.forEach((seed, i) => {
+        const spec: LabSpec = {
+          seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...threatKnobs(createRng(seed).stream('map'), threat) },
+          towers: row.towers, relicIds: [], relics: row.relicSets ? bandSet(i % RELIC_SETS, row.band ?? 0, true) : undefined, unlocks: row.unlocks ?? [],
+          interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: MAX_WAVES, economy: { startingScrap: 100 },
+        };
+        try {
+          const r = runLab(spec, baseContent);
+          const death = r.deathWave ?? MAX_WAVES + 1;
+          deaths.push(death);
+          // What the player FEELS: when the first body got through, and how much Core was left when the run was won.
+          firstLeaks.push(r.waves.find((w) => w.breaches > 0)?.wave ?? MAX_WAVES + 1);
+          const last = r.waves.find((w) => w.wave === threat.finalWave);
+          if (death > threat.finalWave && last) coreAtWin.push(last.coreHpEnd);
+        } catch { /* a seed the carve refuses is no reading */ }
+      });
+      const sorted = [...deaths].sort((a, b) => a - b);
+      const med = (a: number[]): string => (a.length ? String([...a].sort((x, y) => x - y)[Math.floor(a.length / 2)]) : '-');
+      const mean = deaths.reduce((a, c) => a + c, 0) / deaths.length;
+      // "Holds wave m" = the Core is still standing when wave m has been fought: the death wave is past it.
+      const holds = (m: number): string => pct(deaths.filter((d) => d > m).length / deaths.length);
+      console.log(`| ${row.name} | ${mean.toFixed(1)} | ${q(sorted, 0.5)} | ${q(sorted, 0.1)} - ${q(sorted, 0.9)} | ${sorted[0]} | ${marks.map(holds).join(' | ')} | ${holds(threat.finalWave)} | ${med(firstLeaks)} | ${med(coreAtWin)} |`);
+    }
+    console.log('');
+  };
+
+  read(CALM_T, [
+    { name: 'NAIVE: one plain Bolt by the entry, then nothing', towers: naive(1, 'entry') },
+    { name: 'NAIVE: three plain Bolts by the entry, no forks', towers: naive(3, 'entry') },
+    { name: 'NAIVE: plain Bolts by the entry as Scrap comes (eight), no forks', towers: naive(8, 'entry') },
+    { name: 'placement learned: three plain Bolts at the choke, no forks', towers: naive(3, 'choke') },
+    { name: 'forks learned: eight Bolts at the choke, Marksman then Piercing', towers: Array.from({ length: 8 }, () => P('bolt', [0, 0, -1])) },
+    { name: 'the reference (Refinery, Railbore line + Frost + Mortar)', towers: REFERENCE },
+  ], [3, 5, 10]);
+  read(STANDARD_T, [
+    { name: 'NAIVE: three plain Bolts by the entry, no forks', towers: naive(3, 'entry') },
+    { name: 'forks learned: eight Bolts at the choke, Marksman then Piercing', towers: Array.from({ length: 8 }, () => P('bolt', [0, 0, -1])) },
+    { name: 'the reference, no relics', towers: REFERENCE },
+    { name: 'the reference + six common relics (the offer as a new player meets it)', towers: REFERENCE, relicSets: true },
+  ], [5, 10, 15]);
+  /** The everything world's line, as the tree sweep plays it (session 29, PR 6): a Railbore, three aimed Lasers, a Frost. */
+  const LASER_LINE: TowerPlacement[] = [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')];
+  read(GRIM_T, [
+    { name: 'the reference, no relics (the base world)', towers: REFERENCE },
+    { name: 'the reference + six common relics (the base world)', towers: REFERENCE, relicSets: true },
+    { name: 'THE TREE: the Laser line, no relics', towers: LASER_LINE, unlocks: ['*'] },
+    { name: 'THE TREE: the Laser line + six relics inside the epic band', towers: LASER_LINE, unlocks: ['*'], relicSets: true, band: 2 },
+  ], [10, 15, 20]);
+  read(STANDARD_T, [
+    { name: 'THE TREE on Standard, for scale: the Laser line + six relics inside the epic band', towers: LASER_LINE, unlocks: ['*'], relicSets: true, band: 2 },
+  ], [5, 10, 15]);
 }
 
 /**
@@ -344,8 +423,8 @@ if (TREE_ONLY) {
   console.log('');
 }
 
-if (!RELICS_ONLY && !TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY && !BANDS_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
-for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY || ENEMIES_ONLY || BANDS_ONLY ? [] : BOARDS) {
+if (!RELICS_ONLY && !TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY && !BANDS_ONLY && !DEBT_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
+for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY || ENEMIES_ONLY || BANDS_ONLY || DEBT_ONLY ? [] : BOARDS) {
   console.log(`## board ${board.w}x${board.h}\n`);
   console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | crowd kills | all kills |');
   console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
@@ -379,7 +458,7 @@ for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY || ENEMIES_ONLY || BAN
 }
 
 // ---- the relic sweep (session 28, PR 6) ----
-if (!TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY && !BANDS_ONLY) {
+if (!TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY && !BANDS_ONLY && !DEBT_ONLY) {
 console.log(`## relic sets on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - the reference build (Railbore line + Frost + Mortar, choke, economy) with six held relics\n`);
 console.log('| set | relics (rarity) | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean |');
 console.log('|---|---|' + SEEDS.map(() => '---').join('|') + '|---|');
