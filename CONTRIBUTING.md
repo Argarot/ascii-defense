@@ -150,8 +150,17 @@ Read the PRD before the architecture; read this file before touching anything.
   pane's server is not running; the tab id changes.
 - **A gate that reads the analytic model reads a fixed world** (the hand
   tiles); widening its tolerance a fourth time was the wrong fix.
-- **After the last merge of a day: `git fetch` and `git checkout -B main
-  origin/main`.** Between PRs: merge without `--delete-branch`, `git
+- **After the last merge of a day: `npm run home`** (`git fetch`, then `git
+  checkout -B main origin/main`, then the status). It is a script because the
+  sentence alone was not enough: on 2026-09-18 the wrap typed `git checkout
+  main && git reset origin/main` instead. Local `main` was a night stale, the
+  checkout half-failed on three content files the dev server held open, and
+  the reset moved HEAD under a tree of old files - **78 reverse diffs of the
+  whole night's work**, one `git add` from reverting eleven PRs. `-B` to
+  `origin/main` from an up-to-date branch touches no file, so nothing can be
+  locked. If it ever happens anyway: prove every dirty path equals the stale
+  commit (`git diff --name-only <stale> -- <paths>` prints nothing), then
+  restore that list by path. Between PRs: merge without `--delete-branch`, `git
   reset -q origin/main` on the branch, `checkout -q -b <next>`, delete
   the remote branch by name.
 - **After that dance, `git status` must list only files you mean to change.**
