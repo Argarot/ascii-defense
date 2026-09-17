@@ -521,7 +521,7 @@ export const CODEX = {
     },
     {
       "id": "courser",
-      "name": "courser",
+      "name": "harrier",
       "hp": 20,
       "speed": "1.60",
       "breach": 1,
@@ -537,7 +537,7 @@ export const CODEX = {
     },
     {
       "id": "ram",
-      "name": "ram",
+      "name": "lunge",
       "hp": 70,
       "speed": "1",
       "breach": 3,
@@ -553,7 +553,7 @@ export const CODEX = {
     },
     {
       "id": "blob",
-      "name": "blob",
+      "name": "brood",
       "hp": 60,
       "speed": "1",
       "breach": 2,
@@ -569,7 +569,7 @@ export const CODEX = {
     },
     {
       "id": "mender",
-      "name": "mender",
+      "name": "stitch",
       "hp": 40,
       "speed": "1",
       "breach": 1,
@@ -585,7 +585,7 @@ export const CODEX = {
     },
     {
       "id": "mole",
-      "name": "mole",
+      "name": "delve",
       "hp": 50,
       "speed": "1.20",
       "breach": 3,
@@ -601,7 +601,7 @@ export const CODEX = {
     },
     {
       "id": "pavise",
-      "name": "pavise",
+      "name": "buckler",
       "hp": 110,
       "speed": "0.80",
       "breach": 4,

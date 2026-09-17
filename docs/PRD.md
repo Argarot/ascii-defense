@@ -1007,12 +1007,12 @@ numbers):
 
 | body | wave | rule (trait) | the answer |
 |---|---|---|---|
-| **courser** | 3 | `sprint`: runs 60% faster while unhit for two seconds | keep it under fire — a Tesla's arcs, a Laser's beam, a Bolt line |
-| **ram** | 6 | `charge`: runs at double speed once under half hp | finish it in one volley, or slow it before the sprint (Frost) |
-| **blob** | 7 | `split`: dies into two skitters where it fell | kill it early, or let a blast take the halves together |
-| **mender** | 8 | `heal`: mends every body within a cell and a half by 3 a second | priority WEAKEST finds it; kill it first |
-| **mole** | 9 | `burrow`: untargetable and unhittable for its first eight cells | the towers deeper in see it — a line by the Core, not at the entry |
-| **pavise** | 11 | `frontshield`: hits from within 45° of ahead do a third | flank it from beside the road |
+| **harrier** (`courser`) | 3 | `sprint`: runs 60% faster while unhit for two seconds | keep it under fire — a Tesla's arcs, a Laser's beam, a Bolt line |
+| **lunge** (`ram`) | 6 | `charge`: runs at double speed once under half hp | finish it in one volley, or slow it before the sprint (Frost) |
+| **brood** (`blob`) | 7 | `split`: dies into two skitters where it fell | kill it early, or let a blast take the halves together |
+| **stitch** (`mender`) | 8 | `heal`: mends every body within a cell and a half by 3 a second | priority WEAKEST finds it; kill it first |
+| **delve** (`mole`) | 9 | `burrow`: untargetable and unhittable for its first eight cells | the towers deeper in see it — a line by the Core, not at the entry |
+| **buckler** (`pavise`) | 11 | `frontshield`: hits from within 45° of ahead do a third | flank it from beside the road |
 | **Warden** | 12, boss only | `bulwark`: every body within two and a half cells takes 30% less while it lives | the boss to kill first, not last |
 
 Rules of the roster: a **boss-only** body (`bossOnly`) never walks in an
@@ -1022,18 +1022,18 @@ the Juggernaut's place from wave 12 on Standard, wave 15 on Calm's delay —
 which is Calm's last, so a first run never meets it); `unlockDelay`
 applies to the seven as to every body above wave 1; a burrower's unseen
 cells are hashed. Placeholder sprites from the generator, each drawn as
-its rule (a mole under a mound, a pavise behind its plank), until the art
+its rule (a delve under a mound, a buckler behind its plank), until the art
 agent's studies replace them.
 
 **Counter legibility (session 32, PR 3).** Every rule shows where it
-acts: on the body (a burrowed mole is a mound `_^_` with nothing to
-shoot; a mender wears a cross; the Warden wears braces; a charging ram a
-`>>` trail; a sprinting courser a `~`; a pavise its plank on the side it
+acts: on the body (a burrowed delve is a mound `_^_` with nothing to
+shoot; a stitch wears a cross; the Warden wears braces; a charging lunge a
+`>>` trail; a sprinting harrier a `~`; a buckler its plank on the side it
 faces), in the strip's NOW and NEXT (a word per trait when the row has
 room, a two-glyph mark when it has not - `/2 ++ __ >! [| ~> {}` - and a
 line under NEXT saying how the packs walk: "2 wedges ⠂ 1 wall"), and in
 the column under the next wave's composition, **the answer**: the first
-kind with a trait and what answers it ("pavise: flank it from beside the
+kind with a trait and what answers it ("buckler: flank it from beside the
 road"; `view/hud/traitAnswers.ts` is the one table). The tutorial's NEXT
 step says so. The codex's trait legend carries the same answers.
 
@@ -1055,7 +1055,7 @@ item 2).** The offer every second wave waits for a quiet board (item 18 of
 the thought dump: never on a next-wave call), but a Standard run whose
 board was never quiet saw no offer at all; now the CLOCK deals the owed
 offer when it launches the wave after it, and only a player's call over
-living bodies still carries the debt. The mender's field is a green pulse
+living bodies still carries the debt. The stitch's field is a green pulse
 each second (item 9); the title's towers idle in their frames (item 4);
 Esc leaves every page (item 1); the workshop's purse sits in the frame's
 bottom band and a node priced in a tier the purse lacks says where that
@@ -1073,8 +1073,8 @@ in half packs. The boss walks the first front after a beat of a second and
 a half, the escort ahead of it. Every queue entry carries its def, its
 spacing and its front (a resumed save's bare entries walk the old way), and
 the preview names the packs (`nextWavePreview().packs`) for the strip. So
-wave 10 reads unlike wave 5 by shape: a wall of rams on one front and a
-wedge of coursers on another, not eighteen bodies round-robin.
+wave 10 reads unlike wave 5 by shape: a wall of lunges on one front and a
+wedge of harriers on another, not eighteen bodies round-robin.
 
 **The early game, measured (session 31, PR 2;
 docs/lab/base-sweep-2026-09-07.md).** Every level carries its own curve
@@ -1596,7 +1596,7 @@ relics are presented; how to play as a button in the menu will always be
 ignored" - and "the codex is the wiki of everything in the game, a
 player's guide to know detailed stats about what they have already
 encountered". So: the first time a kind of enemy walks in sight (a
-burrowed mole is not yet in sight), a kind of tower stands, a chest
+burrowed delve is not yet in sight), a kind of tower stands, a chest
 surfaces, or a boon cell is on the map once a tower stands, **a card pops
 over the board** - the sprite, the name, the facts and the rules with
 their answers - and the run pauses under it until GOT IT, Enter or Esc;
