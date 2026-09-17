@@ -145,8 +145,18 @@ the time; the reference wins it 94%; relics close the rest.
 | THE TREE: the Laser line, no relics | 25.9 | 29 | 9–36 | 5 | 87% | 83% | 75% | **61%** | wave 3 | 50 |
 | THE TREE: the Laser line + six relics in the epic band | 28.1 | 30 | 19–36 | 5 | 97% | 95% | 86% | **69%** | wave 17 | 50 |
 
-**L5 holds: the base world wins Grim one time in fifteen, the tree two times
-in three.** Grim is bimodal, and `entries` is why (it draws 3–6): three
+> **Amended the same night — L5 does NOT hold.** Every row above is a plan
+> that *ends*: the reference is fully bought by wave 12 and dies holding
+> 3,751 unspent Scrap at wave 20. Give it five more base-world towers and it
+> wins Grim **79%**; the Laser line that keeps building wins **86%**. The
+> tree buys seven points, not fifty-six. The numbers in this table are true
+> and describe a player who does not exist. Measured in
+> docs/lab/economy-research-2026-09-17.md §3; the re-fit is its item E2, due
+> after the RNG fix (#339). L4's lower half ("eight forked Bolts win Standard
+> 2%") has the same flaw in a milder form and is re-read with it.
+
+**As first written:** *L5 holds: the base world wins Grim one time in fifteen,
+the tree two times in three.* Grim is bimodal, and `entries` is why (it draws 3–6): three
 entries wins 17% for the base world, five or six win none. The Laser line
 with no relics leaks at wave 3 and still wins 61% — it opens with a Railbore
 and a Refinery, and the Lasers arrive late; relics move the first leak to
