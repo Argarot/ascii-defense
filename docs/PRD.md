@@ -1768,11 +1768,13 @@ now also opens the tier on the map and in the Smith.
 | maps that carry one | every map (~12 veins) | **about one in three** (3% a vein) | **about one in nine** (1.1% a vein) | "much rarer": each rung a third as common as the one below |
 | vein size | 30–90 | **half** (15–45) | **a third** (10–30) | smaller, but it must still outlast one Refinery for most of a run |
 | mining cycle | ×1 | ×1.5 | ×2 | kept from session 29: a tier-2 run banks ~27 where a tier-1 run banks ~51 |
-| the Smith's cell | — | **+0.5 tier-2 Ore per Ore in the vein**, on top | the same, in tier-3 Ore | you must have mined some to author with it |
+| the Smith's cell | — | **+⅓ tier-2 Ore per Ore in the vein**, on top (§27) | the same, in tier-3 Ore | you must have mined some to author with it; the smallest vein is under half of one lucky find |
 
 From the map alone a player banks about 7 tier-2 Ore a run — the tier-2 tree
-(135) in about eighteen runs, as long as tier 1 took; with a vein tile loaded,
-about five. **Opening a tier moves nothing but veins:** a seed's board, rock
+(135) in about eighteen runs, as long as tier 1 took. The shop's vein tile
+costs tier-2 Ore too (§27: same contents, same price), so the invested road
+is about six luck runs to afford it and five loaded runs after: **eleven
+against eighteen**. **Opening a tier moves nothing but veins:** a seed's board, rock
 and boons are the same map with and without the upgrade (counted: 0 of 2,400).
 A vein says its tier in words as well as colour — on hover and on the
 Refinery's panel — so the colour is never the only carrier.
@@ -1806,6 +1808,27 @@ same contents cost the same. It reads the tile's cells and sums per-feature
 costs. The **coefficients are the lab's to derive** against the existing shipped
 tile prices as the anchor — the requirement is the *shape* of the curve (flat
 for plain, steep for loaded), not any particular number.
+
+**As built (2026-09-17; docs/lab/price-sweep-2026-09-17.md).** `priceTile()`
+in the engine, itemised by `priceLines()`; **no price is written in the
+content file any more** — a special is for sale when the tree lists it, and
+costs what its cells and overlays cost.
+
+| what is on the tile | what it adds |
+|---|---|
+| a tile | 20 |
+| a road cell | 0.9 — path length is what a road tile is for; 20 + 0.9 × road is the line through the five shipped road prices (they move by at most 4) |
+| a rock cell | 1 |
+| a vein | its Ore ÷ 6, in the purse below its tier; an ore cell with no authored vein counts as 60 (it used to be free) |
+| a vein above tier 1 | its Ore ÷ 3 **in its own tier, on top** (§26) |
+| boon ground | **by power**: power^1.5 ÷ 3 → 11 / 30 / 69 / 118 for +10 / 20 / 35 / 50% |
+| crowding | every feature after the first adds 15% to **all** of them |
+
+So: a plain straight is 25 (half a run of income); one strong boon is a
+three-run project; six of them, a kill-zone, is twenty-five runs; the ceiling
+— nine tier-3 veins ringed by sixteen tier-4 boons — is over a thousand. The
+Smith shows every line before MINT, which is what makes the price a dial, and
+it can now author a boon's tier (B1–B4), which it could not before.
 
 
 ## 28. The tree gates rarity, never a named relic *(Daniil, 2026-09-17; rejects the §19 item 3 proposal. D29)*

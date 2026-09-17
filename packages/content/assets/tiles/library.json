@@ -110,11 +110,7 @@
         "-7GL-",
         "GL7GG",
         "GG|GG"
-      ],
-      "price": {
-        "tier": 1,
-        "ore": 25
-      }
+      ]
     },
     {
       "id": "gen_ns_2",
@@ -126,11 +122,7 @@
         "--JL-",
         "GGGGG",
         "GGGGG"
-      ],
-      "price": {
-        "tier": 1,
-        "ore": 30
-      }
+      ]
     },
     {
       "id": "gen_ns_3",
@@ -142,11 +134,7 @@
         "--JL-",
         "GGGGG",
         "GGGGG"
-      ],
-      "price": {
-        "tier": 1,
-        "ore": 25
-      }
+      ]
     },
     {
       "id": "gen_ne_1",
@@ -158,11 +146,7 @@
         "GG|L-",
         "GG|GG",
         "GG|GG"
-      ],
-      "price": {
-        "tier": 1,
-        "ore": 30
-      }
+      ]
     },
     {
       "id": "gen_ne_3",
@@ -185,11 +169,7 @@
         "-JFJG",
         "GG|GG",
         "GG|GG"
-      ],
-      "price": {
-        "tier": 1,
-        "ore": 35
-      }
+      ]
     },
     {
       "id": "rich_vein",
@@ -215,11 +195,7 @@
           "amount": 60,
           "tier": 2
         }
-      ],
-      "price": {
-        "tier": 1,
-        "ore": 60
-      }
+      ]
     },
     {
       "id": "mother_lode",
@@ -239,11 +215,7 @@
           "amount": 90,
           "tier": 3
         }
-      ],
-      "price": {
-        "tier": 2,
-        "ore": 50
-      }
+      ]
     },
     {
       "id": "t_ns_2",
