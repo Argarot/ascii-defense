@@ -134,7 +134,14 @@ Read the PRD before the architecture; read this file before touching anything.
   sessions 29–31; on 2026-09-12 a `python - <<'PY'` heredoc collapsed `\\n` to a
   real newline, so an anchor silently never matched and the edit did not apply.
   Multi-line scripts go to the scratchpad via the Write tool and run by path;
-  single anchored replacements go through the Edit tool.
+  single anchored replacements go through the Edit tool. **Since 2026-09-17
+  this is a mechanism, not a request**: `.claude/settings.json` runs
+  `.claude/hooks/no-inline-scripts.mjs` before every Bash call and refuses a
+  heredoc, or a `node -e` / `python -c`, whose body carries a backslash or a
+  backtick. The prose had been broken ten times - twice that evening with the
+  rule loaded - and one collapse had silently turned a regex's `\.` into `.`
+  in shipped source. The guard fails open, so a bug in it cannot take the
+  shell away.
 - **A generator that merges into the file it reads is tested by its
   second run** (tilegen accumulated 82 → 111 until its id filter matched
   every id it makes).

@@ -149,9 +149,9 @@ export default tseslint.config(
     },
   },
 
-  // tools/ are Node build scripts; they legitimately use Node globals.
+  // tools/ are Node build scripts, and .claude/hooks/ are Node scripts the harness runs; both legitimately use Node globals.
   {
-    files: ['tools/**/*.mjs'],
+    files: ['tools/**/*.mjs', '.claude/hooks/**/*.mjs'],
     languageOptions: { globals: { ...globals.node } },
   },
 );
