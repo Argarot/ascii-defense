@@ -384,6 +384,20 @@ actually walk.
   dice are spent, so every map from before the ladder is the same map.
 - Placement *preferences* (sector spread, walk eagerness, boon-near-road)
   are free implementation space, not rules.
+- **The walk's character and the land's regions are preferences** (session
+  36; `MapGenOptions.walk`, `.land`). The character re-weights which *legal*
+  inward move a wandering walk prefers - straight on, or the heading this
+  map has used least - and the regions re-weight which tile of the *right
+  shape* a slot is dealt. Neither can make an illegal move legal or an
+  ill-fitting tile fit: the tree, the floor, the band, the exits and the
+  availability gates read nothing from them, and `verifyMap` still passes
+  every map (0 of 960 across every board and loadout in the permanent
+  sweep). **With neither option the stream is spent exactly as before**, so
+  the engine's default is the generator as it was and the golden hash does
+  not move; the app asks for both through `threatKnobs()`, which is why
+  `GENERATOR_VERSION` is 4. One rule rides on the regions: **the Core's own
+  region is never rock** (rock cannot be built on, and the ground by the
+  Core is where every tower has its gift).
 
 ### Identity
 

@@ -165,8 +165,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         for (let attempt = 0; ; attempt++) {
           try {
             const knobs = createRng(nextSeed).stream('map');
-            const { entries, targetPathCells } = threatKnobs(knobs, THREAT);
-            nextMap = generateMap(knobs, nextLib, { width: MAP_X, height: MAP_Y, entries, targetPathCells, relicPoolSize: relicDefs.length, specials, oreTierMax: unlocked.oreTierMax });
+            // Everything the Threat says about a map - the two knobs and how its roads walk - in one spread, so the lab's maps are the app's.
+            nextMap = generateMap(knobs, nextLib, { width: MAP_X, height: MAP_Y, ...threatKnobs(knobs, THREAT), relicPoolSize: relicDefs.length, specials, oreTierMax: unlocked.oreTierMax });
             break;
           } catch (e) {
             if (attempt >= 60 && specials.length > 0) {

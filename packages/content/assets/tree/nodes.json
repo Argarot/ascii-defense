@@ -248,7 +248,7 @@
       "id": "ore_t3",
       "name": "Mother lodes",
       "branch": "ore",
-      "desc": "The rarest ore: violet tier-3 veins turn up on about one map in nine - the smallest, the slowest to mine. The workshop sells a tile that carries one, and the Tile Smith gains the tier-3 vein cell.",
+      "desc": "The rarest ore: violet tier-3 veins turn up on about one map in eight - the smallest, the slowest to mine. The workshop sells a tile that carries one, and the Tile Smith gains the tier-3 vein cell.",
       "cost": {
         "tier": 2,
         "ore": 50

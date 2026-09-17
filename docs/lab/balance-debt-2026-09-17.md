@@ -10,6 +10,13 @@ first run?"* — until CONTRIBUTING §6 rule 7 moved them back: a question a
 sweep can answer is never a call. This is the sweep. Every earlier reading of
 the curve used **four seeds**; this one uses a hundred and twenty.
 
+> **These tables are the generator as it was that evening.** Later the same
+> night the walk got a character and the land got regions (PRD §31), which
+> re-deals every app map. The ladder was re-read on the new maps and **every
+> rung holds** — the before-and-after is one table, in
+> [map-sweep-2026-09-17.md](map-sweep-2026-09-17.md#what-it-did-to-difficulty),
+> and is not repeated here. `--debt` always reads the shipped maps.
+
 ## Before measuring: the lab was measuring a world the game does not ship
 
 The Threat levels lived in the app's `protocol.ts`, which the harness may not

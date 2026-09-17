@@ -50,7 +50,9 @@ const all: number[][] = PLANS.map(() => []);
 const byEntries = new Map<number, number[]>();
 for (let i = 1; i <= N; i++) {
   const seed = i * 7919 + 13;
-  const knobs = threatKnobs(createRng(seed).stream('map'), threat);
+  // --no-land / --no-walk: read the two halves of the carve's variety apart (which one moved a tail?).
+  const drawn = threatKnobs(createRng(seed).stream('map'), threat);
+  const knobs = { ...drawn, land: process.argv.includes('--no-land') ? undefined : drawn.land, walk: process.argv.includes('--no-walk') ? undefined : drawn.walk };
   const deaths = PLANS.map(([, towers]) => {
     const spec: LabSpec = { seed, map: { width: 7, height: 5, ...knobs }, towers, relicIds: [], unlocks: [], interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: 40, economy: { startingScrap: 100 } };
     try { return runLab(spec, content).deathWave ?? 41; } catch { return -1; }

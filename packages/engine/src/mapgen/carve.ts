@@ -53,6 +53,43 @@ export interface CarveOptions {
   coverage?: number;
   /** Shortest lane over longest lane, at least (D28 default LANE_BAND). */
   laneBand?: number;
+  /** The walk's character (session 36). Absent = the walk as it always was, and not one extra die is spent. */
+  walk?: WalkCharacterSpec;
+}
+
+/**
+ * How a road WALKS (session 36, "the carve's variety"). The road's shapes
+ * are a closed set of nine (PRD sec 23), so what makes two maps differ is
+ * where the road runs and how it turns - and until this existed every map
+ * on every Threat turned on 55% of its slots, give or take a tenth, and
+ * never ran straight for three (docs/lab/map-sweep-2026-09-17.md).
+ *
+ * None of this touches a topology rule (ARCHITECTURE sec 12): it only
+ * re-weights which LEGAL inward move a wandering walk prefers. The tree,
+ * the floor, the band, the exits and the availability gates are exactly as
+ * they were.
+ */
+export interface WalkCharacterSpec {
+  /**
+   * The Threat's taste for going straight: the weight of the move that
+   * continues the walk's heading, against a turn's 1. Above 1 the road runs
+   * in avenues (Calm, "long and gentle"); below 1 it knots (Grim).
+   */
+  straight: number;
+  /**
+   * How far one MAP may stray from its Threat's taste: each map rolls a
+   * factor between 1/spread and spread (evenly in the exponent) and keeps
+   * it for every walk. This is what makes two Standard maps differ by the
+   * road's walk - one of avenues, one of switchbacks. 1 = no roll.
+   */
+  spread: number;
+  /**
+   * The pull toward the heading this map has used least so far, 0 = none:
+   * a move's weight gains up to `fresh` times itself when its heading is
+   * unused, nothing when it is the most used. Keeps a tree from sprawling
+   * the same way every time.
+   */
+  fresh: number;
 }
 
 export interface RoadPlan {
@@ -170,6 +207,16 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
     roadEdges.set(k, set);
   };
   addEdge(rootK, 'e');
+
+  // The walk's character (session 36). One roll a MAP, only when a character
+  // is asked for: with no `walk` the stream is spent exactly as it always
+  // was and every map from before is the same map.
+  const walk = opts.walk;
+  const mapStraight = walk
+    ? walk.straight * (walk.spread > 1 ? Math.pow(walk.spread, rng.int(-100, 100) / 100) : 1)
+    : 1;
+  /** How often each heading has been walked on this map so far - what "fresh" reads. */
+  const headingUsed: Record<Edge, number> = { n: 0, e: 0, s: 0, w: 0 };
 
   /**
    * Availability gate for growing an EXISTING slot by one edge (branch
@@ -343,6 +390,16 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
             }
             if (nx === 0 || ny === 0 || ny === height - 1) w *= 0.3;
           }
+          if (walk) {
+            // Character re-weights a LEGAL move and nothing else: going on
+            // the way it came by the map's taste for straight, and any
+            // heading this map has walked little by the pull toward fresh.
+            if (cameFrom !== null && o.e === OPPOSITE[cameFrom]) w *= mapStraight;
+            if (walk.fresh > 0) {
+              const most = Math.max(1, headingUsed.n, headingUsed.e, headingUsed.s, headingUsed.w);
+              w *= 1 + walk.fresh * (1 - headingUsed[o.e] / most);
+            }
+          }
           return w;
         };
         let totalW = 0;
@@ -406,6 +463,10 @@ export function carveRoads(rng: RngStream, index: CarveIndex, opts: CarveOptions
     for (const [k, seg] of w.tunnels) secondSegment.set(k, seg);
     entryCells.push(w.entry);
     laneSlots.push(w.lane);
+    // Every committed step counts toward its heading (a step is recorded as
+    // an out-port and the in-port it lands on; the out-port is the heading,
+    // so count each pair once).
+    for (let i = 0; i < w.edges.length; i += 2) headingUsed[w.edges[i][1]]++;
   };
 
   /**
