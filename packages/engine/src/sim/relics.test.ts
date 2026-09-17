@@ -226,6 +226,35 @@ describe('relic effects - each breaks its rule (1.6.1/1.6.3)', () => {
     expect(sim.buildTower(rock.x, rock.y, 'bolt')).toBe(true);
   });
 
+  it('the two placement predicates cannot disagree, on any cell, with or without Vein Tap (issue #218)', () => {
+    // canBuildAt is "SOME tower may stand here"; it used to be written apart from canBuildDefAt and lied both ways:
+    // ore read as buildable while a Bolt's build returned false, and with Vein Tap rock read as unbuildable while it worked.
+    const { cells, cellsW, cellsH, simOpts } = makeOreWorld(31);
+    for (const tap of [false, true]) {
+      const sim = new Sim(31, simOpts);
+      if (tap) grant(sim, 'vein_tap');
+      for (let y = 0; y < cellsH; y++)
+        for (let x = 0; x < cellsW; x++) {
+          const any = ['bolt', 'refinery'].some((id) => sim.canBuildDefAt(x, y, id));
+          expect(sim.canBuildAt(x, y), `(${x},${y}) '${cells[y * cellsW + x]}' tap=${tap}`).toBe(any);
+          expect(sim.buildableDefsAt(x, y).map((d) => d.id)).toEqual(['bolt', 'refinery'].filter((id) => sim.canBuildDefAt(x, y, id)));
+        }
+      // The two cases that used to lie: a vein takes a Refinery and nothing else; rock takes a fighter only with the relic.
+      const ore = cellOfType(cells, cellsW, cellsH, 'O');
+      expect(sim.buildableDefsAt(ore.x, ore.y).map((d) => d.id)).toEqual(['refinery']);
+      const rock = cellOfType(cells, cellsW, cellsH, 'R');
+      expect(sim.canBuildAt(rock.x, rock.y)).toBe(tap);
+      // And what canBuildAt promises, buildTower keeps.
+      const first = sim.buildableDefsAt(ore.x, ore.y)[0];
+      expect(sim.buildTower(ore.x, ore.y, first.id)).toBe(true);
+      expect(sim.canBuildAt(ore.x, ore.y)).toBe(false); // occupied now
+    }
+    // Off the board is never buildable and never throws.
+    const sim = new Sim(31, simOpts);
+    expect(sim.canBuildAt(-1, 0)).toBe(false);
+    expect(sim.buildableDefsAt(cellsW, cellsH)).toEqual([]);
+  });
+
   it('a consumable acts once and FREES its slot (1.7.6)', () => {
     const { simOpts } = makeWorld(41, { spawnEveryTicks: 2, maxSpawns: 8 });
     const sim = new Sim(41, simOpts);

@@ -263,3 +263,29 @@ describe('the worker deals the engine\'s map (session 36: one source for a Threa
     }
   });
 });
+
+describe('the hover tells the truth about building (issue #218)', () => {
+  it('a vein is not "buildable" by the price of a tower that cannot stand on it', () => {
+    // This run has the Bolt and no Refinery: nothing may stand on ore, so hovering a vein must not light up as a build
+    // spot - it used to, because the verdict priced the first tower of the strip whatever the cell was.
+    const { rt, last, debug } = makeRt();
+    let ore: { x: number; y: number } | null = null;
+    let ground: { x: number; y: number } | null = null;
+    for (let seed = 1; seed <= 40 && !(ore && ground); seed++) {
+      rt.handle({ t: 'init', seed, threatIdx: 1, loadout: [], meta: { unlocks: [], earned: [], forged: {} } });
+      ore = null; ground = null;
+      for (let y = 0; y < 35 && !(ore && ground); y++)
+        for (let x = 0; x < 60 && !(ore && ground); x++) {
+          const c = debug('cellAt', x, y);
+          if (c === 'O' && !ore) ore = { x, y };
+          if (c === 'G' && !ground && debug('canBuild', x, y) === true) ground = { x, y };
+        }
+    }
+    expect(ore && ground).toBeTruthy();
+    rt.handle({ t: 'frame', ui: { ...UI, hover: ore } });
+    expect(last('snapshot')!.s.board.hoverBuildable).toBe(false);
+    expect(debug('canBuild', ore!.x, ore!.y)).toBe(false);
+    rt.handle({ t: 'frame', ui: { ...UI, hover: ground } });
+    expect(last('snapshot')!.s.board.hoverBuildable).toBe(true);
+  });
+});

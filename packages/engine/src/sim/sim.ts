@@ -17,7 +17,7 @@
  * and plain objects for towers (dozens, rich state) - ARCHITECTURE sec 7.
  */
 import { createRng, type Rng } from '../rng/rng';
-import { isBuildable, isRoad, strandEntered, strandPorts, type CellType } from '../grid/cells';
+import { isRoad, strandEntered, strandPorts, type CellType } from '../grid/cells';
 import type { BoonRef, GeneratedMap, CellRef } from '../mapgen/mapgen';
 import { SHIELD_REGEN_DELAY, SHIELD_REGEN_TICKS, TRAIT_RULES, frontShieldMul, hasTrait, traitSpeedMul } from './traits';
 import { computeFlowField, type FlowField } from './flow';
@@ -679,11 +679,23 @@ export class Sim {
 
   // ---- building and upgrading ---------------------------------------------
 
+  /**
+   * May SOME tower of this run stand here? Defined as "canBuildDefAt says
+   * yes for at least one def", so the two predicates cannot disagree (issue
+   * #218; the 2026-09-03 audit). They used to be written separately, and
+   * did, both ways: an ore cell read as buildable while the build of
+   * anything but a Refinery silently returned false, and with Vein Tap held
+   * a rock cell read as unbuildable while the build would have worked.
+   */
   canBuildAt(x: number, y: number): boolean {
     if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return false;
-    const t = this.cellsMut[y * this.opts.cellsW + x];
-    // A standing chest holds its ground for its window (item 12: chests surface on ground too).
-    return t !== null && isBuildable(t) && this.occupancy[y * this.opts.cellsW + x] === 0 && !this.voidChests.some((c) => c.x === x && c.y === y);
+    return this.opts.towerDefs.some((d) => this.canBuildDefAt(x, y, d.id));
+  }
+
+  /** The towers of this run that may stand on a cell, in roster order - what a build menu for the cell offers, and the only honest basis for "can I afford to build here". */
+  buildableDefsAt(x: number, y: number): TowerDef[] {
+    if (x < 0 || y < 0 || x >= this.opts.cellsW || y >= this.opts.cellsH) return [];
+    return this.opts.towerDefs.filter((d) => this.canBuildDefAt(x, y, d.id));
   }
 
   canAfford(defId: string): boolean {
