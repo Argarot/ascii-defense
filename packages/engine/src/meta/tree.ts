@@ -14,9 +14,10 @@ import type { RelicDef } from '../sim/defs';
 
 export interface TreeGrant {
   towers?: readonly string[];
+  /** Relics granted outright, whatever their rarity (a starter set may carry a rare). Commons never need it: no named relic is locked behind the tree (PRD sec 28, D29). */
   relics?: readonly string[];
-  /** A branch: every COMMON relic of the tag joins the pool; rarer ones are earned by wins (sec 19 item 3). */
-  relicTags?: readonly string[];
+  /** A RARITY BAND (PRD sec 28.1, D34): the highest rarity index the run's offers may deal - 1 rare, 2 epic. The only thing the reliquary sells. */
+  rarity?: number;
   relicSlots?: number;
   threat?: number;
   tileSlots?: number;
@@ -45,11 +46,15 @@ export interface TreeDef {
 export interface MetaState {
   /** Node ids bought, in any order. The sentinel [ALL_UNLOCKS] means everything (a save from before the tree). */
   unlocks: readonly string[];
-  /** Relic ids earned by wins (rare and epic ones of unlocked branches). */
+  /** Relic ids WON (PRD sec 28.1): the relics that exist only above common are earned by wins, never bought. */
   earned: readonly string[];
-  /** Relic id -> the highest rarity index it was ever forged to; the pool deals a tier only once forged (item 2). */
+  /** Relic id -> the highest rarity index it was ever forged to. A record for the codex since D29: it no longer caps what the pool deals - the BAND does, and nothing finer-grained. */
   forged: Readonly<Record<string, number>>;
 }
+
+/** The relic rarities, in order; a band is an index into it (the sim's RARITIES, kept beside the resolver so meta never imports the sim's runtime). */
+const RELIC_RARITIES = ['common', 'rare', 'epic', 'legendary'] as const;
+const rarityIndex = (r: string): number => Math.max(0, RELIC_RARITIES.indexOf(r as (typeof RELIC_RARITIES)[number]));
 
 /** A save from before the tree had everything; it keeps everything. */
 export const ALL_UNLOCKS = '*';
@@ -59,9 +64,16 @@ export const EMPTY_META: MetaState = { unlocks: [], earned: [], forged: {} };
 /** Everything the tree has granted, resolved. */
 export interface Unlocked {
   towers: ReadonlySet<string>;
-  relicTags: ReadonlySet<string>;
-  /** Relic ids the pool may offer: the base list, every common of an unlocked tag, the earned ones. Fusion-only relics never need unlocking. */
+  /** The highest rarity index the offers may deal (PRD sec 28.1): 0 until a band is bought. */
+  rarityMax: number;
+  /**
+   * Relic ids the pool may offer NOW: every common (none is ever locked),
+   * the granted ones, the WON ones - each only if its base rarity is inside
+   * the band bought - and every fusion-only relic (made, never dealt).
+   */
   relics: ReadonlySet<string>;
+  /** Relic ids the player HAS (common, granted or won) whatever the band: a won epic is theirs before the epic band lets it appear. */
+  has: ReadonlySet<string>;
   relicSlots: number;
   /** The highest Threat index the setup page offers. */
   threatMax: number;
@@ -74,10 +86,10 @@ export interface Unlocked {
   everything: boolean;
 }
 
-function grantInto(g: TreeGrant, out: { towers: Set<string>; tags: Set<string>; relics: Set<string>; tiles: Set<string>; slots: number; threat: number; tileSlots: number; oreTier: number; endless: boolean }): void {
+function grantInto(g: TreeGrant, out: { towers: Set<string>; relics: Set<string>; tiles: Set<string>; slots: number; threat: number; tileSlots: number; oreTier: number; rarity: number; endless: boolean }): void {
   for (const t of g.towers ?? []) out.towers.add(t);
-  for (const t of g.relicTags ?? []) out.tags.add(t);
   for (const r of g.relics ?? []) out.relics.add(r);
+  out.rarity = Math.max(out.rarity, g.rarity ?? 0);
   for (const t of g.tiles ?? []) out.tiles.add(t);
   out.slots += g.relicSlots ?? 0;
   out.threat = Math.max(out.threat, g.threat ?? 0);
@@ -94,7 +106,7 @@ function grantInto(g: TreeGrant, out: { towers: Set<string>; tags: Set<string>; 
  */
 export function resolveUnlocks(tree: TreeDef, meta: MetaState, relicDefs: readonly Pick<RelicDef, 'id' | 'rarity' | 'tags' | 'fusionOnly'>[]): Unlocked {
   const all = meta.unlocks.includes(ALL_UNLOCKS);
-  const acc = { towers: new Set<string>(), tags: new Set<string>(), relics: new Set<string>(), tiles: new Set<string>(), slots: 0, threat: 0, tileSlots: 0, oreTier: 1, endless: false };
+  const acc = { towers: new Set<string>(), relics: new Set<string>(), tiles: new Set<string>(), slots: 0, threat: 0, tileSlots: 0, oreTier: 1, rarity: 0, endless: false };
   grantInto(tree.base, acc);
   const bought = new Set(meta.unlocks);
   let count = 0;
@@ -103,17 +115,24 @@ export function resolveUnlocks(tree: TreeDef, meta: MetaState, relicDefs: readon
     grantInto(n.grants, acc);
     count++;
   }
-  for (const r of relicDefs) {
-    if (all) { acc.relics.add(r.id); continue; }
-    if (r.fusionOnly) { acc.relics.add(r.id); continue; }
-    if (r.rarity === 'common' && (r.tags ?? []).some((t) => acc.tags.has(t))) acc.relics.add(r.id);
-  }
-  for (const id of meta.earned) acc.relics.add(id);
+  // A save from before the tree has every band there is (and every relic).
+  const rarityMax = all ? RELIC_RARITIES.length - 1 : acc.rarity;
+  // What the player HAS: every common (PRD sec 28: no named relic is locked
+  // behind the tree), what the tree granted outright, what was won.
+  const has = new Set<string>(acc.relics);
+  for (const r of relicDefs) if (all || r.fusionOnly || rarityIndex(r.rarity) === 0) has.add(r.id);
+  for (const id of meta.earned) has.add(id);
+  // What may APPEAR: of those, the ones inside the band bought (sec 28.1:
+  // "buying epic access does not hand you the epic relics, it makes the
+  // ones you have won at that rarity able to appear").
+  const relics = new Set<string>();
+  for (const r of relicDefs) if (has.has(r.id) && (r.fusionOnly || rarityIndex(r.rarity) <= rarityMax)) relics.add(r.id);
   if (all) for (const n of tree.nodes) for (const t of n.grants.towers ?? []) acc.towers.add(t);
   return {
     towers: acc.towers,
-    relicTags: acc.tags,
-    relics: acc.relics,
+    rarityMax,
+    relics,
+    has,
     relicSlots: acc.slots,
     threatMax: acc.threat,
     tileSlots: acc.tileSlots,
@@ -152,23 +171,30 @@ export function buyNode(tree: TreeDef, meta: MetaState, ore: readonly number[], 
 }
 
 /**
- * What a WIN earns (PRD sec 19 item 3): one relic of the rarity the Threat
- * sets - Standard a rare, Grim an epic (a rare when no epic is left) - from
- * the unlocked branches, not yet earned and not in the base list. Calm
- * earns Ore only. Deterministic per seed, so a replayed run earns the same
- * relic. Null when nothing is left to earn.
+ * The relics still to be WON at a rarity, IN THE ORDER wins earn them (PRD
+ * sec 28.1, D34): the relics that exist only above common, not fusion-only,
+ * not yet had - in content order. An order, not a dice roll, so the codex
+ * can NAME the win that grants a relic ("the next Standard win", "three
+ * Standard wins from now") instead of pointing at a node.
  */
-export function relicForWin(tree: TreeDef, meta: MetaState, relicDefs: readonly Pick<RelicDef, 'id' | 'rarity' | 'tags' | 'fusionOnly'>[], threatIdx: number, seed: number): string | null {
-  if (threatIdx < 1) return null;
+export function winQueue(tree: TreeDef, meta: MetaState, relicDefs: readonly Pick<RelicDef, 'id' | 'rarity' | 'tags' | 'fusionOnly'>[], rarity: 'rare' | 'epic'): string[] {
   const u = resolveUnlocks(tree, meta, relicDefs);
-  const candidates = (rarity: string): string[] =>
-    relicDefs.filter((r) => r.rarity === rarity && !r.fusionOnly && !u.relics.has(r.id) && (r.tags ?? []).some((t) => u.relicTags.has(t))).map((r) => r.id).sort();
-  const pool = threatIdx >= 2 ? (candidates('epic').length ? candidates('epic') : candidates('rare')) : candidates('rare');
-  if (pool.length === 0) return null;
-  // A small hash of the seed picks; no RNG stream is spent (the run is over).
-  let h = seed >>> 0;
-  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
-  return pool[h % pool.length];
+  return relicDefs.filter((r) => r.rarity === rarity && !r.fusionOnly && !u.has.has(r.id)).map((r) => r.id);
+}
+
+/**
+ * What a WIN earns (PRD sec 28.1, D34: "beating the game unlocks particular
+ * items. Nothing else does"): the head of the queue for the rarity the
+ * Threat sets - Standard a rare, Grim an epic (a rare when no epic is
+ * left). Calm earns Ore only. No tree node is consulted: a relic is locked
+ * behind a win, never behind a purchase. Null when nothing is left to win.
+ */
+export function relicForWin(tree: TreeDef, meta: MetaState, relicDefs: readonly Pick<RelicDef, 'id' | 'rarity' | 'tags' | 'fusionOnly'>[], threatIdx: number): string | null {
+  if (threatIdx < 1) return null;
+  const rares = winQueue(tree, meta, relicDefs, 'rare');
+  const epics = winQueue(tree, meta, relicDefs, 'epic');
+  const queue = threatIdx >= 2 && epics.length ? epics : rares;
+  return queue[0] ?? null;
 }
 
 /**

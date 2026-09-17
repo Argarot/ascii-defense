@@ -191,7 +191,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         coreHp: 50,
         relicDefs: nextRelics,
         relicSlots: unlocked.relicSlots,
-        relicCaps: nextMeta.forged,
+        rarityMax: unlocked.rarityMax,
         setDefs,
         recipeDefs,
         lootTables,

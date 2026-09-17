@@ -41,8 +41,8 @@
       "additionalProperties": false,
       "properties": {
         "towers": { "type": "array", "items": { "type": "string" }, "description": "Tower ids that may be built." },
-        "relics": { "type": "array", "items": { "type": "string" }, "description": "Relic ids that may be offered, whatever their rarity." },
-        "relicTags": { "type": "array", "items": { "type": "string" }, "description": "A BRANCH: every common relic carrying the tag may be offered; its rarer relics are earned by wins." },
+        "relics": { "type": "array", "items": { "type": "string" }, "description": "Relic ids granted outright, whatever their rarity (a starter set may carry a rare). Commons never need it: no named relic is locked behind the tree (PRD sec 28, D29)." },
+        "rarity": { "type": "integer", "minimum": 0, "maximum": 2, "description": "A RARITY BAND (PRD sec 28.1, D34): the highest rarity index a run's offers may deal - 1 rare, 2 epic. The only thing the reliquary sells; a relic itself is won, never bought." },
         "relicSlots": { "type": "integer", "minimum": 0, "description": "Relic slots the Core holds; nodes ADD to the base." },
         "threat": { "type": "integer", "minimum": 0, "description": "The highest Threat index the setup page offers." },
         "tileSlots": { "type": "integer", "minimum": 0, "description": "Special tiles a loadout may carry; nodes ADD to the base." },

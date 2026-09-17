@@ -7,24 +7,6 @@
       "frost",
       "refinery"
     ],
-    "relics": [
-      "overflow",
-      "frostbite",
-      "tithe",
-      "splinter",
-      "vein_tap",
-      "loadbearing",
-      "second_wind",
-      "quarry",
-      "toll",
-      "bounty_board",
-      "orbital",
-      "stasis",
-      "deep_vein",
-      "sandbags",
-      "flashbang",
-      "ore_pocket"
-    ],
     "relicSlots": 6,
     "threat": 1,
     "tileSlots": 1,
@@ -99,147 +81,32 @@
       }
     },
     {
-      "id": "branch_damage",
-      "name": "Damage branch",
+      "id": "band_rare",
+      "name": "Rare relics",
       "branch": "reliquary",
-      "desc": "Every common relic of the damage tag may be offered; its rare and epic ones are earned by wins.",
+      "desc": "Offers may deal RARE cards: every relic can come up at its rare tier, and the rare relics you have won can appear. A relic itself is never sold - wins earn those.",
       "cost": {
         "tier": 1,
-        "ore": 15
+        "ore": 60
       },
       "grants": {
-        "relicTags": [
-          "damage"
-        ]
+        "rarity": 1
       }
     },
     {
-      "id": "branch_cold",
-      "name": "Cold branch",
+      "id": "band_epic",
+      "name": "Epic relics",
       "branch": "reliquary",
-      "desc": "Every common relic of the cold tag may be offered; its rare and epic ones are earned by wins.",
+      "desc": "Offers may deal EPIC cards: every relic can come up at its epic tier, and the epic relics you have won can appear.",
       "cost": {
-        "tier": 1,
-        "ore": 15
-      },
-      "grants": {
-        "relicTags": [
-          "cold"
-        ]
-      }
-    },
-    {
-      "id": "branch_economy",
-      "name": "Economy branch",
-      "branch": "reliquary",
-      "desc": "Every common relic of the economy tag may be offered; its rare and epic ones are earned by wins.",
-      "cost": {
-        "tier": 1,
-        "ore": 15
-      },
-      "grants": {
-        "relicTags": [
-          "economy"
-        ]
-      }
-    },
-    {
-      "id": "branch_core",
-      "name": "Core branch",
-      "branch": "reliquary",
-      "desc": "Every common relic of the core tag may be offered; its rare and epic ones are earned by wins.",
-      "cost": {
-        "tier": 1,
-        "ore": 15
-      },
-      "grants": {
-        "relicTags": [
-          "core"
-        ]
-      }
-    },
-    {
-      "id": "branch_kinetic",
-      "name": "Kinetic branch",
-      "branch": "reliquary",
-      "desc": "The kinetic tag's relics join the pool.",
-      "cost": {
-        "tier": 1,
-        "ore": 15
-      },
-      "requires": [
-        "branch_damage"
-      ],
-      "grants": {
-        "relicTags": [
-          "kinetic"
-        ]
-      }
-    },
-    {
-      "id": "branch_energy",
-      "name": "Energy branch",
-      "branch": "reliquary",
-      "desc": "The energy tag's relics join the pool.",
-      "cost": {
-        "tier": 1,
-        "ore": 15
-      },
-      "requires": [
-        "branch_damage"
-      ],
-      "grants": {
-        "relicTags": [
-          "energy"
-        ]
-      }
-    },
-    {
-      "id": "branch_reach",
-      "name": "Reach branch",
-      "branch": "reliquary",
-      "desc": "The reach tag's relics join the pool.",
-      "cost": {
-        "tier": 1,
-        "ore": 20
-      },
-      "grants": {
-        "relicTags": [
-          "reach"
-        ]
-      }
-    },
-    {
-      "id": "branch_rate",
-      "name": "Rate branch",
-      "branch": "reliquary",
-      "desc": "The rate tag's relics join the pool.",
-      "cost": {
-        "tier": 1,
-        "ore": 20
-      },
-      "grants": {
-        "relicTags": [
-          "rate"
-        ]
-      }
-    },
-    {
-      "id": "branch_support",
-      "name": "Support branch",
-      "branch": "reliquary",
-      "desc": "The support tag's relics join the pool - a Bastion's friends.",
-      "cost": {
-        "tier": 1,
+        "tier": 2,
         "ore": 20
       },
       "requires": [
-        "bastion"
+        "band_rare"
       ],
       "grants": {
-        "relicTags": [
-          "support"
-        ]
+        "rarity": 2
       }
     },
     {

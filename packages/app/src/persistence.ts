@@ -80,6 +80,11 @@ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFin
 const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string');
 const isNumRecord = (v: unknown): v is Record<string, number> => isRecord(v) && Object.values(v).every(isNum);
 
+/** Tree nodes that no longer exist, and the tier-1 Ore each cost: bought once, refunded once (session 36, PR 3). */
+export const RETIRED_NODES: Readonly<Record<string, number>> = {
+  branch_damage: 15, branch_cold: 15, branch_economy: 15, branch_core: 15, branch_kinetic: 15, branch_energy: 15, branch_reach: 20, branch_rate: 20, branch_support: 20,
+};
+
 function shapeMeta(m: Record<string, unknown>): MetaSave | null {
   // v1-v3 banked one number; v4 banks by tier. Either shape loads; the old number is tier 1.
   const bankedOre = m.bankedOre ?? 0;
@@ -87,7 +92,13 @@ function shapeMeta(m: Record<string, unknown>): MetaSave | null {
   const oreRaw = m.ore ?? [bankedOre, 0, 0];
   if (!Array.isArray(oreRaw) || !oreRaw.every(isNum)) return null;
   const ore = Array.from({ length: ORE_TIERS }, (_, i) => (oreRaw[i] as number | undefined) ?? 0);
-  const unlocks = m.unlocks ?? [];
+  const boughtRaw = m.unlocks ?? [];
+  // The reliquary's nine tag branches were retired for two rarity bands (PRD
+  // sec 28, D29): a save that bought one gets its Ore back, once - the id
+  // leaves the list, so the refund cannot repeat. Shape unchanged, so the
+  // version stays (the rule at the top of this file).
+  const unlocks = isStrings(boughtRaw) ? boughtRaw.filter((id) => !(id in RETIRED_NODES)) : boughtRaw;
+  if (isStrings(boughtRaw)) for (const id of boughtRaw) ore[0] += RETIRED_NODES[id] ?? 0;
   const earned = m.earned ?? [];
   const discovered = m.discovered ?? [];
   const forged = m.forged ?? {};

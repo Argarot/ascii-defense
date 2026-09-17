@@ -1687,7 +1687,7 @@ describe('session 29, PR 1 - the tree as a run\'s identity', () => {
   ];
   const RECIPES: RecipeDef[] = [{ a: 'frostbite', b: 'stasis', result: 'permafrost_engine', desc: 'fused' }];
 
-  it('relicSlots caps the row; relicCaps caps the rarity dealt until forged; forging and fusing are recorded for the meta save', () => {
+  it('relicSlots caps the row; the rarity BAND caps what an offer deals (PRD sec 28.1); forging and fusing are recorded for the meta save', () => {
     const { simOpts } = makeWorld(53, { maxSpawns: 0, spawnEveryTicks: 1000 });
     // Four slots: the fifth pick needs a replacement.
     const four = new Sim(53, { ...simOpts, relicDefs: RELICS, recipeDefs: RECIPES, relicSlots: 4 });
@@ -1698,22 +1698,22 @@ describe('session 29, PR 1 - the tree as a run\'s identity', () => {
     expect(four.pickRelic(0)).toBe(false);
     expect(four.pickRelic(0, 0)).toBe(true);
     expect(four.heldRelics.length).toBe(4);
-    // Caps: with an empty forged record every deal is the base rarity; forged to rare, rare may come.
-    const roll = (caps: Record<string, number> | undefined, wave: number): Set<number> => {
+    // The band: nothing bought, every deal is the base rarity; the rare band lets rare come, the epic band epic - for EVERY relic, nothing finer-grained.
+    const roll = (rarityMax: number | undefined, wave: number): Set<number> => {
       const seen = new Set<number>();
       for (let seed = 1; seed < 40; seed++) {
-        const sim = new Sim(seed, { ...simOpts, relicDefs: RELICS, relicCaps: caps });
+        const sim = new Sim(seed, { ...simOpts, relicDefs: RELICS, rarityMax });
         (sim as unknown as { wave: number }).wave = wave;
         seen.add((sim as unknown as { rollRarity(d: RelicDef): number }).rollRarity(RELICS[0]));
       }
       return seen;
     };
-    expect([...roll({}, 30)]).toEqual([0]);
-    expect(Math.max(...roll({ tithe: 1 }, 30))).toBe(1);
-    expect(Math.max(...roll({ tithe: 2 }, 30))).toBe(2);
-    expect(Math.max(...roll(undefined, 30))).toBe(2); // no caps given: the old behaviour
-    // Forging two Tithes records rare; fusing records the recipe's result.
-    const sim = new Sim(53, { ...simOpts, relicDefs: RELICS, recipeDefs: RECIPES });
+    expect([...roll(0, 30)]).toEqual([0]);
+    expect(Math.max(...roll(1, 30))).toBe(1);
+    expect(Math.max(...roll(2, 30))).toBe(2);
+    expect(Math.max(...roll(undefined, 30))).toBe(2); // no band given: no cap (tests, the lab)
+    // Forging is free of the band: two Tithes make a rare with nothing bought, and the run records it; fusing records the recipe's result.
+    const sim = new Sim(53, { ...simOpts, relicDefs: RELICS, recipeDefs: RECIPES, rarityMax: 0 });
     expect(sim.debugGrantRelic('tithe')).toBe(true);
     expect(sim.debugGrantRelic('tithe')).toBe(true);
     expect(sim.combineRelics(0, 1)).toBe(true);

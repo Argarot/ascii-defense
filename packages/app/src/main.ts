@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, everyShopTile, priceTile, priceLines, shortfall, payCost, costText, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
+import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, everyShopTile, winQueue, priceTile, priceLines, shortfall, payCost, costText, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
 import { TUTORIAL_STEPS, goodGround, nearRock, nextStep, type TutorialCtx } from './tutorial';
 import type { TreeNode, CellType } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
@@ -362,7 +362,7 @@ async function main(): Promise<void> {
   let workshopFocus: string | null = null;
   /** Short names for the tree's plates (eleven glyphs under a small plate). */
   const TREE_SHORT: Record<string, string> = {
-    branch_damage: 'Damage', branch_cold: 'Cold', branch_economy: 'Economy', branch_core: 'Core', branch_kinetic: 'Kinetic', branch_energy: 'Energy', branch_reach: 'Reach', branch_rate: 'Rate', branch_support: 'Support',
+    band_rare: 'RARE band', band_epic: 'EPIC band',
     slots_8: 'Slots: 8', slots_10: 'Slots: 10', slots_12: 'Slots: 12', loadout_2: 'Tiles: 2', loadout_3: 'Tiles: 3', loadout_5: 'Tiles: 5',
     grim: 'GRIM', endless: 'ENDLESS', ore_t2: 'Rich vein', ore_t3: 'Mother lode', tiles_all: 'Every tile',
   };
@@ -370,12 +370,8 @@ async function main(): Promise<void> {
   const treeIcon = (n: TreeNode): { sprite?: Sprite; icon?: readonly string[]; iconRole?: string } => {
     const tower = n.grants.towers?.[0];
     if (tower) { const sp = SPRITES.find((s) => s.id === tower); return sp ? { sprite: sp } : { icon: ['/^\\', '|T|', '/_\\'] }; }
-    const tag = n.grants.relicTags?.[0];
-    if (tag) {
-      const relic = RELIC_POOL.find((r) => (r.tags ?? []).some((t) => t === tag) && !r.fusionOnly && r.rarity === 'common') ?? RELIC_POOL.find((r) => (r.tags ?? []).some((t) => t === tag));
-      const sp = relic ? SPRITES.find((s) => s.id === `relic_${relic.id}`) : undefined;
-      return sp ? { sprite: sp } : { icon: [' /\\ ', '<##>', ' \\/ '], iconRole: 'relic.gold' };
-    }
+    // A rarity band (PRD sec 28.1): a gem in the band's own colour - never a relic's icon, because no relic is what it sells.
+    if (n.grants.rarity) return { icon: [' /\\ ', '<##>', ' \\/ '], iconRole: n.grants.rarity >= 2 ? 'rarity.epic' : 'rarity.rare' };
     if (n.grants.relicSlots) return { icon: ['┌┐┌┐', '└┘└┘', ' ++ '], iconRole: 'ui.accent' };
     if (n.grants.tileSlots) return { icon: ['┌──┐', '│##│', '└──┘'], iconRole: 'ui.accent' };
     if (n.grants.threat) return n.id === 'endless' ? { icon: [' oo ', 'o  o', ' oo '], iconRole: 'enemy.fast' } : { icon: ['\\!!/', ' !! ', '/!!\\'], iconRole: 'enemy.fast' };
@@ -466,6 +462,8 @@ async function main(): Promise<void> {
   const ownedSpecials = (): TileDef[] => shippedSpecials.filter((t) => (meta.owned[t.id] ?? 0) > 0);
   /** What the tree has granted, resolved from the meta save as it is NOW (the page after a purchase reads the purchase). */
   const unlockedNow = () => resolveUnlocks(TREE, meta, RELIC_POOL);
+  /** "3/9": the relics of a rarity the player has WON, of those wins can earn (PRD sec 28.1). */
+  const RELIC_WON = (rarity: 'rare' | 'epic'): string => { const all = RELIC_POOL.filter((r) => r.rarity === rarity && !r.fusionOnly); return `${all.filter((r) => unlockedNow().has.has(r.id)).length}/${all.length}`; };
   let setupEndless = false;
   /** What each Threat means, in a phrase (session 31): the setup row said only a wave number. */
   const THREAT_HINT = ['fewer fronts, a slow ramp, the tutorial\'s home', 'the game as measured', 'more fronts, shorter roads, a fast ramp'];
@@ -801,6 +799,8 @@ async function main(): Promise<void> {
           body: [
             `ORE  tier 1: ${ore[0]}   tier 2: ${ore[1]}   tier 3: ${ore[2]}`,
             `towers ${u.towers.size}/${TOWER_COUNT} \u2802 relics in the pool ${u.relics.size}/${RELIC_POOL.length} \u2802 relic slots ${u.relicSlots} \u2802 tile slots ${u.tileSlots} \u2802 tiles owned ${smith.owned}/${smith.total}`,
+            // The reliquary's two halves, side by side (PRD sec 28.1): the band is bought here; a relic is won out there.
+            ...wrapLine(`relics are WON, never sold: rare ${RELIC_WON('rare')} \u2802 epic ${RELIC_WON('epic')} \u2802 a win at Standard earns the next rare, at Grim the next epic \u2802 offers deal up to ${['COMMON', 'RARE', 'EPIC'][Math.min(2, u.rarityMax)]}`, Math.min(100, screenCols - 12)),
             '',
             ...(focus
               ? [...wrapLine(`${focus.name.toUpperCase()}: ${focus.desc}`, Math.min(100, screenCols - 12)), focusWhy === 'already bought' ? 'bought' : focusWhy ? `cannot buy yet: ${focusWhy}${focusWhy.includes('ore') && focus.cost.tier > 1 && (meta.ore[focus.cost.tier - 1] ?? 0) === 0 ? ` - tier-${focus.cost.tier} ore is mined from a tier-${focus.cost.tier} vein: buy ${focus.cost.tier === 2 ? 'RICH VEINS' : 'MOTHER LODES'} on the ORE branch and the veins start turning up on maps (rarely - look for the ${focus.cost.tier === 2 ? 'blue' : 'violet'} ore), or load its vein tile; build a Refinery on one` : ''}` : `click it again to buy for ${focus.cost.ore} tier-${focus.cost.tier} ore`]
@@ -1092,11 +1092,21 @@ async function main(): Promise<void> {
       const sp = SPRITES.find((s) => s.id === `relic_${r.id}`);
       // A fusion not yet discovered keeps its secret (item 23): the name, the partners and the rule stay hidden until fused once.
       const undiscovered = r.fusionOnly && !meta.discovered.includes(r.id);
-      // A locked relic says what opens it (item 15): a branch of the workshop, or the win that earns it.
+      // A relic that cannot appear yet says WHY, and it is never a node that holds a named relic
+      // (PRD sec 28, 28.1): it names the WIN that grants it - its place in the queue - or, once
+      // won, the rarity BAND it waits for. Those are different mechanisms on purpose.
       const u = unlockedNow();
-      const lockReason = r.fusionOnly || u.relics.has(r.id) ? null
-        : !r.tags.some((t) => u.relicTags.has(t)) ? `the workshop's RELIQUARY branch: ${r.tags.map((t) => TREE.nodes.find((n) => n.grants.relicTags?.includes(t))?.name ?? t).join(' or ')}`
-          : r.rarity === 'rare' ? 'earned by a win at Standard or above' : r.rarity === 'epic' ? 'earned by a win at Grim' : 'the workshop';
+      const lockReason = ((): string | null => {
+        if (r.fusionOnly || u.relics.has(r.id)) return null;
+        const band = r.rarity === 'epic' ? 'EPIC' : 'RARE';
+        if (u.has.has(r.id)) return `yours already (won): it appears in offers once the workshop's ${band} band is bought (RELIQUARY)`;
+        if (r.rarity !== 'rare' && r.rarity !== 'epic') return null;
+        // A Grim win earns an epic while one is left, and a rare after that - so the rare queue is Standard's, and Grim's only later.
+        const threat = r.rarity === 'epic' ? 'GRIM' : winQueue(TREE, metaForRun(), RELIC_POOL, 'epic').length ? 'STANDARD' : 'STANDARD or GRIM';
+        const place = winQueue(TREE, metaForRun(), RELIC_POOL, r.rarity).indexOf(r.id);
+        const when = place <= 0 ? `your NEXT win at ${threat} earns it` : `${place + 1} wins at ${threat} from now - each win earns the next ${r.rarity} relic in line`;
+        return `WON, never bought: ${when}${u.rarityMax < (r.rarity === 'epic' ? 2 : 1) ? ` (and it appears once the ${band} band is bought)` : ''}`;
+      })();
       if (undiscovered) {
         title = `???  ${page + 1}/${count}`;
         hero = [];
@@ -1105,7 +1115,7 @@ async function main(): Promise<void> {
         title = `${r.name.toUpperCase()}  ${page + 1}/${count}` + (lockReason ? '  - LOCKED' : '');
         hero = sp ? [sp] : [];
         body = [
-          ...(lockReason ? [`LOCKED - ${lockReason}`, ''] : []),
+          ...(lockReason ? [...wrapLine(`LOCKED - ${lockReason}`), ''] : []),
           ...(r.fusionOnly ? ['DISCOVERED - fused at least once', ''] : []),
           [r.kind, `base rarity ${r.rarity}`, r.tags.length ? `tags ${r.tags.join(' ')}` : '', r.stacks ? 'stacks' : '', r.recharge ? `recharges in ${r.recharge}` : ''].filter(Boolean).join('  \u2802  '),
           ...wrapLine(r.desc),
@@ -1586,10 +1596,13 @@ async function main(): Promise<void> {
         for (const f of snap.story?.forged ?? []) meta.forged[f.id] = Math.max(meta.forged[f.id] ?? 0, f.rarity);
         for (const id of snap.story?.fused ?? []) if (!meta.discovered.includes(id)) meta.discovered.push(id);
         if (snap.status === 'won') {
-          const id = relicForWin(TREE, lastMeta, RELIC_POOL, threatIdx, seed);
+          // The win's relic (PRD sec 28.1): the head of the queue as the save stands NOW, not as the run began - two wins in a row must not earn one relic twice.
+          const id = relicForWin(TREE, { unlocks: meta.unlocks, earned: meta.earned, forged: meta.forged }, RELIC_POOL, threatIdx);
           if (id && !meta.earned.includes(id)) meta.earned.push(id);
           const def = id ? RELIC_POOL.find((r) => r.id === id) : undefined;
-          summary.earned = def ? `${def.name} (${RARITIES.indexOf(def.rarity) >= 0 ? def.rarity : 'common'})` : null;
+          // Won is not yet "will appear": the band is bought separately, and the summary says so rather than promising a card that cannot come.
+          const waits = def && RARITIES.indexOf(def.rarity) > unlockedNow().rarityMax ? ` - it appears once the workshop's ${def.rarity.toUpperCase()} band is bought` : '';
+          summary.earned = def ? `${def.name} (${RARITIES.indexOf(def.rarity) >= 0 ? def.rarity : 'common'})${waits}` : null;
         }
         meta.history.push({ seed, threat: THREAT_LEVELS[threatIdx].name, wave: snap.hud.wave, status: snap.status, kills: snap.hud.kills });
         if (meta.history.length > 50) meta.history.shift();

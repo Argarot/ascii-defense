@@ -1166,6 +1166,10 @@ tier-1 Ore, so the arsenal costs 105 together (about five base runs, answer
 4), every tier-1 node 420, the tier-2 nodes 135 and the tier-3 nodes 60;
 the everything world plays to wave 26 where the base plays to 13 - the
 gap the tree opens, and the reason every later sweep states its tree state.
+*(Since 2026-09-17 the reliquary sells two rarity bands instead of nine tag
+branches (§28.1): the tier-1 nodes cost **330** together and the tier-2
+nodes **155**. A run banks far more than 22 now - §26 has the current
+income.)*
 
 ### 11.1 The tile pool is the ore economy *(Daniil, 2026-08-16 — resolves D9)*
 
@@ -1771,10 +1775,10 @@ now also opens the tier on the map and in the Smith.
 | the Smith's cell | — | **+⅓ tier-2 Ore per Ore in the vein**, on top (§27) | the same, in tier-3 Ore | you must have mined some to author with it; the smallest vein is under half of one lucky find |
 
 From the map alone a player banks about 7 tier-2 Ore a run — the tier-2 tree
-(135) in about eighteen runs, as long as tier 1 took. The shop's vein tile
-costs tier-2 Ore too (§27: same contents, same price), so the invested road
-is about six luck runs to afford it and five loaded runs after: **eleven
-against eighteen**. **Opening a tier moves nothing but veins:** a seed's board, rock
+(155 since the epic band, §28.1) in about twenty-one runs, as long as tier 1
+took. The shop's vein tile costs tier-2 Ore too (§27: same contents, same
+price), so the invested road is about six luck runs to afford it and six
+loaded runs after: **twelve against twenty-one**. **Opening a tier moves nothing but veins:** a seed's board, rock
 and boons are the same map with and without the upgrade (counted: 0 of 2,400).
 A vein says its tier in words as well as colour — on hover and on the
 Refinery's panel — so the colour is never the only carrier.
@@ -1885,6 +1889,41 @@ move, which is why it is written here rather than asked as another call.
 **For the builder.** This replaces session 29's reliquary branch: a node per
 relic *tag* with rares earned by wins becomes a node per *rarity band*, bought,
 with the relic set behind wins. The branch's rework is no longer blocked.
+
+**As built (2026-09-17, session 36 PR 3).**
+
+| | the rule | where |
+|---|---|---|
+| commons | **all 36 are in the pool from the first run.** No node stands in front of a named relic; the nine tag branches are gone (a save that bought one gets its Ore back on load) | `resolveUnlocks` |
+| a band | **RARE — 60 tier-1 Ore; EPIC — 20 tier-2 Ore**, in that order. A band is the highest rarity a run's *offers* may deal, for every relic at once — "nothing finer-grained than that" | `TreeGrant.rarity` → `Unlocked.rarityMax` → `SimOptions.rarityMax` |
+| a relic above common | **won**: the 9 rare and 2 epic relics. A Standard win earns the next rare in line, a Grim win the next epic (a rare once the epics are won), Calm earns Ore only. **A queue, not a dice roll** — content order — so the codex can *name the win*: "your NEXT win at GRIM earns it", "3 wins at STANDARD from now" | `winQueue`, `relicForWin` |
+| both halves | a won relic is the player's at once and **appears only inside its band**; the run summary says so rather than promising a card that cannot come yet | `Unlocked.has` vs `Unlocked.relics` |
+| forging in a run | **free of the band**: two commons still make a rare with nothing bought. The band gates what is *dealt*, never what is *made* | `Sim.rollRarity` only |
+
+**Two readings, stated as readings** (the habit §28 records paying out):
+
+1. **"Particular items" are the relics that exist only above common.** D34
+   says wins unlock particular items and does not list them. Reading it as
+   the eleven relics whose base rarity is rare or epic keeps session 29's
+   win mechanism exactly and drops only the tag condition — and it is §28's
+   own sentence, "some relics exist only at a higher rarity … this is how new
+   cards keep arriving". If he meant some commons too, it is a content flag,
+   not a rework.
+2. **Session 29's per-relic forged cap is gone.** It said a relic's rare tier
+   is dealt only once *that relic* was forged to rare — his own earlier item.
+   §28 says the ladder is "which rarities can appear in your offers — nothing
+   finer-grained than that", and a per-relic cap is finer-grained; keeping
+   both would be two coupled mechanisms for one idea, which is what he
+   rejected. `meta.forged` is still recorded, for the codex.
+
+**The band prices are measured** (`node tools/build-sweep.mjs --bands`, the
+reference build with six held relics, eight sets × four seeds): commons only
+**26.7**; the rare band **27.9** as offers deal it, **28.6** at its ceiling;
+the epic band **27.3 / 28.4**, its best set reaching 34. So the rare band is
+worth a wave or two — priced like one and a half runs of income, beside the
+Laser's 40 — and the epic band adds almost nothing *on average* and a great
+deal *sometimes*: it buys variance, and costs one lucky tier-2 find. It is
+also the first thing tier-2 Ore buys that is not more Ore.
 
 **The sub-question this section left open was answered the same day — see
 §28.1.** The default written here (drop the win-earned half entirely) was

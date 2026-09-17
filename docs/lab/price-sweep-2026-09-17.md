@@ -117,6 +117,9 @@ tile now has to be afforded in tier-2 Ore first:
 | the map's luck alone (7.3 tier-2 a run) | ~18 |
 | luck until `rich_vein` is affordable (46 tier-2 → ~6 runs), then loaded (27 a run → 5 runs) | **~11** |
 
+*(PR 3 of the same session added the epic band at 20 tier-2 Ore: the tree is
+155, so twelve against twenty-one. Same shape.)*
+
 Investing is still the fast road (11 against 18) and now it *starts* with a
 find, which is D30's sentence exactly: "you must mine some before you can
 author with it". Tier 3 is slower again — about fourteen luck runs to the

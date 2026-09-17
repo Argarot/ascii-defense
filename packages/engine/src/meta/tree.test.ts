@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { Sim } from '../sim/sim';
-import { ALL_UNLOCKS, EMPTY_META, MAX_TILE_COPIES, buyNode, buyTile, copyPrice, everyShopTile, priceTile, priceLines, BOON_POWER_PCT, canPay, payCost, costText, shortfall, relicApplies, relicForWin, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
+import { ALL_UNLOCKS, EMPTY_META, MAX_TILE_COPIES, buyNode, buyTile, copyPrice, everyShopTile, priceTile, priceLines, BOON_POWER_PCT, canPay, payCost, costText, shortfall, relicApplies, relicForWin, winQueue, resolveUnlocks, smithOpen, whyNot, whyNotTile, type TreeDef } from './tree';
 
 const TREE: TreeDef = {
-  base: { towers: ['bolt'], relics: ['tithe'], relicSlots: 6, threat: 1, tileSlots: 1, oreTier: 1, tiles: ['twin'] },
+  base: { towers: ['bolt'], relicSlots: 6, threat: 1, tileSlots: 1, oreTier: 1, tiles: ['twin'] },
   nodes: [
     { id: 'tesla', name: 'Tesla', branch: 'arsenal', desc: '', cost: { tier: 1, ore: 40 }, grants: { towers: ['tesla'] } },
     { id: 'laser', name: 'Laser', branch: 'arsenal', desc: '', cost: { tier: 1, ore: 80 }, requires: ['tesla'], grants: { towers: ['laser'] } },
-    { id: 'cold', name: 'Cold', branch: 'reliquary', desc: '', cost: { tier: 1, ore: 30 }, grants: { relicTags: ['cold'] } },
+    { id: 'rare', name: 'Rare relics', branch: 'reliquary', desc: '', cost: { tier: 1, ore: 30 }, grants: { rarity: 1 } },
+    { id: 'epic', name: 'Epic relics', branch: 'reliquary', desc: '', cost: { tier: 2, ore: 30 }, requires: ['rare'], grants: { rarity: 2 } },
     { id: 'slots', name: 'Slots', branch: 'capacity', desc: '', cost: { tier: 2, ore: 30 }, grants: { relicSlots: 2 } },
     { id: 'grim', name: 'Grim', branch: 'threat', desc: '', cost: { tier: 1, ore: 80 }, grants: { threat: 2, endless: true } },
     { id: 'ore2', name: 'Rich', branch: 'ore', desc: '', cost: { tier: 1, ore: 10 }, grants: { oreTier: 2, tiles: ['rich'] } },
@@ -24,33 +25,28 @@ const RELICS = [
 ];
 
 describe('the meta tree (session 29, PR 1)', () => {
-  it('resolves the base alone, then what was bought: towers, a branch of commons, slots, threat', () => {
+  it('resolves the base alone, then what was bought: towers, slots, threat', () => {
     const base = resolveUnlocks(TREE, EMPTY_META, RELICS);
     expect([...base.towers]).toEqual(['bolt']);
-    expect([...base.relics].sort()).toEqual(['doomsday', 'tithe']); // fusion-only needs no unlock
     expect(base.relicSlots).toBe(6);
     expect(base.threatMax).toBe(1);
     expect(base.endless).toBe(false);
     expect(base.everything).toBe(false);
-    const some = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['tesla', 'cold', 'slots', 'grim'] }, RELICS);
+    const some = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['tesla', 'slots', 'grim'] }, RELICS);
     expect([...some.towers].sort()).toEqual(['bolt', 'tesla']);
-    // The cold branch: its commons, not its rare or its epic.
-    expect([...some.relics].sort()).toEqual(['deep_cold', 'doomsday', 'frostbite', 'tithe']);
     expect(some.relicSlots).toBe(8);
     expect(some.threatMax).toBe(2);
     expect(some.endless).toBe(true);
     expect(some.everything).toBe(false);
-    // An earned relic joins the pool whatever its rarity.
-    const earned = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['cold'], earned: ['cold_snap'] }, RELICS);
-    expect(earned.relics.has('cold_snap')).toBe(true);
-    // A retired node id is ignored, never a crash.
-    expect(resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['gone'] }, RELICS).towers.size).toBe(1);
+    // A retired node id is ignored, never a crash - the nine tag branches of session 29 among them.
+    expect(resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['gone', 'branch_cold'] }, RELICS).towers.size).toBe(1);
   });
 
   it('the sentinel from before the tree keeps everything', () => {
     const all = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: [ALL_UNLOCKS] }, RELICS);
     expect([...all.towers].sort()).toEqual(['bolt', 'laser', 'tesla']);
     expect(all.relics.size).toBe(RELICS.length);
+    expect(all.rarityMax).toBe(3);
     expect(all.relicSlots).toBe(8);
     expect(all.threatMax).toBe(2);
     expect(all.everything).toBe(true);
@@ -70,19 +66,47 @@ describe('the meta tree (session 29, PR 1)', () => {
     expect(buyNode(TREE, b!.meta, [80, 0, 0], 'laser')!.meta.unlocks).toEqual(['tesla', 'laser']);
     expect(buyNode(TREE, EMPTY_META, [0, 40, 0], 'slots')!.ore).toEqual([0, 10, 0]);
   });
+});
 
-  it('a win earns a relic of the Threat\'s rarity from the unlocked branches, deterministically, and never twice', () => {
-    const meta = { ...EMPTY_META, unlocks: ['cold'] };
-    expect(relicForWin(TREE, meta, RELICS, 0, 5)).toBeNull(); // Calm earns Ore only
-    expect(relicForWin(TREE, meta, RELICS, 1, 5)).toBe('cold_snap'); // the one rare of the cold branch
-    expect(relicForWin(TREE, meta, RELICS, 1, 5)).toBe(relicForWin(TREE, meta, RELICS, 1, 5));
-    expect(relicForWin(TREE, meta, RELICS, 2, 5)).toBe('absolute'); // Grim: the epic (fusion-only never)
-    // Earned already: nothing rare is left; Grim still finds the epic; then nothing.
-    const won = { ...meta, earned: ['cold_snap', 'absolute'] };
-    expect(relicForWin(TREE, won, RELICS, 1, 5)).toBeNull();
-    expect(relicForWin(TREE, won, RELICS, 2, 5)).toBeNull();
-    // A locked branch earns nothing (kindling is energy).
-    expect(relicForWin(TREE, { ...EMPTY_META, unlocks: [] }, RELICS, 1, 5)).toBeNull();
+describe('the tree gates rarity, never a named relic (PRD sec 28 and 28.1; D29, D34)', () => {
+  it('every common is in the pool from the first run - no node stands in front of a named relic', () => {
+    const base = resolveUnlocks(TREE, EMPTY_META, RELICS);
+    expect(base.rarityMax).toBe(0);
+    // Every common, and the fusion-only relic (made in the Forge, never dealt); no rare, no epic.
+    expect([...base.relics].sort()).toEqual(['deep_cold', 'doomsday', 'frostbite', 'tithe']);
+    // Buying everything that is not a band changes nothing about which relics may appear.
+    const rich = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['tesla', 'laser', 'slots', 'grim', 'ore2'] }, RELICS);
+    expect([...rich.relics].sort()).toEqual([...base.relics].sort());
+  });
+
+  it('a band is BOUGHT and a relic is WON, and it takes both for a rare relic to appear', () => {
+    // The band alone hands over no relic: nothing rare has been won.
+    const band = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['rare'] }, RELICS);
+    expect(band.rarityMax).toBe(1);
+    expect(band.relics.has('cold_snap')).toBe(false);
+    // The win alone: the relic is the player's, and waits for its band.
+    const won = resolveUnlocks(TREE, { ...EMPTY_META, earned: ['cold_snap'] }, RELICS);
+    expect(won.has.has('cold_snap')).toBe(true);
+    expect(won.relics.has('cold_snap')).toBe(false);
+    // Both: it appears.
+    const both = resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['rare'], earned: ['cold_snap', 'absolute'] }, RELICS);
+    expect(both.relics.has('cold_snap')).toBe(true);
+    // A won epic still waits for the EPIC band.
+    expect(both.relics.has('absolute')).toBe(false);
+    expect(resolveUnlocks(TREE, { ...EMPTY_META, unlocks: ['rare', 'epic'], earned: ['absolute'] }, RELICS).relics.has('absolute')).toBe(true);
+  });
+
+  it('a win earns the head of a queue - an order the codex can name, not a dice roll - and consults no node', () => {
+    expect(winQueue(TREE, EMPTY_META, RELICS, 'rare')).toEqual(['cold_snap', 'kindling']); // content order; fusion-only never
+    expect(winQueue(TREE, EMPTY_META, RELICS, 'epic')).toEqual(['absolute']);
+    expect(relicForWin(TREE, EMPTY_META, RELICS, 0)).toBeNull(); // Calm earns Ore only
+    // No branch, no band, nothing bought: a Standard win still earns the first rare.
+    expect(relicForWin(TREE, EMPTY_META, RELICS, 1)).toBe('cold_snap');
+    expect(relicForWin(TREE, { ...EMPTY_META, earned: ['cold_snap'] }, RELICS, 1)).toBe('kindling');
+    expect(relicForWin(TREE, EMPTY_META, RELICS, 2)).toBe('absolute'); // Grim: the epic
+    // Grim with no epic left earns a rare; with nothing left, nothing.
+    expect(relicForWin(TREE, { ...EMPTY_META, earned: ['absolute'] }, RELICS, 2)).toBe('cold_snap');
+    expect(relicForWin(TREE, { ...EMPTY_META, earned: ['cold_snap', 'kindling', 'absolute'] }, RELICS, 2)).toBeNull();
   });
 });
 
