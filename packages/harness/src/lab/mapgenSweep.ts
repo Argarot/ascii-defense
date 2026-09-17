@@ -12,7 +12,7 @@
  *
  * Usage: node tools/mapgen-sweep.mjs [seeds=30]
  */
-import { TILE_SIZE, TileLibrary, createRng, generateMap, mapCells, computeFlowField, type GeneratedMap, type TileDef } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary, createRng, generateMap, mapCells, computeFlowField, threatKnobs, type GeneratedMap, type TileDef } from '@ascii-defense/engine';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 
 // The harness has no node types (layer rule): the three globals it uses, declared.
@@ -31,8 +31,8 @@ const MINTED: TileDef[] = [
   { id: 'sp_vein', cells: g('GGGGG', 'GOOGG', 'GOOGG', 'GGGGG', 'GGGGG'), deposits: [{ x: 1, y: 1, amount: 777 }] },
 ];
 const lib = new TileLibrary([...libraryJson.tiles, ...MINTED]);
-/** Standard, as protocol.ts ships it (harness may not import app). */
-const T = { entries: [2, 5] as const, pathBias: 8 };
+/** Standard, as the game ships it (engine/sim/threat.ts). */
+const T = THREAT_LEVELS[1];
 
 const BOARDS: [number, number][] = [[12, 7], [7, 5], [7, 4], [6, 4]];
 const LOADOUTS: [string, string[]][] = [
@@ -54,8 +54,7 @@ function appGen(seed0: number, w: number, h: number, specials: string[]): Outcom
   for (let attempt = 0; ; attempt++) {
     try {
       const knobs = createRng(seed).stream('map');
-      const entries = knobs.int(T.entries[0], T.entries[1]);
-      const targetPathCells = (T.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
+      const { entries, targetPathCells } = threatKnobs(knobs, T);
       const map = generateMap(knobs, lib, { width: w, height: h, entries, targetPathCells, relicPoolSize: 11, specials });
       return { ok: true, rerolls: attempt, ms: performance.now() - t0, map };
     } catch (e) {

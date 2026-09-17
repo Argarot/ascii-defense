@@ -13,7 +13,7 @@
 // declare the one global the CLI needs rather than dragging in @types/node.
 declare const console: { log: (...args: unknown[]) => void };
 
-import { TileLibrary, effectiveStats, foldRelics, type DifficultySpec } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary, effectiveStats, foldRelics, type DifficultySpec } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
@@ -42,12 +42,11 @@ const BUILDS: Record<string, Pick<LabSpec, 'towers' | 'relicIds'>> = {
   wave48: { towers: Array.from({ length: 5 }, () => ({ ...maxedBolt, at: 'core' as const })), relicIds: ['loadbearing', 'overflow', 'frostbite'] },
 };
 
+/** The shipped Standard curve and a fan of growth rates around it. The first row said "current(linear)" and was the curve of session 12 - three re-curves stale (found session 36); "current" is read from the engine now. */
+const SHIPPED: DifficultySpec = THREAT_LEVELS[1].difficulty;
 const CANDIDATES: { name: string; d: DifficultySpec }[] = [
-  { name: 'current(linear)', d: { hpLinear: 0.18, hpGeometric: 1, countBase: 6, countLinear: 4, countGeometric: 1 } },
-  ...[1.04, 1.06, 1.08, 1.1, 1.12].map((g) => ({
-    name: `geo ${g}`,
-    d: { hpLinear: 0.18, hpGeometric: g, countBase: 6, countLinear: 4, countGeometric: 1 },
-  })),
+  { name: `shipped Standard (x${SHIPPED.hpGeometric})`, d: SHIPPED },
+  ...[1.04, 1.06, 1.08, 1.1, 1.12].map((g) => ({ name: `geo ${g}`, d: { ...SHIPPED, hpGeometric: g } })),
 ];
 
 const MAX_WAVES = 60;
