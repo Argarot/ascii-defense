@@ -1,9 +1,13 @@
 name: CI
 
+# Runs on every pull request, and is CALLED by pages.yml before a deploy (issue
+# #212): main used to deploy without running a single test, because the two
+# workflows were siblings on the same push and Pages waited for nobody. The
+# push-to-main trigger moved there with it - one run of the checks on main,
+# and the deploy hangs off its result.
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_call:
   workflow_dispatch:
 
 permissions:

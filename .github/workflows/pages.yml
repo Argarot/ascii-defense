@@ -19,7 +19,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The gate (issue #212): every check CI runs on a pull request runs here on
+  # the MERGED commit, and nothing below starts unless it passes. A squash
+  # merge is a commit no pull request ever tested - the PR's head was green,
+  # the result of merging it into a moved main was never run - so this is the
+  # first and only time main itself is checked, and the deploy waits for it.
+  checks:
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
