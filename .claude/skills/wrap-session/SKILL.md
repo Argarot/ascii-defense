@@ -17,7 +17,10 @@ this one enforces 3–6 at the end. Where the two disagree, the agreement wins.
 
 ## 1. Verify the ground truth
 
-- `git status` clean, on `main`, synced with origin. All PRs merged green
+- `git status` clean, on `main`, synced with origin — **get there with `npm
+  run home`, never with `git checkout main`**: local `main` is stale by the
+  whole session, and the 2026-09-18 wrap put 78 reverse diffs in the tree that
+  way (CONTRIBUTING §5). All PRs merged green
   **on `gh`'s own exit code** (never through a pipe; "no checks reported"
   right after PR creation means *pending*, not failed — wait and re-watch).
 - Full gate locally: **`npm run gate`** — typecheck, lint, vitest, build and
