@@ -10,9 +10,12 @@ repeated fix round means. Read both.
 ## Before writing any code today
 
 **Run the `start-session` skill** — it is the procedure and it owns the steps
-that belong at a session's start, including minting the calls whose deadline
-has just fallen due. The reads below are its step 1, repeated here because a
-context that never loads the skill still needs them.
+that belong at a session's start: these reads, minting the calls whose deadline
+has just fallen due, proving the tree with `npm run gate`, and then **briefing
+Daniil on what loaded and stopping for his go**. It briefs before it builds, so
+he can see the right context loaded rather than take it on trust. The reads
+below are its step 1, repeated here because a context that never loads the
+skill still needs them.
 
 1. This file, end to end.
 2. **`POSTMORTEM.md`, its last two sections.** Gitignored, so it is on this
@@ -120,11 +123,18 @@ Read the PRD before the architecture; read this file before touching anything.
 
 ## 5. Traps a fresh context falls into
 
-- **The local gate is five things and EVERY exit code goes into the RED
-  check, lint included** — a printed "LINT" line once passed a
-  `prefer-const` that CI caught.
-- **No backtick inside a bash-quoted `node -e` string, ever**; patch
-  scratch scripts with the Edit tool, run them by path.
+- **The local gate is `npm run gate`, one command** — typecheck, lint, vitest,
+  build and doc-drift chained on their real exit codes. Do not hand-chain them
+  and do not read the verdict off printed output: a printed "LINT" line once
+  passed a `prefer-const` that CI caught, and "the exit code was not actually
+  checked" is a finding this project recorded nine separate times before the
+  script existed.
+- **No backtick — and no backslash escape — inside a shell string or a
+  heredoc, even a quoted one.** Backticks were interpolated five times across
+  sessions 29–31; on 2026-09-12 a `python - <<'PY'` heredoc collapsed `\\n` to a
+  real newline, so an anchor silently never matched and the edit did not apply.
+  Multi-line scripts go to the scratchpad via the Write tool and run by path;
+  single anchored replacements go through the Edit tool.
 - **A generator that merges into the file it reads is tested by its
   second run** (tilegen accumulated 82 → 111 until its id filter matched
   every id it makes).
