@@ -36,7 +36,7 @@ const WALKER: EnemyDef = { id: 'walker', hp: 10, speed: 0.2, damage: 2 };
 const BOLT: TowerDef = { id: 'bolt', cost: 20, range: 6, fireEveryTicks: 10, projectile: { damage: 6, speed: 0.6, homing: true } };
 const POOL: RelicDef[] = [
   { id: 'r1', name: 'One', kind: 'passive', rarity: 'common', desc: '', effects: { damageMul: 1.1 } },
-  { id: 'r2', name: 'Two', kind: 'passive', rarity: 'common', desc: '', effects: { damageMul: 1.2 } },
+  { id: 'r2', name: 'Two', kind: 'passive', rarity: 'rare', desc: '', effects: { damageMul: 1.2 } }, // exists only above common: WON, and dealt only inside the rare band (PRD sec 28.1)
 ];
 
 const UI: UiState = { hover: null, selected: null, hudHover: null, targeting: null, showGrid: false };
@@ -55,8 +55,8 @@ function makeRt() {
       { id: 'rock_cache', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },
       { id: 'boss_drop', outcomes: [{ kind: 'scrap', weight: 1, min: 10, max: 10 }] },
     ],
-    // A small tree (session 29, PR 1): the base has the Bolt and one relic; a node grants the second relic and two slots.
-    tree: { base: { towers: ['bolt'], relics: ['r1'], relicSlots: 4, threat: 1, tileSlots: 1, oreTier: 1 }, nodes: [{ id: 'more', name: 'More', branch: 'capacity', desc: '', cost: { tier: 1, ore: 10 }, grants: { relics: ['r2'], relicSlots: 2 } }, { id: 'lodes', name: 'Lodes', branch: 'ore', desc: '', cost: { tier: 1, ore: 10 }, grants: { oreTier: 3 } }] },
+    // A small tree (session 29, PR 1; the reliquary sells a BAND since D34): the base has the Bolt; a node grants the rare band and two slots.
+    tree: { base: { towers: ['bolt'], relicSlots: 4, threat: 1, tileSlots: 1, oreTier: 1 }, nodes: [{ id: 'more', name: 'More', branch: 'capacity', desc: '', cost: { tier: 1, ore: 10 }, grants: { rarity: 1, relicSlots: 2 } }, { id: 'lodes', name: 'Lodes', branch: 'ore', desc: '', cost: { tier: 1, ore: 10 }, grants: { oreTier: 3 } }] },
   });
   const last = <T extends FromWorker['t']>(t: T) =>
     [...posts].reverse().find((p): p is Extract<FromWorker, { t: T }> => p.t === t);
@@ -206,8 +206,13 @@ describe('the meta tree decides the world (session 29, PR 1)', () => {
     const save = last('saved')!.save;
     expect(save.meta.unlocks).toEqual([]);
     expect(save.version).toBe(5);
-    // A resume under a save carrying the node keeps the node's world, whatever the shell sends.
-    rt.handle({ t: 'init', seed: 7, threatIdx: 1, loadout: [], resume: { ...save, meta: { unlocks: ['more'], earned: [], forged: {} } }, meta: { unlocks: [], earned: [], forged: {} } });
+    // The band alone deals no rare relic - it has not been won; the win alone does not either - the band is not bought.
+    for (const meta of [{ unlocks: ['more'], earned: [], forged: {} }, { unlocks: [], earned: ['r2'], forged: {} }]) {
+      rt.handle({ t: 'init', seed: 7, threatIdx: 1, loadout: [], meta });
+      expect((debug('pool') as unknown[]).length, JSON.stringify(meta)).toBe(1);
+    }
+    // A resume under a save carrying the node AND the win keeps that world, whatever the shell sends.
+    rt.handle({ t: 'init', seed: 7, threatIdx: 1, loadout: [], resume: { ...save, meta: { unlocks: ['more'], earned: ['r2'], forged: {} } }, meta: { unlocks: [], earned: [], forged: {} } });
     rt.handle({ t: 'frame', ui: UI });
     expect(last('snapshot')!.s.hud.coreCard?.relicSlots).toBe(6);
     expect((debug('pool') as unknown[]).length).toBe(2);

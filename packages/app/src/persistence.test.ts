@@ -5,7 +5,7 @@
  * silently zeroed every player's banked ore and history.
  */
 import { describe, expect, it } from 'vitest';
-import { META_KEY, META_VERSION, RUN_KEY, defaultMeta, loadMetaFrom, loadRunFrom, saveMetaTo, type KeyStore } from './persistence';
+import { META_KEY, META_VERSION, RETIRED_NODES, RUN_KEY, defaultMeta, loadMetaFrom, loadRunFrom, saveMetaTo, type KeyStore } from './persistence';
 import { SAVE_VERSION } from './protocol';
 
 function store(init: Record<string, string> = {}): KeyStore & { map: Map<string, string> } {
@@ -76,6 +76,24 @@ describe('meta save', () => {
     for (const bad of ['{"version":4,"ore":"x"}', '{"version":4,"unlocks":[1]}', '{"version":4,"forged":{"a":"b"}}']) {
       expect(loadMetaFrom(store({ [META_KEY]: bad })).problem, bad).not.toBeNull();
     }
+  });
+});
+
+describe('the retired reliquary branches (session 36, PR 3; PRD sec 28)', () => {
+  it('a save that bought tag branches gets the Ore back and loses the ids - once, however often it loads', () => {
+    const raw = JSON.stringify({ version: 4, ore: [10, 3, 0], unlocks: ['tesla', 'branch_cold', 'branch_reach'], earned: ['kindling'], settings: { reducedMotion: null }, history: [] });
+    const s = store({ [META_KEY]: raw });
+    const first = loadMetaFrom(s);
+    expect(first.problem).toBeNull();
+    expect(first.meta.unlocks).toEqual(['tesla']);
+    expect(first.meta.ore).toEqual([10 + 15 + 20, 3, 0]);
+    expect(first.meta.earned).toEqual(['kindling']); // what was WON stays won
+    // Loading the untouched blob again gives the same purse, not a second refund on top.
+    expect(loadMetaFrom(s).meta.ore).toEqual([45, 3, 0]);
+    // Once saved the ids are gone, so nothing is left to refund.
+    saveMetaTo(s, first.meta);
+    expect(loadMetaFrom(s).meta.ore).toEqual([45, 3, 0]);
+    expect(Object.values(RETIRED_NODES).reduce((a, c) => a + c, 0)).toBe(150);
   });
 });
 

@@ -32,13 +32,13 @@ export interface Grant {
    */
   towers?: string[];
   /**
-   * Relic ids that may be offered, whatever their rarity.
+   * Relic ids granted outright, whatever their rarity (a starter set may carry a rare). Commons never need it: no named relic is locked behind the tree (PRD sec 28, D29).
    */
   relics?: string[];
   /**
-   * A BRANCH: every common relic carrying the tag may be offered; its rarer relics are earned by wins.
+   * A RARITY BAND (PRD sec 28.1, D34): the highest rarity index a run's offers may deal - 1 rare, 2 epic. The only thing the reliquary sells; a relic itself is won, never bought.
    */
-  relicTags?: string[];
+  rarity?: number;
   /**
    * Relic slots the Core holds; nodes ADD to the base.
    */
@@ -172,14 +172,13 @@ export const treeSchema = {
           "items": {
             "type": "string"
           },
-          "description": "Relic ids that may be offered, whatever their rarity."
+          "description": "Relic ids granted outright, whatever their rarity (a starter set may carry a rare). Commons never need it: no named relic is locked behind the tree (PRD sec 28, D29)."
         },
-        "relicTags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A BRANCH: every common relic carrying the tag may be offered; its rarer relics are earned by wins."
+        "rarity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "A RARITY BAND (PRD sec 28.1, D34): the highest rarity index a run's offers may deal - 1 rare, 2 epic. The only thing the reliquary sells; a relic itself is won, never bought."
         },
         "relicSlots": {
           "type": "integer",

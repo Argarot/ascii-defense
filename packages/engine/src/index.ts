@@ -87,5 +87,5 @@ export { BOSS_CHEST_WINDOW, bossChestRarity } from './sim/sim';
 export { FORMATIONS, queueEntry, queueDef, queueGap, queueFront, queueBoss, type FormationName } from './sim/sim';
 export { TRAIT_RULES, hasTrait, traitSpeedMul, frontShieldMul, type TraitName } from './sim/traits';
 export { MAX_TILE_COPIES, copyPrice } from './meta/tree';
-export { resolveUnlocks, whyNot, buyNode, relicForWin, relicApplies, branchNodes, whyNotTile, buyTile, everyShopTile, smithOpen, priceTile, priceLines, canPay, payCost, costText, shortfall, TILE_PRICE, BOON_POWER_PCT, ALL_UNLOCKS, EMPTY_META } from './meta/tree';
+export { resolveUnlocks, whyNot, buyNode, relicForWin, winQueue, relicApplies, branchNodes, whyNotTile, buyTile, everyShopTile, smithOpen, priceTile, priceLines, canPay, payCost, costText, shortfall, TILE_PRICE, BOON_POWER_PCT, ALL_UNLOCKS, EMPTY_META } from './meta/tree';
 export type { TreeDef, TreeNode, TreeGrant, MetaState, Unlocked, ShopTile, PricedTile, PriceLine, OreCost } from './meta/tree';

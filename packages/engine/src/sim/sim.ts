@@ -90,12 +90,14 @@ export interface SimOptions {
   /** Relic slots the Core holds (session 29, PR 1: the tree grows it from six); RELIC_SLOTS when absent. */
   relicSlots?: number;
   /**
-   * Relic id -> the highest rarity it was ever forged to (session 29, PR 1;
-   * Daniil's item 2: tiers unlock by forging). With caps given the offer
-   * never deals a rarity above max(base, forged); absent = no cap (tests,
-   * the lab, a save from before the tree).
+   * The rarity BAND the workshop has sold (PRD sec 28.1, D34): the highest
+   * rarity index an offer may deal - 0 common, 1 rare, 2 epic. Absent = no
+   * cap (tests, the lab, a save from before the tree). Replaces session
+   * 29's per-relic forged cap: sec 28 - "which rarities can appear in your
+   * offers, nothing finer-grained than that". Forging in the run is free
+   * of it: two commons still make a rare, band or no band.
    */
-  relicCaps?: Readonly<Record<string, number>>;
+  rarityMax?: number;
 }
 
 /**
@@ -1152,10 +1154,9 @@ export class Sim {
     const epic = 10 + Math.floor(this.wave / 2);
     const roll = this.rng.stream('relics').int(0, common + rare + epic - 1);
     const rolled = roll < common ? 0 : roll < common + rare ? 1 : 2;
-    // Tiers unlock by forging (session 29, PR 1; item 2): with caps given, a
-    // rarity above the base is dealt only once this relic was forged to it.
-    const caps = this.opts.relicCaps;
-    const cap = caps ? Math.max(base, caps[def.id] ?? 0) : RARITIES.length - 1;
+    // The band bought decides (PRD sec 28.1); the dice are spent either
+    // way, so a band changes what a roll MEANS and never the stream.
+    const cap = this.opts.rarityMax ?? RARITIES.length - 1;
     return Math.max(base, Math.min(cap, rolled));
   }
 

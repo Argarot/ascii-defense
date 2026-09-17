@@ -184,6 +184,60 @@ if (ENEMIES_ONLY) {
 }
 
 /**
+ * Session 36, PR 3: the BAND sweep (PRD sec 28.1, D34). The reliquary sells
+ * rarity bands now; this reads what a band BUYS, in death waves, so its
+ * price can be set against the tower nodes' instead of guessed. The
+ * reference build with six held relics, eight seeded sets per band, drawn
+ * from the pool the band allows (no rare-only relic before the rare band)
+ * and held at two readings: every relic AT the band's rarity (the ceiling a
+ * band can buy) and at the offer's own wave-weighted mix capped by the band
+ * (what a run actually deals, read at wave 10: 50 / 30 / 15 of 95).
+ */
+const BANDS_ONLY = process.argv.includes('--bands');
+function bandSet(n: number, band: number, mixed: boolean): { id: string; rarity: number }[] {
+  const order = ['common', 'rare', 'epic'];
+  const pool = baseContent.relicDefs.filter((r) => r.kind !== 'consumable' && !r.fusionOnly && order.indexOf(r.rarity) <= band);
+  let x = 2654435761 + n * 40503;
+  const next = (): number => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x; };
+  const picked: { id: string; rarity: number }[] = [];
+  const used = new Set<number>();
+  while (picked.length < RELICS_PER_SET && used.size < pool.length) {
+    const i = next() % pool.length;
+    if (used.has(i)) continue;
+    used.add(i);
+    const base = Math.max(0, order.indexOf(pool[i].rarity));
+    // The offer's mix at wave 10 (Sim.rollRarity): common 50, rare 30, epic 15.
+    const roll = next() % 95;
+    const rolled = roll < 50 ? 0 : roll < 80 ? 1 : 2;
+    picked.push({ id: pool[i].id, rarity: Math.max(base, Math.min(band, mixed ? rolled : band)) });
+  }
+  return picked;
+}
+if (BANDS_ONLY) {
+  console.log(`## what a rarity band buys on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - the reference build, economy 100 scrap, six held relics, ${RELIC_SETS} sets x seeds ${SEEDS.join(', ')}, horizon ${MAX_WAVES}\n`);
+  console.log('| band bought | reading | mean death wave | min - max over sets | vs no band |');
+  console.log('|---|---|---|---|---|');
+  let floor = 0;
+  for (const band of [0, 1, 2])
+    for (const mixedMix of band === 0 ? [true] : [true, false]) {
+      const setMeans: number[] = [];
+      for (let n = 0; n < RELIC_SETS; n++) {
+        const set = bandSet(n, band, mixedMix);
+        const deaths: number[] = [];
+        for (const seed of SEEDS) {
+          const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: mixed('choke', RAILBORE), relicIds: [], relics: set, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+          try { deaths.push(runLab(spec, baseContent).deathWave ?? MAX_WAVES + 1); } catch { /* a seed the carve refuses is no reading */ }
+        }
+        if (deaths.length) setMeans.push(deaths.reduce((a, c) => a + c, 0) / deaths.length);
+      }
+      const mean = setMeans.reduce((a, c) => a + c, 0) / setMeans.length;
+      if (band === 0) floor = mean;
+      const name = ['none (commons only)', 'RARE', 'EPIC'][band];
+      console.log(`| ${name} | ${band === 0 ? 'every relic common' : mixedMix ? "the offer's mix, capped by the band" : `every relic at ${['', 'rare', 'epic'][band]} (the ceiling)`} | ${mean.toFixed(1)} | ${Math.min(...setMeans).toFixed(1)} - ${Math.max(...setMeans).toFixed(1)} | ${band === 0 ? '-' : `+${(mean - floor).toFixed(1)}`} |`);
+    }
+}
+
+/**
  * Session 31, PR 2: the EARLY GAME. The base world (four towers, sixteen
  * relics, six slots - what a new player has) at Calm's knobs (2-3 entries,
  * longer roads, a 55 s clock, fifteen waves) and Standard's, with the
@@ -238,11 +292,11 @@ if (BASE_ONLY) {
  * "about 5 runs to unlock all the towers").
  */
 const TREE_STATES: { name: string; unlocks: string[]; towers: TowerPlacement[]; loadout?: string[] }[] = [
-  { name: 'BASE - Bolt, Mortar, Frost, Refinery; 16 relics; 6 slots', unlocks: [], towers: [A('refinery', [0, 0, 0], 'vein'), ...mixed('choke', RAILBORE)] },
-  { name: 'MID - + Tesla, Bastion; damage, cold, economy branches; 8 slots', unlocks: ['tesla', 'bastion', 'branch_damage', 'branch_cold', 'branch_economy', 'slots_8'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('bastion', [0, 1, 0], 'adjacent'), P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('mortar', [1, 1, 0])] },
+  { name: 'BASE - Bolt, Mortar, Frost, Refinery; every common relic; 6 slots', unlocks: [], towers: [A('refinery', [0, 0, 0], 'vein'), ...mixed('choke', RAILBORE)] },
+  { name: 'MID - + Tesla, Bastion; the rare band; 8 slots', unlocks: ['tesla', 'bastion', 'band_rare', 'slots_8'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('bastion', [0, 1, 0], 'adjacent'), P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('mortar', [1, 1, 0])] },
   { name: 'EVERYTHING - the Laser line, 52 relics, 12 slots', unlocks: ['*'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')] },
   // Session 30, PR 5: the same worlds with a vein tile LOADED - the tier-2 and tier-3 Ore readings the tree's higher nodes are priced against.
-  { name: 'MID + rich_vein loaded (tier-2 veins)', unlocks: ['tesla', 'bastion', 'branch_damage', 'branch_cold', 'branch_economy', 'slots_8', 'ore_t2'], loadout: ['rich_vein'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('bastion', [0, 1, 0], 'adjacent'), P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('mortar', [1, 1, 0])] },
+  { name: 'MID + rich_vein loaded (tier-2 veins)', unlocks: ['tesla', 'bastion', 'band_rare', 'slots_8', 'ore_t2'], loadout: ['rich_vein'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('bastion', [0, 1, 0], 'adjacent'), P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('mortar', [1, 1, 0])] },
   { name: 'EVERYTHING + mother_lode loaded (a tier-3 vein)', unlocks: ['*'], loadout: ['mother_lode'], towers: [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')] },
 ];
 /** Six relics from the state's own pool, deterministic per state and seed. */
@@ -290,8 +344,8 @@ if (TREE_ONLY) {
   console.log('');
 }
 
-if (!RELICS_ONLY && !TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
-for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY || ENEMIES_ONLY ? [] : BOARDS) {
+if (!RELICS_ONLY && !TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY && !BANDS_ONLY) console.log(`build sweep · Standard curve · seeds ${SEEDS.join(', ')} · horizon ${MAX_WAVES} · economy 100 scrap where noted\n`);
+for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY || ENEMIES_ONLY || BANDS_ONLY ? [] : BOARDS) {
   console.log(`## board ${board.w}x${board.h}\n`);
   console.log('| build | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean | crowd kills | all kills |');
   console.log('|---|' + SEEDS.map(() => '---').join('|') + '|---|---|---|');
@@ -325,7 +379,7 @@ for (const board of RELICS_ONLY || TREE_ONLY || BASE_ONLY || ENEMIES_ONLY ? [] :
 }
 
 // ---- the relic sweep (session 28, PR 6) ----
-if (!TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY) {
+if (!TREE_ONLY && !BASE_ONLY && !ENEMIES_ONLY && !BANDS_ONLY) {
 console.log(`## relic sets on ${RELIC_BOARD.w}x${RELIC_BOARD.h} - the reference build (Railbore line + Frost + Mortar, choke, economy) with six held relics\n`);
 console.log('| set | relics (rarity) | ' + SEEDS.map((s) => `death @${s}`).join(' | ') + ' | mean |');
 console.log('|---|---|' + SEEDS.map(() => '---').join('|') + '|---|');
