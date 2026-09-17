@@ -9,6 +9,11 @@ repeated fix round means. Read both.
 
 ## Before writing any code today
 
+**Run the `start-session` skill** — it is the procedure and it owns the steps
+that belong at a session's start, including minting the calls whose deadline
+has just fallen due. The reads below are its step 1, repeated here because a
+context that never loads the skill still needs them.
+
 1. This file, end to end.
 2. **`POSTMORTEM.md`, its last two sections.** Gitignored, so it is on this
    machine only. It is where the current fragilities are recorded — what broke

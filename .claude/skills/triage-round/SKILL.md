@@ -92,13 +92,16 @@ In the final reply and in the request index:
   it was his answer or the default.
 - **scope** as a count and a link to the query, never as a list.
 
-## 5. Mint the unanswered defaults
+## 5. The unanswered ones mint themselves — elsewhere
 
-At the next session's start, any call from the previous round still
-unanswered is **closed**: the default is written into the WBS decision table
-with its date and "by default, unanswered", and the issue is closed citing
-it. It is a decision now — reversible like any other, never again an open
-question.
+A call left open past its deadline is closed on its default at **the start of
+the next session**, by the `start-session` skill: the default goes into
+`docs/ROADMAP.md`'s decision table with the date and "by default, unanswered",
+and the issue closes citing that row.
+
+That step lives there and only there, so the rule has one reading. What this
+skill owes it is a call that **always carries a defensible default** — a call
+without one cannot mint, and will sit in his queue forever.
 
 ---
 
