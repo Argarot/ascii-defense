@@ -270,6 +270,38 @@ gh issue list --label call --label blocks-ship
 *Prevents:* hundreds of items in prose. Hundreds in a filtered list is a
 normal Tuesday.
 
+### 7. A question measurement can answer is never a call
+
+Rule 1 says a call is something no *written rule* decides. That was too loose,
+and it let five balance questions sit in Daniil's queue for a week. The test has
+a second half:
+
+> **Could a sweep, the lab, or the headless runner settle this?** Yes → it is
+> `scope` (go and measure) or `defect` (the number contradicts a stated
+> target). Only if **no rule and no measurement** can settle it is it a `call`.
+
+Balance, tuning, difficulty and dominance are **never** calls. The dev states
+the target, derives the number, ships it with the evidence, and Daniil nudges
+only if it is way off. In his words, 2026-09-17:
+
+> *"You are being lazy and using me as QA, you should be able to do it
+> yourself. I only nudge you if you are way off, but I shouldn't be the
+> bottleneck, figure it out."*
+
+**The trap this closes.** When no target exists, the honest-feeling move is to
+ask him what the number should be. That is the lazy move. **Stating the target
+is the dev's job too** — propose it, argue it from what the sweeps already
+measured, and hold the build to it. Bring him a target only when the evidence
+genuinely cannot say which target is right, and bring it as a proposal with the
+data, never as an open question.
+
+What remains a legitimate call: names, feel, prices as *taste* rather than
+balance, whether a mechanic should exist at all, and anything where "better" is
+not measurable.
+
+*Prevents:* him being used as QA — which is the original diagnosis this whole
+section exists to fix, recurring in a new costume.
+
 ---
 
 ### The content freeze

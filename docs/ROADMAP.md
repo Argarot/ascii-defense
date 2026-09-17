@@ -515,7 +515,7 @@ is frozen in [docs/history/wbs-2026-09-11.md](history/wbs-2026-09-11.md).
 <!-- generated:state -->
 *Rendered from open issues by `node tools/plan-state.mjs` — do not edit by hand.*
 
-**144 of 216 items done; 72 open.**
+**148 of 216 items done; 68 open.**
 
 | | done | open | the open ids |
 |---|---:|---:|---|
@@ -527,7 +527,7 @@ is frozen in [docs/history/wbs-2026-09-11.md](history/wbs-2026-09-11.md).
 | **M6** | 3 | 8 | 6.1 (#285) · 6.2 (#286) · 6.3 (#287) · 6.4 (#288) · 6.5 (#289) · 6.7 (#290) · 6.8 (#291) · 6.11 (#292) |
 | **M7** | 13 | 7 | 7.1 (#293) · 7.2 (#294) · 7.3 (#295) · 7.4 (#296) · 7.5 (#297) · 7.6 (#298) · 7.8 (#299) |
 | **M8** | 0 | 7 | 8.1 (#300) · 8.2 (#301) · 8.3 (#302) · 8.4 (#303) · 8.5 (#304) · 8.6 (#305) · 8.7 (#306) |
-| **Backlog** | 17 | 15 | 9.2 (#307) · 9.3 (#308) · 9.5 (#309) · 9.6 (#310) · 9.16 (#311) · 9.17 (#312) · 9.20 (#313) · 9.21 (#246) · 9.22 (#314) · 9.26 (#315) · 9.28 (#316) · 9.29 (#317) · 9.30 (#318) · 9.31 (#247) · 9.32 (#319) |
+| **Backlog** | 21 | 11 | 9.2 (#307) · 9.3 (#308) · 9.5 (#309) · 9.6 (#310) · 9.16 (#311) · 9.17 (#312) · 9.22 (#314) · 9.26 (#315) · 9.28 (#316) · 9.29 (#317) · 9.30 (#318) |
 
 <!-- /generated:state -->
 
@@ -803,9 +803,14 @@ agreement](../CONTRIBUTING.md), rule 3).*
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
-| D25 | **Towers larger than one cell** — Daniil wants to brainstorm them (2026-09-05). PRD §5.1's one-cell footprint is load-bearing for occupancy, placement and upgrades; a multi-cell tower is either a footprint rule (which cells, which anchor, what blocks) or a visual-only size like 4.14. Decide before the new towers (25) are built | before session 25 | Daniil + dev |
+| D29 | **The tree gates rarity, never a named relic** — **RESOLVED 2026-09-17 (Daniil)**, rejecting the tag-node + earned-by-wins reconciliation as *"convoluted"*. No named relic is locked behind the tree; the tree climbs a **rarity** ladder, and some relics exist only at a higher rarity. PRD §28. **One sub-question is open and tracked as a call**: whether rarity is bought on the tree, earned by wins, or both — do not rework the reliquary branch until it is answered | before the reliquary rework | Daniil |
+| D30 | **The ore ladder** — **RESOLVED 2026-09-17 (Daniil)**: a higher ore tier is a **shop upgrade** that unlocks (a) a new ore on the map — different colour, slower mining, smaller vein, much rarer spawn, everything else identical — and (b) a Tile Smith cell for that tier, whose placement costs tier-N ore **on top of** the lower-tier cost. PRD §26. Closes the dead end where tier-2 prices existed with no tier-2 income | — | closed |
+| D31 | **The Smith prices a tile by its contents** — **RESOLVED 2026-09-17 (Daniil)**: one pricing function over the tile's cells, shared by the Smith and the shop. A plain straight road costs no more than a shipped tile of similar quality; a tile of high-tier veins and top boon ground is *prohibitively* expensive by design. PRD §27, cashing §11.1's unkept promise | — | closed |
+| D32 | **Sixteen authored frames** — **RESOLVED 2026-09-17 (Daniil)**: "feck it let's go with 16", closing the 4/8/16 question. **With a standing invitation**: he is open to being convinced frame-based animation is wrong at the root, and asked for an alternative **shown with visuals**, not argued in prose. PRD §29; the candidate is procedural animation over the glyph grid (one key frame plus rules), which is the register's 6.8 one level up | the invitation stays open | Daniil |
+| D33 | **The round of 2026-09-17, defaults confirmed** — seven calls answered by accepting what shipped, and therefore now decisions rather than open questions: encounter cards **pause** the run; the Bastion's plus is **four** cells; boss chests are **rare <10, epic <20, legendary 20+**; tile copies cost **20/30/40, three at most**; **nine** road shapes is enough (the carve's walk is the lever, not the shape count); **neutral structures are dropped** (the Tile Smith's placeables and boon ground already own that job — PRD §14); monetization defers (D27). None of these may be reopened without a new D-row | — | closed |
+| ~~D25~~ | **Towers larger than one cell** — ~~Daniil wants to brainstorm them~~ **RESOLVED 2026-09-17 (Daniil): no, for now.** PRD §5.1's one-cell footprint stands and nothing is built against a multi-cell tower. His words: *"no for now, but we will revisit this later, maybe as a DLC or extra content once all base features are shipped"* — so this is **deferred, not killed**: it reopens after beta, as content, and it must not be designed around before then | reopens post-beta | closed |
 | ~~D26~~ | **Reversed 2026-09-06 evening (Daniil): passives are relics.** The separate layer built in session 28 PR 1 folded back into the relic pool the same day - tower-mod relics with tiers, one pool, twelve slots, the relic offer every second wave (PRD §7.8) | — | Daniil |
-| D27 | **Monetization and accounts** — intent recorded (PRD §18): Stone Story's model, lighter; nothing pay-to-win. Needs an identity story that §16 rules out today. No build work depends on it; decide before beta hardening | before session 37 | Daniil |
+| ~~D27~~ | **Monetization and accounts** — **RESOLVED 2026-09-17 (Daniil): defer to beta hardening.** Intent stands as PRD §18 (Stone Story's model, lighter; nothing pay-to-win); no build work depends on it and none may be started for it before beta | — | closed |
 | D28 | **The filled board's rules** (PRD §4.3.1): coverage target (~90%?), the leaf rule (every dead end is an entrance — forced by "no dead-end spurs" once the board fills), entries emergent within the threat's range, lane balance band (within what fraction of the longest?). **Daniil's amendment 2026-09-05: the Core moves to the EAST EDGE first** (a face past the border, one entrance, no spawns on that side — PRD §4.5, shipped as session 24 PR 1); the defaults he did not amend stand: 90% coverage, lanes ≥ 70% of the longest | ~~before 2.30 starts~~ resolved 2026-09-05 (go) | closed |
 | D1 | ~~Buildable density~~ **RESOLVED 2026-08-15**: the map generator controls ground amount/placement directly; density is a generation knob tuned as data (PRD §4.4) | — | closed |
 | D2 | ~~The Wall~~ **RESOLVED 2026-08-15**: cut. All three candidate jobs died with the pivot + flyer cut (PRD §5.3, §13) | — | closed |

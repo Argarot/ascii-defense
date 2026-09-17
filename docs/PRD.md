@@ -1147,7 +1147,9 @@ twenty-four nodes in five branches - *arsenal* (the other four towers, the
 Laser behind the Tesla), *reliquary* (a node per relic TAG: every common of
 the tag joins the pool; its rare and epic ones are **earned by wins** -
 Standard earns a rare, Grim an epic, Calm earns Ore only; Daniil's item 3
-reconciled), *capacity* (relic slots to twelve, tile slots to five),
+reconciled — **SUPERSEDED 2026-09-17 by §28: the tree gates RARITY and never a
+named relic. The reliquary branch as described here is what he called
+"convoluted"; do not extend it, and see §28 before reworking it**), *capacity* (relic slots to twelve, tile slots to five),
 *threat* (Grim, then Endless), *ore* (tier-2 and tier-3 vein tiles, the
 tile pool). Costs are Ore of ONE tier each (answer 3); higher nodes want
 rarer Ore. **Tiers unlock by forging** (item 2): the meta save records the
@@ -1317,6 +1319,12 @@ abilities, and **build buttons drawn with the towers' own sprites**, full
 colour when affordable and grey when not, that look like buttons.
 
 ## 14. Deliberately rejected
+
+**Neutral structures** *(2026-09-17, Daniil — thought dump item 20)*. Buildable
+or interactive map furniture that belongs to neither side. Dropped: the Tile
+Smith's placeables and boon ground already own that job, and a third source of
+"things on the map that are not road, ground or ore" would blur all three. The
+idea is not bad; it is already built under other names.
 
 Recorded so they are not re-proposed:
 
@@ -1677,7 +1685,7 @@ one line; his answer moves the row.
 |---|---|---|---|
 | 1 | A fourth rarity, **legendary**; colours common green, rare blue, epic purple, legendary gold; an **uber tier for money** with shifting rainbow colours, Stone-Story style | Legendary: **shipped** (session 29, PR 7) as a lane the offer never deals - reached by forging two epics of a relic with a legendary tier; the four colours are the palette's (§7.6). Uber: **debated** — it is the pay-to-win §18 rules out; filed under D27 as intent, not built | 9.1 · row 29 (legendary), D27 (uber) |
 | 2 | The higher tier of a relic that has tiers is **unlocked by forging** the lower ones first; tierless relics unlock on their own | **Accepted** — the meta save records "forged to rare/epic/legendary" per relic; the pool deals a tier only once it was forged once (the tree still gates the relic itself) | 9.2 · row 29 |
-| 3 | New relics unlock by **beating the game** (difficulty sets the rarity) or through **paid chests**; once a category is exhausted, chests of that rarity | **Accepted with a reconciliation**: the tree unlocks branches (tags) and capacity; the relics inside a branch are earned by wins at a Threat level; paid chests are §18's door. Daniil to confirm the split | 9.3 · row 29 |
+| 3 | New relics unlock by **beating the game** (difficulty sets the rarity) or through **paid chests**; once a category is exhausted, chests of that rarity | ~~**Accepted with a reconciliation**: the tree unlocks branches (tags) and capacity; the relics inside a branch are earned by wins at a Threat level~~ — **REJECTED 2026-09-17** ("this is convoluted; specific relics shouldn't be locked behind the tree"). Replaced by §28: the tree gates **rarity** only, and some relics exist only at a higher rarity. Paid chests remain §18's door | 9.3 · row 29 |
 | 4 | One Refinery mines every ore tier; higher tiers mine slower | **Accepted** — a per-tier cycle multiplier; Deep Bore / Deep Shaft keep growing the vein | 9.4 · row 29 (with ore tiers) |
 | 5 | Core-adjacency boons become **global powerups** (a Laser by the Core doubles the Orbital and halves its cooldown) | **Accepted** — §4.5's gifts move from "this tower's stats" to "a run-wide rule per tower kind" | 9.5 · row 31 balance |
 | 6 | Ignore-armour is too strong and always the pick | **Read, and half answered** (session 31, PR 2) — the armour floor caps what armour strips at 65% of a hit, so Railbore's edge over a plain Bolt against a juggernaut is 8 vs 2.8, not 8 vs 2; the sweep against armoured waves for the fork's number is still open | 9.6 · row 31 |
@@ -1707,3 +1715,169 @@ one line; his answer moves the row.
 | 30 | The menus need a real graphical rework, Stone-Story-quality | **Shipped, the language** (session 30, PR 1) — every page a framed plate with a lit title band, columns, links and key hints; the workshop drawn as a tree; the Smith, the Forge and the offer in the same language. Ornament beyond what spleen has (double lines, blocks) is not drawable; the art agent's splash and the tile art are the next layer | 9.30 · row 30 |
 | 31 | How is meta progression tracked for a browser game; not-browser; monetization hardening | **Decision needed (D28)** — options in the reply: browser plus a light account backend, a desktop wrapper with a store's cloud saves and payments, or both; vendor facts to be checked before a plan | D28 · row 33 |
 | 32 | How many frames per sprite for smooth animation; or procedural animation | **Debated with a recommendation** — authored 4–8 frames for bodies at 100–150 ms, procedural for light and colour; an experiment sprite at 4/8/16 frames for his eye | 9.32 · art brief |
+
+
+## 26. The ore ladder — how a higher tier is reached *(Daniil, 2026-09-17; answers the tier-2 purse. D30)*
+
+**The problem this closes.** Tier-2 and tier-3 ore existed as a *purse* and as
+node prices from session 29, but nothing said where a player gets the first
+tier-2 ore. The workshop only *named* the source when a purse lacked the tier;
+the source itself was never built. A currency with prices and no income is a
+dead end, and every tier-2 node was unreachable in practice.
+
+**The rule.** A higher ore tier is **an upgrade bought in the shop**, and that
+one purchase does two things:
+
+1. **It unlocks a new kind of ore on the map.** Mechanically it is the ore the
+   player already knows — a vein, a Refinery, a purse — and it differs on three
+   axes and no others:
+   - a **different colour**, so it reads as a different substance at a glance;
+   - a **slower mining speed** and a **smaller vein** than the tier below;
+   - a **much lower chance of spawning**.
+
+   Nothing else about mining changes. The Refinery still mines every tier
+   (§11.1); this is a new material, not a new mechanic.
+
+2. **It unlocks a new cell for the Tile Smith** — a vein of that tier, which the
+   player can then author onto a tile. **Placing a tier-N vein costs tier-N ore
+   *on top of* the lower-tier ore the tile already costs.** So the new tier is
+   its own gate: you must mine some before you can author with it, and the
+   authoring sink is what keeps the tier scarce after the first strike.
+
+**Why this shape.** It keeps §11.1's principle — ore tiers are an economic
+fact, not a generator rule — while giving the ladder a first rung. The player
+buys *access* to a material, finds it rarely, mines it slowly, and spends it to
+put more of it on the map. Each tier is therefore a slow, self-funding loop
+rather than a wall.
+
+**For the builder.** This touches: the shop's upgrade list, `deposits[].tier`
+spawn weighting in the generator, the ore-tier colour roles in the palette, the
+Tile Smith's cell vocabulary and its price function (§27), and the
+`ORE_TIER_CYCLE` multiplier that already exists. **The spawn chance, the vein
+size and the cycle multiplier per tier are numbers for the lab to derive, not
+for Daniil to pick** — see §27's note and CONTRIBUTING §6 rule 7.
+
+## 27. The Smith prices a tile by what is on it *(Daniil, 2026-09-17. D31)*
+
+**The rule.** A minted tile's price is a function of **its contents**, not a
+flat fee:
+
+- A **generic straight road with no features costs no more than a shipped tile
+  of similar quality.** Plain authoring is not a luxury and must not be priced
+  like one.
+- Every feature adds: each ore vein by **tier and richness**, each boon-ground
+  cell by **power**, each decorated or special cell by what it does.
+- The extremes are meant to be extreme. **A tile carrying all high-tier veins
+  and the strongest boon ground everywhere costs an exorbitant, prohibitive
+  price.** That is the intended ceiling, not a bug to tune away.
+
+**What it buys the player.** *"More granular control of what tile you get"* —
+the Smith stops being a single expensive button and becomes a dial: pay a
+little for a shape you need, pay enormously for a tile that changes a run.
+
+**Why this shape.** §11.1 already promised it — *"features price the tile:
+richer nodes cost more to mint, so the authoring tool and the economy share one
+pricing function"* — and the promise was never cashed; the Smith charged a
+shared flat price. This is that section's own rule, finally specified.
+
+**For the builder.** One pricing function, used by **both** the Smith's mint
+button and the shop's tile prices, so a minted tile and a bought tile of the
+same contents cost the same. It reads the tile's cells and sums per-feature
+costs. The **coefficients are the lab's to derive** against the existing shipped
+tile prices as the anchor — the requirement is the *shape* of the curve (flat
+for plain, steep for loaded), not any particular number.
+
+
+## 28. The tree gates rarity, never a named relic *(Daniil, 2026-09-17; rejects the §19 item 3 proposal. D29)*
+
+**Rejected:** the reconciliation offered in §19 item 3 and shipped in session 29
+— *the tree unlocks a node per relic TAG; every common of that tag joins the
+pool; its rare and epic ones are earned by wins at a Threat level.* Daniil's
+verdict: **"this is convoluted, specific relics shouldn't be locked behind the
+tree."**
+
+**The rule that replaces it:**
+
+- **No named relic is ever locked behind the tree.** If a relic exists, it can
+  appear, subject only to the rarity rule below. A player must never be unable
+  to see a particular card because of a node they did not buy.
+- **Rarity is what unlocks.** The ladder the tree climbs is *which rarities can
+  appear in your offers* — nothing finer-grained than that.
+- **Some relics exist only at a higher rarity.** Those become reachable when
+  that rarity does, as a consequence of the rarity rule rather than as a
+  separate gate. This is how new cards keep arriving without a per-relic lock.
+
+**Why it is better.** The rejected design had three coupled mechanisms — tags,
+tree nodes and win-earned rarity — to express one idea. This has one. It also
+removes the failure a player actually feels: opening the codex, seeing a relic,
+and being unable to work out which node would let them have it.
+
+**For the builder — one thing is genuinely undecided.** Daniil said rarity
+unlocking is right; he did not say *what* unlocks it. The reading taken here is
+**the tree buys rarity tiers, and the win-earns-rarity mechanic from session 29
+is dropped** as part of the "convoluted" it was called. That is an inference,
+not his words, so it is tracked as an open call with that default rather than
+written as settled. Do not build the reliquary branch's rework until it is
+answered — the rest of this section is safe to build against.
+
+Superseded text lives in §11's tree description and in §19 item 3; both are
+marked.
+
+## 29. Frame-based animation stays, at sixteen *(Daniil, 2026-09-17. D32)*
+
+**The decision:** sprites animate from **authored frames, sixteen of them**,
+resolving the 4/8/16 question in the thought dump's item 32.
+
+**The standing invitation, in his words:** *"I am however open to be convinced
+that having frame-based animation is a wrong approach at the root and there
+could be a better way to make things animated without hand-drawing each frame
+for every sprite. If so — suggest me smth, with visuals."*
+
+So sixteen is the rule to build against **and** an open brief. The alternative
+worth putting to him is **procedural animation over the glyph grid**: a sprite
+declares one authored key frame plus *rules* — per-cell phase offset, a small
+glyph cycle, a colour ramp over time, displacement from a seeded noise function
+— and the view derives every intermediate frame. One drawing plus rules instead
+of sixteen drawings, composing with state (a damaged tower animates differently
+without a second sixteen-frame set).
+
+That is the same idea the register's "smoothness via spatial phase" (6.8)
+already gestures at, one level up. **The brief is not a decision to argue in
+prose: it is a side-by-side he can look at** — the same sprite, hand-framed at
+sixteen versus procedurally driven — because the whole question is whether the
+procedural one looks alive. Until that exists, sixteen frames is the rule.
+
+
+## 30. The seven's names *(default set, 2026-09-17; Daniil: "make smth creative up for defaults, don't hold the project because of this")*
+
+**These are defaults, not a decision he made.** He reserved the right to amend
+them and told the project not to wait. Build against them; if he renames one,
+it is a content edit and a codex line, nothing structural.
+
+**The naming rule**, so an amendment can stay inside a system rather than
+landing as a one-off: *a body is named for what it does to you, in one plain
+concrete English word.* That matches the register already shipped — `grunt`,
+`skitter`, `brute`, `husk`, `shellback` — and it serves the stated goal that
+**every body says its rule by standing there**. Ordinary bodies are lowercase;
+a boss is capitalised, as `Juggernaut` already is.
+
+| id | was | **is** | its rule | why the name |
+|---|---|---|---|---|
+| `courser` | courser | **harrier** | `sprint` | it harries — arrives before you are ready |
+| `ram` | ram | **lunge** | `charge` | the motion is the threat, like `skitter` |
+| `blob` | blob | **brood** | `split` | a brood divides into a brood |
+| `mender` | mender | **stitch** | `heal` | it sews the wave back together |
+| `mole` | mole | **delve** | `burrow` | it is under the road before it is on it |
+| `pavise` | pavise | **buckler** | `frontshield` | a shield you must go around, in a word people know |
+| `warden` | Warden | **the Warden** | `bulwark` | unchanged; it already reads as a boss |
+
+Six of the seven change; `Warden` stays. `pavise` → `buckler` is the one worth
+flagging: a pavise *is* the correct word for a standing shield, and it was
+dropped only because it is obscure at a glance in a strip that has to be read
+under pressure.
+
+**For the builder.** Ids do **not** change — `courser`, `ram`, `blob`,
+`mender`, `mole`, `pavise`, `warden` stay as they are, in content, saves,
+replays and the golden hash. Only the display `name` moves, plus the codex
+entries and any doc naming them. A rename that touched ids would move the
+golden hash for no reason.
