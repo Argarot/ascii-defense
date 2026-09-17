@@ -487,7 +487,10 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         range: selTower && effPreview && eff && effPreview.range !== eff.range
           ? { x: selTower.cellX, y: selTower.cellY, r: effPreview.range, minR: effPreview.minRange }
           : range,
-        hoverBuildable: hover !== null && s.canBuildAt(hover.x, hover.y) && previewDef !== undefined && s.canAfford(previewDef.id),
+        // "You could build here now": some tower that may STAND on the hovered cell is affordable (issue #218). It used to
+        // judge the first tower of the strip whatever the cell - so an ore vein read as buildable by the Bolt's price, where
+        // only a Refinery can go.
+        hoverBuildable: hover !== null && s.buildableDefsAt(hover.x, hover.y).some((d) => s.canAfford(d.id)),
         selectedBuildable: selected !== null && s.canBuildAt(selected.x, selected.y),
         showGrid: ui.showGrid,
         rangeIsPreview: targeting !== null || (!selTower && buildTarget) || (selTower !== null && effPreview !== null),
