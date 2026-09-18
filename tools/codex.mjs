@@ -34,9 +34,30 @@ const recipes = read('recipes/pool.json').recipes;
 const lootTables = read('loot/tables.json').tables;
 const relicName = (id) => relics.find((r) => r.id === id)?.name ?? id;
 
+/**
+ * What a hit is (D37), READ from the engine's source rather than retold: this file said "never more than 65% of it
+ * (Railbore ignores it)" for ten days after both stopped being true in the lab, and would have gone on saying it.
+ * A rule that cannot be found here is an error, not a default.
+ */
+const simSource = readFileSync(join(ROOT, 'packages', 'engine', 'src', 'sim', 'sim.ts'), 'utf8');
+const rulesLine = simSource.match(/export const COMBAT_RULES: CombatRules = \{ armorFloor: ([\d.]+), armorBlunts: '(all|kinetic)', plating: (null|\{ from: (\d+), every: (\d+), add: (\d+) \}) \};/);
+const purseLine = simSource.match(/export const STARTING_SCRAP = (\d+);/);
+if (!rulesLine || !purseLine) throw new Error('codex: COMBAT_RULES or STARTING_SCRAP not found in engine/src/sim/sim.ts in the shape this tool reads - update the tool with the rule');
+const RULES = { armorFloor: Number(rulesLine[1]), armorBlunts: rulesLine[2], plating: rulesLine[3] === 'null' ? null : { from: Number(rulesLine[4]), every: Number(rulesLine[5]), add: Number(rulesLine[6]) } };
+const STARTING_SCRAP = Number(purseLine[1]);
+const armourWords = `armour is subtracted from every ${RULES.armorBlunts === 'kinetic' ? 'KINETIC hit' : 'hit'}, but never more than ${Math.round((1 - RULES.armorFloor) * 100)}% of it${RULES.armorBlunts === 'kinetic' ? '; energy goes through armour untouched' : ''}`;
+const platingWords = RULES.plating ? `From wave ${RULES.plating.from} every body is PLATED: +${RULES.plating.add} armour, and +${RULES.plating.add} more every ${RULES.plating.every} waves - the next-wave panel says how much. A swarm of small hits is a bad answer to a late wave; one big hit, or energy, is a good one.` : null;
+
+/** The resist and weak ranges as the roster has them, and which tower deals which type - counted, never typed. */
+const mults = enemies.flatMap((e) => Object.values(e.resist ?? {}));
+const span = (xs) => (xs.length === 0 ? null : Math.min(...xs) === Math.max(...xs) ? `x${Math.min(...xs)}` : `x${Math.min(...xs)}-${Math.max(...xs)}`);
+const typeWords = [span(mults.filter((m) => m < 1)) ? `${span(mults.filter((m) => m < 1))} resists` : null, span(mults.filter((m) => m > 1)) ? `${span(mults.filter((m) => m > 1))} weak` : null].filter(Boolean).join(', ');
+const byType = (type) => towers.filter((t) => t.damageType === type).map((t) => t.name).join(', ');
+const typeRoster = `Kinetic: ${byType('kinetic')}. Energy: ${byType('energy')}`;
+
 /** Mirror of engine/sim/traits.ts TRAIT_RULES, in words. */
 const TRAITS = {
-  armoured: 'immune to slows; armour is subtracted from every hit, but never more than 65% of it (Railbore ignores it)',
+  armoured: `immune to slows; ${armourWords}`,
   shielded: 'a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire',
   fast: 'slows last half as long',
   swarm: 'spawns in packs of three - one queue entry, three bodies',
@@ -125,7 +146,7 @@ const SECTIONS = {
       '',
       table(['Enemy', 'id', 'HP', 'Speed', 'Breach', 'Bounty', 'From wave', 'Armour', 'Shield', 'vs kinetic', 'vs energy', 'Traits'], enemyRows()),
     '',
-    'Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.',
+    `Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - ${typeWords}, immune takes nothing. ${typeRoster}. Armour: ${armourWords}.${platingWords ? ' ' + platingWords : ''} A run starts with ${STARTING_SCRAP} Scrap.`,
       '',
       'Statuses show on the body (PRD §8) as the ground under the walker: cold when slowed, ember when burning, ice when frozen, ember over cold when both hold; brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.',
     '',
@@ -293,8 +314,11 @@ function codexTs() {
     recipes: recipes.map((x) => ({ a: x.a, b: x.b, result: x.result, aName: relicName(x.a), bName: relicName(x.b), resultName: relicName(x.result), desc: x.desc })),
     loot: lootTables.map((t) => { const total = t.outcomes.reduce((a, o) => a + o.weight, 0); return { id: t.id, outcomes: t.outcomes.map((o) => ({ kind: o.kind, pct: Math.round((o.weight / total) * 100), min: o.min ?? null, max: o.max ?? null })) }; }),
     rules: [
-      'Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.',
-      'Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla, Laser.',
+      `Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - ${typeWords}, immune takes nothing.`,
+      `${typeRoster}.`,
+      `Armour: ${armourWords}.`,
+      ...(platingWords ? [platingWords] : []),
+      'An upgrade is a better buy than another tower: the chassis is the expensive part, and a big hit is what gets through armour.',
       'Slows from different sources stack by one rule: the coldest wins, the longest lasts. The ground under a walker says its status: cold slowed, ember burning, ice frozen, ember over cold for both; ( ) a live shield.',
       'The two ground cells touching the Core face are precious: every tower has a unique gift there, printed on its card.',
     ],

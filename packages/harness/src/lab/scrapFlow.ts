@@ -12,7 +12,7 @@
  *
  *   node tools/scrap-flow.mjs [corpus=40]
  */
-import { THREAT_LEVELS, TileLibrary, createRng, threatKnobs } from '@ascii-defense/engine';
+import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary, createRng, threatKnobs } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -77,7 +77,7 @@ for (const [name, towers] of PLANS) {
   const deaths: number[] = [];
   for (let i = 1; i <= N; i++) {
     const seed = i * 7919 + 13;
-    const spec: LabSpec = { seed, map: { width: 7, height: 5, ...threatKnobs(createRng(seed).stream('map'), STANDARD) }, towers, relicIds: [], unlocks: TREE ? ['*'] : [], interWaveTicks: STANDARD.waveSeconds * 20, difficulty: STANDARD.difficulty, maxWaves: 40, economy: { startingScrap: 100 } };
+    const spec: LabSpec = { seed, map: { width: 7, height: 5, ...threatKnobs(createRng(seed).stream('map'), STANDARD) }, towers, relicIds: [], unlocks: TREE ? ['*'] : [], interWaveTicks: STANDARD.waveSeconds * 20, difficulty: STANDARD.difficulty, maxWaves: 40, economy: { startingScrap: STARTING_SCRAP } };
     try {
       const r = runLab(spec, content);
       deaths.push(r.deathWave ?? 41);

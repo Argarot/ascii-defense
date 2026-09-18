@@ -54,8 +54,12 @@ export const THREAT_LEVELS: readonly ThreatLevel[] = [
   // builder on half of them, and relics come on top of that.
   { name: 'Calm', entries: [2, 3], pathBias: 12, finalWave: 15, waveSeconds: 55, difficulty: { hpLinear: 0.08, hpGeometric: 1.03, countBase: 6, countLinear: 3, countGeometric: 1, unlockDelay: 3, countMax: 60 }, walk: WALK.calm },
   // Session 32 (Enemies II; docs/lab/enemy-sweep-2026-09-08.md): the count is BODIES since packs (a swarm entry counts its three), and bodies are Scrap - fewer of them starved the reference build on half the seeds - so Standard and Grim grow five a wave and the reference dies at 22-24 on every seed.
-  { name: 'Standard', entries: [2, 5], pathBias: 8, finalWave: 20, waveSeconds: 40, difficulty: { hpLinear: 0.15, hpGeometric: 1.07, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 }, walk: WALK.standard },
-  { name: 'Grim', entries: [3, 6], pathBias: 5, finalWave: 25, waveSeconds: 30, difficulty: { hpLinear: 0.15, hpGeometric: 1.09, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 }, walk: WALK.grim },
+  // Session 39 (D37; docs/lab/damage-model-2026-09-18.md): x1.07 -> x1.12 and x1.09 -> x1.17, fitted BEHIND the new damage model - an expensive
+  // chassis and cheap upgrades, plating, energy through plate, wide resistances. At the old rates every build that upgraded won both Threats
+  // outright once plain-Bolt spam stopped working; at these the mixed line wins Standard 93% and the base world wins Grim 11-18% against the
+  // tree's 99%. The first time a curve could open that gap: yesterday nothing could, because nothing bounded how wide a build went.
+  { name: 'Standard', entries: [2, 5], pathBias: 8, finalWave: 20, waveSeconds: 40, difficulty: { hpLinear: 0.15, hpGeometric: 1.12, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 }, walk: WALK.standard },
+  { name: 'Grim', entries: [3, 6], pathBias: 5, finalWave: 25, waveSeconds: 30, difficulty: { hpLinear: 0.15, hpGeometric: 1.17, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 }, walk: WALK.grim },
 ];
 
 /**

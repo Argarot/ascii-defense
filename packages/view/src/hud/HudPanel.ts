@@ -93,7 +93,7 @@ export interface HudState {
    * `canCall` = the current wave has finished spawning, `callBonus` = Scrap
    * for calling now. null once the final wave is out.
    */
-  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number; traits?: readonly string[] }[]; canCall: boolean; callBonus: number; waiting: boolean; /** How the packs walk (session 32, PR 3). */ formations?: readonly { name: string; n: number }[] } | null;
+  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number; traits?: readonly string[] }[]; canCall: boolean; callBonus: number; waiting: boolean; /** How the packs walk (session 32, PR 3). */ formations?: readonly { name: string; n: number }[]; /** Armour every body of the wave wears on top of its own (D37); 0 or absent before plating begins. */ plating?: number } | null;
   /** The strip (4.27): every tower in the roster, whether the player can pay and whether it fits the selected tile. */
   roster?: readonly { id: string; name: string; short?: string; cost: number; affordable: boolean; buildable: boolean }[];
   /** The strip: alive enemies by kind, with each kind's traits. */
@@ -370,6 +370,9 @@ export class HudPanel {
       const fronts = `${s.nextFronts} front${s.nextFronts === 1 ? '' : 's'}`;
       const head = `wave ${nw.wave} \u2802 ${fronts}${nw.boss ? ' \u2802 BOSS' : ''}`;
       term.write(0, y++, head, nw.boss ? role('enemy.fast') : role('ui.text'));
+      // Plating (D37): said in words a player can act on - what it costs a hit, and what goes through it.
+      // Three lines, because the first wording was cut at two ("Big hits and +") the first time it was LOOKED at in the running game.
+      if ((nw.plating ?? 0) > 0) for (const line of this.wrap(`PLATED +${nw.plating}: every kinetic hit loses ${nw.plating} more - hit big, or use energy`, W, 3)) term.write(0, y++, line, role('ui.accent'));
       // Three lines for the composition (session 31: two cut "2 shellback" to "2 shellb" on a five-kind wave).
       for (const line of this.wrap(kinds, W, 3)) term.write(0, y++, line, role('ui.dim'));
       // The answer (session 32, PR 3): the first kind with a trait, and what answers it.

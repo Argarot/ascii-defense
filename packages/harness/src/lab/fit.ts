@@ -17,7 +17,7 @@
  *     "towers":  { "bolt": { "cost": 20, "projectile": { "damage": 8 }, "tiers": [[{ "cost": 25 }, null], null, [{ "mods": { "damage": 40 } }, null]] } },
  *     "threats": { "grim": { "hpGeometric": 1.12 } } }
  */
-import { THREAT_LEVELS, TileLibrary, type CombatRules, type DifficultySpec, type EnemyDef, type TowerDef } from '@ascii-defense/engine';
+import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary, type CombatRules, type DifficultySpec, type EnemyDef, type TowerDef } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -139,7 +139,7 @@ for (const want of WANTED) {
     let towers = 0;
     let why: string | undefined;
     try {
-      const r = runLab({ seed, map: { width: 7, height: 5, threat }, towers: plan.towers, tail: plan.tail, relicIds: [], relics: plan.relics, unlocks: plan.unlocks, interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, rules: patch.rules, maxWaves: threat.finalWave, economy: { startingScrap: patch.startingScrap ?? 100 } }, content);
+      const r = runLab({ seed, map: { width: 7, height: 5, threat }, towers: plan.towers, tail: plan.tail, relicIds: [], relics: plan.relics, unlocks: plan.unlocks, interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, rules: patch.rules, maxWaves: threat.finalWave, economy: { startingScrap: patch.startingScrap ?? STARTING_SCRAP } }, content);
       death = r.deathWave;
       towers = r.waves[r.waves.length - 1]?.towersEnd ?? 0;
     } catch (e) { death = 'refused'; why = e instanceof Error ? e.message : String(e); }

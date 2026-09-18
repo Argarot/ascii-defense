@@ -12,7 +12,7 @@
  *
  *   node tools/seed-corpus.mjs [seeds=500] [--threat=0|1|2]
  */
-import { THREAT_LEVELS, TileLibrary, createRng, generateMap, threatKnobs } from '@ascii-defense/engine';
+import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary, createRng, generateMap, threatKnobs } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -64,7 +64,7 @@ for (const t of THREATS) {
     // The APP'S map for this seed (LabSpec.map's `threat` form): a seed listed here is a seed a player can type in.
     const stream = createRng(seed).stream('map');
     const knobs = threatKnobs(stream, threat);
-    const base = { seed, map: { width: 7, height: 5, threat }, relicIds: [], unlocks: [], interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: threat.finalWave, economy: { startingScrap: 100 } };
+    const base = { seed, map: { width: 7, height: 5, threat }, relicIds: [], unlocks: [], interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: threat.finalWave, economy: { startingScrap: STARTING_SCRAP } };
     const play = (plan: { towers: TowerPlacement[]; tail?: TowerPlacement[] }): number | null | 'refused' => {
       try { return runLab({ ...base, ...plan } as LabSpec, content).deathWave; } catch { return 'refused'; }
     };

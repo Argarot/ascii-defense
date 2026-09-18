@@ -5,7 +5,7 @@
  * the information it needs (PRD sec 9.2).
  */
 export const TRAIT_ANSWER: Record<string, string> = {
-  armoured: 'Frost is wasted; Bolts and Mortars, or Railbore',
+  armoured: 'slows slide off; hit big, or use energy', // short on purpose: the panel gives an answer two lines, and the longer wording was cut at "small +" the first time it was looked at
   shielded: 'focus fire - the shield regrows unhit',
   fast: 'slows last half as long; hit hard',
   swarm: 'blasts and pierce - three bodies a pack',

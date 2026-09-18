@@ -6,7 +6,7 @@
  *
  *   node tools/tail-probe.mjs [threat=1] [corpus=60] [below=15]
  */
-import { THREAT_LEVELS, TileLibrary, createRng, threatKnobs } from '@ascii-defense/engine';
+import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary, createRng, threatKnobs } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -54,7 +54,7 @@ for (let i = 1; i <= N; i++) {
   const drawn = threatKnobs(createRng(seed).stream('map'), threat);
   const knobs = { ...drawn, land: process.argv.includes('--no-land') ? undefined : drawn.land, walk: process.argv.includes('--no-walk') ? undefined : drawn.walk };
   const deaths = PLANS.map(([, towers]) => {
-    const spec: LabSpec = { seed, map: { width: 7, height: 5, ...knobs }, towers, relicIds: [], unlocks: [], interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: 40, economy: { startingScrap: 100 } };
+    const spec: LabSpec = { seed, map: { width: 7, height: 5, ...knobs }, towers, relicIds: [], unlocks: [], interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: 40, economy: { startingScrap: STARTING_SCRAP } };
     try { return runLab(spec, content).deathWave ?? 41; } catch { return -1; }
   });
   deaths.forEach((d, k) => { if (d >= 0) all[k].push(d); });

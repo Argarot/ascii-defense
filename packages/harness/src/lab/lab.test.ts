@@ -6,7 +6,7 @@
  * `node tools/lab.mjs`, not in CI.
  */
 import { describe, expect, it } from 'vitest';
-import { THREAT_LEVELS, TileLibrary, DEFAULT_DIFFICULTY, computeFlowField, createRng, effectiveStats, generateMap, mapCells, threatKnobs, tilePartition } from '@ascii-defense/engine';
+import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary, DEFAULT_DIFFICULTY, computeFlowField, createRng, effectiveStats, generateMap, mapCells, threatKnobs, tilePartition } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
@@ -100,13 +100,14 @@ describe('the balance lab (session 12 gate)', () => {
     // The six-tower reference was bought out by wave 12 and died holding 3,802 Scrap at wave 20 - and every ladder
     // table had been read off it. A plan that ENDS is not a player.
     const bolt = { towerId: 'bolt', choices: [0, 0, 0] as [number, number, number], at: 'auto' as const };
-    const base: LabSpec = { seed: 4242, map: SMALL, towers: [bolt, bolt], relicIds: [], maxWaves: 40, economy: { startingScrap: 100 } };
+    const base: LabSpec = { seed: 4242, map: SMALL, towers: [bolt, bolt], relicIds: [], maxWaves: 40, economy: { startingScrap: STARTING_SCRAP } };
     const ends = runLab(base, content);
     const goesOn = runLab({ ...base, tail: [bolt] }, content);
     expect(ends.result).toBe('died');
     const last = (r: typeof ends) => r.waves[r.waves.length - 1];
     // The plan that ends dies rich; the one that goes on has spent what it earned - within a Bolt's whole price of it.
-    const boltPrice = 20 + 25 + 55 + 120;
+    const boltDef = content.towerDefs.find((d) => d.id === 'bolt')!;
+    const boltPrice = boltDef.cost + boltDef.tiers!.reduce((sum, tier) => sum + tier.choices[0].cost, 0); // the chassis and the Railbore path, whatever they cost today
     expect(last(ends).scrapEnd).toBeGreaterThan(2 * boltPrice);
     expect(last(ends).towersEnd).toBe(2);
     expect(last(goesOn).scrapEnd).toBeLessThan(boltPrice);

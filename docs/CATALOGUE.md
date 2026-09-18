@@ -13,14 +13,14 @@
 
 | Tower | id | Cost | Type | Range | Rate | Damage | DPS | Shape / production | What it is | Next to the Core |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **Bolt Turret** | bolt | 20 | kinetic | 6 | 1.43 | 8 | 11.4 | homing shot | Homing single shots at a steady rate. The all-rounder; its tree picks a job. | every shot passes into one more body. |
-| **Mortar** | mortar | 35 | kinetic | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. | no dead zone - it can hit its own feet. |
-| **Refinery** | refinery | 30 |  | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. | mines from nothing - 1 Ore a cycle with no vein, forever. |
-| **Frost Emitter** | frost | 25 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts. | every third pulse freezes the field solid. |
-| **Tesla Coil** | tesla | 70 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. | every arc hits two more bodies. |
-| **Missile Rack** | missile | 85 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. | two missiles per launch. |
-| **Laser Lance** | laser | 110 | energy | the road | 1 | 20 | 20 | beam: down its facing to where the road turns, however far, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces to where the road turns, however far that is, through every body on it: a pulse a second, and the damage climbs while it holds one. R rotates it. | the heat climbs one multiple higher. |
-| **Bastion** | bastion | 40 |  | 1.5 |  |  |  | aura: a plus, 1 each way, hit x1.15 | Shoots nothing. The four towers in its plus hit harder; its tree makes the arms longer and the gift bigger. | the plus reaches one cell further. |
+| **Bolt Turret** | bolt | 60 | kinetic | 6 | 1.43 | 8 | 11.4 | homing shot | Homing single shots at a steady rate. The all-rounder; its tree picks a job. | every shot passes into one more body. |
+| **Mortar** | mortar | 105 | kinetic | 7 | 0.50 | 10 | 5 | ballistic shell (aim committed at fire time), blast r1.2, dead zone r2.5 | Lobs a shell at a place and blasts what stands there. Cannot hit its own feet. | no dead zone - it can hit its own feet. |
+| **Refinery** | refinery | 90 |  | 0.5 |  |  |  | 1 Ore / 40 s | Mines the ore vein under it. Builds nothing, shoots nothing, pays for everything. | mines from nothing - 1 Ore a cycle with no vein, forever. |
+| **Frost Emitter** | frost | 75 | energy | 3.5 | 0.83 |  | 0 | pulse: hits everything in range at once | A cold field around it slows everything inside. Slows from different sources stack: the coldest wins, the longest lasts. | every third pulse freezes the field solid. |
+| **Tesla Coil** | tesla | 210 | energy | 4 | 1 | 9 | 9 | chain: arcs to 3 bodies within 2.5 cells of each other, 70% per hop | An arc that jumps body to body through a pack. Short reach, answers crowds. | every arc hits two more bodies. |
+| **Missile Rack** | missile | 255 | kinetic | 9 | 0.33 | 30 | 10 | homing shot, blast r1, dead zone r2 | Slow, heavy homing missiles that explode on arrival. Long reach, a dead zone. | two missiles per launch. |
+| **Laser Lance** | laser | 330 | energy | the road | 1 | 20 | 20 | beam: down its facing to where the road turns, however far, every body on it, heat to x2 on a held target (R rotates) | A beam down the road it faces to where the road turns, however far that is, through every body on it: a pulse a second, and the damage climbs while it holds one. R rotates it. | the heat climbs one multiple higher. |
+| **Bastion** | bastion | 120 |  | 1.5 |  |  |  | aura: a plus, 1 each way, hit x1.15 | Shoots nothing. The four towers in its plus hit harder; its tree makes the arms longer and the gift bigger. | the plus reaches one cell further. |
 
 The two ground cells touching the Core face (and the border cells beside it) are the precious ground of PRD §4.5: a tower there gets the gift in the last column, folded like a tier.
 
@@ -28,89 +28,89 @@ The two ground cells touching the Core face (and the border cells beside it) are
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Marksman** | 25 | Reach: +2.5 range. Covers more road from the same cell. | range +2.5 |
-| T1 | **Gatling** | 25 | Throughput: fires twice as often, -1 range. More shots at fewer cells. | fireEveryTicks -7, range -1 |
-| T2 | **Piercing** | 55 | Each shot passes through its target into up to 2 more enemies behind it. The answer to a column. | pierceCount +2 |
-| T2 | **Shatter** | 55 | Double damage to shields. The answer to shellbacks. | shieldMul +1 |
-| T3 | **Railbore** | 120 | One massive round: +22 damage, and armour does nothing against it. The answer to brutes. | damage +22, unlocks ignoreArmor |
-| T3 | **Hailstorm** | 120 | Three homing shots per volley at full damage, each at a different enemy when there is one - but the reach drops to close quarters. Point-blank saturation: the answer to a crowd at the choke. | shots +2, range -2.5, spread +0.6 |
+| T1 | **Marksman** | 15 | Reach: +2.5 range. Covers more road from the same cell. | range +2.5 |
+| T1 | **Gatling** | 15 | Throughput: fires twice as often, -1 range. More shots at fewer cells. | fireEveryTicks -7, range -1 |
+| T2 | **Piercing** | 35 | Each shot passes through its target into up to 2 more enemies behind it. The answer to a column. | pierceCount +2 |
+| T2 | **Shatter** | 35 | Double damage to shields. The answer to shellbacks. | shieldMul +1 |
+| T3 | **Railbore** | 70 | One massive round: +22 damage. Armour takes the same few points off every hit, so it barely dents this one. The answer to brutes. | damage +22 |
+| T3 | **Hailstorm** | 70 | Three homing shots per volley at full damage, each at a different enemy when there is one - but the reach drops to close quarters. Point-blank saturation: the answer to a crowd at the choke. | shots +2, range -2.5, spread +0.6 |
 
 #### Mortar - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Shaped Charge** | 30 | Focused payload: +12 damage in a blast 0.3 cells smaller. Kills the few. | damage +12, explodeRadius -0.3 |
-| T1 | **Wide Burst** | 30 | Wider blast: +0.6 cells of radius at 85% damage. Wounds the many. | explodeRadius +0.6, damageMul +0.85 |
-| T2 | **Long Barrel** | 65 | Reach: +2 range, but the dead zone grows by 1. Sit it back from the road. | range +2, minRange +1 |
-| T2 | **Short Fuse** | 65 | Close work: the dead zone shrinks by 1.5, range -1. Sit it right on the road. | minRange -1.5, range -1 |
-| T3 | **Concussive** | 140 | The blast slows everything it hits to 60% for a second. Control, not just damage. | slowMul -0.4, slowTicks +20 |
-| T3 | **Cluster** | 140 | Three shells per volley at 60% damage each, scattered around the aim point. Saturation. | shots +2, damageMul +0.6, explodeRadius -0.3, spread +0.7 |
+| T1 | **Shaped Charge** | 20 | Focused payload: +12 damage in a blast 0.3 cells smaller. Kills the few. | damage +12, explodeRadius -0.3 |
+| T1 | **Wide Burst** | 20 | Wider blast: +0.6 cells of radius at 85% damage. Wounds the many. | explodeRadius +0.6, damageMul +0.85 |
+| T2 | **Long Barrel** | 40 | Reach: +2 range, but the dead zone grows by 1. Sit it back from the road. | range +2, minRange +1 |
+| T2 | **Short Fuse** | 40 | Close work: the dead zone shrinks by 1.5, range -1. Sit it right on the road. | minRange -1.5, range -1 |
+| T3 | **Concussive** | 85 | The blast slows everything it hits to 60% for a second. Control, not just damage. | slowMul -0.4, slowTicks +20 |
+| T3 | **Cluster** | 85 | Three shells per volley at 60% damage each, scattered around the aim point. Saturation. | shots +2, damageMul +0.6, explodeRadius -0.3, spread +0.7 |
 
 #### Refinery - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Wide Bore** | 30 | 2 Ore per cycle, but a cycle takes 60 s instead of 40. More Ore sooner; the vein empties sooner. | production +1, productionEveryTicks +400 |
-| T1 | **Deep Bore** | 30 | The vein under it grows by half, and every cycle takes 60 s. Less now, more in the end - for the patient. | productionEveryTicks +400, unlocks deepBore50 |
-| T2 | **Survey** | 60 | Every Survey refinery speeds up ALL rock-breaking jobs, everywhere. | unlocks surveySpeed |
-| T2 | **Automation** | 60 | Prospects nearby rocks by itself, free, one job at a time. | unlocks surveyAuto |
-| T3 | **Mother Lode** | 120 | +2 Ore per cycle. The vein pays out fast and runs dry fast. | production +2 |
-| T3 | **Deep Shaft** | 120 | The vein under it doubles, and every cycle takes 40 s longer. The long game - only if you can hold this ground. | productionEveryTicks +800, unlocks deepBore100 |
+| T1 | **Wide Bore** | 20 | 2 Ore per cycle, but a cycle takes 60 s instead of 40. More Ore sooner; the vein empties sooner. | production +1, productionEveryTicks +400 |
+| T1 | **Deep Bore** | 20 | The vein under it grows by half, and every cycle takes 60 s. Less now, more in the end - for the patient. | productionEveryTicks +400, unlocks deepBore50 |
+| T2 | **Survey** | 35 | Every Survey refinery speeds up ALL rock-breaking jobs, everywhere. | unlocks surveySpeed |
+| T2 | **Automation** | 35 | Prospects nearby rocks by itself, free, one job at a time. | unlocks surveyAuto |
+| T3 | **Mother Lode** | 70 | +2 Ore per cycle. The vein pays out fast and runs dry fast. | production +2 |
+| T3 | **Deep Shaft** | 70 | The vein under it doubles, and every cycle takes 40 s longer. The long game - only if you can hold this ground. | productionEveryTicks +800, unlocks deepBore100 |
 
 #### Frost Emitter - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Deep Chill** | 25 | Colder: slowed enemies move at 40% instead of 55%, for 10 ticks longer. The slow path. | slowMul -0.15, slowTicks +10 |
-| T1 | **Ice Shards** | 25 | The field cuts: +4 damage per pulse to everything inside it. The damage path. | damage +4 |
-| T2 | **Wide Field** | 55 | Bigger field: +1.5 range to the chill. More road under the slow. | range +1.5 |
-| T2 | **Brittle** | 55 | This field's pulses deal +50% to anything already slowed. Chill first, then cut. | slowedBonusMul +0.5 |
-| T3 | **Absolute Zero** | 120 | Every fourth pulse freezes the field solid: enemies stop dead for the slow's duration. | freezeEvery +4 |
-| T3 | **Shatterfield** | 120 | +14 damage per pulse. The field becomes a weapon. | damage +14 |
+| T1 | **Deep Chill** | 15 | Colder: slowed enemies move at 40% instead of 55%, for 10 ticks longer. The slow path. | slowMul -0.15, slowTicks +10 |
+| T1 | **Ice Shards** | 15 | The field cuts: +4 damage per pulse to everything inside it. The damage path. | damage +4 |
+| T2 | **Wide Field** | 35 | Bigger field: +1.5 range to the chill. More road under the slow. | range +1.5 |
+| T2 | **Brittle** | 35 | This field's pulses deal +50% to anything already slowed. Chill first, then cut. | slowedBonusMul +0.5 |
+| T3 | **Absolute Zero** | 70 | Every fourth pulse freezes the field solid: enemies stop dead for the slow's duration. | freezeEvery +4 |
+| T3 | **Shatterfield** | 70 | +14 damage per pulse. The field becomes a weapon. | damage +14 |
 
 #### Tesla Coil - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Long Arc** | 60 | Reach: +1.5 range. The first arc finds bodies further out. | range +1.5 |
-| T1 | **Twin Coil** | 60 | Throughput: arcs every 12 ticks instead of 20. More arcs, the same bite. | fireEveryTicks -8 |
-| T2 | **Forked** | 120 | Every arc hits two more bodies. The answer to a column. | chainCount +2 |
-| T2 | **Grounding** | 120 | Bodies the arc touches slow to 60% for 15 ticks. Control on a chain. | slowMul -0.4, slowTicks +15 |
-| T3 | **Overload** | 240 | +16 damage on the first hop, and every hop after it. The answer to brutes. | damage +16 |
-| T3 | **Conductor** | 240 | Three more bodies per arc, hops span two more cells, at 80% damage. The answer to swarms. | chainCount +3, chainReach +2, damageMul +0.8 |
+| T1 | **Long Arc** | 35 | Reach: +1.5 range. The first arc finds bodies further out. | range +1.5 |
+| T1 | **Twin Coil** | 35 | Throughput: arcs every 12 ticks instead of 20. More arcs, the same bite. | fireEveryTicks -8 |
+| T2 | **Forked** | 70 | Every arc hits two more bodies. The answer to a column. | chainCount +2 |
+| T2 | **Grounding** | 70 | Bodies the arc touches slow to 60% for 15 ticks. Control on a chain. | slowMul -0.4, slowTicks +15 |
+| T3 | **Overload** | 145 | +16 damage on the first hop, and every hop after it. The answer to brutes. | damage +16 |
+| T3 | **Conductor** | 145 | Three more bodies per arc, hops span two more cells, at 80% damage. The answer to swarms. | chainCount +3, chainReach +2, damageMul +0.8 |
 
 #### Missile Rack - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Warhead** | 75 | +20 damage per missile. Kills the one it was sent for. | damage +20 |
-| T1 | **Seeker** | 75 | Reach: +2 range, and a missile every 50 ticks instead of 60. | range +2, fireEveryTicks -10 |
-| T2 | **Salvo** | 150 | Two missiles per launch at 75% damage, each homing on a different enemy when there is one. | shots +1, damageMul +0.75 |
-| T2 | **Fragmentation** | 150 | Blast +0.6 cells at 85% damage. Wounds the many. | explodeRadius +0.6, damageMul +0.85 |
-| T3 | **Bunker Buster** | 300 | +40 damage, and armour does nothing against it. The answer to a Juggernaut. | damage +40, unlocks ignoreArmor |
-| T3 | **Barrage** | 300 | Three missiles per launch at 60% damage each. Saturation from range. | shots +2, damageMul +0.6, spread +0.8 |
+| T1 | **Warhead** | 45 | +20 damage per missile. Kills the one it was sent for. | damage +20 |
+| T1 | **Seeker** | 45 | Reach: +2 range, and a missile every 50 ticks instead of 60. | range +2, fireEveryTicks -10 |
+| T2 | **Salvo** | 90 | Two missiles per launch at 75% damage, each homing on a different enemy when there is one. | shots +1, damageMul +0.75 |
+| T2 | **Fragmentation** | 90 | Blast +0.6 cells at 85% damage. Wounds the many. | explodeRadius +0.6, damageMul +0.85 |
+| T3 | **Bunker Buster** | 180 | +40 damage. A hit this size loses a few points to armour and no more. The answer to a Juggernaut. | damage +40 |
+| T3 | **Barrage** | 180 | Three missiles per launch at 60% damage each. Saturation from range. | shots +2, damageMul +0.6, spread +0.8 |
 
 #### Laser Lance - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Capacitor** | 90 | +14 damage per pulse, cold or hot. The damage path starts steady. | damage +14 |
-| T1 | **Chill** | 90 | Every body in the beam moves at 70% while it stands in it; a pulse a second keeps it cold. The control path starts cold. | slowMul -0.3, slowTicks +24 |
-| T2 | **Fast Cycle** | 180 | A pulse every 13 ticks instead of 20: half again the output. | fireEveryTicks -7 |
-| T2 | **Sear** | 180 | Bodies leave the beam burning: 2 a tick for a second. The beam keeps hurting after they pass. | burnDps +2, burnTicks +20 |
-| T3 | **Cutter** | 320 | Every pulse at 150% and the heat climbs one multiple higher. The answer to a column standing in the beam. | damageMul +1.5, beamRampMax +1 |
-| T3 | **Deep Sear** | 320 | The burn doubles and lasts two seconds; the chill deepens to 50%. Nothing walks out of this beam unmarked. | burnDps +2, burnTicks +20, slowMul -0.2 |
+| T1 | **Capacitor** | 55 | +14 damage per pulse, cold or hot. The damage path starts steady. | damage +14 |
+| T1 | **Chill** | 55 | Every body in the beam moves at 70% while it stands in it; a pulse a second keeps it cold. The control path starts cold. | slowMul -0.3, slowTicks +24 |
+| T2 | **Fast Cycle** | 110 | A pulse every 13 ticks instead of 20: half again the output. | fireEveryTicks -7 |
+| T2 | **Sear** | 110 | Bodies leave the beam burning: 2 a tick for a second. The beam keeps hurting after they pass. | burnDps +2, burnTicks +20 |
+| T3 | **Cutter** | 190 | Every pulse at 150% and the heat climbs one multiple higher. The answer to a column standing in the beam. | damageMul +1.5, beamRampMax +1 |
+| T3 | **Deep Sear** | 190 | The burn doubles and lasts two seconds; the chill deepens to 50%. Nothing walks out of this beam unmarked. | burnDps +2, burnTicks +20, slowMul -0.2 |
 
 #### Bastion - the tree
 
 | Tier | Choice | Cost | What it does | Data |
 |---|---|---|---|---|
-| T1 | **Command** | 40 | Neighbours hit for 30% more instead of 15%. | auraDamage +0.15 |
-| T1 | **Logistics** | 40 | Neighbours fire 15% faster, and producers cycle 15% faster. | auraRate +0.15, auraProduction +0.15 |
-| T2 | **Reach** | 80 | The arms grow to two cells: eight neighbours instead of four. | auraReach +1 |
-| T2 | **Hardpoint** | 80 | Neighbours gain +1 range. | auraRange +1 |
-| T3 | **Warlord** | 160 | Neighbours hit for 30% more on top of everything. | auraDamage +0.3 |
-| T3 | **Quartermaster** | 160 | Neighbouring producers cycle 50% faster; neighbours gain +1 range. | auraProduction +0.5, auraRange +1 |
+| T1 | **Command** | 25 | Neighbours hit for 30% more instead of 15%. | auraDamage +0.15 |
+| T1 | **Logistics** | 25 | Neighbours fire 15% faster, and producers cycle 15% faster. | auraRate +0.15, auraProduction +0.15 |
+| T2 | **Reach** | 50 | The arms grow to two cells: eight neighbours instead of four. | auraReach +1 |
+| T2 | **Hardpoint** | 50 | Neighbours gain +1 range. | auraRange +1 |
+| T3 | **Warlord** | 95 | Neighbours hit for 30% more on top of everything. | auraDamage +0.3 |
+| T3 | **Quartermaster** | 95 | Neighbouring producers cycle 50% faster; neighbours gain +1 range. | auraProduction +0.5, auraRange +1 |
 
 <!-- /generated -->
 
@@ -123,20 +123,20 @@ The two ground cells touching the Core face (and the border cells beside it) are
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | **grunt** | grunt | 30 | 1.20 | 1 | 4 | 1 |  |  |  |  |  |
 | **skitter** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  |  |  | fast |
-| **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  | x0.8 | x1.6 | swarm, fast |
-| **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  | x0.6 | x1.6 | armoured |
-| **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 30 | x1.4 | x0.6 | shielded |
-| **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  |  | x1.4 | x0.6 |  |
-| **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  | x0.8 | x1.2 |  |
-| **harrier** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  | x1.2 | x0.8 | sprint |
-| **lunge** | ram | 70 | 1 | 3 | 8 | 6 |  |  | x0.8 | x1.2 | charge |
+| **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  | x0.6 | x2 | swarm, fast |
+| **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  | x0.4 | x2 | armoured |
+| **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 30 | x1.6 | x0.4 | shielded |
+| **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  |  | x1.6 | x0.4 |  |
+| **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  | x0.5 | x1.6 |  |
+| **harrier** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  | x1.4 | x0.6 | sprint |
+| **lunge** | ram | 70 | 1 | 3 | 8 | 6 |  |  | x0.6 | x1.6 | charge |
 | **brood** | blob | 60 | 1 | 2 | 6 | 7 |  |  |  |  | split |
-| **stitch** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  | x1.4 | heal |
+| **stitch** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  | x1.6 | heal |
 | **delve** | mole | 50 | 1.20 | 3 | 8 | 9 |  |  |  |  | burrow |
-| **buckler** | pavise | 110 | 0.80 | 4 | 12 | 11 |  |  | x1.2 | x0.8 | frontshield |
-| **Warden** (boss only) | warden | 450 | 0.60 | 10 | 30 | 12 | 3 |  |  | x1.2 | bulwark |
+| **buckler** | pavise | 110 | 0.80 | 4 | 12 | 11 |  |  | x1.4 | x0.5 | frontshield |
+| **Warden** (boss only) | warden | 450 | 0.60 | 10 | 30 | 12 | 3 |  | x0.7 | x1.4 | bulwark |
 
-Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.5 resists, x1.5 weak, immune takes nothing. Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla.
+Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.4-0.7 resists, x1.4-2 weak, immune takes nothing. Kinetic: Bolt Turret, Mortar, Missile Rack. Energy: Frost Emitter, Tesla Coil, Laser Lance. Armour: armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched. From wave 6 every body is PLATED: +1 armour, and +1 more every 3 waves - the next-wave panel says how much. A swarm of small hits is a bad answer to a late wave; one big hit, or energy, is a good one. A run starts with 200 Scrap.
 
 Statuses show on the body (PRD §8) as the ground under the walker: cold when slowed, ember when burning, ice when frozen, ember over cold when both hold; brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.
 
@@ -144,7 +144,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 
 | Trait | Rule |
 |---|---|
-| armoured | immune to slows; armour is subtracted from every hit, but never more than 65% of it (Railbore ignores it) |
+| armoured | immune to slows; armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched |
 | shielded | a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire |
 | fast | slows last half as long |
 | swarm | spawns in packs of three - one queue entry, three bodies |
