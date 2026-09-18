@@ -158,7 +158,10 @@ Calm: every plan holds the 40 waves the lab runs on all but a seed or two
    86%**. Eleven forked base-world towers are worth as much as the Laser
    line; the tree buys seven points on the rung it exists to open.
    docs/lab/balance-debt-2026-09-17.md is amended to say so.
-5. **Wide-first is a real mistake, and the game punishes it correctly.**
+5. *(Overturned the next day — see E4 below and
+   [ladder-2026-09-18.md](ladder-2026-09-18.md). What follows is true of the
+   plan it measured and false as a statement about the game.)*
+   **Wide-first is a real mistake, and the game punishes it correctly.**
    "Never stops" places thirty plain Railbores before its first upgrade: it
    loses more seeds by wave 15 than either other plan (70 of 80 alive on
    Standard, against 74) and wins fewer — then outlasts both. Depth before
@@ -181,7 +184,7 @@ map, which the tail probe already showed is wrong on five-entry maps; and
 | E1 (#348) | The lab's reference plan ends at wave 12 | **defect** (instrument) | Give `TowerPlacement` plans a tail — "then keep buying X" — and make the spending plan the reference. Every ladder table is re-read with it |
 | E2 (#349) | L5 is not met: the base world wins Grim 79% | **defect** (balance; rule 7 — a number the lab derives, not a call) | Re-fit Grim's curve against spending plans: target base world ≤ 20%, tree ≥ 60%. **After the RNG fix (#339), not before** — that fix re-deals every seed and would make this fit be done twice |
 | E3 | What the tree sells is thin at the top | **scope** | If re-fitting Grim cannot open a gap — if eleven Railbores simply *are* as good as three Lasers — the lever is the arsenal, not the curve: the tree's towers need to out-scale the base world's per cell, since cells are the one thing a spending player runs out of |
-| E4 | Flat prices: the thirtieth Bolt costs 20 | **scope**, recorded not proposed | The genre's usual answer is a rising price per copy. It is *not* recommended here: finding 5 shows depth-before-width already emerges, and the board's cells already cap width. Written down so the next person does not rediscover it as an idea |
+| E4 | Flat prices: the thirtieth Bolt costs 20 | ~~**scope**, recorded not proposed~~ **WITHDRAWN 2026-09-18 — it was wrong** | ~~The genre's usual answer is a rising price per copy. It is *not* recommended here: finding 5 shows depth-before-width already emerges, and the board's cells already cap width.~~ Finding 5 was read off a plan that bought its reference line *first* and went wide afterwards. A plan that goes wide from the first Scrap — plain Bolts at the choke, never upgraded — wins Standard 99% and Grim 84% with two to four hundred towers standing, and beats upgrading. Width is unbounded and it is the strongest thing in the game: [ladder-2026-09-18.md](ladder-2026-09-18.md), where it is put to Daniil as a call |
 | E5 | Tier-1 Ore's fixed sinks end after about eleven runs | **scope**, watch | The Smith is the whole long tail. Worth a purse reading once real saves exist: if finished-tree players sit on hundreds of tier-1 Ore, the Smith is not pulling |
 | E6 | Endless has a dead currency past a full board | **scope**, for the session that builds Endless | A repeatable sink belongs there (Cook's "exponential sink"): an overcharge, a re-roll, anything priced to rise |
 

@@ -145,6 +145,10 @@ the time; the reference wins it 94%; relics close the rest.
 | THE TREE: the Laser line, no relics | 25.9 | 29 | 9–36 | 5 | 87% | 83% | 75% | **61%** | wave 3 | 50 |
 | THE TREE: the Laser line + six relics in the epic band | 28.1 | 30 | 19–36 | 5 | 97% | 95% | 86% | **69%** | wave 17 | 50 |
 
+> **Superseded 2026-09-18.** Every table in this document was read off a plan
+> that stops buying, on a deal that no longer exists. The ladder as it reads
+> with a player who keeps buying is [ladder-2026-09-18.md](ladder-2026-09-18.md).
+>
 > **Amended the same night — L5 does NOT hold.** Every row above is a plan
 > that *ends*: the reference is fully bought by wave 12 and dies holding
 > 3,751 unspent Scrap at wave 20. Give it five more base-world towers and it

@@ -6,7 +6,7 @@
  * `node tools/lab.mjs`, not in CI.
  */
 import { describe, expect, it } from 'vitest';
-import { TileLibrary, DEFAULT_DIFFICULTY, effectiveStats, tilePartition } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary, DEFAULT_DIFFICULTY, computeFlowField, createRng, effectiveStats, generateMap, mapCells, threatKnobs, tilePartition } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
@@ -118,6 +118,22 @@ describe('the balance lab (session 12 gate)', () => {
     // Without an economy a tail means nothing, and changes nothing.
     const free = { ...base, economy: undefined };
     expect(runLab({ ...free, tail: [bolt] }, content).deathWave).toBe(runLab(free, content).deathWave);
+  });
+
+  it("`map: { threat }` is the APP'S map for the seed: the Threat's knobs off the front of the stream, the same stream carving on", () => {
+    // A seed in a lab LIST (the seed corpus) must be a seed a player can type in. Explicit knobs carve from a fresh
+    // stream - the same maps in distribution, a different map for the seed.
+    const threat = THREAT_LEVELS[1];
+    const full: LabContent = { ...content, lib: new TileLibrary(libraryJson.tiles) };
+    for (const seed of [7932, 150474]) {
+      const stream = createRng(seed).stream('map');
+      const app = generateMap(stream, full.lib, { width: 7, height: 5, ...threatKnobs(stream, threat), relicPoolSize: full.relicDefs.length, specials: [], oreTierMax: 1 });
+      const appL = computeFlowField(mapCells(app, full.lib), app.cellsW, app.cellsH, app.entries).L;
+      const spec: LabSpec = { seed, map: { width: 7, height: 5, threat }, towers: [], relicIds: [], maxWaves: 1 };
+      expect(runLab(spec, full).L).toBe(appL);
+      const fresh = runLab({ ...spec, map: { width: 7, height: 5, ...threatKnobs(createRng(seed).stream('map'), threat) } }, full).L;
+      expect([seed, fresh === appL]).toEqual([seed, false]);
+    }
   });
 
   it('demoMap reproduces the live app map derivation deterministically', () => {
