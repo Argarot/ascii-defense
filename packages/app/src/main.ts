@@ -30,7 +30,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack, SmithScreen, type SmithState, drawPulseBox, type GlyphRect } from '@ascii-defense/view';
+  STRIP_ROWS, TRAIT_ANSWER, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack, SmithScreen, type SmithState, drawPulseBox, type GlyphRect } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
 import { validateSprite, validateTree, validateRelics, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -396,6 +396,26 @@ async function main(): Promise<void> {
     [e.armour ? `armour ${e.armour}` : '', e.insulation ? `insulation ${e.insulation}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type in full',
     ...e.traits,
   ];
+  // D41 (2026-09-18, his round's item 4a: the pausing card "is too
+  // disruptive"): a first meeting is a NOTICE - a banner in the side panel
+  // for a few seconds, the run going on under it - and the full card is one
+  // click away, and in the CODEX for good. One card still pauses: the
+  // grunt's, in the tutorial's first run, because that is where a stranger
+  // learns that cards exist at all.
+  interface Notice { title: string; line: string; card: import('@ascii-defense/view').MenuSpec }
+  const noticeQueue: Notice[] = [];
+  /** Wall-clock ms the head notice has stood while the run was running. */
+  let noticeAgeMs = 0;
+  const NOTICE_MS = 9000;
+  const meet = (title: string, line: string, card: import('@ascii-defense/view').MenuSpec, pauses = false): void => {
+    if (pauses) cardQueue.push(card);
+    else noticeQueue.push({ title, line, card });
+  };
+  /** The one line of an enemy's banner: what answers its first trait, else what it is. */
+  const enemyNoticeLine = (e: (typeof CODEX.enemies)[number]): string => {
+    for (const t of e.traits) { const a = TRAIT_ANSWER[t.slice(0, t.indexOf(':'))]; if (a) return a; }
+    return `hp ${e.hp}, speed ${e.speed} - nothing special about it`;
+  };
   const detectEncounters = (): void => {
     if (!snap || !currentMap) return;
     let changed = false;
@@ -405,7 +425,7 @@ async function main(): Promise<void> {
       if (!e) continue;
       meta.met.enemies.push(en.id); changed = true;
       const sp = SPRITES.find((s) => s.id === `enemy_${e.id}`);
-      cardQueue.push(cardOf(`NEW ENEMY: ${e.name.toUpperCase()}`, sp ? [sp] : [], enemyCardBody(e)));
+      meet(`NEW: ${e.name.toUpperCase()}`, enemyNoticeLine(e), cardOf(`NEW ENEMY: ${e.name.toUpperCase()}`, sp ? [sp] : [], enemyCardBody(e)), tutorialOn() && e.id === 'grunt');
     }
     for (const t of snap.board.towers ?? []) {
       if (!t.id || meta.met.towers.includes(t.id)) continue;
@@ -413,16 +433,18 @@ async function main(): Promise<void> {
       if (!c) continue;
       meta.met.towers.push(t.id); changed = true;
       const sp = SPRITES.find((s) => s.id === c.id);
-      cardQueue.push(cardOf(`YOUR FIRST ${c.name.toUpperCase()}`, sp ? [sp] : [], [c.desc, c.shape, ...c.tiers.map((tier, i) => `T${i + 1}: ${tier[0].name} (${tier[0].desc}) or ${tier[1].name} (${tier[1].desc})`), `next to the Core: ${c.coreBoon}`]));
+      // The same banner for a tower, a chest and boon ground: D41 names the enemy's card, and a second mechanism for
+      // the other three would be the more surprising reading of it. His to overrule: pass `true` and the card pauses again.
+      meet(`YOUR FIRST ${c.name.toUpperCase()}`, c.desc, cardOf(`YOUR FIRST ${c.name.toUpperCase()}`, sp ? [sp] : [], [c.desc, c.shape, ...c.tiers.map((tier, i) => `T${i + 1}: ${tier[0].name} (${tier[0].desc}) or ${tier[1].name} (${tier[1].desc})`), `next to the Core: ${c.coreBoon}`]));
     }
     if (!meta.met.chest && (snap.board.chests?.length ?? 0) > 0) {
       meta.met.chest = true; changed = true;
-      cardQueue.push(cardOf('A CHEST SURFACED', [], ['a chest rises on the water or on empty ground now and then and sinks after twelve seconds. select it and CLAIM: Scrap, Ore, a consumable - now and then a relic. a rarer chest pays more; a boss leaves one where it dies.']));
+      meet('A CHEST SURFACED', 'select it and CLAIM - it sinks in twelve seconds', cardOf('A CHEST SURFACED', [], ['a chest rises on the water or on empty ground now and then and sinks after twelve seconds. select it and CLAIM: Scrap, Ore, a consumable - now and then a relic. a rarer chest pays more; a boss leaves one where it dies.']));
     }
     // The boon card waits for the first tower (the tutorial owns the first minute of a first run).
     if (!meta.met.boon && (snap.board.boons?.length ?? 0) > 0 && (snap.board.towers?.length ?? 0) > 0) {
       meta.met.boon = true; changed = true;
-      cardQueue.push(cardOf('BOON GROUND', [], ['some ground carries a boon: corner marks on the cell say its tier, the colour says what it gives - reach (green), damage (red) or fire rate (gold). a tower built on it keeps the boon: ' + [1, 2, 3, 4].map((t) => `tier ${t} ${Sim.boonEffect('damage', t).text}`).join(', ') + ' for damage and rate; +1 range a tier for reach. rock may hide more.']));
+      meet('BOON GROUND', 'a tower built on marked ground keeps its boon', cardOf('BOON GROUND', [], ['some ground carries a boon: corner marks on the cell say its tier, the colour says what it gives - reach (green), damage (red) or fire rate (gold). a tower built on it keeps the boon: ' + [1, 2, 3, 4].map((t) => `tier ${t} ${Sim.boonEffect('damage', t).text}`).join(', ') + ' for damage and rate; +1 range a tier for reach. rock may hide more.']));
     }
     if (changed) saveMeta(meta);
   };
@@ -560,6 +582,7 @@ async function main(): Promise<void> {
       targeting = null;
       summary = null;
       summaryBanked = false;
+      noticeQueue.length = 0; noticeAgeMs = 0; // a banner belongs to the run it was met in
       if (pendingStart) {
         pendingStart = false;
         mode = 'playing';
@@ -1419,6 +1442,12 @@ async function main(): Promise<void> {
     if (action.kind === 'prospect' && selected) act({ k: 'prospect', x: selected.x, y: selected.y });
     if (action.kind === 'callWave') act({ k: 'callWave' });
     if (action.kind === 'tutNext' || action.kind === 'tutSkip') tutorialAction(action.kind);
+    // The banner, clicked (D41): its card opens the way a card always did - the run pauses under it, by the player's own hand this time.
+    if (action.kind === 'openNotice' && noticeQueue[0] && mode === 'playing') {
+      cardQueue.push(noticeQueue[0].card);
+      noticeQueue.shift(); noticeAgeMs = 0;
+      cardResumeSpeed = mirroredSpeed; mode = 'card'; send({ t: 'speed', idx: 0 });
+    }
   };
   /** A pick from the standing offer: straight through, or - with the slots full - parked until the player clicks the slot it replaces. */
   const pickFromOffer = (option: number): void => {
@@ -1639,6 +1668,11 @@ async function main(): Promise<void> {
         detectEncounters();
         if (cardQueue.length > 0) { cardResumeSpeed = mirroredSpeed; mode = 'card'; send({ t: 'speed', idx: 0 }); }
       }
+      // The banner's clock (D41) is the wall's, and runs only while the run does: a pause, a menu or an offer holds it.
+      if (noticeQueue.length > 0 && mode === 'playing' && speed > 0 && snap.offer === null) {
+        noticeAgeMs += dt;
+        if (noticeAgeMs >= NOTICE_MS) { noticeQueue.shift(); noticeAgeMs = 0; }
+      }
       let prompt = '';
       let promptButtons: HudState['promptButtons'];
       let tutTarget: ReturnType<typeof tutorialTarget> = null;
@@ -1668,6 +1702,7 @@ async function main(): Promise<void> {
         ...snap.hud,
         prompt,
         promptButtons,
+        notice: noticeQueue[0] ? { title: noticeQueue[0].title, line: noticeQueue[0].line, left01: 1 - noticeAgeMs / NOTICE_MS, more: noticeQueue.length - 1 } : undefined,
         phase: animPhase,
         inspector: view.describeCell(selected ?? hover) + snap.hud.inspector,
         selectedBuild: snap.hud.palette.findIndex((p) => p.id === selectedBuildId),

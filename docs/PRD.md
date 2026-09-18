@@ -1076,7 +1076,7 @@ numbers):
 |---|---|---|---|
 | **harrier** (`courser`) | 3 | `sprint`: runs 60% faster while unhit for two seconds | keep it under fire — a Tesla's arcs, a Laser's beam, a Bolt line |
 | **lunge** (`ram`) | 6 | `charge`: runs at double speed once under half hp | finish it in one volley, or slow it before the sprint (Frost) |
-| **brood** (`blob`) | 7 | `split`: dies into two skitters where it fell | kill it early, or let a blast take the halves together |
+| **brood** (`blob`) | 7 | `split`: dies into two scuttles (id `skitter`; renamed by D40) where it fell | kill it early, or let a blast take the halves together |
 | **stitch** (`mender`) | 8 | `heal`: mends every body within a cell and a half by 3 a second | priority WEAKEST finds it; kill it first |
 | **delve** (`mole`) | 9 | `burrow`: untargetable and unhittable for its first eight cells | the towers deeper in see it — a line by the Core, not at the entry |
 | **buckler** (`pavise`) | 11 | `frontshield`: hits from within 45° of ahead do a third | flank it from beside the road |
@@ -1670,7 +1670,26 @@ surfaces, or a boon cell is on the map once a tower stands, **a card pops
 over the board** - the sprite, the name, the facts and the rules with
 their answers - and the run pauses under it until GOT IT, Enter or Esc;
 cards queue when several come at once. Every first meeting is remembered
-in the meta save (`met`), so a card comes once, ever. The title's HOW TO
+in the meta save (`met`), so a card comes once, ever.
+
+**Since D41 (2026-09-18) a first meeting no longer stops the game.**
+Daniil, on the live build: "game stopping to show a card of a new enemy -
+cool idea, but it is too disruptive". A first meeting is now a **banner in
+the side panel**, under the next wave: the name on a quiet plate (never the
+accent bar - that is CALL WAVE's, directly above it), the one line that
+answers it (the trait's answer from `traitAnswers.ts`; for a body with no
+trait, its hp and speed), *click: the full card*, and a bar that runs down
+over nine seconds of running play - a pause, a menu or a relic offer holds
+the clock. The run goes on under it. A click anywhere on the banner opens
+the card exactly as it used to pop, paused, by the player's own hand; an
+unread banner is simply gone, and its card is in the CODEX, because the
+meeting was recorded when it happened. Several at once queue, and the plate
+says how many wait (`(+2)`). **One card still pauses: the grunt's, while
+the tutorial is running** - it is where a stranger learns that cards exist.
+The same banner serves the first tower of a kind, the first chest and boon
+ground: D41 names the enemy's card, and a second mechanism for the other
+three would have been the more surprising reading (one argument to `meet()`
+in `app/main.ts` puts any of them back). The title's HOW TO
 PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
 enemy not yet met is a `???` page that says when it walks; a tower or
 relic the tree has not opened stays LOCKED with what opens it, as before.
