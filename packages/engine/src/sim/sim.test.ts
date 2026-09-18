@@ -5,7 +5,7 @@ import { TileLibrary } from '../tiles/board';
 import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, bossHpMul, ARMOR_FLOOR, BOSS_HP_MUL, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
+import { COMBAT_RULES, DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, bossHpMul, platingAt, ARMOR_FLOOR, BOSS_HP_MUL, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
 import { effectiveStats, relicDescAt } from './defs';
 import { TRAIT_RULES, frontShieldMul, traitSpeedMul } from './traits';
 import { FORMATIONS, queueDef, queueFront, queueGap, queueBoss } from './sim';
@@ -1838,6 +1838,33 @@ describe('session 31, PR 2 - the early game', () => {
     let guard = 0;
     while (guard++ < 3000 && !(sim.alive[0] && sim.hp[0] < plated.hp)) sim.tick();
     expect(plated.hp - sim.hp[0]).toBeCloseTo(8 * ARMOR_FLOOR); // 2.8, not 8 - 6 = 2
+  });
+
+  it('what a hit is, is a RULE a run may override (D37): the floor, what armour blunts, and plating by wave', () => {
+    // The shipped rules are the defaults, and with none overridden a hit is what it always was.
+    expect(COMBAT_RULES).toEqual({ armorFloor: ARMOR_FLOOR, armorBlunts: 'all', plating: null });
+    expect(platingAt(COMBAT_RULES, 30)).toBe(0);
+    const plating = { from: 6, every: 3, add: 2 };
+    expect([5, 6, 8, 9, 12].map((w) => platingAt({ ...COMBAT_RULES, plating }, w))).toEqual([0, 2, 2, 4, 6]);
+
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const body: EnemyDef = { ...WALKER, hp: 100000, armor: 6 };
+    const firstHitOf = (damage: number, type: 'kinetic' | 'energy', rules: SimOptions['rules']): number => {
+      const tower: TowerDef = { ...BOLT, damageType: type, fireEveryTicks: 1000, projectile: { damage, speed: 1, homing: true } };
+      const sim = new Sim(47, { ...simOpts, towerDefs: [tower], enemyDefs: [body], rules });
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      let guard = 0;
+      while (guard++ < 3000 && !(sim.alive[0] && sim.hp[0] < body.hp)) sim.tick();
+      return body.hp - sim.hp[0];
+    };
+    // A lower floor: the small hit is a worse answer to armour, the big hit barely notices.
+    expect(firstHitOf(8, 'kinetic', { armorFloor: 0.1 })).toBeCloseTo(2); // 8 - 6, no longer lifted to 2.8
+    expect(firstHitOf(30, 'kinetic', { armorFloor: 0.1 })).toBeCloseTo(24);
+    // Armour that blunts kinetic alone: energy goes through plate; kinetic is as it was.
+    expect(firstHitOf(8, 'energy', { armorBlunts: 'kinetic' })).toBeCloseTo(8);
+    expect(firstHitOf(8, 'kinetic', { armorBlunts: 'kinetic' })).toBeCloseTo(8 * ARMOR_FLOOR);
+    expect(firstHitOf(8, 'energy', {})).toBeCloseTo(8 * ARMOR_FLOOR); // shipped: armour blunts every hit
   });
 
   it('a delay in the difficulty spec pushes every unlock above wave 1 later, and the boss stays the heaviest available', () => {

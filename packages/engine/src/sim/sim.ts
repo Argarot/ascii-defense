@@ -98,6 +98,8 @@ export interface SimOptions {
    * of it: two commons still make a rare, band or no band.
    */
   rarityMax?: number;
+  /** Overrides of COMBAT_RULES for this run (session 39): the lab's way to play a candidate rule. The app passes none. */
+  rules?: Partial<CombatRules>;
 }
 
 /**
@@ -128,6 +130,31 @@ export interface DifficultySpec {
    * session 32 a swarm entry counts its three bodies toward it.
    */
   countMax?: number;
+}
+
+/**
+ * What a hit IS (session 39, D37): the rules between a tower's damage and an
+ * enemy's health, as data - so the lab can play a candidate rule against the
+ * whole ladder before a number ships. D37 made this the thing that bounds a
+ * build: no cap on towers and no rising price, so what stops four hundred
+ * plain Bolts has to be that a small hit is a bad answer to armour.
+ */
+export interface CombatRules {
+  /** The least share of a hit that armour lets through (a hit is never below 1). */
+  armorFloor: number;
+  /** What armour blunts: every hit, or kinetic hits alone - energy goes through plate, and resistances are its counter. */
+  armorBlunts: 'all' | 'kinetic';
+  /** Plating: from wave `from`, every body wears `add` more armour per `every` waves begun - the ramp's answer to width, where hp is its answer to depth. null = none. */
+  plating: { from: number; every: number; add: number } | null;
+}
+/** The rules the game ships. A run may override them (SimOptions.rules) - the lab does; the app does not. */
+export const COMBAT_RULES: CombatRules = { armorFloor: 0.35, armorBlunts: 'all', plating: null };
+
+/** The armour plating adds at wave `wave`: `add` for each `every` waves begun since `from`. */
+export function platingAt(rules: CombatRules, wave: number): number {
+  const p = rules.plating;
+  if (!p || wave < p.from) return 0;
+  return p.add * (1 + Math.floor((wave - p.from) / p.every));
 }
 
 /**
@@ -300,7 +327,7 @@ export function bossHpMul(def: { hp: number }): number {
  * the shot nothing. Before this a plain Bolt did 2 of its 8 to a
  * juggernaut; with the floor it does 2.8. Railbore still ignores armour.
  */
-export const ARMOR_FLOOR = 0.35;
+export const ARMOR_FLOOR = COMBAT_RULES.armorFloor; // one number, in the rules (session 39)
 export const BOSS_BOUNTY_MUL = 5;
 export const BOSS_DAMAGE_MUL = 3;
 /** Queue encoding: a boss entry is its defIdx OR this flag. */
@@ -613,6 +640,8 @@ export class Sim {
   private readonly maxSpawns: number;
   private readonly interWaveTicks: number;
   private readonly difficulty: DifficultySpec;
+  /** What a hit is, this run: COMBAT_RULES under the run's overrides. */
+  readonly rules: CombatRules;
   private readonly finalWave: number;
   private spawnTimer = 0;
 
@@ -631,6 +660,7 @@ export class Sim {
     this.mode = opts.mode ?? 'trickle';
     // Water (null cells inside the board) is where void chests may surface (session 28, PR 5).
     for (let k = 0; k < opts.cellsW * opts.cellsH; k++) if (opts.cells[k] === null) this.voidCells.push(k);
+    this.rules = { ...COMBAT_RULES, ...opts.rules };
     this.spawnEvery = opts.spawnEveryTicks ?? TICK_HZ;
     this.maxSpawns = opts.maxSpawns ?? 0;
     this.scrap = opts.startingScrap ?? 100;
@@ -2725,7 +2755,9 @@ export class Sim {
     // Zero-damage attacks are pure control (Frost's base): effects land,
     // health does not move, armor's min-1 rule only applies to real hits.
     // Railbore ignores armour outright.
-    let dmg = typed <= 0 ? 0 : Math.max(1, ignoreArmor ? typed : Math.max(typed * ARMOR_FLOOR, typed - (def.armor ?? 0)));
+    // What armour blunts, how little it lets through and how it thickens with the waves are RULES (CombatRules, D37).
+    const plated = ignoreArmor || (this.rules.armorBlunts === 'kinetic' && type === 'energy') ? 0 : (def.armor ?? 0) + platingAt(this.rules, this.wave);
+    let dmg = typed <= 0 ? 0 : Math.max(1, plated <= 0 ? typed : Math.max(typed * this.rules.armorFloor, typed - plated));
     // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
     // relic that turns Frost from utility into a damage amplifier.
     // A frozen body is a slowed body (session 31, PR 8: Stasis held them still and Frostbite did nothing; Cold Snap already counted the freeze).

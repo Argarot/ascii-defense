@@ -25,6 +25,7 @@ import {
   TILE_SIZE,
   TileLibrary,
   type CellType,
+  type CombatRules,
   type DifficultySpec,
   type EnemyDef,
   type GeneratedMap,
@@ -88,6 +89,8 @@ export interface LabSpec {
   /** Session 28, PR 6: relics with a held rarity (0 common, 1 rare, 2 epic), granted after relicIds. */
   relics?: { id: string; rarity?: number }[];
   difficulty?: DifficultySpec;
+  /** A candidate for what a hit is (session 39, D37): overrides of the engine's COMBAT_RULES for this run. */
+  rules?: Partial<CombatRules>;
   maxWaves: number;
   coreHp?: number;
   /**
@@ -383,6 +386,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     // Without an economy the lab measures combat capability, not scrap.
     startingScrap: spec.economy ? spec.economy.startingScrap : 1_000_000,
     difficulty: spec.difficulty ?? DEFAULT_DIFFICULTY,
+    rules: spec.rules,
   });
 
   // Grant relics directly - acquisition flow is not what is being measured.
