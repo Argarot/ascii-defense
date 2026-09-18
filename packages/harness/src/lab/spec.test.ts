@@ -5,12 +5,39 @@
  * its own LabSpec.
  */
 import { describe, expect, it } from 'vitest';
-import { STARTING_SCRAP, THREAT_LEVELS } from '@ascii-defense/engine';
+import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary } from '@ascii-defense/engine';
+import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
+import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
+import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
+import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
+import towersJson from '@ascii-defense/content/assets/towers/roster.json';
+import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
+import { runLab, type LabContent } from './lab';
 import { PLANS } from './plans';
 import { LAB_BOARD, corpusSeed, specFor } from './spec';
 
 const [CALM, STANDARD, GRIM] = THREAT_LEVELS;
 const SOURCES = import.meta.glob(['./fit.ts', './balanceCheck.ts', './seedCorpus.ts', './buildSweep.ts'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+
+// #367, "the refused seeds": they were never refused maps. runLab let the plan buy on the tick the Core died; the sim
+// refuses a purchase once the run is over, the lab threw, and a LOST run left its row's denominator. Both seeds below
+// threw before the fix ("cannot choose t2 on bolt", "cannot place mortar"); both are plain losses.
+describe('a run that ends on a plan tick is a finished run, not a refused one (#367)', () => {
+  const must = <T,>(r: { ok: true; value: T } | { ok: false; errors: unknown[] }): T => { if (!r.ok) throw new Error('content invalid'); return r.value; };
+  const content: LabContent = {
+    lib: new TileLibrary(libraryJson.tiles),
+    enemyDefs: must(validateEnemies.check(enemiesJson)).enemies,
+    towerDefs: must(validateTowers.check(towersJson)).towers,
+    relicDefs: must(validateRelics.check(relicsJson)).relics,
+    tree: must(validateTree.check(treeJson)),
+  };
+  it.each([87122, 174231])('grim:bareBaseDeep on seed %i plays to its end and reports a death wave', (seed) => {
+    const report = runLab(specFor(GRIM, PLANS.bareBaseDeep, seed), content);
+    expect(typeof report.deathWave).toBe('number');
+    expect(report.deathWave!).toBeGreaterThan(5);
+    expect(report.deathWave!).toBeLessThanOrEqual(GRIM.finalWave);
+  }, 60_000);
+});
 
 describe('specFor', () => {
   it('deals the APP\'S map for the seed: the threat form, on the app\'s board', () => {
