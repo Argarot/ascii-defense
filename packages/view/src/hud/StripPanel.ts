@@ -27,6 +27,7 @@ import { RELIC_PLATE_H, RELIC_PLATE_W, drawRelicPlate } from '../board/relicPlat
 import { CELL_H, CELL_W } from '../board/style';
 import type { HudAction, HudState } from './HudPanel';
 import { RELIC_PULSE_TICKS } from './HudPanel';
+import { platingWords } from './traitAnswers';
 
 /**
  * Rows the strip takes at the BOARD's font scale (feedback 2026-09-05 item
@@ -41,6 +42,7 @@ const BUTTON_H = 7;
 /** A trait, in a word the strip can afford (the rule lives in engine/sim/traits.ts). */
 const TRAIT_WORD: Record<string, string> = {
   armoured: 'armoured',
+  insulated: 'insulated',
   shielded: 'shielded',
   fast: 'fast',
   swarm: 'swarm x3',
@@ -59,6 +61,7 @@ const TRAIT_WORD: Record<string, string> = {
 /** The same trait as a two-glyph MARK for a narrow strip: the shield's brackets are the board's own. */
 const TRAIT_MARK: Record<string, string> = {
   armoured: '##',
+  insulated: '%%',
   shielded: '()',
   fast: '>>',
   swarm: 'x3',
@@ -205,7 +208,8 @@ export class StripPanel {
     if (s.nextWave) {
       const nw = s.nextWave;
       // Plating rides the header (D37): "NEXT 9 PLATED +2" - the armour every body of that wave wears on top of its own.
-      const platedTag = (nw.plating ?? 0) > 0 ? ` PLATED +${nw.plating}` : '';
+      const plated = platingWords(nw.plating ?? 0, nw.insulating ?? 0);
+      const platedTag = plated ? ` ${plated.tag}` : '';
       term.write(nx, 1, `${nw.boss ? `NEXT ${nw.wave} BOSS` : `NEXT ${nw.wave}`}${platedTag}`.slice(0, colW - 1), nw.boss ? role('enemy.fast') : dim);
       nw.kinds.slice(0, H - 2).forEach((k, i) => {
         const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);

@@ -62,6 +62,12 @@ const PLANS: Record<string, { towers: TowerPlacement[]; tail?: TowerPlacement[];
   naive3: { towers: [P('bolt', PLAIN, 'entry'), P('bolt', PLAIN, 'entry'), P('bolt', PLAIN, 'entry')], unlocks: [] },
   spam: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [] },
   reference: { towers: [P('refinery', [0, 0, 0], 'vein'), ...LINE], tail: LINE, unlocks: [] },
+  // THE ENERGY DOOR (D38; the same plans as fit.ts, where their story is): width in the cheapest energy hit in the
+  // game - Ice Shards and no further - alone and holding the tree's relics, and the tree's mono-energy line played
+  // depth first, which has to lose to `tree` above.
+  frostSpam: { towers: [P('frost', [1, -1, -1])], tail: [P('frost', [1, -1, -1])], unlocks: [] },
+  treeFrostSpam: { towers: [P('frost', [1, -1, -1])], tail: [P('frost', [1, -1, -1])], unlocks: ['*'], relics: SIX.map((id) => ({ id, rarity: 2 })) },
+  treeEnergy: { towers: [P('frost', [1, 1, 1]), P('refinery', [0, 0, 0], 'vein')], tail: [P('tesla', [0, 0, 0]), P('laser', [0, 0, 0], 'inline'), P('frost', [1, 1, 1])], unlocks: ['*'], relics: SIX.map((id) => ({ id, rarity: 2 })) },
 };
 const THREAT_KEYS = ['calm', 'standard', 'grim'];
 

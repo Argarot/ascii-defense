@@ -51,11 +51,12 @@ proven red and green in its own PR.
 
 **Not built, said plainly:**
 
-- **Energy has no armour (D38, #370).** The damage model closed the kinetic
-  door and left the energy one unread: energy goes through armour and plating
-  untouched, its only counter is a multiplier on four kinds, and Tesla, Laser
-  and Frost-shard spam have never been played in the lab. Daniil named it the
-  same evening. First thing next session.
+- ~~**Energy has no armour (D38, #370).**~~ **Built the same evening**
+  (docs/lab/energy-door-2026-09-18.md): the rungs first — Ice Shards spam won
+  Standard 21% and, holding the tree's relics, Grim 94% — then plating's twin
+  for energy hits and insulation on husk, buckler and shellback. Energy spam
+  wins Standard 0–4% and Grim never; the mixed line 89%; mono-energy loses Grim
+  to mixed. The panel now says *"PLATED +2: every hit loses 2 more - hit big"*.
 - **The synergy (S5, #365).** No relic set carries a Bolt-only build: it reads
   1% against a target of 70%. D37 asked for it by name.
 - **The arsenal (#366).** The tree's relics carry Grim, not its towers: the
@@ -100,7 +101,8 @@ on the instrument as it now has to be played.**
 **PR list (a full day and then some — in this order, because each stands on
 the one before):**
 
-0. **Energy gets its armour (D38, #370) — first, because PR 2 stands on it.**
+0. **Energy gets its armour (D38, #370) — BUILT 2026-09-18, all three targets
+   met (docs/lab/energy-door-2026-09-18.md); first, because PR 2 stands on it.**
    Today every energy hit goes through armour and plating untouched; the only
    thing that blunts energy is a multiplier on four kinds; and *nobody has
    measured Tesla, Laser or Frost-shard spam* — the harness has a plain-Bolt

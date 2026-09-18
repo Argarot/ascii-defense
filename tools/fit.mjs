@@ -39,7 +39,7 @@ const shard = (k) => new Promise((resolve, reject) => {
 const started = Date.now();
 const runs = (await Promise.all(Array.from({ length: JOBS }, (_, k) => shard(k)))).join('').split('\n').filter(Boolean).map((l) => JSON.parse(l));
 
-console.log(`fit - ${patchFile ?? 'the game as shipped'} - ${SEEDS} seeds a row, the app's own maps, 100 Scrap - ${((Date.now() - started) / 1000).toFixed(0)}s\n`);
+console.log(`fit - ${patchFile ?? 'the game as shipped'} - ${SEEDS} seeds a row, the app's own maps and purse -${((Date.now() - started) / 1000).toFixed(0)}s\n`);
 console.log('| run | WINS | mean death | holds 5 | holds 10 | holds 15 | towers at the end (median) |');
 console.log('|---|---|---|---|---|---|---|');
 const pct = (a, b) => `${Math.round((100 * a) / b)}%`;

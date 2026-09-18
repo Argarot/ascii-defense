@@ -119,24 +119,24 @@ The two ground cells touching the Core face (and the border cells beside it) are
 <!-- generated:enemies -->
 14 enemies in `packages/content/assets/enemies/roster.json`. Speed is cells per second; breach is the Core health lost when one arrives; "from wave" is the first wave that may roll it. Every enemy walks the road; there are no flyers (PRD §8).
 
-| Enemy | id | HP | Speed | Breach | Bounty | From wave | Armour | Shield | vs kinetic | vs energy | Traits |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| **grunt** | grunt | 30 | 1.20 | 1 | 4 | 1 |  |  |  |  |  |
-| **skitter** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  |  |  | fast |
-| **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  | x0.6 | x2 | swarm, fast |
-| **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  | x0.4 | x2 | armoured |
-| **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 30 | x1.6 | x0.4 | shielded |
-| **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  |  | x1.6 | x0.4 |  |
-| **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  | x0.5 | x1.6 |  |
-| **harrier** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  | x1.4 | x0.6 | sprint |
-| **lunge** | ram | 70 | 1 | 3 | 8 | 6 |  |  | x0.6 | x1.6 | charge |
-| **brood** | blob | 60 | 1 | 2 | 6 | 7 |  |  |  |  | split |
-| **stitch** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  | x1.6 | heal |
-| **delve** | mole | 50 | 1.20 | 3 | 8 | 9 |  |  |  |  | burrow |
-| **buckler** | pavise | 110 | 0.80 | 4 | 12 | 11 |  |  | x1.4 | x0.5 | frontshield |
-| **Warden** (boss only) | warden | 450 | 0.60 | 10 | 30 | 12 | 3 |  | x0.7 | x1.4 | bulwark |
+| Enemy | id | HP | Speed | Breach | Bounty | From wave | Armour | Insulation | Shield | vs kinetic | vs energy | Traits |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **grunt** | grunt | 30 | 1.20 | 1 | 4 | 1 |  |  |  |  |  |  |
+| **skitter** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  |  |  |  | fast |
+| **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  |  | x0.6 | x2 | swarm, fast |
+| **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  |  | x0.4 | x2 | armoured |
+| **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 2 | 30 | x1.6 | x0.4 | shielded |
+| **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  | 4 |  | x1.6 | x0.4 |  |
+| **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  |  | x0.5 | x1.6 |  |
+| **harrier** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  |  | x1.4 | x0.6 | sprint |
+| **lunge** | ram | 70 | 1 | 3 | 8 | 6 |  |  |  | x0.6 | x1.6 | charge |
+| **brood** | blob | 60 | 1 | 2 | 6 | 7 |  |  |  |  |  | split |
+| **stitch** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  |  | x1.6 | heal |
+| **delve** | mole | 50 | 1.20 | 3 | 8 | 9 |  |  |  |  |  | burrow |
+| **buckler** | pavise | 110 | 0.80 | 4 | 12 | 11 |  | 4 |  | x1.4 | x0.5 | frontshield |
+| **Warden** (boss only) | warden | 450 | 0.60 | 10 | 30 | 12 | 3 |  |  | x0.7 | x1.4 | bulwark |
 
-Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.4-0.7 resists, x1.4-2 weak, immune takes nothing. Kinetic: Bolt Turret, Mortar, Missile Rack. Energy: Frost Emitter, Tesla Coil, Laser Lance. Armour: armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched. From wave 6 every body is PLATED: +1 armour, and +1 more every 3 waves - the next-wave panel says how much. A swarm of small hits is a bad answer to a late wave; one big hit, or energy, is a good one. A run starts with 200 Scrap.
+Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.4-0.7 resists, x1.4-2 weak, immune takes nothing. Kinetic: Bolt Turret, Mortar, Missile Rack. Energy: Frost Emitter, Tesla Coil, Laser Lance. Armour: armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched. And insulation is armour's mirror: subtracted from every ENERGY hit, but never more than 85% of it; kinetic goes through insulation untouched. From wave 6 every body is PLATED: +1 off every hit, kinetic or energy, and +1 more every 3 waves - the next-wave panel says how much. A swarm of small hits of either type is a bad answer to a late wave; one big hit is a good one. A run starts with 200 Scrap.
 
 Statuses show on the body (PRD §8) as the ground under the walker: cold when slowed, ember when burning, ice when frozen, ember over cold when both hold; brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.
 

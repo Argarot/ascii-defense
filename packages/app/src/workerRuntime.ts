@@ -32,6 +32,7 @@ import {
   createRng,
   generateMap,
   mapCells,
+  insulatingAt,
   platingAt,
   threatKnobs,
   validateTile,
@@ -288,6 +289,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       if (m === undefined || m === 1) continue;
       out.push(`${m < 1 ? 'resists' : 'weak'}-${t}`);
     }
+    // Insulation (D38) is a number on the def, like armour - but armour's bodies carry the 'armoured' trait and an
+    // insulated one carries nothing the strip could show, so the word is derived here, the way the resistances are.
+    if ((d.insulation ?? 0) > 0) out.push('insulated');
     return out;
   }
 
@@ -534,6 +538,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             waiting: s.waitingForCall(),
             // Plating (D37): the armour every body of this wave wears on top of its own - said BEFORE the wave, because it decides what to buy for it.
             plating: platingAt(s.rules, p.wave),
+            // Its twin for energy hits (D38). The shipped rules ramp both alike, and the panel then says one number.
+            insulating: insulatingAt(s.rules, p.wave),
             // How the packs walk (session 32, PR 3): counted by formation, in the composer's order of first appearance.
             formations: (() => { const out: { name: string; n: number }[] = []; for (const k of p.packs) { const f = out.find((o) => o.name === k.formation); if (f) f.n++; else out.push({ name: k.formation, n: 1 }); } return out; })(),
           };

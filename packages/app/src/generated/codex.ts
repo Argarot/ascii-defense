@@ -421,6 +421,7 @@ export const CODEX = {
       "bounty": 4,
       "fromWave": 1,
       "armour": 0,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "",
       "energy": "",
@@ -435,6 +436,7 @@ export const CODEX = {
       "bounty": 3,
       "fromWave": 2,
       "armour": 0,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "",
       "energy": "",
@@ -451,6 +453,7 @@ export const CODEX = {
       "bounty": 1,
       "fromWave": 3,
       "armour": 0,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "x0.6",
       "energy": "x2",
@@ -468,6 +471,7 @@ export const CODEX = {
       "bounty": 8,
       "fromWave": 4,
       "armour": 3,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "x0.4",
       "energy": "x2",
@@ -484,11 +488,13 @@ export const CODEX = {
       "bounty": 7,
       "fromWave": 5,
       "armour": 0,
+      "insulation": 2,
       "shield": 30,
       "kinetic": "x1.6",
       "energy": "x0.4",
       "traits": [
-        "shielded: a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire"
+        "shielded: a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire",
+        "insulated: its insulation comes off every ENERGY hit, but never more than 85% of it; kinetic goes through untouched - hit big, or use kinetic"
       ]
     },
     {
@@ -500,10 +506,13 @@ export const CODEX = {
       "bounty": 12,
       "fromWave": 6,
       "armour": 0,
+      "insulation": 4,
       "shield": 0,
       "kinetic": "x1.6",
       "energy": "x0.4",
-      "traits": []
+      "traits": [
+        "insulated: its insulation comes off every ENERGY hit, but never more than 85% of it; kinetic goes through untouched - hit big, or use kinetic"
+      ]
     },
     {
       "id": "juggernaut",
@@ -514,6 +523,7 @@ export const CODEX = {
       "bounty": 20,
       "fromWave": 10,
       "armour": 6,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "x0.5",
       "energy": "x1.6",
@@ -528,6 +538,7 @@ export const CODEX = {
       "bounty": 4,
       "fromWave": 3,
       "armour": 0,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "x1.4",
       "energy": "x0.6",
@@ -544,6 +555,7 @@ export const CODEX = {
       "bounty": 8,
       "fromWave": 6,
       "armour": 0,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "x0.6",
       "energy": "x1.6",
@@ -560,6 +572,7 @@ export const CODEX = {
       "bounty": 6,
       "fromWave": 7,
       "armour": 0,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "",
       "energy": "",
@@ -576,6 +589,7 @@ export const CODEX = {
       "bounty": 9,
       "fromWave": 8,
       "armour": 0,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "",
       "energy": "x1.6",
@@ -592,6 +606,7 @@ export const CODEX = {
       "bounty": 8,
       "fromWave": 9,
       "armour": 0,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "",
       "energy": "",
@@ -608,11 +623,13 @@ export const CODEX = {
       "bounty": 12,
       "fromWave": 11,
       "armour": 0,
+      "insulation": 4,
       "shield": 0,
       "kinetic": "x1.4",
       "energy": "x0.5",
       "traits": [
-        "frontshield: a shield facing the way it walks: hits from ahead do a third - flank it from beside the road"
+        "frontshield: a shield facing the way it walks: hits from ahead do a third - flank it from beside the road",
+        "insulated: its insulation comes off every ENERGY hit, but never more than 85% of it; kinetic goes through untouched - hit big, or use kinetic"
       ]
     },
     {
@@ -624,6 +641,7 @@ export const CODEX = {
       "bounty": 30,
       "fromWave": 12,
       "armour": 3,
+      "insulation": 0,
       "shield": 0,
       "kinetic": "x0.7",
       "energy": "x1.4",
@@ -1732,8 +1750,8 @@ export const CODEX = {
   "rules": [
     "Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.4-0.7 resists, x1.4-2 weak, immune takes nothing.",
     "Kinetic: Bolt Turret, Mortar, Missile Rack. Energy: Frost Emitter, Tesla Coil, Laser Lance.",
-    "Armour: armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched.",
-    "From wave 6 every body is PLATED: +1 armour, and +1 more every 3 waves - the next-wave panel says how much. A swarm of small hits is a bad answer to a late wave; one big hit, or energy, is a good one.",
+    "Armour: armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched. And insulation is armour's mirror: subtracted from every ENERGY hit, but never more than 85% of it; kinetic goes through insulation untouched.",
+    "From wave 6 every body is PLATED: +1 off every hit, kinetic or energy, and +1 more every 3 waves - the next-wave panel says how much. A swarm of small hits of either type is a bad answer to a late wave; one big hit is a good one.",
     "An upgrade is a better buy than another tower: the chassis is the expensive part, and a big hit is what gets through armour.",
     "Slows from different sources stack by one rule: the coldest wins, the longest lasts. The ground under a walker says its status: cold slowed, ember burning, ice frozen, ember over cold for both; ( ) a live shield.",
     "The two ground cells touching the Core face are precious: every tower has a unique gift there, printed on its card."

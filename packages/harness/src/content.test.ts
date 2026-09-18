@@ -66,6 +66,22 @@ describe('shipped combat rosters - cross-content sanity', () => {
     }
   });
 
+  it('an insulated body is one kinetic is effective against (D38): insulation is the mirror of armour, never a second wall on the same body', () => {
+    // D38, in Daniil's words: foes that "ignore significant amount of energy damage, while physical one is effective
+    // against it". A body that is insulated AND armoured, or insulated and resisting kinetic, has no answer in the
+    // arsenal but a bigger number - which is the design this rule exists to keep out of the roster.
+    type Body = { id: string; armor?: number; insulation?: number; resist?: { kinetic?: number; energy?: number } };
+    const bodies = enemies.enemies as Body[];
+    const insulated = bodies.filter((e) => (e.insulation ?? 0) > 0);
+    expect(insulated.length, 'the roster has insulated bodies').toBeGreaterThan(0);
+    for (const e of insulated) {
+      expect(e.armor ?? 0, `${e.id}: insulated and armoured`).toBe(0);
+      expect(e.resist?.kinetic ?? 1, `${e.id}: insulated, so kinetic must be effective`).toBeGreaterThanOrEqual(1);
+    }
+    // And the mirror holds the other way: what is armoured lets energy through.
+    for (const e of bodies.filter((b) => (b.armor ?? 0) > 0)) expect(e.resist?.energy ?? 1, `${e.id}: armoured, so energy must be effective`).toBeGreaterThanOrEqual(1);
+  });
+
   it('ids are unique across each roster', () => {
     const eIds = enemies.enemies.map((e) => e.id);
     const tIds = towers.towers.map((t) => t.id);

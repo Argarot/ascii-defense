@@ -40,13 +40,24 @@ const relicName = (id) => relics.find((r) => r.id === id)?.name ?? id;
  * A rule that cannot be found here is an error, not a default.
  */
 const simSource = readFileSync(join(ROOT, 'packages', 'engine', 'src', 'sim', 'sim.ts'), 'utf8');
-const rulesLine = simSource.match(/export const COMBAT_RULES: CombatRules = \{ armorFloor: ([\d.]+), armorBlunts: '(all|kinetic)', plating: (null|\{ from: (\d+), every: (\d+), add: (\d+) \}) \};/);
+const rulesLine = simSource.match(/export const COMBAT_RULES: CombatRules = \{ armorFloor: ([\d.]+), armorBlunts: '(all|kinetic)', plating: (null|\{ from: (\d+), every: (\d+), add: (\d+) \}), insulating: (null|\{ from: (\d+), every: (\d+), add: (\d+) \}) \};/);
 const purseLine = simSource.match(/export const STARTING_SCRAP = (\d+);/);
 if (!rulesLine || !purseLine) throw new Error('codex: COMBAT_RULES or STARTING_SCRAP not found in engine/src/sim/sim.ts in the shape this tool reads - update the tool with the rule');
-const RULES = { armorFloor: Number(rulesLine[1]), armorBlunts: rulesLine[2], plating: rulesLine[3] === 'null' ? null : { from: Number(rulesLine[4]), every: Number(rulesLine[5]), add: Number(rulesLine[6]) } };
+const ramp = (at) => (rulesLine[at] === 'null' ? null : { from: Number(rulesLine[at + 1]), every: Number(rulesLine[at + 2]), add: Number(rulesLine[at + 3]) });
+const RULES = { armorFloor: Number(rulesLine[1]), armorBlunts: rulesLine[2], plating: ramp(3), insulating: ramp(7) };
 const STARTING_SCRAP = Number(purseLine[1]);
 const armourWords = `armour is subtracted from every ${RULES.armorBlunts === 'kinetic' ? 'KINETIC hit' : 'hit'}, but never more than ${Math.round((1 - RULES.armorFloor) * 100)}% of it${RULES.armorBlunts === 'kinetic' ? '; energy goes through armour untouched' : ''}`;
-const platingWords = RULES.plating ? `From wave ${RULES.plating.from} every body is PLATED: +${RULES.plating.add} armour, and +${RULES.plating.add} more every ${RULES.plating.every} waves - the next-wave panel says how much. A swarm of small hits is a bad answer to a late wave; one big hit, or energy, is a good one.` : null;
+/** Insulation (D38) is armour's mirror, and is said as one. */
+const insulationRule = `subtracted from every ENERGY hit, but never more than ${Math.round((1 - RULES.armorFloor) * 100)}% of it; kinetic goes through insulation untouched`;
+const insulationWords = `insulation is armour's mirror: ${insulationRule}`;
+/** Plating in words, from the two ramps as the engine has them: said once when they are the same ramp, by type when they are not. */
+const rampWords = (p, what) => `+${p.add} ${what} from wave ${p.from}, and +${p.add} more every ${p.every} waves`;
+const sameRamp = RULES.plating && RULES.insulating && JSON.stringify(RULES.plating) === JSON.stringify(RULES.insulating);
+const platingWords = sameRamp
+  ? `From wave ${RULES.plating.from} every body is PLATED: +${RULES.plating.add} off every hit, kinetic or energy, and +${RULES.plating.add} more every ${RULES.plating.every} waves - the next-wave panel says how much. A swarm of small hits of either type is a bad answer to a late wave; one big hit is a good one.`
+  : RULES.plating || RULES.insulating
+    ? `Every body is PLATED as the waves go on: ${[RULES.plating ? rampWords(RULES.plating, 'armour') : null, RULES.insulating ? rampWords(RULES.insulating, 'insulation') : null].filter(Boolean).join('; ')} - the next-wave panel says how much. A swarm of small hits is a bad answer to a late wave; one big hit${RULES.insulating ? '' : ', or energy,'} is a good one.`
+    : null;
 
 /** The resist and weak ranges as the roster has them, and which tower deals which type - counted, never typed. */
 const mults = enemies.flatMap((e) => Object.values(e.resist ?? {}));
@@ -112,7 +123,7 @@ function tierRows(t) {
 function enemyRows() {
   const mul = (v) => (v === undefined || v === 1 ? '' : v === 0 ? 'immune' : `x${v}`);
   return enemies.map((e) => [
-    `**${e.name ?? e.id}**${e.bossOnly ? ' (boss only)' : ''}`, e.id, e.hp, n(e.speed * TICK_HZ, 2), e.damage, e.bounty, e.minWave ?? 1, e.armor ?? '', e.shield ?? '',
+    `**${e.name ?? e.id}**${e.bossOnly ? ' (boss only)' : ''}`, e.id, e.hp, n(e.speed * TICK_HZ, 2), e.damage, e.bounty, e.minWave ?? 1, e.armor ?? '', e.insulation ?? '', e.shield ?? '',
     mul(e.resist?.kinetic), mul(e.resist?.energy), (e.traits ?? []).join(', '),
   ]);
 }
@@ -144,9 +155,9 @@ const SECTIONS = {
     [
       `${enemies.length} enemies in \`packages/content/assets/enemies/roster.json\`. Speed is cells per second; breach is the Core health lost when one arrives; "from wave" is the first wave that may roll it. Every enemy walks the road; there are no flyers (PRD §8).`,
       '',
-      table(['Enemy', 'id', 'HP', 'Speed', 'Breach', 'Bounty', 'From wave', 'Armour', 'Shield', 'vs kinetic', 'vs energy', 'Traits'], enemyRows()),
+      table(['Enemy', 'id', 'HP', 'Speed', 'Breach', 'Bounty', 'From wave', 'Armour', 'Insulation', 'Shield', 'vs kinetic', 'vs energy', 'Traits'], enemyRows()),
     '',
-    `Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - ${typeWords}, immune takes nothing. ${typeRoster}. Armour: ${armourWords}.${platingWords ? ' ' + platingWords : ''} A run starts with ${STARTING_SCRAP} Scrap.`,
+    `Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - ${typeWords}, immune takes nothing. ${typeRoster}. Armour: ${armourWords}. And ${insulationWords}.${platingWords ? ' ' + platingWords : ''} A run starts with ${STARTING_SCRAP} Scrap.`,
       '',
       'Statuses show on the body (PRD §8) as the ground under the walker: cold when slowed, ember when burning, ice when frozen, ember over cold when both hold; brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.',
     '',
@@ -291,10 +302,12 @@ function codexTs() {
       bounty: e.bounty ?? 0,
       fromWave: e.minWave ?? 1,
       armour: e.armor ?? 0,
+      insulation: e.insulation ?? 0,
       shield: e.shield ?? 0,
       kinetic: mul(e.resist?.kinetic),
       energy: mul(e.resist?.energy),
-      traits: (e.traits ?? []).map((t) => `${t}: ${TRAITS[t] ?? ''}`),
+      // An insulated body carries no engine trait (the number is the rule), so its card would show "insulation 4" and never say what that is.
+      traits: [...(e.traits ?? []).map((t) => `${t}: ${TRAITS[t] ?? ''}`), ...(e.insulation ? [`insulated: its insulation comes off every ENERGY hit, but never more than ${Math.round((1 - RULES.armorFloor) * 100)}% of it; kinetic goes through untouched - hit big, or use kinetic`] : [])],
     })),
     relics: relics.map((r) => ({
       id: r.id,
@@ -316,7 +329,7 @@ function codexTs() {
     rules: [
       `Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - ${typeWords}, immune takes nothing.`,
       `${typeRoster}.`,
-      `Armour: ${armourWords}.`,
+      `Armour: ${armourWords}. And ${insulationWords}.`,
       ...(platingWords ? [platingWords] : []),
       'An upgrade is a better buy than another tower: the chassis is the expensive part, and a big hit is what gets through armour.',
       'Slows from different sources stack by one rule: the coldest wins, the longest lasts. The ground under a walker says its status: cold slowed, ember burning, ice frozen, ember over cold for both; ( ) a live shield.',

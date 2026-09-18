@@ -5,7 +5,7 @@ import { TileLibrary } from '../tiles/board';
 import type { CellType } from '../grid/cells';
 import { mapCells, generateMap } from '../mapgen/mapgen';
 import { computeFlowField } from './flow';
-import { COMBAT_RULES, DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, bossHpMul, platingAt, ARMOR_FLOOR, BOSS_HP_MUL, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
+import { COMBAT_RULES, DEFAULT_DIFFICULTY, EVENT_CAP, Sim, inPlus, TICK_HZ, bossHpMul, platingAt, insulatingAt, ARMOR_FLOOR, BOSS_HP_MUL, waveCount, waveHpScale, type SimOptions, RELIC_SLOTS, SALVAGE_ORE, CHEST_EVERY, CHEST_WINDOW, CHEST_MAX } from './sim';
 import { effectiveStats, relicDescAt } from './defs';
 import { TRAIT_RULES, frontShieldMul, traitSpeedMul } from './traits';
 import { FORMATIONS, queueDef, queueFront, queueGap, queueBoss } from './sim';
@@ -1843,8 +1843,9 @@ describe('session 31, PR 2 - the early game', () => {
   });
 
   it('what a hit is, is a RULE a run may override (D37): the floor, what armour blunts, and plating by wave', () => {
-    // The shipped rules (D37, 2026-09-18): a low floor, armour that blunts kinetic alone, one more armour on every body per three waves from wave 6.
-    expect(COMBAT_RULES).toEqual({ armorFloor: 0.15, armorBlunts: 'kinetic', plating: { from: 6, every: 3, add: 1 } });
+    // The shipped rules (D37, 2026-09-18): a low floor, armour that blunts kinetic alone, one more armour on every body per three waves from wave 6 -
+    // and (D38, the same evening) the same ramp for energy hits, so that plating is no longer something a small energy hit goes through.
+    expect(COMBAT_RULES).toEqual({ armorFloor: 0.15, armorBlunts: 'kinetic', plating: { from: 6, every: 3, add: 1 }, insulating: { from: 6, every: 3, add: 1 } });
     expect(ARMOR_FLOOR).toBe(COMBAT_RULES.armorFloor);
     expect([1, 5, 6, 8, 9, 12, 20].map((w) => platingAt(COMBAT_RULES, w))).toEqual([0, 0, 1, 1, 2, 3, 5]);
     expect(platingAt({ ...COMBAT_RULES, plating: null }, 30)).toBe(0);
@@ -1875,6 +1876,40 @@ describe('session 31, PR 2 - the early game', () => {
     // And with no override a run plays the shipped rules.
     expect(firstHitOf(8, 'energy', undefined)).toBeCloseTo(8);
     expect(firstHitOf(8, 'kinetic', undefined)).toBeCloseTo(2);
+  });
+
+  it('insulation is the mirror of armour (D38): a flat amount off every ENERGY hit, under the same floor, and kinetic never meets it', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const firstHitOf = (damage: number, type: 'kinetic' | 'energy', body: EnemyDef, rules: SimOptions['rules']): number => {
+      const tower: TowerDef = { ...BOLT, damageType: type, fireEveryTicks: 1000, projectile: { damage, speed: 1, homing: true } };
+      const sim = new Sim(47, { ...simOpts, towerDefs: [tower], enemyDefs: [body], rules });
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      let guard = 0;
+      while (guard++ < 3000 && !(sim.alive[0] && sim.hp[0] < body.hp)) sim.tick();
+      return body.hp - sim.hp[0];
+    };
+    // Every rule named, so the test reads the RULE and not whatever ships. Wave 1: no ramp of either kind yet.
+    const RULES = { armorFloor: 0.15, armorBlunts: 'kinetic', plating: null, insulating: null } as const;
+    const insulated: EnemyDef = { ...WALKER, hp: 100000, insulation: 6 };
+    expect(firstHitOf(8, 'energy', insulated, RULES)).toBeCloseTo(2); // 8 - 6
+    expect(firstHitOf(4, 'energy', insulated, RULES)).toBeCloseTo(1); // 4 - 6 is below the floor (0.6), and a hit is never below 1
+    expect(firstHitOf(30, 'energy', insulated, RULES)).toBeCloseTo(24); // the big hit is the answer, as it is to plate
+    expect(firstHitOf(8, 'kinetic', insulated, RULES)).toBeCloseTo(8); // the other half of the arsenal goes through untouched
+    // The floor is the same floor.
+    expect(firstHitOf(20, 'energy', { ...insulated, insulation: 19 }, { ...RULES, armorFloor: 0.35 })).toBeCloseTo(7);
+    // The resistance comes first, then the flat amount - the order armour has always had.
+    expect(firstHitOf(20, 'energy', { ...insulated, resist: { energy: 0.5 } }, RULES)).toBeCloseTo(4); // 20 x 0.5 = 10, - 6
+    // A body may wear both; each meets its own half. Under 'all', armour blunts energy as well and the two add.
+    const both: EnemyDef = { ...WALKER, hp: 100000, armor: 3, insulation: 6 };
+    expect(firstHitOf(20, 'kinetic', both, RULES)).toBeCloseTo(17);
+    expect(firstHitOf(20, 'energy', both, RULES)).toBeCloseTo(14);
+    expect(firstHitOf(20, 'energy', both, { ...RULES, armorBlunts: 'all' })).toBeCloseTo(11);
+    // The ramp is plating's twin: by wave, on every body, for energy alone.
+    const ramp = { from: 6, every: 3, add: 2 };
+    expect([5, 6, 8, 9, 12].map((w) => insulatingAt({ ...COMBAT_RULES, insulating: ramp }, w))).toEqual([0, 2, 2, 4, 6]);
+    expect(insulatingAt({ ...COMBAT_RULES, insulating: null }, 30)).toBe(0);
+    expect(platingAt({ ...COMBAT_RULES, plating: null, insulating: ramp }, 30)).toBe(0); // one ramp never feeds the other
   });
 
   it('a delay in the difficulty spec pushes every unlock above wave 1 later, and the boss stays the heaviest available', () => {

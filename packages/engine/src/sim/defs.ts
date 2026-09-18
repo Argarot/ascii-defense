@@ -32,6 +32,8 @@ export interface EnemyDef {
   bounty?: number;
   /** Flat damage reduction per hit; every hit still deals at least 1. */
   armor?: number;
+  /** Armour's mirror (D38): flat reduction per ENERGY hit, under the same floor; kinetic hits do not meet it. */
+  insulation?: number;
   /** Absorb pool burned before hp. */
   shield?: number;
   /** First wave this enemy may appear in (waves mode). */

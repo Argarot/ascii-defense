@@ -84,6 +84,11 @@
             "type": "number",
             "minimum": 0
           },
+          "insulation": {
+            "description": "Armour's mirror (D38): flat damage reduction per ENERGY hit, under the same floor as armour; kinetic hits do not meet it. Worn by bodies kinetic is effective against.",
+            "type": "number",
+            "minimum": 0
+          },
           "shield": {
             "description": "Absorb pool burned before hp.",
             "type": "number",

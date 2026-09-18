@@ -48,6 +48,10 @@ export interface EnemyRoster {
        */
       armor?: number;
       /**
+       * Armour's mirror (D38): flat damage reduction per ENERGY hit, under the same floor as armour; kinetic hits do not meet it. Worn by bodies kinetic is effective against.
+       */
+      insulation?: number;
+      /**
        * Absorb pool burned before hp.
        */
       shield?: number;
@@ -101,6 +105,10 @@ export interface EnemyRoster {
        * Flat damage reduction per hit; hits always deal at least 1.
        */
       armor?: number;
+      /**
+       * Armour's mirror (D38): flat damage reduction per ENERGY hit, under the same floor as armour; kinetic hits do not meet it. Worn by bodies kinetic is effective against.
+       */
+      insulation?: number;
       /**
        * Absorb pool burned before hp.
        */
@@ -211,6 +219,11 @@ export const enemiesSchema = {
           },
           "armor": {
             "description": "Flat damage reduction per hit; hits always deal at least 1.",
+            "type": "number",
+            "minimum": 0
+          },
+          "insulation": {
+            "description": "Armour's mirror (D38): flat damage reduction per ENERGY hit, under the same floor as armour; kinetic hits do not meet it. Worn by bodies kinetic is effective against.",
             "type": "number",
             "minimum": 0
           },
