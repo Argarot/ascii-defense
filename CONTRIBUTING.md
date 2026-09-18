@@ -95,6 +95,16 @@ Windows 10, PowerShell 5.1, Node v22.23.2, npm 12.0.2, git 2.33.0.
 - **The browser pane throttles `requestAnimationFrame` when not displayed**, and
   screenshots fail there. Verify rendering by reading pixels via `readPixels`,
   or by `toText()`.
+- **...so a motion or effect is looked at with frames driven on a WALL-CLOCK
+  timer while the sim runs, never after the fact.** Stepping the sim by hand
+  (`__ad.step`) with no frames between piles effects up - `__ad.fx().alive`
+  read 22 - and one frame then draws them all at mixed ages: a thick white
+  ring and a green disc the game never shows (2026-09-18, the mender's field).
+  The probe that works: `setInterval(() => __ad.frame(), 33)`, a crop of the
+  board canvas `drawImage`d onto a fixed overlay every ~110 ms (a filmstrip),
+  one screenshot of the overlay; `fx().alive` is the sanity check. And
+  `__ad.modalText()` after a menu action is the PREVIOUS page until
+  `__ad.frame()` has run.
 - **A bitmap font must be drawn at native size or an integer multiple.**
   Fractional scaling turns it to mush. Never set CSS `max-width` on the canvas.
 
@@ -191,6 +201,32 @@ Read the PRD before the architecture; read this file before touching anything.
   (2026-09-18: a tier edited mid-run made three rows differ by a seed each).
   And a one-seed difference is never noise: the lab is deterministic. Chasing
   that one found the lab dealing the base world rares and epics it cannot have.
+- **Every named player lives in ONE table: `harness/src/lab/plans.ts`.** The
+  fit harness, the balance gate, the ladder and the seed corpus take their
+  plans from it (`plans.test.ts` fails a tool that builds a placement by
+  hand). **A plan's name is a claim - read its towers before quoting its
+  number.** Issue #366 said "the Tesla line wins Grim 16%"; the line had no
+  Frost in it, and a Tesla at half its price or three times its damage still
+  won 1%. The fair rung for a tower is the SLOT: the base line with one
+  tower's place given to it and nothing else changed (`bare*Slot`) - there
+  the Tesla is the Mortar's equal. And a tool that builds its own `LabSpec`
+  drifts from the app: the ladder dealt maps the app never deals until
+  2026-09-18, because it spread `threatKnobs()` of a fresh stream into the
+  spec instead of using `map: { threat }`.
+- **When a bound says a lever cannot move the number, stop tuning and look at
+  the question.** The bounding round below exists to say "this mechanism can
+  meet the target"; on 2026-09-18 it said the opposite about five of the
+  Missile Rack's own numbers, which made its gap a question about the
+  tower's role (a call) and not a number (the dev's).
+- **When a literal is found lying, grep for its siblings before closing the
+  finding.** Session 40 took "100 Scrap" out of two headers; the ladder's and
+  the seed corpus's went on saying it for another session.
+- **Test the set, not the example you happened to think of.** The
+  first-meeting banner was tested against the longest ENEMY answer and
+  shipped a tower's sentence cut at "sources stack: +"; `notices.test.ts`
+  now holds every line the game can produce, and failed on its first run on
+  a line nobody had looked at. (And vitest does not typecheck: a test that
+  passes `npx vitest` can still fail `npm run gate`.)
 - **A rule that closes one door gets a rung for the door it opens, in the same
   change.** D37's damage model made armour blunt kinetic hits alone - "energy
   goes through plate" - and the harness that proved plain-Bolt spam dead had
@@ -250,6 +286,24 @@ Read the PRD before the architecture; read this file before touching anything.
   PR (2026-09-17: four files of the placement fix, caught by reading the
   status line by line). Anything you cannot explain, restore **by path**:
   `git checkout -- <file>`.
+- **"Every PR says MERGED" is not "it is on main".** A stack of squash-merged
+  PRs is correct under exactly one merge order, and on 2026-09-18 the five of
+  session 40 were merged out of it inside two minutes: #376 carried its branch
+  onward before #377 (and inside it the wrap) had landed in it, so `main` got
+  three of five and `gh pr list` said "no open PRs". **Check by ancestry or by
+  tree, never by PR state**: `git merge-base --is-ancestor <tip> origin/main`,
+  or an empty `git diff --stat origin/main <gated tip>`. And while the dev
+  cannot merge (the auto-mode classifier refuses `gh pr merge` and `gh issue
+  close` even on Daniil's instruction in chat; only a permission rule in his
+  settings lifts it, and that file is his) **a run of stacked PRs ends in ONE
+  roll-up PR, tip -> `main`**, whose body carries the `Closes #N` lines: one
+  click is the whole merge, and the item PRs are closed citing it.
+- **A file that can be written but not unlinked** (`pool.json`, held open by
+  another agent's process: "unable to unlink ... Invalid argument" on every
+  checkout that touches it). Do the merge in a scratch `git worktree` - a
+  fresh path has no locks - then in the real tree `git symbolic-ref HEAD
+  refs/heads/<branch>`, `git reset -q`, and restore the files `git status`
+  lists BY PATH. Never kill the holder: it is not ours.
 - **`git add` with one nonexistent path stages nothing.**
 - **The pane at 1920×1080** (`resize_window`) is how the workshop's plates
   fit; the hidden pane's default is far smaller and clips tall pages.
