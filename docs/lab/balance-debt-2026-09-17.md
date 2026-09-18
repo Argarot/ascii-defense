@@ -183,6 +183,14 @@ will not be invisible for **dailies** (PRD §11: consecutive dates would cycle
 2-3-4-5 entries) and it silently stratified this corpus — which made these
 tables *more* even, not less, so the readings stand.
 
+> **Fixed 2026-09-18 (D35).** The seed word is mixed before it seeds a stream;
+> `rng.test.ts` holds every row of the table above at chance, on five
+> arithmetic corpora and all seven streams. Writing that test found two things
+> this table missed: seeds that differ only in their **high** bits drew the
+> *same* first number, and every stream's first draw was the same function of
+> the seed. **No seed in this document reproduces any more**; the statistics
+> stand until the ladder is re-read on the new deal.
+
 **Not fixed here, on purpose.** The fix is three lines (mix the seed, or
 discard two outputs). The consequence is that every seed deals a different
 map and every stream a different run: the golden hash, every seed-pinned

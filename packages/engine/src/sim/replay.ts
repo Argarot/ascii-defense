@@ -14,8 +14,8 @@
 import type { Priority } from './targeting';
 import type { EnemyDef, TowerDef } from './defs';
 
-/** Bump on any change that invalidates recorded inputs. */
-export const REPLAY_VERSION = 1;
+/** Bump on any change that invalidates recorded inputs. 2 (D35, 2026-09-18): the RNG was re-dealt - the same seed and inputs are a different run. */
+export const REPLAY_VERSION = 2;
 
 export type ReplayAction =
   | { t: 'build'; x: number; y: number; defId: string }
@@ -77,9 +77,17 @@ const PRESENTATION_KEYS: ReadonlySet<string> = new Set(['name', 'short', 'desc']
  * state. It used to hash the whole def, so PRD sec 30's renames - "a content
  * edit and a codex line, nothing structural" - would have refused every
  * run in progress as "made against different content".
+ *
+ * `rest` (issue #341, 2026-09-18) is EVERYTHING ELSE a sim is built from -
+ * relics, sets, recipes, loot tables, the tree's grants, the Threat curves.
+ * The receipt covered the two rosters only, so a relic's numbers or a wave
+ * curve could change between a save and its resume and the run would
+ * continue, without a word, into a state that never happened. The caller
+ * passes what it constructs its sim from; absent, `r` is left out of the
+ * JSON and the receipt is the two rosters, as before.
  */
-export function contentHashOf(enemyDefs: readonly EnemyDef[], towerDefs: readonly TowerDef[]): number {
-  return fnv1a(JSON.stringify({ e: enemyDefs, t: towerDefs }, (key, value: unknown) => (PRESENTATION_KEYS.has(key) ? undefined : value)));
+export function contentHashOf(enemyDefs: readonly EnemyDef[], towerDefs: readonly TowerDef[], rest?: unknown): number {
+  return fnv1a(JSON.stringify({ e: enemyDefs, t: towerDefs, r: rest }, (key, value: unknown) => (PRESENTATION_KEYS.has(key) ? undefined : value)));
 }
 
 /** The slice of Sim playback needs - structural, so this module never imports the class. */
@@ -97,6 +105,9 @@ interface Replayable {
  * player's clicks were.
  */
 export function playReplay(sim: Replayable, replay: Replay, untilTick: number): void {
+  // The version was stamped from the first day and read by nothing until D35 (2026-09-18) made it matter: the same
+  // seed and inputs under another RNG are a different run, and playing them would "prove" a state that never happened.
+  if (replay.version !== REPLAY_VERSION) throw new Error(`replay is version ${replay.version}, this build plays ${REPLAY_VERSION} - the same seed and inputs would be a different run`);
   let i = 0;
   for (;;) {
     while (i < replay.inputs.length && replay.inputs[i].tick === sim.tickCount) {

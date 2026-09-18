@@ -534,7 +534,11 @@ describe('towers and projectiles', () => {
     expect(sim.pickRelic(0)).toBe(false);
     const ore0 = sim.ore[0];
     const replacedRarity = sim.heldRarity[3];
-    expect(sim.pickRelic(0, 3)).toBe(true);
+    // Take the Tithe BY NAME, not "option 0": which relic the dice deal first is the seed's business, and a Frostbite
+    // kept here multiplies into the fold this test reads at the end (the re-deal of D35 dealt one, and 3 read as 4.5).
+    const tithe = sim.offerDefs()!.findIndex((d) => d.id === 'tithe');
+    expect(tithe).toBeGreaterThanOrEqual(0);
+    expect(sim.pickRelic(tithe, 3)).toBe(true);
     expect(sim.heldRelics.length).toBe(RELIC_SLOTS);
     expect(sim.ore[0]).toBe(ore0 + SALVAGE_ORE[replacedRarity]);
     expect(sim.inputs.some((i) => i.a.t === 'pickRelic' && i.a.replace === 3)).toBe(true);
@@ -821,7 +825,10 @@ describe('towers and projectiles', () => {
 
   it('chain towers arc through nearby bodies with falloff, no projectiles (session 25)', () => {
     // Six bodies over three entries, one tick apart: every entry gets a pair standing together.
-    const { map, cellsW, cellsH, simOpts } = makeWorld(53, { maxSpawns: 6, spawnEveryTicks: 1 });
+    // The seed is a FIXTURE, chosen because its map lets a tower stand by an entry where a pair gathers: on the deal
+    // of D35 that holds for 23 of seeds 1-40, and the seed this test used before (53) is not one of them.
+    const SEED = 7;
+    const { map, cellsW, cellsH, simOpts } = makeWorld(SEED, { maxSpawns: 6, spawnEveryTicks: 1 });
     const COIL: TowerDef = {
       id: 'bolt',
       cost: 20,
@@ -832,7 +839,7 @@ describe('towers and projectiles', () => {
       chain: { count: 3, reach: 4, falloff: 0.3 }, // 0.3: hop totals are never multiples of the first hop, whatever the arc count
     };
     const parked: EnemyDef = { ...WALKER, hp: 10000, speed: 0.005 };
-    const sim = new Sim(53, { ...simOpts, enemyDefs: [parked], towerDefs: [COIL] });
+    const sim = new Sim(SEED, { ...simOpts, enemyDefs: [parked], towerDefs: [COIL] });
     for (const entry of map.entries) {
       let placed = false;
       for (let dy = -3; dy <= 3 && !placed; dy++)
@@ -1087,8 +1094,9 @@ describe('a fired shot always resolves (WBS 2.19, playtest 8)', () => {
       fireEveryTicks: 1000,
       projectile: { damage: 6, speed: 0.5, homing: false, explosive: true, explodeRadius: 1.5 },
     };
-    const { cells, cellsW, cellsH, simOpts } = makeWorld(23, { towerDefs: [SHELL], maxSpawns: 4, spawnEveryTicks: 2 });
-    const sim = new Sim(23, simOpts);
+    // A fixture seed: the spot nearest the Core must see a body within 400 ticks (32 of seeds 1-40 on the deal of D35; 23 is not one).
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(7, { towerDefs: [SHELL], maxSpawns: 4, spawnEveryTicks: 2 });
+    const sim = new Sim(7, simOpts);
     const spot = buildSpotNear(cells, cellsW, cellsH);
     sim.buildTower(spot.x, spot.y, 'shell');
     // March until the tower fires, then kill its target mid-flight.

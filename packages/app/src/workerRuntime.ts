@@ -75,6 +75,8 @@ export interface WorkerRuntimeDeps {
 const TICK_MS = 1000 / TICK_HZ;
 const SPEEDS = [0, 1, 2, 4, 8] as const;
 const MIN_SLOTS = 12;
+/** The Core's health at the start of every run; named because the content receipt covers it too (issue #341). */
+const CORE_HP = 50;
 
 export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   const { post, basics, enemyDefs, towerDefs, relicDefs, setDefs, recipeDefs, lootTables, tree } = deps;
@@ -86,7 +88,12 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   /** Endless (session 29, PR 2): the run has no final wave. */
   let runEndless = false;
   let runFinalWave = 0;
-  const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs);
+  // The receipt covers everything newRun builds a sim from (issue #341): a save resumes only against the content it saw.
+  // Of a Threat, only what the SIM reads: its map knobs and its walk made the map, and the save carries its map (D15).
+  const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs, {
+    relicDefs, setDefs, recipeDefs, lootTables, tree, coreHp: CORE_HP,
+    threats: THREAT_LEVELS.map((l) => ({ finalWave: l.finalWave, waveSeconds: l.waveSeconds, difficulty: l.difficulty })),
+  });
 
   // The current run - null until the first successful init. Everything here
   // is only ever reassigned by newRun's COMMIT block, together.
@@ -187,7 +194,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         enemyDefs,
         towerDefs: nextTowers,
         mode: 'waves',
-        coreHp: 50,
+        coreHp: CORE_HP,
         relicDefs: nextRelics,
         relicSlots: unlocked.relicSlots,
         rarityMax: unlocked.rarityMax,

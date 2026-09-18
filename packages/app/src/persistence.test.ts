@@ -114,19 +114,22 @@ describe('run save', () => {
     expect(loadRunFrom(store({ [RUN_KEY]: JSON.stringify(run) })).run?.seed).toBe(5);
   });
 
-  it('a v4 save (before the tree) resumes with everything unlocked (session 29, PR 1)', () => {
-    const v4: Record<string, unknown> = { ...run };
-    delete v4.meta;
-    const r = loadRunFrom(store({ [RUN_KEY]: JSON.stringify({ ...v4, version: 4 }) }));
-    expect(r.problem).toBeNull();
-    expect(r.run?.meta.unlocks).toEqual(['*']);
-    expect(r.run?.version).toBe(SAVE_VERSION);
-    // A v5 save without its meta is corrupt, not a resume.
-    expect(loadRunFrom(store({ [RUN_KEY]: JSON.stringify(v4) })).problem).toMatch(/corrupt/);
+  it('a save without its meta is corrupt, not a resume', () => {
+    const bare: Record<string, unknown> = { ...run };
+    delete bare.meta;
+    expect(loadRunFrom(store({ [RUN_KEY]: JSON.stringify(bare) })).problem).toMatch(/corrupt/);
   });
 
-  it('refuses pre-rebuild saves and future versions with a sentence', () => {
-    expect(loadRunFrom(store({ [RUN_KEY]: JSON.stringify({ ...run, version: 2 }) })).problem).toMatch(/predates/);
+  it('refuses every save from before the re-deal, and future versions, with a sentence (D35)', () => {
+    // v5 was the live version the day the RNG was re-dealt; v4 used to MIGRATE, and must not any more - its input log
+    // would replay against different waves, offers and loot.
+    for (const version of [2, 4, 5]) {
+      const r = loadRunFrom(store({ [RUN_KEY]: JSON.stringify({ ...run, version }) }));
+      expect(r.run).toBeNull();
+      expect(r.problem).toMatch(/predates the re-deal/);
+      expect(r.problem).toMatch(/cannot continue/);
+    }
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(6);
     expect(loadRunFrom(store({ [RUN_KEY]: JSON.stringify({ ...run, version: SAVE_VERSION + 1 }) })).problem).toMatch(/cannot continue/);
   });
 

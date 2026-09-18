@@ -17,7 +17,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { THREAT_LEVELS, TileLibrary, createRng, generateMap, threatKnobs, type EnemyDef, type RelicDef, type TileDef, type TowerDef } from '@ascii-defense/engine';
-import { BOARD_SLOTS, type FromWorker, type RunSave, type UiState } from './protocol';
+import { BOARD_SLOTS, SAVE_VERSION, type FromWorker, type RunSave, type UiState } from './protocol';
 import { createWorkerRuntime } from './workerRuntime';
 
 const g = (...rows: string[]): string[] => rows;
@@ -205,7 +205,7 @@ describe('the meta tree decides the world (session 29, PR 1)', () => {
     rt.handle({ t: 'save', id: 1 });
     const save = last('saved')!.save;
     expect(save.meta.unlocks).toEqual([]);
-    expect(save.version).toBe(5);
+    expect(save.version).toBe(SAVE_VERSION);
     // The band alone deals no rare relic - it has not been won; the win alone does not either - the band is not bought.
     for (const meta of [{ unlocks: ['more'], earned: [], forged: {} }, { unlocks: [], earned: ['r2'], forged: {} }]) {
       rt.handle({ t: 'init', seed: 7, threatIdx: 1, loadout: [], meta });

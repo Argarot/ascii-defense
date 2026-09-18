@@ -102,19 +102,23 @@ describe('the land has regions (session 36)', () => {
   it('the Core\'s own region is never rock: the ground by the Core is where every tower has its gift, and rock cannot be built on', () => {
     // The root slot - east border, the Core's row - leans toward its region's family like any slot. With the rule its
     // tile is rock far less often than a tile anywhere (rock is the commonest family: about 0.37 of all tiles).
+    // Read on 400 seeds, not the file's 40: the true rate is about 0.17, and at 40 a sample strays past 0.2 one time
+    // in three - the re-deal of D35 dealt such a sample (0.275) while 1,200 seeds read 0.178 against 0.409 without.
+    const ROOT_SEEDS = Array.from({ length: 400 }, (_, i) => (i + 1) * 7919 + 13);
     const rockAtRoot = (extra: Partial<MapGenOptions>): number => {
       let rock = 0;
-      for (const seed of SEEDS) {
+      for (const seed of ROOT_SEEDS) {
         const knobs = createRng(seed).stream('map');
         const { entries, targetPathCells } = threatKnobs(knobs, STANDARD);
         const m = generateMap(knobs, lib, { width: 7, height: 5, entries, targetPathCells, relicPoolSize: 11, specials: [], ...extra });
         const root = m.board.slots[Math.floor(m.core.y / 5) * 7 + 6]!;
         if (landFamilyOf(lib.resolved(root.tileId, root.rotation).cells) === 'rock') rock++;
       }
-      return rock / SEEDS.length;
+      return rock / ROOT_SEEDS.length;
     };
-    expect(rockAtRoot({ land: MAP_LAND })).toBeLessThan(0.2);
-    expect(rockAtRoot({ land: MAP_LAND })).toBeLessThan(rockAtRoot({}));
+    const ruled = rockAtRoot({ land: MAP_LAND });
+    expect(ruled).toBeLessThan(0.23); // three standard deviations above 0.17 at 400
+    expect(rockAtRoot({}) - ruled).toBeGreaterThan(0.12); // the rule's whole effect is about 0.23
   });
 
   it('never leaves a map without ore: three regions, three families, each present', () => {

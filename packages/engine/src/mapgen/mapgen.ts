@@ -192,7 +192,7 @@ export const ORE_REACH = 3;
  * A code from another version is refused loudly, never silently
  * regenerated into a different map.
  */
-export const GENERATOR_VERSION = 4; // 2: the Core at the east edge (session 24); 3: the ore ladder - a tree with a tier open deals different veins (D30); 4: the walk has a character and the land has regions (session 36) - every app map is a different map
+export const GENERATOR_VERSION = 5; // 5: the RNG mixes its seed word (D35, 2026-09-18) - every seed deals a different map; 2: the Core at the east edge (session 24); 3: the ore ladder - a tree with a tier open deals different veins (D30); 4: the walk has a character and the land has regions (session 36) - every app map is a different map
 /**
  * Extra cell columns past the east border that hold the Core FACE (session
  * 24, Daniil): the board's slots stay TILE_SIZE-square, and the Core lives

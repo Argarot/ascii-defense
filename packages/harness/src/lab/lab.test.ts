@@ -53,7 +53,7 @@ describe('the balance lab (session 12 gate)', () => {
     expect(report.deathWave).toBeGreaterThan(6);
   });
 
-  it('gate: the analytic prediction matches the real run within tolerance', () => {
+  it('the analytic prediction is a pessimistic floor under the real run (the tolerance gate, retired - issue #223)', () => {
     const spec: LabSpec = {
       seed: 4242,
       map: SMALL,
@@ -74,17 +74,13 @@ describe('the balance lab (session 12 gate)', () => {
     const pred = predict(spec, content, placedStats, 40);
     expect(report.result).toBe('died');
     expect(pred.deathWave).not.toBeNull();
-    // The model ignores overkill and contention (optimistic) and slow
-    // (pessimistic). Tolerance widened 5 to 7 when generated tiles made
-    // roads wigglier: longer in-tile exposure grows exactly the term the
-    // no-contention assumption is optimistic about. Widened 7 to 8 with the
-    // Core at the edge (session 24): every lane now shares the tail past
-    // the root, so towers there see every enemy and contention grows again.
-    // The mixed-build lab (session 24, PR 4) is the ruler that replaces this.
-    // Widened 8 to 10 with packs and formations (session 32, PR 2): a wall puts a
-    // whole pack in a tower's range at once, the contention term the model has
-    // never had; the register says only the headless runner is trusted.
-    expect(Math.abs(pred.deathWave! - report.deathWave!)).toBeLessThanOrEqual(10);
+    // This used to be a tolerance - |predicted - real| within 5, then 7, 8 and 10 waves, widened four times - and it
+    // was read on ONE seed. Measured over sixty seeds on 2026-09-18 (issue #223), on the old deal and the new alike:
+    // the model says wave 7-9 for every map while the real run dies anywhere from 5 to 27; the median error is eleven
+    // waves and a third of seeds sat inside the tolerance. Seed 4242 passed at exactly ten. It was never a gate.
+    // What IS true on every one of those seeds: the model is a pessimistic FLOOR - it never promised more than two
+    // waves past what the real run held. That is the property kept; the headless runner is the instrument.
+    expect(pred.deathWave!).toBeLessThanOrEqual(report.deathWave! + 3);
   });
 
   it('a stronger build strictly outlives a weaker one under the same curve', () => {
