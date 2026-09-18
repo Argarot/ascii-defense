@@ -201,6 +201,11 @@ Read the PRD before the architecture; read this file before touching anything.
 - **Two agents share this working tree**: `git add` by explicit path,
   never `stash`/`checkout .`/`reset --hard`; the placeholder-sprite tool
   rewrites palette.json's key order — restore it by path.
+- **The machine is shared too: never kill a process by NAME.** On 2026-09-18
+  `taskkill /F /IM node.exe`, meant for three leftover sweeps, killed every
+  Node process on the machine - the preview server and one nobody could
+  name afterwards. Start long jobs through the harness so they have an id to
+  stop, and let a sharded sweep's parent own its children.
 - **The font decides the language**: spleen has `┌┐└┘─│├┤┬┴┼`, `◆`,
   braille — no double lines, no blocks.
 

@@ -32,6 +32,8 @@ import {
   type TowerDef,
   resolveUnlocks,
   relicApplies,
+  threatKnobs,
+  type ThreatLevel,
   type TreeDef,
 } from '@ascii-defense/engine';
 
@@ -72,8 +74,14 @@ export interface LabSpec {
   loadout?: string[];
   /** The wave clock, launch to launch, in ticks (session 31: Calm's 55 s vs Standard's 40 s); the sim's default when absent. */
   interWaveTicks?: number;
-  /** 'demo' derives the map exactly as the live app does for this seed. */
-  map: 'demo' | { width: number; height: number; entries: number; targetPathCells: number };
+  /**
+   * 'demo' is the app's derivation as it was in session 12 (Standard's knobs, no walk, no land) - kept for the sweeps
+   * whose baselines stand on it. `{ threat }` is THE APP'S OWN MAP for this seed as the worker deals it today (session
+   * 38): the Threat's knobs drawn off the front of the map stream and the SAME stream carving on. Explicit knobs carve
+   * from a fresh stream: the same maps in distribution, not the map a player gets from that seed - right for a
+   * statistic, wrong for a list of seeds.
+   */
+  map: 'demo' | { width: number; height: number; entries: number; targetPathCells: number } | { width: number; height: number; threat: ThreatLevel };
   towers: TowerPlacement[];
   /** Granted before the first tick, in order (offer flow bypassed). */
   relicIds: string[];
@@ -156,8 +164,61 @@ export function demoMap(seed: number, lib: TileLibrary, poolSize: number, board 
 
 function makeWorld(spec: LabSpec, content: LabContent, oreTierMax = 1) {
   if (spec.map === 'demo') return demoMap(spec.seed, content.lib, content.relicDefs.length);
+  if ('threat' in spec.map) {
+    // Draw for draw what workerRuntime.newRun does (its test holds the worker to the engine's map; this holds the lab to it).
+    const knobs = createRng(spec.seed).stream('map');
+    const dealt = generateMap(knobs, content.lib, { width: spec.map.width, height: spec.map.height, ...threatKnobs(knobs, spec.map.threat), relicPoolSize: content.relicDefs.length, specials: spec.loadout ?? [], oreTierMax });
+    return { map: dealt, cellsW: dealt.cellsW, cellsH: dealt.cellsH, cells: mapCells(dealt, content.lib) };
+  }
   const map = generateMap(createRng(spec.seed).stream('map'), content.lib, { ...spec.map, relicPoolSize: content.relicDefs.length, specials: spec.loadout ?? [], oreTierMax });
   return { map, cellsW: map.cellsW, cellsH: map.cellsH, cells: mapCells(map, content.lib) };
+}
+
+/**
+ * How many lanes walk through each road cell (session 38): every entry's route to the Core, walked down the flow
+ * field, one count a cell. 'choke' placement weighs a cell by it, because a choke is where the LANES gather and not
+ * where the road is thickest: counting cells alone, the lab stood all five towers of seed 150474 at a busy junction
+ * fifteen cells out while a second branch joined the road beside the Core and walked in untouched - dead at wave 6
+ * on every plan, and filed as an "unwinnable seed" until the towers' coordinates were read.
+ * An approximation on purpose: a bridge's two strands are walked as one cell.
+ */
+function laneTraffic(cells: readonly (CellType | null)[], W: number, H: number, entries: readonly { x: number; y: number }[]): Int32Array {
+  const flow = computeFlowField(cells, W, H, entries);
+  const traffic = new Int32Array(W * H);
+  const STEPS: readonly [number, number, number][] = [[1, 0, -1], [2, 1, 0], [4, 0, 1], [8, -1, 0]]; // the flow field's N E S W bits
+  for (const e of entries) {
+    let x = e.x;
+    let y = e.y;
+    for (let guard = 0; guard < W * H; guard++) {
+      const at = y * W + x;
+      const d = flow.dist[at];
+      if (d < 0) break;
+      traffic[at]++;
+      if (d === 0) break;
+      const step = STEPS.find(([bit, dx, dy]) => {
+        const nx = x + dx;
+        const ny = y + dy;
+        return (flow.allowed[at] & bit) !== 0 && nx >= 0 && ny >= 0 && nx < W && ny < H && flow.dist[ny * W + nx] === d - 1;
+      });
+      if (!step) break;
+      x += step[1];
+      y += step[2];
+    }
+  }
+  return traffic;
+}
+
+/** `coverage`, each road cell counted once per lane that walks it - what a tower standing at (x, y) would actually see go by. */
+function laneCoverage(traffic: Int32Array, W: number, H: number, x: number, y: number, range: number): number {
+  let n = 0;
+  const r2 = range * range;
+  for (let cy = Math.max(0, Math.floor(y - range)); cy <= Math.min(H - 1, Math.ceil(y + range)); cy++)
+    for (let cx = Math.max(0, Math.floor(x - range)); cx <= Math.min(W - 1, Math.ceil(x + range)); cx++) {
+      const dx = cx - x;
+      const dy = cy - y;
+      if (dx * dx + dy * dy <= r2) n += traffic[cy * W + cx];
+    }
+  return n;
 }
 
 /** Road cells within `range` of cell (x, y), measured centre to centre.
@@ -245,7 +306,7 @@ function inlineSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H:
 }
 
 /** Greedy best-coverage placement, the way a player actually builds. */
-function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, range: number, where: 'auto' | 'core' | 'choke' | 'adjacent' | 'entry' = 'auto', last?: { x: number; y: number }, entry?: { x: number; y: number }): { x: number; y: number } | null {
+function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: number, towerId: string, range: number, where: 'auto' | 'core' | 'choke' | 'adjacent' | 'entry' = 'auto', last?: { x: number; y: number }, entry?: { x: number; y: number }, lanes?: readonly { x: number; y: number }[]): { x: number; y: number } | null {
   const allowed = new Set<number>();
   if (where === 'entry') {
     if (!entry) where = 'auto';
@@ -282,13 +343,15 @@ function autoSpot(sim: Sim, cells: readonly (CellType | null)[], W: number, H: n
         }
       }
   }
+  // The choke is scored by LANES seen, road cells breaking a tie; everywhere else by road cells, as it always was.
+  const traffic = where === 'choke' && lanes && lanes.length > 0 ? laneTraffic(cells, W, H, lanes) : null;
   let best: { x: number; y: number } | null = null;
   let bestCov = -1;
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       if (where !== 'auto' && !allowed.has(y * W + x)) continue;
       if (!sim.canBuildDefAt(x, y, towerId)) continue;
-      const cov = coverage(cells, W, H, x, y, range);
+      const cov = traffic ? laneCoverage(traffic, W, H, x, y, range) * 10_000 + coverage(cells, W, H, x, y, range) : coverage(cells, W, H, x, y, range);
       if (cov > bestCov) {
         bestCov = cov;
         best = { x, y };
@@ -352,7 +415,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     if (p.at === 'inline') {
       const inl = inlineSpot(sim, cells, cellsW, cellsH, p.towerId);
       if (inl) { spot = inl; facing = inl.facing; }
-      else spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, 'choke');
+      else spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, 'choke', undefined, undefined, map.entries);
     } else if (p.at === 'vein') {
       // The richest vein it may stand on: highest tier, then most Ore left.
       spot = null;
@@ -366,7 +429,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
         }
       if (!spot) return false; // no vein: the plan goes on without its producer
     } else if (typeof p.at === 'string') {
-      spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, p.at, placed[placed.length - 1], map.entries[0]) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE);
+      spot = autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE, p.at, placed[placed.length - 1], map.entries[0], map.entries) ?? autoSpot(sim, cells, cellsW, cellsH, p.towerId, def.range ?? BEAM_AS_GUN_RANGE);
     } else {
       spot = p.at;
     }
