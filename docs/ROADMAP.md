@@ -92,71 +92,77 @@ Standard run of nothing but plain Bolts by the Core, never upgraded.**
 ## The next session
 
 *Named by the ledger's **NEXT** row below — that row owns the name, this
-section owns the plan. Daniil's entire next input should be able to be the
-word "go".*
+section owns the plan.*
 
-*(Written 2026-09-18 at the wrap of Calibration I. It builds the DEFAULT of
-call #357; if he answers the call differently, this plan is superseded by his
-answer and rewritten before anything is built.)*
+*(Rewritten 2026-09-18, the same afternoon, on Daniil's answer to call #357 —
+D37. The plan that stood here for an hour built a tower cap; he refused it,
+and a rising price with it. His instruction for the session: "Go and build
+stuff until you reach a point where you need my input on a critical decision.
+Until then just keep building.")*
 
-**Theme.** Nothing bounds how wide a build may go, so the cheapest tower,
-never upgraded, is the strongest line in the game, upgrades lose to it, and
-the tree's top rung sells nothing the base world lacks. One rule answers all
-three: **the Core supports N towers, and the workshop's capacity branch sells
-more.** Build the rule, let the lab derive N and its steps, then fit the
-ladder behind it — which is the first moment a fit can mean anything. It
-unblocks #349, every balance number downstream, and the stranger's round
-(whose Standard should not be one a first-timer can win by spamming).
+**Theme.** What bounds a build is the **damage model**, not a rule about
+counting. Today a plain Bolt is three to five times the damage per Scrap of
+anything else in the game, armour is on three bodies of fourteen and can
+never take more than 65% off a hit, and the two damage types differ by
+±40–60%. So eleven Bolts beat a Railbore, and four hundred beat everything.
+The fix is to make *what a hit is* matter: per-hit damage against armour,
+type against resistance, and an upgrade that is worth more than another
+tower. **A Bolt-only build stays welcome where relics carry it** — finding a
+"broken" synergy is the game working; winning by default is not.
 
-**PR list (a full day):**
+**Targets, stated before any number is measured** (the lab derives the rest —
+CONTRIBUTING §6 rule 7):
 
-1. **The rule, end to end** — `SimOptions.towerCap`; `buildTower` refuses past
-   it with a reason the HUD can say; the strip shows *n / N*; `Unlocked.towerCap`
-   from `grants.towerCap` on capacity nodes — **and its authoring surface in
-   the same PR**: the tree schema and generated types, the validator, the
-   workshop plates' text, the codex and the catalogue, a tutorial line, the
-   creative page's toggle. Selling frees a slot. *Proof:* a run in the live
-   app that hits the cap and says so; replay bit-identical; the golden hash
-   moved once or not at all, with the reason.
-2. **The lab derives N** — the ladder read at caps from 8 to 40, base world and
-   tree. Targets stated before the numbers: spam no longer beats depth on any
-   Threat; *forks learned* beats *placement learned* (L3 becomes a ladder
-   again); Standard is lost by what wins Calm (L4). *Proof:* one table, and
-   the N it picks with its reason.
-3. **The tree's steps, and Grim re-fitted** — #349. The capacity nodes' sizes
-   and Ore prices from the same sweep; then Grim's curve to *base world ≤ 20%,
-   tree ≥ 60%*. **Stop condition, again:** if no cap-and-curve pair opens the
-   gap, that is the arsenal (next item) and the PR says so instead of bending
-   a number.
-4. **The arsenal, measured per slot** — once slots are scarce a tower is worth
-   what it does *per slot*. Laser, Missile, Tesla and Bastion lines against the
-   Railbore line under the cap. Where a tree tower does not out-scale a
-   Railbore per slot, its numbers are the lab's to derive (rule 7), with the
-   variant sweep as the guard against a new dominant path.
-5. **The bands move, on purpose** — `balance/targets.json` re-set from the new
-   ladder, every moved band carrying its reason; the thermometer re-read.
-   ladder-2026-09-18.md gets its successor. *Proof:* `npm run gate` green on
-   the new game, red if the cap is removed.
+| # | target |
+|---|---|
+| S1 | **Plain Bolts, never upgraded, no relics, going on:** win Standard at most one run in ten and Grim never; on Calm they may still win about half — placement is a lesson and Calm is where it is learned |
+| S2 | **Forks learned beats placement learned** on every Threat, by a rung a player would notice — an upgrade is worth more than another tower |
+| S3 | **The reference wins Standard most of the time** (85–95%), and what wins Calm loses Standard (L4) |
+| S4 | **Grim is lost by the base world (≤ 20%) and won by the tree (≥ 60%)** — and the tree's *towers* carry part of that, not its relics alone (L5) |
+| S5 | **Bolts only, with relics that support them, win Standard** (≥ 70%): the synergy exists to be found |
+| S6 | L1, L2 and L6 still hold: a know-nothing holds Calm's wave 5 and then loses; no seed is unwinnable |
 
-**Gate — his eye on the live build:** a Standard run where he reaches the cap
-and has to choose between upgrading and selling; a Bolt-only run that loses;
-Grim with a fresh save as a loss that teaches and with the tree as a fight.
+**PR list — built in order, each behind the last:**
 
-**His part: one thing, and "go" covers it.** Call **#357** — *what bounds a
-build?* Default: the tower cap, which this plan builds. A different answer
-(a price that rises per copy; or leave it) replaces this plan.
+1. **The fit harness.** The lab plays named plans against content *patches*
+   (an enemy's armour, a resistance, a tier's numbers, the armour floor)
+   without touching the shipped files, sharded like the corpus, a read in
+   well under a minute. *Proof:* the unpatched read equals the ladder's.
+2. **Armour means something.** Which bodies wear it, how much, and how little
+   of a hit the floor lets through — so that a swarm of small hits is a bad
+   answer to an armoured wave and one big hit is a good one. *Proof:* S1 moves
+   most of its way on this alone; nothing about waves 1–5 on Calm changes.
+3. **Types decide fights.** Resistances wide enough to choose a tower by, and
+   what armour means to each type — so the mixed line beats the pure one and
+   the tree's energy towers have a job the base world cannot do. *Proof:* S4's
+   gap opens; the variant sweep finds no single dominant line.
+4. **An upgrade is worth more than another tower.** Tier numbers re-derived
+   so that depth is the better use of Scrap. *Proof:* S2.
+5. **The synergy is there to find.** The relics that carry a Bolt-only build —
+   flat damage, armour-piercing, attack speed — measured as a set; a knob
+   added with its authoring surface if one is missing. *Proof:* S5.
+6. **The ladder re-fitted and the bands moved.** Standard's and Grim's curves
+   behind the new damage model; `balance/targets.json` re-set with a reason on
+   every band; the ladder document's successor; PRD §8 rewritten to say what
+   armour and types now are.
 
-**Biggest risk — and this one wants his verdict, not his silence.** A cap is
-a hard rule in a game that has had none: it changes what a run *feels* like
-from the first minute, and a wrong N is felt by every player on every run.
-**The alternative is the soft version — a price that rises per copy of a
-tower kind** — which bounds width without ever saying "no", keeps the board
-free, and gives the tree nothing to sell. *Default: the cap, because it is the
-only answer that also makes upgrades matter and gives the tree's top rung a
-job.* **Expensive if wrong:** every number fitted next session is fitted on
-top of it — the ladder, the bands, the capacity nodes' prices, the tutorial's
-words — and a later change of mind re-does that whole session. *"That risk
-is real, build the rising price instead"* or *"accepted"* — one sentence.
+**Where it stops for him:** when two targets cannot both be met, when a
+change would alter what a tower *is* rather than what it costs or deals, or
+when the early game (Calm to wave 5, the stranger's round) would have to move.
+
+**Gate — his eye on the live build:** a Standard run of nothing but plain
+Bolts loses, and he can see why (the strip's answer line names armour); a
+Railbore visibly does what ten Bolts cannot; a Bolt-only run with the right
+relics wins and feels like a find.
+
+**Biggest risk.** Every number in the game moves in one session, on the
+strength of a lab player who buys the instant it can afford and places by
+arithmetic. A person is weaker than that player by an amount nobody has
+measured, so a fit to "the reference wins Standard 90%" may be a fit to a
+Standard that people lose. **Mitigation:** fit to the *upper* end of each
+band, keep Calm and the first five waves where they are, and hand him the
+build early. **Expensive if wrong:** tutorial text, codex lines and the art
+brief's "answers" table all quote what beats what.
 
 ---
 
@@ -471,7 +477,7 @@ The order is derived from *what causes rework if done late*:
 | **The stranger's round** | *(waits on a person, not on the build)* A stranger plays the live build unaided on Calm to wave 5 under `docs/STRANGER-TEST.md`; the ten scored rows are filed as issues `[r36.<row>] …`; every 0 and 1 becomes a fix the same session. This is the one question no sweep can answer, which is why it stays his — unlike balance, which §6 rule 7 moved back to the dev | A "2" on rows 5, 6 and 10 of the scorecard |
 | ~~37~~ | **DONE, GATE OPEN** *(PRs #342, #344–#347, #350, the same night; the commits say "session 36")* **The carve's variety, the debt dive and the economy research**: a walk with a character per Threat and a roll per map, land in regions by family, the map sweep's resemblance columns and a gallery tool; then #218 closed by construction, the deploy gated on the checks (#212's workflow half), generator hygiene (#217, #211, #321), the heredoc rule as a hook, and docs/lab/economy-research-2026-09-17.md | — | **Moved, not met**: Calm and Grim now read apart at a glance by the sweep's columns; two *Standard* maps still resemble each other more than the gate allows (avenue maps 8% → 18%, and no walk setting moves it further — D28's fill target decides it; call #343). His eye decides whether that is enough |
 | ~~38~~ | **DONE, GATE OPEN** *(PRs #353-#356, #358-#360, 2026-09-18 - Daniil's "go with the next session")* **Calibration I**: every seed re-dealt (D35) with the hash reading quantities exactly and the receipt covering the whole world; a lab player who keeps buying (WBS 1.5.1 under its real name); the ladder re-read and the seed corpus on the app's own maps (WBS 3.4); `npm run balance` in CI and in the gate (WBS 1.5.2, 3.2). **Not built:** the human offset (3.3, needs his replays), a bot that chooses (3.1) | - | Injected regression caught - **met**, red and green in PR #360's own CI. No unwinnable seed in 1,500 - **met**. No trivial seed - **not met**: nine Calm seeds in 500 are won by one plain Bolt, listed. And the finding that outweighs the gate: plain Bolts, never upgraded, win Standard 99% and Grim 84%; no curve moved; call #357 |
-| **What bounds a build** | *(NEXT; the plan is "The next session" above - born of call #357, which the content freeze admits: only defects and calls enter)* The default of #357 built end to end: a tower cap raised by the tree's capacity branch, with its authoring surface; N and its steps derived by the lab; Grim re-fitted behind it (#349); the arsenal measured per slot; the balance bands moved on purpose | A Bolt-only run loses Standard; he reaches the cap and has to choose; Grim is lost by the base world and fought by the tree - and the ladder document says the same in numbers |
+| **What bounds a build** | *(NEXT; the plan is "The next session" above - born of call #357, answered as D37)* The damage model: armour that means something, types that decide fights, an upgrade worth more than another tower, the relic synergy that carries a Bolt-only build; then Standard and Grim re-fitted behind it (#349) and the balance bands moved on purpose. **No cap, no rising price** (D37) | Plain Bolts alone lose Standard and he can see why; a Railbore does what ten Bolts cannot; Bolts with the right relics win and feel like a find; Grim is lost by the base world and fought by the tree |
 | **Meta progression, full** | *(plus 7.8, the monetization door — D27; the tree, run history with bests and the in-game Tile Smith landed in sessions 29–31)* | Tech tree stages 1–2 beyond the shipped tree, dailies, replay sharing, **the tile-loadout slot economy** (7.5) | Finishing a run visibly changes the next one |
 | **Calibration II** | WBS 3.6: recalibrate with the meta layer live — tech-tree multipliers, pool unlocks and chosen tile loadouts all move player power underneath the curves calibration I fixed. Re-baseline `balance.yml`, re-sweep the seed corpus at several tree states | No trivial or unwinnable seed at any tech-tree state the player can actually hold |
 | **Presentation at scale** | Full art pass with per-upgrade tower identity (4.11), effects for every attack shape (6.3), enemy trait markers, UI art (4.13), **6.7 relic art at board-glyph scale**, **6.8 smoothness via spatial phase**, biomes, minimal SFX. The art round-trip proof (6.1) opens this block | The board reads as a place, not a diagram |
@@ -824,6 +830,7 @@ agreement](../CONTRIBUTING.md), rule 3).*
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
+| D37 | **What bounds a build is the damage model, not a rule about counting** - **RESOLVED 2026-09-18 (Daniil)**, answering call #357 against its default. **No hard cap on towers**, and **no price that rises per copy** ("also not the most elegant way to solve this"). Instead: "rebalance of the damage/DPS, or making damage types much more relevant". **A Bolt-only build is welcome when a combination of relics supports it** - "to find 'broken' synergies so to say" - but "default brainless spam of basic bolts shouldn't beat every game". The evidence that raised it: plain Bolts, never upgraded, win Standard 99% and Grim 84% (docs/lab/ladder-2026-09-18.md). The default I had proposed - a tower cap sold by the tree - was refused; nothing had been built on it |  | closed |
 | D36 | **The board fills on every map** — **MINTED 2026-09-18, by default, unanswered** (call #343). D28's fill target stays 0.9 on every map; a map does not roll its own. Consequence, recorded so it is not rediscovered: the carve's gate (*two Standard runs do not resemble each other by the road's walk*) stays "moved, not met" — about one Standard map in five differs in kind, and the map sweep shows no walk setting moves it further, because lane count decides a Standard map's look and the fill target decides lane count. Reversible: `MapGenOptions.coverage` already exists, and `node tools/map-gallery.mjs 1 8 --coverage=0.6` shows the alternative |  | closed |
 | D35 | **Every seed is re-dealt, now, as a clean break** — **MINTED 2026-09-18, by default** (call #339; Daniil's "go" on the plan whose first PR builds it, no separate answer to the call or to the plan's risk line). The RNG's first draws follow the seed's low bits; the fix mixes the seed before seeding each stream and bumps `GENERATOR_VERSION`, `REPLAY_VERSION` and `SAVE_VERSION`, so an old run code or saved run is refused with a sentence. **No versioned path for old seeds is kept** — the alternative the plan put to him, carrying two RNG paths and two golden hashes forever, was not taken. The cheapest moment: before dailies and before the stranger's round |  | closed |
 | D34 | **A rarity band is bought; a relic is won** — **RESOLVED 2026-09-17 (Daniil)**, answering the sub-question D29 left open. The meta surface sells *access to a rarity* (rare for X Ore, epic for Y); **specific relics are unlocked by winning**, and a named relic is never for sale. Selling one for money is D27's territory and stays deferred. PRD §28.1. The default proposed alongside D29 - drop the win-earned half - was wrong and was corrected before anything was built on it |  | closed |
