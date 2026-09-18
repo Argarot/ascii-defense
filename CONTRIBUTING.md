@@ -13,7 +13,11 @@ repeated fix round means. Read both.
 that belong at a session's start: these reads, minting the calls whose deadline
 has just fallen due, proving the tree with `npm run gate`, and then **briefing
 Daniil on what loaded and stopping for his go**. It briefs before it builds, so
-he can see the right context loaded rather than take it on trust. The reads
+he can see the right context loaded rather than take it on trust. **That is
+for a new, empty conversation only.** Continuing in a conversation that already
+holds the context — "go with the next session" after a wrap — the wrap's plan
+is the brief and his "go" is the go: mint the overdue calls, prove the gate,
+build (the skill says so itself, under "When NOT to run this"). The reads
 below are its step 1, repeated here because a context that never loads the
 skill still needs them.
 
