@@ -19,6 +19,7 @@ import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import { runLab, type LabContent, type LabSpec, type TowerPlacement } from './lab';
+import { planOf, type PlanName } from './plans';
 
 declare const console: { log: (...args: unknown[]) => void };
 declare const process: { argv: string[] };
@@ -291,23 +292,21 @@ const DEBT_ONLY = process.argv.includes('--debt');
 if (DEBT_ONLY) {
   const N = Number(process.argv.slice(2).find((a) => /^\d+$/.test(a)) ?? 60);
   const CORPUS = Array.from({ length: N }, (_, i) => (i + 1) * 7919 + 13);
-  const PLAIN: [number, number, number] = [-1, -1, -1];
   /** The Core's health in the lab and in the app alike (the sim's default; nothing passes another). */
   const CORE_HP = 50;
-  const naive = (n: number, at: TowerPlacement['at']): TowerPlacement[] => Array.from({ length: n }, () => ({ towerId: 'bolt', choices: PLAIN, at }));
-  const REFERENCE: TowerPlacement[] = [A('refinery', [0, 0, 0], 'vein'), ...mixed('choke', RAILBORE)];
   const pct = (x: number): string => `${Math.round(100 * x)}%`;
   const q = (sorted: number[], p: number): number => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
 
   /**
-   * unlocks: the tree state the row plays under ([] = the base world); band: the rarity band its six relics are dealt
-   * inside; tail: what the player goes on buying once the plan is bought out (issue #348). A row WITHOUT a tail is a
-   * player who stops on purpose - the know-nothing rows of L1 - and the purse column shows what that costs them.
+   * A rung is a PLAN from the one table (plans.ts) and the words the ladder says about it. `relicSets`: deal the row six
+   * relics inside `band`, a different seeded set per seed (the offer as a player meets it) - which REPLACES whatever
+   * the plan itself holds, so the tree's rungs are read on dealt sets where the fit harness reads them on a held six.
+   * A plan WITHOUT a tail is a player who stops on purpose - the know-nothing rows of L1 - and the purse column shows
+   * what that costs them. Until 2026-09-18 these rows were hand-made here and laid six chassis before the first
+   * upgrade; D37's prices punish that order (46% on Standard against the depth-first line's 93%).
    */
-  interface Row { name: string; towers: TowerPlacement[]; tail?: TowerPlacement[]; relicSets?: boolean; unlocks?: string[]; band?: number }
-  /** The reference goes on buying its own line; the tree's line goes on buying Lasers with a Railbore between. */
-  const REFERENCE_TAIL: TowerPlacement[] = mixed('choke', RAILBORE);
-  const FORKED_BOLT: TowerPlacement = P('bolt', [0, 0, -1]);
+  /** `bare`: hold nothing, whatever the plan holds - what a line's TOWERS are worth. */
+  interface Row { name: string; plan: PlanName; relicSets?: boolean; band?: number; bare?: boolean }
   const read = (threat: (typeof THREAT_LEVELS)[number], rows: Row[], marks: number[]): void => {
     // Five waves past the win and no further: the ladder's targets are win rates, and a player who keeps buying
     // stands thirty towers against sixty bodies by wave 40 - hours of sweep to read a number nobody plays to.
@@ -317,7 +316,7 @@ if (DEBT_ONLY) {
     if (process.argv.includes('--rows')) { console.log(rows.length); return; }
     const rowArg = process.argv.find((a) => a.startsWith('--row='));
     const onlyRow = rowArg === undefined ? null : Number(rowArg.slice(6));
-    if (onlyRow === null || onlyRow < 0) console.log(`## ${threat.name.toUpperCase()} - the shipped curve, ${RELIC_BOARD.w}x${RELIC_BOARD.h}, economy 100 scrap, the ${threat.waveSeconds}s clock, ${N} seeds, horizon ${HORIZON}; the run is WON by holding wave ${threat.finalWave}\n`);
+    if (onlyRow === null || onlyRow < 0) console.log(`## ${threat.name.toUpperCase()} - the shipped curve, the app's own ${RELIC_BOARD.w}x${RELIC_BOARD.h} maps, ${STARTING_SCRAP} Scrap, the ${threat.waveSeconds}s clock, ${N} seeds, horizon ${HORIZON}; the run is WON by holding wave ${threat.finalWave}\n`);
     if (onlyRow === null || onlyRow < 0) {
       console.log(`| build | mean death | median | 10th - 90th pct | min | ${marks.map((m) => `holds wave ${m}`).join(' | ')} | WINS (holds ${threat.finalWave}) | first leak (median wave) | Core left at the win (median, of ${CORE_HP}) | towers at the end (median) | Scrap in hand at the end / what the last wave paid (medians) |`);
       console.log(`|---|---|---|---|---|${marks.map(() => '---').join('|')}|---|---|---|---|---|`);
@@ -332,9 +331,14 @@ if (DEBT_ONLY) {
       const handAtEnd: number[] = [];
       const lastWavePaid: number[] = [];
       CORPUS.forEach((seed, i) => {
+        const plan = planOf(row.plan);
         const spec: LabSpec = {
-          seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...threatKnobs(createRng(seed).stream('map'), threat) },
-          towers: row.towers, tail: row.tail, relicIds: [], relics: row.relicSets ? bandSet(i % RELIC_SETS, row.band ?? 0, true) : undefined, unlocks: row.unlocks ?? [],
+          // The APP'S map for this seed (LabSpec.map's `threat` form), as the fit harness, the gate and the corpus deal
+          // it. Until 2026-09-18 this spread threatKnobs() of a FRESH stream into the map, and runLab then carved from
+          // another fresh stream: knobs drawn twice, a map the app never deals for that seed (session 38's finding,
+          // fixed everywhere but here).
+          seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, threat },
+          towers: plan.towers, tail: plan.tail, relicIds: [], relics: row.bare ? undefined : row.relicSets ? bandSet(i % RELIC_SETS, row.band ?? 0, true) : plan.relics, unlocks: plan.unlocks,
           interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: HORIZON, economy: { startingScrap: STARTING_SCRAP },
         };
         try {
@@ -369,62 +373,52 @@ if (DEBT_ONLY) {
   /** `--only=calm,grim`: read some of the tables (a Threat's full read is tens of minutes with players who keep buying). */
   const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7).split(',');
   const want = (table: 'calm' | 'standard' | 'grim' | 'tree'): boolean => only === undefined || only.includes(table);
+  // Every rung is a plan of the ONE table, bought DEPTH FIRST where it upgrades at all. The rungs climb the way a
+  // player does - knows nothing, learns placement, learns forks, plays the line - and then name the doors the damage
+  // model closed (D37: plain-Bolt width; D38: Ice Shards width) and the one it opened on purpose (#365: the relic set).
   if (want('calm')) read(CALM_T, [
-    { name: 'NAIVE: one plain Bolt by the entry, then nothing', towers: naive(1, 'entry') },
-    { name: 'NAIVE: three plain Bolts by the entry, no forks', towers: naive(3, 'entry') },
-    { name: 'NAIVE: plain Bolts by the entry for as long as Scrap comes, no forks', towers: naive(1, 'entry'), tail: naive(1, 'entry') },
-    { name: 'placement learned: plain Bolts at the choke for as long as Scrap comes, no forks', towers: naive(1, 'choke'), tail: naive(1, 'choke') },
-    { name: 'forks learned: Bolts at the choke, Marksman then Piercing, for as long as Scrap comes', towers: [FORKED_BOLT], tail: [FORKED_BOLT] },
-    { name: 'the reference (Refinery, Railbore line + Frost + Mortar), and it goes on buying its line', towers: REFERENCE, tail: REFERENCE_TAIL },
+    { name: 'NAIVE: one plain Bolt by the entry, then nothing', plan: 'naive1' },
+    { name: 'NAIVE: three plain Bolts by the entry, no forks, then nothing', plan: 'naive3' },
+    { name: 'NAIVE: plain Bolts by the entry for as long as Scrap comes, no forks', plan: 'naiveWide' },
+    { name: 'placement learned: plain Bolts at the choke for as long as Scrap comes, no forks', plan: 'spam' },
+    { name: 'forks learned: Bolts at the choke, Marksman then Piercing, for as long as Scrap comes', plan: 'forks' },
+    { name: 'the mixed line (Railbores, a Frost, a Mortar, a Refinery), bought depth first, going on', plan: 'mixedDeep' },
   ], [3, 5, 10]);
   if (want('standard')) read(STANDARD_T, [
-    { name: 'NAIVE: three plain Bolts by the entry, no forks, then nothing', towers: naive(3, 'entry') },
-    { name: 'NAIVE: plain Bolts by the entry for as long as Scrap comes, no forks', towers: naive(1, 'entry'), tail: naive(1, 'entry') },
-    { name: 'placement learned: plain Bolts at the choke for as long as Scrap comes, no forks', towers: naive(1, 'choke'), tail: naive(1, 'choke') },
-    { name: 'forks learned: Bolts at the choke, Marksman then Piercing, for as long as Scrap comes', towers: [FORKED_BOLT], tail: [FORKED_BOLT] },
-    { name: 'the reference, no relics, and it goes on buying its line', towers: REFERENCE, tail: REFERENCE_TAIL },
-    { name: 'the reference + six common relics (the offer as a new player meets it), going on', towers: REFERENCE, tail: REFERENCE_TAIL, relicSets: true },
+    { name: 'NAIVE: three plain Bolts by the entry, no forks, then nothing', plan: 'naive3' },
+    { name: 'NAIVE: plain Bolts by the entry for as long as Scrap comes, no forks', plan: 'naiveWide' },
+    { name: 'placement learned: plain Bolts at the choke for as long as Scrap comes, no forks (D37: must LOSE)', plan: 'spam' },
+    { name: 'the energy door: Ice Shards at the choke and no further, for as long as Scrap comes (D38: must LOSE)', plan: 'frostSpam' },
+    { name: 'forks learned: Bolts at the choke, Marksman then Piercing, for as long as Scrap comes', plan: 'forks' },
+    { name: 'depth learned: nothing but Railbores, each finished before the next', plan: 'rails' },
+    { name: 'the mixed line, depth first, no relics held, going on', plan: 'mixedDeep' },
+    { name: 'the mixed line, depth first + six common relics dealt (the offer as a new player meets it)', plan: 'mixedDeep', relicSets: true },
+    { name: 'THE SYNERGY (#365): plain Bolts at the choke holding Payload, Penetrators and four commons', plan: 'spamRelics' },
+    { name: 'for the record - CHASSIS FIRST: the same six towers laid before the first upgrade, going on', plan: 'reference' },
   ], [5, 10, 15]);
-  /** The everything world's line, as the tree sweep plays it (session 29, PR 6): a Railbore, three aimed Lasers, a Frost. */
-  const LASER_LINE: TowerPlacement[] = [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')];
-  const LASER_TAIL: TowerPlacement[] = [A('laser', [0, 0, 0], 'inline'), P('bolt', RAILBORE)];
   // The tree is not one build (session 38): it is every tower, a deeper relic band and more slots. A tree player may
   // play the BASE line with the tree's relics, or any of the tree's own lines - the rung is what the BEST of them wins.
-  const VEIN = A('refinery', [0, 0, 0], 'vein');
-  const MISSILE_LINE: TowerPlacement[] = [VEIN, P('bolt', RAILBORE), P('missile', [0, 1, 0]), A('bastion', [0, 0, 0], 'adjacent'), P('missile', [1, 0, 1]), P('bolt', RAILBORE)];
-  const MISSILE_TAIL: TowerPlacement[] = [P('missile', [0, 1, 0]), P('bolt', RAILBORE)];
-  const TESLA_LINE: TowerPlacement[] = [VEIN, P('bolt', RAILBORE), P('tesla', [0, 0, 0]), A('bastion', [0, 1, 0], 'adjacent'), P('frost', [1, 0, 1]), P('tesla', [1, 1, 0])];
-  const TESLA_TAIL: TowerPlacement[] = [P('tesla', [0, 0, 0]), P('bolt', RAILBORE)];
   if (want('grim')) read(GRIM_T, [
-    { name: 'the reference, no relics (the base world), going on', towers: REFERENCE, tail: REFERENCE_TAIL },
-    { name: 'the reference + six common relics (the base world), going on', towers: REFERENCE, tail: REFERENCE_TAIL, relicSets: true },
-    { name: 'placement learned: plain Bolts at the choke for as long as Scrap comes, no forks (the base world)', towers: naive(1, 'choke'), tail: naive(1, 'choke') },
-    { name: 'forks learned: Bolts at the choke, Marksman then Piercing, for as long as Scrap comes (the base world)', towers: [FORKED_BOLT], tail: [FORKED_BOLT] },
-    { name: 'THE TREE playing the BASE line: the reference going on + six relics inside the epic band', towers: REFERENCE, tail: REFERENCE_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
-    { name: 'THE TREE: the Laser line, no relics, going on (a Laser, a Railbore, a Laser...)', towers: LASER_LINE, tail: LASER_TAIL, unlocks: ['*'] },
-    { name: 'THE TREE: the Laser line + six relics inside the epic band, going on', towers: LASER_LINE, tail: LASER_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
-    { name: 'THE TREE: the Missile line (Bastion adjacent) + six relics inside the epic band, going on', towers: MISSILE_LINE, tail: MISSILE_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
-    { name: 'THE TREE: the Tesla line (Bastion adjacent, Frost) + six relics inside the epic band, going on', towers: TESLA_LINE, tail: TESLA_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
-    { name: 'for the record - the OLD instrument: the reference that stops when its six towers are bought', towers: REFERENCE },
+    { name: 'BASE WORLD: the mixed line, depth first, no relics held, going on', plan: 'mixedDeep' },
+    { name: 'BASE WORLD: the mixed line, depth first + six common relics dealt', plan: 'mixedDeep', relicSets: true },
+    { name: 'BASE WORLD: plain Bolts at the choke for as long as Scrap comes (D37: must LOSE)', plan: 'spam' },
+    { name: 'BASE WORLD: Ice Shards at the choke and no further (D38: must LOSE)', plan: 'frostSpam' },
+    { name: 'BASE WORLD: nothing but Railbores, each finished before the next', plan: 'rails' },
+    { name: 'BASE WORLD: the mixed line holding the Bolt set (#365: the set must not carry Grim)', plan: 'mixedDeepBolt' },
+    { name: 'THE TREE playing the BASE line, depth first + six relics dealt inside the epic band', plan: 'treeBaseDeep', relicSets: true, band: 2 },
+    { name: 'THE TREE: the base line, depth first, NO relics - what the workshop is worth before its relic band', plan: 'treeBaseDeep', bare: true },
+    { name: 'THE TREE: the Laser line, depth first, NO relics', plan: 'treeLaserDeep', bare: true },
+    { name: 'THE TREE: the Laser line, depth first + six relics dealt inside the epic band', plan: 'treeLaserDeep', relicSets: true, band: 2 },
+    { name: 'THE TREE: the Missile line, depth first + six relics dealt inside the epic band', plan: 'treeMissileDeep', relicSets: true, band: 2 },
+    { name: 'THE TREE: the Tesla line, depth first + six relics dealt inside the epic band', plan: 'treeTeslaDeep', relicSets: true, band: 2 },
+    { name: 'THE TREE: the mixed tree line (Tesla, Frost, Railbore, Laser, Mortar), depth first + six epic-band relics dealt', plan: 'treeMixedDeep', relicSets: true, band: 2 },
+    { name: 'THE TREE: mono-energy (Frost, Tesla, Laser), depth first + six epic-band relics dealt (D38: must lose to mixed)', plan: 'treeEnergyDeep', relicSets: true, band: 2 },
   ], [10, 15, 20]);
-  // The fit (session 38, issue #349): Grim at a steeper health curve, `--geo=1.12`, read for the base world's best
-  // and the tree's best. The target is a GAP - base world at or under 20%, the tree at or over 60% - and the question
-  // is whether any growth rate opens one. Never part of a plain ladder read: `--only=fit` asks for it.
-  // `--final=30` is the other lever: the same curve held for longer. A steeper rate compounds from wave 1 and hardens
-  // the middle of the run for everyone; a later final wave leaves the first twenty-five waves exactly as they are.
-  const geo = process.argv.find((a) => a.startsWith('--geo='));
-  const fin = process.argv.find((a) => a.startsWith('--final='));
-  const fitGeo = geo ? Number(geo.slice(6)) : GRIM_T.difficulty.hpGeometric;
-  const fitFinal = fin ? Number(fin.slice(8)) : GRIM_T.finalWave;
-  if (only?.includes('fit')) read({ ...GRIM_T, name: `Grim at x${fitGeo} a wave, won at wave ${fitFinal}`, finalWave: fitFinal, difficulty: { ...GRIM_T.difficulty, hpGeometric: fitGeo } }, [
-    { name: 'BASE: the reference, no relics, going on', towers: REFERENCE, tail: REFERENCE_TAIL },
-    { name: 'BASE: the reference + six common relics, going on', towers: REFERENCE, tail: REFERENCE_TAIL, relicSets: true },
-    { name: 'TREE: the base line + six relics inside the epic band, going on', towers: REFERENCE, tail: REFERENCE_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
-    { name: 'TREE: the Laser line + six relics inside the epic band, going on', towers: LASER_LINE, tail: LASER_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
-    { name: 'TREE: the Missile line + six relics inside the epic band, going on', towers: MISSILE_LINE, tail: MISSILE_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
-  ], [10, 15, 20]);
+  // A Threat's curve at another growth rate is the fit harness's job now (`node tools/fit.mjs --patch=...`, a
+  // `threats` key): the `--only=fit --geo=` table that lived here read one Threat, chassis first, on the old maps.
   if (want('tree')) read(STANDARD_T, [
-    { name: 'THE TREE on Standard, for scale: the Laser line + six relics inside the epic band, going on', towers: LASER_LINE, tail: LASER_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
+    { name: 'THE TREE on Standard, for scale: the base line, depth first + six epic-band relics dealt', plan: 'treeBaseDeep', relicSets: true, band: 2 },
+    { name: 'THE TREE on Standard, for scale: the Laser line, depth first + six epic-band relics dealt', plan: 'treeLaserDeep', relicSets: true, band: 2 },
   ], [5, 10, 15]);
 }
 

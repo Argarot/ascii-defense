@@ -3,6 +3,16 @@
 `node tools/scrap-flow.mjs 80 [--threat=0|1|2] [--tree]` · the app's 7×5 board ·
 80 seeds per Threat · generator v4, the curve in `engine/src/sim/threat.ts`.
 
+> **SUPERSEDED where it measures, 2026-09-18 (night); the model and the
+> reading of other people's work stand.** Every Scrap table below is from
+> before D37: a run started with 100 Scrap (200 now), a Bolt cost 20 (60 now,
+> and its upgrades a fraction of what they were), and the plans here lay six
+> chassis before the first upgrade — the order the new prices punish. The
+> purse is still printed by the ladder (`node tools/ladder.mjs`, last column),
+> now for plans bought depth first from the lab's one table
+> (`packages/harness/src/lab/plans.ts`) on the app's own maps. Read the
+> numbers below as the record of 2026-09-17, not as the game.
+
 Daniil asked for research on the in-game economy and how to balance it. This
 is that: the model as built, three things other people have written that
 apply to it, a measurement nobody had taken (the **purse**, not the death
