@@ -185,7 +185,12 @@ Read the PRD before the architecture; read this file before touching anything.
   way** - "Railbores beat the mixed line" was the lab buying one depth first
   and the other chassis first. When the candidate ships, **run the harness
   with no patch and diff the rows**: the shipped game must reproduce the
-  candidate to the digit, or something was typed wrong on the way in.
+  candidate to the digit, or something was typed wrong on the way in. **Both
+  sides of that diff come from ONE bundle, and nothing the bundle reads - the
+  engine, the lab, a content file - is edited while a read is in flight**
+  (2026-09-18: a tier edited mid-run made three rows differ by a seed each).
+  And a one-seed difference is never noise: the lab is deterministic. Chasing
+  that one found the lab dealing the base world rares and epics it cannot have.
 - **A rule that closes one door gets a rung for the door it opens, in the same
   change.** D37's damage model made armour blunt kinetic hits alone - "energy
   goes through plate" - and the harness that proved plain-Bolt spam dead had
@@ -193,6 +198,20 @@ Read the PRD before the architecture; read this file before touching anything.
   already knew and shipped the mirror image unread; Daniil named it in one
   reading (D38). When a change makes X worse, ask what it makes *relatively
   better*, and add that plan to the table before believing the table.
+- **Before tuning a mechanism, bound it: play it at a value far too large.**
+  The synergy relics of #365 read 1% at sensible numbers; a bounding round at
+  three times those read 99% - so the mechanism could meet its target - and
+  showed in the same table that the flat bonus lifted the base world's mixed
+  line on Grim from 32% to 71%. Tuning would have walked into that one step at
+  a time. One round tells you whether the target is reachable at all, and what
+  else moves when it is.
+- **No row of the lab "holds nothing".** `runLab` takes option 0 of every relic
+  offer - one every two waves, twelve slots - so a plan that "holds nothing"
+  ends a Standard run holding up to ten commons the pool dealt it, and every
+  band is a function of the POOL. Adding two relics moved
+  `standard:spam` 4% -> 3% and `standard:mixedDeep` 90% -> 91% with no rule
+  changed. A PR that adds or cuts a relic will nudge bands it never touched:
+  expect it, re-read them, and say so in their `why`.
 - **Look at every new line of text in the running game before it ships.** Both
   HUD lines D37 added were cut off mid-sentence at the panel's width ("Big
   hits and +", "small +") and every test was green. A sentence that does not

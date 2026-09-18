@@ -34,7 +34,7 @@ const shard = (k) => new Promise((resolve, reject) => {
 const runs = (await Promise.all(Array.from({ length: JOBS }, (_, k) => shard(k)))).join('').split('\n').filter(Boolean).map((l) => JSON.parse(l));
 
 let red = 0;
-console.log(`balance check - ${SEEDS} seeds a row, the app's own maps, the base world, 100 Scrap\n`);
+console.log(`balance check - ${SEEDS} seeds a row, the app's own maps and purse\n`);
 console.log('| | band | measured | what | |');
 console.log('|---|---|---|---|---|');
 for (const band of spec.bands) {

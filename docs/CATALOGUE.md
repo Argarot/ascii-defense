@@ -119,24 +119,24 @@ The two ground cells touching the Core face (and the border cells beside it) are
 <!-- generated:enemies -->
 14 enemies in `packages/content/assets/enemies/roster.json`. Speed is cells per second; breach is the Core health lost when one arrives; "from wave" is the first wave that may roll it. Every enemy walks the road; there are no flyers (PRD §8).
 
-| Enemy | id | HP | Speed | Breach | Bounty | From wave | Armour | Shield | vs kinetic | vs energy | Traits |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| **grunt** | grunt | 30 | 1.20 | 1 | 4 | 1 |  |  |  |  |  |
-| **skitter** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  |  |  | fast |
-| **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  | x0.6 | x2 | swarm, fast |
-| **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  | x0.4 | x2 | armoured |
-| **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 30 | x1.6 | x0.4 | shielded |
-| **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  |  | x1.6 | x0.4 |  |
-| **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  | x0.5 | x1.6 |  |
-| **harrier** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  | x1.4 | x0.6 | sprint |
-| **lunge** | ram | 70 | 1 | 3 | 8 | 6 |  |  | x0.6 | x1.6 | charge |
-| **brood** | blob | 60 | 1 | 2 | 6 | 7 |  |  |  |  | split |
-| **stitch** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  | x1.6 | heal |
-| **delve** | mole | 50 | 1.20 | 3 | 8 | 9 |  |  |  |  | burrow |
-| **buckler** | pavise | 110 | 0.80 | 4 | 12 | 11 |  |  | x1.4 | x0.5 | frontshield |
-| **Warden** (boss only) | warden | 450 | 0.60 | 10 | 30 | 12 | 3 |  | x0.7 | x1.4 | bulwark |
+| Enemy | id | HP | Speed | Breach | Bounty | From wave | Armour | Insulation | Shield | vs kinetic | vs energy | Traits |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **grunt** | grunt | 30 | 1.20 | 1 | 4 | 1 |  |  |  |  |  |  |
+| **skitter** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  |  |  |  | fast |
+| **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  |  | x0.6 | x2 | swarm, fast |
+| **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  |  | x0.4 | x2 | armoured |
+| **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 2 | 30 | x1.6 | x0.4 | shielded |
+| **husk** | husk | 160 | 0.70 | 5 | 12 | 6 |  | 4 |  | x1.6 | x0.4 |  |
+| **Juggernaut** | juggernaut | 400 | 0.60 | 12 | 20 | 10 | 6 |  |  | x0.5 | x1.6 |  |
+| **harrier** | courser | 20 | 1.60 | 1 | 4 | 3 |  |  |  | x1.4 | x0.6 | sprint |
+| **lunge** | ram | 70 | 1 | 3 | 8 | 6 |  |  |  | x0.6 | x1.6 | charge |
+| **brood** | blob | 60 | 1 | 2 | 6 | 7 |  |  |  |  |  | split |
+| **stitch** | mender | 40 | 1 | 1 | 9 | 8 |  |  |  |  | x1.6 | heal |
+| **delve** | mole | 50 | 1.20 | 3 | 8 | 9 |  |  |  |  |  | burrow |
+| **buckler** | pavise | 110 | 0.80 | 4 | 12 | 11 |  | 4 |  | x1.4 | x0.5 | frontshield |
+| **Warden** (boss only) | warden | 450 | 0.60 | 10 | 30 | 12 | 3 |  |  | x0.7 | x1.4 | bulwark |
 
-Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.4-0.7 resists, x1.4-2 weak, immune takes nothing. Kinetic: Bolt Turret, Mortar, Missile Rack. Energy: Frost Emitter, Tesla Coil, Laser Lance. Armour: armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched. From wave 6 every body is PLATED: +1 armour, and +1 more every 3 waves - the next-wave panel says how much. A swarm of small hits is a bad answer to a late wave; one big hit, or energy, is a good one. A run starts with 200 Scrap.
+Damage types decide fights (PRD §8): a tower hits with its type, an enemy multiplies the hit by its entry - x0.4-0.7 resists, x1.4-2 weak, immune takes nothing. Kinetic: Bolt Turret, Mortar, Missile Rack. Energy: Frost Emitter, Tesla Coil, Laser Lance. Armour: armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched. And insulation is armour's mirror: subtracted from every ENERGY hit, but never more than 85% of it; kinetic goes through insulation untouched. From wave 6 every body is PLATED: +1 off every hit, kinetic or energy, and +1 more every 3 waves - the next-wave panel says how much. A swarm of small hits of either type is a bad answer to a late wave; one big hit is a good one. A run starts with 200 Scrap.
 
 Statuses show on the body (PRD §8) as the ground under the walker: cold when slowed, ember when burning, ice when frozen, ember over cold when both hold; brackets for a live shield. Slows from different sources stack by one rule: the coldest multiplier wins, the longest duration lasts.
 
@@ -160,7 +160,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 ## Relics *(generated)*
 
 <!-- generated:relics -->
-52 relics in `packages/content/assets/relics/pool.json`. Passives work while held (some are tower mods on every tower - the former passive layer, one pool since 2026-09-06 evening); actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
+54 relics in `packages/content/assets/relics/pool.json`. Passives work while held (some are tower mods on every tower - the former passive layer, one pool since 2026-09-06 evening); actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
 
 | Relic | id | Kind | Base rarity | Tags | Stacks | Recharge | What it does (common) | Data | Rare | Epic | Legendary |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -211,6 +211,8 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | **Bounty Hunter** | bounty_hunter | passive | common | economy |  |  | Every bounty pays 25% more. | bountyMul 1.25 | Every bounty pays 50% more. [bountyMul 1.5] | Every bounty pays double. [bountyMul 2] | none |
 | **Tempered Steel** | tempered_steel | passive | rare | damage reach |  |  | Every hit does 10% more and every tower reaches half a cell further. | damageMul 1.1, mods {range 0.5} | same | Every hit does 20% more and every tower reaches a cell further. [damageMul 1.2, mods {range 1}] | none |
 | **Shield Breaker** | shield_breaker | passive | common | kinetic energy |  |  | Every hit does half again to shields. | mods {shieldMul 0.5} | Every hit does double to shields. [mods {shieldMul 1}] | Every hit does triple to shields. [mods {shieldMul 2}] | none |
+| **Payload** | payload | passive | common | damage | yes |  | A tower whose hit is under 10 hits for 11 more - before any multiplier. Nothing for a big gun. | damageAdd 11, damageAddBelow 10 | A tower whose hit is under 10 hits for 13 more - before any multiplier. [damageAdd 13, damageAddBelow 10] | A tower whose hit is under 10 hits for 16 more - before any multiplier. [damageAdd 16, damageAddBelow 10] | none |
+| **Penetrators** | penetrators | passive | common | damage | yes |  | Every hit ignores 2 of what a body wears - armour, insulation and plating alike. | armorPierce 2 | Every hit ignores 3 of what a body wears. [armorPierce 3] | Every hit ignores 4 of what a body wears. [armorPierce 4] | none |
 | **Permafrost Engine** | permafrost_engine | passive (fusion only) | epic | cold damage |  |  | Slowed enemies take triple from everything. Frostbite and Stasis, fused. | slowedDamageMul 3 | same | same | Slowed enemies take quadruple from everything. [slowedDamageMul 4] |
 | **Tollbooth** | tollbooth | passive (fusion only) | epic | economy |  |  | Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused. | killRefundScrap 5, tollScrap 3 | same | same | Every kill refunds 8 Scrap and every enemy pays 4 Scrap for each cell it walks beside a tower. [killRefundScrap 8, tollScrap 4] |
 | **Bunker** | bunker | passive (fusion only) | epic | core |  |  | The Core mends 8 health every wave. Sandbags and Second Wind, fused. | coreHealPerWave 8 | same | same | The Core mends 12 health every wave. [coreHealPerWave 12] |

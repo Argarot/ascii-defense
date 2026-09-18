@@ -931,8 +931,9 @@ the time and Grim 84%. Four things changed, together:
    strip say how much before the wave comes. A swarm of small hits is a bad
    answer to a late wave; one big hit is a good one. Armour may now take all
    but 15% of a hit (`armorFloor`, was 35%).
-3. **Energy goes through armour** (`armorBlunts: 'kinetic'`). Energy's counter
-   is a resistance, never plate — which gives the tree's Tesla and Laser a job
+3. **Energy goes through armour** (`armorBlunts: 'kinetic'`) — *through a body's
+   own armour, and since D38 no longer through plating: see 5 and 6 below.*
+   Energy's counter was a resistance, never plate — which gives the tree's Tesla and Laser a job
    the base world's kinetic line cannot do. Railbore and Bunker Buster no
    longer *ignore* armour: they are big hits, and a big hit is already the
    answer.
@@ -945,16 +946,33 @@ is lost by the base world (11–18%) and won by the tree (99%)** — the gap no
 curve could open while width was unbounded. Calm's first five waves are
 untouched.
 
-**The model is not yet symmetric, and must be** *(D38, Daniil, 2026-09-18 —
-decided, not built)*: *"we have armored foes that ignore some amount of
-physical damage. But there need to be foes that do opposite - ignore
-significant amount of energy damage, while physical one is effective against
-it. So tesla/laser/chill spam is not as effective."* Kinetic has a flat
-per-hit counter — armour, and plating on every body; energy has only a
-multiplier on four kinds, and goes through plate untouched. The mirror of
-armour — a flat amount off every energy hit, worn by bodies that kinetic is
-effective against — is the first PR of the next session (#370), measured
-first: the lab has never played energy spam.
+**The model is symmetric** *(D38, Daniil, 2026-09-18 — as built the same
+evening; docs/lab/energy-door-2026-09-18.md)*: *"we have armored foes that
+ignore some amount of physical damage. But there need to be foes that do
+opposite - ignore significant amount of energy damage, while physical one is
+effective against it. So tesla/laser/chill spam is not as effective."* Point 3
+above, as first built, sent energy through the wave's *plating* as well as
+through a body's armour, and the lab had never played energy width: Ice Shards
+spam — a 4-damage energy hit — won Standard 21% where plain Bolts won 4%, and
+holding the tree's relics it won Grim 94% where Bolts won none. Two things
+closed it:
+
+5. **Plating blunts every hit.** The ramp has a twin for energy
+   (`COMBAT_RULES.insulating`, the same steps), so the panel says one number:
+   *"PLATED +2: every hit loses 2 more - hit big"*. What is left of "energy
+   goes through" is a body's **own** armour — brute, Juggernaut, Warden.
+6. **Insulation is armour's mirror** (`EnemyDef.insulation`): a flat amount off
+   every energy hit, after the resistance, under the same floor; kinetic never
+   meets it. Worn by bodies kinetic is effective against — husk 4, buckler 4,
+   shellback 2 — and by no body that is armoured or resists kinetic (a content
+   test holds that). The strip marks the kind `insulated`, and its answer is
+   the mirror of armour's: *"energy slides off; hit big, or use kinetic"*.
+
+Energy spam now wins Standard 0–4% and Grim never; the mixed line wins Standard
+89%; a mono-energy tree build loses Grim to a mixed one (84% against 98%
+holding six epics, 2% against 18% holding nothing). The kinds alone could not
+do it at any value — a 4-damage hit is already at the floor against them — and
+the twin alone leaves a finished Frost winning Standard 70%: both are needed.
 
 *A Bolt-only build that relics carry is welcome (D37: "to find
 'broken' synergies"); the set that carries one is not built yet.*

@@ -142,10 +142,12 @@ export interface DifficultySpec {
 export interface CombatRules {
   /** The least share of a hit that armour lets through (a hit is never below 1). */
   armorFloor: number;
-  /** What armour blunts: every hit, or kinetic hits alone - energy goes through plate, and resistances are its counter. */
+  /** What armour blunts: every hit, or kinetic hits alone - then energy goes through armour and plating both, and what stops it is insulation (a body's own, and `insulating` below). */
   armorBlunts: 'all' | 'kinetic';
   /** Plating: from wave `from`, every body wears `add` more armour per `every` waves begun - the ramp's answer to width, where hp is its answer to depth. null = none. */
   plating: { from: number; every: number; add: number } | null;
+  /** Plating's twin for ENERGY (D38): from wave `from`, every body wears `add` more insulation per `every` waves begun. null = none. */
+  insulating: { from: number; every: number; add: number } | null;
 }
 /**
  * The rules the game ships. A run may override them (SimOptions.rules) - the lab does; the app does not.
@@ -153,9 +155,15 @@ export interface CombatRules {
  * Set 2026-09-18 (D37; docs/lab/damage-model-2026-09-18.md). Until that day the floor was 0.35, armour blunted every
  * hit and nothing was plated - and four hundred plain Bolts won Grim. Now a small kinetic hit is a bad answer to a
  * late wave (every body wears one more armour per three waves from wave 6, and armour may take all but 15% of a
- * hit), a big one is a good answer, and ENERGY goes through plate: its counter is a resistance, not armour.
+ * hit), a big one is a good answer, and ENERGY goes through a body's own ARMOUR.
+ *
+ * Amended 2026-09-18, the same evening (D38; docs/lab/energy-door-2026-09-18.md): that model sent energy through the
+ * wave's PLATING as well, and the lab had never played energy width. Ice Shards spam - a 4-damage energy hit - won
+ * Standard 21% where plain Bolts won 4%, and Grim 94% holding the tree's relics where Bolts won none. So the ramp has
+ * a twin: `insulating`, the same steps, for energy hits. What is left of "energy goes through" is a body's own armour
+ * (brute, juggernaut, warden), and its mirror is a body's own insulation (husk, buckler, shellback).
  */
-export const COMBAT_RULES: CombatRules = { armorFloor: 0.15, armorBlunts: 'kinetic', plating: { from: 6, every: 3, add: 1 } };
+export const COMBAT_RULES: CombatRules = { armorFloor: 0.15, armorBlunts: 'kinetic', plating: { from: 6, every: 3, add: 1 }, insulating: { from: 6, every: 3, add: 1 } };
 
 /**
  * The purse a run starts with. 200 since 2026-09-18 (D37): a tower's chassis costs three times what it did and its
@@ -166,7 +174,13 @@ export const STARTING_SCRAP = 200;
 
 /** The armour plating adds at wave `wave`: `add` for each `every` waves begun since `from`. */
 export function platingAt(rules: CombatRules, wave: number): number {
-  const p = rules.plating;
+  return rampAt(rules.plating, wave);
+}
+/** The insulation every body wears at wave `wave` on top of its own (D38): plating's twin, for energy hits. */
+export function insulatingAt(rules: CombatRules, wave: number): number {
+  return rampAt(rules.insulating, wave);
+}
+function rampAt(p: { from: number; every: number; add: number } | null, wave: number): number {
   if (!p || wave < p.from) return 0;
   return p.add * (1 + Math.floor((wave - p.from) / p.every));
 }
@@ -996,6 +1010,9 @@ export class Sim {
   private foldStats(t: Tower): EffectiveStats {
     const def = this.opts.towerDefs[t.defIdx];
     const out = effectiveStats(def, t.choices);
+    // The tower's OWN hit - its def and its tiers, before any gift, aura or relic: what a relic for small hits reads
+    // (#365), so that a Bastion's aura (8 x 1.15 = 9.2) or the Core's boon never pushes a Bolt out of its own relic.
+    const ownDamage = out.damage;
     // The Core's gift (PRD sec 4.5, WBS 2.35): a tower standing next to
     // the face gets its own unique boon, folded like a tier.
     if (def.coreBoon && this.nearCore[t.cellY * this.opts.cellsW + t.cellX]) applyCoreBoon(out, def.coreBoon);
@@ -1034,6 +1051,9 @@ export class Sim {
     }
     const f = this.fold;
     if (f !== EMPTY_FOLD) {
+      // Flat damage (#365) lands BEFORE the multipliers, only on a hit that already does damage (a plain Frost stays
+      // pure control) and only on a SMALL one when the relic says so - or it lifts a Railbore as gladly as a Bolt.
+      if (f.damageAdd !== 0 && ownDamage > 0 && ownDamage < f.damageAddBelow) out.damage += f.damageAdd;
       out.damage *= f.damageMul;
       out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / f.fireRateMul));
       out.range += f.rangeAdd;
@@ -2770,7 +2790,11 @@ export class Sim {
     // health does not move, armor's min-1 rule only applies to real hits.
     // Railbore ignores armour outright.
     // What armour blunts, how little it lets through and how it thickens with the waves are RULES (CombatRules, D37).
-    const plated = ignoreArmor || (this.rules.armorBlunts === 'kinetic' && type === 'energy') ? 0 : (def.armor ?? 0) + platingAt(this.rules, this.wave);
+    // INSULATION is armour's mirror (D38): a flat amount off every ENERGY hit, under the same floor - so a swarm of
+    // small energy hits meets what a swarm of plain Bolts meets, and the answer to an insulated body is the kinetic half.
+    const armour = ignoreArmor || (this.rules.armorBlunts === 'kinetic' && type === 'energy') ? 0 : (def.armor ?? 0) + platingAt(this.rules, this.wave);
+    // Armour pierce (#365, a relic's): every hit ignores that much of whatever the body wears.
+    const plated = Math.max(0, armour + (type === 'energy' ? (def.insulation ?? 0) + insulatingAt(this.rules, this.wave) : 0) - this.fold.armorPierce);
     let dmg = typed <= 0 ? 0 : Math.max(1, plated <= 0 ? typed : Math.max(typed * this.rules.armorFloor, typed - plated));
     // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
     // relic that turns Frost from utility into a damage amplifier.

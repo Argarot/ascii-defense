@@ -14,7 +14,7 @@ import type { Sprite } from '@ascii-defense/content';
 import { drawRelicPlate, RELIC_PLATE_W } from '../board/relicPlate';
 import { FACING_NAME, PRIORITIES, type Priority } from '@ascii-defense/engine';
 import { role, rarityRole } from '../palette';
-import { waveAnswer } from './traitAnswers';
+import { platingWords, waveAnswer } from './traitAnswers';
 
 export interface HudChoiceInfo {
   name: string;
@@ -93,7 +93,7 @@ export interface HudState {
    * `canCall` = the current wave has finished spawning, `callBonus` = Scrap
    * for calling now. null once the final wave is out.
    */
-  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number; traits?: readonly string[] }[]; canCall: boolean; callBonus: number; waiting: boolean; /** How the packs walk (session 32, PR 3). */ formations?: readonly { name: string; n: number }[]; /** Armour every body of the wave wears on top of its own (D37); 0 or absent before plating begins. */ plating?: number } | null;
+  nextWave: { wave: number; boss: boolean; kinds: readonly { name: string; count: number; traits?: readonly string[] }[]; canCall: boolean; callBonus: number; waiting: boolean; /** How the packs walk (session 32, PR 3). */ formations?: readonly { name: string; n: number }[]; /** Armour every body of the wave wears on top of its own (D37); 0 or absent before plating begins. */ plating?: number; /** The same for ENERGY hits (D38): what plating takes off one. The shipped rules ramp the two alike. */ insulating?: number } | null;
   /** The strip (4.27): every tower in the roster, whether the player can pay and whether it fits the selected tile. */
   roster?: readonly { id: string; name: string; short?: string; cost: number; affordable: boolean; buildable: boolean }[];
   /** The strip: alive enemies by kind, with each kind's traits. */
@@ -372,7 +372,8 @@ export class HudPanel {
       term.write(0, y++, head, nw.boss ? role('enemy.fast') : role('ui.text'));
       // Plating (D37): said in words a player can act on - what it costs a hit, and what goes through it.
       // Three lines, because the first wording was cut at two ("Big hits and +") the first time it was LOOKED at in the running game.
-      if ((nw.plating ?? 0) > 0) for (const line of this.wrap(`PLATED +${nw.plating}: every kinetic hit loses ${nw.plating} more - hit big, or use energy`, W, 3)) term.write(0, y++, line, role('ui.accent'));
+      const plated = platingWords(nw.plating ?? 0, nw.insulating ?? 0);
+      if (plated) for (const line of this.wrap(plated.line, W, 3)) term.write(0, y++, line, role('ui.accent'));
       // Three lines for the composition (session 31: two cut "2 shellback" to "2 shellb" on a five-kind wave).
       for (const line of this.wrap(kinds, W, 3)) term.write(0, y++, line, role('ui.dim'));
       // The answer (session 32, PR 3): the first kind with a trait, and what answers it.

@@ -237,6 +237,18 @@ export interface Effects {
    */
   pierceAdd?: number;
   /**
+   * Passive: flat damage added to every hit that already does damage, before any multiplier (#365). Worth most to the smallest hit. Copies add.
+   */
+  damageAdd?: number;
+  /**
+   * Passive: damageAdd reaches only a tower whose OWN hit - its def and tiers, before any gift, aura or relic - is below this (absent = every hit). What makes it a relic for small hits. The widest limit among held copies holds.
+   */
+  damageAddBelow?: number;
+  /**
+   * Passive: every hit ignores this much of what a body wears - armour, insulation and plating alike (#365). Copies add.
+   */
+  armorPierce?: number;
+  /**
    * Passive: every arc jumps to this many more bodies (Grounding Rod).
    */
   chainAdd?: number;
@@ -611,6 +623,21 @@ export const relicsSchema = {
           "description": "Passive: every shot passes into this many more bodies (Wide Net).",
           "type": "number",
           "minimum": 1
+        },
+        "damageAdd": {
+          "description": "Passive: flat damage added to every hit that already does damage, before any multiplier (#365). Worth most to the smallest hit. Copies add.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "damageAddBelow": {
+          "description": "Passive: damageAdd reaches only a tower whose OWN hit - its def and tiers, before any gift, aura or relic - is below this (absent = every hit). What makes it a relic for small hits. The widest limit among held copies holds.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "armorPierce": {
+          "description": "Passive: every hit ignores this much of what a body wears - armour, insulation and plating alike (#365). Copies add.",
+          "type": "number",
+          "exclusiveMinimum": 0
         },
         "chainAdd": {
           "description": "Passive: every arc jumps to this many more bodies (Grounding Rod).",

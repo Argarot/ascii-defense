@@ -393,7 +393,7 @@ async function main(): Promise<void> {
   });
   const enemyCardBody = (e: (typeof CODEX.enemies)[number]): string[] => [
     [`hp ${e.hp}`, `speed ${e.speed} cells/s`, `breach ${e.breach}`, `bounty ${e.bounty}`, `from wave ${e.fromWave}`].join('  \u2802  '),
-    [e.armour ? `armour ${e.armour}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type in full',
+    [e.armour ? `armour ${e.armour}` : '', e.insulation ? `insulation ${e.insulation}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type in full',
     ...e.traits,
   ];
   const detectEncounters = (): void => {
@@ -1083,7 +1083,7 @@ async function main(): Promise<void> {
       hero = sp ? [sp] : [];
       body = [
         [`hp ${e.hp}`, `speed ${e.speed} cells/s`, `breach ${e.breach}`, `bounty ${e.bounty}`, `from wave ${e.fromWave}`].join('  \u2802  '),
-        [e.armour ? `armour ${e.armour}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type at x1',
+        [e.armour ? `armour ${e.armour}` : '', e.insulation ? `insulation ${e.insulation}` : '', e.shield ? `shield ${e.shield}` : '', e.kinetic ? `vs kinetic ${e.kinetic}` : '', e.energy ? `vs energy ${e.energy}` : ''].filter(Boolean).join('  \u2802  ') || 'no armour, no shield, takes every type at x1',
         ...e.traits.flatMap((t) => wrapLine(t)),
       ];
     } else {
