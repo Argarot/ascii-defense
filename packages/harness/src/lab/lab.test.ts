@@ -7,7 +7,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary, DEFAULT_DIFFICULTY, computeFlowField, createRng, effectiveStats, generateMap, mapCells, threatKnobs, tilePartition } from '@ascii-defense/engine';
-import { validateEnemies, validateRelics, validateTowers } from '@ascii-defense/content';
+import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
+import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
@@ -135,6 +136,23 @@ describe('the balance lab (session 12 gate)', () => {
       const fresh = runLab({ ...spec, map: { width: 7, height: 5, ...threatKnobs(createRng(seed).stream('map'), threat) } }, full).L;
       expect([seed, fresh === appL]).toEqual([seed, false]);
     }
+  });
+
+  it("the lab's base world deals commons alone, as the app's does (D29): the band the tree bought caps what an offer may deal", () => {
+    // Until 2026-09-18 runLab passed the tree's relicSlots to the Sim and not its rarityMax, so every base-world row
+    // of every table rolled rares and epics from its offers - a richer world than a player without the workshop is
+    // in. Found because a one-seed difference between two reads "could not happen": a base-world run had reached an
+    // EPIC tier. The lab takes option 0 of every offer, so a run that lives a dozen waves holds several.
+    const full: LabContent = { ...content, lib: new TileLibrary(libraryJson.tiles), tree: must(validateTree.check(treeJson)) };
+    const threat = THREAT_LEVELS[0];
+    const rail = { towerId: 'bolt', choices: [0, 0, 0] as [number, number, number], at: 'choke' as const };
+    const spec: LabSpec = { seed: 7932, map: { width: 7, height: 5, threat }, towers: [rail], tail: [rail], relicIds: [], unlocks: [], interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: threat.finalWave, economy: { startingScrap: STARTING_SCRAP } };
+    const base = runLab(spec, full);
+    expect(base.relicsHeld.length).toBeGreaterThan(3);
+    expect(base.relicsHeld.filter((r) => r.rarity > 0)).toEqual([]);
+    // ...and the whole workshop lifts the cap: the same seed, the same plan, holds something rarer.
+    const tree = runLab({ ...spec, unlocks: ['*'] }, full);
+    expect(tree.relicsHeld.some((r) => r.rarity > 0)).toBe(true);
   });
 
   it('demoMap reproduces the live app map derivation deterministically', () => {
