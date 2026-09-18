@@ -170,6 +170,9 @@ const RELICS = {
   bunker: { role: 'relic.stone', rows: ['/##\\', '|##|', '|##|'], dim: '/\\|' },
   quarry_master: { role: 'relic.copper', rows: ['/\\/\\', '#oo#', '####'], dim: '#' },
   doomsday: { role: 'relic.void', rows: ['\\||/', '*||*', '/**\\'], dim: '\\/' },
+  // ---- #365: the synergy - a heavier round, and a point that goes through plate ----
+  payload: { role: 'relic.blood', rows: [' /\\ ', '|++|', '|__|'], dim: '/\\|_' },
+  penetrators: { role: 'relic.steel', rows: ['# |>', '#=|>', '# |>'], dim: '#' },
 };
 for (const [id, r] of Object.entries(RELICS)) {
   const keys = makeKeys();

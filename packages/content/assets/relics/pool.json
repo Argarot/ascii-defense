@@ -1259,6 +1259,65 @@
       }
     },
     {
+      "id": "payload",
+      "name": "Payload",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
+      "stackable": true,
+      "desc": "A tower whose hit is under 10 hits for 11 more - before any multiplier. Nothing for a big gun.",
+      "effects": {
+        "damageAdd": 11,
+        "damageAddBelow": 10
+      },
+      "tiers": {
+        "rare": {
+          "desc": "A tower whose hit is under 10 hits for 13 more - before any multiplier.",
+          "effects": {
+            "damageAdd": 13,
+            "damageAddBelow": 10
+          }
+        },
+        "epic": {
+          "desc": "A tower whose hit is under 10 hits for 16 more - before any multiplier.",
+          "effects": {
+            "damageAdd": 16,
+            "damageAddBelow": 10
+          }
+        }
+      }
+    },
+    {
+      "id": "penetrators",
+      "name": "Penetrators",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
+      "stackable": true,
+      "desc": "Every hit ignores 2 of what a body wears - armour, insulation and plating alike.",
+      "effects": {
+        "armorPierce": 2
+      },
+      "tiers": {
+        "rare": {
+          "desc": "Every hit ignores 3 of what a body wears.",
+          "effects": {
+            "armorPierce": 3
+          }
+        },
+        "epic": {
+          "desc": "Every hit ignores 4 of what a body wears.",
+          "effects": {
+            "armorPierce": 4
+          }
+        }
+      }
+    },
+    {
       "id": "permafrost_engine",
       "name": "Permafrost Engine",
       "kind": "passive",

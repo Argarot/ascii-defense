@@ -1010,6 +1010,9 @@ export class Sim {
   private foldStats(t: Tower): EffectiveStats {
     const def = this.opts.towerDefs[t.defIdx];
     const out = effectiveStats(def, t.choices);
+    // The tower's OWN hit - its def and its tiers, before any gift, aura or relic: what a relic for small hits reads
+    // (#365), so that a Bastion's aura (8 x 1.15 = 9.2) or the Core's boon never pushes a Bolt out of its own relic.
+    const ownDamage = out.damage;
     // The Core's gift (PRD sec 4.5, WBS 2.35): a tower standing next to
     // the face gets its own unique boon, folded like a tier.
     if (def.coreBoon && this.nearCore[t.cellY * this.opts.cellsW + t.cellX]) applyCoreBoon(out, def.coreBoon);
@@ -1048,6 +1051,9 @@ export class Sim {
     }
     const f = this.fold;
     if (f !== EMPTY_FOLD) {
+      // Flat damage (#365) lands BEFORE the multipliers, only on a hit that already does damage (a plain Frost stays
+      // pure control) and only on a SMALL one when the relic says so - or it lifts a Railbore as gladly as a Bolt.
+      if (f.damageAdd !== 0 && ownDamage > 0 && ownDamage < f.damageAddBelow) out.damage += f.damageAdd;
       out.damage *= f.damageMul;
       out.fireEveryTicks = Math.max(2, Math.round(out.fireEveryTicks / f.fireRateMul));
       out.range += f.rangeAdd;
@@ -2787,7 +2793,8 @@ export class Sim {
     // INSULATION is armour's mirror (D38): a flat amount off every ENERGY hit, under the same floor - so a swarm of
     // small energy hits meets what a swarm of plain Bolts meets, and the answer to an insulated body is the kinetic half.
     const armour = ignoreArmor || (this.rules.armorBlunts === 'kinetic' && type === 'energy') ? 0 : (def.armor ?? 0) + platingAt(this.rules, this.wave);
-    const plated = armour + (type === 'energy' ? (def.insulation ?? 0) + insulatingAt(this.rules, this.wave) : 0);
+    // Armour pierce (#365, a relic's): every hit ignores that much of whatever the body wears.
+    const plated = Math.max(0, armour + (type === 'energy' ? (def.insulation ?? 0) + insulatingAt(this.rules, this.wave) : 0) - this.fold.armorPierce);
     let dmg = typed <= 0 ? 0 : Math.max(1, plated <= 0 ? typed : Math.max(typed * this.rules.armorFloor, typed - plated));
     // Frostbite (relic): slowed enemies take extra from EVERYTHING - the
     // relic that turns Frost from utility into a damage amplifier.

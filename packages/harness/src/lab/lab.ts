@@ -143,6 +143,8 @@ export interface LabReport {
   oreEnd: number[];
   /** The towers and relics the tree state allowed this run. */
   world: { towers: number; relics: number; relicSlots: number };
+  /** What the run held when it ended, granted and picked alike, each at its rarity (0 common): no row of the lab "holds nothing" - it takes option 0 of every offer. */
+  relicsHeld: { id: string; rarity: number }[];
 }
 
 export interface LabContent {
@@ -379,6 +381,10 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     towerDefs,
     relicDefs,
     relicSlots: unlocked?.relicSlots,
+    // The band the tree bought caps what an offer may deal, as in the worker (D29: the base world deals commons alone).
+    // Until 2026-09-18 the lab passed the slots and not the cap, so every base-world row rolled rares and epics from
+    // its offers - a richer world than the one a player without the workshop is in.
+    rarityMax: unlocked?.rarityMax,
     interWaveTicks: spec.interWaveTicks,
     mode: 'waves',
     firstWaveWaits: false,
@@ -559,6 +565,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     killsByDef,
     oreEnd: [...sim.ore],
     world: { towers: towerDefs.length, relics: relicDefs.length, relicSlots: sim.relicSlots },
+    relicsHeld: sim.heldRelics.map((di, i) => ({ id: relicDefs[di].id, rarity: sim.heldRarity[i] ?? 0 })),
   };
 }
 

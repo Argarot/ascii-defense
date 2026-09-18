@@ -44,6 +44,8 @@ interface Patch {
   enemies?: Record<string, Partial<EnemyDef>>;
   towers?: Record<string, { cost?: number; range?: number; fireEveryTicks?: number; projectile?: Record<string, number>; tiers?: ((TierPatch | null)[] | null)[] }>;
   threats?: Record<string, Partial<DifficultySpec> & { finalWave?: number }>;
+  /** A relic's numbers, by id: its common `effects` and any of its `tiers`, merged over what ships (#365). */
+  relics?: Record<string, { effects?: Record<string, unknown>; tiers?: Record<string, { effects: Record<string, unknown> }> }>;
 }
 /** The patch arrives in the environment (FIT_PATCH, JSON): a shard is spawned by the runner, and a command line is no place for braces. */
 const patch: Patch = JSON.parse(process.env.FIT_PATCH ?? '{}') as Patch;
@@ -70,7 +72,13 @@ const content: LabContent = {
   lib: new TileLibrary(libraryJson.tiles),
   enemyDefs,
   towerDefs,
-  relicDefs: must(validateRelics.check(relicsJson)).relics,
+  relicDefs: must(validateRelics.check(relicsJson)).relics.map((r) => {
+    const p = patch.relics?.[r.id];
+    if (!p) return r;
+    const tiers = { ...(r.tiers ?? {}) } as Record<string, { desc?: string; effects: Record<string, unknown> }>;
+    for (const [band, t] of Object.entries(p.tiers ?? {})) tiers[band] = { ...tiers[band], effects: { ...tiers[band]?.effects, ...t.effects } };
+    return { ...r, effects: { ...r.effects, ...p.effects }, tiers } as typeof r;
+  }),
   tree: must(validateTree.check(treeJson)),
 };
 
@@ -93,7 +101,9 @@ const OPENING: TowerPlacement[] = [P('bolt', PLAIN), P('bolt', PLAIN), P('bolt',
 /** COMMONS only: the base world's pool holds nothing rarer (D29), and a set that names a rare is refused on every seed. */
 const SIX = ['hot_loads', 'quick_hands', 'iron_sights', 'deep_cold', 'thick_walls', 'second_wind'];
 /** What carries a Bolt-only build (target S5): more per hit, more hits, more bodies per hit, more reach, more Scrap for the next Bolt. */
-const BOLT_SET = ['hot_loads', 'quick_hands', 'wide_net', 'ricochet', 'iron_sights', 'bounty_hunter'];
+const BOLT_SET = ['payload', 'penetrators', 'hot_loads', 'quick_hands', 'wide_net', 'bounty_hunter'];
+/** The six commons that suited a Bolt before #365 - a multiplier on 8 damage is still a small hit, and they read 1%. Kept as the row that shows WHAT carries the build. */
+const OLD_BOLT_SET = ['hot_loads', 'quick_hands', 'wide_net', 'ricochet', 'iron_sights', 'bounty_hunter'];
 interface Plan { towers: TowerPlacement[]; tail?: TowerPlacement[]; unlocks: string[]; relics?: { id: string; rarity: number }[] }
 const held = (ids: string[], rarity: number): { id: string; rarity: number }[] => ids.map((id) => ({ id, rarity }));
 const PLANS: Record<string, Plan> = {
@@ -101,6 +111,21 @@ const PLANS: Record<string, Plan> = {
   naive3: { towers: [P('bolt', PLAIN, 'entry'), P('bolt', PLAIN, 'entry'), P('bolt', PLAIN, 'entry')], unlocks: [] },
   spam: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [] },
   spamRelics: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(BOLT_SET, 0) },
+  // THE SYNERGY (#365, D37: "to find 'broken' synergies"): what carries plain-Bolt width, taken apart - the old six
+  // commons, each new relic alone, the pair, the set. And the doors the pair could open (CONTRIBUTING sec 5): Ice Shards
+  // width holding the same set, and the base world's mixed line holding it on Grim, which S4 says the base world loses.
+  spamCommons: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(OLD_BOLT_SET, 0) },
+  spamPayload: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(['payload'], 0) },
+  spamPenetrators: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(['penetrators'], 0) },
+  spamPair: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(['payload', 'penetrators'], 0) },
+  frostSpamRelics: { towers: [P('frost', ICE_SHARDS)], tail: [P('frost', ICE_SHARDS)], unlocks: [], relics: held(BOLT_SET, 0) },
+  // One relic is not a synergy: what Payload ALONE does for the small hits that are not plain Bolts - the Gatling fork
+  // finished (8 damage, fast, two more shots), and Mortars never upgraded (a 10-damage blast).
+  gatlingsPayload: { towers: [P('bolt', [1, 1, 1])], tail: [P('bolt', [1, 1, 1])], unlocks: [], relics: held(['payload'], 0) },
+  mortarSpamPayload: { towers: [P('bolt', PLAIN), P('mortar', PLAIN)], tail: [P('mortar', PLAIN)], unlocks: [], relics: held(['payload'], 0) },
+  mortarSpam: { towers: [P('bolt', PLAIN), P('mortar', PLAIN)], tail: [P('mortar', PLAIN)], unlocks: [] },
+  mixedDeepCommons: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], unlocks: [], relics: held(OLD_BOLT_SET, 0) },
+  mixedDeepBolt: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], unlocks: [], relics: held(BOLT_SET, 0) },
   forks: { towers: [P('bolt', [0, 0, -1])], tail: [P('bolt', [0, 0, -1])], unlocks: [] },
   rails: { towers: [P('bolt', RAIL)], tail: [P('bolt', RAIL)], unlocks: [] },
   railsRelics: { towers: [P('bolt', RAIL)], tail: [P('bolt', RAIL)], unlocks: [], relics: held(BOLT_SET, 0) },

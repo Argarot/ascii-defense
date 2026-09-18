@@ -1571,6 +1571,21 @@ describe('session 29, PR 0 - the fix bundle of the 2026-09-06 thought dump', () 
   const BASTION: TowerDef = { id: 'bastion', cost: 40, range: 1.5, fireEveryTicks: 1, attack: 'none', aura: { damageMul: 1.15, rateMul: 1, rangeAdd: 0, reach: 1, productionMul: 1 }, tiers: [{ choices: [{ cost: 40, name: 'Reach', mods: { auraReach: 1 } }, { cost: 40, name: 'x' }] }] };
   const REACH: RelicDef = { id: 'long_arm', name: 'Long Arm', kind: 'passive', rarity: 'common', desc: '+2 range', effects: { rangeAdd: 2 } };
 
+  it("a relic for small hits reads the tower's OWN hit: a Bastion's aura does not push a Bolt out of it (#365)", () => {
+    // Found before it shipped: the limit first read the hit AFTER the aura, so the shipped Bolt (8) beside a Bastion
+    // (x1.15 = 9.2) would have lost "under 10" by standing next to its own support - 9.2 is under 10, but x1.45 is not.
+    const SMALL: RelicDef = { id: 'payload', name: 'Payload', kind: 'passive', rarity: 'common', desc: '', effects: { damageAdd: 3, damageAddBelow: 6.5 } };
+    const { simOpts } = makeWorld(53, { maxSpawns: 0, startingScrap: 900 });
+    const sim = new Sim(53, { ...simOpts, towerDefs: [BOLT, BASTION], relicDefs: [SMALL] });
+    const { x, y } = ell(sim, simOpts.cellsW, simOpts.cellsH)!;
+    expect(sim.buildTower(x + 1, y, 'bolt')).toBe(true);
+    expect(sim.buildTower(x, y, 'bastion')).toBe(true);
+    const bolt = sim.towerAt(x + 1, y)!;
+    expect(sim.stats(bolt).damage).toBeCloseTo(6 * 1.15); // 6.9: over the limit of 6.5, were the buffed hit the one read
+    expect(sim.debugGrantRelic('payload')).toBe(true);
+    expect(sim.stats(bolt).damage).toBeCloseTo(6 * 1.15 + 3);
+  });
+
   it('a supporter reaches a PLUS - straight out, never the diagonal - and its own range is that reach whatever relic is held (items 8, 9)', () => {
     const { simOpts } = makeWorld(53, { maxSpawns: 0, startingScrap: 900 });
     const sim = new Sim(53, { ...simOpts, towerDefs: [BOLT, BASTION], relicDefs: [REACH] });
@@ -1910,6 +1925,54 @@ describe('session 31, PR 2 - the early game', () => {
     expect([5, 6, 8, 9, 12].map((w) => insulatingAt({ ...COMBAT_RULES, insulating: ramp }, w))).toEqual([0, 2, 2, 4, 6]);
     expect(insulatingAt({ ...COMBAT_RULES, insulating: null }, 30)).toBe(0);
     expect(platingAt({ ...COMBAT_RULES, plating: null, insulating: ramp }, 30)).toBe(0); // one ramp never feeds the other
+  });
+
+  it('the synergy knobs (#365): flat damage lands before the multipliers and never on a hit of zero; armour pierce takes off whatever the body wears, and no more', () => {
+    const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
+    const spot = buildSpotNear(cells, cellsW, cellsH);
+    const RELICS: RelicDef[] = [
+      { id: 'payload', name: 'Payload', kind: 'passive', rarity: 'common', stackable: true, desc: '', effects: { damageAdd: 3 } },
+      { id: 'penetrators', name: 'Penetrators', kind: 'passive', rarity: 'common', stackable: true, desc: '', effects: { armorPierce: 2 } },
+      { id: 'hot_loads', name: 'Hot Loads', kind: 'passive', rarity: 'common', desc: '', effects: { damageMul: 1.5 } },
+    ];
+    const RULES = { armorFloor: 0.15, armorBlunts: 'kinetic', plating: null, insulating: null } as const;
+    const firstHitOf = (damage: number, type: 'kinetic' | 'energy', body: EnemyDef, held: string[]): { hit: number; shown: number } => {
+      const tower: TowerDef = { ...BOLT, damageType: type, fireEveryTicks: 1000, projectile: { damage, speed: 1, homing: true } };
+      const sim = new Sim(47, { ...simOpts, towerDefs: [tower], enemyDefs: [body], relicDefs: RELICS, rules: RULES });
+      for (const id of held) expect(sim.debugGrantRelic(id), id).toBe(true);
+      sim.buildTower(spot.x, spot.y, 'bolt');
+      const shown = sim.stats(sim.towers.find((t) => t)!).damage;
+      let guard = 0;
+      while (guard++ < 3000 && !(sim.alive[0] && sim.hp[0] < body.hp)) sim.tick();
+      return { hit: body.hp - sim.hp[0], shown };
+    };
+    const bare: EnemyDef = { ...WALKER, hp: 100000 };
+    const plated: EnemyDef = { ...WALKER, hp: 100000, armor: 5 };
+    const insulated: EnemyDef = { ...WALKER, hp: 100000, insulation: 5 };
+    // Flat damage: 8 + 3, and the card says what the hit does.
+    expect(firstHitOf(8, 'kinetic', bare, ['payload'])).toEqual({ hit: 11, shown: 11 });
+    // Two copies add; a multiplier multiplies the SUM - (8 + 6) x 1.5 - which is what makes the pair a find.
+    expect(firstHitOf(8, 'kinetic', bare, ['payload', 'payload', 'hot_loads']).hit).toBeCloseTo(21);
+    // A tower that does no damage is control, and stays control.
+    expect(firstHitOf(0, 'energy', bare, ['payload']).shown).toBe(0);
+    // A limit makes it a relic for SMALL hits: under it the bonus lands, at it and over it nothing. What is read is
+    // the tower's OWN hit - so two copies do not push a Bolt out of its own relic, and neither does a multiplier
+    // (the aura case, which folds in BEFORE the relic, has its own test beside the Bastion's).
+    RELICS[0] = { ...RELICS[0], effects: { damageAdd: 3, damageAddBelow: 10 } };
+    expect(firstHitOf(9, 'kinetic', bare, ['payload']).hit).toBeCloseTo(12);
+    expect(firstHitOf(10, 'kinetic', bare, ['payload']).hit).toBeCloseTo(10);
+    expect(firstHitOf(30, 'kinetic', bare, ['payload']).hit).toBeCloseTo(30);
+    expect(firstHitOf(8, 'kinetic', bare, ['payload', 'payload']).hit).toBeCloseTo(14);
+    expect(firstHitOf(8, 'kinetic', bare, ['hot_loads', 'payload']).hit).toBeCloseTo(16.5); // (8 + 3) x 1.5 - the own hit is 8, whatever 8 x 1.5 is
+    // Armour pierce: 8 - (5 - 2); against a body that wears nothing it is nothing, never a bonus.
+    expect(firstHitOf(8, 'kinetic', plated, ['penetrators']).hit).toBeCloseTo(5);
+    expect(firstHitOf(8, 'kinetic', plated, ['penetrators', 'penetrators', 'penetrators']).hit).toBeCloseTo(8);
+    expect(firstHitOf(8, 'kinetic', bare, ['penetrators']).hit).toBeCloseTo(8);
+    // Insulation is worn the same way, and pierced the same way.
+    expect(firstHitOf(8, 'energy', insulated, ['penetrators']).hit).toBeCloseTo(5);
+    // Together, against plate: (8 + 3) - (5 - 2) = 8, where the bare Bolt did 3.
+    expect(firstHitOf(8, 'kinetic', plated, []).hit).toBeCloseTo(3);
+    expect(firstHitOf(8, 'kinetic', plated, ['payload', 'penetrators']).hit).toBeCloseTo(8);
   });
 
   it('a delay in the difficulty spec pushes every unlock above wave 1 later, and the boss stays the heaviest available', () => {

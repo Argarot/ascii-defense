@@ -160,7 +160,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 ## Relics *(generated)*
 
 <!-- generated:relics -->
-52 relics in `packages/content/assets/relics/pool.json`. Passives work while held (some are tower mods on every tower - the former passive layer, one pool since 2026-09-06 evening); actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
+54 relics in `packages/content/assets/relics/pool.json`. Passives work while held (some are tower mods on every tower - the former passive layer, one pool since 2026-09-06 evening); actives are clicked in the strip and recharge; consumables are one use. "Stacks" means a second copy adds (a second charge for actives).
 
 | Relic | id | Kind | Base rarity | Tags | Stacks | Recharge | What it does (common) | Data | Rare | Epic | Legendary |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -211,6 +211,8 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | **Bounty Hunter** | bounty_hunter | passive | common | economy |  |  | Every bounty pays 25% more. | bountyMul 1.25 | Every bounty pays 50% more. [bountyMul 1.5] | Every bounty pays double. [bountyMul 2] | none |
 | **Tempered Steel** | tempered_steel | passive | rare | damage reach |  |  | Every hit does 10% more and every tower reaches half a cell further. | damageMul 1.1, mods {range 0.5} | same | Every hit does 20% more and every tower reaches a cell further. [damageMul 1.2, mods {range 1}] | none |
 | **Shield Breaker** | shield_breaker | passive | common | kinetic energy |  |  | Every hit does half again to shields. | mods {shieldMul 0.5} | Every hit does double to shields. [mods {shieldMul 1}] | Every hit does triple to shields. [mods {shieldMul 2}] | none |
+| **Payload** | payload | passive | common | damage | yes |  | A tower whose hit is under 10 hits for 11 more - before any multiplier. Nothing for a big gun. | damageAdd 11, damageAddBelow 10 | A tower whose hit is under 10 hits for 13 more - before any multiplier. [damageAdd 13, damageAddBelow 10] | A tower whose hit is under 10 hits for 16 more - before any multiplier. [damageAdd 16, damageAddBelow 10] | none |
+| **Penetrators** | penetrators | passive | common | damage | yes |  | Every hit ignores 2 of what a body wears - armour, insulation and plating alike. | armorPierce 2 | Every hit ignores 3 of what a body wears. [armorPierce 3] | Every hit ignores 4 of what a body wears. [armorPierce 4] | none |
 | **Permafrost Engine** | permafrost_engine | passive (fusion only) | epic | cold damage |  |  | Slowed enemies take triple from everything. Frostbite and Stasis, fused. | slowedDamageMul 3 | same | same | Slowed enemies take quadruple from everything. [slowedDamageMul 4] |
 | **Tollbooth** | tollbooth | passive (fusion only) | epic | economy |  |  | Every kill refunds 5 Scrap and every enemy pays 3 Scrap for each cell it walks beside a tower. Toll and Tithe, fused. | killRefundScrap 5, tollScrap 3 | same | same | Every kill refunds 8 Scrap and every enemy pays 4 Scrap for each cell it walks beside a tower. [killRefundScrap 8, tollScrap 4] |
 | **Bunker** | bunker | passive (fusion only) | epic | core |  |  | The Core mends 8 health every wave. Sandbags and Second Wind, fused. | coreHealPerWave 8 | same | same | The Core mends 12 health every wave. [coreHealPerWave 12] |

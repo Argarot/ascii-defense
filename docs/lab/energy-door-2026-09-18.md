@@ -5,6 +5,14 @@ own maps, 7×5 · 80 seeds a row while searching, 120 for the confirmation.
 The sequel to [damage-model-2026-09-18.md](damage-model-2026-09-18.md), written
 the same evening.
 
+> **Read before the instrument was corrected.** Every base-world row below
+> rolled rares and epics from its offers, which the app's base world cannot
+> ([synergy-2026-09-18.md](synergy-2026-09-18.md), "The lab's base world was
+> richer than the app's"). On the corrected lab the targets are still met —
+> Ice Shards spam 4% / 0%, mono-energy 84% against 100% — and the mixed line
+> on Standard reads 86% where this document says 89%. The gate's bands carry
+> the current numbers.
+
 **The question.** D37's damage model gave KINETIC a flat per-hit counter —
 armour, and plating on every body from wave 6 — and sent every ENERGY hit
 through both untouched. It proved plain-Bolt spam dead on sixteen rungs and

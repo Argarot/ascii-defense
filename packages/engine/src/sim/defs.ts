@@ -129,6 +129,20 @@ export interface RelicEffects {
   tierCostMul?: number;
   /** Passive: pierce added to every shot (Wide Net). */
   pierceAdd?: number;
+  /**
+   * Passive: FLAT damage added to every hit that already does damage (D37's synergy, #365) - before any multiplier,
+   * so Hot Loads multiplies it. Worth most to the smallest hit in the game, which is the point: it is what makes width
+   * a build. A tower that does no damage (a plain Frost) stays pure control - which `mods: { damage }` would not keep.
+   */
+  damageAdd?: number;
+  /**
+   * ...and only to a tower whose OWN hit - its def and its tiers, before any gift, aura or relic - is below this
+   * (absent = every hit). Without it the flat bonus lifted the mixed line on Grim as hard as it lifted width (32% to
+   * 71% in the bounding round of #365): the limit is what makes it a relic FOR small hits rather than for everything.
+   */
+  damageAddBelow?: number;
+  /** Passive: every hit ignores this much of what a body wears - armour, insulation and plating alike (#365). Copies add. */
+  armorPierce?: number;
   /** Passive: bodies added to every arc (Grounding Rod). */
   chainAdd?: number;
   /** Passive: cells added to every blast radius, explosive shots only (Long Fuse). */
@@ -303,6 +317,10 @@ export interface RelicFold {
   buildCostMul: number;
   tierCostMul: number;
   pierceAdd: number;
+  damageAdd: number;
+  /** `damageAdd` reaches a tower whose own hit is below this: the widest limit among the held copies (1e9 when one has none); 0 when nothing adds. */
+  damageAddBelow: number;
+  armorPierce: number;
   chainAdd: number;
   blastAdd: number;
   coreAdjacentDamageMul: number;
@@ -336,6 +354,9 @@ export const EMPTY_FOLD: RelicFold = {
   buildCostMul: 1,
   tierCostMul: 1,
   pierceAdd: 0,
+  damageAdd: 0,
+  damageAddBelow: 0,
+  armorPierce: 0,
   chainAdd: 0,
   blastAdd: 0,
   coreAdjacentDamageMul: 1,
@@ -375,6 +396,10 @@ export function foldRelics(defs: readonly { effects?: RelicEffects }[]): RelicFo
     out.buildCostMul *= e.buildCostMul ?? 1;
     out.tierCostMul *= e.tierCostMul ?? 1;
     out.pierceAdd += e.pierceAdd ?? 0;
+    out.damageAdd += e.damageAdd ?? 0;
+    // No limit is a number no hit reaches, not Infinity: a fold may be printed as JSON, and JSON has no Infinity.
+    if (e.damageAdd !== undefined) out.damageAddBelow = Math.max(out.damageAddBelow, e.damageAddBelow ?? 1e9);
+    out.armorPierce += e.armorPierce ?? 0;
     out.chainAdd += e.chainAdd ?? 0;
     out.blastAdd += e.blastAdd ?? 0;
     out.coreAdjacentDamageMul *= e.coreAdjacentDamageMul ?? 1;
