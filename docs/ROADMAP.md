@@ -145,6 +145,18 @@ ladder and the corpus on the game as it now is.**
 **PR list (a full day — in this order, because each stands on the one
 before):**
 
+0. **What he saw on 2026-09-18 (the round of that evening, five items, his
+   numbering in the tracker as `[r0918.N]`).** Three defects, fixed without
+   asking: the new-enemy card's sprite sits in a corner of a lighter box —
+   centred, and no box (#382); **the mender's wave** is a thick bright ring
+   and must read like the Frost Emitter's field, green-tinted, subtle, fading
+   from its source (#386) — this is the *second* round on that effect (round
+   33, item 9), so rule 4 applies: **PRD §8 gets the rule for every area
+   effect first — one language, a ground tint that fades with distance, the
+   colour says whose — and the fix follows from it**; the longer-turn special
+   reads as crossroads on the loadout page (#381: find out first whether the
+   minted tile or its thumbnail is wrong). *Proof:* each looked at in the
+   running game, side by side with his screenshot's scene.
 1. **One table of plans (the old PR 3, moved first).** `fit.ts` and
    `balanceCheck.ts` hold hand copies of the same plans, and `build-sweep`,
    `tools/ladder.mjs` and `seedCorpus.ts` still lay six chassis before the
@@ -185,7 +197,18 @@ answer; he finds Payload, goes wide with plain Bolts on purpose, and it works �
 and without it, it does not; a Standard run with a sensible mixed line is won
 more often than lost, and does not feel like a wall.
 
-**His part: merging, and nothing else.** No call is open. Three things were
+**His part: merging, and two calls from his own round — "go" covers both.**
+**#383** — *skitter reads like shitter*: what is it called? *Default:
+**scuttle** (the id stays `skitter`).* **#384** — the new-enemy card stopping
+the game is too disruptive: what replaces the pause? *Default: no pause — a
+banner in the side panel for a few seconds, the full card in the CODEX and
+behind a click; the tutorial's first run keeps one pausing card, the grunt's.*
+The rest of that round is not his to decide: the tile selector rebuilt around
+real tile sprites is scope (#380), and **introducing enemies more slowly**
+(#385) is the unlock schedule — measurable, so the dev states the target and
+derives it (rule 7); it moves every band, so it is its own PR after this row.
+
+Three things were
 decided by default this evening and are his to overrule in a word: the word
 **"insulated"** and its mark `%%`; the names ***Payload*** and
 ***Penetrators***; Standard at **×1.105**.
