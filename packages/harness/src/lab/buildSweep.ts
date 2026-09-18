@@ -11,7 +11,7 @@
  *
  * Usage: node tools/build-sweep.mjs [seed ...]
  */
-import { THREAT_LEVELS, TileLibrary, createRng, resolveUnlocks, threatKnobs, type DifficultySpec, type TowerDef } from '@ascii-defense/engine';
+import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary, createRng, resolveUnlocks, threatKnobs, type DifficultySpec, type TowerDef } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -99,14 +99,14 @@ const EIGHT: [string, TowerPlacement[]][] = [
 /** The crowd bodies: a crowd role's value shows in how many of these fell, not on the death wave. */
 const CROWD = new Set(['swarmling', 'skitter']);
 const BUILDS: Build[] = [
-  ...EIGHT.map(([name, towers]) => ({ name: `choke, ${name}, economy`, towers, content: baseContent, economy: { startingScrap: 100 } })),
-  { name: 'choke, KINETIC only (3 Railbore + Mortar + Missiles), economy', towers: soloKinetic('choke'), content: baseContent, economy: { startingScrap: 100 } },
-  { name: 'choke, ENERGY only (3 Tesla + 2 Frost), economy', towers: soloEnergy('choke'), content: baseContent, economy: { startingScrap: 100 } },
-  { name: 'choke, BOTH types (2 Railbore + Tesla + Frost + Mortar), economy', towers: bothTypes('choke'), content: baseContent, economy: { startingScrap: 100 } },
-  { name: 'choke, Railbore line + Frost + Mortar, economy', towers: mixed('choke', RAILBORE), content: baseContent, economy: { startingScrap: 100 } },
-  { name: 'spread, same build, economy', towers: mixed('auto', RAILBORE), content: baseContent, economy: { startingScrap: 100 } },
-  { name: 'choke, Hailstorm 60% line + Frost + Mortar, economy', towers: mixed('choke', HAILSTORM), content: baseContent, economy: { startingScrap: 100 } },
-  { name: 'choke, Hailstorm 75% line + Frost + Mortar, economy', towers: mixed('choke', HAILSTORM), content: withHailstorm(0.75), economy: { startingScrap: 100 } },
+  ...EIGHT.map(([name, towers]) => ({ name: `choke, ${name}, economy`, towers, content: baseContent, economy: { startingScrap: STARTING_SCRAP } })),
+  { name: 'choke, KINETIC only (3 Railbore + Mortar + Missiles), economy', towers: soloKinetic('choke'), content: baseContent, economy: { startingScrap: STARTING_SCRAP } },
+  { name: 'choke, ENERGY only (3 Tesla + 2 Frost), economy', towers: soloEnergy('choke'), content: baseContent, economy: { startingScrap: STARTING_SCRAP } },
+  { name: 'choke, BOTH types (2 Railbore + Tesla + Frost + Mortar), economy', towers: bothTypes('choke'), content: baseContent, economy: { startingScrap: STARTING_SCRAP } },
+  { name: 'choke, Railbore line + Frost + Mortar, economy', towers: mixed('choke', RAILBORE), content: baseContent, economy: { startingScrap: STARTING_SCRAP } },
+  { name: 'spread, same build, economy', towers: mixed('auto', RAILBORE), content: baseContent, economy: { startingScrap: STARTING_SCRAP } },
+  { name: 'choke, Hailstorm 60% line + Frost + Mortar, economy', towers: mixed('choke', HAILSTORM), content: baseContent, economy: { startingScrap: STARTING_SCRAP } },
+  { name: 'choke, Hailstorm 75% line + Frost + Mortar, economy', towers: mixed('choke', HAILSTORM), content: withHailstorm(0.75), economy: { startingScrap: STARTING_SCRAP } },
   { name: 'choke, same build, unlimited scrap (capability)', towers: mixed('choke', RAILBORE), content: baseContent, economy: undefined },
   { name: 'choke, Hailstorm (close quarters) line + Frost + Mortar, unlimited scrap (capability)', towers: mixed('choke', HAILSTORM), content: baseContent, economy: undefined },
 ];
@@ -223,7 +223,7 @@ if (BANDS_ONLY) {
         const set = bandSet(n, band, mixedMix);
         const deaths: number[] = [];
         for (const seed of SEEDS) {
-          const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: mixed('choke', RAILBORE), relicIds: [], relics: set, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+          const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: mixed('choke', RAILBORE), relicIds: [], relics: set, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: STARTING_SCRAP } };
           try { deaths.push(runLab(spec, baseContent).deathWave ?? MAX_WAVES + 1); } catch { /* a seed the carve refuses is no reading */ }
         }
         if (deaths.length) setMeans.push(deaths.reduce((a, c) => a + c, 0) / deaths.length);
@@ -265,7 +265,7 @@ if (BASE_ONLY) {
       const deaths: (number | null)[] = [];
       const ores: number[] = [];
       for (const seed of SEEDS) {
-        const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...world.knobs(seed) }, towers: b.towers, relicIds: [], unlocks: [], interWaveTicks: world.clock, difficulty: world.spec, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+        const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...world.knobs(seed) }, towers: b.towers, relicIds: [], unlocks: [], interWaveTicks: world.clock, difficulty: world.spec, maxWaves: MAX_WAVES, economy: { startingScrap: STARTING_SCRAP } };
         try { const r = runLab(spec, baseContent); deaths.push(r.deathWave); ores.push(r.oreEnd[0]); } catch (e) { deaths.push(-1); ores.push(0); console.log(`<!-- ${b.name} @${seed}: ${e instanceof Error ? e.message : String(e)} -->`); }
       }
       const nums = deaths.map((d) => (d === null ? MAX_WAVES + 1 : d === -1 ? 0 : d));
@@ -335,7 +335,7 @@ if (DEBT_ONLY) {
         const spec: LabSpec = {
           seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...threatKnobs(createRng(seed).stream('map'), threat) },
           towers: row.towers, tail: row.tail, relicIds: [], relics: row.relicSets ? bandSet(i % RELIC_SETS, row.band ?? 0, true) : undefined, unlocks: row.unlocks ?? [],
-          interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: HORIZON, economy: { startingScrap: 100 },
+          interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: HORIZON, economy: { startingScrap: STARTING_SCRAP },
         };
         try {
           const r = runLab(spec, baseContent);
@@ -469,7 +469,7 @@ if (TREE_ONLY) {
     const ores: number[][] = [];
     let world = { towers: 0, relics: 0, relicSlots: 0 };
     SEEDS.forEach((seed, i) => {
-      const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: st.towers, relicIds: [], relics: poolSet(st.unlocks, i), unlocks: st.unlocks, loadout: st.loadout, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+      const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: st.towers, relicIds: [], relics: poolSet(st.unlocks, i), unlocks: st.unlocks, loadout: st.loadout, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: STARTING_SCRAP } };
       try {
         const r = runLab(spec, baseContent);
         deaths.push(r.deathWave);
@@ -535,7 +535,7 @@ for (let n = -1; n < RELIC_SETS; n++) {
   const set = n < 0 ? [] : relicSet(n);
   const deaths: (number | null)[] = [];
   for (const seed of SEEDS) {
-    const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: mixed('choke', RAILBORE), relicIds: [], relics: set, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: 100 } };
+    const spec: LabSpec = { seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...demoKnobs(seed) }, towers: mixed('choke', RAILBORE), relicIds: [], relics: set, difficulty: STANDARD, maxWaves: MAX_WAVES, economy: { startingScrap: STARTING_SCRAP } };
     try { deaths.push(runLab(spec, baseContent).deathWave); } catch { deaths.push(-1); }
   }
   const nums = deaths.map((d) => (d === null ? MAX_WAVES + 1 : d === -1 ? 0 : d));

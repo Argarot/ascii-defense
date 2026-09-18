@@ -174,6 +174,23 @@ Read the PRD before the architecture; read this file before touching anything.
   that is what `lab.test.ts` keeps. **Before widening any tolerance, measure
   the quantity across seeds** - a bound that is met on a third of them was
   never a bound. The headless runner is the instrument.
+- **Fit with the harness, not with the content files** (`node tools/fit.mjs
+  --patch=candidate.json`): named plans - every rung of every Threat at once -
+  against a PATCH of the game (a combat rule, an enemy's armour or
+  resistances, a tower's numbers tier by tier, every price by one rule, the
+  purse, a curve), three to four minutes a read. The damage model of D37 was
+  five rounds of it in an afternoon. Two things it taught: **change one kind
+  of thing per round**, or the table cannot say which change did it; and
+  **before believing a new dominant line, check the plans are played the same
+  way** - "Railbores beat the mixed line" was the lab buying one depth first
+  and the other chassis first. When the candidate ships, **run the harness
+  with no patch and diff the rows**: the shipped game must reproduce the
+  candidate to the digit, or something was typed wrong on the way in.
+- **Look at every new line of text in the running game before it ships.** Both
+  HUD lines D37 added were cut off mid-sentence at the panel's width ("Big
+  hits and +", "small +") and every test was green. A sentence that does not
+  fit is a lie by omission; `traitAnswers.test.ts` now wraps each answer the
+  way the panel does.
 - **A lab plan that can finish buying says what it buys next** (`LabSpec.tail`,
   issue #348), **and a sweep over an economy prints the purse.** For six
   sessions the reference build was six towers: bought out by wave 12, dead at

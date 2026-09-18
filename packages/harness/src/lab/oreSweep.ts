@@ -15,7 +15,7 @@
  *
  *   node tools/ore-sweep.mjs [seeds=400]
  */
-import { ORE_TIER_SPAWN, ORE_TIER_VEIN, THREAT_LEVELS, TileLibrary, createRng, generateMap, threatKnobs, type DifficultySpec, type GeneratedMap } from '@ascii-defense/engine';
+import { STARTING_SCRAP, ORE_TIER_SPAWN, ORE_TIER_VEIN, THREAT_LEVELS, TileLibrary, createRng, generateMap, threatKnobs, type DifficultySpec, type GeneratedMap } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -102,7 +102,7 @@ for (let i = 1; i <= INCOME_SEEDS; i++) {
   const seed = i * 7919 + 13;
   const knobs = createRng(seed).stream('map');
   const mapOpts = { width: BOARD.w, height: BOARD.h, ...threatKnobs(knobs, std) };
-  const spec: LabSpec = { seed, map: mapOpts, towers: BASE_BUILD, relicIds: [], unlocks: ['ore_t2'], difficulty: STANDARD, maxWaves: 40, economy: { startingScrap: 100 } };
+  const spec: LabSpec = { seed, map: mapOpts, towers: BASE_BUILD, relicIds: [], unlocks: ['ore_t2'], difficulty: STANDARD, maxWaves: 40, economy: { startingScrap: STARTING_SCRAP } };
   try {
     const rep = runLab(spec, content);
     // The lab's own map for this spec (a fresh 'map' stream, as makeWorld deals it).

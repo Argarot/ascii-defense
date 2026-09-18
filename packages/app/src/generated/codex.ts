@@ -6,7 +6,7 @@ export const CODEX = {
       "id": "bolt",
       "name": "Bolt Turret",
       "type": "kinetic",
-      "cost": 20,
+      "cost": 60,
       "range": 6,
       "rate": "1.43",
       "dmg": 8,
@@ -18,36 +18,36 @@ export const CODEX = {
         [
           {
             "name": "Marksman",
-            "cost": 25,
+            "cost": 15,
             "desc": "Reach: +2.5 range. Covers more road from the same cell."
           },
           {
             "name": "Gatling",
-            "cost": 25,
+            "cost": 15,
             "desc": "Throughput: fires twice as often, -1 range. More shots at fewer cells."
           }
         ],
         [
           {
             "name": "Piercing",
-            "cost": 55,
+            "cost": 35,
             "desc": "Each shot passes through its target into up to 2 more enemies behind it. The answer to a column."
           },
           {
             "name": "Shatter",
-            "cost": 55,
+            "cost": 35,
             "desc": "Double damage to shields. The answer to shellbacks."
           }
         ],
         [
           {
             "name": "Railbore",
-            "cost": 120,
-            "desc": "One massive round: +22 damage, and armour does nothing against it. The answer to brutes."
+            "cost": 70,
+            "desc": "One massive round: +22 damage. Armour takes the same few points off every hit, so it barely dents this one. The answer to brutes."
           },
           {
             "name": "Hailstorm",
-            "cost": 120,
+            "cost": 70,
             "desc": "Three homing shots per volley at full damage, each at a different enemy when there is one - but the reach drops to close quarters. Point-blank saturation: the answer to a crowd at the choke."
           }
         ]
@@ -57,7 +57,7 @@ export const CODEX = {
       "id": "mortar",
       "name": "Mortar",
       "type": "kinetic",
-      "cost": 35,
+      "cost": 105,
       "range": 7,
       "rate": "0.50",
       "dmg": 10,
@@ -69,36 +69,36 @@ export const CODEX = {
         [
           {
             "name": "Shaped Charge",
-            "cost": 30,
+            "cost": 20,
             "desc": "Focused payload: +12 damage in a blast 0.3 cells smaller. Kills the few."
           },
           {
             "name": "Wide Burst",
-            "cost": 30,
+            "cost": 20,
             "desc": "Wider blast: +0.6 cells of radius at 85% damage. Wounds the many."
           }
         ],
         [
           {
             "name": "Long Barrel",
-            "cost": 65,
+            "cost": 40,
             "desc": "Reach: +2 range, but the dead zone grows by 1. Sit it back from the road."
           },
           {
             "name": "Short Fuse",
-            "cost": 65,
+            "cost": 40,
             "desc": "Close work: the dead zone shrinks by 1.5, range -1. Sit it right on the road."
           }
         ],
         [
           {
             "name": "Concussive",
-            "cost": 140,
+            "cost": 85,
             "desc": "The blast slows everything it hits to 60% for a second. Control, not just damage."
           },
           {
             "name": "Cluster",
-            "cost": 140,
+            "cost": 85,
             "desc": "Three shells per volley at 60% damage each, scattered around the aim point. Saturation."
           }
         ]
@@ -108,7 +108,7 @@ export const CODEX = {
       "id": "refinery",
       "name": "Refinery",
       "type": "",
-      "cost": 30,
+      "cost": 90,
       "range": 0.5,
       "rate": "",
       "dmg": 0,
@@ -120,36 +120,36 @@ export const CODEX = {
         [
           {
             "name": "Wide Bore",
-            "cost": 30,
+            "cost": 20,
             "desc": "2 Ore per cycle, but a cycle takes 60 s instead of 40. More Ore sooner; the vein empties sooner."
           },
           {
             "name": "Deep Bore",
-            "cost": 30,
+            "cost": 20,
             "desc": "The vein under it grows by half, and every cycle takes 60 s. Less now, more in the end - for the patient."
           }
         ],
         [
           {
             "name": "Survey",
-            "cost": 60,
+            "cost": 35,
             "desc": "Every Survey refinery speeds up ALL rock-breaking jobs, everywhere."
           },
           {
             "name": "Automation",
-            "cost": 60,
+            "cost": 35,
             "desc": "Prospects nearby rocks by itself, free, one job at a time."
           }
         ],
         [
           {
             "name": "Mother Lode",
-            "cost": 120,
+            "cost": 70,
             "desc": "+2 Ore per cycle. The vein pays out fast and runs dry fast."
           },
           {
             "name": "Deep Shaft",
-            "cost": 120,
+            "cost": 70,
             "desc": "The vein under it doubles, and every cycle takes 40 s longer. The long game - only if you can hold this ground."
           }
         ]
@@ -159,7 +159,7 @@ export const CODEX = {
       "id": "frost",
       "name": "Frost Emitter",
       "type": "energy",
-      "cost": 25,
+      "cost": 75,
       "range": 3.5,
       "rate": "0.83",
       "dmg": 0,
@@ -171,36 +171,36 @@ export const CODEX = {
         [
           {
             "name": "Deep Chill",
-            "cost": 25,
+            "cost": 15,
             "desc": "Colder: slowed enemies move at 40% instead of 55%, for 10 ticks longer. The slow path."
           },
           {
             "name": "Ice Shards",
-            "cost": 25,
+            "cost": 15,
             "desc": "The field cuts: +4 damage per pulse to everything inside it. The damage path."
           }
         ],
         [
           {
             "name": "Wide Field",
-            "cost": 55,
+            "cost": 35,
             "desc": "Bigger field: +1.5 range to the chill. More road under the slow."
           },
           {
             "name": "Brittle",
-            "cost": 55,
+            "cost": 35,
             "desc": "This field's pulses deal +50% to anything already slowed. Chill first, then cut."
           }
         ],
         [
           {
             "name": "Absolute Zero",
-            "cost": 120,
+            "cost": 70,
             "desc": "Every fourth pulse freezes the field solid: enemies stop dead for the slow's duration."
           },
           {
             "name": "Shatterfield",
-            "cost": 120,
+            "cost": 70,
             "desc": "+14 damage per pulse. The field becomes a weapon."
           }
         ]
@@ -210,7 +210,7 @@ export const CODEX = {
       "id": "tesla",
       "name": "Tesla Coil",
       "type": "energy",
-      "cost": 70,
+      "cost": 210,
       "range": 4,
       "rate": "1",
       "dmg": 9,
@@ -222,36 +222,36 @@ export const CODEX = {
         [
           {
             "name": "Long Arc",
-            "cost": 60,
+            "cost": 35,
             "desc": "Reach: +1.5 range. The first arc finds bodies further out."
           },
           {
             "name": "Twin Coil",
-            "cost": 60,
+            "cost": 35,
             "desc": "Throughput: arcs every 12 ticks instead of 20. More arcs, the same bite."
           }
         ],
         [
           {
             "name": "Forked",
-            "cost": 120,
+            "cost": 70,
             "desc": "Every arc hits two more bodies. The answer to a column."
           },
           {
             "name": "Grounding",
-            "cost": 120,
+            "cost": 70,
             "desc": "Bodies the arc touches slow to 60% for 15 ticks. Control on a chain."
           }
         ],
         [
           {
             "name": "Overload",
-            "cost": 240,
+            "cost": 145,
             "desc": "+16 damage on the first hop, and every hop after it. The answer to brutes."
           },
           {
             "name": "Conductor",
-            "cost": 240,
+            "cost": 145,
             "desc": "Three more bodies per arc, hops span two more cells, at 80% damage. The answer to swarms."
           }
         ]
@@ -261,7 +261,7 @@ export const CODEX = {
       "id": "missile",
       "name": "Missile Rack",
       "type": "kinetic",
-      "cost": 85,
+      "cost": 255,
       "range": 9,
       "rate": "0.33",
       "dmg": 30,
@@ -273,36 +273,36 @@ export const CODEX = {
         [
           {
             "name": "Warhead",
-            "cost": 75,
+            "cost": 45,
             "desc": "+20 damage per missile. Kills the one it was sent for."
           },
           {
             "name": "Seeker",
-            "cost": 75,
+            "cost": 45,
             "desc": "Reach: +2 range, and a missile every 50 ticks instead of 60."
           }
         ],
         [
           {
             "name": "Salvo",
-            "cost": 150,
+            "cost": 90,
             "desc": "Two missiles per launch at 75% damage, each homing on a different enemy when there is one."
           },
           {
             "name": "Fragmentation",
-            "cost": 150,
+            "cost": 90,
             "desc": "Blast +0.6 cells at 85% damage. Wounds the many."
           }
         ],
         [
           {
             "name": "Bunker Buster",
-            "cost": 300,
-            "desc": "+40 damage, and armour does nothing against it. The answer to a Juggernaut."
+            "cost": 180,
+            "desc": "+40 damage. A hit this size loses a few points to armour and no more. The answer to a Juggernaut."
           },
           {
             "name": "Barrage",
-            "cost": 300,
+            "cost": 180,
             "desc": "Three missiles per launch at 60% damage each. Saturation from range."
           }
         ]
@@ -312,7 +312,7 @@ export const CODEX = {
       "id": "laser",
       "name": "Laser Lance",
       "type": "energy",
-      "cost": 110,
+      "cost": 330,
       "range": "the road, to its turn",
       "rate": "1",
       "dmg": 20,
@@ -324,36 +324,36 @@ export const CODEX = {
         [
           {
             "name": "Capacitor",
-            "cost": 90,
+            "cost": 55,
             "desc": "+14 damage per pulse, cold or hot. The damage path starts steady."
           },
           {
             "name": "Chill",
-            "cost": 90,
+            "cost": 55,
             "desc": "Every body in the beam moves at 70% while it stands in it; a pulse a second keeps it cold. The control path starts cold."
           }
         ],
         [
           {
             "name": "Fast Cycle",
-            "cost": 180,
+            "cost": 110,
             "desc": "A pulse every 13 ticks instead of 20: half again the output."
           },
           {
             "name": "Sear",
-            "cost": 180,
+            "cost": 110,
             "desc": "Bodies leave the beam burning: 2 a tick for a second. The beam keeps hurting after they pass."
           }
         ],
         [
           {
             "name": "Cutter",
-            "cost": 320,
+            "cost": 190,
             "desc": "Every pulse at 150% and the heat climbs one multiple higher. The answer to a column standing in the beam."
           },
           {
             "name": "Deep Sear",
-            "cost": 320,
+            "cost": 190,
             "desc": "The burn doubles and lasts two seconds; the chill deepens to 50%. Nothing walks out of this beam unmarked."
           }
         ]
@@ -363,7 +363,7 @@ export const CODEX = {
       "id": "bastion",
       "name": "Bastion",
       "type": "",
-      "cost": 40,
+      "cost": 120,
       "range": 1.5,
       "rate": "",
       "dmg": 0,
@@ -375,36 +375,36 @@ export const CODEX = {
         [
           {
             "name": "Command",
-            "cost": 40,
+            "cost": 25,
             "desc": "Neighbours hit for 30% more instead of 15%."
           },
           {
             "name": "Logistics",
-            "cost": 40,
+            "cost": 25,
             "desc": "Neighbours fire 15% faster, and producers cycle 15% faster."
           }
         ],
         [
           {
             "name": "Reach",
-            "cost": 80,
+            "cost": 50,
             "desc": "The arms grow to two cells: eight neighbours instead of four."
           },
           {
             "name": "Hardpoint",
-            "cost": 80,
+            "cost": 50,
             "desc": "Neighbours gain +1 range."
           }
         ],
         [
           {
             "name": "Warlord",
-            "cost": 160,
+            "cost": 95,
             "desc": "Neighbours hit for 30% more on top of everything."
           },
           {
             "name": "Quartermaster",
-            "cost": 160,
+            "cost": 95,
             "desc": "Neighbouring producers cycle 50% faster; neighbours gain +1 range."
           }
         ]
@@ -452,8 +452,8 @@ export const CODEX = {
       "fromWave": 3,
       "armour": 0,
       "shield": 0,
-      "kinetic": "x0.8",
-      "energy": "x1.6",
+      "kinetic": "x0.6",
+      "energy": "x2",
       "traits": [
         "swarm: spawns in packs of three - one queue entry, three bodies",
         "fast: slows last half as long"
@@ -469,10 +469,10 @@ export const CODEX = {
       "fromWave": 4,
       "armour": 3,
       "shield": 0,
-      "kinetic": "x0.6",
-      "energy": "x1.6",
+      "kinetic": "x0.4",
+      "energy": "x2",
       "traits": [
-        "armoured: immune to slows; armour is subtracted from every hit, but never more than 65% of it (Railbore ignores it)"
+        "armoured: immune to slows; armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched"
       ]
     },
     {
@@ -485,8 +485,8 @@ export const CODEX = {
       "fromWave": 5,
       "armour": 0,
       "shield": 30,
-      "kinetic": "x1.4",
-      "energy": "x0.6",
+      "kinetic": "x1.6",
+      "energy": "x0.4",
       "traits": [
         "shielded: a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire"
       ]
@@ -501,8 +501,8 @@ export const CODEX = {
       "fromWave": 6,
       "armour": 0,
       "shield": 0,
-      "kinetic": "x1.4",
-      "energy": "x0.6",
+      "kinetic": "x1.6",
+      "energy": "x0.4",
       "traits": []
     },
     {
@@ -515,8 +515,8 @@ export const CODEX = {
       "fromWave": 10,
       "armour": 6,
       "shield": 0,
-      "kinetic": "x0.8",
-      "energy": "x1.2",
+      "kinetic": "x0.5",
+      "energy": "x1.6",
       "traits": []
     },
     {
@@ -529,8 +529,8 @@ export const CODEX = {
       "fromWave": 3,
       "armour": 0,
       "shield": 0,
-      "kinetic": "x1.2",
-      "energy": "x0.8",
+      "kinetic": "x1.4",
+      "energy": "x0.6",
       "traits": [
         "sprint: runs 60% faster while unhit for two seconds - keep it under fire"
       ]
@@ -545,8 +545,8 @@ export const CODEX = {
       "fromWave": 6,
       "armour": 0,
       "shield": 0,
-      "kinetic": "x0.8",
-      "energy": "x1.2",
+      "kinetic": "x0.6",
+      "energy": "x1.6",
       "traits": [
         "charge: runs at double speed once under half hp - finish it, or slow it before the sprint"
       ]
@@ -578,7 +578,7 @@ export const CODEX = {
       "armour": 0,
       "shield": 0,
       "kinetic": "",
-      "energy": "x1.4",
+      "energy": "x1.6",
       "traits": [
         "heal: mends every body within a cell and a half by 3 every second - kill the mender first (priority WEAKEST finds it)"
       ]
@@ -609,8 +609,8 @@ export const CODEX = {
       "fromWave": 11,
       "armour": 0,
       "shield": 0,
-      "kinetic": "x1.2",
-      "energy": "x0.8",
+      "kinetic": "x1.4",
+      "energy": "x0.5",
       "traits": [
         "frontshield: a shield facing the way it walks: hits from ahead do a third - flank it from beside the road"
       ]
@@ -625,8 +625,8 @@ export const CODEX = {
       "fromWave": 12,
       "armour": 3,
       "shield": 0,
-      "kinetic": "",
-      "energy": "x1.2",
+      "kinetic": "x0.7",
+      "energy": "x1.4",
       "traits": [
         "bulwark: every body within two and a half cells takes 30% less while it lives - the boss to kill first"
       ]
@@ -1730,8 +1730,11 @@ export const CODEX = {
     }
   ],
   "rules": [
-    "Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.6 resists, x1.4-1.6 weak, immune takes nothing.",
-    "Kinetic: Bolt, Mortar, Missiles. Energy: Frost, Tesla, Laser.",
+    "Damage types decide fights: a tower hits with its type, an enemy multiplies the hit by its entry - x0.4-0.7 resists, x1.4-2 weak, immune takes nothing.",
+    "Kinetic: Bolt Turret, Mortar, Missile Rack. Energy: Frost Emitter, Tesla Coil, Laser Lance.",
+    "Armour: armour is subtracted from every KINETIC hit, but never more than 85% of it; energy goes through armour untouched.",
+    "From wave 6 every body is PLATED: +1 armour, and +1 more every 3 waves - the next-wave panel says how much. A swarm of small hits is a bad answer to a late wave; one big hit, or energy, is a good one.",
+    "An upgrade is a better buy than another tower: the chassis is the expensive part, and a big hit is what gets through armour.",
     "Slows from different sources stack by one rule: the coldest wins, the longest lasts. The ground under a walker says its status: cold slowed, ember burning, ice frozen, ember over cold for both; ( ) a live shield.",
     "The two ground cells touching the Core face are precious: every tower has a unique gift there, printed on its card."
   ]

@@ -1831,19 +1831,23 @@ describe('session 31, PR 2 - the early game', () => {
     expect(bossHpMul({ hp: 400 })).toBe(1.5);
     const { cells, cellsW, cellsH, simOpts } = makeWorld(47, { maxSpawns: 1, spawnEveryTicks: 1 });
     const spot = buildSpotNear(cells, cellsW, cellsH);
-    const plated: EnemyDef = { ...WALKER, hp: 100000, armor: 6 };
+    // Armour 20 against a hit of 8: the flat strip would leave nothing, and the floor's share is what lands.
+    // (Armour 6 until D37 lowered the floor from 0.35 to 0.15: 8 - 6 = 2 is now above the floor's 1.2, which is the point.)
+    const plated: EnemyDef = { ...WALKER, hp: 100000, armor: 20 };
     const single: TowerDef = { ...BOLT, fireEveryTicks: 1000, projectile: { damage: 8, speed: 1, homing: true } };
     const sim = new Sim(47, { ...simOpts, towerDefs: [single], enemyDefs: [plated] });
     sim.buildTower(spot.x, spot.y, 'bolt');
     let guard = 0;
     while (guard++ < 3000 && !(sim.alive[0] && sim.hp[0] < plated.hp)) sim.tick();
-    expect(plated.hp - sim.hp[0]).toBeCloseTo(8 * ARMOR_FLOOR); // 2.8, not 8 - 6 = 2
+    expect(plated.hp - sim.hp[0]).toBeCloseTo(8 * ARMOR_FLOOR); // 1.2, not nothing
   });
 
   it('what a hit is, is a RULE a run may override (D37): the floor, what armour blunts, and plating by wave', () => {
-    // The shipped rules are the defaults, and with none overridden a hit is what it always was.
-    expect(COMBAT_RULES).toEqual({ armorFloor: ARMOR_FLOOR, armorBlunts: 'all', plating: null });
-    expect(platingAt(COMBAT_RULES, 30)).toBe(0);
+    // The shipped rules (D37, 2026-09-18): a low floor, armour that blunts kinetic alone, one more armour on every body per three waves from wave 6.
+    expect(COMBAT_RULES).toEqual({ armorFloor: 0.15, armorBlunts: 'kinetic', plating: { from: 6, every: 3, add: 1 } });
+    expect(ARMOR_FLOOR).toBe(COMBAT_RULES.armorFloor);
+    expect([1, 5, 6, 8, 9, 12, 20].map((w) => platingAt(COMBAT_RULES, w))).toEqual([0, 0, 1, 1, 2, 3, 5]);
+    expect(platingAt({ ...COMBAT_RULES, plating: null }, 30)).toBe(0);
     const plating = { from: 6, every: 3, add: 2 };
     expect([5, 6, 8, 9, 12].map((w) => platingAt({ ...COMBAT_RULES, plating }, w))).toEqual([0, 2, 2, 4, 6]);
 
@@ -1858,13 +1862,19 @@ describe('session 31, PR 2 - the early game', () => {
       while (guard++ < 3000 && !(sim.alive[0] && sim.hp[0] < body.hp)) sim.tick();
       return body.hp - sim.hp[0];
     };
-    // A lower floor: the small hit is a worse answer to armour, the big hit barely notices.
-    expect(firstHitOf(8, 'kinetic', { armorFloor: 0.1 })).toBeCloseTo(2); // 8 - 6, no longer lifted to 2.8
-    expect(firstHitOf(30, 'kinetic', { armorFloor: 0.1 })).toBeCloseTo(24);
-    // Armour that blunts kinetic alone: energy goes through plate; kinetic is as it was.
-    expect(firstHitOf(8, 'energy', { armorBlunts: 'kinetic' })).toBeCloseTo(8);
-    expect(firstHitOf(8, 'kinetic', { armorBlunts: 'kinetic' })).toBeCloseTo(8 * ARMOR_FLOOR);
-    expect(firstHitOf(8, 'energy', {})).toBeCloseTo(8 * ARMOR_FLOOR); // shipped: armour blunts every hit
+    // Every rule named, so the test reads the RULE and not whatever ships. Armour 6, wave 1 (no plating yet).
+    const OLD = { armorFloor: 0.35, armorBlunts: 'all', plating: null } as const;
+    // The floor: a small hit is a worse answer to armour under the low one, a big hit barely notices either.
+    expect(firstHitOf(8, 'kinetic', OLD)).toBeCloseTo(2.8); // 8 - 6 = 2, lifted to 35%
+    expect(firstHitOf(8, 'kinetic', { ...OLD, armorFloor: 0.15 })).toBeCloseTo(2); // 8 - 6, above 15%
+    expect(firstHitOf(30, 'kinetic', { ...OLD, armorFloor: 0.15 })).toBeCloseTo(24);
+    // What armour blunts: under 'kinetic', energy goes through plate and kinetic is as it was.
+    expect(firstHitOf(8, 'energy', OLD)).toBeCloseTo(2.8);
+    expect(firstHitOf(8, 'energy', { ...OLD, armorBlunts: 'kinetic' })).toBeCloseTo(8);
+    expect(firstHitOf(8, 'kinetic', { ...OLD, armorBlunts: 'kinetic' })).toBeCloseTo(2.8);
+    // And with no override a run plays the shipped rules.
+    expect(firstHitOf(8, 'energy', undefined)).toBeCloseTo(8);
+    expect(firstHitOf(8, 'kinetic', undefined)).toBeCloseTo(2);
   });
 
   it('a delay in the difficulty spec pushes every unlock above wave 1 later, and the boss stays the heaviest available', () => {

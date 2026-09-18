@@ -19,10 +19,12 @@
  *    by hash, loudly.
  */
 import {
+  COMBAT_RULES,
   DEPOSIT_MAX,
   ORE_TIER_VEIN,
   PROSPECT_TICKS,
   REPLAY_VERSION,
+  STARTING_SCRAP,
   Sim,
   TICK_HZ,
   TileLibrary,
@@ -30,6 +32,7 @@ import {
   createRng,
   generateMap,
   mapCells,
+  platingAt,
   threatKnobs,
   validateTile,
   type EnemyDef,
@@ -91,7 +94,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   // The receipt covers everything newRun builds a sim from (issue #341): a save resumes only against the content it saw.
   // Of a Threat, only what the SIM reads: its map knobs and its walk made the map, and the save carries its map (D15).
   const CONTENT_HASH = contentHashOf(enemyDefs, towerDefs, {
-    relicDefs, setDefs, recipeDefs, lootTables, tree, coreHp: CORE_HP,
+    relicDefs, setDefs, recipeDefs, lootTables, tree, coreHp: CORE_HP, rules: COMBAT_RULES, startingScrap: STARTING_SCRAP,
     threats: THREAT_LEVELS.map((l) => ({ finalWave: l.finalWave, waveSeconds: l.waveSeconds, difficulty: l.difficulty })),
   });
 
@@ -529,6 +532,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             canCall: s.canCallWave(),
             callBonus: s.callBonus(),
             waiting: s.waitingForCall(),
+            // Plating (D37): the armour every body of this wave wears on top of its own - said BEFORE the wave, because it decides what to buy for it.
+            plating: platingAt(s.rules, p.wave),
             // How the packs walk (session 32, PR 3): counted by formation, in the composer's order of first appearance.
             formations: (() => { const out: { name: string; n: number }[] = []; for (const k of p.packs) { const f = out.find((o) => o.name === k.formation); if (f) f.n++; else out.push({ name: k.formation, n: 1 }); } return out; })(),
           };

@@ -147,8 +147,22 @@ export interface CombatRules {
   /** Plating: from wave `from`, every body wears `add` more armour per `every` waves begun - the ramp's answer to width, where hp is its answer to depth. null = none. */
   plating: { from: number; every: number; add: number } | null;
 }
-/** The rules the game ships. A run may override them (SimOptions.rules) - the lab does; the app does not. */
-export const COMBAT_RULES: CombatRules = { armorFloor: 0.35, armorBlunts: 'all', plating: null };
+/**
+ * The rules the game ships. A run may override them (SimOptions.rules) - the lab does; the app does not.
+ *
+ * Set 2026-09-18 (D37; docs/lab/damage-model-2026-09-18.md). Until that day the floor was 0.35, armour blunted every
+ * hit and nothing was plated - and four hundred plain Bolts won Grim. Now a small kinetic hit is a bad answer to a
+ * late wave (every body wears one more armour per three waves from wave 6, and armour may take all but 15% of a
+ * hit), a big one is a good answer, and ENERGY goes through plate: its counter is a resistance, not armour.
+ */
+export const COMBAT_RULES: CombatRules = { armorFloor: 0.15, armorBlunts: 'kinetic', plating: { from: 6, every: 3, add: 1 } };
+
+/**
+ * The purse a run starts with. 200 since 2026-09-18 (D37): a tower's chassis costs three times what it did and its
+ * upgrades six tenths, so that an upgrade is a better buy than another tower; the purse doubled so that a run still
+ * opens with three guns, or one and its first upgrades. One number here - the lab imported a literal 100 in nine files.
+ */
+export const STARTING_SCRAP = 200;
 
 /** The armour plating adds at wave `wave`: `add` for each `every` waves begun since `from`. */
 export function platingAt(rules: CombatRules, wave: number): number {
@@ -663,7 +677,7 @@ export class Sim {
     this.rules = { ...COMBAT_RULES, ...opts.rules };
     this.spawnEvery = opts.spawnEveryTicks ?? TICK_HZ;
     this.maxSpawns = opts.maxSpawns ?? 0;
-    this.scrap = opts.startingScrap ?? 100;
+    this.scrap = opts.startingScrap ?? STARTING_SCRAP;
     this.ore[0] = opts.startingOre ?? 0;
     this.coreHpMax = opts.coreHp ?? 50;
     this.coreHp = this.coreHpMax;

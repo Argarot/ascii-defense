@@ -204,7 +204,9 @@ export class StripPanel {
     const nx = wx + colW;
     if (s.nextWave) {
       const nw = s.nextWave;
-      term.write(nx, 1, nw.boss ? `NEXT ${nw.wave} BOSS` : `NEXT ${nw.wave}`, nw.boss ? role('enemy.fast') : dim);
+      // Plating rides the header (D37): "NEXT 9 PLATED +2" - the armour every body of that wave wears on top of its own.
+      const platedTag = (nw.plating ?? 0) > 0 ? ` PLATED +${nw.plating}` : '';
+      term.write(nx, 1, `${nw.boss ? `NEXT ${nw.wave} BOSS` : `NEXT ${nw.wave}`}${platedTag}`.slice(0, colW - 1), nw.boss ? role('enemy.fast') : dim);
       nw.kinds.slice(0, H - 2).forEach((k, i) => {
         const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);
         term.write(nx, 2 + i, line, text);

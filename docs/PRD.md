@@ -913,6 +913,39 @@ demand for a composition of *towers*, which is the entire content of "every
 placement is a build decision". One tower type clearing every wave is precisely
 the failure that rule exists to prevent.
 
+**What bounds a build is what a hit is** *(D37, 2026-09-18 — as built, session
+39; docs/lab/damage-model-2026-09-18.md)*. Nothing caps how many towers a
+player may build and no price rises with the count: Daniil refused both. Until
+that day a plain Bolt was three to five times the damage per Scrap of anything
+else in the game, so four hundred of them, never upgraded, won Standard 99% of
+the time and Grim 84%. Four things changed, together:
+
+1. **The chassis is the expensive part.** Every tower costs three times what it
+   did and every tier choice six tenths (`tools/reprice-towers.mjs` moves all
+   fifty-six prices by that one rule); a run starts with 200 Scrap
+   (`STARTING_SCRAP`) instead of 100. An upgrade is now a better buy than
+   another tower, and a run still opens with three guns, or one and its first
+   upgrades.
+2. **Plating.** From wave 6 every body wears one more armour, and one more
+   every three waves (`COMBAT_RULES.plating`). The next-wave panel and the
+   strip say how much before the wave comes. A swarm of small hits is a bad
+   answer to a late wave; one big hit is a good one. Armour may now take all
+   but 15% of a hit (`armorFloor`, was 35%).
+3. **Energy goes through armour** (`armorBlunts: 'kinetic'`). Energy's counter
+   is a resistance, never plate — which gives the tree's Tesla and Laser a job
+   the base world's kinetic line cannot do. Railbore and Bunker Buster no
+   longer *ignore* armour: they are big hits, and a big hit is already the
+   answer.
+4. **Resistances wide enough to choose a tower by**: ×0.4–0.7 resists, ×1.4–2
+   weak (they were ×0.6–0.8 and ×1.2–1.6).
+
+Standard and Grim were then re-fitted behind it (×1.12 and ×1.17 a wave): plain
+Bolts win Standard 3% and Grim never; the mixed line wins Standard 93%; **Grim
+is lost by the base world (11–18%) and won by the tree (99%)** — the gap no
+curve could open while width was unbounded. Calm's first five waves are
+untouched. *A Bolt-only build that relics carry is welcome (D37: "to find
+'broken' synergies"); the set that carries one is not built yet.*
+
 **Traits show on the enemy, not in a legend.** A shield is drawn as a bracket
 around the glyph and destroyed separately from the body, so any enemy may carry
 one and the player watches it break; remaining health reads off a mark beside
@@ -1083,7 +1116,9 @@ bodies plus three a wave, and meets every kind above wave 1 **three waves
 later** (`unlockDelay`); Standard and Grim keep the curve below. Two rules
 changed for every level: **armour strips a flat amount from a hit but never
 more than 65% of it** (`ARMOR_FLOOR`; a plain Bolt does 2.8 to a
-juggernaut, not 2 - Railbore still ignores armour), and **a boss's
+juggernaut, not 2 - Railbore still ignores armour) *(superseded 2026-09-18 by
+D37: the floor is 85%, armour blunts kinetic hits alone, every body is plated
+from wave 6, and nothing ignores armour - §8)*, and **a boss's
 multiplier shrinks with the body's own weight** (`bossHpMul`: ×6 for a
 grunt, ×1.5 for a juggernaut) - the ×6 juggernaut at wave 10 was a wall no
 base-world build passed. The reference line now holds Calm's fifteen on

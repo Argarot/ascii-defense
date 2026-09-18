@@ -11,7 +11,7 @@
  *
  *   node tools/balance-check.mjs [--seeds=N] [--jobs=N]
  */
-import { THREAT_LEVELS, TileLibrary } from '@ascii-defense/engine';
+import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -46,7 +46,13 @@ const PLAIN: [number, number, number] = [-1, -1, -1];
 const P = (towerId: string, choices: [number, number, number], at: TowerPlacement['at'] = 'choke'): TowerPlacement => ({ towerId, choices, at });
 const LINE: TowerPlacement[] = [P('bolt', RAIL), P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)];
 /** The plans a band may name. A plan with no tail is a player who stops on purpose. */
-const PLANS: Record<string, { towers: TowerPlacement[]; tail?: TowerPlacement[]; unlocks: string[]; horizon?: number }> = {
+/** The mixed line bought DEPTH FIRST: one gun through its choices, the Refinery, then each tower of the line finished before the next (D37: an upgrade is the better buy, and a plan that lays six chassis first is playing badly on purpose). */
+const DEEP = { towers: [P('bolt', RAIL), P('refinery', [0, 0, 0], 'vein')], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)] };
+/** Six relics a build is glad of; held at rarity 2 they stand for the tree's epic band (the base world's pool holds commons alone). */
+const SIX = ['hot_loads', 'quick_hands', 'iron_sights', 'deep_cold', 'thick_walls', 'second_wind'];
+const PLANS: Record<string, { towers: TowerPlacement[]; tail?: TowerPlacement[]; unlocks: string[]; horizon?: number; relics?: { id: string; rarity: number }[] }> = {
+  mixed: { ...DEEP, unlocks: [] },
+  tree: { ...DEEP, unlocks: ['*'], relics: SIX.map((id) => ({ id, rarity: 2 })) },
   // The THERMOMETER (not a player): the six-tower reference that stops buying, played to wave 40. It dies in the
   // middle of the run on Standard and Grim, so its mean death wave moves with the smallest change to a curve, a
   // price or a road - where a win rate near 100% does not move at all. This is what "the reference dies at 22-24"
@@ -68,7 +74,7 @@ for (const want of WANTED) {
     const seed = (i + 1) * 7919 + 13;
     let death: number | null | 'refused';
     try {
-      death = runLab({ seed, map: { width: 7, height: 5, threat }, towers: plan.towers, tail: plan.tail, relicIds: [], unlocks: plan.unlocks, interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: plan.horizon ?? threat.finalWave, economy: { startingScrap: 100 } }, content).deathWave;
+      death = runLab({ seed, map: { width: 7, height: 5, threat }, towers: plan.towers, tail: plan.tail, relicIds: [], relics: plan.relics, unlocks: plan.unlocks, interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: plan.horizon ?? threat.finalWave, economy: { startingScrap: STARTING_SCRAP } }, content).deathWave;
     } catch { death = 'refused'; }
     console.log(JSON.stringify({ run: want, seed, death, horizon: plan.horizon ?? threat.finalWave }));
   }

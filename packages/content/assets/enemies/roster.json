@@ -34,8 +34,8 @@
         "fast"
       ],
       "resist": {
-        "kinetic": 0.8,
-        "energy": 1.6
+        "kinetic": 0.6,
+        "energy": 2
       }
     },
     {
@@ -51,8 +51,8 @@
         "armoured"
       ],
       "resist": {
-        "kinetic": 0.6,
-        "energy": 1.6
+        "kinetic": 0.4,
+        "energy": 2
       }
     },
     {
@@ -68,8 +68,8 @@
         "shielded"
       ],
       "resist": {
-        "kinetic": 1.4,
-        "energy": 0.6
+        "kinetic": 1.6,
+        "energy": 0.4
       }
     },
     {
@@ -81,8 +81,8 @@
       "bounty": 12,
       "minWave": 6,
       "resist": {
-        "kinetic": 1.4,
-        "energy": 0.6
+        "kinetic": 1.6,
+        "energy": 0.4
       }
     },
     {
@@ -95,8 +95,8 @@
       "armor": 6,
       "minWave": 10,
       "resist": {
-        "kinetic": 0.8,
-        "energy": 1.2
+        "kinetic": 0.5,
+        "energy": 1.6
       }
     },
     {
@@ -111,8 +111,8 @@
         "sprint"
       ],
       "resist": {
-        "kinetic": 1.2,
-        "energy": 0.8
+        "kinetic": 1.4,
+        "energy": 0.6
       }
     },
     {
@@ -127,8 +127,8 @@
         "charge"
       ],
       "resist": {
-        "kinetic": 0.8,
-        "energy": 1.2
+        "kinetic": 0.6,
+        "energy": 1.6
       }
     },
     {
@@ -157,7 +157,7 @@
       ],
       "resist": {
         "kinetic": 1,
-        "energy": 1.4
+        "energy": 1.6
       }
     },
     {
@@ -184,8 +184,8 @@
         "frontshield"
       ],
       "resist": {
-        "kinetic": 1.2,
-        "energy": 0.8
+        "kinetic": 1.4,
+        "energy": 0.5
       }
     },
     {
@@ -202,8 +202,8 @@
       ],
       "bossOnly": true,
       "resist": {
-        "kinetic": 1,
-        "energy": 1.2
+        "kinetic": 0.7,
+        "energy": 1.4
       }
     }
   ]
