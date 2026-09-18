@@ -152,8 +152,20 @@ Read the PRD before the architecture; read this file before touching anything.
 - **Vite's eager glob of sprite JSON needs a dev-server restart for NEW
   files**; a new export needs one too. `preview_start` by name when the
   pane's server is not running; the tab id changes.
-- **A gate that reads the analytic model reads a fixed world** (the hand
-  tiles); widening its tolerance a fourth time was the wrong fix.
+- **The lab's analytic model is a floor, not a forecast** - and its gate is
+  retired (issue #223). The tolerance between `predict()` and the real run was
+  widened four times (5, 7, 8, 10 waves) and read on ONE seed. Over sixty
+  seeds the model says wave 7-9 for every map while real runs die anywhere
+  from 5 to 27: a median error of eleven waves, a third of seeds inside the
+  tolerance, and the gate's own seed passing at exactly ten. What holds on
+  every seed is that the model never promises more than the run delivers;
+  that is what `lab.test.ts` keeps. **Before widening any tolerance, measure
+  the quantity across seeds** - a bound that is met on a third of them was
+  never a bound. The headless runner is the instrument.
+- **A statistical test needs a corpus that can carry its bound.** A rate near
+  0.17 read on 40 seeds strays past 0.2 one time in three; the re-deal of
+  D35 found one such test by changing the dice. State the true rate and the
+  corpus size next to the bound.
 - **After the last merge of a day: `npm run home`** (`git fetch`, then `git
   checkout -B main origin/main`, then the status). It is a script because the
   sentence alone was not enough: on 2026-09-18 the wrap typed `git checkout

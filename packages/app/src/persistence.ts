@@ -10,7 +10,7 @@
  * the meta shape had not changed at all. META_VERSION moves only when the
  * META shape moves.
  */
-import { ALL_UNLOCKS, ORE_TIERS } from '@ascii-defense/engine';
+import { ORE_TIERS } from '@ascii-defense/engine';
 import { SAVE_VERSION, type RunSave } from './protocol';
 
 export const META_KEY = 'ascii-defense.meta.v1';
@@ -166,15 +166,14 @@ export function loadRunFrom(store: KeyStore): { run: RunSave | null; problem: st
     if (!raw) return { run: null, problem: null };
     const r: unknown = JSON.parse(raw);
     if (!isRecord(r) || typeof r.version !== 'number') return corrupt;
-    // v1/v2 saves carry no map; across the generator rebuild their seed
-    // would regenerate a DIFFERENT map and the input log would replay onto
-    // the wrong cells - refused with a sentence, never silently corrupted.
-    if (r.version < 4) return { run: null, problem: 'run save predates the generator rebuild - it cannot continue' };
-    // v4 -> v5 (session 29, PR 1): the world before the tree had everything; the save keeps it.
-    const v5 = r.version === 4 ? { ...r, version: 5, meta: { unlocks: [ALL_UNLOCKS], earned: [], forged: {} } } : r;
-    if (v5.version !== SAVE_VERSION) return { run: null, problem: `run save is version ${v5.version}, this build reads ${SAVE_VERSION} - it cannot continue` };
-    if (!looksLikeRun(v5) || !isRecord(v5.meta) || !isStrings(v5.meta.unlocks)) return corrupt;
-    return { run: v5 as unknown as RunSave, problem: null };
+    // Nothing before v6 continues (D35, 2026-09-18): the RNG was re-dealt, so a run saved before that day would
+    // replay its input log against different waves, offers and loot - the save carries its map, not its dice.
+    // Refused with a sentence, never silently continued into a run that did not happen. (This retired the v4 -> v5
+    // migration and the older "predates the generator rebuild" refusal: both are this refusal now.)
+    if (r.version < 6) return { run: null, problem: 'run save predates the re-deal of 2026-09-18 (every seed now deals a different run) - it cannot continue' };
+    if (r.version !== SAVE_VERSION) return { run: null, problem: `run save is version ${r.version}, this build reads ${SAVE_VERSION} - it cannot continue` };
+    if (!looksLikeRun(r) || !isRecord(r.meta) || !isStrings(r.meta.unlocks)) return corrupt;
+    return { run: r as unknown as RunSave, problem: null };
   } catch {
     return corrupt;
   }

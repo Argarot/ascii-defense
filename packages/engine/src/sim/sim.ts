@@ -373,6 +373,8 @@ export interface Tower {
 }
 
 export const SELL_REFUND = 0.7;
+/** hashState's scratch double: eight bytes read back as two little-endian words. */
+const HASH_VIEW = new DataView(new ArrayBuffer(8));
 
 /**
  * A supporter's reach is a PLUS (2026-09-06 thought dump, items 8 and 9):
@@ -1882,13 +1884,19 @@ export class Sim {
     const i16 = (arr: Int16Array | Uint16Array, n: number): void => {
       for (let i = 0; i < n; i++) u32(arr[i]);
     };
+    // A QUANTITY hashes by its exact IEEE bits (issue #220, 2026-09-18). `u32` keeps only the low 32 bits of the
+    // integer part, so Scrap 10 and Scrap 10.5 hashed alike and the hash was sound only while content kept every purse
+    // integral (Bounty Board rounds for that reason and nothing enforced it); the multipliers were rounded to
+    // thousandths. Counters, indices and ticks stay on `u32`. `+ 0` folds -0 into 0: they evolve identically.
+    // A DataView with the byte order NAMED: a typed-array view of a double splits it in the machine's order.
+    const f64 = (v: number): void => { HASH_VIEW.setFloat64(0, v + 0, true); u32(HASH_VIEW.getUint32(0, true)); u32(HASH_VIEW.getUint32(4, true)); };
 
-    u32(this.tickCount); u32(this.scrap); u32(this.coreHp); u32(this.coreDamage);
+    u32(this.tickCount); f64(this.scrap); f64(this.coreHp); f64(this.coreDamage);
     u32(this.wave); u32(this.kills); u32(this.breaches); u32(this.spawned);
     u32(this.status === 'running' ? 1 : 0);
-    for (const o of this.ore) u32(o);
-    u32(this.freezeUntil); u32(this.prodBoostUntil); u32(Math.round(this.prodBoostMul * 1000));
-    u32(this.offerWave); u32(this.relicsBought); u32(this.rerollsBought); u32(this.coreHpMax);
+    for (const o of this.ore) f64(o);
+    u32(this.freezeUntil); u32(this.prodBoostUntil); f64(this.prodBoostMul);
+    u32(this.offerWave); u32(this.relicsBought); u32(this.rerollsBought); f64(this.coreHpMax);
     for (const r of this.heldRelics) u32(r);
     for (const c of this.relicCooldowns) u32(c);
     for (const o of this.offer ?? [-1]) u32(o + 1);
@@ -1900,10 +1908,10 @@ export class Sim {
     for (const b of this.extraBoons) { u32(b.x); u32(b.y); u32(b.tier ?? 1); u32(b.boon.charCodeAt(0)); }
     for (const ch of this.cellChanges) { u32(ch.x); u32(ch.y); u32(ch.t.charCodeAt(0)); }
     u32(this.status === 'won' ? 1 : 0);
-    for (const [k, v] of this.depositLeft) { u32(k); u32(v); }
+    for (const [k, v] of this.depositLeft) { u32(k); f64(v); }
     for (const [k, v] of this.prospectJobs) { u32(k); u32(v); }
     u32(this.waveTimer + 1); u32(this.intraTimer); u32(this.spawnTimer);
-    u32(Math.round(this.lengthMul * 1000));
+    f64(this.lengthMul);
     for (const q of this.spawnQueue) u32(q);
     for (const q of this.nextQueue) u32(q + 0x10000);
     for (const e of this.waveEntries) { u32(e.x); u32(e.y); }
@@ -1931,11 +1939,11 @@ export class Sim {
     i16(this.occupancy, this.occupancy.length);
     for (const t of this.towers) {
       if (!t) { u32(0xdead); continue; }
-      u32(t.cellX); u32(t.cellY); u32(t.defIdx); u32(t.cooldown); u32(t.prodCooldown); u32(t.kills); u32(t.pulses);
+      u32(t.cellX); u32(t.cellY); u32(t.defIdx); f64(t.cooldown); f64(t.prodCooldown); u32(t.kills); u32(t.pulses);
       u32(PRIORITIES.indexOf(t.priority));
-      u32(t.facing); u32(Math.round(t.heat * 1000)); // session 26: facing and heat are tower state
+      u32(t.facing); f64(t.heat); // session 26: facing and heat are tower state
       for (const c of t.choices) u32(c + 1);
-      u32(t.beamLead + 1); u32(t.beamLeadGen); u32(t.paid); // session 31, PR 8: the lead decides whether heat ramps; paid decides a refund
+      u32(t.beamLead + 1); u32(t.beamLeadGen); f64(t.paid); // session 31, PR 8: the lead decides whether heat ramps; paid decides a refund
     }
     // Session 31, PR 8: state that decided damage or a heal and was not hashed -
     // a shot's damage type, the kill count toward a Bloodstone heal, and the
@@ -1946,9 +1954,9 @@ export class Sim {
       const sl = this.slowEntries[i];
       const bu = this.burnEntries[i];
       u32(sl ? sl.length : 0);
-      if (sl) for (const e of sl) { u32(Math.round(e.mul * 1000)); u32(e.ticks); }
+      if (sl) for (const e of sl) { f64(e.mul); u32(e.ticks); }
       u32(bu ? bu.length : 0);
-      if (bu) for (const e of bu) { u32(Math.round(e.dps * 1000)); u32(e.ticks); u32(TYPE_CODE[e.type ?? 'none']); }
+      if (bu) for (const e of bu) { f64(e.dps); u32(e.ticks); u32(TYPE_CODE[e.type ?? 'none']); }
     }
     return h >>> 0;
   }

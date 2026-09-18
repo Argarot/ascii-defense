@@ -51,6 +51,25 @@ function hashName(name: string): number {
   return h >>> 0;
 }
 
+/**
+ * MurmurHash3's 32-bit finalizer: every input bit reaches every output bit.
+ * The word a stream is seeded with goes through it (D35, 2026-09-18), because
+ * xoroshiro's first outputs are near-linear in its seed word and
+ * `seed ^ hashName(name)` is linear in the seed: until then a stream's first
+ * draw was the seed's low bits, its second the same inverted, seeds that
+ * differed only in their high bits drew the same first number, and every
+ * stream's first draw was one function of the seed. rng.test.ts holds the
+ * property over the arithmetic corpora the project actually uses.
+ */
+function mix32(h: number): number {
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h | 0;
+}
+
 class Stream implements RngStream {
   private readonly g: ReturnType<typeof xoroshiro128plus>;
 
@@ -62,7 +81,7 @@ class Stream implements RngStream {
     this.g =
       state !== undefined
         ? xoroshiro128plusFromState(state)
-        : xoroshiro128plus((seed ^ hashName(name)) | 0);
+        : xoroshiro128plus(mix32(seed ^ hashName(name)));
   }
 
   int(min: number, max: number): number {

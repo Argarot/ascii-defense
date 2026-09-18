@@ -132,5 +132,8 @@ export type FromWorker =
  * v5 (session 29, PR 1): RunSave carries the run's meta identity (the tree
  * state); a v4 save migrates with the everything sentinel, since the world
  * before the tree had everything.
+ * v6 (D35, 2026-09-18): the RNG was re-dealt - a stream's first draws were
+ * the seed's low bits. A save carries its map but not its dice, so an older
+ * run would continue against different waves, offers and loot: refused.
  */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;

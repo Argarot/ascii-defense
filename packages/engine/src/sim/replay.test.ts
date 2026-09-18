@@ -130,6 +130,12 @@ describe('replay (WBS 1.4.8)', () => {
     expect(fresh.tickCount).toBe(original.tickCount);
     expect(fresh.inputs).toEqual(original.inputs); // playback re-records the same log
     expect(fresh.hashState()).toBe(original.hashState());
+
+    // A replay from another version is refused with a sentence and the sim is not touched (D35): under the re-dealt
+    // RNG the same seed and inputs are a different run.
+    const { sim: untouched } = makeGoldenSim();
+    expect(() => playReplay(untouched, { ...replay, version: REPLAY_VERSION - 1 }, original.tickCount)).toThrow(/different run/);
+    expect(untouched.tickCount).toBe(0);
   });
 
   it('golden: the 2,000-tick state hash is frozen', () => {
@@ -229,7 +235,26 @@ describe('replay (WBS 1.4.8)', () => {
     // so the golden run's bodies arrive in packs on one front each instead
     // of one every six ticks round-robin - a behaviour change by design.
     // Round-trip replay still proves bit-identical.
-    expect(sim.hashState()).toBe(1642996455);
+    // 1642996455 -> 3521805202 on 2026-09-18 (D35, the re-deal; issues #339 and #220), two causes in one move ON
+    // PURPOSE, because each alone re-baselines everything seed-pinned and they should do it once:
+    //   (1) the RNG mixes its seed word (rng.ts mix32): a stream's first draws were the seed's low bits. EVERY seed
+    //       deals a different map and a different run - a behaviour change by design. Alone it read 340119969.
+    //   (2) hashState hashes quantities (Scrap, Core health, Ore, vein contents, cooldowns, heat, the multipliers) by
+    //       their IEEE bits instead of truncating or rounding them. No behaviour change; the same run, read exactly.
+    // GENERATOR_VERSION, REPLAY_VERSION and SAVE_VERSION moved with it: an old code or save is refused, not re-dealt.
+    // Round-trip replay still proves bit-identical.
+    expect(sim.hashState()).toBe(3521805202);
+  });
+
+  it('the hash sees a fraction: half a Scrap, half a point of Core health, a sliver of Ore (issue #220)', () => {
+    // Until 2026-09-18 the purses and the Core's health were hashed as 32-bit integers, so two runs that differed by
+    // less than one hashed alike - sound only while content kept them whole, which nothing enforced.
+    const base = makeGoldenSim().sim.hashState();
+    const nudged = (nudge: (s: Sim) => void): number => { const { sim } = makeGoldenSim(); nudge(sim); return sim.hashState(); };
+    expect(nudged(() => undefined)).toBe(base);
+    expect(nudged((s) => { s.scrap += 0.5; })).not.toBe(base);
+    expect(nudged((s) => { s.coreHp -= 0.25; })).not.toBe(base);
+    expect(nudged((s) => { s.ore[0] += 0.001; })).not.toBe(base);
   });
 
   it('unimplemented or invalid Phase 6 actions are rejected, not misapplied', () => {
@@ -263,5 +288,23 @@ describe('replay (WBS 1.4.8)', () => {
     // One number: a different receipt.
     expect(contentHashOf(enemyDefs.map((e, i) => (i === 0 ? { ...e, hp: e.hp + 1 } : e)), towerDefs)).not.toBe(receipt);
     expect(contentHashOf(enemyDefs, towerDefs.map((t, i) => (i === 0 ? { ...t, cost: t.cost + 1 } : t)))).not.toBe(receipt);
+  });
+
+  it('the receipt covers everything else a sim is built from: a relic number, a loot weight, a wave curve (issue #341)', () => {
+    const { enemyDefs, towerDefs } = makeGoldenSim();
+    const rest = {
+      relicDefs: [{ id: 'tithe', name: 'Tithe', desc: '+2', effects: { killRefundScrap: 2 } }],
+      lootTables: { rock: [{ kind: 'scrap', weight: 3, min: 10, max: 20 }] },
+      threats: [{ finalWave: 20, waveSeconds: 40, difficulty: { hpGeometric: 1.07 } }],
+    };
+    const receipt = contentHashOf(enemyDefs, towerDefs, rest);
+    expect(receipt).not.toBe(contentHashOf(enemyDefs, towerDefs)); // and with nothing passed it is the two rosters, as before
+    expect(contentHashOf(enemyDefs, towerDefs, JSON.parse(JSON.stringify(rest)))).toBe(receipt);
+    // A rename is still not a different world.
+    expect(contentHashOf(enemyDefs, towerDefs, { ...rest, relicDefs: [{ ...rest.relicDefs[0], name: 'Levy', desc: 'other words' }] })).toBe(receipt);
+    // One number anywhere is.
+    expect(contentHashOf(enemyDefs, towerDefs, { ...rest, relicDefs: [{ ...rest.relicDefs[0], effects: { killRefundScrap: 3 } }] })).not.toBe(receipt);
+    expect(contentHashOf(enemyDefs, towerDefs, { ...rest, lootTables: { rock: [{ ...rest.lootTables.rock[0], weight: 4 }] } })).not.toBe(receipt);
+    expect(contentHashOf(enemyDefs, towerDefs, { ...rest, threats: [{ ...rest.threats[0], difficulty: { hpGeometric: 1.09 } }] })).not.toBe(receipt);
   });
 });

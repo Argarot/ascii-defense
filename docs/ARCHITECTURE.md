@@ -182,11 +182,27 @@ something upstream is wrong.
 - One seeded PRNG (`pure-rand`, MIT). **`Math.random` banned by lint** — the
   hand-rolled xorshift used in the mocks is biased and must not ship.
 - **Named streams** so map, waves and combat draw independently.
+- **A stream is seeded with a MIXED word** (`mix32(seed ^ hashName(name))`,
+  D35). xoroshiro's first outputs are near-linear in its seed word, and until
+  2026-09-18 that word was linear in the seed: a stream's first draw was the
+  seed's low bits (a Standard map's entry count was `seed mod 4`), seeds that
+  differed only in their high bits drew the same first number, and every
+  stream's first draw was one function of the seed. Deterministic is not the
+  same as random in the seed; `rng.test.ts` holds the second property over
+  the arithmetic corpora dailies and the lab actually use.
 - **Fixed 20 Hz tick.** No frame delta reaches the simulation.
 - Rendering reads the sim; it never writes to it.
 - **Replay** = `{ version, seed, contentHash, inputs: [{tick, action}] }`.
   `contentHash` matters: a replay recorded against different content is not
-  replayable and must say so rather than diverge silently.
+  replayable and must say so rather than diverge silently. It covers
+  **everything a sim is built from** - both rosters, relics, sets, recipes,
+  loot tables, the tree's grants, each Threat's curve - with display text
+  left out, so a rename is not a different world. `playReplay` refuses a
+  replay of another `REPLAY_VERSION`; a run save of another `SAVE_VERSION` is
+  refused on load, with a sentence on the title page.
+- **The state hash reads quantities exactly**: purses, Core health, vein
+  contents, cooldowns and multipliers hash by their IEEE bits (little-endian,
+  named), not truncated to integers - two runs half a Scrap apart differ.
 - **Golden test:** seed + scripted inputs → 2,000 ticks → state hash.
 
 ## 7. Data layout
