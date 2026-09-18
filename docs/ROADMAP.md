@@ -10,159 +10,122 @@ Read [PRD.md](PRD.md) first, then [ARCHITECTURE.md](ARCHITECTURE.md), then
 ## Where the project is today
 
 Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always).
-**Since session 38 a run code begins `AD5-`, and a run saved before
-2026-09-18 is refused on the title page with a sentence** — a build without
-those is older. Nothing else a player can see changed that day: it was a day
-of instruments, and of what they found.
+**Since session 39 a run starts with 200 Scrap, a Bolt costs 60 and its first
+upgrade 15, and from wave 6 the next-wave panel says PLATED** — a build
+without those is older. A run saved before 2026-09-18 is refused on the title
+page with a sentence.
 
-**2026-09-18 — session 38, Calibration I (PRs #353–#356, #358–#360, all
-merged green; Daniil's "go with the next session"):**
+**2026-09-18, afternoon — session 39, "What bounds a build", HALF BUILT (PRs
+#362–#364, merged green; Daniil's answer to call #357 and "keep building
+until you need me"). It was wrapped on his instruction when the working
+context ran short — the row stays NEXT.**
 
-1. **Two calls minted on open (#353)** — D35 (every seed re-dealt, a clean
-   break) and D36 (the fill target stays 0.9 on every map).
-2. **The re-deal (#355; D35, #220, #341, #223)** — the RNG mixes its seed
-   word: a stream's first draws were the seed's low bits, seeds differing
-   only in their high bits drew the *same* first number, and every stream's
-   first draw was one function of the seed. The property is a test over five
-   arithmetic corpora and seven streams, written first and watched failing.
-   The state hash reads quantities by their IEEE bits; the content receipt
-   covers everything a sim is built from; GENERATOR 5, REPLAY 2, SAVE 6.
-   Changing the dice audited the suite: 8 of 367 tests moved, five of them
-   standing on luck — among them the lab's analytic gate, **retired** (a
-   median error of eleven waves over sixty seeds; it had been read on one).
-3. **A lab player who keeps buying (#356; #348)** — `LabSpec.tail`. The old
-   six-tower reference dies holding 4,198 Scrap; no tailed plan ends holding a
-   wave's income.
-4. **The ladder re-read (#358)** — docs/lab/ladder-2026-09-18.md. **Plain
-   Bolts at the choke, never upgraded, win Calm 100%, Standard 99% and Grim
-   84%**, two to four hundred of them standing, and beat upgrading. The base
-   world wins Grim 91–97%. Grim read at six growth rates and two later final
-   waves: the tree is worth about 33 points, L5 wants 40, and all 33 are its
-   relics — nothing the arsenal sells out-scales a Railbore. **The plan's
-   stop condition was reached and honoured: no curve moved.** Call #357.
-   Along the way the lab's choke placement learned to count *lanes* (an
-   "unwinnable seed" was five towers at the wrong junction) and the lab
-   learned to deal the app's own map for a seed.
-5. **The seed corpus (#359; WBS 3.4, #340)** — 1,500 of the app's own seeds in
-   two minutes: **none unwinnable.** Five hard openings and two L1 misses
-   (a know-nothing dead at Calm's wave 5) listed by seed.
-   docs/lab/seed-corpus-2026-09-18.md.
-6. **The balance gate (#360; WBS 1.5.2, 3.2)** — `npm run balance`, a step of
-   CI and of `npm run gate`, half a minute: committed bands that record what
-   the game *is*. Proven in its own PR's CI: Grim nudged ×1.09 → ×1.10 went
-   **red**, reverted went green — and only because of the *thermometer* band,
-   since Grim's win rate (94% → 91%) stayed inside its own.
-7. **The start-session skill is for a new, empty conversation only (#354)** —
-   Daniil's correction, the same morning.
+1. **D37 (#362)** — no cap on towers, no price that rises per copy: the damage
+   model bounds a build. A Bolt-only build is welcome when relics carry it.
+2. **The fit harness (#363)** — `node tools/fit.mjs --patch=…`: every rung of
+   every Threat against a *patch* of the game (a combat rule, armour, a
+   resistance, a tier's numbers, every price by one rule, the purse, a curve),
+   three to four minutes a read. What a hit is became `COMBAT_RULES`, which a
+   run may override and only the lab does.
+3. **The damage model (#364; #349 closed)** —
+   docs/lab/damage-model-2026-09-18.md, five harness rounds, targets stated
+   first. The chassis is the expensive part (every tower ×3, every tier ×0.6,
+   the purse 100 → 200); plating from wave 6; armour may take 85% of a hit;
+   energy goes through armour; nothing *ignores* armour any more; resistances
+   ×0.4–0.7 / ×1.4–2; Standard ×1.12, Grim ×1.17. **Plain Bolts win Standard
+   3% and Grim 0% (they won 99% and 84%); the mixed line wins Standard 93%;
+   Grim is lost by the base world (11–18%) and won by the tree (99%)** — the
+   gap no curve could open in the morning. The shipped game reproduces the
+   fitted candidate row for row. The HUD, the strip, the codex, the catalogue
+   and the tutorial say the new rules; the balance bands all moved, with
+   reasons, and two are new (*plain Bolts lose Standard*, *…lose Grim*).
 
-**Golden replay hash:** **1642996455 → 3521805202**, once, both causes in its
-reasons list (the RNG; the hash reading quantities exactly).
+Earlier the same day, **session 38 — Calibration I** (PRs #353–#361): every
+seed re-dealt (D35) with its property as a test; a lab player who keeps
+buying; the ladder re-read, which is what found the Bolt spam; the seed corpus
+(1,500 of the app's own seeds, none unwinnable); the balance gate in CI,
+proven red and green in its own PR.
+
+**Golden replay hash:** 3521805202 — moved once on 2026-09-18 by the re-deal,
+**not** by the damage model (its world wears no armour and buys nothing).
 
 **Not built, said plainly:**
 
-- **No balance number moved.** Grim, Standard and Calm are as they shipped.
-  #349 (re-fit Grim) stays open behind call #357; fitting any curve while the
-  Bolt spammer stands is fitting it to the wrong game.
-- **The human offset** (WBS 3.3) — needs Daniil's recorded replays. Every win
-  rate in `docs/lab/` is a ceiling on a person's.
-- **A bot that chooses** (WBS 3.1) — the spending player is WBS 1.5.1's crude
-  policy under its real name; it places by arithmetic and never sells.
-- **L1's two seeds and Calm's nine trivial ones** are listed, not fixed.
-- Branch protection on `main` — his hands; the token cannot.
+- **The synergy (S5, #365).** No relic set carries a Bolt-only build: it reads
+  1% against a target of 70%. D37 asked for it by name.
+- **The arsenal (#366).** The tree's relics carry Grim, not its towers: the
+  Tesla line wins 16% and the Missile line 9%.
+- **The ladder document's successor.** `tools/ladder.mjs` still plays the
+  mixed line chassis first, which the new prices punish; its rows want the
+  depth-first plans the harness has. damage-model-2026-09-18.md is the record
+  until then.
+- **Calm is still won by placement alone** (99%) — call #368, default: leave it.
+- **The human offset.** Every rate is the lab's player. Standard was fitted to
+  the top of its band (93%) because a person buys later and places worse; by
+  how much, nobody has measured.
+- Branch protection on `main` — his hands.
 
-**A thing that went wrong:** to clear three leftover sweep processes the dev
-ran `taskkill /F /IM node.exe` and killed every Node process on the machine —
-the preview server and one nobody could name. Said in the turn it happened;
-the rule is in CONTRIBUTING §5.
-
-**His calls live in the tracker**, each with a default and a deadline
-([CONTRIBUTING §6](../CONTRIBUTING.md), rule 3):
-
-```bash
-gh issue list --label call --label blocks-ship
-```
-
-**Gate:** his eye on the live build — a new run's code begins `AD5-`; three
-new Standard runs in a row draw different entry counts. And one experiment
-worth ten minutes of his own hands, because no table replaces it: **a
-Standard run of nothing but plain Bolts by the Core, never upgraded.**
+**Gate — his eye on the live build, and this one matters more than most:**
+every price on the strip changed and the first minute of a run with it. A
+Standard run of nothing but plain Bolts should lose around wave 11–13 and the
+panel should have told him why (PLATED); a Railbore should visibly do what
+several Bolts cannot; the opening — 200 Scrap, three guns or one and its
+upgrades — should still feel like an opening.
 
 ---
 
 ## The next session
 
 *Named by the ledger's **NEXT** row below — that row owns the name, this
-section owns the plan.*
+section owns the plan. Daniil's entire next input should be able to be the
+word "go".*
 
-*(Rewritten 2026-09-18, the same afternoon, on Daniil's answer to call #357 —
-D37. The plan that stood here for an hour built a tower cap; he refused it,
-and a rising price with it. His instruction for the session: "Go and build
-stuff until you reach a point where you need my input on a critical decision.
-Until then just keep building.")*
+*(Written 2026-09-18 at the wrap of session 39. The row is the same row: this
+is its second half, plus what the first half found.)*
 
-**Theme.** What bounds a build is the **damage model**, not a rule about
-counting. Today a plain Bolt is three to five times the damage per Scrap of
-anything else in the game, armour is on three bodies of fourteen and can
-never take more than 65% off a hit, and the two damage types differ by
-±40–60%. So eleven Bolts beat a Railbore, and four hundred beat everything.
-The fix is to make *what a hit is* matter: per-hit damage against armour,
-type against resistance, and an upgrade that is worth more than another
-tower. **A Bolt-only build stays welcome where relics carry it** — finding a
-"broken" synergy is the game working; winning by default is not.
+**Theme.** The damage model is in and spam is dead; what is missing is the
+part D37 asked for by name and the part the fit exposed. **Make the synergy
+findable, make the tree's towers earn their Ore, and re-read the whole ladder
+on the instrument as it now has to be played.**
 
-**Targets, stated before any number is measured** (the lab derives the rest —
-CONTRIBUTING §6 rule 7):
+**PR list (a full day):**
 
-| # | target |
-|---|---|
-| S1 | **Plain Bolts, never upgraded, no relics, going on:** win Standard at most one run in ten and Grim never; on Calm they may still win about half — placement is a lesson and Calm is where it is learned |
-| S2 | **Forks learned beats placement learned** on every Threat, by a rung a player would notice — an upgrade is worth more than another tower |
-| S3 | **The reference wins Standard most of the time** (85–95%), and what wins Calm loses Standard (L4) |
-| S4 | **Grim is lost by the base world (≤ 20%) and won by the tree (≥ 60%)** — and the tree's *towers* carry part of that, not its relics alone (L5) |
-| S5 | **Bolts only, with relics that support them, win Standard** (≥ 70%): the synergy exists to be found |
-| S6 | L1, L2 and L6 still hold: a know-nothing holds Calm's wave 5 and then loses; no seed is unwinnable |
+1. **The synergy (#365).** A relic that adds flat damage to every hit (a
+   tower-stat mod — no engine change) and one that pierces armour (a new fold
+   knob **with its authoring surface in the same PR**: schema, generated
+   types, validator, codex, icon placeholder). *Proof:* `standard:spamRelics`
+   ≥ 70% while `standard:spam` stays ≤ 10%; both as bands in the gate.
+2. **The arsenal, per Scrap (#366).** Tesla, Missile Rack, Laser and Bastion
+   read against a Railbore under plating; their numbers derived so that a
+   tree line out-scales the base line on Grim. *Proof:* S4's second half — a
+   tree line beats "the base line + the tree's relics"; the variant sweep
+   shows no single dominant path.
+3. **The ladder plays depth first.** `build-sweep --debt` and
+   `tools/ladder.mjs` take the harness's `*Deep` plans; the 120-seed ladder
+   document's successor; economy-research and ladder-2026-09-18 marked
+   superseded where they are. *Proof:* one document, every target stated
+   before its number.
+4. **The seed corpus on the new game** — 500 a Threat, again: did plating or
+   the prices make any seed unwinnable, or any opening impossible?
+5. **The refused seeds (#367)** explained, and the harness saying why for a
+   row refused on *some* seeds.
 
-**PR list — built in order, each behind the last:**
+**Gate — his eye on the live build:** he finds a relic, goes wide with plain
+Bolts on purpose, and it works — and without it, it does not.
 
-1. **The fit harness.** The lab plays named plans against content *patches*
-   (an enemy's armour, a resistance, a tier's numbers, the armour floor)
-   without touching the shipped files, sharded like the corpus, a read in
-   well under a minute. *Proof:* the unpatched read equals the ladder's.
-2. **Armour means something.** Which bodies wear it, how much, and how little
-   of a hit the floor lets through — so that a swarm of small hits is a bad
-   answer to an armoured wave and one big hit is a good one. *Proof:* S1 moves
-   most of its way on this alone; nothing about waves 1–5 on Calm changes.
-3. **Types decide fights.** Resistances wide enough to choose a tower by, and
-   what armour means to each type — so the mixed line beats the pure one and
-   the tree's energy towers have a job the base world cannot do. *Proof:* S4's
-   gap opens; the variant sweep finds no single dominant line.
-4. **An upgrade is worth more than another tower.** Tier numbers re-derived
-   so that depth is the better use of Scrap. *Proof:* S2.
-5. **The synergy is there to find.** The relics that carry a Bolt-only build —
-   flat damage, armour-piercing, attack speed — measured as a set; a knob
-   added with its authoring surface if one is missing. *Proof:* S5.
-6. **The ladder re-fitted and the bands moved.** Standard's and Grim's curves
-   behind the new damage model; `balance/targets.json` re-set with a reason on
-   every band; the ladder document's successor; PRD §8 rewritten to say what
-   armour and types now are.
+**His part: one call, and "go" covers it.** **#368** — should Bolt spam still
+win Calm (99%)? *Default: yes, leave Calm.*
 
-**Where it stops for him:** when two targets cannot both be met, when a
-change would alter what a tower *is* rather than what it costs or deals, or
-when the early game (Calm to wave 5, the stranger's round) would have to move.
-
-**Gate — his eye on the live build:** a Standard run of nothing but plain
-Bolts loses, and he can see why (the strip's answer line names armour); a
-Railbore visibly does what ten Bolts cannot; a Bolt-only run with the right
-relics wins and feels like a find.
-
-**Biggest risk.** Every number in the game moves in one session, on the
-strength of a lab player who buys the instant it can afford and places by
-arithmetic. A person is weaker than that player by an amount nobody has
-measured, so a fit to "the reference wins Standard 90%" may be a fit to a
-Standard that people lose. **Mitigation:** fit to the *upper* end of each
-band, keep Calm and the first five waves where they are, and hand him the
-build early. **Expensive if wrong:** tutorial text, codex lines and the art
-brief's "answers" table all quote what beats what.
+**Biggest risk — and this one wants his verdict, not his silence.** The whole
+damage model was fitted to a lab player who buys the instant it can afford and
+places by arithmetic, and **nobody has played it**. If Standard at ×1.12 is a
+wall for a person, every number built on top next session is built on a wall.
+**The alternative is to play before building:** one Standard run and one Grim
+run by his own hands first, and the session opens with what he found.
+*Default: build, because the harness re-fits a curve in four minutes and
+nothing in the list depends on Standard's exact rate.* **Expensive if wrong:**
+the arsenal's numbers (PR 2) are derived against Grim's curve; if Grim moves
+afterwards they are derived twice. *"Play first"* or *"accepted"*.
 
 ---
 
@@ -477,7 +440,7 @@ The order is derived from *what causes rework if done late*:
 | **The stranger's round** | *(waits on a person, not on the build)* A stranger plays the live build unaided on Calm to wave 5 under `docs/STRANGER-TEST.md`; the ten scored rows are filed as issues `[r36.<row>] …`; every 0 and 1 becomes a fix the same session. This is the one question no sweep can answer, which is why it stays his — unlike balance, which §6 rule 7 moved back to the dev | A "2" on rows 5, 6 and 10 of the scorecard |
 | ~~37~~ | **DONE, GATE OPEN** *(PRs #342, #344–#347, #350, the same night; the commits say "session 36")* **The carve's variety, the debt dive and the economy research**: a walk with a character per Threat and a roll per map, land in regions by family, the map sweep's resemblance columns and a gallery tool; then #218 closed by construction, the deploy gated on the checks (#212's workflow half), generator hygiene (#217, #211, #321), the heredoc rule as a hook, and docs/lab/economy-research-2026-09-17.md | — | **Moved, not met**: Calm and Grim now read apart at a glance by the sweep's columns; two *Standard* maps still resemble each other more than the gate allows (avenue maps 8% → 18%, and no walk setting moves it further — D28's fill target decides it; call #343). His eye decides whether that is enough |
 | ~~38~~ | **DONE, GATE OPEN** *(PRs #353-#356, #358-#360, 2026-09-18 - Daniil's "go with the next session")* **Calibration I**: every seed re-dealt (D35) with the hash reading quantities exactly and the receipt covering the whole world; a lab player who keeps buying (WBS 1.5.1 under its real name); the ladder re-read and the seed corpus on the app's own maps (WBS 3.4); `npm run balance` in CI and in the gate (WBS 1.5.2, 3.2). **Not built:** the human offset (3.3, needs his replays), a bot that chooses (3.1) | - | Injected regression caught - **met**, red and green in PR #360's own CI. No unwinnable seed in 1,500 - **met**. No trivial seed - **not met**: nine Calm seeds in 500 are won by one plain Bolt, listed. And the finding that outweighs the gate: plain Bolts, never upgraded, win Standard 99% and Grim 84%; no curve moved; call #357 |
-| **What bounds a build** | *(NEXT; the plan is "The next session" above - born of call #357, answered as D37)* The damage model: armour that means something, types that decide fights, an upgrade worth more than another tower, the relic synergy that carries a Bolt-only build; then Standard and Grim re-fitted behind it (#349) and the balance bands moved on purpose. **No cap, no rising price** (D37) | Plain Bolts alone lose Standard and he can see why; a Railbore does what ten Bolts cannot; Bolts with the right relics win and feel like a find; Grim is lost by the base world and fought by the tree |
+| **What bounds a build** | *(NEXT; the plan is "The next session" above - born of call #357, answered as D37. **HALF BUILT in session 39, PRs #362-#364, 2026-09-18**: the fit harness; the damage model - an expensive chassis and cheap upgrades, plating, energy through armour, wide resistances; Standard and Grim re-fitted behind it, #349 closed; the bands moved)* **Still to build:** the relic synergy that carries a Bolt-only build (#365); the tree's towers earning their Ore (#366); the ladder and the corpus re-read, played depth first. **No cap, no rising price** (D37) | Met on the build so far: plain Bolts alone lose Standard (3%) and the panel says why; Grim is lost by the base world (11-18%) and won by the tree (99%). **Open:** Bolts with the right relics win and feel like a find (reads 1%); a tree line beats the base line holding the tree's relics. His eye on every price and the first minute of a run |
 | **Meta progression, full** | *(plus 7.8, the monetization door — D27; the tree, run history with bests and the in-game Tile Smith landed in sessions 29–31)* | Tech tree stages 1–2 beyond the shipped tree, dailies, replay sharing, **the tile-loadout slot economy** (7.5) | Finishing a run visibly changes the next one |
 | **Calibration II** | WBS 3.6: recalibrate with the meta layer live — tech-tree multipliers, pool unlocks and chosen tile loadouts all move player power underneath the curves calibration I fixed. Re-baseline `balance.yml`, re-sweep the seed corpus at several tree states | No trivial or unwinnable seed at any tech-tree state the player can actually hold |
 | **Presentation at scale** | Full art pass with per-upgrade tower identity (4.11), effects for every attack shape (6.3), enemy trait markers, UI art (4.13), **6.7 relic art at board-glyph scale**, **6.8 smoothness via spatial phase**, biomes, minimal SFX. The art round-trip proof (6.1) opens this block | The board reads as a place, not a diagram |
