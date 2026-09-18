@@ -218,13 +218,20 @@ Read the PRD before the architecture; read this file before touching anything.
   meet the target"; on 2026-09-18 it said the opposite about five of the
   Missile Rack's own numbers, which made its gap a question about the
   tower's role (a call) and not a number (the dev's).
-- **Never run the gate while a long read is in flight.** `npm run build`
-  empties `dist/`, and `tools/ladder.mjs` spawns one process a ROW from
-  `dist/lab/build-sweep.mjs` for the length of the read: on 2026-09-18 the
-  wrap's gate deleted the bundle under a 120-seed ladder, which died with
-  "Cannot find module" and no table. (A tool that spawns all its shards at
-  the start, like the seed corpus, survives by luck, not design.) One or the
-  other; and a read worth an hour gets its bundle outside `dist/`.
+- **The lab's bundles live in `node_modules/.cache/lab/`, never in `dist/`.**
+  `npm run build` empties `dist/`, and `tools/ladder.mjs` spawns one process
+  a ROW from its bundle for the length of the read: on 2026-09-18 the wrap's
+  gate deleted `dist/lab/build-sweep.mjs` under a 120-seed ladder, which died
+  with "Cannot find module" and no table. All fifteen runners moved the same
+  night. What is still true: **two reads of ONE tool share one bundle path**,
+  so do not start a second `fit.mjs` while the first is building, and a gate
+  beside an hour-long read still steals its cores and stretches its time.
+- **Every lab run is built by `specFor(threat, plan, seed)`**
+  (`harness/src/lab/spec.ts`, #394): the app's own map for the seed, the
+  Threat's clock and curve, the engine's purse, the plan's towers. A tool
+  that spells its own `LabSpec` is a tool that drifts from the app - it
+  happened three times in three sessions - and `spec.test.ts` fails the
+  four plan-playing tools if one does.
 - **When a literal is found lying, grep for its siblings before closing the
   finding.** Session 40 took "100 Scrap" out of two headers; the ladder's and
   the seed corpus's went on saying it for another session.

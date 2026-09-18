@@ -9,14 +9,14 @@ import { buildSync } from 'esbuild';
 import { mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-mkdirSync('dist/lab', { recursive: true });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
 buildSync({
   entryPoints: ['packages/harness/src/lab/mapGallery.ts'],
   bundle: true,
   platform: 'node',
   format: 'esm',
-  outfile: 'dist/lab/map-gallery.mjs',
+  outfile: 'node_modules/.cache/lab/map-gallery.mjs',
   logLevel: 'warning',
 });
-const r = spawnSync(process.execPath, ['dist/lab/map-gallery.mjs', ...process.argv.slice(2)], { stdio: 'inherit' });
+const r = spawnSync(process.execPath, ['node_modules/.cache/lab/map-gallery.mjs', ...process.argv.slice(2)], { stdio: 'inherit' });
 process.exit(r.status ?? 1);

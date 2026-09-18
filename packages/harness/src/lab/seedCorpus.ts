@@ -19,8 +19,9 @@ import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
-import { runLab, type LabContent, type LabSpec } from './lab';
+import { runLab, type LabContent } from './lab';
 import { PLANS, type Plan } from './plans';
+import { LAB_BOARD, corpusSeed, specFor } from './spec';
 
 declare const console: { log: (...args: unknown[]) => void };
 declare const process: { argv: string[] };
@@ -58,16 +59,15 @@ const NAIVE = PLANS.naive1;
 for (const t of THREATS) {
   const threat = THREAT_LEVELS[t];
   for (let i = SHARD; i < N; i += SHARDS) {
-    const seed = (i + 1) * 7919 + 13;
+    const seed = corpusSeed(i);
     // The APP'S map for this seed (LabSpec.map's `threat` form): a seed listed here is a seed a player can type in.
     const stream = createRng(seed).stream('map');
     const knobs = threatKnobs(stream, threat);
-    const base = { seed, map: { width: 7, height: 5, threat }, relicIds: [], unlocks: [], interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: threat.finalWave, economy: { startingScrap: STARTING_SCRAP } };
     const play = (plan: Plan): number | null | 'refused' => {
-      try { return runLab({ ...base, towers: plan.towers, tail: plan.tail } as LabSpec, content).deathWave; } catch { return 'refused'; }
+      try { return runLab(specFor(threat, plan, seed), content).deathWave; } catch { return 'refused'; }
     };
     let attempts = -1;
-    try { attempts = generateMap(stream, content.lib, { width: 7, height: 5, ...knobs, relicPoolSize: content.relicDefs.length, specials: [] }).attempts ?? -1; } catch { /* refused */ }
+    try { attempts = generateMap(stream, content.lib, { ...LAB_BOARD, ...knobs, relicPoolSize: content.relicDefs.length, specials: [] }).attempts ?? -1; } catch { /* refused */ }
     const intended = play(INTENDED);
     // The second plan is only worth its minutes where the first one lost.
     const noVein = intended === null ? null : play(NO_VEIN);

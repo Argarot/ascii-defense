@@ -18,11 +18,11 @@ const JOBS = jobsArg ? Number(jobsArg.split('=')[1]) : Math.max(1, cpus().length
 const pass = args.filter((a) => !a.startsWith('--jobs='));
 const N = Number(pass.find((a) => /^\d+$/.test(a)) ?? 500);
 
-mkdirSync('dist/lab', { recursive: true });
-buildSync({ entryPoints: ['packages/harness/src/lab/seedCorpus.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'dist/lab/seed-corpus.mjs', logLevel: 'warning' });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
+buildSync({ entryPoints: ['packages/harness/src/lab/seedCorpus.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'node_modules/.cache/lab/seed-corpus.mjs', logLevel: 'warning' });
 
 const shard = (k) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['dist/lab/seed-corpus.mjs', ...pass, `--shard=${k}/${JOBS}`], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const child = spawn(process.execPath, ['node_modules/.cache/lab/seed-corpus.mjs', ...pass, `--shard=${k}/${JOBS}`], { stdio: ['ignore', 'pipe', 'inherit'] });
   let out = '';
   child.stdout.on('data', (d) => { out += d; });
   child.on('close', (code) => (code === 0 ? resolve(out) : reject(new Error(`shard ${k} exited ${code}`))));

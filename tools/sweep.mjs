@@ -8,14 +8,14 @@ import { buildSync } from 'esbuild';
 import { mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-mkdirSync('dist/lab', { recursive: true });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
 buildSync({
   entryPoints: ['packages/harness/src/lab/sweep.ts'],
   bundle: true,
   platform: 'node',
   format: 'esm',
-  outfile: 'dist/lab/sweep.mjs',
+  outfile: 'node_modules/.cache/lab/sweep.mjs',
   logLevel: 'warning',
 });
-const r = spawnSync(process.execPath, ['dist/lab/sweep.mjs', ...process.argv.slice(2)], { stdio: 'inherit' });
+const r = spawnSync(process.execPath, ['node_modules/.cache/lab/sweep.mjs', ...process.argv.slice(2)], { stdio: 'inherit' });
 process.exit(r.status ?? 1);

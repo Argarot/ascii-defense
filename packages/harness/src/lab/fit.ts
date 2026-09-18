@@ -17,7 +17,7 @@
  *     "towers":  { "bolt": { "cost": 20, "projectile": { "damage": 8 }, "tiers": [[{ "cost": 25 }, null], null, [{ "mods": { "damage": 40 } }, null]] } },
  *     "threats": { "grim": { "hpGeometric": 1.12 } } }
  */
-import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary, type CombatRules, type DifficultySpec, type EnemyDef, type TowerDef } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary, type CombatRules, type DifficultySpec, type EnemyDef, type TowerDef } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -26,6 +26,7 @@ import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import { runLab, type LabContent } from './lab';
 import { THREAT_KEYS, planOf } from './plans';
+import { corpusSeed, specFor } from './spec';
 
 declare const console: { log: (...args: unknown[]) => void };
 declare const process: { argv: string[]; env: Record<string, string | undefined> };
@@ -38,7 +39,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false; errors: unknown[] }): 
 interface TierPatch { cost?: number; mods?: Record<string, number>; /** null takes a capability away (a Railbore that no longer ignores armour). */ unlocks?: string | null }
 interface Patch {
   rules?: Partial<CombatRules>;
-  /** The purse a run starts with (100 as shipped). */
+  /** The purse a run starts with (the engine's STARTING_SCRAP when absent - this comment typed "100" for a day after D37 made it 200). */
   startingScrap?: number;
   /** Every tower's price by one rule: the chassis times `base`, each tier choice times `tiers` - the split between a tower and its upgrades, which is what makes width or depth the better buy. `except` keeps its prices. */
   scale?: { base: number; tiers: number; except?: string[] };
@@ -98,12 +99,12 @@ for (const want of WANTED) {
   // An instrument plays past the win (the thermometer's horizon); a player plays to the Threat's final wave.
   const horizon = plan.horizon ?? threat.finalWave;
   for (let i = SHARD; i < N; i += SHARDS) {
-    const seed = (i + 1) * 7919 + 13;
+    const seed = corpusSeed(i);
     let death: number | null | 'refused';
     let towers = 0;
     let why: string | undefined;
     try {
-      const r = runLab({ seed, map: { width: 7, height: 5, threat }, towers: plan.towers, tail: plan.tail, relicIds: [], relics: plan.relics, unlocks: plan.unlocks, interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, rules: patch.rules, maxWaves: horizon, economy: { startingScrap: patch.startingScrap ?? STARTING_SCRAP } }, content);
+      const r = runLab(specFor(threat, plan, seed, { rules: patch.rules, startingScrap: patch.startingScrap, horizon }), content);
       death = r.deathWave;
       towers = r.waves[r.waves.length - 1]?.towersEnd ?? 0;
     } catch (e) { death = 'refused'; why = e instanceof Error ? e.message : String(e); }

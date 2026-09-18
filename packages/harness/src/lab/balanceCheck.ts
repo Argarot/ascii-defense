@@ -11,7 +11,7 @@
  *
  *   node tools/balance-check.mjs [--seeds=N] [--jobs=N]
  */
-import { STARTING_SCRAP, THREAT_LEVELS, TileLibrary } from '@ascii-defense/engine';
+import { THREAT_LEVELS, TileLibrary } from '@ascii-defense/engine';
 import { validateEnemies, validateRelics, validateTowers, validateTree } from '@ascii-defense/content';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -20,6 +20,7 @@ import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import { runLab, type LabContent } from './lab';
 import { THREAT_KEYS, planOf } from './plans';
+import { corpusSeed, specFor } from './spec';
 
 declare const console: { log: (...args: unknown[]) => void };
 declare const process: { argv: string[] };
@@ -48,10 +49,10 @@ for (const want of WANTED) {
   if (!threat) throw new Error(`unknown threat in '${want}' - threats: ${THREAT_KEYS.join(', ')}`);
   const plan = planOf(planKey);
   for (let i = SHARD; i < N; i += SHARDS) {
-    const seed = (i + 1) * 7919 + 13;
+    const seed = corpusSeed(i);
     let death: number | null | 'refused';
     try {
-      death = runLab({ seed, map: { width: 7, height: 5, threat }, towers: plan.towers, tail: plan.tail, relicIds: [], relics: plan.relics, unlocks: plan.unlocks, interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: plan.horizon ?? threat.finalWave, economy: { startingScrap: STARTING_SCRAP } }, content).deathWave;
+      death = runLab(specFor(threat, plan, seed), content).deathWave;
     } catch { death = 'refused'; }
     console.log(JSON.stringify({ run: want, seed, death, horizon: plan.horizon ?? threat.finalWave }));
   }

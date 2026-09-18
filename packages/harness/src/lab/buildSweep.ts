@@ -20,6 +20,7 @@ import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import { runLab, type LabContent, type LabSpec, type TowerPlacement } from './lab';
 import { planOf, type PlanName } from './plans';
+import { corpusSeed, specFor } from './spec';
 
 declare const console: { log: (...args: unknown[]) => void };
 declare const process: { argv: string[] };
@@ -291,7 +292,7 @@ if (BASE_ONLY) {
 const DEBT_ONLY = process.argv.includes('--debt');
 if (DEBT_ONLY) {
   const N = Number(process.argv.slice(2).find((a) => /^\d+$/.test(a)) ?? 60);
-  const CORPUS = Array.from({ length: N }, (_, i) => (i + 1) * 7919 + 13);
+  const CORPUS = Array.from({ length: N }, (_, i) => corpusSeed(i));
   /** The Core's health in the lab and in the app alike (the sim's default; nothing passes another). */
   const CORE_HP = 50;
   const pct = (x: number): string => `${Math.round(100 * x)}%`;
@@ -332,15 +333,10 @@ if (DEBT_ONLY) {
       const lastWavePaid: number[] = [];
       CORPUS.forEach((seed, i) => {
         const plan = planOf(row.plan);
-        const spec: LabSpec = {
-          // The APP'S map for this seed (LabSpec.map's `threat` form), as the fit harness, the gate and the corpus deal
-          // it. Until 2026-09-18 this spread threatKnobs() of a FRESH stream into the map, and runLab then carved from
-          // another fresh stream: knobs drawn twice, a map the app never deals for that seed (session 38's finding,
-          // fixed everywhere but here).
-          seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, threat },
-          towers: plan.towers, tail: plan.tail, relicIds: [], relics: row.bare ? undefined : row.relicSets ? bandSet(i % RELIC_SETS, row.band ?? 0, true) : plan.relics, unlocks: plan.unlocks,
-          interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: HORIZON, economy: { startingScrap: STARTING_SCRAP },
-        };
+        // The APP'S map for this seed, the clock, the purse - everything but WHO PLAYS - comes from specFor(), as it does
+        // for the fit harness, the gate and the corpus (#394). Until 2026-09-18 this tool spelled its own spec and spread
+        // threatKnobs() of a fresh stream into the map: right for a statistic, wrong beside tools that list seeds.
+        const spec: LabSpec = specFor(threat, plan, seed, { horizon: HORIZON, relics: row.bare ? null : row.relicSets ? bandSet(i % RELIC_SETS, row.band ?? 0, true) : undefined });
         try {
           const r = runLab(spec, baseContent);
           const death = r.deathWave ?? HORIZON + 1;

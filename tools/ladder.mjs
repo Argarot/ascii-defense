@@ -29,12 +29,12 @@ const corpus = args.find((a) => /^\d+$/.test(a)) ?? '120';
 /** Anything else (`--geo=1.12` for the fit) goes to every row's process as it is. */
 const pass = args.filter((a) => a.startsWith('--') && !a.startsWith('--jobs=') && !a.startsWith('--only=') && a !== '--no-build');
 
-mkdirSync('dist/lab', { recursive: true });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
 // `--no-build`: several reads at once (one per --geo) share the bundle the first of them wrote.
-if (!args.includes('--no-build')) buildSync({ entryPoints: ['packages/harness/src/lab/buildSweep.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'dist/lab/build-sweep.mjs', logLevel: 'warning' });
+if (!args.includes('--no-build')) buildSync({ entryPoints: ['packages/harness/src/lab/buildSweep.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'node_modules/.cache/lab/build-sweep.mjs', logLevel: 'warning' });
 
 const run = (extra) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['dist/lab/build-sweep.mjs', '--debt', corpus, ...pass, ...extra], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const child = spawn(process.execPath, ['node_modules/.cache/lab/build-sweep.mjs', '--debt', corpus, ...pass, ...extra], { stdio: ['ignore', 'pipe', 'inherit'] });
   let out = '';
   child.stdout.on('data', (d) => { out += d; });
   child.on('close', (code) => (code === 0 ? resolve(out.trim()) : reject(new Error(`${extra.join(' ')} exited ${code}`))));
