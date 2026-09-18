@@ -10,86 +10,82 @@ Read [PRD.md](PRD.md) first, then [ARCHITECTURE.md](ARCHITECTURE.md), then
 ## Where the project is today
 
 Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always).
-**Since session 36 the workshop's reliquary is two rarity bands (not nine
-tag nodes), the seven newer enemies are called harrier, lunge, brood,
-stitch, delve, buckler and Warden, and a map with the ore nodes bought can
-carry a blue or a violet vein** — a build without those is older.
+**Since session 38 a run code begins `AD5-`, and a run saved before
+2026-09-18 is refused on the title page with a sentence** — a build without
+those is older. Nothing else a player can see changed that day: it was a day
+of instruments, and of what they found.
 
-**2026-09-17, overnight — sessions 36 and 37 in one sitting (PRs #334–#338,
-#342, #344–#347, #350, all merged green; Daniil's "go, and do the next
-session as well … a deep dive on bugs and technical debt … research on the
-in-game economics"):**
+**2026-09-18 — session 38, Calibration I (PRs #353–#356, #358–#360, all
+merged green; Daniil's "go with the next session"):**
 
-1. **The ore ladder (#334; PRD §26, D30)** — Rich veins and Mother lodes
-   open tier-2 (blue) and tier-3 (violet) veins: about one map in three and
-   one in eight, half and a third the size, tinted rock and all. The roll is
-   the last dice of a map, *after* verification, so opening a tier moves no
-   board (0 of 2,400). docs/lab/ore-sweep-2026-09-17.md.
-2. **The Smith prices by contents (#335; PRD §27, D31)** — one function,
-   `priceTile`, for the Smith and the shop; no price is written in content
-   any more. Boon tiers B1–B4 are authorable; the price is itemised on the
-   page. docs/lab/price-sweep-2026-09-17.md.
-3. **The reliquary rework (#336; PRD §28, D29 and D34)** — a node per rarity
-   band, bought with Ore; named relics are *won*, in a queue the codex shows
-   ("win Standard — second in line"). A save that had bought a retired node
-   is refunded once. docs/lab/band-sweep-2026-09-17.md.
-4. **The seven's names (#337; PRD §30)** — display names only; the content
-   receipt stopped hashing presentation keys, or the rename would have
-   refused every saved run.
-5. **The balance debt, measured (#338; #234, #235 closed)** — the Threat
-   table moved into the engine (`sim/threat.ts`, one source; seven hand
-   copies deleted, a test refuses an eighth). The ladder as win rates per
-   rung. docs/lab/balance-debt-2026-09-17.md — **whose Grim conclusion item
-   11 overturns.**
-6. **The carve's variety (#342; PRD §31)** — a walk with a character per
-   Threat and a roll per map; land grouped into regions by family; a map
-   gallery tool. **Gate reported as moved, not met** — see below.
-7. **The placement predicates (#344; #218, was blocks-ship)** — `canBuildAt`
-   is *defined by* `canBuildDefAt`; they cannot disagree.
-8. **The deploy gate (#345; #212, the workflow half)** — Pages calls the
-   checks and waits. Proven on main: checks → build → deploy.
-9. **Generator hygiene (#346; #217, #211, #321 closed, #216 half)** —
-   retries counted, one strand-edge rule, the sim proven on directional
-   roads, a suite that does not time out on load.
-10. **The heredoc rule as a mechanism (#347)** — a PreToolUse hook refuses
-    an inline script carrying a backslash or a backtick. `.claude/settings.json`
-    is new and tracked; it holds that hook and nothing else.
-11. **The economy, researched (#350)** —
-    docs/lab/economy-research-2026-09-17.md. **The lab's reference build
-    stops spending at wave 12 and every ladder table used it.** With five
-    more base-world towers Grim is won 79% (the tree: 86%). Filed as #348
-    and #349; the balance doc is amended in place.
+1. **Two calls minted on open (#353)** — D35 (every seed re-dealt, a clean
+   break) and D36 (the fill target stays 0.9 on every map).
+2. **The re-deal (#355; D35, #220, #341, #223)** — the RNG mixes its seed
+   word: a stream's first draws were the seed's low bits, seeds differing
+   only in their high bits drew the *same* first number, and every stream's
+   first draw was one function of the seed. The property is a test over five
+   arithmetic corpora and seven streams, written first and watched failing.
+   The state hash reads quantities by their IEEE bits; the content receipt
+   covers everything a sim is built from; GENERATOR 5, REPLAY 2, SAVE 6.
+   Changing the dice audited the suite: 8 of 367 tests moved, five of them
+   standing on luck — among them the lab's analytic gate, **retired** (a
+   median error of eleven waves over sixty seeds; it had been read on one).
+3. **A lab player who keeps buying (#356; #348)** — `LabSpec.tail`. The old
+   six-tower reference dies holding 4,198 Scrap; no tailed plan ends holding a
+   wave's income.
+4. **The ladder re-read (#358)** — docs/lab/ladder-2026-09-18.md. **Plain
+   Bolts at the choke, never upgraded, win Calm 100%, Standard 99% and Grim
+   84%**, two to four hundred of them standing, and beat upgrading. The base
+   world wins Grim 91–97%. Grim read at six growth rates and two later final
+   waves: the tree is worth about 33 points, L5 wants 40, and all 33 are its
+   relics — nothing the arsenal sells out-scales a Railbore. **The plan's
+   stop condition was reached and honoured: no curve moved.** Call #357.
+   Along the way the lab's choke placement learned to count *lanes* (an
+   "unwinnable seed" was five towers at the wrong junction) and the lab
+   learned to deal the app's own map for a seed.
+5. **The seed corpus (#359; WBS 3.4, #340)** — 1,500 of the app's own seeds in
+   two minutes: **none unwinnable.** Five hard openings and two L1 misses
+   (a know-nothing dead at Calm's wave 5) listed by seed.
+   docs/lab/seed-corpus-2026-09-18.md.
+6. **The balance gate (#360; WBS 1.5.2, 3.2)** — `npm run balance`, a step of
+   CI and of `npm run gate`, half a minute: committed bands that record what
+   the game *is*. Proven in its own PR's CI: Grim nudged ×1.09 → ×1.10 went
+   **red**, reverted went green — and only because of the *thermometer* band,
+   since Grim's win rate (94% → 91%) stayed inside its own.
+7. **The start-session skill is for a new, empty conversation only (#354)** —
+   Daniil's correction, the same morning.
 
-**Golden replay hash:** unchanged (1642996455) — through a generator that
-went v2 → v4, because every new roll is optional and spends no dice when off.
+**Golden replay hash:** **1642996455 → 3521805202**, once, both causes in its
+reasons list (the RNG; the hash reading quantities exactly).
 
 **Not built, said plainly:**
 
-- **The carve's gate is not met.** Standard's avenue maps went 8% → 18%;
-  widening the roll further changes nothing, because D28's fill target (0.9
-  on every map) decides what a Standard map looks like. That is call #343.
-- **Grim is not re-fitted** (#349) — the RNG fix (#339) re-deals every seed,
-  so a fit made first is made twice.
-- **Branch protection** — the other half of #212. The token deliberately
-  cannot do it; it is on his list below.
-- **Nothing was eyeballed.** Screenshots time out in the hidden pane; tier
-  colours, regions and the Smith's price lines were verified through the
-  `__ad` handle and pixel counts, not by looking.
-- The stranger test (his hands); the art agent's studies.
+- **No balance number moved.** Grim, Standard and Calm are as they shipped.
+  #349 (re-fit Grim) stays open behind call #357; fitting any curve while the
+  Bolt spammer stands is fitting it to the wrong game.
+- **The human offset** (WBS 3.3) — needs Daniil's recorded replays. Every win
+  rate in `docs/lab/` is a ceiling on a person's.
+- **A bot that chooses** (WBS 3.1) — the spending player is WBS 1.5.1's crude
+  policy under its real name; it places by arithmetic and never sells.
+- **L1's two seeds and Calm's nine trivial ones** are listed, not fixed.
+- Branch protection on `main` — his hands; the token cannot.
 
-**His calls live in the tracker now**, not here — each with a stated default
-and a deadline ([CONTRIBUTING §6](../CONTRIBUTING.md), rule 3).
-What beta waits on is three questions:
+**A thing that went wrong:** to clear three leftover sweep processes the dev
+ran `taskkill /F /IM node.exe` and killed every Node process on the machine —
+the preview server and one nobody could name. Said in the turn it happened;
+the rule is in CONTRIBUTING §5.
+
+**His calls live in the tracker**, each with a default and a deadline
+([CONTRIBUTING §6](../CONTRIBUTING.md), rule 3):
 
 ```bash
 gh issue list --label call --label blocks-ship
 ```
 
-**Gate:** his eye on the live build — the workshop's reliquary as two
-bands and the codex naming the win that grants a relic; the Smith's price
-moving as boon ground is added; with `?dev`, both ore nodes toggled on, a
-few new runs until a blue vein shows; two Calm maps beside two Grim maps
-(`node tools/map-gallery.mjs` prints them without playing).
+**Gate:** his eye on the live build — a new run's code begins `AD5-`; three
+new Standard runs in a row draw different entry counts. And one experiment
+worth ten minutes of his own hands, because no table replaces it: **a
+Standard run of nothing but plain Bolts by the Core, never upgraded.**
 
 ---
 
@@ -99,85 +95,68 @@ few new runs until a blue vein shows; two Calm maps beside two Grim maps
 section owns the plan. Daniil's entire next input should be able to be the
 word "go".*
 
-*(Written 2026-09-18 at the wrap of the overnight sitting. The stranger's
-round is still the row that matters most and still waits on a person; this
-is the next thing a builder can do alone.)*
+*(Written 2026-09-18 at the wrap of Calibration I. It builds the DEFAULT of
+call #357; if he answers the call differently, this plan is superseded by his
+answer and rewritten before anything is built.)*
 
-**Theme.** Every number this project has measured is about to be re-dealt,
-and one of its instruments was found wanting — so do both at once, once.
-The RNG's first draws follow the seed's low bits (#339): fixing it changes
-every map, every run, the golden hash and every table in `docs/lab/`. The
-lab's reference build stops spending at wave 12 (#348), so the top of the
-difficulty ladder was read off a player who does not exist, and Grim's rung
-is compressed (#349). **Re-deal, then re-measure with a player who keeps
-buying, then re-fit, then put a gate on it** — in that order, because any
-other order does the work twice. It unblocks dailies (consecutive seeds stop
-cycling 2-3-4-5 entries), the stranger's round (whose Calm must be the Calm
-that ships) and everything downstream that quotes a lab number.
+**Theme.** Nothing bounds how wide a build may go, so the cheapest tower,
+never upgraded, is the strongest line in the game, upgrades lose to it, and
+the tree's top rung sells nothing the base world lacks. One rule answers all
+three: **the Core supports N towers, and the workshop's capacity branch sells
+more.** Build the rule, let the lab derive N and its steps, then fit the
+ladder behind it — which is the first moment a fit can mean anything. It
+unblocks #349, every balance number downstream, and the stranger's round
+(whose Standard should not be one a first-timer can win by spamming).
 
 **PR list (a full day):**
 
-1. **The re-deal** — #339 (its default, minted on open if unanswered), with
-   #220 (`hashState` truncates fractional lanes) and #341 (the content
-   receipt covers two of seven content files) riding along, because this is
-   the one PR that already invalidates every saved run and moves the golden
-   hash — the cheapest moment either will ever have. Mix the seed, or
-   discard the first outputs; measured, not argued. *Proof:* the
-   4,000-seed correlation table of balance-debt-2026-09-17.md re-run and
-   reading 50% in every row; the golden constant moved **once**, with the
-   reason in its comment; a saved run from before is refused with a sentence,
-   not a crash; the mapgen sweep green on the new deal.
-2. **A lab player who keeps buying** — #348. `TowerPlacement` plans gain a
-   tail ("then keep buying X while Scrap allows"); the spending plan becomes
-   the reference in `buildSweep --debt`; this is WBS 1.5.1's crude bot
-   policy under its real name. *Proof:* no plan in the ladder tables ends a
-   winning run holding more than one wave's income; the purse column printed
-   beside every death wave.
-3. **The ladder re-read, and Grim re-fitted** — #349. All six targets L1–L6
-   re-measured on the new deal with the spending player; Grim's curve fitted
-   to *base world ≤ 20%, tree ≥ 60%*. **If no curve opens that gap, stop:**
-   that is a design finding about the arsenal, and it goes to Daniil as a
-   call with the fit's evidence rather than being patched round. *Proof:*
-   one document replacing balance-debt-2026-09-17.md's tables, every target
-   stated before its number.
-4. **The seed corpus** — WBS 3.4, #340, #224. At least 500 runs per Threat
-   with the spending player: every seed the intended build cannot win, and
-   every seed a naive build cannot lose, listed with its map's knobs. Seed
-   316773's cause found or the seed shown gone under the new deal.
-   *Proof:* the list, and either zero unwinnable seeds or a generator rule
-   that removes the class.
-5. **The gate** — WBS 1.5.2 and 3.2: `harness check` reads committed target
-   bands and fails outside them; `balance.yml` runs it in CI on a small
-   corpus. *Proof:* an injected regression (Grim's growth nudged) turns the
-   check red in a PR, and reverting it turns it green.
+1. **The rule, end to end** — `SimOptions.towerCap`; `buildTower` refuses past
+   it with a reason the HUD can say; the strip shows *n / N*; `Unlocked.towerCap`
+   from `grants.towerCap` on capacity nodes — **and its authoring surface in
+   the same PR**: the tree schema and generated types, the validator, the
+   workshop plates' text, the codex and the catalogue, a tutorial line, the
+   creative page's toggle. Selling frees a slot. *Proof:* a run in the live
+   app that hits the cap and says so; replay bit-identical; the golden hash
+   moved once or not at all, with the reason.
+2. **The lab derives N** — the ladder read at caps from 8 to 40, base world and
+   tree. Targets stated before the numbers: spam no longer beats depth on any
+   Threat; *forks learned* beats *placement learned* (L3 becomes a ladder
+   again); Standard is lost by what wins Calm (L4). *Proof:* one table, and
+   the N it picks with its reason.
+3. **The tree's steps, and Grim re-fitted** — #349. The capacity nodes' sizes
+   and Ore prices from the same sweep; then Grim's curve to *base world ≤ 20%,
+   tree ≥ 60%*. **Stop condition, again:** if no cap-and-curve pair opens the
+   gap, that is the arsenal (next item) and the PR says so instead of bending
+   a number.
+4. **The arsenal, measured per slot** — once slots are scarce a tower is worth
+   what it does *per slot*. Laser, Missile, Tesla and Bastion lines against the
+   Railbore line under the cap. Where a tree tower does not out-scale a
+   Railbore per slot, its numbers are the lab's to derive (rule 7), with the
+   variant sweep as the guard against a new dominant path.
+5. **The bands move, on purpose** — `balance/targets.json` re-set from the new
+   ladder, every moved band carrying its reason; the thermometer re-read.
+   ladder-2026-09-18.md gets its successor. *Proof:* `npm run gate` green on
+   the new game, red if the cap is removed.
 
-**Not in it, said now:** the human offset (WBS 3.3) needs Daniil's recorded
-replays and is not faked with a number; a real bot that *chooses* (WBS 3.1)
-stays with Calibration's second half if the spending player proves enough.
+**Gate — his eye on the live build:** a Standard run where he reaches the cap
+and has to choose between upgrading and selling; a Bolt-only run that loses;
+Grim with a fresh save as a loss that teaches and with the tree as a fight.
 
-**Gate — his eye on the live build:** three new Standard runs in a row deal
-different entry counts; Grim with a fresh save is a loss that feels like a
-lesson and with the tree bought is a fight — and the lab document says the
-same thing in numbers.
+**His part: one thing, and "go" covers it.** Call **#357** — *what bounds a
+build?* Default: the tower cap, which this plan builds. A different answer
+(a price that rises per copy; or leave it) replaces this plan.
 
-**His part: two small things, neither blocks "go".**
-(a) **Branch protection on `main`** — Settings → Branches → require the
-`checks` status. The project's token deliberately cannot do this. *Default:
-left off; the deploy is already gated by the workflow (#345).*
-(b) **Call #343** — should a map roll its own fill target? *Default: no.*
-It mints itself on open.
-
-**Biggest risk — and this one wants his verdict, not his silence.** PR 1
-throws away every saved run and changes what every run code means. Today
-that costs nothing anyone would notice: there are no players but him.
-**The alternative is to keep the old generator for old seeds behind a
-version field** and only deal new runs the new way — no save is lost, and
-the project carries two RNG paths and two golden hashes forever. *Default:
-the clean break, now, because the day before strangers and dailies is the
-last day it is free.* **Expensive if wrong:** after the stranger's round,
-a re-deal invalidates the seeds his testers reported bugs against; after
-dailies, it breaks a public promise that a date means a map. *"That risk is
-real, keep a versioned path"* or *"accepted"* — one sentence is enough.
+**Biggest risk — and this one wants his verdict, not his silence.** A cap is
+a hard rule in a game that has had none: it changes what a run *feels* like
+from the first minute, and a wrong N is felt by every player on every run.
+**The alternative is the soft version — a price that rises per copy of a
+tower kind** — which bounds width without ever saying "no", keeps the board
+free, and gives the tree nothing to sell. *Default: the cap, because it is the
+only answer that also makes upgrades matter and gives the tree's top rung a
+job.* **Expensive if wrong:** every number fitted next session is fitted on
+top of it — the ladder, the bands, the capacity nodes' prices, the tutorial's
+words — and a later change of mind re-does that whole session. *"That risk
+is real, build the rising price instead"* or *"accepted"* — one sentence.
 
 ---
 
@@ -491,7 +470,8 @@ The order is derived from *what causes rework if done late*:
 | ~~36~~ | **DONE** *(PRs #334–#338, 2026-09-17 overnight — Daniil's "go")* **The economy's missing rungs**: the ore ladder (D30) with its sweep; the Smith and the shop priced by one function over a tile's contents (D31); the reliquary as two rarity bands bought and named relics won in a queue (D29, D34); the seven's display names; the balance debt measured as win rates per rung, the Threat table moved into the engine | — | Gate met on the build: tier-2 ore is reachable in a run (27 a run on the map in three that carries it); a loaded minted tile is ruinous (a B4 boon alone is 142) and a plain one is 25; a relic comes from a win and a rarity from a purchase. **His eye pending — nothing was eyeballed, the pane takes no screenshots** |
 | **The stranger's round** | *(waits on a person, not on the build)* A stranger plays the live build unaided on Calm to wave 5 under `docs/STRANGER-TEST.md`; the ten scored rows are filed as issues `[r36.<row>] …`; every 0 and 1 becomes a fix the same session. This is the one question no sweep can answer, which is why it stays his — unlike balance, which §6 rule 7 moved back to the dev | A "2" on rows 5, 6 and 10 of the scorecard |
 | ~~37~~ | **DONE, GATE OPEN** *(PRs #342, #344–#347, #350, the same night; the commits say "session 36")* **The carve's variety, the debt dive and the economy research**: a walk with a character per Threat and a roll per map, land in regions by family, the map sweep's resemblance columns and a gallery tool; then #218 closed by construction, the deploy gated on the checks (#212's workflow half), generator hygiene (#217, #211, #321), the heredoc rule as a hook, and docs/lab/economy-research-2026-09-17.md | — | **Moved, not met**: Calm and Grim now read apart at a glance by the sweep's columns; two *Standard* maps still resemble each other more than the gate allows (avenue maps 8% → 18%, and no walk setting moves it further — D28's fill target decides it; call #343). His eye decides whether that is enough |
-| **Calibration I** | *(NEXT; the plan is "The next session" above)* The re-deal (#339, with #220 and #341) · WBS 1.5.1/1.5.2 + 3.1–3.4: bot policy, `calibrate`/`check`, human offset from Daniil's replays, `balance.yml` gate, seed-corpus sweeps | Injected regression caught; no trivial or unwinnable seed in ≥500 runs |
+| ~~38~~ | **DONE, GATE OPEN** *(PRs #353-#356, #358-#360, 2026-09-18 - Daniil's "go with the next session")* **Calibration I**: every seed re-dealt (D35) with the hash reading quantities exactly and the receipt covering the whole world; a lab player who keeps buying (WBS 1.5.1 under its real name); the ladder re-read and the seed corpus on the app's own maps (WBS 3.4); `npm run balance` in CI and in the gate (WBS 1.5.2, 3.2). **Not built:** the human offset (3.3, needs his replays), a bot that chooses (3.1) | - | Injected regression caught - **met**, red and green in PR #360's own CI. No unwinnable seed in 1,500 - **met**. No trivial seed - **not met**: nine Calm seeds in 500 are won by one plain Bolt, listed. And the finding that outweighs the gate: plain Bolts, never upgraded, win Standard 99% and Grim 84%; no curve moved; call #357 |
+| **What bounds a build** | *(NEXT; the plan is "The next session" above - born of call #357, which the content freeze admits: only defects and calls enter)* The default of #357 built end to end: a tower cap raised by the tree's capacity branch, with its authoring surface; N and its steps derived by the lab; Grim re-fitted behind it (#349); the arsenal measured per slot; the balance bands moved on purpose | A Bolt-only run loses Standard; he reaches the cap and has to choose; Grim is lost by the base world and fought by the tree - and the ladder document says the same in numbers |
 | **Meta progression, full** | *(plus 7.8, the monetization door — D27; the tree, run history with bests and the in-game Tile Smith landed in sessions 29–31)* | Tech tree stages 1–2 beyond the shipped tree, dailies, replay sharing, **the tile-loadout slot economy** (7.5) | Finishing a run visibly changes the next one |
 | **Calibration II** | WBS 3.6: recalibrate with the meta layer live — tech-tree multipliers, pool unlocks and chosen tile loadouts all move player power underneath the curves calibration I fixed. Re-baseline `balance.yml`, re-sweep the seed corpus at several tree states | No trivial or unwinnable seed at any tech-tree state the player can actually hold |
 | **Presentation at scale** | Full art pass with per-upgrade tower identity (4.11), effects for every attack shape (6.3), enemy trait markers, UI art (4.13), **6.7 relic art at board-glyph scale**, **6.8 smoothness via spatial phase**, biomes, minimal SFX. The art round-trip proof (6.1) opens this block | The board reads as a place, not a diagram |
