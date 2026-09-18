@@ -1,12 +1,32 @@
 ---
 name: start-session
-description: Open a working session on ASCII Defense — read the right three things, mint the calls whose deadline has passed, prove the tree is green, then BRIEF Daniil on what loaded and what is about to be built and WAIT for his go. Run at the start of every session, including one that opens with just "go".
+description: Open a working session on ASCII Defense in a NEW, EMPTY conversation with no prior context — read the right three things, mint the calls whose deadline has passed, prove the tree is green, then BRIEF Daniil on what loaded and what is about to be built and WAIT for his go. Run it when a fresh chat opens, including one that opens with just "go". Do NOT run it to continue work in a conversation that already holds the context (e.g. "go with the next session" right after a wrap) — there the wrap's plan is the brief and his "go" is the go.
 ---
 
 # Open the working day
 
-The counterpart to `wrap-session`. Run it **before writing any code**, every
-session — including the ones that open with a single word.
+The counterpart to `wrap-session`. Run it **before writing any code** in every
+**new, empty conversation** — including the ones that open with a single word.
+
+## When NOT to run this
+
+**Never to continue work in a conversation that already has the context**
+(Daniil, 2026-09-18: *"you shouldn't use it to continue work, only in a new
+empty session with no prior context"*). The brief exists so he can see that
+the right context *loaded*; in a conversation that just wrapped a session,
+the context is on the screen, the wrap's next-session plan **is** the brief,
+and his "go" is the answer to it. Running the skill there costs him a second
+"go" for a plan he has just approved — which is what happened that day.
+
+When continuing, do only the two things that fall due regardless of who is
+reading, then build:
+
+1. **Mint the overdue calls** (step 2 below) — the deadline is the start of
+   the next session whether or not the chat is new.
+2. **`npm run gate` on a clean, synced `main`** (step 3) — skip it only if the
+   wrap's own final gate ran minutes ago on the same commit.
+
+No brief, no checkpoint. Say in one line what was minted, and start PR 1.
 
 It exists because the start of a session had no procedure. `triage-round` fires
 only when a numbered list arrives; the wrap fires at the end; a session that
