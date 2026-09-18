@@ -30,7 +30,7 @@ import {
   role,
   setReducedMotion,
   StripPanel,
-  STRIP_ROWS, TRAIT_ANSWER, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack, SmithScreen, type SmithState, drawPulseBox, type GlyphRect } from '@ascii-defense/view';
+  STRIP_ROWS, interpolate, WALKER_MAX_STEP, SHOT_MAX_STEP, RenderClock, setPaletteSet, ForgeModal, setPaletteRoles, setTerrainPack, type TerrainSpritePack, SmithScreen, type SmithState, drawPulseBox, type GlyphRect } from '@ascii-defense/view';
 import type { CellRef, HudAction, HudState, RenderState, MenuSpec } from '@ascii-defense/view';
 import { validateSprite, validateTree, validateRelics, type Sprite } from '@ascii-defense/content';
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
@@ -40,6 +40,7 @@ import { THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type 
 import { META_KEY, RUN_KEY, loadMetaFrom, loadRunFrom, saveMetaTo, type MetaSave } from './persistence';
 import { boardSlotsFor } from './boardSize';
 import { CODEX } from './generated/codex';
+import { BOON_NOTICE_LINE, CHEST_NOTICE_LINE, NOTICE_MS, enemyNoticeLine, towerNoticeLine } from './notices';
 
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: { path: string; message: string }[] }, what: string): T {
   if (!r.ok) throw new Error(`${what} failed validation: ` + r.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
@@ -406,15 +407,9 @@ async function main(): Promise<void> {
   const noticeQueue: Notice[] = [];
   /** Wall-clock ms the head notice has stood while the run was running. */
   let noticeAgeMs = 0;
-  const NOTICE_MS = 9000;
-  const meet = (title: string, line: string, card: import('@ascii-defense/view').MenuSpec, pauses = false): void => {
+  const meet =(title: string, line: string, card: import('@ascii-defense/view').MenuSpec, pauses = false): void => {
     if (pauses) cardQueue.push(card);
     else noticeQueue.push({ title, line, card });
-  };
-  /** The one line of an enemy's banner: what answers its first trait, else what it is. */
-  const enemyNoticeLine = (e: (typeof CODEX.enemies)[number]): string => {
-    for (const t of e.traits) { const a = TRAIT_ANSWER[t.slice(0, t.indexOf(':'))]; if (a) return a; }
-    return `hp ${e.hp}, speed ${e.speed} - nothing special about it`;
   };
   const detectEncounters = (): void => {
     if (!snap || !currentMap) return;
@@ -435,16 +430,16 @@ async function main(): Promise<void> {
       const sp = SPRITES.find((s) => s.id === c.id);
       // The same banner for a tower, a chest and boon ground: D41 names the enemy's card, and a second mechanism for
       // the other three would be the more surprising reading of it. His to overrule: pass `true` and the card pauses again.
-      meet(`YOUR FIRST ${c.name.toUpperCase()}`, c.desc, cardOf(`YOUR FIRST ${c.name.toUpperCase()}`, sp ? [sp] : [], [c.desc, c.shape, ...c.tiers.map((tier, i) => `T${i + 1}: ${tier[0].name} (${tier[0].desc}) or ${tier[1].name} (${tier[1].desc})`), `next to the Core: ${c.coreBoon}`]));
+      meet(`YOUR FIRST ${c.name.toUpperCase()}`, towerNoticeLine(c), cardOf(`YOUR FIRST ${c.name.toUpperCase()}`, sp ? [sp] : [], [c.desc, c.shape, ...c.tiers.map((tier, i) => `T${i + 1}: ${tier[0].name} (${tier[0].desc}) or ${tier[1].name} (${tier[1].desc})`), `next to the Core: ${c.coreBoon}`]));
     }
     if (!meta.met.chest && (snap.board.chests?.length ?? 0) > 0) {
       meta.met.chest = true; changed = true;
-      meet('A CHEST SURFACED', 'select it and CLAIM - it sinks in twelve seconds', cardOf('A CHEST SURFACED', [], ['a chest rises on the water or on empty ground now and then and sinks after twelve seconds. select it and CLAIM: Scrap, Ore, a consumable - now and then a relic. a rarer chest pays more; a boss leaves one where it dies.']));
+      meet('A CHEST SURFACED', CHEST_NOTICE_LINE, cardOf('A CHEST SURFACED', [], ['a chest rises on the water or on empty ground now and then and sinks after twelve seconds. select it and CLAIM: Scrap, Ore, a consumable - now and then a relic. a rarer chest pays more; a boss leaves one where it dies.']));
     }
     // The boon card waits for the first tower (the tutorial owns the first minute of a first run).
     if (!meta.met.boon && (snap.board.boons?.length ?? 0) > 0 && (snap.board.towers?.length ?? 0) > 0) {
       meta.met.boon = true; changed = true;
-      meet('BOON GROUND', 'a tower built on marked ground keeps its boon', cardOf('BOON GROUND', [], ['some ground carries a boon: corner marks on the cell say its tier, the colour says what it gives - reach (green), damage (red) or fire rate (gold). a tower built on it keeps the boon: ' + [1, 2, 3, 4].map((t) => `tier ${t} ${Sim.boonEffect('damage', t).text}`).join(', ') + ' for damage and rate; +1 range a tier for reach. rock may hide more.']));
+      meet('BOON GROUND', BOON_NOTICE_LINE, cardOf('BOON GROUND', [], ['some ground carries a boon: corner marks on the cell say its tier, the colour says what it gives - reach (green), damage (red) or fire rate (gold). a tower built on it keeps the boon: ' + [1, 2, 3, 4].map((t) => `tier ${t} ${Sim.boonEffect('damage', t).text}`).join(', ') + ' for damage and rate; +1 range a tier for reach. rock may hide more.']));
     }
     if (changed) saveMeta(meta);
   };
