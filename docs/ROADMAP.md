@@ -64,7 +64,8 @@ proven red and green in its own PR.
   mixed line chassis first, which the new prices punish; its rows want the
   depth-first plans the harness has. damage-model-2026-09-18.md is the record
   until then.
-- **Calm is still won by placement alone** (99%) — call #368, default: leave it.
+- **Calm is still won by placement alone** (99%) — and stays so, by default
+  (D39, call #368 unanswered).
 - **The human offset.** Every rate is the lab's player. Standard was fitted to
   the top of its band (93%) because a person buys later and places worse; by
   how much, nobody has measured.
@@ -142,8 +143,9 @@ Bolts on purpose, and it works — and without it, it does not. And a wall of
 Teslas meets a body it cannot burn through, the panel says which, and a
 Railbore is the answer.
 
-**His part: one call, and "go" covers it.** **#368** — should Bolt spam still
-win Calm (99%)? *Default: yes, leave Calm.*
+**His part: one call, and "go" covered it.** **#368** — should Bolt spam still
+win Calm (99%)? *Default: yes, leave Calm* — minted as **D39** when the session
+opened on his "go", 2026-09-18.
 
 **Biggest risk — and this one wants his verdict, not his silence.** The whole
 damage model was fitted to a lab player who buys the instant it can afford and
@@ -157,7 +159,8 @@ the arsenal's numbers (PR 2) are derived against Grim's curve; if Grim moves
 afterwards they are derived twice. *"Play first"* or *"accepted"*.
 *(2026-09-18, evening: he agreed to the steps and added D38; he did not rule
 on this line separately, so the default — build — stands, and the risk with
-it.)*
+it. Later the same evening the session's brief put "go" and "play first" side
+by side and he answered "Go build": build it is, by his word this time.)*
 
 ---
 
@@ -825,6 +828,7 @@ agreement](../CONTRIBUTING.md), rule 3).*
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
+| D39 | **Calm stays winnable by placement alone** — **MINTED 2026-09-18, by default, unanswered** (call #368; Daniil's "go" on the brief that put the call and its default in front of him, no separate answer). After D37's damage model plain, never-upgraded Bolts win Standard 3% and Grim 0% — and **Calm 99%**, and that is left as it is. Calm is where placement is learned: its plating starts at wave 6 of 15 and its kinds unlock three waves late on purpose, and moving it moves the first five waves of a stranger's first run. The target written before measuring said "about half"; it was missed and is recorded as missed, not bent to. Reversible in one harness round: Calm's own plating (earlier, or +2) or its curve — `node tools/fit.mjs --plans=calm:naive1,calm:naive3,calm:spam,calm:mixed` with a patch prices either in four minutes. Evidence: docs/lab/damage-model-2026-09-18.md |  | closed |
 | D38 | **Energy needs its armour** — **RESOLVED 2026-09-18 (Daniil)**, added when he approved the second half of "What bounds a build": *"we have armored foes that ignore some amount of physical damage. But there need to be foes that do opposite - ignore significant amount of energy damage, while physical one is effective against it. So tesla/laser/chill spam is not as effective."* Where the game stood that evening: D37's damage model gave KINETIC a flat per-hit counter (armour, and plating on every body from wave 6) and sent every ENERGY hit through both untouched; energy's only counter was a multiplier on four kinds (×0.4–0.6), which does nothing to a swarm of small hits that a swarm of big ones does not also suffer; and the lab had never played energy spam. To build: the energy-spam rungs in the harness first, then the mirror of armour — a flat amount off every energy hit, worn by bodies kinetic is effective against — with its authoring surface. Issue #370; PR 0 of "The next session" |  | closed |
 | D37 | **What bounds a build is the damage model, not a rule about counting** - **RESOLVED 2026-09-18 (Daniil)**, answering call #357 against its default. **No hard cap on towers**, and **no price that rises per copy** ("also not the most elegant way to solve this"). Instead: "rebalance of the damage/DPS, or making damage types much more relevant". **A Bolt-only build is welcome when a combination of relics supports it** - "to find 'broken' synergies so to say" - but "default brainless spam of basic bolts shouldn't beat every game". The evidence that raised it: plain Bolts, never upgraded, win Standard 99% and Grim 84% (docs/lab/ladder-2026-09-18.md). The default I had proposed - a tower cap sold by the tree - was refused; nothing had been built on it |  | closed |
 | D36 | **The board fills on every map** — **MINTED 2026-09-18, by default, unanswered** (call #343). D28's fill target stays 0.9 on every map; a map does not roll its own. Consequence, recorded so it is not rediscovered: the carve's gate (*two Standard runs do not resemble each other by the road's walk*) stays "moved, not met" — about one Standard map in five differs in kind, and the map sweep shows no walk setting moves it further, because lane count decides a Standard map's look and the fill target decides lane count. Reversible: `MapGenOptions.coverage` already exists, and `node tools/map-gallery.mjs 1 8 --coverage=0.6` shows the alternative |  | closed |
