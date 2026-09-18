@@ -58,7 +58,10 @@ export const THREAT_LEVELS: readonly ThreatLevel[] = [
   // chassis and cheap upgrades, plating, energy through plate, wide resistances. At the old rates every build that upgraded won both Threats
   // outright once plain-Bolt spam stopped working; at these the mixed line wins Standard 93% and the base world wins Grim 11-18% against the
   // tree's 99%. The first time a curve could open that gap: yesterday nothing could, because nothing bounded how wide a build went.
-  { name: 'Standard', entries: [2, 5], pathBias: 8, finalWave: 20, waveSeconds: 40, difficulty: { hpLinear: 0.15, hpGeometric: 1.12, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 }, walk: WALK.standard },
+  // The same evening (docs/lab/standard-curve-2026-09-18.md): Standard x1.12 -> x1.105. The 93% was fitted to the TOP of 85-95% on purpose
+  // (a person buys later and places worse than the lab); plating's twin for energy (D38) took four points of it and the lab's corrected
+  // base world - commons alone, as the app's - three more, leaving the line at the floor. x1.105 reads 93% again; Grim is untouched.
+  { name: 'Standard', entries: [2, 5], pathBias: 8, finalWave: 20, waveSeconds: 40, difficulty: { hpLinear: 0.15, hpGeometric: 1.105, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 }, walk: WALK.standard },
   { name: 'Grim', entries: [3, 6], pathBias: 5, finalWave: 25, waveSeconds: 30, difficulty: { hpLinear: 0.15, hpGeometric: 1.17, countBase: 6, countLinear: 5, countGeometric: 1, unlockDelay: 0, countMax: 60 }, walk: WALK.grim },
 ];
 
