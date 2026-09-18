@@ -1422,9 +1422,9 @@ export const CODEX = {
       ],
       "stacks": true,
       "recharge": "",
-      "desc": "A tower whose hit is under 10 hits for 11 more - before any multiplier. Nothing for a big gun.",
-      "rare": "A tower whose hit is under 10 hits for 13 more - before any multiplier.",
-      "epic": "A tower whose hit is under 10 hits for 16 more - before any multiplier.",
+      "desc": "A tower whose hit is under 10 hits for 10 more - before any multiplier. Nothing for a big gun.",
+      "rare": "A tower whose hit is under 10 hits for 12 more - before any multiplier.",
+      "epic": "A tower whose hit is under 10 hits for 15 more - before any multiplier.",
       "legendary": "",
       "fusionOnly": false
     },

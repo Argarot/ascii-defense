@@ -59,14 +59,19 @@ proven red and green in its own PR.
   to mixed. The panel now says *"PLATED +2: every hit loses 2 more - hit big"*.
 - ~~**The synergy (S5, #365).**~~ **Built the same evening**
   (docs/lab/synergy-2026-09-18.md): two commons — *Payload* (a tower whose own
-  hit is under 10 hits for 11 more) and *Penetrators* (every hit ignores 2 of
+  hit is under 10 hits for 10 more) and *Penetrators* (every hit ignores 2 of
   what a body wears). Plain Bolts holding the set win Standard **83%**, 2%
   without it; neither relic alone carries it (13%, 3%); the base world holding
   the set still loses Grim (20%). Nobody has yet *found* the set in a run.
 - **The lab's base world was richer than the app's** — it rolled rares and
   epics from its offers (no `rarityMax`). Fixed with the synergy; every band
-  but the thermometer held, and **Standard's mixed line reads 86%**, the floor
-  of its range. Its curve is the next PR.
+  but the thermometer held, and Standard's mixed line read 86%, the floor of
+  its range.
+- ~~**Standard's curve.**~~ **Re-fitted the same evening**
+  (docs/lab/standard-curve-2026-09-18.md): ×1.12 → **×1.105**, the mixed line
+  back at **93%** where D37 put it, the doors still shut (Bolt spam 3%, Ice
+  Shards spam 4%); Payload 11 → 10 so the relic set stays at 83%. S3's floor
+  in the gate went up with it.
 - **The arsenal (#366).** The tree's relics carry Grim, not its towers: the
   Tesla line wins 16% and the Missile line 9%.
 - **The ladder document's successor.** `tools/ladder.mjs` still plays the
