@@ -186,6 +186,13 @@ Read the PRD before the architecture; read this file before touching anything.
   and the other chassis first. When the candidate ships, **run the harness
   with no patch and diff the rows**: the shipped game must reproduce the
   candidate to the digit, or something was typed wrong on the way in.
+- **A rule that closes one door gets a rung for the door it opens, in the same
+  change.** D37's damage model made armour blunt kinetic hits alone - "energy
+  goes through plate" - and the harness that proved plain-Bolt spam dead had
+  no Tesla, Laser or Frost-shard rung in it. The lab measured the exploit it
+  already knew and shipped the mirror image unread; Daniil named it in one
+  reading (D38). When a change makes X worse, ask what it makes *relatively
+  better*, and add that plan to the table before believing the table.
 - **Look at every new line of text in the running game before it ships.** Both
   HUD lines D37 added were cut off mid-sentence at the panel's width ("Big
   hits and +", "small +") and every test was green. A sentence that does not

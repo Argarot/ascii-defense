@@ -114,6 +114,13 @@ wide as it likes.
 
 ## Not done, said plainly
 
+- **Energy was never read, and has no armour** (D38, #370 — Daniil's, the same
+  evening). Every table here has a plain-Bolt rung and no Tesla, Laser or
+  Frost-shard one. This model gave kinetic a flat per-hit counter and sent
+  energy through it untouched; energy's only counter is a multiplier on four
+  kinds, which does not single out a swarm of small hits. "Energy goes through
+  armour" is half a rule until something stops energy the way plate stops a
+  Bolt. First PR of the next session, rungs before fix.
 - **S5** — no relic set carries a Bolt-only build. Next PR.
 - **S4's second half** — the tree's towers are not shown to carry Grim; its
   relics do. Tesla (16%) and Missile (9%) lines are weak under the new model

@@ -51,6 +51,11 @@ proven red and green in its own PR.
 
 **Not built, said plainly:**
 
+- **Energy has no armour (D38, #370).** The damage model closed the kinetic
+  door and left the energy one unread: energy goes through armour and plating
+  untouched, its only counter is a multiplier on four kinds, and Tesla, Laser
+  and Frost-shard spam have never been played in the lab. Daniil named it the
+  same evening. First thing next session.
 - **The synergy (S5, #365).** No relic set carries a Bolt-only build: it reads
   1% against a target of 70%. D37 asked for it by name.
 - **The arsenal (#366).** The tree's relics carry Grim, not its towers: the
@@ -83,19 +88,41 @@ word "go".*
 *(Written 2026-09-18 at the wrap of session 39. The row is the same row: this
 is its second half, plus what the first half found.)*
 
-**Theme.** The damage model is in and spam is dead; what is missing is the
-part D37 asked for by name and the part the fit exposed. **Make the synergy
+*(Approved by Daniil the same evening — "agree with the next steps" — with
+one addition, minted as D38 and built FIRST below: energy needs its armour.)*
+
+**Theme.** The damage model is in and *kinetic* spam is dead; what is missing
+is its mirror, the part D37 asked for by name, and the part the fit exposed.
+**Close the energy door the way the kinetic one was closed, make the synergy
 findable, make the tree's towers earn their Ore, and re-read the whole ladder
 on the instrument as it now has to be played.**
 
-**PR list (a full day):**
+**PR list (a full day and then some — in this order, because each stands on
+the one before):**
 
+0. **Energy gets its armour (D38, #370) — first, because PR 2 stands on it.**
+   Today every energy hit goes through armour and plating untouched; the only
+   thing that blunts energy is a multiplier on four kinds; and *nobody has
+   measured Tesla, Laser or Frost-shard spam* — the harness has a plain-Bolt
+   rung and no energy one. **(a)** the rungs: `teslaSpam`, `frostSpam`,
+   `laserSpam`, Standard and Grim, base world and tree — the number before the
+   fix. **(b)** the mirror of armour: a flat amount off every *energy* hit,
+   worn by bodies that kinetic is effective against, as a field beside `armor`
+   **with its authoring surface in the same PR** (schema, generated types,
+   validator, codex card, catalogue column, the strip's trait mark and its
+   answer line, the encounter card). Whether plating gets a twin is the lab's
+   to derive from (a). *Proof, targets stated first:* energy spam ≤ 10% on
+   Standard and never on Grim; the mixed line still 85–95% on Standard; a
+   mono-energy tree build loses to a mixed one on Grim; the rungs as bands in
+   the gate.
 1. **The synergy (#365).** A relic that adds flat damage to every hit (a
    tower-stat mod — no engine change) and one that pierces armour (a new fold
    knob **with its authoring surface in the same PR**: schema, generated
    types, validator, codex, icon placeholder). *Proof:* `standard:spamRelics`
    ≥ 70% while `standard:spam` stays ≤ 10%; both as bands in the gate.
-2. **The arsenal, per Scrap (#366).** Tesla, Missile Rack, Laser and Bastion
+2. **The arsenal, per Scrap (#366)** — *after PR 0: Tesla's and Laser's numbers
+   are not derived before their counter exists, or they are derived twice.*
+   Tesla, Missile Rack, Laser and Bastion
    read against a Railbore under plating; their numbers derived so that a
    tree line out-scales the base line on Grim. *Proof:* S4's second half — a
    tree line beats "the base line + the tree's relics"; the variant sweep
@@ -111,7 +138,9 @@ on the instrument as it now has to be played.**
    row refused on *some* seeds.
 
 **Gate — his eye on the live build:** he finds a relic, goes wide with plain
-Bolts on purpose, and it works — and without it, it does not.
+Bolts on purpose, and it works — and without it, it does not. And a wall of
+Teslas meets a body it cannot burn through, the panel says which, and a
+Railbore is the answer.
 
 **His part: one call, and "go" covers it.** **#368** — should Bolt spam still
 win Calm (99%)? *Default: yes, leave Calm.*
@@ -126,6 +155,9 @@ run by his own hands first, and the session opens with what he found.
 nothing in the list depends on Standard's exact rate.* **Expensive if wrong:**
 the arsenal's numbers (PR 2) are derived against Grim's curve; if Grim moves
 afterwards they are derived twice. *"Play first"* or *"accepted"*.
+*(2026-09-18, evening: he agreed to the steps and added D38; he did not rule
+on this line separately, so the default — build — stands, and the risk with
+it.)*
 
 ---
 
@@ -440,7 +472,7 @@ The order is derived from *what causes rework if done late*:
 | **The stranger's round** | *(waits on a person, not on the build)* A stranger plays the live build unaided on Calm to wave 5 under `docs/STRANGER-TEST.md`; the ten scored rows are filed as issues `[r36.<row>] …`; every 0 and 1 becomes a fix the same session. This is the one question no sweep can answer, which is why it stays his — unlike balance, which §6 rule 7 moved back to the dev | A "2" on rows 5, 6 and 10 of the scorecard |
 | ~~37~~ | **DONE, GATE OPEN** *(PRs #342, #344–#347, #350, the same night; the commits say "session 36")* **The carve's variety, the debt dive and the economy research**: a walk with a character per Threat and a roll per map, land in regions by family, the map sweep's resemblance columns and a gallery tool; then #218 closed by construction, the deploy gated on the checks (#212's workflow half), generator hygiene (#217, #211, #321), the heredoc rule as a hook, and docs/lab/economy-research-2026-09-17.md | — | **Moved, not met**: Calm and Grim now read apart at a glance by the sweep's columns; two *Standard* maps still resemble each other more than the gate allows (avenue maps 8% → 18%, and no walk setting moves it further — D28's fill target decides it; call #343). His eye decides whether that is enough |
 | ~~38~~ | **DONE, GATE OPEN** *(PRs #353-#356, #358-#360, 2026-09-18 - Daniil's "go with the next session")* **Calibration I**: every seed re-dealt (D35) with the hash reading quantities exactly and the receipt covering the whole world; a lab player who keeps buying (WBS 1.5.1 under its real name); the ladder re-read and the seed corpus on the app's own maps (WBS 3.4); `npm run balance` in CI and in the gate (WBS 1.5.2, 3.2). **Not built:** the human offset (3.3, needs his replays), a bot that chooses (3.1) | - | Injected regression caught - **met**, red and green in PR #360's own CI. No unwinnable seed in 1,500 - **met**. No trivial seed - **not met**: nine Calm seeds in 500 are won by one plain Bolt, listed. And the finding that outweighs the gate: plain Bolts, never upgraded, win Standard 99% and Grim 84%; no curve moved; call #357 |
-| **What bounds a build** | *(NEXT; the plan is "The next session" above - born of call #357, answered as D37. **HALF BUILT in session 39, PRs #362-#364, 2026-09-18**: the fit harness; the damage model - an expensive chassis and cheap upgrades, plating, energy through armour, wide resistances; Standard and Grim re-fitted behind it, #349 closed; the bands moved)* **Still to build:** the relic synergy that carries a Bolt-only build (#365); the tree's towers earning their Ore (#366); the ladder and the corpus re-read, played depth first. **No cap, no rising price** (D37) | Met on the build so far: plain Bolts alone lose Standard (3%) and the panel says why; Grim is lost by the base world (11-18%) and won by the tree (99%). **Open:** Bolts with the right relics win and feel like a find (reads 1%); a tree line beats the base line holding the tree's relics. His eye on every price and the first minute of a run |
+| **What bounds a build** | *(NEXT; the plan is "The next session" above - born of call #357, answered as D37. **HALF BUILT in session 39, PRs #362-#364, 2026-09-18**: the fit harness; the damage model - an expensive chassis and cheap upgrades, plating, energy through armour, wide resistances; Standard and Grim re-fitted behind it, #349 closed; the bands moved)* **Still to build:** energy's own armour, so Tesla / Laser / Frost spam is not the new Bolt spam (D38, #370 - first); the relic synergy that carries a Bolt-only build (#365); the tree's towers earning their Ore (#366); the ladder and the corpus re-read, played depth first. **No cap, no rising price** (D37) | Met on the build so far: plain Bolts alone lose Standard (3%) and the panel says why; Grim is lost by the base world (11-18%) and won by the tree (99%). **Open:** a wall of Teslas meets a body it cannot burn through, and a Railbore is the answer (D38 - unread); Bolts with the right relics win and feel like a find (reads 1%); a tree line beats the base line holding the tree's relics. His eye on every price and the first minute of a run |
 | **Meta progression, full** | *(plus 7.8, the monetization door — D27; the tree, run history with bests and the in-game Tile Smith landed in sessions 29–31)* | Tech tree stages 1–2 beyond the shipped tree, dailies, replay sharing, **the tile-loadout slot economy** (7.5) | Finishing a run visibly changes the next one |
 | **Calibration II** | WBS 3.6: recalibrate with the meta layer live — tech-tree multipliers, pool unlocks and chosen tile loadouts all move player power underneath the curves calibration I fixed. Re-baseline `balance.yml`, re-sweep the seed corpus at several tree states | No trivial or unwinnable seed at any tech-tree state the player can actually hold |
 | **Presentation at scale** | Full art pass with per-upgrade tower identity (4.11), effects for every attack shape (6.3), enemy trait markers, UI art (4.13), **6.7 relic art at board-glyph scale**, **6.8 smoothness via spatial phase**, biomes, minimal SFX. The art round-trip proof (6.1) opens this block | The board reads as a place, not a diagram |
@@ -793,6 +825,7 @@ agreement](../CONTRIBUTING.md), rule 3).*
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
+| D38 | **Energy needs its armour** — **RESOLVED 2026-09-18 (Daniil)**, added when he approved the second half of "What bounds a build": *"we have armored foes that ignore some amount of physical damage. But there need to be foes that do opposite - ignore significant amount of energy damage, while physical one is effective against it. So tesla/laser/chill spam is not as effective."* Where the game stood that evening: D37's damage model gave KINETIC a flat per-hit counter (armour, and plating on every body from wave 6) and sent every ENERGY hit through both untouched; energy's only counter was a multiplier on four kinds (×0.4–0.6), which does nothing to a swarm of small hits that a swarm of big ones does not also suffer; and the lab had never played energy spam. To build: the energy-spam rungs in the harness first, then the mirror of armour — a flat amount off every energy hit, worn by bodies kinetic is effective against — with its authoring surface. Issue #370; PR 0 of "The next session" |  | closed |
 | D37 | **What bounds a build is the damage model, not a rule about counting** - **RESOLVED 2026-09-18 (Daniil)**, answering call #357 against its default. **No hard cap on towers**, and **no price that rises per copy** ("also not the most elegant way to solve this"). Instead: "rebalance of the damage/DPS, or making damage types much more relevant". **A Bolt-only build is welcome when a combination of relics supports it** - "to find 'broken' synergies so to say" - but "default brainless spam of basic bolts shouldn't beat every game". The evidence that raised it: plain Bolts, never upgraded, win Standard 99% and Grim 84% (docs/lab/ladder-2026-09-18.md). The default I had proposed - a tower cap sold by the tree - was refused; nothing had been built on it |  | closed |
 | D36 | **The board fills on every map** — **MINTED 2026-09-18, by default, unanswered** (call #343). D28's fill target stays 0.9 on every map; a map does not roll its own. Consequence, recorded so it is not rediscovered: the carve's gate (*two Standard runs do not resemble each other by the road's walk*) stays "moved, not met" — about one Standard map in five differs in kind, and the map sweep shows no walk setting moves it further, because lane count decides a Standard map's look and the fill target decides lane count. Reversible: `MapGenOptions.coverage` already exists, and `node tools/map-gallery.mjs 1 8 --coverage=0.6` shows the alternative |  | closed |
 | D35 | **Every seed is re-dealt, now, as a clean break** — **MINTED 2026-09-18, by default** (call #339; Daniil's "go" on the plan whose first PR builds it, no separate answer to the call or to the plan's risk line). The RNG's first draws follow the seed's low bits; the fix mixes the seed before seeding each stream and bumps `GENERATOR_VERSION`, `REPLAY_VERSION` and `SAVE_VERSION`, so an old run code or saved run is refused with a sentence. **No versioned path for old seeds is kept** — the alternative the plan put to him, carrying two RNG paths and two golden hashes forever, was not taken. The cheapest moment: before dailies and before the stranger's round |  | closed |

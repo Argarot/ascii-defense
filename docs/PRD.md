@@ -943,7 +943,20 @@ Standard and Grim were then re-fitted behind it (×1.12 and ×1.17 a wave): plai
 Bolts win Standard 3% and Grim never; the mixed line wins Standard 93%; **Grim
 is lost by the base world (11–18%) and won by the tree (99%)** — the gap no
 curve could open while width was unbounded. Calm's first five waves are
-untouched. *A Bolt-only build that relics carry is welcome (D37: "to find
+untouched.
+
+**The model is not yet symmetric, and must be** *(D38, Daniil, 2026-09-18 —
+decided, not built)*: *"we have armored foes that ignore some amount of
+physical damage. But there need to be foes that do opposite - ignore
+significant amount of energy damage, while physical one is effective against
+it. So tesla/laser/chill spam is not as effective."* Kinetic has a flat
+per-hit counter — armour, and plating on every body; energy has only a
+multiplier on four kinds, and goes through plate untouched. The mirror of
+armour — a flat amount off every energy hit, worn by bodies that kinetic is
+effective against — is the first PR of the next session (#370), measured
+first: the lab has never played energy spam.
+
+*A Bolt-only build that relics carry is welcome (D37: "to find
 'broken' synergies"); the set that carries one is not built yet.*
 
 **Traits show on the enemy, not in a legend.** A shield is drawn as a bracket
