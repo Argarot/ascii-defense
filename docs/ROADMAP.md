@@ -150,12 +150,16 @@ proven red and green in its own PR.
   trails by 7 — a gap no number it owns closes (call #392). Still open under
   #366: Payload's and Penetrators' rare and epic tiers; the mixed tree line
   read in slot form.
-- **The ladder document's successor.** The instrument is fixed —
-  `tools/ladder.mjs` takes every rung from the one table of plans, depth
-  first, on the app's own maps (it had been dealing maps the app never
-  deals) — and **the document is not written**: the 120-seed read was started
-  at the night's wrap and **died when the wrap's own gate emptied `dist/`
-  under it** (CONTRIBUTING §5); it has to be run again, alone.
+- ~~**The ladder document's successor.**~~ **Written after the wrap**
+  (docs/lab/ladder-2026-09-19.md): 32 rungs, 120 seeds, the one table of
+  plans, the app's own maps, after #367's fix. L2, L4, S1, S2, S3, S5, E1 and
+  E3 are met; L1 misses by a seed; the Missile Rack still trails its slot.
+  **And one sentence of this week's records turns out to be two: "the tree
+  wins Grim 99%" is six hand-picked relics held at EPIC from wave 1. With six
+  relics DEALT inside the epic band the tree's base line wins Grim 46%, and
+  only one line passes S4's 60% — a Laser in the Mortar's slot, 80%.** What
+  Grim is meant to be for a player with the whole tree has no stated target;
+  it needs one before anything is tuned against it.
 - **The seed corpus on the new game is READ and not analysed**
   (docs/lab/seed-corpus-2026-09-18-night.md, 500 seeds a Threat): Calm has no
   unwinnable seed and three that break L1; **Standard has 9 of 500 (1.8%)
@@ -163,8 +167,11 @@ proven red and green in its own PR.
   had none because Bolt width won them; Grim's table is not a finding — the
   base world is meant to lose it, and the corpus must play the tree there.
   No target exists yet for "how many Standard seeds may the careful plans
-  lose" — state it first. **The refused seeds (#367)**: still unexplained,
-  still dropped silently from a row's denominator.
+  lose" — state it first. ~~**The refused seeds (#367)**~~ **explained and
+  fixed after the wrap** (#397): they were finished runs — a Core that died
+  on a plan tick threw, and a LOST run left its row's denominator. Every win
+  rate read since the lab's player learned to keep buying was nudged up by
+  it; the corpus above was read before the fix.
 - **Calm is still won by placement alone** (99%) — and stays so, by default
   (D39, call #368 unanswered).
 - **The human offset.** Every rate is the lab's player. Standard was fitted to
@@ -211,17 +218,22 @@ is a banner and not a lesson that stops the game.
    nothing touching; the board's drawing of touching segments filed as scope.*
    #392 (what the Missile Rack is for) — *default: leave it.* *Proof:* #381 in
    the running game, the tile loaded and looked at on the board.
-1. **One `specFor(threat, plan, seed)` (#394).** Three times in three sessions a lab
-   tool that built its own `LabSpec` drifted from the app (the seed→map
-   draw, the rarity cap, the ladder's maps). Every tool calls one function;
-   a test fails a tool that spells a spec by hand. *Proof:* the gate's twenty
-   measurements and fit's rows reproduce to the digit (one bundle a side).
-2. **The ladder's successor and the corpus — the row's last reading.** Every
-   Threat, every rung, 120 seeds; 500 seeds a Threat for the corpus; every
-   target stated before its number; the refused seeds explained and a row
-   that drops seeds saying how many and why (#367). One document; the five
-   lab records of 2026-09-18 become its sources. *Proof:* the document, and
-   each of its tables checked against its output file before commit.
+1. ~~**One `specFor(threat, plan, seed)` (#394).**~~ **Built the same night,
+   after the wrap** (#396, in the roll-up), with the refused seeds (#367,
+   #397) and the ladder's successor (docs/lab/ladder-2026-09-19.md): none of
+   the three moved a number of the game or needed an answer from him.
+2. **Two targets nobody has stated, and the corpus read against them.**
+   *(a)* **What is Grim for a player with the whole tree?** "The tree wins
+   Grim 99%" is six hand-picked relics held at epic from wave 1; on six
+   relics *dealt* inside the epic band the base line wins 46% and only the
+   Laser's slot passes S4's 60% (80%). Propose the target from the ladder's
+   table, re-point `S4-grim-tree` at a dealt rung, and only then look at the
+   Laser's +34 points over its siblings. *(b)* **How many Standard seeds may
+   the careful plans lose?** The night's corpus says 9 of 500, read before
+   #367's fix: re-read it, make the corpus play the TREE on Grim, state the
+   target, and list what is over it. *Proof:* both targets written into the
+   ladder record before their numbers; the corpus document; the band moved
+   with its reason.
 3. **The unlock schedule (#385)** — measurable, so the dev's (rule 7).
    *Targets, stated here first:* on Standard never more than **one new kind a
    wave**, and none in a boss wave; on Calm **one every two waves**; the
