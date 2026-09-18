@@ -96,6 +96,30 @@ describe('the balance lab (session 12 gate)', () => {
     expect(upgraded.deathWave ?? 41).toBeGreaterThan(naked.deathWave!);
   });
 
+  it('a plan with a tail is a player who keeps buying: no pile of Scrap, more towers, a longer run (issue #348)', () => {
+    // The six-tower reference was bought out by wave 12 and died holding 3,802 Scrap at wave 20 - and every ladder
+    // table had been read off it. A plan that ENDS is not a player.
+    const bolt = { towerId: 'bolt', choices: [0, 0, 0] as [number, number, number], at: 'auto' as const };
+    const base: LabSpec = { seed: 4242, map: SMALL, towers: [bolt, bolt], relicIds: [], maxWaves: 40, economy: { startingScrap: 100 } };
+    const ends = runLab(base, content);
+    const goesOn = runLab({ ...base, tail: [bolt] }, content);
+    expect(ends.result).toBe('died');
+    const last = (r: typeof ends) => r.waves[r.waves.length - 1];
+    // The plan that ends dies rich; the one that goes on has spent what it earned - within a Bolt's whole price of it.
+    const boltPrice = 20 + 25 + 55 + 120;
+    expect(last(ends).scrapEnd).toBeGreaterThan(2 * boltPrice);
+    expect(last(ends).towersEnd).toBe(2);
+    expect(last(goesOn).scrapEnd).toBeLessThan(boltPrice);
+    expect(last(goesOn).towersEnd).toBeGreaterThan(4);
+    expect(goesOn.deathWave ?? 41).toBeGreaterThan(ends.deathWave!);
+    // Depth before width: a tail tower is placed only when everything standing is fully bought, so at most the newest
+    // tower is ever short of its listed choices.
+    expect(goesOn.towersPlaced.length).toBe(last(goesOn).towersEnd);
+    // Without an economy a tail means nothing, and changes nothing.
+    const free = { ...base, economy: undefined };
+    expect(runLab({ ...free, tail: [bolt] }, content).deathWave).toBe(runLab(free, content).deathWave);
+  });
+
   it('demoMap reproduces the live app map derivation deterministically', () => {
     const a = demoMap(945046, content.lib, content.relicDefs.length);
     const b = demoMap(945046, content.lib, content.relicDefs.length);

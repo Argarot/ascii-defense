@@ -162,6 +162,14 @@ Read the PRD before the architecture; read this file before touching anything.
   that is what `lab.test.ts` keeps. **Before widening any tolerance, measure
   the quantity across seeds** - a bound that is met on a third of them was
   never a bound. The headless runner is the instrument.
+- **A lab plan that can finish buying says what it buys next** (`LabSpec.tail`,
+  issue #348), **and a sweep over an economy prints the purse.** For six
+  sessions the reference build was six towers: bought out by wave 12, dead at
+  wave 22 holding 4,266 Scrap, and every rung of the difficulty ladder was
+  read off it. A plan without a tail is a player who stops on purpose - say so
+  in the row's name. `build-sweep --debt` prints towers standing and Scrap in
+  hand beside what the last wave paid; a run that ends holding several waves'
+  income was not played by a player.
 - **A statistical test needs a corpus that can carry its bound.** A rate near
   0.17 read on 40 seeds strays past 0.2 one time in three; the re-deal of
   D35 found one such test by changing the dice. State the true rate and the
