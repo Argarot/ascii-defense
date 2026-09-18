@@ -185,6 +185,15 @@ map, which the tail probe already showed is wrong on five-entry maps; and
 | E5 | Tier-1 Ore's fixed sinks end after about eleven runs | **scope**, watch | The Smith is the whole long tail. Worth a purse reading once real saves exist: if finished-tree players sit on hundreds of tier-1 Ore, the Smith is not pulling |
 | E6 | Endless has a dead currency past a full board | **scope**, for the session that builds Endless | A repeatable sink belongs there (Cook's "exponential sink"): an overcharge, a re-roll, anything priced to rise |
 
+> **E1 is done (2026-09-18, the PR that closes #348).** `LabSpec.tail` is what a
+> plan buys once it is bought out - one tower at a time, each fully upgraded
+> before the next - and `build-sweep --debt` plays every rung with one and
+> prints the purse. On twelve seeds no tailed plan ends holding a wave's income
+> (7-119 Scrap against 200-640 paid); the old reference ends holding 4,266.
+> What the ladder reads as with a player who keeps buying is the next
+> document's business, and it is not what this one guessed: see
+> docs/lab/ for the re-read.
+
 **Nothing here is a call.** E2 has a target and a lever; E3 is a design
 direction that only matters if E2's fit fails, and is asked then, with the
 fit's evidence.

@@ -299,30 +299,53 @@ if (DEBT_ONLY) {
   const pct = (x: number): string => `${Math.round(100 * x)}%`;
   const q = (sorted: number[], p: number): number => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
 
-  /** unlocks: the tree state the row plays under ([] = the base world); band: the rarity band its six relics are dealt inside. */
-  interface Row { name: string; towers: TowerPlacement[]; relicSets?: boolean; unlocks?: string[]; band?: number }
+  /**
+   * unlocks: the tree state the row plays under ([] = the base world); band: the rarity band its six relics are dealt
+   * inside; tail: what the player goes on buying once the plan is bought out (issue #348). A row WITHOUT a tail is a
+   * player who stops on purpose - the know-nothing rows of L1 - and the purse column shows what that costs them.
+   */
+  interface Row { name: string; towers: TowerPlacement[]; tail?: TowerPlacement[]; relicSets?: boolean; unlocks?: string[]; band?: number }
+  /** The reference goes on buying its own line; the tree's line goes on buying Lasers with a Railbore between. */
+  const REFERENCE_TAIL: TowerPlacement[] = mixed('choke', RAILBORE);
+  const FORKED_BOLT: TowerPlacement = P('bolt', [0, 0, -1]);
   const read = (threat: (typeof THREAT_LEVELS)[number], rows: Row[], marks: number[]): void => {
-    console.log(`## ${threat.name.toUpperCase()} - the shipped curve, ${RELIC_BOARD.w}x${RELIC_BOARD.h}, economy 100 scrap, the ${threat.waveSeconds}s clock, ${N} seeds, horizon ${MAX_WAVES}; the run is WON by holding wave ${threat.finalWave}\n`);
-    console.log(`| build | mean death | median | 10th - 90th pct | min | ${marks.map((m) => `holds wave ${m}`).join(' | ')} | WINS (holds ${threat.finalWave}) | first leak (median wave) | Core left at the win (median, of ${CORE_HP}) |`);
-    console.log(`|---|---|---|---|---|${marks.map(() => '---').join('|')}|---|---|---|`);
+    // Five waves past the win and no further: the ladder's targets are win rates, and a player who keeps buying
+    // stands thirty towers against sixty bodies by wave 40 - hours of sweep to read a number nobody plays to.
+    const HORIZON = threat.finalWave + 5;
+    console.log(`## ${threat.name.toUpperCase()} - the shipped curve, ${RELIC_BOARD.w}x${RELIC_BOARD.h}, economy 100 scrap, the ${threat.waveSeconds}s clock, ${N} seeds, horizon ${HORIZON}; the run is WON by holding wave ${threat.finalWave}\n`);
+    console.log(`| build | mean death | median | 10th - 90th pct | min | ${marks.map((m) => `holds wave ${m}`).join(' | ')} | WINS (holds ${threat.finalWave}) | first leak (median wave) | Core left at the win (median, of ${CORE_HP}) | towers at the end (median) | Scrap in hand at the end / what the last wave paid (medians) |`);
+    console.log(`|---|---|---|---|---|${marks.map(() => '---').join('|')}|---|---|---|---|---|`);
     for (const row of rows) {
       const deaths: number[] = [];
       const firstLeaks: number[] = [];
       const coreAtWin: number[] = [];
+      // The purse (issue #348): a run that ends holding several waves' income was not played by a player.
+      const towersAtEnd: number[] = [];
+      const handAtEnd: number[] = [];
+      const lastWavePaid: number[] = [];
       CORPUS.forEach((seed, i) => {
         const spec: LabSpec = {
           seed, map: { width: RELIC_BOARD.w, height: RELIC_BOARD.h, ...threatKnobs(createRng(seed).stream('map'), threat) },
-          towers: row.towers, relicIds: [], relics: row.relicSets ? bandSet(i % RELIC_SETS, row.band ?? 0, true) : undefined, unlocks: row.unlocks ?? [],
-          interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: MAX_WAVES, economy: { startingScrap: 100 },
+          towers: row.towers, tail: row.tail, relicIds: [], relics: row.relicSets ? bandSet(i % RELIC_SETS, row.band ?? 0, true) : undefined, unlocks: row.unlocks ?? [],
+          interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, maxWaves: HORIZON, economy: { startingScrap: 100 },
         };
         try {
           const r = runLab(spec, baseContent);
-          const death = r.deathWave ?? MAX_WAVES + 1;
+          const death = r.deathWave ?? HORIZON + 1;
           deaths.push(death);
           // What the player FEELS: when the first body got through, and how much Core was left when the run was won.
-          firstLeaks.push(r.waves.find((w) => w.breaches > 0)?.wave ?? MAX_WAVES + 1);
+          firstLeaks.push(r.waves.find((w) => w.breaches > 0)?.wave ?? HORIZON + 1);
           const last = r.waves.find((w) => w.wave === threat.finalWave);
           if (death > threat.finalWave && last) coreAtWin.push(last.coreHpEnd);
+          // The end of the run as the player has it: the final wave if it was held, the death wave if not.
+          const endWave = Math.min(death, threat.finalWave);
+          const end = r.waves.find((w) => w.wave === endWave);
+          const before = r.waves.find((w) => w.wave === endWave - 1);
+          if (end) {
+            towersAtEnd.push(end.towersEnd);
+            handAtEnd.push(end.scrapEnd);
+            if (before) lastWavePaid.push(end.scrapEnd + end.spentEnd - before.scrapEnd - before.spentEnd);
+          }
         } catch { /* a seed the carve refuses is no reading */ }
       });
       const sorted = [...deaths].sort((a, b) => a - b);
@@ -330,7 +353,7 @@ if (DEBT_ONLY) {
       const mean = deaths.reduce((a, c) => a + c, 0) / deaths.length;
       // "Holds wave m" = the Core is still standing when wave m has been fought: the death wave is past it.
       const holds = (m: number): string => pct(deaths.filter((d) => d > m).length / deaths.length);
-      console.log(`| ${row.name} | ${mean.toFixed(1)} | ${q(sorted, 0.5)} | ${q(sorted, 0.1)} - ${q(sorted, 0.9)} | ${sorted[0]} | ${marks.map(holds).join(' | ')} | ${holds(threat.finalWave)} | ${med(firstLeaks)} | ${med(coreAtWin)} |`);
+      console.log(`| ${row.name} | ${mean.toFixed(1)} | ${q(sorted, 0.5)} | ${q(sorted, 0.1)} - ${q(sorted, 0.9)} | ${sorted[0]} | ${marks.map(holds).join(' | ')} | ${holds(threat.finalWave)} | ${med(firstLeaks)} | ${med(coreAtWin)} | ${med(towersAtEnd)} | ${med(handAtEnd)} / ${med(lastWavePaid)} |`);
     }
     console.log('');
   };
@@ -338,27 +361,30 @@ if (DEBT_ONLY) {
   read(CALM_T, [
     { name: 'NAIVE: one plain Bolt by the entry, then nothing', towers: naive(1, 'entry') },
     { name: 'NAIVE: three plain Bolts by the entry, no forks', towers: naive(3, 'entry') },
-    { name: 'NAIVE: plain Bolts by the entry as Scrap comes (eight), no forks', towers: naive(8, 'entry') },
-    { name: 'placement learned: three plain Bolts at the choke, no forks', towers: naive(3, 'choke') },
-    { name: 'forks learned: eight Bolts at the choke, Marksman then Piercing', towers: Array.from({ length: 8 }, () => P('bolt', [0, 0, -1])) },
-    { name: 'the reference (Refinery, Railbore line + Frost + Mortar)', towers: REFERENCE },
+    { name: 'NAIVE: plain Bolts by the entry for as long as Scrap comes, no forks', towers: naive(1, 'entry'), tail: naive(1, 'entry') },
+    { name: 'placement learned: plain Bolts at the choke for as long as Scrap comes, no forks', towers: naive(1, 'choke'), tail: naive(1, 'choke') },
+    { name: 'forks learned: Bolts at the choke, Marksman then Piercing, for as long as Scrap comes', towers: [FORKED_BOLT], tail: [FORKED_BOLT] },
+    { name: 'the reference (Refinery, Railbore line + Frost + Mortar), and it goes on buying its line', towers: REFERENCE, tail: REFERENCE_TAIL },
   ], [3, 5, 10]);
   read(STANDARD_T, [
-    { name: 'NAIVE: three plain Bolts by the entry, no forks', towers: naive(3, 'entry') },
-    { name: 'forks learned: eight Bolts at the choke, Marksman then Piercing', towers: Array.from({ length: 8 }, () => P('bolt', [0, 0, -1])) },
-    { name: 'the reference, no relics', towers: REFERENCE },
-    { name: 'the reference + six common relics (the offer as a new player meets it)', towers: REFERENCE, relicSets: true },
+    { name: 'NAIVE: three plain Bolts by the entry, no forks, then nothing', towers: naive(3, 'entry') },
+    { name: 'NAIVE: plain Bolts by the entry for as long as Scrap comes, no forks', towers: naive(1, 'entry'), tail: naive(1, 'entry') },
+    { name: 'forks learned: Bolts at the choke, Marksman then Piercing, for as long as Scrap comes', towers: [FORKED_BOLT], tail: [FORKED_BOLT] },
+    { name: 'the reference, no relics, and it goes on buying its line', towers: REFERENCE, tail: REFERENCE_TAIL },
+    { name: 'the reference + six common relics (the offer as a new player meets it), going on', towers: REFERENCE, tail: REFERENCE_TAIL, relicSets: true },
   ], [5, 10, 15]);
   /** The everything world's line, as the tree sweep plays it (session 29, PR 6): a Railbore, three aimed Lasers, a Frost. */
   const LASER_LINE: TowerPlacement[] = [A('refinery', [0, 0, 0], 'vein'), P('bolt', RAILBORE), A('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), A('laser', [0, 0, 0], 'inline'), A('laser', [1, 1, 1], 'inline')];
+  const LASER_TAIL: TowerPlacement[] = [A('laser', [0, 0, 0], 'inline'), P('bolt', RAILBORE)];
   read(GRIM_T, [
-    { name: 'the reference, no relics (the base world)', towers: REFERENCE },
-    { name: 'the reference + six common relics (the base world)', towers: REFERENCE, relicSets: true },
-    { name: 'THE TREE: the Laser line, no relics', towers: LASER_LINE, unlocks: ['*'] },
-    { name: 'THE TREE: the Laser line + six relics inside the epic band', towers: LASER_LINE, unlocks: ['*'], relicSets: true, band: 2 },
+    { name: 'the reference, no relics (the base world), going on', towers: REFERENCE, tail: REFERENCE_TAIL },
+    { name: 'the reference + six common relics (the base world), going on', towers: REFERENCE, tail: REFERENCE_TAIL, relicSets: true },
+    { name: 'THE TREE: the Laser line, no relics, going on (a Laser, a Railbore, a Laser...)', towers: LASER_LINE, tail: LASER_TAIL, unlocks: ['*'] },
+    { name: 'THE TREE: the Laser line + six relics inside the epic band, going on', towers: LASER_LINE, tail: LASER_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
+    { name: 'for the record - the OLD instrument: the reference that stops when its six towers are bought', towers: REFERENCE },
   ], [10, 15, 20]);
   read(STANDARD_T, [
-    { name: 'THE TREE on Standard, for scale: the Laser line + six relics inside the epic band', towers: LASER_LINE, unlocks: ['*'], relicSets: true, band: 2 },
+    { name: 'THE TREE on Standard, for scale: the Laser line + six relics inside the epic band, going on', towers: LASER_LINE, tail: LASER_TAIL, unlocks: ['*'], relicSets: true, band: 2 },
   ], [5, 10, 15]);
 }
 

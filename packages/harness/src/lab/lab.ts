@@ -90,6 +90,18 @@ export interface LabSpec {
    * placed at tick 0 with unlimited scrap (combat capability, not economy).
    */
   economy?: { startingScrap: number };
+  /**
+   * What the player buys once the plan is BOUGHT OUT (session 38, issue #348):
+   * cycled, one tower at a time, each upgraded through its listed choices
+   * before the next is placed - depth before width, which is what the curve
+   * rewards (docs/lab/economy-research-2026-09-17.md, finding 5). It ends when
+   * the board has no cell left for the next one. Needs `economy`.
+   *
+   * It exists because a plan that ENDS is not a player: the six-tower
+   * reference was fully bought by wave 12 and died holding 3,802 Scrap at
+   * wave 20, and every ladder table had been read off it.
+   */
+  tail?: TowerPlacement[];
 }
 
 export interface WaveRow {
@@ -327,9 +339,11 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   }
 
   const placed: LabReport['towersPlaced'] = [];
+  /** The plan as it stands: the listed towers, then each tail tower as it is placed - `placed[i]` is where `plan[i]` went. */
+  const plan: TowerPlacement[] = [...spec.towers];
   let spent = 0;
   /** Place the next tower of the plan; returns false when it cannot (no spot, or - with an economy - no scrap). */
-  const placeNext = (p: TowerPlacement): boolean => {
+  const placeNext = (p: TowerPlacement, soft = false): boolean => {
     const def = content.towerDefs.find((d) => d.id === p.towerId);
     if (!def) throw new Error(`unknown tower '${p.towerId}'`);
     if (spec.economy && !sim.canAfford(p.towerId)) return false;
@@ -357,6 +371,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
       spot = p.at;
     }
     const purse = sim.scrap;
+    if (!spot && soft) return false; // the tail, on a board with no cell left: the plan is over, not broken
     if (!spot || !sim.buildTower(spot.x, spot.y, p.towerId)) throw new Error(`cannot place ${p.towerId}`);
     spent += purse - sim.scrap;
     if (facing !== null) sim.setFacing(spot.x, spot.y, facing);
@@ -365,7 +380,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   };
   /** Buy the next listed tier choice on a placed tower; false when it cannot pay or nothing is left. */
   const upgradeNext = (i: number): boolean => {
-    const p = spec.towers[i];
+    const p = plan[i];
     const at = placed[i];
     if (at.x < 0) return false; // a skipped producer
     for (let tier = 0; tier < 3; tier++) {
@@ -385,11 +400,19 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     return false;
   };
   let nextToPlace = 0;
-  /** One pass of the plan: towers first, then upgrades in listed order; loops until nothing more is affordable. */
+  let tailAt = 0;
+  let tailOver = spec.tail === undefined || spec.tail.length === 0 || !spec.economy;
+  /** Every listed choice of every standing tower is bought: nothing in the plan is waiting on the purse. */
+  const boughtOut = (): boolean => placed.every((at, i) => {
+    if (at.x < 0) return true;
+    const tower = sim.towerAt(at.x, at.y);
+    return !tower || plan[i].choices.every((opt, tier) => opt < 0 || tower.choices[tier] >= 0);
+  });
+  /** One pass of the plan: towers first, then upgrades in listed order, then the tail; loops until nothing more is affordable. */
   const advancePlan = (): void => {
     for (;;) {
-      if (nextToPlace < spec.towers.length) {
-        const p = spec.towers[nextToPlace];
+      if (nextToPlace < plan.length) {
+        const p = plan[nextToPlace];
         if (!placeNext(p)) {
           // A producer with no vein is skipped, not waited for (the plan would stall forever).
           if (p.at === 'vein' && (!spec.economy || sim.canAfford(p.towerId))) { placed.push({ towerId: p.towerId, x: -1, y: -1 }); nextToPlace++; continue; }
@@ -400,7 +423,15 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
       }
       let bought = false;
       for (let i = 0; i < placed.length && !bought; i++) bought = upgradeNext(i);
-      if (!bought) return;
+      if (bought) continue;
+      // Nothing bought: the purse is short, or the plan is bought out - and only then does the tail go on.
+      if (tailOver || !boughtOut()) return;
+      const next = spec.tail![tailAt % spec.tail!.length];
+      if (!sim.canAfford(next.towerId)) return;
+      if (!placeNext(next, true)) { tailOver = true; return; }
+      plan.push(next);
+      nextToPlace++;
+      tailAt++;
     }
   };
   advancePlan();
