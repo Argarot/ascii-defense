@@ -57,8 +57,16 @@ proven red and green in its own PR.
   for energy hits and insulation on husk, buckler and shellback. Energy spam
   wins Standard 0–4% and Grim never; the mixed line 89%; mono-energy loses Grim
   to mixed. The panel now says *"PLATED +2: every hit loses 2 more - hit big"*.
-- **The synergy (S5, #365).** No relic set carries a Bolt-only build: it reads
-  1% against a target of 70%. D37 asked for it by name.
+- ~~**The synergy (S5, #365).**~~ **Built the same evening**
+  (docs/lab/synergy-2026-09-18.md): two commons — *Payload* (a tower whose own
+  hit is under 10 hits for 11 more) and *Penetrators* (every hit ignores 2 of
+  what a body wears). Plain Bolts holding the set win Standard **83%**, 2%
+  without it; neither relic alone carries it (13%, 3%); the base world holding
+  the set still loses Grim (20%). Nobody has yet *found* the set in a run.
+- **The lab's base world was richer than the app's** — it rolled rares and
+  epics from its offers (no `rarityMax`). Fixed with the synergy; every band
+  but the thermometer held, and **Standard's mixed line reads 86%**, the floor
+  of its range. Its curve is the next PR.
 - **The arsenal (#366).** The tree's relics carry Grim, not its towers: the
   Tesla line wins 16% and the Missile line 9%.
 - **The ladder document's successor.** `tools/ladder.mjs` still plays the
@@ -117,7 +125,8 @@ the one before):**
    Standard and never on Grim; the mixed line still 85–95% on Standard; a
    mono-energy tree build loses to a mixed one on Grim; the rungs as bands in
    the gate.
-1. **The synergy (#365).** A relic that adds flat damage to every hit (a
+1. **The synergy (#365) — BUILT 2026-09-18, target met (83% against 2%;
+   docs/lab/synergy-2026-09-18.md).** A relic that adds flat damage to every hit (a
    tower-stat mod — no engine change) and one that pierces armour (a new fold
    knob **with its authoring surface in the same PR**: schema, generated
    types, validator, codex, icon placeholder). *Proof:* `standard:spamRelics`

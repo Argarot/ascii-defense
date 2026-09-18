@@ -1413,6 +1413,38 @@ export const CODEX = {
       "fusionOnly": false
     },
     {
+      "id": "payload",
+      "name": "Payload",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "A tower whose hit is under 10 hits for 11 more - before any multiplier. Nothing for a big gun.",
+      "rare": "A tower whose hit is under 10 hits for 13 more - before any multiplier.",
+      "epic": "A tower whose hit is under 10 hits for 16 more - before any multiplier.",
+      "legendary": "",
+      "fusionOnly": false
+    },
+    {
+      "id": "penetrators",
+      "name": "Penetrators",
+      "kind": "passive",
+      "rarity": "common",
+      "tags": [
+        "damage"
+      ],
+      "stacks": true,
+      "recharge": "",
+      "desc": "Every hit ignores 2 of what a body wears - armour, insulation and plating alike.",
+      "rare": "Every hit ignores 3 of what a body wears.",
+      "epic": "Every hit ignores 4 of what a body wears.",
+      "legendary": "",
+      "fusionOnly": false
+    },
+    {
       "id": "permafrost_engine",
       "name": "Permafrost Engine",
       "kind": "passive",
