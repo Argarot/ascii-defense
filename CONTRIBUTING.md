@@ -218,6 +218,13 @@ Read the PRD before the architecture; read this file before touching anything.
   meet the target"; on 2026-09-18 it said the opposite about five of the
   Missile Rack's own numbers, which made its gap a question about the
   tower's role (a call) and not a number (the dev's).
+- **Never run the gate while a long read is in flight.** `npm run build`
+  empties `dist/`, and `tools/ladder.mjs` spawns one process a ROW from
+  `dist/lab/build-sweep.mjs` for the length of the read: on 2026-09-18 the
+  wrap's gate deleted the bundle under a 120-seed ladder, which died with
+  "Cannot find module" and no table. (A tool that spawns all its shards at
+  the start, like the seed corpus, survives by luck, not design.) One or the
+  other; and a read worth an hour gets its bundle outside `dist/`.
 - **When a literal is found lying, grep for its siblings before closing the
   finding.** Session 40 took "100 Scrap" out of two headers; the ladder's and
   the seed corpus's went on saying it for another session.

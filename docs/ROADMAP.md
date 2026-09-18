@@ -153,11 +153,18 @@ proven red and green in its own PR.
 - **The ladder document's successor.** The instrument is fixed —
   `tools/ladder.mjs` takes every rung from the one table of plans, depth
   first, on the app's own maps (it had been dealing maps the app never
-  deals) — and **the document is not written**: the 120-seed read is an hour
-  of compute and was started at the night's wrap, not finished inside it.
-- **The seed corpus on the new game**, and **the refused seeds (#367)** — two
-  of 80 Grim seeds are still refused for one plan and dropped silently from a
-  row's denominator.
+  deals) — and **the document is not written**: the 120-seed read was started
+  at the night's wrap and **died when the wrap's own gate emptied `dist/`
+  under it** (CONTRIBUTING §5); it has to be run again, alone.
+- **The seed corpus on the new game is READ and not analysed**
+  (docs/lab/seed-corpus-2026-09-18-night.md, 500 seeds a Threat): Calm has no
+  unwinnable seed and three that break L1; **Standard has 9 of 500 (1.8%)
+  that all three plans lose**, most at waves 17–20, where the morning's corpus
+  had none because Bolt width won them; Grim's table is not a finding — the
+  base world is meant to lose it, and the corpus must play the tree there.
+  No target exists yet for "how many Standard seeds may the careful plans
+  lose" — state it first. **The refused seeds (#367)**: still unexplained,
+  still dropped silently from a row's denominator.
 - **Calm is still won by placement alone** (99%) — and stays so, by default
   (D39, call #368 unanswered).
 - **The human offset.** Every rate is the lab's player. Standard was fitted to
