@@ -18,7 +18,8 @@
     "preview": "vite preview packages/app",
     "lint": "eslint .",
     "test": "vitest run",
-    "gate": "npm run typecheck && npm run lint && npm run test && npm run build && node tools/doc-drift.mjs && node .claude/hooks/no-inline-scripts.test.mjs",
+    "balance": "node tools/balance-check.mjs",
+    "gate": "npm run typecheck && npm run lint && npm run test && npm run build && node tools/doc-drift.mjs && node .claude/hooks/no-inline-scripts.test.mjs && npm run balance",
     "home": "git fetch && git checkout -B main origin/main && git status --short"
   },
   "devDependencies": {

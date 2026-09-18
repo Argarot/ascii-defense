@@ -133,6 +133,18 @@ Read the PRD before the architecture; read this file before touching anything.
   passed a `prefer-const` that CI caught, and "the exit code was not actually
   checked" is a finding this project recorded nine separate times before the
   script existed.
+- **The balance gate is part of it** (`npm run balance`, a step of CI, half a
+  minute). Eighty of the app's own seeds a band, against
+  `packages/harness/balance/targets.json`. The bands record what the game
+  **is** — target met or not — so the gate is green on the day it is set and
+  red the day the game moves: a curve nudged, a tower re-priced, a generator
+  rule that shortens roads. **Red is a question, not a failure: if the move
+  was meant, move the band in the same PR and say why in its `why`.** Two
+  kinds of band: *win rates* for the ladder's rungs, which sit near 0% or 100%
+  and only catch a rung breaking; and the **thermometer** — the six-tower
+  reference that stops buying, useless as a player and exact as an
+  instrument, whose mean death wave moved 21.85 → 20.95 when Grim's growth
+  was nudged ×1.09 → ×1.10 while Grim's win rate stayed inside its band.
 - **No backtick — and no backslash escape — inside a shell string or a
   heredoc, even a quoted one.** Backticks were interpolated five times across
   sessions 29–31; on 2026-09-12 a `python - <<'PY'` heredoc collapsed `\\n` to a

@@ -66,6 +66,13 @@ jobs:
       - name: Doc drift check
         run: node tools/doc-drift.mjs
 
+      # The balance gate (WBS 1.5.2 / 3.2 - the "balance.yml" the plan named, kept in THIS workflow because Pages
+      # calls it and a deploy should hang off the balance too). Eighty seeds a band against
+      # packages/harness/balance/targets.json, about half a minute. Red means the game MOVED: if it was meant to,
+      # move the band in the same PR and say why in its `why`.
+      - name: Balance check
+        run: node tools/balance-check.mjs
+
       # Generated types must match the schemas in the same commit. Regenerate
       # and fail on any diff - committed types can never drift.
       - name: Content type drift check
