@@ -6,6 +6,7 @@
  * IV deletes the old path and folds what is left of this file into the sim.
  */
 import { isRoad, type CellType } from '../grid/cells';
+import type { EnemyDef } from './defs';
 
 /**
  * Digging replaces prospecting (sec 32.2, D43): "if it can be dug, there is a
@@ -49,13 +50,43 @@ export interface ClearRules {
 }
 export const REWORK_CLEAR: ClearRules = { mul: 1, windowShare: 0.2 };
 
+/**
+ * The courier carries the chest (sec 32.4, D45): random chests that blink
+ * somewhere were an attention tax; a courier in the preview is a problem the
+ * build can be asked to solve. MUCH faster than any other body; NOTHING HOLDS
+ * IT - slows, freezes and Stasis all fail (his two corrections); harmless at
+ * the Core; about one wave in three; killed, it drops its chest where it fell,
+ * claimed by a click as chests are; missed, the chest is gone and nothing else
+ * is lost. A boss's chest stays. Target for the re-fit, not for here: a build
+ * that ignores it kills it about 30% of the time, one that answers it (reach
+ * and burst on a long straight, priority FAST) about 80%.
+ *
+ * The body is NOT in the content roster: a run gets it by `withCourier(defs)`
+ * only when the switch is on, so the game as it is cannot compose, preview or
+ * hash one. It moves into the roster when Rework IV makes the switch the game.
+ */
+export interface CourierRules {
+  /** A courier walks with every Nth wave... */
+  every: number;
+  /** ...starting at this one. Never on a boss wave: the boss has a chest of its own. */
+  from: number;
+}
+export const REWORK_COURIER: CourierRules = { every: 3, from: 2 };
+/** 3.8 cells a second at the sim's twenty ticks: the swarmling, the fastest body that ships, does 2.8. */
+export const COURIER_DEF: EnemyDef = { id: 'courier', name: 'courier', hp: 40, speed: 0.19, damage: 0, bounty: 0, courier: true };
+/** The run's roster with the courier at its END, so every other body keeps its index. */
+export function withCourier(defs: readonly EnemyDef[]): EnemyDef[] {
+  return defs.some((d) => d.courier) ? [...defs] : [...defs, COURIER_DEF];
+}
+
 export interface ReworkRules {
   dig?: DigRules;
   clear?: ClearRules;
+  courier?: CourierRules;
 }
 /** Everything the prototype turns on in the sim, at its first-pass numbers. */
-export function reworkRules(over: Partial<{ dig: Partial<DigRules>; clear: Partial<ClearRules> }> = {}): ReworkRules {
-  return { dig: { ...REWORK_DIG, ...over.dig }, clear: { ...REWORK_CLEAR, ...over.clear } };
+export function reworkRules(over: Partial<{ dig: Partial<DigRules>; clear: Partial<ClearRules>; courier: Partial<CourierRules> }> = {}): ReworkRules {
+  return { dig: { ...REWORK_DIG, ...over.dig }, clear: { ...REWORK_CLEAR, ...over.clear }, courier: { ...REWORK_COURIER, ...over.courier } };
 }
 
 /** An OPEN cell is one a player can see into the ground from: road, the Core, a pad, a vein (a pad with ore under it). */

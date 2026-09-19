@@ -17,6 +17,10 @@ export const TRAIT_ANSWER: Record<string, string> = {
   frontshield: 'flank it from beside the road',
   sprint: 'keep it under fire - arcs, a beam',
   bulwark: 'kill the Warden first, not last',
+  // The courier (PRD sec 32.4, the rework's prototype): what it is, and the only thing that works on it.
+  // The ANSWER only - that it carries a chest is the strip's word for it. The first wording was cut at "reach +" in the
+  // panel, and the second fitted behind "courier" but not behind the longest name, which is what the test holds.
+  courier: 'nothing holds it: reach and burst',
 };
 
 /**
