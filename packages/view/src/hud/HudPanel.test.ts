@@ -96,6 +96,28 @@ describe('the HUD as text', () => {
     expect(hud.actionAt(2 * 10, row2 * 16 + 1)).toBeNull();
   });
 
+  // D41 (2026-09-18): a first meeting no longer stops the game - it is a banner here, and a click opens the card.
+  it('a first meeting is a banner under the next wave: whole, clickable on every row, gone when the state drops it', () => {
+    const term = new TextTerm(PANEL);
+    const hud = new HudPanel(term, 10, 16);
+    // The longest title and the longest answer the game can produce today.
+    const notice = { title: 'YOUR FIRST MISSILE RACK', line: 'energy slides off; hit big, or use kinetic', left01: 0.5, more: 2 };
+    hud.render(state({ notice }));
+    const lines = term.toText().split('\n');
+    const head = lines.findIndex((l) => l.includes('YOUR FIRST MISSILE RACK'));
+    const call = lines.findIndex((l) => l.includes('CALL WAVE 5'));
+    expect(head).toBeGreaterThan(call); // under the next wave, where the eye already is
+    expect(lines[head]).toContain('(+2)'); // how many wait behind it, not cut by the panel's width
+    // The answer is whole: its words, re-joined across the wrapped rows, are the sentence.
+    const hint = lines.findIndex((l) => l.includes('click: the full card'));
+    expect(lines.slice(head + 1, hint).map((l) => l.trim()).join(' ')).toBe(notice.line);
+    // The bar runs down: half of the panel's width at left01 0.5.
+    expect([...lines[hint + 1].trim()].length).toBe(Math.round(PANEL.cols / 2));
+    for (let r = head; r <= hint + 1; r++) expect(hud.actionAt(2 * 10, r * 16 + 1)).toEqual({ kind: 'openNotice' });
+    hud.render(state());
+    expect(term.toText()).not.toContain('click: the full card');
+  });
+
   it('the cache card offers OPEN, and the build palette lists towers as buttons', () => {
     const term = new TextTerm(PANEL);
     const hud = new HudPanel(term, 10, 16);

@@ -122,7 +122,7 @@ The two ground cells touching the Core face (and the border cells beside it) are
 | Enemy | id | HP | Speed | Breach | Bounty | From wave | Armour | Insulation | Shield | vs kinetic | vs energy | Traits |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | **grunt** | grunt | 30 | 1.20 | 1 | 4 | 1 |  |  |  |  |  |  |
-| **skitter** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  |  |  |  | fast |
+| **scuttle** | skitter | 12 | 2.40 | 1 | 3 | 2 |  |  |  |  |  | fast |
 | **swarmling** | swarmling | 6 | 2.80 | 1 | 1 | 3 |  |  |  | x0.6 | x2 | swarm, fast |
 | **brute** | brute | 90 | 0.90 | 3 | 8 | 4 | 3 |  |  | x0.4 | x2 | armoured |
 | **shellback** | shell | 25 | 1.20 | 2 | 7 | 5 |  | 2 | 30 | x1.6 | x0.4 | shielded |
@@ -148,7 +148,7 @@ Statuses show on the body (PRD §8) as the ground under the walker: cold when sl
 | shielded | a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire |
 | fast | slows last half as long |
 | swarm | spawns in packs of three - one queue entry, three bodies |
-| split | dies into two skitters where it fell - kill it early, or let a blast take the halves together |
+| split | dies into two scuttles where it fell - kill it early, or let a blast take the halves together |
 | heal | mends every body within a cell and a half by 3 every second - kill the mender first (priority WEAKEST finds it) |
 | burrow | untargetable and unhittable for its first eight cells of road - the towers deeper in see it |
 | charge | runs at double speed once under half hp - finish it, or slow it before the sprint |

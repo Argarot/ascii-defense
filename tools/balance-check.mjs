@@ -21,12 +21,12 @@ const SEEDS = Number(flag('seeds') ?? spec.seeds);
 const JOBS = Number(flag('jobs') ?? Math.max(1, cpus().length - 1));
 const FINAL = { calm: 15, standard: 20, grim: 25 };
 
-mkdirSync('dist/lab', { recursive: true });
-buildSync({ entryPoints: ['packages/harness/src/lab/balanceCheck.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'dist/lab/balance-check.mjs', logLevel: 'warning' });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
+buildSync({ entryPoints: ['packages/harness/src/lab/balanceCheck.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'node_modules/.cache/lab/balance-check.mjs', logLevel: 'warning' });
 
 const plans = [...new Set(spec.bands.map((b) => b.run))].join(',');
 const shard = (k) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['dist/lab/balance-check.mjs', `--seeds=${SEEDS}`, `--plans=${plans}`, `--shard=${k}/${JOBS}`], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const child = spawn(process.execPath, ['node_modules/.cache/lab/balance-check.mjs', `--seeds=${SEEDS}`, `--plans=${plans}`, `--shard=${k}/${JOBS}`], { stdio: ['ignore', 'pipe', 'inherit'] });
   let out = '';
   child.stdout.on('data', (d) => { out += d; });
   child.on('close', (code) => (code === 0 ? resolve(out) : reject(new Error(`shard ${k} exited ${code}`))));

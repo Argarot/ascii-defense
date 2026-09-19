@@ -1002,6 +1002,41 @@ twice" and the sim resolves a blast twice, but nothing on screen shows the
 second blast or explains the damage. A rule the player cannot see or read is
 a bug in the presentation, whatever the code does.
 
+**A field speaks one language** *(written 2026-09-18, because the mender's
+wave came back: round 33 item 9 made it "the Frost pulse's ring, in green",
+and the round of 2026-09-18, item 5, found it "way too distracting" - a
+thick bright ring that "doesn't fit". Two rounds on one effect is a missing
+rule, not a missing patch - CONTRIBUTING §6 rule 4.)* A **field** is
+anything that acts on every body within a radius of a source, again and
+again: the Frost Emitter's slow, the mender's heal, and whatever comes next
+(a Warden's bulwark, should it ever be drawn). Every field is drawn the same
+way, and the rule has five clauses:
+
+1. **It is the ground, never a glyph.** A field changes the background of
+   the glyphs it crosses and writes nothing over them - the same rule as a
+   status under a walker, for the same reason.
+2. **One ring, from the source outward**, one glyph-band wide, the same
+   geometry for every field. The code has ONE function for it
+   (`EffectsLayer.drawField`); a second drawing of a field is a defect.
+3. **Brightest at its source, nothing at its reach.** Strength falls with
+   distance and with age together, so the ring arrives at the edge of the
+   field already gone. The radius it dies at IS the field's reach - the ring
+   is how a player reads where the effect ends.
+4. **It is a glow, never a flash.** At its peak a field moves the ground's
+   brightness by well under a factor of two, so ten overlapping fields add
+   up to a glow (the thought dump's item 11: many Frost rings were
+   "epilepsy-inducing"). Under reduced motion it is a still ring at the
+   field's reach, at a third of the peak.
+5. **The colour says whose.** The player's fields lift the ground toward
+   light and keep its hue; an enemy's field **washes the ground toward the
+   colour of what it does** - green for mending - mixed INTO the ground, at
+   most three parts in ten, never painted over it. The ground stays the
+   ground: a player must still be able to read road from rock through it.
+
+An **impact** is not a field - a mortar's blast, a missile's spokes, the
+orbital column are single events with a kill radius, may throw glyphs, and
+keep their own rule (their extent is the radius that kills, never more).
+
 **Which tower answers which enemy must be legible.** Damage types exist and
 are inert (above); until resistances land, the roster reads as six glyphs
 with different health. The answer is the same as the rule: resistances that
@@ -1076,7 +1111,7 @@ numbers):
 |---|---|---|---|
 | **harrier** (`courser`) | 3 | `sprint`: runs 60% faster while unhit for two seconds | keep it under fire — a Tesla's arcs, a Laser's beam, a Bolt line |
 | **lunge** (`ram`) | 6 | `charge`: runs at double speed once under half hp | finish it in one volley, or slow it before the sprint (Frost) |
-| **brood** (`blob`) | 7 | `split`: dies into two skitters where it fell | kill it early, or let a blast take the halves together |
+| **brood** (`blob`) | 7 | `split`: dies into two scuttles (id `skitter`; renamed by D40) where it fell | kill it early, or let a blast take the halves together |
 | **stitch** (`mender`) | 8 | `heal`: mends every body within a cell and a half by 3 a second | priority WEAKEST finds it; kill it first |
 | **delve** (`mole`) | 9 | `burrow`: untargetable and unhittable for its first eight cells | the towers deeper in see it — a line by the Core, not at the entry |
 | **buckler** (`pavise`) | 11 | `frontshield`: hits from within 45° of ahead do a third | flank it from beside the road |
@@ -1670,7 +1705,26 @@ surfaces, or a boon cell is on the map once a tower stands, **a card pops
 over the board** - the sprite, the name, the facts and the rules with
 their answers - and the run pauses under it until GOT IT, Enter or Esc;
 cards queue when several come at once. Every first meeting is remembered
-in the meta save (`met`), so a card comes once, ever. The title's HOW TO
+in the meta save (`met`), so a card comes once, ever.
+
+**Since D41 (2026-09-18) a first meeting no longer stops the game.**
+Daniil, on the live build: "game stopping to show a card of a new enemy -
+cool idea, but it is too disruptive". A first meeting is now a **banner in
+the side panel**, under the next wave: the name on a quiet plate (never the
+accent bar - that is CALL WAVE's, directly above it), the one line that
+answers it (the trait's answer from `traitAnswers.ts`; for a body with no
+trait, its hp and speed), *click: the full card*, and a bar that runs down
+over nine seconds of running play - a pause, a menu or a relic offer holds
+the clock. The run goes on under it. A click anywhere on the banner opens
+the card exactly as it used to pop, paused, by the player's own hand; an
+unread banner is simply gone, and its card is in the CODEX, because the
+meeting was recorded when it happened. Several at once queue, and the plate
+says how many wait (`(+2)`). **One card still pauses: the grunt's, while
+the tutorial is running** - it is where a stranger learns that cards exist.
+The same banner serves the first tower of a kind, the first chest and boon
+ground: D41 names the enemy's card, and a second mechanism for the other
+three would have been the more surprising reading (one argument to `meet()`
+in `app/main.ts` puts any of them back). The title's HOW TO
 PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
 enemy not yet met is a `???` page that says when it walks; a tower or
 relic the tree has not opened stays LOCKED with what opens it, as before.

@@ -287,11 +287,22 @@ export class MenuScreen {
     let y = top + 2;
     if (hero.length > 0) {
       // The towers stand in a row above the title, each on its own ground.
+      // A sprite smaller than a cell - an enemy is 3x2, a relic 4x3 - is
+      // not a tower and has no ground of its own: it stands CENTRED in the
+      // slot, on the plate (round of 2026-09-18, item 2: the new-enemy
+      // card drew its walker in the corner of a lighter box; ASSETS sec 3
+      // says an enemy is drawn centred on its position).
       const hx0 = x0 + Math.floor((plateW - heroW) / 2);
       hero.forEach((sp, i) => {
         const gx = hx0 + i * (CELL_W + 2);
+        const frame = idleFrame(sp, spriteState(sp, []), spec.animMs ?? 0, i);
+        const [w, h] = sp.cell;
+        if (w < CELL_W || h < CELL_H) {
+          drawSpriteFrame(term, sp, frame, gx + Math.floor((CELL_W - w) / 2), y + Math.floor((CELL_H - h) / 2), { transparent: true });
+          return;
+        }
         for (let r = 0; r < CELL_H; r++) for (let c = 0; c < CELL_W; c++) term.put(gx + c, y + r, ' ', role('tower.ground'), role('tower.ground'));
-        drawSpriteFrame(term, sp, idleFrame(sp, spriteState(sp, []), spec.animMs ?? 0, i), gx, y);
+        drawSpriteFrame(term, sp, frame, gx, y);
       });
       y += heroH;
     }

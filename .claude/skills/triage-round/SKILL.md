@@ -64,6 +64,17 @@ gh issue create --title "[r34.3] the strip's hp is redundant" \
 Title convention: `[r<round>.<his number>] <his words, trimmed>`. His words,
 not a paraphrase — a paraphrase loses the complaint.
 
+**When the item came with a screenshot, write into the issue WHAT IS IN THE
+PICTURE** — which page, which tile or tower or enemy by id, where on the
+screen, what it looks like. The picture lives in a chat the next session
+cannot read (transcript search finds nothing), and his words alone are often
+half a pointer: *"the longer turn tile is minted wrongly — from crossroads"*
+(#381, 2026-09-18) named no tile, and the session that had to fix it spent an
+hour establishing that three different things could be meant, each with a
+different fix, and had to hand it back to him as a call. One sentence at
+filing time — *"LOADOUT page, fourth thumbnail, Jogged Elbow (`gen_ne_1`)"* —
+would have made it a defect fixed without asking.
+
 Scope items get `later` unless the stranger test or a shipped gate is waiting
 on them. The **content freeze** applies: from the stranger's round onward,
 scope does not enter the ledger, it waits in the tracker.

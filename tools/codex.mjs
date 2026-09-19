@@ -66,13 +66,22 @@ const typeWords = [span(mults.filter((m) => m < 1)) ? `${span(mults.filter((m) =
 const byType = (type) => towers.filter((t) => t.damageType === type).map((t) => t.name).join(', ');
 const typeRoster = `Kinetic: ${byType('kinetic')}. Energy: ${byType('energy')}`;
 
+// What a splitter dies into is READ from the roster, by name (D40: the skitter became the scuttle, and a sentence
+// that typed the name would have kept the old one). One splitter ships; a second with other halves wants this per enemy.
+const halves = (() => {
+  const into = enemies.find((e) => e.splitInto)?.splitInto;
+  const half = enemies.find((e) => e.id === into);
+  if (!half) throw new Error('codex: no enemy carries splitInto, or it names an id the roster lacks - the split sentence cannot be written');
+  return `${half.name ?? half.id}s`;
+})();
+
 /** Mirror of engine/sim/traits.ts TRAIT_RULES, in words. */
 const TRAITS = {
   armoured: `immune to slows; ${armourWords}`,
   shielded: 'a shield pool burns before hp and REGENERATES after 2 s unhit - focus fire',
   fast: 'slows last half as long',
   swarm: 'spawns in packs of three - one queue entry, three bodies',
-  split: 'dies into two skitters where it fell - kill it early, or let a blast take the halves together',
+  split: `dies into two ${halves} where it fell - kill it early, or let a blast take the halves together`,
   heal: 'mends every body within a cell and a half by 3 every second - kill the mender first (priority WEAKEST finds it)',
   burrow: 'untargetable and unhittable for its first eight cells of road - the towers deeper in see it',
   charge: 'runs at double speed once under half hp - finish it, or slow it before the sprint',

@@ -10,14 +10,14 @@ import { buildSync } from 'esbuild';
 import { mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-mkdirSync('dist/lab', { recursive: true });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
 buildSync({
   entryPoints: ['packages/harness/src/lab/scrapFlow.ts'],
   bundle: true,
   platform: 'node',
   format: 'esm',
-  outfile: 'dist/lab/scrap-flow.mjs',
+  outfile: 'node_modules/.cache/lab/scrap-flow.mjs',
   logLevel: 'warning',
 });
-const r = spawnSync(process.execPath, ['dist/lab/scrap-flow.mjs', ...process.argv.slice(2)], { stdio: 'inherit' });
+const r = spawnSync(process.execPath, ['node_modules/.cache/lab/scrap-flow.mjs', ...process.argv.slice(2)], { stdio: 'inherit' });
 process.exit(r.status ?? 1);

@@ -27,11 +27,11 @@ const DEFAULT_PLANS = [
 ];
 const PLANS = (flag('plans') ?? DEFAULT_PLANS.join(',')).split(',');
 
-mkdirSync('dist/lab', { recursive: true });
-if (!args.includes('--no-build')) buildSync({ entryPoints: ['packages/harness/src/lab/fit.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'dist/lab/fit.mjs', logLevel: 'warning' });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
+if (!args.includes('--no-build')) buildSync({ entryPoints: ['packages/harness/src/lab/fit.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'node_modules/.cache/lab/fit.mjs', logLevel: 'warning' });
 
 const shard = (k) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['dist/lab/fit.mjs', `--seeds=${SEEDS}`, `--plans=${PLANS.join(',')}`, `--shard=${k}/${JOBS}`], { stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, FIT_PATCH: patch } });
+  const child = spawn(process.execPath, ['node_modules/.cache/lab/fit.mjs', `--seeds=${SEEDS}`, `--plans=${PLANS.join(',')}`, `--shard=${k}/${JOBS}`], { stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, FIT_PATCH: patch } });
   let out = '';
   child.stdout.on('data', (d) => { out += d; });
   child.on('close', (code) => (code === 0 ? resolve(out) : reject(new Error(`shard ${k} exited ${code}`))));
