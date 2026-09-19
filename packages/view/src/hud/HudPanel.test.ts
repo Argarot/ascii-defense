@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { TextTerm } from '@ascii-defense/render';
+import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import { HudPanel, type HudState } from './HudPanel';
 
 const PANEL = { cols: 30, rows: 52 };
@@ -131,5 +132,29 @@ describe('the HUD as text', () => {
     const l2 = term.toText().split('\n');
     const bolt = l2.findIndex((l) => l.includes('Bolt Turret $20'));
     expect(hud.actionAt(1 * 10, bolt * 16 + 1)).toEqual({ kind: 'build', index: 0 });
+  });
+
+  it('a held relic\'s card never writes over its own icon plate, and says its whole sentence - every relic of the pool (#375)', () => {
+    const PLATE_W = 6;
+    const PLATE_H = 5;
+    const relics = (relicsJson as unknown as { relics: unknown }).relics as { id: string; name: string; kind: string; rarity: string; tags?: string[]; desc: string; tiers?: Record<string, { desc?: string }> }[];
+    expect(relics.length).toBeGreaterThan(50);
+    for (const r of relics) {
+      // The base sentence and every tier's: a rare copy carries its own card text.
+      for (const desc of [r.desc, ...Object.values(r.tiers ?? {}).map((t) => t.desc ?? '')].filter(Boolean)) {
+        const term = new TextTerm(PANEL);
+        const hud = new HudPanel(term, 10, 16);
+        hud.render(state({ selectedTower: null, relicCard: { index: 0, name: r.name, rarity: r.rarity, kind: r.kind, tags: r.tags ?? [], desc, uses: 0, salvageOre: 10, combine: [] } }));
+        const lines = term.toText().split('\n').map((l) => l.padEnd(PANEL.cols));
+        const top = lines.findIndex((l) => l.startsWith(r.name.toUpperCase().slice(0, PANEL.cols - PLATE_W - 1)));
+        expect(top, `${r.id}: the name row`).toBeGreaterThanOrEqual(0);
+        // The column left of the plate stays empty for the plate's height: nothing ran into it.
+        for (let k = 0; k < PLATE_H; k++) expect(lines[top + k][PANEL.cols - PLATE_W - 1], `${r.id}: row ${k} beside the plate`).toBe(' ');
+        // And the sentence is all there, in order, with no word cut.
+        const end = lines.findIndex((l, i) => i > top && l.startsWith('its rule'));
+        const body = lines.slice(top + 1, end).map((l, i) => (i + 1 < PLATE_H ? l.slice(0, PANEL.cols - PLATE_W - 1) : l).trim()).join(' ');
+        expect(body, `${r.id}: the whole sentence`).toContain(desc.split(' ').filter(Boolean).join(' '));
+      }
+    }
   });
 });

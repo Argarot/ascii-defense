@@ -10,7 +10,7 @@ import { validateSprite } from '@ascii-defense/content';
 import boltJson from '@ascii-defense/content/assets/sprites/bolt.json';
 import mortarJson from '@ascii-defense/content/assets/sprites/mortar.json';
 import orbitalJson from '@ascii-defense/content/assets/sprites/relic_orbital.json';
-import { StripPanel, STRIP_ROWS } from './StripPanel';
+import { markLegend, StripPanel, STRIP_ROWS } from './StripPanel';
 import type { HudState } from './HudPanel';
 
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: unknown[] }): T {
@@ -111,5 +111,28 @@ describe('the strip as text', () => {
     const drawRow = text.findIndex((l) => l.includes('DRAW RELIC'));
     expect(drawRow).toBeGreaterThan(0);
     expect(strip.actionAt((text[drawRow].indexOf('DRAW') + 1) * 5, drawRow * 8 + 1)).toEqual({ kind: 'coreDraw' });
+  });
+
+  it('every mark the strip falls back to is spelled out in a legend under the wave (#373)', () => {
+    const term = new TextTerm(STRIP);
+    const strip = new StripPanel(term, 5, 8, SPRITES);
+    // A husk since D38: three traits never fit the column, so it reads "K+ E- %%".
+    const husk = { name: 'husk', count: 4, traits: ['weak-kinetic', 'resists-energy', 'insulated'] };
+    strip.render(state({ nextWave: { ...state().nextWave!, kinds: [{ name: 'grunt', count: 9, traits: [] }, husk] } }));
+    const text = term.toText();
+    expect(text).toContain('K+ E- %%');
+    for (const entry of ['K+ weak to kinetic', 'E- resists energy', '%% insulated']) expect(text, entry).toContain(entry);
+    // A mark nobody is shown gets no legend: the legend is what is on screen, not a glossary.
+    expect(text).not.toContain('## armoured');
+  });
+
+  it('the legend packs whole entries into the width it is given and never cuts one', () => {
+    const all = new Set(['armoured', 'insulated', 'shielded', 'fast', 'swarm', 'split', 'heal', 'burrow', 'charge', 'frontshield', 'sprint', 'bulwark', 'resists-kinetic', 'resists-energy', 'weak-kinetic', 'weak-energy']);
+    for (const width of [31, 40, 51]) {
+      const lines = markLegend(all, width);
+      for (const l of lines) expect(l.length, l).toBeLessThanOrEqual(width);
+      expect(lines.join(' ').match(/weak to energy/g)?.length).toBe(1);
+      expect(lines.join(' ')).toContain('[| front shield');
+    }
   });
 });
