@@ -24,7 +24,8 @@ import libraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
-import { runLab, type LabContent, type TowerPlacement } from './lab';
+import { runLab, type LabContent } from './lab';
+import { THREAT_KEYS, planOf } from './plans';
 
 declare const console: { log: (...args: unknown[]) => void };
 declare const process: { argv: string[]; env: Record<string, string | undefined> };
@@ -87,112 +88,25 @@ const N = Number(arg('seeds') ?? 80);
 const [SHARD, SHARDS] = (arg('shard') ?? '0/1').split('/').map(Number);
 const WANTED = (arg('plans') ?? '').split(',').filter(Boolean);
 
-const RAIL: [number, number, number] = [0, 0, 0];
-const PLAIN: [number, number, number] = [-1, -1, -1];
-const P = (towerId: string, choices: [number, number, number], at: TowerPlacement['at'] = 'choke'): TowerPlacement => ({ towerId, choices, at });
-const LINE: TowerPlacement[] = [P('bolt', RAIL), P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)];
-const VEIN = P('refinery', [0, 0, 0], 'vein');
-/** Frost's damage fork: Ice Shards and no further (the cheapest energy hit in the game), and the fork finished (Ice Shards, Brittle, Shatterfield). */
-const ICE_SHARDS: [number, number, number] = [1, -1, -1];
-const SHATTER: [number, number, number] = [1, 1, 1];
-/** What 200 Scrap buys a player who means to go wide on a tower the purse cannot reach: three plain Bolts. */
-const OPENING: TowerPlacement[] = [P('bolt', PLAIN), P('bolt', PLAIN), P('bolt', PLAIN)];
-/** Six relics a build would be glad of, held from wave 1 - common for the base world, epic for the tree: the rarity band is what differs. */
-/** COMMONS only: the base world's pool holds nothing rarer (D29), and a set that names a rare is refused on every seed. */
-const SIX = ['hot_loads', 'quick_hands', 'iron_sights', 'deep_cold', 'thick_walls', 'second_wind'];
-/** What carries a Bolt-only build (target S5): more per hit, more hits, more bodies per hit, more reach, more Scrap for the next Bolt. */
-const BOLT_SET = ['payload', 'penetrators', 'hot_loads', 'quick_hands', 'wide_net', 'bounty_hunter'];
-/** The six commons that suited a Bolt before #365 - a multiplier on 8 damage is still a small hit, and they read 1%. Kept as the row that shows WHAT carries the build. */
-const OLD_BOLT_SET = ['hot_loads', 'quick_hands', 'wide_net', 'ricochet', 'iron_sights', 'bounty_hunter'];
-interface Plan { towers: TowerPlacement[]; tail?: TowerPlacement[]; unlocks: string[]; relics?: { id: string; rarity: number }[] }
-const held = (ids: string[], rarity: number): { id: string; rarity: number }[] => ids.map((id) => ({ id, rarity }));
-const PLANS: Record<string, Plan> = {
-  naive1: { towers: [P('bolt', PLAIN, 'entry')], unlocks: [] },
-  naive3: { towers: [P('bolt', PLAIN, 'entry'), P('bolt', PLAIN, 'entry'), P('bolt', PLAIN, 'entry')], unlocks: [] },
-  spam: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [] },
-  spamRelics: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(BOLT_SET, 0) },
-  // THE SYNERGY (#365, D37: "to find 'broken' synergies"): what carries plain-Bolt width, taken apart - the old six
-  // commons, each new relic alone, the pair, the set. And the doors the pair could open (CONTRIBUTING sec 5): Ice Shards
-  // width holding the same set, and the base world's mixed line holding it on Grim, which S4 says the base world loses.
-  spamCommons: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(OLD_BOLT_SET, 0) },
-  spamPayload: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(['payload'], 0) },
-  spamPenetrators: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(['penetrators'], 0) },
-  spamPair: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: [], relics: held(['payload', 'penetrators'], 0) },
-  frostSpamRelics: { towers: [P('frost', ICE_SHARDS)], tail: [P('frost', ICE_SHARDS)], unlocks: [], relics: held(BOLT_SET, 0) },
-  // One relic is not a synergy: what Payload ALONE does for the small hits that are not plain Bolts - the Gatling fork
-  // finished (8 damage, fast, two more shots), and Mortars never upgraded (a 10-damage blast).
-  gatlingsPayload: { towers: [P('bolt', [1, 1, 1])], tail: [P('bolt', [1, 1, 1])], unlocks: [], relics: held(['payload'], 0) },
-  mortarSpamPayload: { towers: [P('bolt', PLAIN), P('mortar', PLAIN)], tail: [P('mortar', PLAIN)], unlocks: [], relics: held(['payload'], 0) },
-  mortarSpam: { towers: [P('bolt', PLAIN), P('mortar', PLAIN)], tail: [P('mortar', PLAIN)], unlocks: [] },
-  mixedDeepCommons: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], unlocks: [], relics: held(OLD_BOLT_SET, 0) },
-  mixedDeepBolt: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], unlocks: [], relics: held(BOLT_SET, 0) },
-  forks: { towers: [P('bolt', [0, 0, -1])], tail: [P('bolt', [0, 0, -1])], unlocks: [] },
-  rails: { towers: [P('bolt', RAIL)], tail: [P('bolt', RAIL)], unlocks: [] },
-  railsRelics: { towers: [P('bolt', RAIL)], tail: [P('bolt', RAIL)], unlocks: [], relics: held(BOLT_SET, 0) },
-  gatlings: { towers: [P('bolt', [1, 1, 1])], tail: [P('bolt', [1, 1, 1])], unlocks: [] },
-  mortars: { towers: [P('bolt', PLAIN), P('mortar', [0, 0, 0])], tail: [P('mortar', [0, 0, 0])], unlocks: [] },
-  reference: { towers: [VEIN, ...LINE], tail: LINE, unlocks: [] },
-  /** The reference for a player who looks at the map: a gun before the Refinery (the tail probe of 2026-09-17 - the Refinery first is the lab's commonest mistake, not the map's). */
-  gunFirst: { towers: [P('bolt', RAIL), VEIN, P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], tail: LINE, unlocks: [] },
-  gunFirstRelics: { towers: [P('bolt', RAIL), VEIN, P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], tail: LINE, unlocks: [], relics: held(SIX, 0) },
-  referenceRelics: { towers: [VEIN, ...LINE], tail: LINE, unlocks: [], relics: held(SIX, 0) },
-  // DEPTH FIRST (session 39): one gun taken through its choices, the Refinery, then each tower of the line in turn,
-  // each finished before the next. The plans above place all six chassis before the first upgrade - which is how the
-  // lab has always played them, and is the mistake an expensive chassis punishes: it made the mixed line look weaker
-  // than mono-Railbore when what differed was the ORDER, not the towers.
-  mixedDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], unlocks: [] },
-  mixedDeepRelics: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], unlocks: [], relics: held(SIX, 0) },
-  treeBaseDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('mortar', [1, 1, 0]), P('bolt', RAIL)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeMixedDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('bolt', RAIL), P('laser', [0, 0, 0], 'inline'), P('mortar', [1, 1, 0])], unlocks: ['*'], relics: held(SIX, 2) },
-  treeLaserDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('laser', [0, 0, 0], 'inline'), P('bolt', RAIL)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeTeslaDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('tesla', [0, 0, 0]), P('bolt', RAIL)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeMissileDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('missile', [0, 1, 0]), P('bolt', RAIL)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeRails: { towers: [P('bolt', RAIL)], tail: [P('bolt', RAIL)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeBase: { towers: [VEIN, ...LINE], tail: LINE, unlocks: ['*'], relics: held(SIX, 2) },
-  treeLaser: { towers: [VEIN, P('bolt', RAIL), P('laser', [0, 0, 0], 'inline'), P('frost', [1, 0, 1]), P('laser', [0, 0, 0], 'inline'), P('laser', [1, 1, 1], 'inline')], tail: [P('laser', [0, 0, 0], 'inline'), P('bolt', RAIL)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeTesla: { towers: [VEIN, P('bolt', RAIL), P('tesla', [0, 0, 0]), P('bastion', [0, 1, 0], 'adjacent'), P('frost', [1, 0, 1]), P('tesla', [1, 1, 0])], tail: [P('tesla', [0, 0, 0]), P('bolt', RAIL)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeMissile: { towers: [VEIN, P('bolt', RAIL), P('missile', [0, 1, 0]), P('bastion', [0, 0, 0], 'adjacent'), P('missile', [1, 0, 1]), P('bolt', RAIL)], tail: [P('missile', [0, 1, 0]), P('bolt', RAIL)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeMixed: { towers: [VEIN, P('bolt', RAIL), P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('mortar', [1, 1, 0]), P('laser', [0, 0, 0], 'inline')], tail: [P('bolt', RAIL), P('tesla', [0, 0, 0]), P('laser', [0, 0, 0], 'inline')], unlocks: ['*'], relics: held(SIX, 2) },
-  // THE ENERGY DOOR (D38): D37 closed the kinetic door - a small kinetic hit is a bad answer to plate - and these are
-  // the rungs for the door that opened: width in ENERGY, which plate does not touch. A Tesla (210) and a Laser (330)
-  // cost more than the purse, so their spam opens the way a person would - three plain Bolts, which is all 200 Scrap
-  // buys - and every Scrap after that goes wide on the one energy tower. Ice Shards is the base world's own rung.
-  frostSpam: { towers: [P('frost', ICE_SHARDS)], tail: [P('frost', ICE_SHARDS)], unlocks: [] },
-  teslaSpam: { towers: OPENING, tail: [P('tesla', PLAIN)], unlocks: ['*'] },
-  laserSpam: { towers: OPENING, tail: [P('laser', PLAIN, 'inline')], unlocks: ['*'] },
-  // The same width holding the tree's relics, with its kinetic twin beside it: what the epic band does for spam of either kind.
-  treeSpam: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeFrostSpam: { towers: [P('frost', ICE_SHARDS)], tail: [P('frost', ICE_SHARDS)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeTeslaSpam: { towers: OPENING, tail: [P('tesla', PLAIN)], unlocks: ['*'], relics: held(SIX, 2) },
-  treeLaserSpam: { towers: OPENING, tail: [P('laser', PLAIN, 'inline')], unlocks: ['*'], relics: held(SIX, 2) },
-  // MONO-ENERGY, played depth first like the *Deep plans above (so that only the towers differ, not the order): the
-  // base world's is a finished Frost and nothing else; the tree's is Frost, Tesla and Laser - not one kinetic hit in it.
-  frostDeep: { towers: [P('frost', SHATTER), VEIN], tail: [P('frost', SHATTER)], unlocks: [] },
-  treeEnergyDeep: { towers: [P('frost', SHATTER), VEIN], tail: [P('tesla', [0, 0, 0]), P('laser', [0, 0, 0], 'inline'), P('frost', SHATTER)], unlocks: ['*'], relics: held(SIX, 2) },
-  // The same two lines holding NOTHING: on Grim six epic relics win for whatever stands under them (99% for every
-  // line that upgrades), so "mono-energy loses to mixed" can only be read where the towers are all there is.
-  bareEnergyDeep: { towers: [P('frost', SHATTER), VEIN], tail: [P('tesla', [0, 0, 0]), P('laser', [0, 0, 0], 'inline'), P('frost', SHATTER)], unlocks: ['*'] },
-  bareMixedDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('bolt', RAIL), P('laser', [0, 0, 0], 'inline'), P('mortar', [1, 1, 0])], unlocks: ['*'] },
-};
-const THREAT_KEYS = ['calm', 'standard', 'grim'];
-
 for (const want of WANTED) {
   const [threatKey, planKey] = want.split(':');
-  const shipped = THREAT_LEVELS[THREAT_KEYS.indexOf(threatKey)];
-  const plan = PLANS[planKey];
-  if (!shipped || !plan) throw new Error(`unknown threat or plan in '${want}' - plans: ${Object.keys(PLANS).join(', ')}`);
+  const shipped = THREAT_LEVELS[THREAT_KEYS.indexOf(threatKey as (typeof THREAT_KEYS)[number])];
+  if (!shipped) throw new Error(`unknown threat in '${want}' - threats: ${THREAT_KEYS.join(', ')}`);
+  const plan = planOf(planKey);
   const { finalWave: patchedFinal, ...curve } = patch.threats?.[threatKey] ?? {};
   const threat = { ...shipped, finalWave: patchedFinal ?? shipped.finalWave, difficulty: { ...shipped.difficulty, ...curve } };
+  // An instrument plays past the win (the thermometer's horizon); a player plays to the Threat's final wave.
+  const horizon = plan.horizon ?? threat.finalWave;
   for (let i = SHARD; i < N; i += SHARDS) {
     const seed = (i + 1) * 7919 + 13;
     let death: number | null | 'refused';
     let towers = 0;
     let why: string | undefined;
     try {
-      const r = runLab({ seed, map: { width: 7, height: 5, threat }, towers: plan.towers, tail: plan.tail, relicIds: [], relics: plan.relics, unlocks: plan.unlocks, interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, rules: patch.rules, maxWaves: threat.finalWave, economy: { startingScrap: patch.startingScrap ?? STARTING_SCRAP } }, content);
+      const r = runLab({ seed, map: { width: 7, height: 5, threat }, towers: plan.towers, tail: plan.tail, relicIds: [], relics: plan.relics, unlocks: plan.unlocks, interWaveTicks: threat.waveSeconds * 20, difficulty: threat.difficulty, rules: patch.rules, maxWaves: horizon, economy: { startingScrap: patch.startingScrap ?? STARTING_SCRAP } }, content);
       death = r.deathWave;
       towers = r.waves[r.waves.length - 1]?.towersEnd ?? 0;
     } catch (e) { death = 'refused'; why = e instanceof Error ? e.message : String(e); }
-    console.log(JSON.stringify({ run: want, seed, death, towers, final: threat.finalWave, why }));
+    console.log(JSON.stringify({ run: want, seed, death, towers, final: horizon, why }));
   }
 }

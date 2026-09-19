@@ -33,22 +33,23 @@ const NAMES = ['Calm', 'Standard', 'Grim'];
 const FINAL = [15, 20, 25];
 const pct = (a, b) => (b === 0 ? '-' : `${((100 * a) / b).toFixed(1)}%`);
 const won = (death) => death === null; // the lab plays to the final wave and no further: no death wave = the run was won
-console.log(`# the seed corpus - ${N} seeds per Threat, the app's own maps (7x5), the base world, no relics, 100 Scrap\n`);
-console.log('A run is played to the Threat\'s final wave. Three plans, each tried only where the one before lost: the reference going on buying its line; the same line without the Refinery first; plain Bolts at the choke, never upgraded. **Unwinnable** = none of the three holds it. **Trivial** = one plain Bolt by the entry, then nothing, holds it.\n');
+// The purse comes from the engine by way of the shard: a header that types a number is a header that lies (it said 100 for a day after D37 made it 200).
+console.log(`# the seed corpus - ${N} seeds per Threat, the app's own maps (7x5), the base world, no relics held, ${rows[0]?.scrap ?? '?'} Scrap\n`);
+console.log('A run is played to the Threat\'s final wave. Three plans from the one table of the lab (plans.ts), each tried only where the one before lost: the mixed line bought DEPTH FIRST and going on (`mixedDeep`); the same line with no Refinery (`mixedDeepNoVein`); nothing but Railbores, each finished before the next (`rails`). **Unwinnable** = none of the three holds it. **Trivial** = one plain Bolt by the entry, then nothing, holds it.\n');
 for (const t of [...new Set(rows.map((r) => r.threat))].sort()) {
   const mine = rows.filter((r) => r.threat === t).sort((a, b) => a.seed - b.seed);
   const dealt = mine.filter((r) => r.intended !== 'refused');
   const lostFirst = dealt.filter((r) => !won(r.intended));
-  const lostBoth = lostFirst.filter((r) => !won(r.gunsFirst));
-  const unwinnable = lostBoth.filter((r) => !won(r.boltsWide));
+  const lostBoth = lostFirst.filter((r) => !won(r.noVein));
+  const unwinnable = lostBoth.filter((r) => !won(r.rails));
   const trivial = dealt.filter((r) => won(r.naive));
   console.log(`## ${NAMES[t]} - won by holding wave ${FINAL[t]}\n`);
   console.log('| | seeds | share |');
   console.log('|---|---|---|');
   console.log(`| dealt (the carve refused ${mine.length - dealt.length}) | ${dealt.length} | |`);
-  console.log(`| the reference, going on, WINS | ${dealt.length - lostFirst.length} | ${pct(dealt.length - lostFirst.length, dealt.length)} |`);
-  console.log(`| ...it loses, and the same line WITHOUT the Refinery first wins | ${lostFirst.length - lostBoth.length} | ${pct(lostFirst.length - lostBoth.length, dealt.length)} |`);
-  console.log(`| ...both lose, and plain Bolts at the choke, never upgraded, win (a HARD OPENING, not a bad seed) | ${lostBoth.length - unwinnable.length} | ${pct(lostBoth.length - unwinnable.length, dealt.length)} |`);
+  console.log(`| the mixed line, depth first and going on, WINS | ${dealt.length - lostFirst.length} | ${pct(dealt.length - lostFirst.length, dealt.length)} |`);
+  console.log(`| ...it loses, and the same line with NO Refinery wins | ${lostFirst.length - lostBoth.length} | ${pct(lostFirst.length - lostBoth.length, dealt.length)} |`);
+  console.log(`| ...both lose, and Railbores alone win (a HARD OPENING, not a bad seed) | ${lostBoth.length - unwinnable.length} | ${pct(lostBoth.length - unwinnable.length, dealt.length)} |`);
   console.log(`| **UNWINNABLE for all three** | **${unwinnable.length}** | ${pct(unwinnable.length, dealt.length)} |`);
   console.log(`| **TRIVIAL**: one plain Bolt, then nothing, wins | **${trivial.length}** | ${pct(trivial.length, dealt.length)} |`);
   // L1 (Calm only): the stranger test plays Calm to wave 5 unaided - a seed that kills a know-nothing by then spends a stranger's one first session.
@@ -56,23 +57,23 @@ for (const t of [...new Set(rows.map((r) => r.threat))].sort()) {
   if (t === 0) console.log(`| **L1 broken**: one plain Bolt, then nothing, is dead by wave 5 | **${earlyDeath.length}** | ${pct(earlyDeath.length, dealt.length)} |`);
   console.log('');
   const byEntries = new Map();
-  for (const r of dealt) { const b = byEntries.get(r.entries) ?? { n: 0, lost: 0, unw: 0, triv: 0 }; b.n++; if (!won(r.intended)) b.lost++; if (!won(r.intended) && !won(r.gunsFirst)) b.unw++; if (won(r.naive)) b.triv++; byEntries.set(r.entries, b); }
-  console.log('| entries the map drew | maps | the reference loses | both careful plans lose | trivial |');
+  for (const r of dealt) { const b = byEntries.get(r.entries) ?? { n: 0, lost: 0, unw: 0, triv: 0 }; b.n++; if (!won(r.intended)) b.lost++; if (!won(r.intended) && !won(r.noVein)) b.unw++; if (won(r.naive)) b.triv++; byEntries.set(r.entries, b); }
+  console.log('| entries the map drew | maps | the mixed line loses | both careful plans lose | trivial |');
   console.log('|---|---|---|---|---|');
   for (const [e, b] of [...byEntries].sort((a, c) => a[0] - c[0])) console.log(`| ${e} | ${b.n} | ${pct(b.lost, b.n)} | ${pct(b.unw, b.n)} | ${pct(b.triv, b.n)} |`);
   console.log('');
   const list = (title, picked) => {
     if (picked.length === 0) return;
     console.log(`### ${title}\n`);
-    console.log('| seed | entries | path floor (cells) | carve attempts | reference dies | guns first dies | Bolts wide dies | one plain Bolt dies |');
+    console.log('| seed | entries | path floor (cells) | carve attempts | mixed line dies | no Refinery dies | Railbores die | one plain Bolt dies |');
     console.log('|---|---|---|---|---|---|---|---|');
     const cell = (death, played) => (!played ? '-' : death ?? 'wins');
-    for (const r of picked.slice(0, 40)) console.log(`| ${r.seed} | ${r.entries} | ${r.pathCells} | ${r.attempts} | ${r.intended ?? 'wins'} | ${cell(r.gunsFirst, r.intended !== null)} | ${cell(r.boltsWide, r.intended !== null && r.gunsFirst !== null)} | ${r.naive ?? 'wins'} |`);
+    for (const r of picked.slice(0, 40)) console.log(`| ${r.seed} | ${r.entries} | ${r.pathCells} | ${r.attempts} | ${r.intended ?? 'wins'} | ${cell(r.noVein, r.intended !== null)} | ${cell(r.rails, r.intended !== null && r.noVein !== null)} | ${r.naive ?? 'wins'} |`);
     if (picked.length > 40) console.log(`\n...and ${picked.length - 40} more.`);
     console.log('');
   };
   list(`${NAMES[t]}: a know-nothing is dead by wave 5 (L1)`, earlyDeath);
-  list(`${NAMES[t]}: hard openings - both careful plans lose, Bolts wide wins`, lostBoth.filter((r) => won(r.boltsWide)));
+  list(`${NAMES[t]}: hard openings - both careful plans lose, Railbores alone win`, lostBoth.filter((r) => won(r.rails)));
   list(`${NAMES[t]}: unwinnable seeds`, unwinnable);
   list(`${NAMES[t]}: trivial seeds`, trivial);
 }
