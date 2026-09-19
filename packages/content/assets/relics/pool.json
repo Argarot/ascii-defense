@@ -1267,23 +1267,23 @@
         "damage"
       ],
       "stackable": true,
-      "desc": "A tower whose hit is under 10 hits for 11 more - before any multiplier. Nothing for a big gun.",
+      "desc": "A tower whose hit is under 10 hits for 10 more - before any multiplier. Nothing for a big gun.",
       "effects": {
-        "damageAdd": 11,
+        "damageAdd": 10,
         "damageAddBelow": 10
       },
       "tiers": {
         "rare": {
-          "desc": "A tower whose hit is under 10 hits for 13 more - before any multiplier.",
+          "desc": "A tower whose hit is under 10 hits for 12 more - before any multiplier.",
           "effects": {
-            "damageAdd": 13,
+            "damageAdd": 12,
             "damageAddBelow": 10
           }
         },
         "epic": {
-          "desc": "A tower whose hit is under 10 hits for 16 more - before any multiplier.",
+          "desc": "A tower whose hit is under 10 hits for 15 more - before any multiplier.",
           "effects": {
-            "damageAdd": 16,
+            "damageAdd": 15,
             "damageAddBelow": 10
           }
         }

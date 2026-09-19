@@ -940,7 +940,10 @@ the time and Grim 84%. Four things changed, together:
 4. **Resistances wide enough to choose a tower by**: ×0.4–0.7 resists, ×1.4–2
    weak (they were ×0.6–0.8 and ×1.2–1.6).
 
-Standard and Grim were then re-fitted behind it (×1.12 and ×1.17 a wave): plain
+Standard and Grim were then re-fitted behind it (×1.12 and ×1.17 a wave;
+Standard ×1.105 since the same evening, once D38 and a corrected lab had
+taken the mixed line from the top of its range to the floor —
+docs/lab/standard-curve-2026-09-18.md): plain
 Bolts win Standard 3% and Grim never; the mixed line wins Standard 93%; **Grim
 is lost by the base world (11–18%) and won by the tree (99%)** — the gap no
 curve could open while width was unbounded. Calm's first five waves are
