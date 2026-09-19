@@ -221,9 +221,10 @@ word "go".*
 §32. The previous plan is superseded, and where each of its items went is
 said at the end of this section.)*
 
-**Before anything: the roll-up PR of 2026-09-18's night (tip → `main`) and
-the rework's own PR.** Either order is safe — the rework's branch contains the
-roll-up. **Check what landed by ancestry, not by PR state** (CONTRIBUTING §5).
+**Nothing is waiting to be merged.** The night's roll-up (#395) and the
+rework (#413) are on `main`, verified by tree; since 2026-09-19 the dev merges
+its own green PRs (his permission rule). **Still check what landed by
+ancestry, never by PR state** (CONTRIBUTING §5).
 
 **Theme. Prove the rework's foundation with the smallest thing that can be
 played: the map.** Very scarce pads are the expensive decision — every band,
@@ -243,8 +244,7 @@ PROTOTYPE: on / off**; the pause menu's debug page gets the knobs.
 
 0. **On open: the calls, then three defects a stranger would meet.** Mint
    #381 (*default: re-mint Jogged Elbow*), #392 (*default: leave the Missile
-   Rack*) and #412 (*the Core roster — default: Relay, Bulwark, Foreman*) if
-   unanswered. Then #373, #375, #378, each looked at in the running game.
+   Rack*) if unanswered. *(#412, the Core roster, is answered: D55.)* Then #373, #375, #378, each looked at in the running game.
 0a. **The PRD, written clean - before any code** (CONTRIBUTING §6 rule 9).
    Today it is 2,500 lines of dated strata plus §32 on top, and until today
    the session checklist did not read it. Rewrite it as **what the game is
@@ -307,8 +307,7 @@ Does a dig feel like a decision? Does the clear bonus make him build forward
 without being told? Is the courier fun or an irritant? **His verdict moves the
 knobs or sends the idea back; the lab moves nothing before it.**
 
-**His part.** Merge the two PRs. Answer #412 if the default roster is wrong
-(nothing is built on it before Rework II). Then play.
+**His part.** Read the rewritten PRD end to end (PR 0a's gate). Then play.
 
 **Biggest risk — and it wants his verdict, not his silence.** The switch means
 **two code paths** in the generator and the sim until the re-fit deletes the
@@ -318,8 +317,7 @@ remove, and every feature built in Rework II–III would have to work on both.
 for the new map only — a run with the switch off simply does not see them.*
 **Expensive if wrong:** if pads feel bad and we find out late, the briefing,
 the Cores and the tile economy were all designed for a map that does not
-exist. That is why he plays before anything else is built. *"Accepted"*, or
-*"no switch — build it straight and re-fit at once"*.
+exist. That is why he plays before anything else is built. **His verdict, 2026-09-19: "let's switch" — accepted (D55).**
 
 **Where the superseded plan went.** Its calls (#381, #392) are PR 0. *What is
 Grim for a player with the whole tree* is answered by PRD §32.12 (50–60% on
@@ -645,7 +643,7 @@ The order is derived from *what causes rework if done late*:
 | ~~38~~ | **DONE, GATE OPEN** *(PRs #353-#356, #358-#360, 2026-09-18 - Daniil's "go with the next session")* **Calibration I**: every seed re-dealt (D35) with the hash reading quantities exactly and the receipt covering the whole world; a lab player who keeps buying (WBS 1.5.1 under its real name); the ladder re-read and the seed corpus on the app's own maps (WBS 3.4); `npm run balance` in CI and in the gate (WBS 1.5.2, 3.2). **Not built:** the human offset (3.3, needs his replays), a bot that chooses (3.1) | - | Injected regression caught - **met**, red and green in PR #360's own CI. No unwinnable seed in 1,500 - **met**. No trivial seed - **not met**: nine Calm seeds in 500 are won by one plain Bolt, listed. And the finding that outweighs the gate: plain Bolts, never upgraded, win Standard 99% and Grim 84%; no curve moved; call #357 |
 | **What bounds a build** | *(BUILT, GATE OPEN - and no longer next: superseded as the next thing by The Rework, 2026-09-19, whose re-fit (10.12) re-reads every number this row fitted. Born of call #357, answered as D37. **HALF BUILT in session 39, PRs #362-#364, 2026-09-18**: the fit harness; the damage model - an expensive chassis and cheap upgrades, plating, energy through armour, wide resistances; Standard and Grim re-fitted behind it, #349 closed; the bands moved. **THREE QUARTERS BUILT in session 40, the same evening, PRs #372, #374, #376, #377 - green and OPEN, his to merge, in that order**: D39; energy's armour (D38, #370); the relic synergy (#365) and the lab's base world corrected; Standard's curve re-fitted behind both. **MOST OF THE LAST QUARTER in session 41, the same night, PRs #387-#393 - green and OPEN, merged by ONE roll-up PR**: the stack's recovery (#387); D40 and D41; the new-enemy card and the first-meeting banner; one language for every field (the mender's wave); ONE table of plans for every lab tool, and the ladder on the app's own maps; the arsenal read fairly - most of #366 was the rung, and no content number moved)* **Still to build:** the ladder's successor document and the corpus on the new game (the instruments are ready; the reads are an hour of compute); the refused seeds (#367); under #366, the relic set's rare and epic tiers and the mixed tree line in slot form. **No cap, no rising price** (D37) | Met on the build so far, in the lab: plain Bolts alone lose Standard (3%) and the panel says why; energy width loses it too (4%); plain Bolts holding the relic set win it (83%); the mixed line wins it 93%; Grim is lost by the base world (3%) and won by the tree (99-100%). **Read, 2026-09-18 night:** in the Mortar's slot on Grim, holding nothing, the Tesla equals the Mortar (19% against 21%), the Laser beats it (42%) and the Missile Rack trails (14%) - its role is call #392. **His eye, and none of it has had it yet:** every price and the first minute of a run; a wall of Frost or Teslas meeting a husk, the panel saying which, and a Railbore being the answer; finding Payload, going wide on purpose, and it working |
 | **The Rework I — the spatial prototype** | *(NEXT; the plan is "The next session" above. PRD §32.1–32.4, D42–D45; items 10.1–10.4)* | Very scarce build pads (pad / rock / bedrock) as a generator rule with a density knob; digging with one layer of sight and one crew; the clear bonus against a par, spawn windows short; the courier in place of random chests. **Behind one switch, engine default off: the lab, the bands and the golden hash do not move** | **Daniil plays three runs with the switch on and says whether very scarce feels right.** Nothing is tuned before that |
-| **The Rework II — the run's identity** | *(PRD §32.5–32.7, D46–D48; items 10.5–10.7; the Core roster is call #412)* | The briefing (map features, the host, bosses by wave each with one mechanic, a starting relic of three); the undo window; Core types at run setup; the relic audit - a rule-breaker in every offer, flat stats into the sets, skipping pays, tower-family relics, win rate per relic in every sweep | He reads a briefing and plans a run from it; two runs on one Threat feel like different problems; he uses a Core's verb without being told to |
+| **The Rework II — the run's identity** | *(PRD §32.5–32.7, D46–D48, D55; items 10.5–10.7)* | The briefing (map features, the host, bosses by wave each with one mechanic, a starting relic of three); the undo window; Core types at run setup; the relic audit - a rule-breaker in every offer, flat stats into the sets, skipping pays, tower-family relics, win rate per relic in every sweep | He reads a briefing and plans a run from it; two runs on one Threat feel like different problems; he uses a Core's verb without being told to |
 | **The Rework III — one economy** | *(PRD §32.9–32.11, D49–D52; items 10.8–10.11)* | Bank what you mined; a tile from every run past wave 5 by depth score; parts, recycling, minting with parts, the part ladder; `priceTile` with pads priced by the road they touch; the tile shop removed and the Smith open at the first recycle; towers on a first-hour schedule; Grim and Endless by wins; loadout comfort half offset; **the meta-save migration, with a refund of what the shop sold** | A lost run still hands him something; he recycles a tile and mints one; a Calm grind is visibly not worth it; no save is lost |
 | **The design review before the re-fit** | *(pre-planned 2026-09-19, CONTRIBUTING §6 rule 8 - or sooner, if six done rows or a trigger come first; the `design-review` skill; needs Daniil in the conversation)* | No code. The PRD read whole; every pillar held to evidence; the decision audit on the new map (is *where to build* a decision now? does the answer change between runs?); he plays while the dev watches; one or two research questions; the subtraction list; the PRD rewritten clean; the process retro | Decisions, or an explicit "no change" - **before** the expensive step, so the re-fit runs on a design that has just been checked |
 | **The Rework IV — the re-fit** | *(PRD §32.8 and §32.12, D53; item 10.12. **The old map's code path is deleted here**)* | One re-fit of Calm, Standard and Grim against the stated targets on the new map; the plating question answered by measurement; every band, the ladder and the seed corpus rebuilt; the unwinnable-seed target stated and read | In the lab: naive play with everything unlocked wins Grim under 5%, skilled play with the base kit 15–25%, with everything 50–60% on relics DEALT. His eye: a Grim run he loses and knows why |
@@ -964,7 +962,7 @@ is frozen in [docs/history/wbs-2026-09-11.md](history/wbs-2026-09-11.md).
 | `10.3` | The clear bonus against a par; short spawn windows (§32.3) |  |
 | `10.4` | The courier replaces random void chests (§32.4) |  |
 | `10.5` | The briefing, bosses with a mechanic each, a starting relic of three, the undo window (§32.5) |  |
-| `10.6` | Core types carry the in-wave verb (§32.6; the roster is call #412) |  |
+| `10.6` | Core types carry the in-wave verb (§32.6; the first roster is D55) |  |
 | `10.7` | The relic audit: rule-breakers from run one (§32.7) |  |
 | `10.8` | Ore: you bank what you mined (§32.9) |  |
 | `10.9` | A tile from every run past wave 5, by depth score (§32.10) |  |
@@ -1021,6 +1019,7 @@ agreement](../CONTRIBUTING.md), rule 3).*
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
+| D55 | **The first Core roster, and the prototype's switch** — **ANSWERED 2026-09-19 (Daniil; call #412 and the risk put to him at the rework's wrap)**. *Cores:* the dev's three are accepted - **Relay** (*Overdrive*: one tower at double rate for four seconds), **Bulwark** (*Brace*), **Foreman** (*Rush*: a dig or a Refinery cycle fifteen seconds sooner, and a second crew) - with one change, his: **Brace halves breach damage for four seconds, it does not ignore it.** *The switch:* **"let's switch"** - Rework I is built behind one switch, engine default off, so the lab, the bands and the golden hash stand still until he has played it; the two code paths that creates are accepted, and the old one is deleted in Rework IV |  | closed |
 | D54 | **The daily run, and no paid power** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.13–32.14)**: one seed a day; the first attempt is scored and practice is unlimited; loadout and Core fixed, everything unlocked, so no meta state can touch the score; a share strip with no link; no sign-up, no notifications, a days-played counter with no escalating reward. On money the record is advice for D27, which stays open and his: free web, then a cosmetic supporter pack, then a paid Steam build; paid power recommended against for good |  | closed |
 | D53 | **Grim is a skill check** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.12)**: *"gear makes it somewhat easier. No-skill random play even with all gear unlocked on grim should be almost impossible to win."* Targets before numbers: naive play with everything unlocked wins Grim under 5%; skilled play with the base kit 15–25%, with everything 50–60% on relics DEALT; Standard 85–90% for skilled base-kit play. One re-fit, after the map is settled. This answers the ladder's open question of the same morning |  | closed |
 | D52 | **The tree sells breadth; wins open the Threats** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.11)**: towers arrive on a first-hour schedule (absorbing #385), Grim opens on a Standard win and Endless on a Grim win, the tree keeps slots and rarity bands, and a loadout's comfort is half offset in the host's budget |  | closed |

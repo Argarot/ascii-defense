@@ -332,10 +332,10 @@ Status is yours to keep or ignore.
 | **leaving the pool** | | the flat-stat relics - Hot Loads, Iron Sights, Quick Hands and their kin - fold into the set bonuses: PRD §7.1's own test, applied | approved 2026-09-19 (PRD §32.7, D48; #405) |
 | *(add rows)* | | | |
 
-### Cores *(PRD §32.6 - the concept is approved, THE ROSTER IS CALL #412; these three are its default)*
+### Cores *(PRD §32.6 - the first roster, decided 2026-09-19, D55)*
 
 | Name | Role | Its verb (one, on a cooldown, never on click rate, never a weapon) | Status |
 |---|---|---|---|
-| Relay | offence | *Overdrive*: one tower fires at double rate for four seconds | default of #412 |
-| Bulwark | defence | *Brace*: for four seconds the Core takes no breach damage | default of #412 |
-| Foreman | economy | *Rush*: a dig or a Refinery cycle finishes fifteen seconds sooner; the run starts with a second crew | default of #412 |
+| Relay | offence | *Overdrive*: one tower fires at double rate for four seconds | approved (D55; #404) |
+| Bulwark | defence | *Brace*: for four seconds every breach costs the Core **half** (his change: the dev proposed none) | approved (D55; #404) |
+| Foreman | economy | *Rush*: a dig or a Refinery cycle finishes fifteen seconds sooner; the run starts with a second crew | approved (D55; #404) |

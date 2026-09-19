@@ -2341,7 +2341,7 @@ is made with information: *shield-heavy host, so Shatter, and an early Tesla.*
 **An undo window:** any purchase refunds in full for about five seconds, so a
 misclick is not a lesson.
 
-### 32.6 Core types carry the in-wave verb *(D47 — the concept is his; THE ROSTER IS OPEN, a call with the default below)*
+### 32.6 Core types carry the in-wave verb *(D47 the concept, D55 the first roster)*
 
 A planner's game in which sitting back is not optimal needs one thing to do in
 every run. It comes from **the Core the player chooses at run setup** — the
@@ -2362,13 +2362,15 @@ The laws of a Core, all his or agreed with him:
    verb that lands twice, one that chains to a neighbour. Nothing
    game-breaking unless stacked for on purpose.
 
-*The default roster (the dev's, unreviewed — the call's default):* **Relay** —
-*Overdrive*: one tower fires at double rate for four seconds (offence, a
-timing call on the build). **Bulwark** — *Brace*: for four seconds the Core
-takes no breach damage (defence: press it as the leak arrives). **Foreman** —
-*Rush*: a dig or a Refinery cycle finishes fifteen seconds sooner, and the run
-starts with a second crew (economy). Offence, defence, economy: three roles,
-no common unit to compare them in.
+**The first roster** *(D55 — Daniil accepted the dev's three and changed one)*:
+**Relay** — *Overdrive*: one tower fires at double rate for four seconds
+(offence, a timing call on the build). **Bulwark** — *Brace*: for four
+seconds **every breach costs the Core half** (defence: press it as the leak
+arrives; *his change — the dev had proposed no damage at all, and a verb that
+erases a leak is a verb that forgives the build*). **Foreman** — *Rush*: a dig
+or a Refinery cycle finishes fifteen seconds sooner, and the run starts with a
+second crew (economy). Offence, defence, economy: three roles, no common unit
+to compare them in. The durations and cooldowns are the lab's.
 
 ### 32.7 Relics: rule-breakers from the first run *(D48; amends §7)*
 
