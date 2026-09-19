@@ -96,6 +96,10 @@ link now, because the ledger is the record:
   generated from the content files, so it cannot be out of date
 - **what is still open** — the issue tracker:
   `gh issue list --label scope`
+- **where the design is going** — the rework of 2026-09-19, *approved and not
+  yet built*: [PRD §32](docs/PRD.md), the reasons and the research in
+  [docs/design/rework-2026-09-19.md](docs/design/rework-2026-09-19.md), and
+  the GitHub milestone *The Rework — the map asks, the run answers*
 
 ## Design ideas worth knowing
 

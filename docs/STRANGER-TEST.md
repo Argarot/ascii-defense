@@ -28,11 +28,11 @@ start), 2 (happened cleanly). Write the stranger's words next to it.
 | 2 | Ground | clicks ground beside the road on the first try; says why (near the Core) |
 | 3 | The first tower | builds a Bolt from the strip; hovers a button for its card at least once |
 | 4 | The first wave | calls it (button or N) rather than waiting for the observer |
-| 5 | NEXT | when asked "what is coming next?" points at the strip's NEXT and reads a kind and a mark ("skitter, fast") |
+| 5 | NEXT | when asked "what is coming next?" points at the strip's NEXT and reads a kind and a mark ("scuttle, fast") |
 | 6 | The answer | reads the column's answer line under the composition and acts on it, or says why not |
 | 7 | The fork | takes a first upgrade (a fork) before wave 6 without being told; can say what the two options were |
 | 8 | The offer | when the relic offer comes, reads the cards and picks one (or skips on purpose) within a minute |
-| 9 | The card | when an encounter card pops (a new enemy, the first chest), reads it and dismisses it; can say one fact from it afterwards |
+| 9 | The card | reads the grunt's card in the tutorial and dismisses it; later, when a first-meeting banner stands in the side panel (a new enemy, the first chest - D41: it no longer pauses), notices it, and can say one fact from it or from the card behind it afterwards |
 | 10 | Wave 5 | the Core stands at wave 5; the stranger can say what they would do differently |
 
 Also note, without scoring: every time the stranger asks "what does X

@@ -24,6 +24,12 @@ export interface TermSurface {
   tint(x: number, y: number, bg: string): void;
   /** Multiply the existing background toward brighter (>1) or darker (<1). */
   shade(x: number, y: number, mul: number, add?: number): void;
+  /**
+   * Mix the existing background TOWARD a colour by `amount` (0 leaves it, 1
+   * is tint). A field that carries a colour uses this (PRD sec 8, "a field
+   * speaks one language"): the ground stays the ground, with a cast.
+   */
+  wash(x: number, y: number, bg: string, amount: number): void;
   flush(): void;
   /** Screen state as plain text, trailing spaces trimmed per row. */
   toText(): string;
@@ -116,6 +122,15 @@ export class TextTerm implements TermSurface {
     if (i === -1) return;
     const c = rgb(this.bg[i]).map((v) => Math.min(255, (v / 255) * mul * 255 + add * 255)) as [number, number, number];
     this.bg[i] = hex(c);
+  }
+
+  wash(x: number, y: number, bg: string, amount: number): void {
+    const i = this.idx(x, y);
+    if (i === -1) return;
+    const a = Math.max(0, Math.min(1, amount));
+    const from = rgb(this.bg[i]);
+    const to = rgb(bg);
+    this.bg[i] = hex([from[0] + (to[0] - from[0]) * a, from[1] + (to[1] - from[1]) * a, from[2] + (to[2] - from[2]) * a]);
   }
 
   flush(): void {

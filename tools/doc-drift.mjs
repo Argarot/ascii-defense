@@ -72,6 +72,23 @@ if (codex.status !== 0) problems.push('the catalogue or the codex twin is stale:
 // 6. The GitHub description and homepage (local only: needs gh). A WARNING,
 //    not a failure: CI has no token. Since 2026-09-11 the project's token
 //    carries Administration write, so the wrap can fix it with `gh repo edit`.
+// 5. The design review is on a schedule, and the schedule is a gate (CONTRIBUTING sec 6, rule 8). ROADMAP says when
+//    the last one was and which done row was the newest then; more than REVIEW_EVERY rows struck since is a problem.
+//    From 2026-08-16 to 2026-09-19 nobody asked whether the plan was still the right game.
+const REVIEW_EVERY = 6;
+const review = /\*\*Last design review: (\d{4}-\d{2}-\d{2}), after done row (\d+)\.\*\*/.exec(roadmap);
+if (!review) problems.push('ROADMAP: no "**Last design review: <date>, after done row <N>.**" line (CONTRIBUTING sec 6, rule 8)');
+else {
+  const since = roadmap.split('\n').map((l) => /^\| ~~(\d+)~~ \|/.exec(l)).filter((m) => m && Number(m[1]) > Number(review[2])).length;
+  if (since > REVIEW_EVERY) problems.push(`a design review is overdue: ${since} ledger rows done since ${review[1]} (every ${REVIEW_EVERY}). The next session is the design-review skill, not a build (CONTRIBUTING sec 6, rule 8)`);
+}
+
+// 6. The PRD is written once, not stacked (rule 9). Amendment markers are budgeted and the budget only goes DOWN:
+//    lower it whenever the PRD is rewritten clean. Going over it is a trigger for a design review, not a formatting problem.
+const PRD_AMENDMENT_BUDGET = 24; // 2026-09-19: the strata of forty sessions plus sec 32's twelve pointers; ROADMAP's next session rewrites the PRD and lowers this
+const amendments = read('docs/PRD.md').split('\n').filter((l) => /superseded|changes this|amended 20|reworked 20|revised 20|corrected 20|rewritten 20/i.test(l)).length;
+if (amendments > PRD_AMENDMENT_BUDGET) problems.push(`PRD: ${amendments} amendment markers, the budget is ${PRD_AMENDMENT_BUDGET}. Rewrite the section in place and move what it replaced to docs/history/ (CONTRIBUTING sec 6, rule 9) - or the design has outgrown its document and a review is due (rule 8)`);
+
 const warnings = [];
 if (!process.env.CI) {
   const gh = spawnSync('gh', ['repo', 'view', '--json', 'description,homepageUrl'], { cwd: ROOT, encoding: 'utf8', shell: true });

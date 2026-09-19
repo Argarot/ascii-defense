@@ -518,7 +518,12 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   const guard = spec.maxWaves * 20_000;
   for (let t = 0; t < guard; t++) {
     sim.tick();
-    if (spec.economy && t % 20 === 0) advancePlan(); // once a second: scrap arrives with kills
+    // Once a second: scrap arrives with kills. NEVER after the run has ended (#367): the sim refuses every purchase
+    // once its status is not 'running', and placeNext / upgradeNext throw on a refusal - so a Core that died on a
+    // plan tick, with a purse that could afford something, turned a LOST run into a thrown one, and every tool
+    // recorded it as "refused" and dropped it from its row's denominator. One loss in twenty-odd, since issue #348
+    // gave the lab a player who keeps buying; every win rate read since then was nudged up by it.
+    if (spec.economy && t % 20 === 0 && sim.status === 'running') advancePlan();
     if (sim.offer !== null) sim.pickRelic(0);
     if (sim.wave !== lastWave) {
       if (lastWave > 0) {

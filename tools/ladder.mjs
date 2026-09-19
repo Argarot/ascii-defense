@@ -2,10 +2,18 @@
  * The difficulty ladder, read in parallel (session 38): `build-sweep --debt`
  * with one process per table ROW. A player who keeps buying (LabSpec.tail) is
  * slow to play - 120 seeds of one row is minutes on one core, and the ladder
- * has twenty-odd rows.
+ * has thirty-odd rows.
+ *
+ * Every rung is a plan of the lab's ONE table (harness/src/lab/plans.ts),
+ * bought depth first, on the app's own map for the seed - the same players
+ * and the same boards as the fit harness, the balance gate and the seed
+ * corpus. What this tool adds to theirs is the PURSE: towers standing and
+ * Scrap in hand at the end, beside what the last wave paid.
  *
  * Usage: node tools/ladder.mjs [corpus=120] [--only=calm,standard,grim,tree] [--jobs=N]
- *        node tools/ladder.mjs 120 --only=fit --geo=1.12     Grim at another growth rate (issue #349)
+ *
+ * A Threat at another growth rate is the fit harness's job:
+ *        node tools/fit.mjs --patch=candidate.json      with { "threats": { "grim": { "hpGeometric": 1.12 } } }
  */
 import { buildSync } from 'esbuild';
 import { mkdirSync } from 'node:fs';
@@ -21,12 +29,12 @@ const corpus = args.find((a) => /^\d+$/.test(a)) ?? '120';
 /** Anything else (`--geo=1.12` for the fit) goes to every row's process as it is. */
 const pass = args.filter((a) => a.startsWith('--') && !a.startsWith('--jobs=') && !a.startsWith('--only=') && a !== '--no-build');
 
-mkdirSync('dist/lab', { recursive: true });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
 // `--no-build`: several reads at once (one per --geo) share the bundle the first of them wrote.
-if (!args.includes('--no-build')) buildSync({ entryPoints: ['packages/harness/src/lab/buildSweep.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'dist/lab/build-sweep.mjs', logLevel: 'warning' });
+if (!args.includes('--no-build')) buildSync({ entryPoints: ['packages/harness/src/lab/buildSweep.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'node_modules/.cache/lab/build-sweep.mjs', logLevel: 'warning' });
 
 const run = (extra) => new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ['dist/lab/build-sweep.mjs', '--debt', corpus, ...pass, ...extra], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const child = spawn(process.execPath, ['node_modules/.cache/lab/build-sweep.mjs', '--debt', corpus, ...pass, ...extra], { stdio: ['ignore', 'pipe', 'inherit'] });
   let out = '';
   child.stdout.on('data', (d) => { out += d; });
   child.on('close', (code) => (code === 0 ? resolve(out.trim()) : reject(new Error(`${extra.join(' ')} exited ${code}`))));

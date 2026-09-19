@@ -1,7 +1,8 @@
 # ASCII Defense — Product Requirements
 
-Status: **M1 in flight - Phases 1 & 3 done, Phase 4 nearly done (Refinery/Ore and
-replay remain); Phase 6, the relic layer (§7), added 2026-08-16.** Live:
+Status: **the running game is §1–§31. §32 is THE REWORK of 2026-09-19 — an
+approved design, not built — and every section it changes says so under its
+heading.** Live:
 <https://argarot.github.io/ascii-defense/>
 
 This document specifies *what the game is*. It deliberately names no glyph, no
@@ -23,6 +24,8 @@ unlock richer terrain tiles between runs, and eventually author your own
 (§11). *(Pivoted 2026-08-15 from player tile-laying — see §14.)*
 
 ## 2. Design pillars
+
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: the map makes placement a decision — pads are very scarce (§32.1), and every run asks a different question before wave 1 (§32.5).
 
 | Pillar | Means | Rules out |
 |---|---|---|
@@ -56,6 +59,8 @@ authored in glyph grids and the aspect is absorbed by the cell shape.
 ## 4. The map
 
 ### 4.1 Cell types
+
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: every cell that is not road becomes a **pad**, **rock over a pad**, or **bedrock**; plain buildable ground goes (§32.1).
 
 | Type | On the route | Buildable | Notes |
 |---|---|---|---|
@@ -266,6 +271,8 @@ a pool you cannot choose from.
 
 ### 4.9 The void has business *(Daniil, 2026-08-17)*
 
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: random chests are cut; a **courier** carries the chest and nothing holds it (§32.4). A boss's chest stays.
+
 Unclaimed water is currently scenery. **Chests surface on it occasionally and
 sink again after a short window** — a small, seeded, optional prize that gives
 the void a reason to be watched. Claiming one pays out through the loot-table
@@ -395,6 +402,8 @@ the numbers never jump on build.
 
 ### 4.6 Caches and prospecting — the map as a source of power
 
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: prospecting becomes **digging** — one rock, always a pad under it, one layer of sight, one crew, slow and costly; rock caches are cut (§32.2).
+
 *(Caches reworked in design round 1, 2026-09-03 — D21. The first design
 scattered relic-holding caches at generation and charged Scrap to claim them;
 in play every cache was an auto-claim with pure upside, a decision about
@@ -504,7 +513,7 @@ M1 ships the first four. Target is **8 towers + the Core**, not 14.
 | Bolt Turret | single target, homing | Marksman (reach) / Gatling (throughput) | Piercing (columns) / Shatter (shields) | Railbore (armour) / Hailstorm (crowds) | M1 |
 | Mortar | area, dead zone | Shaped Charge (the few) / Wide Burst (the many) | Long Barrel (sit back) / Short Fuse (sit close) | Concussive (control) / Cluster (saturation) | M1 |
 | Frost Emitter | slow field | Deep Chill (slow path) / Ice Shards (damage path) | Wide Field / Brittle | Absolute Zero / Shatterfield | M1 |
-| Refinery | economy (§6) | Wide Bore (more now) / Deep Bore (more in the end) | Survey / Automation | Mother Lode / Deep Shaft | M1 |
+| Refinery | economy (§6) | Wide Bore (more now) / Deep Bore (more in the end) | Survey / Automation *(§32.2: Survey reveals rock, Automation becomes Second Crew)* | Mother Lode / Deep Shaft | M1 |
 | Tesla Coil | chain arcs, short range *(session 25)* | Long Arc (reach) / Twin Coil (throughput) | Forked (more bodies) / Grounding (slow on the chain) | Overload (damage) / Conductor (swarms) | shipped 2026-09-05 |
 | Missile Rack | homing explosive, long range, dead zone *(session 25)* | Warhead (damage) / Seeker (reach, rate) | Salvo (two missiles) / Fragmentation (blast) | Bunker Buster (armour) / Barrage (three missiles) | shipped 2026-09-05 |
 | Laser Lance | a beam down the road it FACES to where the road turns, heat on a held target *(session 26; reworked 2026-09-06 on Daniil's feedback)* | Capacitor (damage) / Chill (control) | Fast Cycle / Sear (a burn) | Cutter / Deep Sear | shipped 2026-09-05, reworked 09-06 |
@@ -611,6 +620,8 @@ facing and never show one.
 
 ## 6. Economy
 
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: **you bank what you mined**, so Ore spent in a run costs the bank nothing (§32.9); the **clear bonus** pays for killing forward (§32.3). Ore tiers stay.
+
 **Scrap** funds the run: towers, tiers, cache claims and prospecting. **Ore**
 buys relics at the Core (§7.3) and banks at run's end for tech tree nodes.
 Towers are Scrap, the Core is Ore, so they never compete for the same pool.
@@ -696,6 +707,8 @@ variants; a relic that lets a tower hold **both** options of a tier invents a
 what towers *do* — freely — but never which of the 14 forms they are.
 
 ### 7.3 Where relics come from
+
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: every offer holds a rule-breaker, flat-stat relics leave the pool for the sets, skipping pays, and a run opens with one relic of three (§32.5, §32.7).
 
 **The run's pool is what the run can use (session 31, PR 7).** A relic
 whose only effect touches a tower kind - Grounding Rod's arcs, Overclock's
@@ -1002,6 +1015,41 @@ twice" and the sim resolves a blast twice, but nothing on screen shows the
 second blast or explains the damage. A rule the player cannot see or read is
 a bug in the presentation, whatever the code does.
 
+**A field speaks one language** *(written 2026-09-18, because the mender's
+wave came back: round 33 item 9 made it "the Frost pulse's ring, in green",
+and the round of 2026-09-18, item 5, found it "way too distracting" - a
+thick bright ring that "doesn't fit". Two rounds on one effect is a missing
+rule, not a missing patch - CONTRIBUTING §6 rule 4.)* A **field** is
+anything that acts on every body within a radius of a source, again and
+again: the Frost Emitter's slow, the mender's heal, and whatever comes next
+(a Warden's bulwark, should it ever be drawn). Every field is drawn the same
+way, and the rule has five clauses:
+
+1. **It is the ground, never a glyph.** A field changes the background of
+   the glyphs it crosses and writes nothing over them - the same rule as a
+   status under a walker, for the same reason.
+2. **One ring, from the source outward**, one glyph-band wide, the same
+   geometry for every field. The code has ONE function for it
+   (`EffectsLayer.drawField`); a second drawing of a field is a defect.
+3. **Brightest at its source, nothing at its reach.** Strength falls with
+   distance and with age together, so the ring arrives at the edge of the
+   field already gone. The radius it dies at IS the field's reach - the ring
+   is how a player reads where the effect ends.
+4. **It is a glow, never a flash.** At its peak a field moves the ground's
+   brightness by well under a factor of two, so ten overlapping fields add
+   up to a glow (the thought dump's item 11: many Frost rings were
+   "epilepsy-inducing"). Under reduced motion it is a still ring at the
+   field's reach, at a third of the peak.
+5. **The colour says whose.** The player's fields lift the ground toward
+   light and keep its hue; an enemy's field **washes the ground toward the
+   colour of what it does** - green for mending - mixed INTO the ground, at
+   most three parts in ten, never painted over it. The ground stays the
+   ground: a player must still be able to read road from rock through it.
+
+An **impact** is not a field - a mortar's blast, a missile's spokes, the
+orbital column are single events with a kill radius, may throw glyphs, and
+keep their own rule (their extent is the radius that kills, never more).
+
 **Which tower answers which enemy must be legible.** Damage types exist and
 are inert (above); until resistances land, the roster reads as six glyphs
 with different health. The answer is the same as the rule: resistances that
@@ -1076,7 +1124,7 @@ numbers):
 |---|---|---|---|
 | **harrier** (`courser`) | 3 | `sprint`: runs 60% faster while unhit for two seconds | keep it under fire — a Tesla's arcs, a Laser's beam, a Bolt line |
 | **lunge** (`ram`) | 6 | `charge`: runs at double speed once under half hp | finish it in one volley, or slow it before the sprint (Frost) |
-| **brood** (`blob`) | 7 | `split`: dies into two skitters where it fell | kill it early, or let a blast take the halves together |
+| **brood** (`blob`) | 7 | `split`: dies into two scuttles (id `skitter`; renamed by D40) where it fell | kill it early, or let a blast take the halves together |
 | **stitch** (`mender`) | 8 | `heal`: mends every body within a cell and a half by 3 a second | priority WEAKEST finds it; kill it first |
 | **delve** (`mole`) | 9 | `burrow`: untargetable and unhittable for its first eight cells | the towers deeper in see it — a line by the Core, not at the entry |
 | **buckler** (`pavise`) | 11 | `frontshield`: hits from within 45° of ahead do a third | flank it from beside the road |
@@ -1105,6 +1153,8 @@ road"; `view/hud/traitAnswers.ts` is the one table). The tutorial's NEXT
 step says so. The codex's trait legend carries the same answers.
 
 ### 9.2 Wave tempo *(Daniil, design round 1, 2026-09-03 — D17)*
+
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: a wave arrives inside a short spawn window and pays a **clear bonus** against its par (§32.3). The early call stands as written.
 
 The wave clock runs **from one launch to the next** and never waits for the
 last enemy to die. Killing fast buys a quiet board before the next front;
@@ -1195,6 +1245,8 @@ in-game autopilot falls out for free.
 
 ## 11. Meta progression
 
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: towers arrive on a first-hour schedule, Grim and Endless open by wins, and loadout comfort is half offset (§32.11); the difficulty targets are §32.12; the daily run is §32.13.
+
 Ore buys a tech tree, staged and gated behind the core loop being fun.
 
 | Stage | Grants | When |
@@ -1241,6 +1293,8 @@ nodes **155**. A run banks far more than 22 now - §26 has the current
 income.)*
 
 ### 11.1 The tile pool is the ore economy *(Daniil, 2026-08-16 — resolves D9)*
+
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: **the tile shop is removed**: every run past wave 5 pays a tile by depth, tiles recycle into **parts**, and the Smith opens at the first recycle (§32.10).
 
 Ore tiers do not need a distribution rule in the generator. **They are tiles you
 buy.** A richer vein exists on the map because you purchased the tile that
@@ -1484,6 +1538,8 @@ die, what did I keep, and why would I start again.
 
 ### 15.1 Screens and flow
 
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: run setup gains **the briefing** and **the Core** the player chooses (§32.5, §32.6).
+
 ```
 launch → title → ┬─ new run → run setup → THE RUN ⇄ pause
                  │                            ↓
@@ -1626,6 +1682,8 @@ project:
 
 ## 18. Monetization — intent, not design *(Daniil, 2026-09-05)*
 
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: what the research found about Stone Story RPG, the portals and paid power is recorded as advice in §32.14. D27 is still his and still open.
+
 Daniil is seriously considering monetizing the game eventually, on the Stone
 Story RPG model and less aggressively than that: small things that make the
 game more fun and less grindy, never pay-to-win. Recorded so that nothing
@@ -1670,7 +1728,26 @@ surfaces, or a boon cell is on the map once a tower stands, **a card pops
 over the board** - the sprite, the name, the facts and the rules with
 their answers - and the run pauses under it until GOT IT, Enter or Esc;
 cards queue when several come at once. Every first meeting is remembered
-in the meta save (`met`), so a card comes once, ever. The title's HOW TO
+in the meta save (`met`), so a card comes once, ever.
+
+**Since D41 (2026-09-18) a first meeting no longer stops the game.**
+Daniil, on the live build: "game stopping to show a card of a new enemy -
+cool idea, but it is too disruptive". A first meeting is now a **banner in
+the side panel**, under the next wave: the name on a quiet plate (never the
+accent bar - that is CALL WAVE's, directly above it), the one line that
+answers it (the trait's answer from `traitAnswers.ts`; for a body with no
+trait, its hp and speed), *click: the full card*, and a bar that runs down
+over nine seconds of running play - a pause, a menu or a relic offer holds
+the clock. The run goes on under it. A click anywhere on the banner opens
+the card exactly as it used to pop, paused, by the player's own hand; an
+unread banner is simply gone, and its card is in the CODEX, because the
+meeting was recorded when it happened. Several at once queue, and the plate
+says how many wait (`(+2)`). **One card still pauses: the grunt's, while
+the tutorial is running** - it is where a stranger learns that cards exist.
+The same banner serves the first tower of a kind, the first chest and boon
+ground: D41 names the enemy's card, and a second mechanism for the other
+three would have been the more surprising reading (one argument to `meet()`
+in `app/main.ts` puts any of them back). The title's HOW TO
 PLAY is **the CODEX**: basics, towers, enemies, relics and **boons**; an
 enemy not yet met is a `???` page that says when it walks; a tower or
 relic the tree has not opened stays LOCKED with what opens it, as before.
@@ -1853,6 +1930,8 @@ A vein says its tier in words as well as colour — on hover and on the
 Refinery's panel — so the colour is never the only carrier.
 
 ## 27. The Smith prices a tile by what is on it *(Daniil, 2026-09-17. D31)*
+
+> **§32 changes this** *(the rework of 2026-09-19 — approved, NOT BUILT; this section describes the running game until its ledger row ships)*: `priceTile` gains **pads priced by the road they touch** and loses its free ground; minting also needs the **parts** painted (§32.10).
 
 **The rule.** A minted tile's price is a function of **its contents**, not a
 flat fee:
@@ -2118,3 +2197,350 @@ The app, the worker and every sweep get both from `threatKnobs()`
 (`engine/src/sim/threat.ts`), which is why `GENERATOR_VERSION` is 4: every
 app map is a different map, and an old run code is refused with a sentence.
 A saved run carries its map (D15) and is untouched.
+
+## 32. The rework of 2026-09-19 — the map asks, the run answers *(Daniil, after the design review; D42–D54. APPROVED DESIGN, NOT BUILT)*
+
+**Read this first.** Everything in this section is a decision about what the
+game will be; **none of it is in the build.** Until a ledger row of "The
+Rework" ships, the sections this one supersedes still describe the running
+game, and each of them carries a pointer here. The reasons, the research and
+what was dropped are in
+[docs/design/rework-2026-09-19.md](design/rework-2026-09-19.md); the order of
+work is ROADMAP's. **Every number below is a first pass with its target beside
+it** — the lab derives the number, the target is the design (CONTRIBUTING §6
+rule 7).
+
+**Why.** The review found that the two decisions a tower defense lives on each
+had one answer. *Where do I build?* — the shared stretch by the Core, always:
+ground was unlimited and every lane passes there. *What do I build?* — the
+same forks every run, because every run asked the same question. Relics and
+the tree then added less than they seemed to. The rework makes the **map** ask
+a different question each run and gives the **run** the means to answer it.
+
+### 32.1 Build pads: every cell that is not road is a pad, rock, or bedrock *(D42)*
+
+- **A pad** is where a tower stands. A vein sits on a pad (an ore cell is a pad
+  with ore under it, as today). Boon ground is a pad with a modifier (§4.7).
+- **Rock** is a pad with rock on it. *If it can be dug, there is a pad
+  underneath* — always (§32.2).
+- **Bedrock** never breaks. It is functionally the void: nothing is built on
+  it, nothing is under it. **Scarcity is the share of bedrock.**
+- **Plain buildable ground no longer exists as a cell type.** "Ground" in the
+  sections above means *pad* from the day this ships.
+
+**Very scarce** *(his word)*. Target: a 7×5-tile board opens with **25–35
+pads**, of which **3–5 touch the last shared stretch by the Core** — §4.5's
+"cells next to the Core are meant to be precious", finally true of the map and
+not only of the gifts. A run ends with 12–20 towers. Pad count and placement
+are Threat knobs (§4.4 gains two).
+
+What follows, and is wanted: the special tiles earn their place (a pad beside
+roads that touch without merging sees two lanes — §4.8's shapes become
+positions worth owning); **width is bounded by the map and by nothing else**
+(D37's "no cap, no rising price" stands — a map is not a cap); and a tower is
+a character with a build the board shows, because there are few of them.
+
+*For the builder.* The first build is **a generator rule with a density knob**,
+not a re-authored library: the carve demotes most of a tile's ground to
+bedrock by rule, keeps pads where the rule says (near bends, beside crossings,
+by the Core face), and the knob is what Daniil plays with. Tiles author their
+own pads only once the rule has been played and he has said the density is
+right (§32.10 needs authored pads; §32.1 does not).
+
+### 32.2 Digging replaces prospecting *(D43; supersedes §4.6's prospecting and rock caches)*
+
+- **One rock.** No hardness. A dig turns rock into the pad that was always
+  under it. **A rock may hide boon ground** (rarely — a generation knob) **and
+  nothing else**: no vein, no cache. Rock caches and their loot table are
+  gone; bosses and couriers carry the loot (§32.4). Veins are always visible —
+  "where is the money" is still answered by looking (§6).
+- **One layer of sight.** From outside, rock and bedrock look the same. A cell
+  shows which it is — and the boon under it, if any — **only when it touches an
+  open cell** (road, pad, or a finished dig). Everything behind is unknown
+  until a neighbour opens. The decision is a tunnel: *can I reach the cell
+  that touches both lanes, or is there bedrock in the way?* Contents are dealt
+  at generation, so the seed still describes the run (§12).
+- **Slow and costly, and flat.** First pass **60 Scrap and 45 seconds** (today
+  25 and 30). **The price does not depend on what the pad touches** — that
+  prices a pad in the Tile Smith (§32.10), never a dig. *Target:* a run that
+  digs at every chance ends with **about six more pads**, so a dig is a
+  decision made three to six times a run and never a systematic excavation
+  (the Dome Keeper criticism this is built to avoid).
+- **One crew.** One dig at a time, queued. More crews come from **the
+  Refinery's tree** (the *Automation* fork becomes **Second Crew**) **and/or a
+  relic** (*Work Gang*, +1 crew, stacks) — the lab says whether the game wants
+  one source or both.
+- **Sight is bought.** *Quarry* (faster digs) becomes **Seismograph**, with
+  two tiers only: **epic — two layers of sight; legendary — the whole board.**
+  The Refinery's *Survey* fork reveals rock within two cells of that Refinery
+  — the local, tower-bound version. *Prospector's Eye* stops making digs free
+  (digs at half price). *Vein Tap* ("build on rock") has to be read again under
+  scarce pads: the lab's question, asked before it ships.
+
+### 32.3 The clear bonus: kill them early, get paid *(D44)*
+
+His rule, in place of the dev's bounty-by-distance: **the sooner a wave is
+cleared, the more it pays.** A wave killed near its entry never walks the
+road, so clear time already measures how far forward a build kills — and it
+reads as one line a player already understands:
+
+> `WAVE 7 CLEARED in 31 s ⠂ par 60 ⠂ +58`
+
+- **Par** is per wave: its spawn window plus the walk of its slowest body from
+  the farthest entry to the Core.
+- **The bonus** is that wave's bounties × the share of par saved. First pass
+  ×1.0, so it grows with the waves by itself. *Target:* a build that hugs the
+  Core earns about **60%** of today's income, a build that kills forward about
+  **160%** — bounties are re-fitted around that spread.
+- **Spawn windows are short** *(his condition)*: a wave finishes arriving
+  within about a fifth of its clock (Calm 11 s, Standard 8, Grim 6), or the
+  last body's entry time decides the payout and not the build. Formations
+  (§9.2) compress to fit.
+- **The early call is unchanged** (§9.2): it pays the seconds left on the
+  clock and stays the bet on overlapping waves. Par runs from a wave's own
+  launch, so a call never touches it. Two bonuses, two jobs: one for killing
+  forward, one for risk.
+- **The last body decides the payout** — accepted. *Watched in the prototype:*
+  one slow Juggernaut setting a whole wave's bonus, and a tax on slow-based
+  builds. **The stated fallback** is the per-kill form of the same idea
+  (bounty ×1 at the Core rising to ×3 at the entry).
+- *For the builder:* a body must know its wave for "wave N cleared" to mean
+  anything while waves overlap. Not verified in the sim at the time of
+  writing.
+
+### 32.4 The courier replaces the void chest *(D45; supersedes §4.9's random chests)*
+
+A body that carries a chest. **Much faster than anything else** (first pass
+3.5–4 cells a second; the swarmling, at 2.8, is today's fastest). **Nothing
+holds it: slows, freezes and Stasis all fail on it.** It does no breach
+damage. It shows in the NEXT preview and has its own cue on entry. It comes
+about **one wave in three**. Killed, it drops its chest where it fell, claimed
+by a click as chests are today; missed, the chest is gone and nothing else is
+lost. *Target:* a build that ignores it kills it about 30% of the time, one
+that answers it (reach and burst on a long straight, priority FAST) about 80%.
+
+Random chests that surface on empty cells are cut: a chest that blinked
+somewhere was an attention tax, a courier in the preview is a problem the
+build can be asked to solve. **A boss's chest stays.**
+
+### 32.5 The briefing: every run asks a different question, before wave 1 *(D46)*
+
+After the map is dealt and before anything is built, one page shows:
+
+- **the map**, with its entries and its named features ("short approach",
+  "two crossings", "a rich vein far west");
+- **this run's host** — two or three featured kinds the waves lean toward;
+- **the bosses, by the wave they come on** — and each boss has **one
+  mechanic of its own**, as the Warden already has; "the heaviest body,
+  scaled" stops being a boss;
+- **a starting relic: one of three, each a rule-breaker** (§32.7);
+- **the Core** (§32.6).
+
+Forks stay permanent (pillar 3). They stop being coin tosses because the plan
+is made with information: *shield-heavy host, so Shatter, and an early Tesla.*
+**An undo window:** any purchase refunds in full for about five seconds, so a
+misclick is not a lesson.
+
+### 32.6 Core types carry the in-wave verb *(D47 — the concept is his; THE ROSTER IS OPEN, a call with the default below)*
+
+A planner's game in which sitting back is not optimal needs one thing to do in
+every run. It comes from **the Core the player chooses at run setup** — the
+roguelite's character select: a run identity, an unlock axis (Cores are earned
+by feats and wins), and the home of Core skins later (§32.14).
+
+The laws of a Core, all his or agreed with him:
+
+1. **One verb on a cooldown, never on click rate.** Clicking helps; clicking
+   fast never helps more. A design that would reward an auto-clicker is a
+   defect.
+2. **The Core is still not a tower** (§4.5, §14): no verb deals damage to a
+   body.
+3. **No verb is another verb's bigger sibling.** He rejected the first roster
+   for exactly this: a lane taking +30% always beats one tower at double rate.
+   Cores differ in **role**, never in degree.
+4. **Relics modify the verb, they do not supply it**: a shorter cooldown, a
+   verb that lands twice, one that chains to a neighbour. Nothing
+   game-breaking unless stacked for on purpose.
+
+*The default roster (the dev's, unreviewed — the call's default):* **Relay** —
+*Overdrive*: one tower fires at double rate for four seconds (offence, a
+timing call on the build). **Bulwark** — *Brace*: for four seconds the Core
+takes no breach damage (defence: press it as the leak arrives). **Foreman** —
+*Rush*: a dig or a Refinery cycle finishes fifteen seconds sooner, and the run
+starts with a second crew (economy). Offence, defence, economy: three roles,
+no common unit to compare them in.
+
+### 32.7 Relics: rule-breakers from the first run *(D48; amends §7)*
+
+- **Every offer holds at least one rule-breaker**, and commons include simple
+  ones. §7.1's own test — *"+15% damage is never a story"* — is applied to the
+  pool: **flat-stat relics leave it** (Hot Loads, Iron Sights, Quick Hands and
+  their kin) and their numbers fold into the set bonuses, where a quiet reward
+  for a theme is right and a card is not.
+- **Wins unlock stranger relics, never stronger ones** (§28.1 stands as
+  written).
+- **Skipping an offer pays Scrap**, so taking a relic always costs something.
+- **Relics keyed to one tower family**, enough of them that a cold run, a
+  blast run and a chain run are each three or four pieces deep; and thought
+  dump item 29, **a relic that grants one unique tower for this run only.**
+- **A standing check in the lab:** win rate per relic held, every sweep. Pick
+  rate needs players and waits for them.
+
+### 32.8 The counter system after the map bounds width *(a question for the lab, not a decision)*
+
+D37 and D38 stand. The review's hypothesis is that chassis pricing and plating
+were answers to unlimited ground, and that with §32.1 they have nothing left
+to do — in which case plating goes and the eight rapid-fire fork options stop
+being late-game traps. **§32.12 measures it; nothing here assumes it.** The
+behavioural bodies (harrier, lunge, brood, stitch, delve, buckler) are the
+counter system that works, and stay.
+
+### 32.9 Ore: you bank what you mined *(D49; supersedes §6's "spend now or bank")*
+
+**Spending Ore in a run takes nothing from the bank.** At run end the player
+banks, per tier, **what the run mined × the Threat's weight × the share of
+waves cleared.** One currency, no new purse.
+
+- Relic draws, rerolls and the Forge stop costing the player's future, so the
+  third relic channel (§7.3) gets used.
+- A Refinery is an ordinary economy tower: Scrap now, relics later this run,
+  the bank as a consequence. *When can I afford the greed* is a question a
+  tower defense player already likes.
+- Farming Calm stops paying: its weight is low (§32.10's weights).
+- **Ore tiers stay** (D30, §26). A tier-N vein banks tier-N Ore, as today.
+
+### 32.10 Tiles come from runs; parts come from tiles *(D50, D51; supersedes §11.1's shop and the Smith's gate)*
+
+**The tile shop is removed. The Tile Smith opens with the first recycled
+tile.** One loop replaces three competing ones:
+
+**Every run that cleared wave 5 pays one tile**, won or lost. *(The floor is
+there because without it the fastest farm is: start, die, collect.)* The
+tile's rarity is rolled on a **depth score** *S = waves cleared × the Threat's
+weight* — Calm 0.5, Standard 1, Grim 1.6; an endless run keeps counting on its
+Threat's weight.
+
+| S | what it means | the tile |
+|---|---|---|
+| under 20 | any Calm run (a win is 7.5); a Standard run lost part-way | common |
+| 20–39 | a Standard win; a Grim run lost past wave 12 | common 70% · rare 30% |
+| 40–59 | a Grim win | rare 20% · epic 75% · legendary 5% |
+| 60–79 | endless, past about wave 38 on Grim | epic 60% · legendary 40% |
+| 80 and over | endless past wave 50 | legendary |
+
+So grinding Calm is pointless by arithmetic, and the deepest tiles exist only
+at the bottom of an endless run. **The first time a player reaches a band, the
+tile is the band's best and spare parts come with it** — a reason to push
+depth that is not a leaderboard (the Greater Rift failure). **An endless run
+must be guaranteed to end** — an accelerating curve, never starved income.
+Endless is not built; its curve is designed when it is.
+
+**One function values a tile** — §27's `priceTile`, extended, and still the
+only pricing function in the game:
+
+| what is on the tile | what it adds |
+|---|---|
+| a tile | 20 |
+| a road cell | 0.9 |
+| **a pad** | **by the road it touches**: 6 + 6 × n^1.3, n = road cells among its eight neighbours → 12 at a corner, 21, 42 at four, **96 for a pad ringed by road** *(his rule: the more roads it touches, the dearer)* |
+| rock over a pad | six tenths of that pad (it still costs a dig in the run) |
+| bedrock | nothing — it is the void |
+| a vein, boon ground, crowding | as §27 |
+
+**Nothing but bedrock is free**: there are no plains to paint. That one
+number is the tile's **rarity** (bands fitted by the lab so the shipped
+library splits about 60 / 25 / 12 / 3), what it **recycles** into, and its
+**mint fee**.
+
+**Parts are the features themselves** — Road, Rock, Pad, Vein (by tier), Boon
+I–IV, Crossing. They are an inventory shown on the Smith's brushes, **never a
+currency: a part has no price and cannot be bought.**
+
+- **Recycle** a tile: half of each kind on it, rounded down, and always at
+  least one of its best feature.
+- **Mint** a tile: every part painted, **plus** the Ore fee `priceTile` says —
+  in the tiers §26 says, so a tier-2 vein still needs tier-2 Ore.
+- **The part ladder** *(his point: a player ends up with hundreds of roads and
+  rocks, only ever loads a handful of tiles, and should make those few as
+  strong as he can)*: **lower parts climb into higher ones.** First pass: 10
+  Road or Rock → 1 Pad; 20 Road → 1 Crossing; 5 Pad → 1 Boon I or 1 tier-1
+  Vein; two of any tiered part → one of the next tier (the Forge's rule, which
+  the player already knows). *Target:* the commons of about ten runs are worth
+  one Boon I; a six-boon kill-zone tile is dozens of rare-or-better runs —
+  §27's "many runs" ceiling, kept.
+
+### 32.11 The tree sells breadth; wins open the Threats *(D52; amends §11)*
+
+- **Towers arrive on a first-hour schedule** — a new tower in each of the
+  first four runs — not as purchases. (This absorbs the unlock schedule of
+  #385: what a stranger's first sessions are made of is designed as one
+  thing.)
+- **Grim opens on a Standard win, Endless on a Grim win.** Skill gates; two
+  nodes fewer.
+- The tree keeps **relic slots, loadout slots and the rarity bands**, priced
+  in Ore by tier as today.
+- **Loadout comfort is half offset.** The summed value of a run's loaded tiles
+  raises the host's wave budget sub-linearly, as `L` already does for road
+  length (§9). *"Gear makes it somewhat easier"* — written as a rule, so
+  authoring a tile is expression and never purchased easy mode.
+
+### 32.12 The difficulty targets, stated before any number moves *(D53)*
+
+Grim is a **skill check**. Gear makes it somewhat easier. **No-skill play with
+every unlock should almost never win it** *(his words)*.
+
+| the player | Calm | Standard | Grim |
+|---|---|---|---|
+| naive play, base kit | wins most runs | rarely wins | — |
+| naive play, everything unlocked | — | — | **under 5%** |
+| skilled play, base kit | — | 85–90% | 15–25% |
+| skilled play, everything unlocked | — | — | 50–60% |
+
+This is also the answer to the ladder's open question of 2026-09-19 ("what is
+Grim for a player with the whole tree?"): on relics **dealt**, 50–60%, never
+the 99% of a hand-picked six. **One re-fit of all three Threats** happens
+after §32.1–32.4 are played and settled, against this table; the plating
+question (§32.8) is answered in the same pass, by measurement.
+
+### 32.13 The daily run *(D54)*
+
+One seed a day, the same for everyone. **The first attempt is scored; practice
+is unlimited** (the Dead Cells compromise — a thirteen-minute run is too long
+for a pure one-shot to feel casual). **The loadout and the Core are fixed and
+everything is unlocked**: fair, a showcase of what a new player has not
+earned yet, and no meta state — earned or ever sold — can touch the score.
+The result page makes a **shareable ASCII strip** (a glyph a wave: clean,
+leaked, boss) **with no link in it**. No sign-up, no notifications. A plain
+*days played* counter with no escalating reward and nothing lost on a missed
+day. The first run of any day banks double. Feats ("win Standard with no
+Bolts") pay the bank and push players off a solved build. A leaderboard needs
+a backend (D28) and comes later, as it did elsewhere.
+
+### 32.14 Money, later *(advice recorded for D27; nothing is designed)*
+
+Stone Story RPG, the model he named, is **premium with no purchases on PC and
+free-with-purchases on mobile**; the "aggressive" criticism was of the mobile
+half. The lowest-regret path found: **free on the web (own page, itch.io) →
+a cosmetic supporter pack (palettes, glyph skins, Core skins) → a paid Steam
+build with Steam Cloud.** Keep the save one blob under 1 MB and it ports to
+portal cloud saves and to Steam. **Recommended against, permanently: paid
+power** — an uber tier, paid chests, sold parts. With a shared daily the
+score is only worth something while nothing purchasable touches it; the fixed
+daily loadout (§32.13) is the wall that keeps that true even if D27 later
+decides otherwise for the rest of the game.
+
+### 32.15 What this section supersedes
+
+| section | what changes when the rework ships |
+|---|---|
+| §2 pillars | "Every placement is a build decision" gains its other half: **the map makes placement a decision**; pillar 1 means the player's decisions, not only the generator's knobs |
+| §4.1 | Ground → pad; Rock always hides a pad; **Bedrock** is new; "buildable" means pad |
+| §4.6 | prospecting → digging (§32.2); rock caches are cut |
+| §4.9 | random void chests are cut; the courier carries the chest (§32.4); a boss's chest stays |
+| §5.3 | the Refinery's T2 forks: *Survey* reveals, *Automation* → *Second Crew* |
+| §6 | "spend now or bank" → bank what you mined (§32.9) |
+| §7.3–7.4 | every offer holds a rule-breaker; flat stats leave the pool; skipping pays (§32.7) |
+| §9.2 | short spawn windows and the clear bonus (§32.3); the early call stands |
+| §11, §11.1, §27 | no tile shop; the Smith opens at the first recycle; parts; pads priced by the road they touch; towers on a schedule; Grim and Endless by wins (§32.10–11) |
+| §15.1 | run setup gains the briefing and the Core (§32.5–6) |
+| §18 | D27's intent gains §32.14's advice |

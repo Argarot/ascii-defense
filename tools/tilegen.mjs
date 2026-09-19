@@ -15,16 +15,16 @@
 import { buildSync } from 'esbuild';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
-mkdirSync('dist/lab', { recursive: true });
+mkdirSync('node_modules/.cache/lab', { recursive: true });
 buildSync({
   entryPoints: ['packages/harness/src/tilegen/generate.ts'],
   bundle: true,
   platform: 'node',
   format: 'esm',
-  outfile: 'dist/lab/tilegen.mjs',
+  outfile: 'node_modules/.cache/lab/tilegen.mjs',
   logLevel: 'warning',
 });
-const { enumerateVariants, enumerateFillers, decorateRoads, canonicalKeyOf, nameByFamily } = await import('../dist/lab/tilegen.mjs');
+const { enumerateVariants, enumerateFillers, decorateRoads, canonicalKeyOf, nameByFamily } = await import('../node_modules/.cache/lab/tilegen.mjs');
 
 const perSig = Number(process.argv[2] ?? 25);
 const fillers = Number(process.argv[3] ?? 40);
