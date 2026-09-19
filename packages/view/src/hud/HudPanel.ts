@@ -333,6 +333,7 @@ export class HudPanel {
       },
       tint: (x: number, y2: number, c: string): void => { raw.tint(x, y2 - this.scroll, c); },
       shade: (x: number, y2: number, mul: number, add?: number): void => { raw.shade(x, y2 - this.scroll, mul, add); },
+      wash: (x: number, y2: number, c: string, amount: number): void => { raw.wash(x, y2 - this.scroll, c, amount); },
       clear: (bg?: string): void => raw.clear(bg),
       has: (ch: string): boolean => raw.has(ch),
       toText: (): string => raw.toText(),

@@ -57,6 +57,16 @@ const TTL: Record<Effect['kind'], number> = {
   arc: 4,
   lance: 20, // the fallback; a lance's pulse lasts until its next fire (the event says how long)
 };
+/**
+ * A field's numbers (PRD sec 8, "a field speaks one language"), in one place
+ * because the rule is that there IS one place: the ring's half-width in
+ * cells, how far the player's field lifts the ground at its peak (x1.6,
+ * the rule's "well under a factor of two"), and the most an enemy's field
+ * mixes its colour into the ground (the rule's "three parts in ten").
+ */
+const FIELD_BAND = 0.24;
+const FIELD_LIFT = 0.6;
+const FIELD_WASH = 0.3;
 /** The orbital column's fall before its blast opens, in ticks. */
 const ORBITAL_FALL = 2;
 /** The second, smaller blast under the first: the site keeps exploding for a beat. */
@@ -277,23 +287,42 @@ export class EffectsLayer {
   }
 
   /**
-   * The expanding tower pulse - the visual that used to live in BoardView.
-   * Muted, and fading with radius (2026-09-06 thought dump item 11: with
-   * many Frost towers the rings were "epilepsy-inducing"): brightest at
-   * the tower, dying out toward the full reach, and its peak is well under
-   * half what it was, so overlapping pulses add up to a glow, never a flash.
+   * The tower pulse's history, kept because it is where the numbers came
+   * from: muted, and fading with radius (2026-09-06 thought dump item 11:
+   * with many Frost towers the rings were "epilepsy-inducing") - brightest
+   * at the tower, dying out toward the full reach, its peak well under half
+   * what it was, so overlapping pulses add up to a glow, never a flash.
+   *
+   * EVERY field, in one language (PRD sec 8, "a field speaks one language";
+   * written 2026-09-18 when the mender's wave came back a second time - it
+   * had been a thick ring of solid green PAINTED over the ground). One ring
+   * from the source outward, the ground and never a glyph, brightest at the
+   * source and nothing at its reach, a glow and never a flash. `washRole`
+   * is the clause "the colour says whose": absent, the ground is lifted
+   * toward light (the player's Frost); present, it is mixed toward that
+   * colour by at most FIELD_WASH (an enemy's field - green for mending).
    */
-  /** A mender's field (feedback 2026-09-08, item 9): the Frost pulse's ring, in green - what it touches, it mends. */
-  private drawHeal(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+  private drawField(term: TermSurface, e: Effect, age01: number, still: boolean, washRole?: string): void {
     const rNow = still ? e.r : e.r * age01;
-    this.ring(term, e.x, e.y, rNow, 0.3, (gx, gy) => term.tint(gx, gy, role('fx.heal')));
+    const far = e.r > 0 ? Math.min(1, rNow / e.r) : 1; // 0 at the source, 1 at the reach
+    // 1 at the source the moment it fires, 0 on arrival; held at a third under reduced motion.
+    const env = still ? 1 / 3 : (1 - age01) * (1 - 0.7 * far);
+    if (washRole === undefined) {
+      this.ring(term, e.x, e.y, rNow, FIELD_BAND, (gx, gy) => term.shade(gx, gy, 1 + FIELD_LIFT * env, 0.03 * (1 - far)));
+      return;
+    }
+    const to = role(washRole);
+    this.ring(term, e.x, e.y, rNow, FIELD_BAND, (gx, gy) => term.wash(gx, gy, to, FIELD_WASH * env));
   }
 
+  /** A mender's field: what it touches, it mends - the ground takes a green cast that dies with distance. */
+  private drawHeal(term: TermSurface, e: Effect, age01: number, still: boolean): void {
+    this.drawField(term, e, age01, still, 'fx.heal');
+  }
+
+  /** The expanding tower pulse (a Frost Emitter's slow): the ground lifted toward light. */
   private drawPulse(term: TermSurface, e: Effect, age01: number, still: boolean): void {
-    const rNow = still ? e.r : e.r * age01;
-    const far = e.r > 0 ? Math.min(1, rNow / e.r) : 1; // 0 at the tower, 1 at the reach
-    const strength = still ? 1.2 : 1 + 0.6 * (1 - age01) * (1 - 0.7 * far);
-    this.ring(term, e.x, e.y, rNow, 0.24, (gx, gy) => term.shade(gx, gy, strength, 0.03 * (1 - far)));
+    this.drawField(term, e, age01, still);
   }
 
   /**

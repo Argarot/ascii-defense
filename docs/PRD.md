@@ -1002,6 +1002,41 @@ twice" and the sim resolves a blast twice, but nothing on screen shows the
 second blast or explains the damage. A rule the player cannot see or read is
 a bug in the presentation, whatever the code does.
 
+**A field speaks one language** *(written 2026-09-18, because the mender's
+wave came back: round 33 item 9 made it "the Frost pulse's ring, in green",
+and the round of 2026-09-18, item 5, found it "way too distracting" - a
+thick bright ring that "doesn't fit". Two rounds on one effect is a missing
+rule, not a missing patch - CONTRIBUTING §6 rule 4.)* A **field** is
+anything that acts on every body within a radius of a source, again and
+again: the Frost Emitter's slow, the mender's heal, and whatever comes next
+(a Warden's bulwark, should it ever be drawn). Every field is drawn the same
+way, and the rule has five clauses:
+
+1. **It is the ground, never a glyph.** A field changes the background of
+   the glyphs it crosses and writes nothing over them - the same rule as a
+   status under a walker, for the same reason.
+2. **One ring, from the source outward**, one glyph-band wide, the same
+   geometry for every field. The code has ONE function for it
+   (`EffectsLayer.drawField`); a second drawing of a field is a defect.
+3. **Brightest at its source, nothing at its reach.** Strength falls with
+   distance and with age together, so the ring arrives at the edge of the
+   field already gone. The radius it dies at IS the field's reach - the ring
+   is how a player reads where the effect ends.
+4. **It is a glow, never a flash.** At its peak a field moves the ground's
+   brightness by well under a factor of two, so ten overlapping fields add
+   up to a glow (the thought dump's item 11: many Frost rings were
+   "epilepsy-inducing"). Under reduced motion it is a still ring at the
+   field's reach, at a third of the peak.
+5. **The colour says whose.** The player's fields lift the ground toward
+   light and keep its hue; an enemy's field **washes the ground toward the
+   colour of what it does** - green for mending - mixed INTO the ground, at
+   most three parts in ten, never painted over it. The ground stays the
+   ground: a player must still be able to read road from rock through it.
+
+An **impact** is not a field - a mortar's blast, a missile's spokes, the
+orbital column are single events with a kill radius, may throw glyphs, and
+keep their own rule (their extent is the radius that kills, never more).
+
 **Which tower answers which enemy must be legible.** Damage types exist and
 are inert (above); until resistances land, the roster reads as six glyphs
 with different health. The answer is the same as the rule: resistances that
