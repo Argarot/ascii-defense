@@ -85,9 +85,15 @@ else {
 
 // 6. The PRD is written once, not stacked (rule 9). Amendment markers are budgeted and the budget only goes DOWN:
 //    lower it whenever the PRD is rewritten clean. Going over it is a trigger for a design review, not a formatting problem.
-const PRD_AMENDMENT_BUDGET = 24; // 2026-09-19: the strata of forty sessions plus sec 32's twelve pointers; ROADMAP's next session rewrites the PRD and lowers this
+const PRD_AMENDMENT_BUDGET = 13; // 2026-09-19 (evening): the PRD rewritten clean - what is left is sec 32's thirteen "changes this" pointers, one per section the rework will change. Each goes when its Rework row ships (it was 24)
 const amendments = read('docs/PRD.md').split('\n').filter((l) => /superseded|changes this|amended 20|reworked 20|revised 20|corrected 20|rewritten 20/i.test(l)).length;
 if (amendments > PRD_AMENDMENT_BUDGET) problems.push(`PRD: ${amendments} amendment markers, the budget is ${PRD_AMENDMENT_BUDGET}. Rewrite the section in place and move what it replaced to docs/history/ (CONTRIBUTING sec 6, rule 9) - or the design has outgrown its document and a review is due (rule 8)`);
+//    And the running game (everything above sec 32) carries no STRATA: a date, a session or a PR number in its prose is how
+//    "as built on ..." paragraphs came back forty times. File names and links are not prose (a lab record has a date in its name).
+const PRD_STRATA_BUDGET = 2; // the thought dump's title (sec 19) and "refused at the design review of ..." (sec 14): both NAME a thing by its date
+const running = read('docs/PRD.md').split(/^## 32\. /m)[0];
+const strata = running.split('\n').filter((l) => /\b20\d\d-\d\d-\d\d\b|\bsession \d+|\bPR #?\d+|\bPRs #?\d+/i.test(l.replace(/`[^`]*`/g, '').replace(/\]\([^)]*\)/g, ']').replace(/\[[^\]]*\.md\]/g, ''))).length;
+if (strata > PRD_STRATA_BUDGET) problems.push(`PRD: ${strata} lines above sec 32 carry a date, a session or a PR number; the budget is ${PRD_STRATA_BUDGET}. The PRD says what is true NOW - the when and the why belong to ROADMAP's decision table, docs/design/ and docs/history/ (CONTRIBUTING sec 6, rule 9)`);
 
 const warnings = [];
 if (!process.env.CI) {
