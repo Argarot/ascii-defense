@@ -7,7 +7,7 @@
  * no live objects - so the view can never reach into sim memory again. The
  * failure mode this shape prevents: a screen caching sim state (PRD sec 15.1).
  */
-import type { CellRef, GeneratedMap, ReplayInput, StampedSimEvent, TileDef , MetaState } from '@ascii-defense/engine';
+import type { CellRef, GeneratedMap, PadOptions, ReplayInput, StampedSimEvent, TileDef , MetaState } from '@ascii-defense/engine';
 import type { HudState, RenderState } from '@ascii-defense/view';
 
 /**
@@ -41,6 +41,8 @@ export interface RunSave {
   meta: MetaState;
   /** Endless mode (session 29, PR 2; PRD sec 19 item 22): no final wave, the ramp runs until the Core falls. Absent = false. */
   endless?: boolean;
+  /** The rework's prototype switch (PRD sec 32, D55), as the run was started. Absent = the game as it is. */
+  rework?: ReworkSpec;
   tick: number;
   inputs: ReplayInput[];
   contentHash: number;
@@ -86,8 +88,18 @@ export interface FrameSnapshot {
   story?: { killsByTower: { name: string; kills: number }[]; met: { name: string; count: number }[]; relics: string[]; relicUses: { name: string; uses: number }[]; /** Forged-to rarities and fusions reached, for the meta save (session 29, PR 1). */ forged: { id: string; rarity: number }[]; fused: string[] };
 }
 
+/**
+ * THE REWORK'S PROTOTYPE (PRD sec 32.1-32.4, D55). Its presence IS the switch;
+ * its fields are the debug page's knobs laid over the Threat's own numbers
+ * (engine `reworkKnobs`). One object, so the four spatial pieces ride one
+ * field of the init message and of the save, and Rework IV deletes one thing.
+ */
+export interface ReworkSpec {
+  pads?: Partial<PadOptions>;
+}
+
 export type ToWorker =
-  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave; board?: { w: number; h: number }; /** The tree state for a NEW run (session 29, PR 1); absent = everything (tests). A resume carries its own. */ meta?: MetaState; /** Endless mode for a NEW run (session 29, PR 2); a resume carries its own. */ endless?: boolean }
+  | { t: 'init'; seed: number; threatIdx: number; loadout?: TileDef[]; resume?: RunSave; board?: { w: number; h: number }; /** The tree state for a NEW run (session 29, PR 1); absent = everything (tests). A resume carries its own. */ meta?: MetaState; /** Endless mode for a NEW run (session 29, PR 2); a resume carries its own. */ endless?: boolean; /** The rework's prototype for a NEW run; a resume carries its own. */ rework?: ReworkSpec }
   | { t: 'frame'; ui: UiState }
   | { t: 'speed'; idx: number }
   | { t: 'action'; a: WorkerAction }

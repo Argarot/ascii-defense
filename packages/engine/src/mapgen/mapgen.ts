@@ -27,6 +27,7 @@ import { TileLibrary, createBoard, place, resolveCells, slotAt, type Board } fro
 import type { CellType } from '../grid/cells';
 import { EDGE_DELTA, carveRoads, sigKey, type RoadSpecialSpec, type WalkCharacterSpec } from './carve';
 import { verifyMap } from './verify';
+import { dealPads, type PadOptions } from './pads';
 
 export interface MapGenOptions {
   /** Board size in tile slots. */
@@ -77,6 +78,16 @@ export interface MapGenOptions {
    * ladder is the same map. Authored veins keep their author's tier.
    */
   oreTierMax?: number;
+  /**
+   * The rework's build pads (PRD sec 32.1, D42 - a PROTOTYPE behind a switch,
+   * D55): most ground becomes bedrock and a few cells stay pads, by the rule
+   * in pads.ts. Absent, no ground moves and no dice are spent - the same
+   * shape as `walk`, `land` and `oreTierMax` above - so the engine's default
+   * generator, the lab, the bands and the golden hash stand still. It is the
+   * map's LAST dice: a seed's roads, rock, veins and boons are the same
+   * board with and without it.
+   */
+  pads?: PadOptions;
 }
 
 export interface CellRef {
@@ -165,6 +176,13 @@ export interface GeneratedMap {
   /** The lane band the carve achieved: LANE_BAND when the shortest lane is within it of the longest, else 0. */
   laneBand: number;
   /**
+   * Ground the pad rule turned to bedrock (PRD sec 32.1), as cell indices.
+   * Absent on every map made without `MapGenOptions.pads`. It rides the map
+   * because the cell grid is re-derived from the tiles at every resume:
+   * mapCells applies it, so a saved prototype run keeps its board.
+   */
+  bedrock?: number[];
+  /**
    * How many whole-map attempts this map took: 1 = the first carve verified
    * (issue #217). generateMap retries a cornered carve or a verification
    * failure up to GENERATE_ATTEMPTS times on the same stream, and until this
@@ -216,6 +234,8 @@ export function mapCells(map: GeneratedMap, lib: TileLibrary): (CellType | null)
     for (let x = tileW; x < map.cellsW; x++) out[y * map.cellsW + x] = 'G';
   }
   for (const c of map.coreFace) out[c.y * map.cellsW + c.x] = 'C';
+  // The pad rule's bedrock (PRD sec 32.1): only ever ground, by construction (pads.ts).
+  if (map.bedrock) for (const k of map.bedrock) if (out[k] === 'G') out[k] = 'D';
   return out;
 }
 /**
@@ -707,5 +727,10 @@ function generateMapOnce(rng: RngStream, lib: TileLibrary, opts: MapGenOptions):
         break;
       }
     }
+  // Build pads (PRD sec 32.1): after everything, for the same reason - the
+  // board of a seed is the same board with the prototype's switch on and off.
+  if (opts.pads) {
+    map.bedrock = dealPads(rng, mapCells(map, lib), map.cellsW, map.cellsH, map.entries, map.coreFace, boons, width * height, opts.pads).bedrock;
+  }
   return map;
 }

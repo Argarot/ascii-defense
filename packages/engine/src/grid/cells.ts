@@ -14,10 +14,17 @@
  * There is no spawn type: entries are DERIVED - an open road end at the board
  * edge is a spawn point (PRD sec 4.1) - the same philosophy as derived
  * connectors. C is the Core's own substance, the thing enemies march toward.
+ *
+ * D is BEDROCK (PRD sec 32.1, the rework's build pads): never built on, never
+ * dug, nothing under it - functionally the void, with a floor. 'D' and not
+ * 'K': K was rock in the old alphabet (LEGACY_CELL_MAP), and 'B' is the
+ * bridge. Only the generator's pad rule writes it today (mapgen/pads.ts); no
+ * tile may author it until sec 32.10's authored pads ship, so the tile schema
+ * does not know the letter.
  */
-export type CellType = 'G' | 'X' | 'B' | 'R' | 'O' | 'C' | '-' | '|' | 'L' | 'J' | 'F' | '7' | 'T' | 'U' | 'E' | '3';
+export type CellType = 'G' | 'X' | 'B' | 'R' | 'O' | 'C' | 'D' | '-' | '|' | 'L' | 'J' | 'F' | '7' | 'T' | 'U' | 'E' | '3';
 
-export const CELL_TYPES: readonly CellType[] = ['G', 'X', 'B', 'R', 'O', 'C', '-', '|', 'L', 'J', 'F', '7', 'T', 'U', 'E', '3'];
+export const CELL_TYPES: readonly CellType[] = ['G', 'X', 'B', 'R', 'O', 'C', 'D', '-', '|', 'L', 'J', 'F', '7', 'T', 'U', 'E', '3'];
 
 /** Old-alphabet cell codes (pre-2026-08-18) mapped to the current ones. */
 export const LEGACY_CELL_MAP: Readonly<Record<string, string>> = { R: 'X', K: 'R', r: 'B' };

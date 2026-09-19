@@ -94,6 +94,8 @@ export const TERRAIN_KEY: Record<CellType, string> = {
   R: 'rock',
   O: 'ore',
   C: 'core',
+  // Bedrock (PRD sec 32.1): its own, darker roles - the pads must be what the eye finds.
+  D: 'bedrock',
 };
 
 /** Stateless mixing hash for per-glyph texture (ASSETS.md sec 5). */

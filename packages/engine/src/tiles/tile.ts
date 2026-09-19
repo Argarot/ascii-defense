@@ -193,6 +193,8 @@ export function validateTileCells(cells: readonly string[]): string[] {
     }
     for (let x = 0; x < TILE_SIZE; x++) {
       if (!isCellType(cells[y][x])) return [`cell (${x},${y}) has unknown type '${cells[y][x]}'`];
+      // Bedrock is the generator's (PRD sec 32.1): a tile authors its own pads only once sec 32.10 ships.
+      if (cells[y][x] === 'D') return [`cell (${x},${y}) is bedrock - the pad rule deals it; a tile may not author it yet`];
     }
   }
 

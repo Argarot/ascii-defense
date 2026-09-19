@@ -96,6 +96,7 @@ const DESCRIBE: Record<CellType, string> = {
   R: 'rock \u2802 blocked',
   O: 'ore \u2802 buildable \u2802 a refinery here mines Ore',
   C: 'the CORE \u2802 protect this \u2802 every road leads here',
+  D: 'bedrock \u2802 nothing is built here, and nothing is under it',
 };
 
 export interface CellRef {
@@ -263,7 +264,11 @@ export class BoardView {
       throw new Error(`map cell grid ${map.cellsW}x${map.cellsH} does not fit this view (${this.cellsW}x${this.cellsH})`);
     }
     this.cells = mapCells(map, this.lib);
+    // Under the pad rule (PRD sec 32.1) ground is the rarest cell on the board and the first thing a player looks for.
+    this.scarcePads = (map.bedrock?.length ?? 0) > 0;
   }
+  /** The map carries bedrock: every ground cell is a PAD, and is drawn to be found. */
+  private scarcePads = false;
 
   cellType(ref: CellRef): CellType | null {
     if (ref.x < 0 || ref.y < 0 || ref.x >= this.cellsW || ref.y >= this.cellsH) return null;
@@ -350,7 +355,9 @@ export class BoardView {
         const north = cy > 0 ? this.cells[(cy - 1) * this.cellsW + cx] : null;
         const south = cy + 1 < this.cellsH ? this.cells[(cy + 1) * this.cellsW + cx] : null;
         drawTerrainCell(term, kind, gx0, gy0, {
-          bg: hoverBg,
+          // A pad wears a quiet tint of the hover's own "you may build here" green (looked at, 2026-09-19: at thirteen
+          // pads a board, plain ground beside a road read as a bulge of the road and could not be found at a glance).
+          bg: hoverBg ?? (this.scarcePads && kind === 'G' ? role('terrain.pad.dark') : undefined),
           litTop: shaded && north !== kind,
           shadowBottom: shaded && south !== kind,
           richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx)?.frac : undefined,
