@@ -35,6 +35,7 @@ import {
   insulatingAt,
   platingAt,
   threatKnobs,
+  reworkKnobs,
   validateTile,
   type EnemyDef,
   type GeneratedMap,
@@ -58,7 +59,7 @@ import {
   relicEffectsAt,
   TRAIT_RULES,
  effectiveStats, DAMAGE_TYPES } from '@ascii-defense/engine';
-import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
+import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type ReworkSpec, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
 export interface WorkerRuntimeDeps {
   post: (m: FromWorker) => void;
@@ -91,6 +92,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   let runRelics: readonly RelicDef[] = relicDefs;
   /** Endless (session 29, PR 2): the run has no final wave. */
   let runEndless = false;
+  /** The rework's prototype switch for this run (PRD sec 32, D55); undefined = the game as it is. */
+  let runRework: ReworkSpec | undefined;
   let runFinalWave = 0;
   // The receipt covers everything newRun builds a sim from (issue #341): a save resumes only against the content it saw.
   // Of a Threat, only what the SIM reads: its map knobs and its walk made the map, and the save carries its map (D15).
@@ -113,9 +116,11 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   let acc = 0;
   let lastBeat = 0;
 
-  function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave, board?: { w: number; h: number }, meta?: MetaState, endless?: boolean): void {
+  function newRun(wantSeed: number, tIdx: number, wantLoadout: TileDef[], resume?: RunSave, board?: { w: number; h: number }, meta?: MetaState, endless?: boolean, rework?: ReworkSpec): void {
     try {
       const nextEndless = resume?.endless ?? endless ?? false;
+      // A resume carries the switch it was started under - never the shell's current one.
+      const nextRework = resume ? resume.rework : rework;
       // The tree decides the world (session 29, PR 1): which towers the strip
       // offers, which relics the pool deals, how many slots, which rarities.
       // A resume keeps the meta it was saved with; a new run takes the
@@ -177,7 +182,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           try {
             const knobs = createRng(nextSeed).stream('map');
             // Everything the Threat says about a map - the two knobs and how its roads walk - in one spread, so the lab's maps are the app's.
-            nextMap = generateMap(knobs, nextLib, { width: MAP_X, height: MAP_Y, ...threatKnobs(knobs, THREAT), relicPoolSize: relicDefs.length, specials, oreTierMax: unlocked.oreTierMax });
+            nextMap = generateMap(knobs, nextLib, { width: MAP_X, height: MAP_Y, ...threatKnobs(knobs, THREAT), relicPoolSize: relicDefs.length, specials, oreTierMax: unlocked.oreTierMax, ...(nextRework ? reworkKnobs(THREAT, nextRework.pads) : {}) });
             break;
           } catch (e) {
             if (attempt >= 60 && specials.length > 0) {
@@ -233,6 +238,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       runTowers = nextTowers;
       runRelics = nextRelics;
       runEndless = nextEndless;
+      runRework = nextRework;
       runFinalWave = nextEndless ? 0 : THREAT.finalWave;
       seed = resume ? resume.seed : nextSeed;
       threatIdx = nextThreatIdx;
@@ -686,7 +692,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   function handle(m: ToWorker): void {
     switch (m.t) {
       case 'init':
-        newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume, m.board, m.meta, m.endless);
+        newRun(m.seed, m.threatIdx, m.resume?.loadout ?? m.loadout ?? [], m.resume, m.board, m.meta, m.endless, m.rework);
         break;
       case 'frame': {
         if (!sim) break; // no run yet: nothing to serve, and never a lie
@@ -715,6 +721,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             loadout,
             meta: runMeta, // the tree state the run was started under (session 29, PR 1)
             endless: runEndless,
+            ...(runRework ? { rework: runRework } : {}),
             map, // D15: the save carries the map; resume never regenerates
           },
         });

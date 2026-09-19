@@ -10,7 +10,7 @@
  */
 import { GLTerm } from '@ascii-defense/render';
 import type { GlyphSet } from '@ascii-defense/render';
-import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, everyShopTile, winQueue, priceTile, priceLines, shortfall, payCost, costText, validateTileCells, deriveConnectors, mapCells, isRoad } from '@ascii-defense/engine';
+import { Sim, CORE_STRIP, GENERATOR_VERSION, TILE_SIZE, TileLibrary, fnv1a, relicForWin, RARITIES, resolveUnlocks, whyNot, buyNode, branchNodes, whyNotTile, buyTile, copyPrice, smithOpen, everyShopTile, winQueue, priceTile, priceLines, shortfall, payCost, costText, validateTileCells, deriveConnectors, mapCells, isRoad, REWORK_PADS } from '@ascii-defense/engine';
 import { TUTORIAL_STEPS, goodGround, nearRock, nextStep, type TutorialCtx } from './tutorial';
 import type { TreeNode, CellType } from '@ascii-defense/engine';
 import type { GeneratedMap, TileDef, MetaState } from '@ascii-defense/engine';
@@ -36,7 +36,7 @@ import { validateSprite, validateTree, validateRelics, type Sprite } from '@asci
 import tileLibraryJson from '@ascii-defense/content/assets/tiles/library.json';
 import treeJson from '@ascii-defense/content/assets/tree/nodes.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
-import { THREAT_LEVELS, type FrameSnapshot, type FromWorker, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
+import { THREAT_LEVELS, type FrameSnapshot, type FromWorker, type ReworkSpec, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 import { META_KEY, RUN_KEY, loadMetaFrom, loadRunFrom, saveMetaTo, type MetaSave } from './persistence';
 import { boardSlotsFor } from './boardSize';
 import { CODEX } from './generated/codex';
@@ -482,6 +482,16 @@ async function main(): Promise<void> {
   /** "3/9": the relics of a rarity the player has WON, of those wins can earn (PRD sec 28.1). */
   const RELIC_WON = (rarity: 'rare' | 'epic'): string => { const all = RELIC_POOL.filter((r) => r.rarity === rarity && !r.fusionOnly); return `${all.filter((r) => unlockedNow().has.has(r.id)).length}/${all.length}`; };
   let setupEndless = false;
+  // THE REWORK'S PROTOTYPE (PRD sec 32.1-32.4, D55): one switch on run setup, knobs on the debug page. The engine's
+  // default stays the game as it is; a run started with the switch on carries a ReworkSpec in its init and its save.
+  const REWORK_KEY = 'ad.rework';
+  const reworkState: { on: boolean; perTile: number | null; touchBias: number | null } = (() => {
+    try { const raw = localStorage.getItem(REWORK_KEY); if (raw) { const j = JSON.parse(raw) as Partial<{ on: boolean; perTile: number | null; touchBias: number | null }>; return { on: j.on === true, perTile: typeof j.perTile === 'number' ? j.perTile : null, touchBias: typeof j.touchBias === 'number' ? j.touchBias : null }; } } catch { /* a private window: the switch simply does not persist */ }
+    return { on: false, perTile: null, touchBias: null };
+  })();
+  const saveRework = (): void => { try { localStorage.setItem(REWORK_KEY, JSON.stringify(reworkState)); } catch { /* as above */ } };
+  /** What a NEW run is started with: undefined = the game as it is. A knob left alone is the Threat's own number. */
+  const reworkSpec = (): ReworkSpec | undefined => (reworkState.on ? { pads: { ...(reworkState.perTile !== null ? { perTile: reworkState.perTile } : {}), ...(reworkState.touchBias !== null ? { touchBias: reworkState.touchBias } : {}) } } : undefined);
   /** What each Threat means, in a phrase (session 31): the setup row said only a wave number. */
   const THREAT_HINT = ['fewer fronts, a slow ramp, the tutorial\'s home', 'the game as measured', 'more fronts, shorter roads, a fast ramp'];
   let mode: Mode = 'title';
@@ -613,11 +623,11 @@ async function main(): Promise<void> {
   // run's identity is fixed at its start whatever the workshop sells later.
   const metaForRun = (): MetaState => ({ unlocks: [...meta.unlocks], earned: [...meta.earned], forged: { ...meta.forged } });
   let lastMeta: MetaState = metaForRun();
-  const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave, loadout?: TileDef[], endless?: boolean): void => {
+  const startRun = (tIdx: number, wantSeed?: number, resume?: RunSave, loadout?: TileDef[], endless?: boolean, rework?: ReworkSpec): void => {
     threatIdx = tIdx;
     lastLoadout = resume?.loadout ?? loadout ?? [];
     lastMeta = resume?.meta ?? metaForRun();
-    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout, board: { w: mapX, h: mapY }, meta: lastMeta, endless: resume?.endless ?? endless ?? false });
+    send({ t: 'init', seed: wantSeed ?? Date.now() % 1_000_000, threatIdx: tIdx, resume, loadout, board: { w: mapX, h: mapY }, meta: lastMeta, endless: resume?.endless ?? endless ?? false, rework: resume ? undefined : rework });
     pendingStart = true; // 'playing' begins on 'ready', not on send
     mirroredSpeed = 1;
   };
@@ -718,6 +728,7 @@ async function main(): Promise<void> {
             })),
             { id: 'loadout', label: 'LOADOUT', note: loadMintedTiles().length + ownedSpecials().length === 0 ? 'no special tiles yet - the workshop sells them' : `${setupLoadout.length}/${loadoutSlots()} special(s) >` },
             ...(unlockedNow().endless ? [{ id: 'endless', label: 'ENDLESS', note: setupEndless ? 'ON - no final wave, the ramp runs until the Core falls' : 'OFF', selected: setupEndless }] : []),
+            { id: 'rework', label: 'REWORK PROTOTYPE', note: reworkState.on ? 'ON - very scarce build pads; the rest of the ground is bedrock' : 'OFF - the game as it is', selected: reworkState.on },
             { id: 'start', label: 'START RUN' },
             { id: 'back', label: 'BACK' },
           ],
@@ -922,6 +933,12 @@ async function main(): Promise<void> {
             ] },
             { heading: 'BOARD', items: [
               { id: 'dbg:kill', label: 'kill every body' }, { id: 'dbg:wave', label: 'call the next wave' }, { id: 'dbg:chest', label: 'surface a chest', note: RARITIES[debugRarity] },
+            ] },
+            { heading: 'REWORK (the NEXT run)', items: [
+              { id: 'dbg:rw', label: 'prototype: ' + (reworkState.on ? 'ON' : 'off'), tone: reworkState.on ? 'rarity.legendary' : undefined },
+              { id: 'dbg:rw:pads-', label: 'pads per tile  -' }, { id: 'dbg:rw:pads+', label: 'pads per tile  +', note: reworkState.perTile === null ? "the Threat's own" : reworkState.perTile.toFixed(2) + ' (x' + mapX * mapY + ' tiles = ' + Math.round(reworkState.perTile * mapX * mapY) + ')' },
+              { id: 'dbg:rw:bias-', label: 'road-touch bias  -' }, { id: 'dbg:rw:bias+', label: 'road-touch bias  +', note: reworkState.touchBias === null ? "the Threat's own" : reworkState.touchBias.toFixed(1) },
+              { id: 'dbg:rw:reset', label: "back to the Threat's own" },
             ] },
             { heading: 'SPAWN (at the first entry)', items: [
               ...ENEMY_POOL.map((e) => ({ id: `dbg:spawn:${e.id}`, label: e.name })),
@@ -1250,7 +1267,7 @@ async function main(): Promise<void> {
           .map((tid) => pool.find((t) => t.id === tid))
           .filter((t): t is NonNullable<typeof t> => t !== undefined);
         genError = null;
-        startRun(setupThreat, undefined, undefined, defs, setupEndless);
+        startRun(setupThreat, undefined, undefined, defs, setupEndless, reworkSpec());
         break;
       }
       case 'continue': {
@@ -1265,6 +1282,7 @@ async function main(): Promise<void> {
       case 'smith': if (smithOpen(TREE, meta.owned).open || DEV) { mode = 'smith'; smithNote = 'a blank tile: paint roads with the brushes, then MINT'; } break;
       case 'history': mode = 'history'; break;
       case 'endless': setupEndless = !setupEndless; break;
+      case 'rework': reworkState.on = !reworkState.on; saveRework(); break;
       case 'motion': {
         const v = !isReducedMotion();
         setReducedMotion(v);
@@ -1340,6 +1358,13 @@ async function main(): Promise<void> {
       case 'resume': mode = 'playing'; send({ t: 'speed', idx: 0 }); send({ t: 'speed', idx: mirroredSpeed }); break;
       case 'debug': mode = 'debug'; break;
       case 'dbg:scrap': void debug('give', 'scrap', 100); break;
+      // The rework's knobs (PRD sec 32.1): a first press starts from Standard's number, so the step is visible.
+      case 'dbg:rw': reworkState.on = !reworkState.on; saveRework(); break;
+      case 'dbg:rw:pads-': reworkState.perTile = Math.max(0.3, Math.round(((reworkState.perTile ?? REWORK_PADS.Standard.perTile) - 0.1) * 100) / 100); saveRework(); break;
+      case 'dbg:rw:pads+': reworkState.perTile = Math.min(3, Math.round(((reworkState.perTile ?? REWORK_PADS.Standard.perTile) + 0.1) * 100) / 100); saveRework(); break;
+      case 'dbg:rw:bias-': reworkState.touchBias = Math.max(0, Math.round(((reworkState.touchBias ?? REWORK_PADS.Standard.touchBias) - 0.5) * 10) / 10); saveRework(); break;
+      case 'dbg:rw:bias+': reworkState.touchBias = Math.min(4, Math.round(((reworkState.touchBias ?? REWORK_PADS.Standard.touchBias) + 0.5) * 10) / 10); saveRework(); break;
+      case 'dbg:rw:reset': reworkState.perTile = null; reworkState.touchBias = null; saveRework(); break;
       case 'dbg:ore:0': void debug('give', 'ore', 50, 0); break;
       case 'dbg:ore:1': void debug('give', 'ore', 50, 1); break;
       case 'dbg:ore:2': void debug('give', 'ore', 50, 2); break;

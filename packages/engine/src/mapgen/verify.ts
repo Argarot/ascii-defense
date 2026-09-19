@@ -70,7 +70,8 @@ export function verifyMap(map: GeneratedMap, lib: TileLibrary, opts: VerifyMapOp
   for (let y = 0; y < H; y++)
     for (let x = tileW; x < W; x++) {
       const c = cellAt(x, y);
-      if (c !== 'C' && c !== 'G') bad('tier0/strip-ground', `strip cell (${x},${y}) is '${c}'; the column is ground around the face`);
+      // 'D': under the pad rule (PRD sec 32.1) the strip's ground is bedrock like any other, bar the pads it keeps.
+      if (c !== 'C' && c !== 'G' && c !== 'D') bad('tier0/strip-ground', `strip cell (${x},${y}) is '${c}'; the column is ground around the face`);
     }
   let feeds = 0;
   for (const c of face) {

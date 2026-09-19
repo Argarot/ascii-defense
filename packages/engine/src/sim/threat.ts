@@ -16,6 +16,7 @@ import type { RngStream } from '../rng/rng';
 import type { DifficultySpec } from './sim';
 import type { WalkCharacterSpec } from '../mapgen/carve';
 import type { LandSpec } from '../mapgen/mapgen';
+import type { PadOptions } from '../mapgen/pads';
 
 export interface ThreatLevel {
   name: string;
@@ -81,6 +82,29 @@ export const MAP_LAND: LandSpec = { regions: 3, bias: 6 };
  * own map for the seed; a sweep that only wants the knobs may draw from a
  * fresh one.
  */
+/**
+ * THE REWORK'S PROTOTYPE (PRD sec 32.1-32.4, D55: "let's switch"). What a
+ * Threat says about the new map, kept OUT of threatKnobs() on purpose: the
+ * app's own maps, the lab, the twenty balance bands and the golden hash do
+ * not move until Daniil has played three runs with the switch on and said the
+ * density feels right. The old path is deleted in Rework IV, and these fold
+ * into THREAT_LEVELS then.
+ *
+ * Pads (sec 32.1): "a 7x5-tile board opens with 25-35 pads" - so a pad count
+ * per TILE, because the board is sized to the screen. Calm gets the most
+ * pads and the best ones (a high touch bias gathers them at bends and
+ * crossings, where a pad sees the most road); Grim the fewest, and scattered.
+ * First-pass numbers: the debug page's knobs are what he plays with.
+ */
+export const REWORK_PADS: Readonly<Record<string, PadOptions>> = {
+  Calm: { perTile: 1.0, touchBias: 2 },
+  Standard: { perTile: 0.86, touchBias: 1.5 },
+  Grim: { perTile: 0.72, touchBias: 1 },
+};
+export function reworkKnobs(threat: ThreatLevel, over: Partial<PadOptions> = {}): { pads: PadOptions } {
+  return { pads: { ...(REWORK_PADS[threat.name] ?? REWORK_PADS.Standard), ...over } };
+}
+
 export function threatKnobs(knobs: RngStream, threat: ThreatLevel): { entries: number; targetPathCells: number; walk: WalkCharacterSpec; land: LandSpec } {
   const entries = knobs.int(threat.entries[0], threat.entries[1]);
   const targetPathCells = (threat.pathBias + Math.max(knobs.int(0, 18), knobs.int(0, 18))) * TILE_SIZE;
