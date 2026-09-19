@@ -318,10 +318,24 @@ Status is yours to keep or ignore.
 
 | Name | What it does | Counter | Status |
 |---|---|---|---|
+| courier | carries a chest; 3.5-4 cells a second (the swarmling's 2.8 is today's fastest); **nothing holds it** - slows, freezes and Stasis all fail; no breach damage; in the NEXT preview, about one wave in three; drops its chest where it dies | reach and burst on a long straight, priority FAST | approved 2026-09-19 (PRD §32.4, D45; #402) - replaces random void chests |
 | *(add rows)* | | | |
 
 ### Relics
 
 | Name | Kind | What it does | Status |
 |---|---|---|---|
+| Seismograph | passive, epic | see two layers into rock instead of one; **legendary: the whole board**. Two tiers only. Replaces Quarry (faster digs) | approved 2026-09-19 (PRD §32.2, D43; #400) |
+| Work Gang | passive, stacks | one more dig crew | approved 2026-09-19 (PRD §32.2; #400) - the lab says whether crews come from this, from the Refinery's Second Crew fork, or both |
+| *(relics that modify the Core's verb)* | passive | a shorter cooldown; a verb that lands twice; a verb that chains to a neighbour | approved as a family 2026-09-19 (PRD §32.6, D47; #404) |
+| *(a one-run unique tower)* | passive | grants ONE copy of a tower that exists nowhere else, for this run | approved 2026-09-19 (PRD §32.7; thought dump item 29; #405) |
+| **leaving the pool** | | the flat-stat relics - Hot Loads, Iron Sights, Quick Hands and their kin - fold into the set bonuses: PRD §7.1's own test, applied | approved 2026-09-19 (PRD §32.7, D48; #405) |
 | *(add rows)* | | | |
+
+### Cores *(PRD §32.6 - the concept is approved, THE ROSTER IS CALL #412; these three are its default)*
+
+| Name | Role | Its verb (one, on a cooldown, never on click rate, never a weapon) | Status |
+|---|---|---|---|
+| Relay | offence | *Overdrive*: one tower fires at double rate for four seconds | default of #412 |
+| Bulwark | defence | *Brace*: for four seconds the Core takes no breach damage | default of #412 |
+| Foreman | economy | *Rush*: a dig or a Refinery cycle finishes fifteen seconds sooner; the run starts with a second crew | default of #412 |

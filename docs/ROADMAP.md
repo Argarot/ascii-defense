@@ -15,6 +15,24 @@ upgrade 15, and from wave 6 the next-wave panel says PLATED** — a build
 without those is older. A run saved before 2026-09-18 is refused on the title
 page with a sentence.
 
+**2026-09-19 — THE REWORK: a design session, no code. The game's direction
+changed, and the plan below is rewritten around it.** Daniil asked the dev to
+review the game as a designer — *"point where the game is flawed by design, not
+by numbers"*. The finding: the two decisions a tower defense lives on each had
+one answer. *Where to build* — the shared stretch by the Core, always, because
+ground was unlimited (the lab's own rung: Bolts by the entry win Calm 26%, at
+the choke 100%). *What to build* — the same forks every run, because every run
+asked the same question. Three rounds of conversation and two research passes
+later it is **PRD §32, decisions D42–D54, the GitHub milestone "The Rework —
+the map asks, the run answers", and five ledger rows**: very scarce build pads
+(pad / rock / bedrock), digging with one layer of sight, a bonus for clearing a
+wave early, a courier that carries the chest, a briefing before wave 1, Core
+types that carry the in-wave verb, rule-breaking relics from run one,
+bank-what-you-mined, a tile from every run and parts from tiles, difficulty
+targets with Grim as a skill check, and a daily run. **The why, the sources and
+what was dropped: docs/design/rework-2026-09-19.md. Nothing is built; the golden
+hash did not move; the roll-up below is still the thing to merge first.**
+
 **2026-09-18, night — session 41, the same row's last quarter, most of it
 built: seven PRs, green, ALL OPEN — and ONE PR merges the lot: the roll-up,
 tip → `main`.** The dev still cannot merge (the auto-mode classifier refuses
@@ -194,90 +212,80 @@ upgrades — should still feel like an opening.
 section owns the plan. Daniil's entire next input should be able to be the
 word "go".*
 
-*(Written 2026-09-18 at the night wrap of session 41. The row is the same
-row: what is left of it is reading, not building — and then the first thing
-after it.)*
+*(Written 2026-09-19, at the end of the design session that produced PRD
+§32. The previous plan is superseded, and where each of its items went is
+said at the end of this section.)*
 
-**Before anything: ONE PR is open that matters — the roll-up, tip → `main`.**
-It carries #387 through #393 and the wrap, and its body closes the issues.
-Merge it and the item PRs are closed citing it. If it is not merged, the
-session stacks on `docs/2026-09-18-night-wrap` and says so in the brief.
-**Check it landed by ancestry, not by PR state** (CONTRIBUTING §5).
+**Before anything: the roll-up PR of 2026-09-18's night (tip → `main`) and
+the rework's own PR.** Either order is safe — the rework's branch contains the
+roll-up. **Check what landed by ancestry, not by PR state** (CONTRIBUTING §5).
 
-**Theme.** The instruments are finally one instrument: one table of plans,
-the app's own maps, depth first. **Read the whole game on it once, write that
-down as the ladder's successor, close the row — and then spend the rest of
-the day on the first ten waves, which is where his round of 2026-09-18 was
-pointing**: enemies arrive too fast to learn (#385), now that a first meeting
-is a banner and not a lesson that stops the game.
+**Theme. Prove the rework's foundation with the smallest thing that can be
+played: the map.** Very scarce pads are the expensive decision — every band,
+the ladder and the corpus are invalid the day they ship, and everything after
+them is tuned on top. So the first session builds the four spatial pieces **as
+a prototype behind one switch, with knobs**, Daniil plays three runs, and
+**nothing is tuned until he says the density feels right.** A blocker found
+with nothing invested costs a session; found after the re-fit it costs the
+re-fit.
+
+**The switch.** The engine's default stays the game as it is — the lab, the
+gate's twenty bands and the golden hash do not move (the pattern
+`threatKnobs()` used for the generator). The app's run setup gets **REWORK
+PROTOTYPE: on / off**; the pause menu's debug page gets the knobs.
 
 **PR list (a full day, in this order):**
 
-0. **His two answers, or their defaults.** #381 (the long-turn tile) —
-   *default: re-mint Jogged Elbow as a taller turn out of straight runs,
-   nothing touching; the board's drawing of touching segments filed as scope.*
-   #392 (what the Missile Rack is for) — *default: leave it.* *Proof:* #381 in
-   the running game, the tile loaded and looked at on the board.
-1. ~~**One `specFor(threat, plan, seed)` (#394).**~~ **Built the same night,
-   after the wrap** (#396, in the roll-up), with the refused seeds (#367,
-   #397) and the ladder's successor (docs/lab/ladder-2026-09-19.md): none of
-   the three moved a number of the game or needed an answer from him.
-2. **Two targets nobody has stated, and the corpus read against them.**
-   *(a)* **What is Grim for a player with the whole tree?** "The tree wins
-   Grim 99%" is six hand-picked relics held at epic from wave 1; on six
-   relics *dealt* inside the epic band the base line wins 46% and only the
-   Laser's slot passes S4's 60% (80%). Propose the target from the ladder's
-   table, re-point `S4-grim-tree` at a dealt rung, and only then look at the
-   Laser's +34 points over its siblings. *(b)* **How many Standard seeds may
-   the careful plans lose?** The night's corpus says 9 of 500, read before
-   #367's fix: re-read it, make the corpus play the TREE on Grim, state the
-   target, and list what is over it. *Proof:* both targets written into the
-   ladder record before their numbers; the corpus document; the band moved
-   with its reason.
-3. **The unlock schedule (#385)** — measurable, so the dev's (rule 7).
-   *Targets, stated here first:* on Standard never more than **one new kind a
-   wave**, and none in a boss wave; on Calm **one every two waves**; the
-   first three waves of any Threat hold **grunts and scuttles alone**. Derive
-   `minWave` and `unlockDelay`; **every band of the gate moves** — re-read
-   all twenty, move each with its reason, and re-fit a curve only if a
-   ladder target (S1–S5, E1–E3, A1–A2) is missed. *Proof:* the schedule as a
-   table in PRD §8, the bands, and the first ten waves of a Calm and a
-   Standard run **played in the pane and looked at**: one banner at a time.
-4. **What a stranger would meet** — #373 (the strip's marks have no legend),
-   #375 (the relic card draws over its own icon), #378 (eleven relics have no
-   icon). *Proof:* each in the running game.
-5. **Still owed under #366, if the day has room:** Payload's and Penetrators'
-   rare and epic tiers; the mixed tree line read in slot form.
+0. **On open: the calls, then three defects a stranger would meet.** Mint
+   #381 (*default: re-mint Jogged Elbow*), #392 (*default: leave the Missile
+   Rack*) and #412 (*the Core roster — default: Relay, Bulwark, Foreman*) if
+   unanswered. Then #373, #375, #378, each looked at in the running game.
+1. **Pads (10.1, #399).** A `bedrock` cell; the generator rule that demotes
+   ground to bedrock and keeps pads by the rule in PRD §32.1; the density knob;
+   two Threat knobs. *Proof:* a census over 500 seeds a Threat — pads per
+   board 25–35, 3–5 on the last shared stretch, no lane without a pad in
+   reach — and the board **looked at** at three densities.
+2. **Digging (10.2, #400).** One rock, a pad under every one, one layer of
+   sight, one crew with a queue, flat 60 Scrap / 45 s, a boon under some rock;
+   *Second Crew*, *Survey*, *Seismograph*, *Prospector's Eye* re-read; rock
+   caches cut. *Proof:* sight tested cell by cell on a fixed seed; a run that
+   digs at every chance ends about six pads up; the tunnel **played**.
+3. **The clear bonus (10.3, #401).** Bodies know their wave (*verify first —
+   not checked*); par; short spawn windows; the line in the HUD. *Proof:* one
+   lab row pair, the same build at the choke and forward, reading the income
+   spread against the 60% / 160% target — a reading, not a tuning.
+4. **The courier (10.4, #402).** The body, its immunity to every hold, the
+   preview line, the cue, the chest where it falls; random chests off under
+   the switch. *Proof:* a courier in the pane, killed and missed.
 
-**Gate — his eye on the live build, now owed two sessions' worth:** a new
-enemy walks in and the game does NOT stop — a banner, and the card behind a
-click; the mender's heal is a soft green cast, no ring; a wall of Frost meets
-a husk and the panel says `insulated`; he finds Payload and goes wide on
-purpose; a Standard run on a sensible mixed line is won more often than lost.
+**Gate — his hands, and only his.** Three runs with the switch on (Calm,
+Standard, Standard). Does *very scarce* feel like a puzzle or like a cage?
+Does a dig feel like a decision? Does the clear bonus make him build forward
+without being told? Is the courier fun or an irritant? **His verdict moves the
+knobs or sends the idea back; the lab moves nothing before it.**
 
-**His part: one merge, and two calls — "go" covers both.** The roll-up PR.
-**#381** and **#392**, defaults above. *If he wants the dev to merge and to
-close issues:* `{"permissions":{"allow":["Bash(gh pr merge:*)","Bash(gh issue close:*)"]}}`
-in `.claude/settings.local.json` — his file, his call.
+**His part.** Merge the two PRs. Answer #412 if the default roster is wrong
+(nothing is built on it before Rework II). Then play.
 
-Decided by default tonight, his to overrule in a word: **the banner also
-replaces the first-tower, first-chest and boon-ground cards** (D41 names the
-enemy's; one argument to `meet()` puts any back); the banner is a **quiet
-plate**, not an accent bar; a tower's banner says **the first clause of its
-description that fits**.
+**Biggest risk — and it wants his verdict, not his silence.** The switch means
+**two code paths** in the generator and the sim until the re-fit deletes the
+old one (Rework IV). A prototype that lingers becomes a fork nobody dares
+remove, and every feature built in Rework II–III would have to work on both.
+*Default: the old path is deleted in Rework IV, and Rework II–III are built
+for the new map only — a run with the switch off simply does not see them.*
+**Expensive if wrong:** if pads feel bad and we find out late, the briefing,
+the Cores and the tile economy were all designed for a map that does not
+exist. That is why he plays before anything else is built. *"Accepted"*, or
+*"no switch — build it straight and re-fit at once"*.
 
-**Biggest risk — and it wants his verdict, not his silence.** It is the same
-risk for the third wrap running, and tonight it grew a second head. **Nobody
-has played any of this** — and tonight the lab was found quietly wrong twice
-more (the ladder's maps; a "Tesla line" with no slow in it that I had quoted
-in an issue as a fact about the game). Each was caught by reading, not by a
-number. PR 3 moves every band on the strength of that lab. **The alternative
-is to play before PR 3:** merge, play one Calm and one Standard run to wave
-ten, and open the session with what he saw. *Default: PRs 0–2 change no
-number and are built either way; PR 3 waits for his run if there is one, and
-is built on the targets above if there is not.* **Expensive if wrong:** the
-unlock schedule is what a stranger's first session is made of, and the
-stranger's round can only be spent once. *"Play first"* or *"accepted"*.
+**Where the superseded plan went.** Its calls (#381, #392) are PR 0. *What is
+Grim for a player with the whole tree* is answered by PRD §32.12 (50–60% on
+relics dealt); the Standard unwinnable-seed target is part of the re-fit
+(10.12). The unlock schedule (#385) is absorbed by the first-hour schedule
+(10.11). The three stranger defects are PR 0. #366's relic tiers are absorbed
+by the relic audit (10.7). **The stranger's round waits for the rework** — a
+stranger's first session is only worth spending once, and not on a game about
+to change under them.
 
 ---
 
@@ -592,9 +600,14 @@ The order is derived from *what causes rework if done late*:
 | **The stranger's round** | *(waits on a person, not on the build)* A stranger plays the live build unaided on Calm to wave 5 under `docs/STRANGER-TEST.md`; the ten scored rows are filed as issues `[r36.<row>] …`; every 0 and 1 becomes a fix the same session. This is the one question no sweep can answer, which is why it stays his — unlike balance, which §6 rule 7 moved back to the dev | A "2" on rows 5, 6 and 10 of the scorecard |
 | ~~37~~ | **DONE, GATE OPEN** *(PRs #342, #344–#347, #350, the same night; the commits say "session 36")* **The carve's variety, the debt dive and the economy research**: a walk with a character per Threat and a roll per map, land in regions by family, the map sweep's resemblance columns and a gallery tool; then #218 closed by construction, the deploy gated on the checks (#212's workflow half), generator hygiene (#217, #211, #321), the heredoc rule as a hook, and docs/lab/economy-research-2026-09-17.md | — | **Moved, not met**: Calm and Grim now read apart at a glance by the sweep's columns; two *Standard* maps still resemble each other more than the gate allows (avenue maps 8% → 18%, and no walk setting moves it further — D28's fill target decides it; call #343). His eye decides whether that is enough |
 | ~~38~~ | **DONE, GATE OPEN** *(PRs #353-#356, #358-#360, 2026-09-18 - Daniil's "go with the next session")* **Calibration I**: every seed re-dealt (D35) with the hash reading quantities exactly and the receipt covering the whole world; a lab player who keeps buying (WBS 1.5.1 under its real name); the ladder re-read and the seed corpus on the app's own maps (WBS 3.4); `npm run balance` in CI and in the gate (WBS 1.5.2, 3.2). **Not built:** the human offset (3.3, needs his replays), a bot that chooses (3.1) | - | Injected regression caught - **met**, red and green in PR #360's own CI. No unwinnable seed in 1,500 - **met**. No trivial seed - **not met**: nine Calm seeds in 500 are won by one plain Bolt, listed. And the finding that outweighs the gate: plain Bolts, never upgraded, win Standard 99% and Grim 84%; no curve moved; call #357 |
-| **What bounds a build** | *(NEXT; the plan is "The next session" above - born of call #357, answered as D37. **HALF BUILT in session 39, PRs #362-#364, 2026-09-18**: the fit harness; the damage model - an expensive chassis and cheap upgrades, plating, energy through armour, wide resistances; Standard and Grim re-fitted behind it, #349 closed; the bands moved. **THREE QUARTERS BUILT in session 40, the same evening, PRs #372, #374, #376, #377 - green and OPEN, his to merge, in that order**: D39; energy's armour (D38, #370); the relic synergy (#365) and the lab's base world corrected; Standard's curve re-fitted behind both. **MOST OF THE LAST QUARTER in session 41, the same night, PRs #387-#393 - green and OPEN, merged by ONE roll-up PR**: the stack's recovery (#387); D40 and D41; the new-enemy card and the first-meeting banner; one language for every field (the mender's wave); ONE table of plans for every lab tool, and the ladder on the app's own maps; the arsenal read fairly - most of #366 was the rung, and no content number moved)* **Still to build:** the ladder's successor document and the corpus on the new game (the instruments are ready; the reads are an hour of compute); the refused seeds (#367); under #366, the relic set's rare and epic tiers and the mixed tree line in slot form. **No cap, no rising price** (D37) | Met on the build so far, in the lab: plain Bolts alone lose Standard (3%) and the panel says why; energy width loses it too (4%); plain Bolts holding the relic set win it (83%); the mixed line wins it 93%; Grim is lost by the base world (3%) and won by the tree (99-100%). **Read, 2026-09-18 night:** in the Mortar's slot on Grim, holding nothing, the Tesla equals the Mortar (19% against 21%), the Laser beats it (42%) and the Missile Rack trails (14%) - its role is call #392. **His eye, and none of it has had it yet:** every price and the first minute of a run; a wall of Frost or Teslas meeting a husk, the panel saying which, and a Railbore being the answer; finding Payload, going wide on purpose, and it working |
-| **Meta progression, full** | *(plus 7.8, the monetization door — D27; the tree, run history with bests and the in-game Tile Smith landed in sessions 29–31)* | Tech tree stages 1–2 beyond the shipped tree, dailies, replay sharing, **the tile-loadout slot economy** (7.5) | Finishing a run visibly changes the next one |
-| **Calibration II** | WBS 3.6: recalibrate with the meta layer live — tech-tree multipliers, pool unlocks and chosen tile loadouts all move player power underneath the curves calibration I fixed. Re-baseline `balance.yml`, re-sweep the seed corpus at several tree states | No trivial or unwinnable seed at any tech-tree state the player can actually hold |
+| **What bounds a build** | *(BUILT, GATE OPEN - and no longer next: superseded as the next thing by The Rework, 2026-09-19, whose re-fit (10.12) re-reads every number this row fitted. Born of call #357, answered as D37. **HALF BUILT in session 39, PRs #362-#364, 2026-09-18**: the fit harness; the damage model - an expensive chassis and cheap upgrades, plating, energy through armour, wide resistances; Standard and Grim re-fitted behind it, #349 closed; the bands moved. **THREE QUARTERS BUILT in session 40, the same evening, PRs #372, #374, #376, #377 - green and OPEN, his to merge, in that order**: D39; energy's armour (D38, #370); the relic synergy (#365) and the lab's base world corrected; Standard's curve re-fitted behind both. **MOST OF THE LAST QUARTER in session 41, the same night, PRs #387-#393 - green and OPEN, merged by ONE roll-up PR**: the stack's recovery (#387); D40 and D41; the new-enemy card and the first-meeting banner; one language for every field (the mender's wave); ONE table of plans for every lab tool, and the ladder on the app's own maps; the arsenal read fairly - most of #366 was the rung, and no content number moved)* **Still to build:** the ladder's successor document and the corpus on the new game (the instruments are ready; the reads are an hour of compute); the refused seeds (#367); under #366, the relic set's rare and epic tiers and the mixed tree line in slot form. **No cap, no rising price** (D37) | Met on the build so far, in the lab: plain Bolts alone lose Standard (3%) and the panel says why; energy width loses it too (4%); plain Bolts holding the relic set win it (83%); the mixed line wins it 93%; Grim is lost by the base world (3%) and won by the tree (99-100%). **Read, 2026-09-18 night:** in the Mortar's slot on Grim, holding nothing, the Tesla equals the Mortar (19% against 21%), the Laser beats it (42%) and the Missile Rack trails (14%) - its role is call #392. **His eye, and none of it has had it yet:** every price and the first minute of a run; a wall of Frost or Teslas meeting a husk, the panel saying which, and a Railbore being the answer; finding Payload, going wide on purpose, and it working |
+| **The Rework I — the spatial prototype** | *(NEXT; the plan is "The next session" above. PRD §32.1–32.4, D42–D45; items 10.1–10.4)* | Very scarce build pads (pad / rock / bedrock) as a generator rule with a density knob; digging with one layer of sight and one crew; the clear bonus against a par, spawn windows short; the courier in place of random chests. **Behind one switch, engine default off: the lab, the bands and the golden hash do not move** | **Daniil plays three runs with the switch on and says whether very scarce feels right.** Nothing is tuned before that |
+| **The Rework II — the run's identity** | *(PRD §32.5–32.7, D46–D48; items 10.5–10.7; the Core roster is call #412)* | The briefing (map features, the host, bosses by wave each with one mechanic, a starting relic of three); the undo window; Core types at run setup; the relic audit - a rule-breaker in every offer, flat stats into the sets, skipping pays, tower-family relics, win rate per relic in every sweep | He reads a briefing and plans a run from it; two runs on one Threat feel like different problems; he uses a Core's verb without being told to |
+| **The Rework III — one economy** | *(PRD §32.9–32.11, D49–D52; items 10.8–10.11)* | Bank what you mined; a tile from every run past wave 5 by depth score; parts, recycling, minting with parts, the part ladder; `priceTile` with pads priced by the road they touch; the tile shop removed and the Smith open at the first recycle; towers on a first-hour schedule; Grim and Endless by wins; loadout comfort half offset; **the meta-save migration, with a refund of what the shop sold** | A lost run still hands him something; he recycles a tile and mints one; a Calm grind is visibly not worth it; no save is lost |
+| **The Rework IV — the re-fit** | *(PRD §32.8 and §32.12, D53; item 10.12. **The old map's code path is deleted here**)* | One re-fit of Calm, Standard and Grim against the stated targets on the new map; the plating question answered by measurement; every band, the ladder and the seed corpus rebuilt; the unwinnable-seed target stated and read | In the lab: naive play with everything unlocked wins Grim under 5%, skilled play with the base kit 15–25%, with everything 50–60% on relics DEALT. His eye: a Grim run he loses and knows why |
+| **The Rework V — the daily** | *(PRD §32.13, D54; item 10.13, and 7.4 which it fulfils)* | The daily run - first attempt scored, practice unlimited, loadout and Core fixed, everything unlocked; the share strip with no link; days played; feats that pay the bank | He plays the daily two days running and sends the strip to someone |
+| **Meta progression, full** | *(**mostly absorbed by The Rework III and V, 2026-09-19** - what is left is tech tree stage 2 and replay sharing; plus 7.8, the monetization door — D27; the tree, run history with bests and the in-game Tile Smith landed in sessions 29–31)* | Tech tree stages 1–2 beyond the shipped tree, dailies, replay sharing, **the tile-loadout slot economy** (7.5) | Finishing a run visibly changes the next one |
+| **Calibration II** | *(after The Rework IV, which re-fits the base game first)* WBS 3.6: recalibrate with the meta layer live — tech-tree multipliers, pool unlocks and chosen tile loadouts all move player power underneath the curves calibration I fixed. Re-baseline `balance.yml`, re-sweep the seed corpus at several tree states | No trivial or unwinnable seed at any tech-tree state the player can actually hold |
 | **Presentation at scale** | Full art pass with per-upgrade tower identity (4.11), effects for every attack shape (6.3), enemy trait markers, UI art (4.13), **6.7 relic art at board-glyph scale**, **6.8 smoothness via spatial phase**, biomes, minimal SFX. The art round-trip proof (6.1) opens this block | The board reads as a place, not a diagram |
 | **Beta hardening + release** | Perf and bundle budgets in CI, browser matrix, error-path audit, save migration tests, external playtest with strangers, release process | PRD §17 stable beta |
 
@@ -657,7 +670,7 @@ is frozen in [docs/history/wbs-2026-09-11.md](history/wbs-2026-09-11.md).
 <!-- generated:state -->
 *Rendered from open issues by `node tools/plan-state.mjs` — do not edit by hand.*
 
-**148 of 216 items done; 68 open.**
+**148 of 229 items done; 81 open.**
 
 | | done | open | the open ids |
 |---|---:|---:|---|
@@ -669,6 +682,7 @@ is frozen in [docs/history/wbs-2026-09-11.md](history/wbs-2026-09-11.md).
 | **M6** | 3 | 8 | 6.1 (#285) · 6.2 (#286) · 6.3 (#287) · 6.4 (#288) · 6.5 (#289) · 6.7 (#290) · 6.8 (#291) · 6.11 (#292) |
 | **M7** | 13 | 7 | 7.1 (#293) · 7.2 (#294) · 7.3 (#295) · 7.4 (#296) · 7.5 (#297) · 7.6 (#298) · 7.8 (#299) |
 | **M8** | 0 | 7 | 8.1 (#300) · 8.2 (#301) · 8.3 (#302) · 8.4 (#303) · 8.5 (#304) · 8.6 (#305) · 8.7 (#306) |
+| **M9** | 0 | 13 | 10.1 (#399) · 10.2 (#400) · 10.3 (#401) · 10.4 (#402) · 10.5 (#403) · 10.6 (#404) · 10.7 (#405) · 10.8 (#406) · 10.9 (#407) · 10.10 (#408) · 10.11 (#409) · 10.12 (#410) · 10.13 (#411) |
 | **Backlog** | 21 | 11 | 9.2 (#307) · 9.3 (#308) · 9.5 (#309) · 9.6 (#310) · 9.16 (#311) · 9.17 (#312) · 9.22 (#314) · 9.26 (#315) · 9.28 (#316) · 9.29 (#317) · 9.30 (#318) |
 
 <!-- /generated:state -->
@@ -897,6 +911,24 @@ is frozen in [docs/history/wbs-2026-09-11.md](history/wbs-2026-09-11.md).
 | `8.6` | Release process: versioning, changelog, tagged beta, a way for players to… |  |
 | `8.7` | Licences and attribution verified (Apache-2.0; spleen BSD-2-Clause). |  |
 
+### M9 — The Rework: the map asks, the run answers *(2026-09-19; PRD §32; the GitHub milestone of the same name)*
+
+| id | item | shipped |
+|---|---|---|
+| `10.1` | Build pads: every cell that is not road is a pad, rock over a pad, or bedrock — very scarce (§32.1) |  |
+| `10.2` | Digging replaces prospecting: one rock, one layer of sight, one crew, a flat price (§32.2) |  |
+| `10.3` | The clear bonus against a par; short spawn windows (§32.3) |  |
+| `10.4` | The courier replaces random void chests (§32.4) |  |
+| `10.5` | The briefing, bosses with a mechanic each, a starting relic of three, the undo window (§32.5) |  |
+| `10.6` | Core types carry the in-wave verb (§32.6; the roster is call #412) |  |
+| `10.7` | The relic audit: rule-breakers from run one (§32.7) |  |
+| `10.8` | Ore: you bank what you mined (§32.9) |  |
+| `10.9` | A tile from every run past wave 5, by depth score (§32.10) |  |
+| `10.10` | Parts: recycle, mint, the part ladder; pads priced by road touch; no shop; the Smith opens early (§32.10) |  |
+| `10.11` | The tree sells breadth: towers on a schedule, Threats by wins, loadout comfort half offset (§32.11) |  |
+| `10.12` | One re-fit against the stated targets; the plating question measured (§32.8, §32.12) |  |
+| `10.13` | The daily run, the share strip, days played, feats (§32.13) |  |
+
 ### Backlog — The thought dump of 2026-09-06 — Daniil's numbering
 
 | id | item | shipped |
@@ -945,6 +977,19 @@ agreement](../CONTRIBUTING.md), rule 3).*
 
 | ID | Decision | Deadline | Owner |
 |---|---|---|---|
+| D54 | **The daily run, and no paid power** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.13–32.14)**: one seed a day; the first attempt is scored and practice is unlimited; loadout and Core fixed, everything unlocked, so no meta state can touch the score; a share strip with no link; no sign-up, no notifications, a days-played counter with no escalating reward. On money the record is advice for D27, which stays open and his: free web, then a cosmetic supporter pack, then a paid Steam build; paid power recommended against for good |  | closed |
+| D53 | **Grim is a skill check** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.12)**: *"gear makes it somewhat easier. No-skill random play even with all gear unlocked on grim should be almost impossible to win."* Targets before numbers: naive play with everything unlocked wins Grim under 5%; skilled play with the base kit 15–25%, with everything 50–60% on relics DEALT; Standard 85–90% for skilled base-kit play. One re-fit, after the map is settled. This answers the ladder's open question of the same morning |  | closed |
+| D52 | **The tree sells breadth; wins open the Threats** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.11)**: towers arrive on a first-hour schedule (absorbing #385), Grim opens on a Standard win and Endless on a Grim win, the tree keeps slots and rarity bands, and a loadout's comfort is half offset in the host's budget |  | closed |
+| D51 | **Parts** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.10)**: a tile recycles into its features (half of each kind, at least one of its best); a part *has no price and cannot be bought*; minting needs the parts painted plus the Smith's Ore fee; **a pad costs more the more road it touches** (his rule - a pad ringed by road is the dearest); nothing but bedrock is free; and **the part ladder** lets hundreds of common parts climb into rarer ones, because a player only ever loads a handful of tiles and should make those as strong as he can. Burning a part for a one-run feature was proposed and refused: *"pretty pointless"* |  | closed |
+| D50 | **Tiles come from runs, never from a shop** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.10)**: **every run that cleared wave 5 pays a tile, won or lost**, its rarity rolled on waves cleared × the Threat's weight (Calm 0.5, Standard 1, Grim 1.6), so grinding Calm is pointless and the deepest tiles exist only at the bottom of an endless run; the first time in a band pays its best. The tile shop is removed; the Smith opens at the first recycle |  | closed |
+| D49 | **You bank what you mined** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.9)**: Ore spent in a run costs the bank nothing; the bank is what the run mined × the Threat's weight × the share of waves cleared. His condition was no third currency, and this needs none. **Ore tiers stay** - the dev proposed collapsing them and he refused: D30 stands |  | closed |
+| D48 | **Relics break rules from the first run** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.7)**: a rule-breaker in every offer, flat-stat relics fold into the sets, skipping pays Scrap, relics keyed to a tower family, one-run unique towers; wins unlock stranger relics, never stronger ones |  | closed |
+| D47 | **Core types carry the in-wave verb** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.6)**: the player chooses a Core at run setup; one verb on a cooldown, *never* on click rate; the Core is still not a tower; Cores differ in role, never in degree; relics modify the verb and never supply it. He refused an always-on ability, a guaranteed "hands" relic, and the dev's first roster (*a lane taking +30% always beats one tower at double rate, and a striking Core is a tower*). **The roster is call #412**, default Relay / Bulwark / Foreman |  | closed |
+| D46 | **The briefing** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.5)**: before wave 1 a page shows the map's features, this run's host, the bosses by wave (each with one mechanic) and a starting relic of three. Forks stay permanent; a purchase refunds in full for about five seconds |  | closed |
+| D45 | **The courier carries the chest** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.4)**: random void chests are cut. A body much faster than any other, **that nothing holds - slows, freezes and Stasis all fail** (his two corrections), harmless, shown in the preview, dropping its chest where it dies. A boss's chest stays |  | closed |
+| D44 | **A wave pays for being cleared early** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.3)**: his rule, in place of the dev's bounty-by-distance, because clear time already measures how far forward a build kills and reads as one line. Par per wave; the bonus is the wave's bounties × the share of par saved; **spawn windows must be short** (his condition); the last body deciding the payout is accepted; the early call is unchanged. Fallback if it plays badly: bounty ×1 at the Core to ×3 at the entry |  | closed |
+| D43 | **Digging replaces prospecting** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.2)**: *"if it can be dug, there is a pad behind it."* One rock, no hardness; a rock may hide boon ground and nothing else; one layer of sight; **slower and costlier, at a flat price** (the road a pad touches prices it in the Smith, never in a dig); one crew, more from the Refinery's tree and/or a relic; Automation is cut - it *"breaks the point"*; Seismograph has two tiers, epic (two layers) and legendary (the board) |  | closed |
+| D42 | **Build pads, very scarce** — **DECIDED 2026-09-19 (Daniil, the design review - PRD §32.1)**: *"happy with very scarce ground"* - it was part of why the cell grew (D24). Every cell that is not road is a **pad**, **rock over a pad**, or **bedrock**, which is the void; *"there shouldn't be free plains"*. Width is bounded by the map and by nothing else - D37's "no cap, no rising price" stands. Built first, as a generator rule with a knob, and played by him before anything is tuned |  | closed |
 | D41 | **A new enemy no longer stops the game** — **MINTED 2026-09-18, by default, unanswered** (call #384, his round of that evening, item 4a: *"game stopping to show a card of a new enemy - cool idea, but it is too disruptive"*; the session brief put the default in front of him and said a bare "go" mints it; he answered "Go build this"). A first meeting shows a **banner in the side panel for a few seconds** — the name and the one-line answer — and the run goes on; the full card waits in the CODEX and behind a click on the banner. **The tutorial's first run keeps one pausing card, the grunt's**, because that card is where a stranger learns that cards exist. Reversible: one flag and a panel row |  | closed |
 | D40 | **The skitter is called the *scuttle*** — **MINTED 2026-09-18, by default, unanswered** (call #383, the same round, item 3: *"skitter reads like shitter"*; the same brief, the same "go"). The display name changes; **the id stays `skitter`** (PRD §30: a rename is a content edit, never an id), so no save, replay, sprite file or lab row moves. Reversible: one string in `enemies/roster.json` and a codex regeneration |  | closed |
 | D39 | **Calm stays winnable by placement alone** — **MINTED 2026-09-18, by default, unanswered** (call #368; Daniil's "go" on the brief that put the call and its default in front of him, no separate answer). After D37's damage model plain, never-upgraded Bolts win Standard 3% and Grim 0% — and **Calm 99%**, and that is left as it is. Calm is where placement is learned: its plating starts at wave 6 of 15 and its kinds unlock three waves late on purpose, and moving it moves the first five waves of a stranger's first run. The target written before measuring said "about half"; it was missed and is recorded as missed, not bent to. Reversible in one harness round: Calm's own plating (earlier, or +2) or its curve — `node tools/fit.mjs --plans=calm:naive1,calm:naive3,calm:spam,calm:mixed` with a patch prices either in four minutes. Evidence: docs/lab/damage-model-2026-09-18.md |  | closed |
