@@ -407,10 +407,14 @@ if (DEBT_ONLY) {
     { name: 'BASE WORLD: the mixed line holding the Bolt set (#365: the set must not carry Grim)', plan: 'mixedDeepBolt' },
     { name: 'THE TREE playing the BASE line, depth first + six relics dealt inside the epic band', plan: 'treeBaseDeep', relicSets: true, band: 2 },
     { name: 'THE TREE: the base line, depth first, NO relics - what the workshop is worth before its relic band', plan: 'treeBaseDeep', bare: true },
-    { name: 'THE TREE: the Laser line, depth first, NO relics', plan: 'treeLaserDeep', bare: true },
-    { name: 'THE TREE: the Laser line, depth first + six relics dealt inside the epic band', plan: 'treeLaserDeep', relicSets: true, band: 2 },
-    { name: 'THE TREE: the Missile line, depth first + six relics dealt inside the epic band', plan: 'treeMissileDeep', relicSets: true, band: 2 },
-    { name: 'THE TREE: the Tesla line, depth first + six relics dealt inside the epic band', plan: 'treeTeslaDeep', relicSets: true, band: 2 },
+    // The tree's towers are read IN A SLOT (docs/lab/arsenal-2026-09-18.md): the base line with the Mortar slot given
+    // to the tower and nothing else changed. The `tree*Deep` lines drop the Frost too, and read a missing slow as a weak tower.
+    { name: 'THE TREE: a Laser in the Mortar\'s slot, NO relics', plan: 'bareLaserSlot' },
+    { name: 'THE TREE: a Tesla in the Mortar\'s slot, NO relics', plan: 'bareTeslaSlot' },
+    { name: 'THE TREE: a Missile Rack in the Mortar\'s slot, NO relics', plan: 'bareMissileSlot' },
+    { name: 'THE TREE: a Laser in the Mortar\'s slot + six relics dealt inside the epic band', plan: 'bareLaserSlot', relicSets: true, band: 2 },
+    { name: 'THE TREE: a Missile Rack in the Mortar\'s slot + six relics dealt inside the epic band', plan: 'bareMissileSlot', relicSets: true, band: 2 },
+    { name: 'THE TREE: a Tesla in the Mortar\'s slot + six relics dealt inside the epic band', plan: 'bareTeslaSlot', relicSets: true, band: 2 },
     { name: 'THE TREE: the mixed tree line (Tesla, Frost, Railbore, Laser, Mortar), depth first + six epic-band relics dealt', plan: 'treeMixedDeep', relicSets: true, band: 2 },
     { name: 'THE TREE: mono-energy (Frost, Tesla, Laser), depth first + six epic-band relics dealt (D38: must lose to mixed)', plan: 'treeEnergyDeep', relicSets: true, band: 2 },
   ], [10, 15, 20]);
@@ -418,7 +422,7 @@ if (DEBT_ONLY) {
   // `threats` key): the `--only=fit --geo=` table that lived here read one Threat, chassis first, on the old maps.
   if (want('tree')) read(STANDARD_T, [
     { name: 'THE TREE on Standard, for scale: the base line, depth first + six epic-band relics dealt', plan: 'treeBaseDeep', relicSets: true, band: 2 },
-    { name: 'THE TREE on Standard, for scale: the Laser line, depth first + six epic-band relics dealt', plan: 'treeLaserDeep', relicSets: true, band: 2 },
+    { name: 'THE TREE on Standard, for scale: a Laser in the Mortar\'s slot + six epic-band relics dealt', plan: 'bareLaserSlot', relicSets: true, band: 2 },
   ], [5, 10, 15]);
 }
 

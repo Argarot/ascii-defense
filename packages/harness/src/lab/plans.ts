@@ -128,6 +128,8 @@ export const PLANS = {
   frostSpam: { towers: [P('frost', ICE_SHARDS)], tail: [P('frost', ICE_SHARDS)], unlocks: [] },
   teslaSpam: { towers: OPENING, tail: [P('tesla', PLAIN)], unlocks: ['*'] },
   laserSpam: { towers: OPENING, tail: [P('laser', PLAIN, 'inline')], unlocks: ['*'] },
+  /** Payload's door (#366, A4): it lifts a hit under 10, and a plain Tesla hits for 9 - Tesla width holding it must not become a second synergy by accident. */
+  teslaSpamPayload: { towers: OPENING, tail: [P('tesla', PLAIN)], unlocks: ['*'], relics: held(['payload'], 0) },
   // The same width holding the tree's relics, with its kinetic twin beside it: what the epic band does for spam of either kind.
   treeSpam: { towers: [P('bolt', PLAIN)], tail: [P('bolt', PLAIN)], unlocks: ['*'], relics: held(SIX, 2) },
   treeFrostSpam: { towers: [P('frost', ICE_SHARDS)], tail: [P('frost', ICE_SHARDS)], unlocks: ['*'], relics: held(SIX, 2) },
@@ -139,6 +141,24 @@ export const PLANS = {
   treeEnergyDeep: { towers: [P('frost', SHATTER), VEIN], tail: [P('tesla', [0, 0, 0]), P('laser', [0, 0, 0], 'inline'), P('frost', SHATTER)], unlocks: ['*'], relics: held(SIX, 2) },
   // The same two lines holding NOTHING: on Grim six epic relics win for whatever stands under them (99% for every
   // line that upgrades), so "mono-energy loses to mixed" can only be read where the towers are all there is.
+  // THE ARSENAL (#366): each of the tree's lines and the base line under the same tree, holding nothing - the only
+  // rung where "the tree's TOWERS earn their Ore" can be missed. Same shape every one: a Railbore, the Refinery, then
+  // the line's tower and a Railbore in turn, each finished before the next - so only the tower differs.
+  bareBaseDeep: { ...DEEP, unlocks: ['*'] },
+  bareRails: { towers: [P('bolt', RAIL)], tail: [P('bolt', RAIL)], unlocks: ['*'] },
+  bareTeslaDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('tesla', [0, 0, 0]), P('bolt', RAIL)], unlocks: ['*'] },
+  bareMissileDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('missile', [0, 1, 0]), P('bolt', RAIL)], unlocks: ['*'] },
+  bareLaserDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('laser', [0, 0, 0], 'inline'), P('bolt', RAIL)], unlocks: ['*'] },
+  // ...and the SLOT plans, which are the fair reading: the *Deep lines above drop the Frost AND the Mortar for one
+  // tower type, so they differ from the base line by a missing slow as much as by the tower (round 0 of the arsenal:
+  // Tesla at three times its damage still won Grim 1%). These are the base line with the Mortar's slot - the line's
+  // area damage - given to the tree's tower, and nothing else changed.
+  bareTeslaSlot: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('tesla', [0, 0, 0]), P('bolt', RAIL)], unlocks: ['*'] },
+  bareMissileSlot: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('missile', [0, 1, 0]), P('bolt', RAIL)], unlocks: ['*'] },
+  /** The Missile Rack's other forks in the same slot: Seeker, Salvo, Barrage (many small blasts) and Warhead, Salvo, Bunker Buster (two big ones). */
+  bareMissileSlotBarrage: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('missile', [1, 0, 1]), P('bolt', RAIL)], unlocks: ['*'] },
+  bareMissileSlotSalvo: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('missile', [0, 0, 0]), P('bolt', RAIL)], unlocks: ['*'] },
+  bareLaserSlot: { towers: [P('bolt', RAIL), VEIN], tail: [P('frost', [1, 0, 1]), P('bolt', RAIL), P('laser', [0, 0, 0], 'inline'), P('bolt', RAIL)], unlocks: ['*'] },
   bareEnergyDeep: { towers: [P('frost', SHATTER), VEIN], tail: [P('tesla', [0, 0, 0]), P('laser', [0, 0, 0], 'inline'), P('frost', SHATTER)], unlocks: ['*'] },
   bareMixedDeep: { towers: [P('bolt', RAIL), VEIN], tail: [P('tesla', [0, 0, 0]), P('frost', [1, 0, 1]), P('bolt', RAIL), P('laser', [0, 0, 0], 'inline'), P('mortar', [1, 1, 0])], unlocks: ['*'] },
 } satisfies Record<string, Plan>;
