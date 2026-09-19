@@ -429,7 +429,7 @@ export const CODEX = {
     },
     {
       "id": "skitter",
-      "name": "skitter",
+      "name": "scuttle",
       "hp": 12,
       "speed": "2.40",
       "breach": 1,
@@ -577,7 +577,7 @@ export const CODEX = {
       "kinetic": "",
       "energy": "",
       "traits": [
-        "split: dies into two skitters where it fell - kill it early, or let a blast take the halves together"
+        "split: dies into two scuttles where it fell - kill it early, or let a blast take the halves together"
       ]
     },
     {

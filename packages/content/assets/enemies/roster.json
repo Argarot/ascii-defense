@@ -11,7 +11,7 @@
     },
     {
       "id": "skitter",
-      "name": "skitter",
+      "name": "scuttle",
       "hp": 12,
       "speed": 0.12,
       "damage": 1,

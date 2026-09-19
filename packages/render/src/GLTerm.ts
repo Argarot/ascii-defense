@@ -247,6 +247,15 @@ export class GLTerm implements TermSurface {
     }
   }
 
+  /** Mix a cell's EXISTING background toward a colour: 0 leaves it, 1 is tint. The ground keeps its tone under a cast. */
+  wash(x: number, y: number, bg: string, amount: number): void {
+    if (x < 0 || y < 0 || x >= this.cols || y >= this.rows) return;
+    const o = (y * this.cols + x) * FLOATS_PER_CELL;
+    const a = Math.max(0, Math.min(1, amount));
+    const b = rgb(bg);
+    for (let c = 0; c < 3; c++) this.data[o + 6 + c] += (b[c] - this.data[o + 6 + c]) * a;
+  }
+
   put(x: number, y: number, ch: string, fg: string, bg?: string): void {
     if (x < 0 || y < 0 || x >= this.cols || y >= this.rows) return;
     const slot = this.index.get(ch.codePointAt(0) ?? 32);
