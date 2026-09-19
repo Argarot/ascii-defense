@@ -21,6 +21,7 @@ import { isRoad, strandEntered, strandPorts, type CellType } from '../grid/cells
 import type { BoonRef, GeneratedMap, CellRef } from '../mapgen/mapgen';
 import { SHIELD_REGEN_DELAY, SHIELD_REGEN_TICKS, TRAIT_RULES, frontShieldMul, hasTrait, traitSpeedMul } from './traits';
 import { computeFlowField, type FlowField } from './flow';
+import { SURVEY_SIGHT, boonUnder, sightMask, type DigRules, type ReworkRules } from './rework';
 import { PRIORITIES, pickTarget, type Priority, type TargetCandidate } from './targeting';
 import {
   EMPTY_FOLD,
@@ -100,6 +101,8 @@ export interface SimOptions {
   rarityMax?: number;
   /** Overrides of COMBAT_RULES for this run (session 39): the lab's way to play a candidate rule. The app passes none. */
   rules?: Partial<CombatRules>;
+  /** THE REWORK'S PROTOTYPE (PRD sec 32.2-32.4, D55; sim/rework.ts): absent = the game as it is. The app passes it only when the switch is on. */
+  rework?: ReworkRules;
 }
 
 /**
@@ -237,7 +240,7 @@ export type SimEvent =
   | { kind: 'build'; x: number; y: number }
   | { kind: 'sell'; x: number; y: number }
   | { kind: 'waveStart'; wave: number }
-  | { kind: 'reveal'; x: number; y: number; found: 'ore' | 'cache' | 'none' }
+  | { kind: 'reveal'; x: number; y: number; found: 'ore' | 'cache' | 'none' | 'boon' }
   | { kind: 'loot'; x: number; y: number; text: string };
 
 export type StampedSimEvent = SimEvent & { seq: number; tick: number };
@@ -770,7 +773,48 @@ export class Sim {
 
   /** What prospecting costs this run (Prospector's Eye makes it free). */
   prospectCost(): number {
+    // Digging (PRD sec 32.2): flat, and Prospector's Eye halves it - a free dig is a systematic excavation.
+    const dig = this.opts.rework?.dig;
+    if (dig) return Math.round(dig.cost * (this.fold.prospectFree ? 0.5 : 1));
     return this.fold.prospectFree ? 0 : PROSPECT_COST;
+  }
+
+  // ---- digging (the rework's prototype, PRD sec 32.2; rules in sim/rework.ts) ----------------------------------
+  /** The run's digging rules; undefined = prospecting as it is. */
+  get digRules(): DigRules | undefined {
+    return this.opts.rework?.dig;
+  }
+  /** Crews at work at once: the rules' own, plus one per Refinery that took Automation - "Second Crew" under the rework. */
+  digCrews(): number {
+    const dig = this.opts.rework?.dig;
+    return dig ? dig.crews + this.surveyCount('surveyAuto') : 0;
+  }
+  /** How far the player sees into the ground, and from where besides open cells: Seismograph (the Quarry family, held) is a second layer; a Survey refinery reveals the rock around it. */
+  digSight(): { layers: number; sources: { x: number; y: number; r: number }[] } | null {
+    const dig = this.opts.rework?.dig;
+    if (!dig) return null;
+    const sources: { x: number; y: number; r: number }[] = [];
+    for (const t of this.towers) {
+      if (!t) continue;
+      const tiers = this.opts.towerDefs[t.defIdx].tiers;
+      if (!tiers) continue;
+      for (let ti = 0; ti < t.choices.length; ti++) {
+        const pick = t.choices[ti];
+        if (pick >= 0 && tiers[ti]?.choices[pick]?.unlocks === 'surveySpeed') sources.push({ x: t.cellX, y: t.cellY, r: SURVEY_SIGHT });
+      }
+    }
+    return { layers: dig.sight + (this.fold.prospectSpeedMul > 1 ? 1 : 0), sources };
+  }
+  /** Is the nature of (x, y) known to the player? Always, without the rework. */
+  cellKnown(x: number, y: number): boolean {
+    const sight = this.digSight();
+    if (!sight) return true;
+    const W = this.opts.cellsW;
+    return sightMask(this.cellsMut, W, this.opts.cellsH, sight.layers, sight.sources)[y * W + x] === 1;
+  }
+  /** The dig queue in order, for the rock card: the first digCrews() entries are being dug, the rest wait. */
+  digQueue(): number[] {
+    return this.opts.rework?.dig ? [...this.prospectJobs.keys()] : [];
   }
 
   /**
@@ -795,7 +839,8 @@ export class Sim {
     // Refineries live on veins - except next to the Core, where the mineAnywhere gift lets one stand on plain ground (PRD sec 4.5).
     if (minesOre) return cell === 'O' || (cell === 'G' && def.coreBoon?.flags?.includes('mineAnywhere') === true && this.nearCore[y * this.opts.cellsW + x] === 1);
     if (cell === 'G') return true;
-    if (cell === 'R') return this.fold.buildOnRock; // Vein Tap
+    // Vein Tap. Under one layer of sight (PRD sec 32.2) only on rock the player can SEE is rock - a build that succeeds on the unknown mass would be a free survey.
+    if (cell === 'R') return this.fold.buildOnRock && this.cellKnown(x, y);
     return false; // O is Refinery ground; road and C are never buildable
   }
 
@@ -1668,7 +1713,8 @@ export class Sim {
   /** The active prospect job at (x, y), for the rock card's progress bar. */
   prospectJobAt(x: number, y: number): { remaining: number; total: number } | null {
     const r = this.prospectJobs.get(y * this.opts.cellsW + x);
-    return r === undefined ? null : { remaining: r, total: PROSPECT_TICKS };
+    const dig = this.opts.rework?.dig;
+    return r === undefined ? null : { remaining: r, total: dig ? dig.seconds * TICK_HZ : PROSPECT_TICKS };
   }
 
   /**
@@ -1682,17 +1728,21 @@ export class Sim {
     if (this.cellAt(x, y) !== 'R') return false;
     const k = y * this.opts.cellsW + x;
     if (this.prospectJobs.has(k)) return false;
+    const dig = this.opts.rework?.dig;
+    // A dig needs to KNOW it is rock (one layer of sight), and the queue behind the crews is short.
+    if (dig && (!this.cellKnown(x, y) || this.prospectJobs.size >= this.digCrews() + dig.queue)) return false;
     const price = this.prospectCost();
     if (this.scrap < price) return false;
     this.scrap -= price;
-    if (price === 0) this.noteRelicUse('prospectFree');
-    this.prospectJobs.set(k, PROSPECT_TICKS);
+    if (price === 0 || (dig && this.fold.prospectFree)) this.noteRelicUse('prospectFree');
+    this.prospectJobs.set(k, dig ? dig.seconds * TICK_HZ : PROSPECT_TICKS);
     this.inputs.push({ tick: this.tickCount, a: { t: 'prospect', x, y } });
     return true;
   }
 
   /** Jobs tick down (Survey towers accelerate); completion reveals the deal. */
   private prospectPhase(): void {
+    if (this.opts.rework?.dig) { this.digPhase(); return; }
     const speed = this.prospectSpeed();
     for (const [k, remaining] of this.prospectJobs) {
       const x = k % this.opts.cellsW;
@@ -1750,6 +1800,28 @@ export class Sim {
           this.prospectJobs.set(rk, PROSPECT_TICKS);
           break outer;
         }
+    }
+  }
+
+  /**
+   * Digging's tick (PRD sec 32.2): the first digCrews() jobs of the queue are dug, at one speed - nothing hurries a
+   * dig - and the rest wait their turn. A finished dig is ALWAYS a pad ("if it can be dug, there is a pad behind
+   * it"); where the map dealt the rock a find, the pad is boon ground, and nothing else is ever under a rock: no
+   * vein, no cache (bosses and couriers carry the loot). Automation digs nothing by itself: it is the Second Crew.
+   */
+  private digPhase(): void {
+    let crews = this.digCrews();
+    for (const [k, remaining] of this.prospectJobs) {
+      if (crews-- <= 0) break;
+      if (remaining > 1) { this.prospectJobs.set(k, remaining - 1); continue; }
+      this.prospectJobs.delete(k);
+      const x = k % this.opts.cellsW;
+      const y = Math.floor(k / this.opts.cellsW);
+      this.cellsMut[k] = 'G';
+      this.cellChanges.push({ x, y, t: 'G' });
+      const find = this.opts.map.rockContents.find((r) => r.x === x && r.y === y)?.yields === 'cache';
+      if (find) this.extraBoons.push({ x, y, ...boonUnder(x, y) });
+      this.emit({ kind: 'reveal', x, y, found: find ? 'boon' : 'none' });
     }
   }
 

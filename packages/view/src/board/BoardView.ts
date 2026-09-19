@@ -13,6 +13,7 @@ import {
   TILE_SIZE,
   TileLibrary,
   mapCells,
+  sightMask,
   CORE_STRIP,
   slotAt,
   type Board,
@@ -194,6 +195,8 @@ export interface RenderState {
   /** The sim's route graph (FlowField.allowed): legal steps per cell. Kerbs
    *  are drawn from ITS verdict, so what looks connected IS connected. */
   routeAllowed?: Uint8Array;
+  /** One layer of sight (PRD sec 32.2, the rework's prototype): how deep the player sees into rock, and from where besides open cells. Absent or null = everything is known. */
+  sight?: { layers: number; sources: readonly { x: number; y: number; r: number }[] } | null;
   /** Boon cells (PRD sec 4.7) - corner marks = tier, visible under towers; the type picks the colour (4.29). */
   boons?: readonly { x: number; y: number; tier?: number; boon?: 'range' | 'damage' | 'rate' }[];
   /** The Core has fallen; draw the end screen over everything. */
@@ -269,6 +272,8 @@ export class BoardView {
   }
   /** The map carries bedrock: every ground cell is a PAD, and is drawn to be found. */
   private scarcePads = false;
+  /** Which cells' nature the player knows (sim/rework.ts sightMask - the sim's own rule); null = all of them. */
+  private known: Uint8Array | null = null;
 
   cellType(ref: CellRef): CellType | null {
     if (ref.x < 0 || ref.y < 0 || ref.x >= this.cellsW || ref.y >= this.cellsH) return null;
@@ -288,6 +293,8 @@ export class BoardView {
   describeCell(ref: CellRef | null): string {
     if (!ref) return '';
     const t = this.cellType(ref);
+    // From outside, rock and bedrock look the same (PRD sec 32.2) - and read the same.
+    if (this.known && (t === 'R' || t === 'D') && this.known[ref.y * this.cellsW + ref.x] === 0) return `cell ${ref.x},${ref.y} \u2802 solid ground \u2802 rock or bedrock: it shows which once a cell beside it is open`;
     const base = t === null ? 'void \u2802 unclaimed land \u2802 the run grows here' : DESCRIBE[t];
     return `cell ${ref.x},${ref.y} \u2802 ${base}`;
   }
@@ -298,6 +305,8 @@ export class BoardView {
       ? new Map(state.oreRichness.map((r) => [r.y * this.cellsW + r.x, r]))
       : undefined;
     const offsetY = 0; // the board owns its whole surface; text lives in HudPanel
+    // A board is nine hundred cells: the mask is cheaper to make again than to keep in step with every dig and tower.
+    this.known = state.sight ? sightMask(this.cells, this.cellsW, this.cellsH, state.sight.layers, state.sight.sources) : null;
 
     term.clear(role('ui.bg'));
 
@@ -354,12 +363,16 @@ export class BoardView {
         const shaded = kind === 'G' || kind === 'R' || kind === 'O';
         const north = cy > 0 ? this.cells[(cy - 1) * this.cellsW + cx] : null;
         const south = cy + 1 < this.cellsH ? this.cells[(cy + 1) * this.cellsW + cx] : null;
-        drawTerrainCell(term, kind, gx0, gy0, {
+        // One layer of sight: unknown rock and unknown bedrock are ONE mass (bedrock's art); rock the player can see is
+        // rock, and so stands out as the thing to dig; bedrock the player can see goes flat and dark - known, and useless.
+        const unknown = this.known !== null && (kind === 'R' || kind === 'D') && this.known[cy * this.cellsW + cx] === 0;
+        const knownBedrock = this.known !== null && kind === 'D' && !unknown;
+        drawTerrainCell(term, unknown ? 'D' : kind, gx0, gy0, {
           // A pad wears a quiet tint of the hover's own "you may build here" green (looked at, 2026-09-19: at thirteen
           // pads a board, plain ground beside a road read as a bulge of the road and could not be found at a glance).
-          bg: hoverBg ?? (this.scarcePads && kind === 'G' ? role('terrain.pad.dark') : undefined),
-          litTop: shaded && north !== kind,
-          shadowBottom: shaded && south !== kind,
+          bg: hoverBg ?? (this.scarcePads && kind === 'G' ? role('terrain.pad.dark') : knownBedrock ? role('terrain.bedrock.known') : undefined),
+          litTop: shaded && !unknown && north !== kind,
+          shadowBottom: shaded && !unknown && south !== kind,
           richness: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx)?.frac : undefined,
           oreTier: kind === 'O' ? richnessAt?.get(cy * this.cellsW + cx)?.tier : undefined,
           rim: state.routeAllowed ? ~state.routeAllowed[cy * this.cellsW + cx] & 15 : 0,

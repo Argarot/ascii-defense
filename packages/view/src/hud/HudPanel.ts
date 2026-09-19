@@ -135,7 +135,7 @@ export interface HudState {
   /** What the last opened cache gave, shown briefly; null otherwise. */
   loot: string | null;
   /** The prospect card, when a rock cell is selected. */
-  rock: { cost: number; affordable: boolean; seconds: number; job: { pct: number } | null } | null;
+  rock: { cost: number; affordable: boolean; seconds: number; job: { pct: number } | null; /** Digging (PRD sec 32.2): absent = prospecting as it is. */ dig?: { place: number; crews: number; waiting: number; room: boolean } } | null;
   /** Animation phase 0..1 - preview numbers pulse on it. */
   phase: number;
 }
@@ -520,17 +520,31 @@ export class HudPanel {
       // ---- the prospect card: rocks are containers (PRD sec 4.6) ----------
       term.write(0, y++, 'ROCK', role('ui.text'));
       y++;
+      const dig = s.rock.dig;
       for (const line of this.wrap(
-        'Break it open: an ore vein, a sealed cache, or bare ground. Dealt when the map was made - prospecting only reveals. Survey refineries nearby work faster, and prospect on their own.',
+        dig
+          // Digging (PRD sec 32.2): what it is, what it costs in time, and why the ground beyond stays unknown.
+          ? 'There is a pad under it - always. A dig is slow, and a crew digs one rock at a time; the rest wait their turn. What lies beyond shows only once this cell is open.'
+          : 'Break it open: an ore vein, a sealed cache, or bare ground. Dealt when the map was made - prospecting only reveals. Survey refineries nearby work faster, and prospect on their own.',
         W,
         6,
       )) {
         term.write(0, y++, line, role('ui.dim'));
       }
       y++;
-      if (s.rock.job) {
-        term.write(0, y++, `PROSPECTING.. ${s.rock.job.pct}%`, role('ui.accent'));
+      if (dig && s.rock.job && dig.place > dig.crews) {
+        // Paid for and waiting: the crews are busy with the rocks ahead of it.
+        term.write(0, y++, `QUEUED \u2802 ${dig.place - dig.crews} ahead of it`.slice(0, W), role('ui.accent'));
+        term.write(0, y++, `${dig.crews} crew${dig.crews === 1 ? '' : 's'} digging`, role('ui.dim'));
+      } else if (s.rock.job) {
+        term.write(0, y++, `${dig ? 'DIGGING' : 'PROSPECTING'}.. ${s.rock.job.pct}%`, role('ui.accent'));
         term.write(0, y++, '='.repeat(Math.max(1, Math.round((s.rock.job.pct / 100) * (W - 2)))), role('ui.accent'));
+      } else if (dig) {
+        const can = s.rock.affordable && dig.room;
+        this.button(0, y, W - 6, `DIG - $${s.rock.cost} \u2802 ${s.rock.seconds}s`, can ? role('ui.bg') : role('ui.dim'), can ? role('ui.accent') : role('ui.grid'));
+        if (can) this.regions.push({ row: y, x0: 0, x1: W - 6, action: { kind: 'prospect' } });
+        y += 2;
+        term.write(0, y++, (!dig.room ? 'the queue is full' : dig.waiting >= dig.crews ? `it will wait: ${dig.waiting} dig${dig.waiting === 1 ? '' : 's'} ahead` : `${dig.crews} crew${dig.crews === 1 ? '' : 's'}, free now`).slice(0, W), role('ui.dim'));
       } else {
         const can = s.rock.affordable;
         this.button(0, y, W - 6, `PROSPECT - $${s.rock.cost} \u2802 ${s.rock.seconds}s`, can ? role('ui.bg') : role('ui.dim'), can ? role('ui.accent') : role('ui.grid'));
