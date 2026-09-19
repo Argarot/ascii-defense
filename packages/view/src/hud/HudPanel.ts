@@ -115,6 +115,13 @@ export interface HudState {
   prompt?: string;
   /** The tutorial (session 31): draw NEXT (when the step waits for it) and SKIP TUTORIAL under the prompt. */
   promptButtons?: { next: boolean };
+  /**
+   * A first meeting, said without stopping the run (D41, 2026-09-18: the
+   * pausing card was "too disruptive"): a title, the one line that answers
+   * it, and a bar that runs down while it stands. A click opens the full card.
+   * `left01` runs 1 (just met) to 0 (gone); `more` is how many wait behind it.
+   */
+  notice?: { title: string; line: string; left01: number; more: number };
   /** The hovered build button's tower, before it is bought (feedback item 1, 2026-09-05). */
   buildPreview?: { name: string; cost: number; desc: string; stats: HudStats; coreBoon?: string | null } | null;
   /** The Core card, when a Core cell is selected. */
@@ -157,7 +164,9 @@ export type HudAction =
   | { kind: 'callWave' }
   /** The tutorial's NEXT and SKIP under its prompt (session 31). */
   | { kind: 'tutNext' }
-  | { kind: 'tutSkip' };
+  | { kind: 'tutSkip' }
+  /** The first-meeting banner, clicked: the full card opens (D41). */
+  | { kind: 'openNotice' };
 
 /** One inventory slot on the Core card. Empty slots render too (Daniil). */
 export interface HudRelicSlot {
@@ -324,6 +333,7 @@ export class HudPanel {
       },
       tint: (x: number, y2: number, c: string): void => { raw.tint(x, y2 - this.scroll, c); },
       shade: (x: number, y2: number, mul: number, add?: number): void => { raw.shade(x, y2 - this.scroll, mul, add); },
+      wash: (x: number, y2: number, c: string, amount: number): void => { raw.wash(x, y2 - this.scroll, c, amount); },
       clear: (bg?: string): void => raw.clear(bg),
       has: (ch: string): boolean => raw.has(ch),
       toText: (): string => raw.toText(),
@@ -385,6 +395,20 @@ export class HudPanel {
       y++;
     }
     if (s.loot) term.write(0, y++, `found: ${s.loot}`, role('terrain.ore.lit'));
+    // ---- a first meeting (D41): said here, and the run goes on -------------
+    // It sits under the next wave because that is where the eye already is
+    // when something new walks in; every row of it opens the full card.
+    if (s.notice) {
+      const n = s.notice;
+      const y0 = ++y;
+      // A quiet plate, accent ink: looked at in the running game, a solid accent bar sat directly under CALL WAVE and
+      // read as a second call button. The call is the action; this is news.
+      this.button(0, y++, W, n.more > 0 ? `${n.title} (+${n.more})` : n.title, role('ui.accent'), role('ui.grid'));
+      for (const line of this.wrap(n.line, W, 3)) term.write(0, y++, line, role('ui.text'));
+      term.write(0, y++, 'click: the full card', role('ui.dim'));
+      term.write(0, y++, '─'.repeat(Math.max(0, Math.round(Math.min(1, Math.max(0, n.left01)) * W))), role('ui.grid'));
+      for (let r = y0; r < y; r++) this.regions.push({ row: r, x0: 0, x1: W, action: { kind: 'openNotice' } });
+    }
 
     // ---- build palette (vertical, hover previews radius on the board) ------
     // Shown ONLY when an empty buildable tile is selected (Daniil): the

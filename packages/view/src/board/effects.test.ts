@@ -157,6 +157,65 @@ describe('the tower pulse (session 29, PR 0, item 11)', () => {
   });
 });
 
+// PRD sec 8, "a field speaks one language" (2026-09-18, the mender's wave's second round): one test a clause.
+describe('a field speaks one language: the mender\'s heal is the Frost pulse with a green cast', () => {
+  const GROUND = '#283848';
+  const COLS = 12 * CELL_W;
+  const ROWS = 12 * CELL_H;
+  const chan = (hex: string): [number, number, number] => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+  const dist = (a: string, b: string): number => { const x = chan(a); const y = chan(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+  const draw = (kind: 'heal' | 'pulse', age01: number): TextTerm => {
+    const term = new TextTerm({ cols: COLS, rows: ROWS });
+    term.clear(GROUND);
+    const fx = new EffectsLayer();
+    fx.ingest([{ kind, x: 6, y: 6, r: 4, seq: 0, tick: 100 } as StampedSimEvent]);
+    fx.draw(term, 100 + age01 * 10);
+    return term;
+  };
+  const touched = (term: TextTerm): string[] => {
+    const out: string[] = [];
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (term.bgAt(x, y) !== GROUND) out.push(`${x},${y}`);
+    return out;
+  };
+
+  it('clause 1 - it is the ground, never a glyph', () => {
+    for (const age of [0.1, 0.5, 0.9]) expect(draw('heal', age).toText().trim()).toBe('');
+  });
+
+  it('clause 2 - one ring, the same geometry as every other field', () => {
+    for (const age of [0.2, 0.5, 0.8]) {
+      const heal = touched(draw('heal', age));
+      expect(heal.length).toBeGreaterThan(0);
+      expect(heal).toEqual(touched(draw('pulse', age)));
+    }
+  });
+
+  it('clauses 3 and 4 - brightest at its source, all but gone at its reach, and never a flash', () => {
+    const strongest = (age: number): number => { const t = draw('heal', age); return Math.max(0, ...touched(t).map((k) => { const [x, y] = k.split(',').map(Number); return dist(t.bgAt(x, y), GROUND); })); };
+    const ages = [0.1, 0.3, 0.5, 0.7, 0.9];
+    const cast = ages.map(strongest);
+    for (let i = 1; i < cast.length; i++) expect(cast[i]).toBeLessThan(cast[i - 1]);
+    // At its reach the ring has all but arrived at the ground: under a tenth of the heal colour's distance from it.
+    const full = dist('#5fd88a', GROUND);
+    expect(cast[cast.length - 1]).toBeLessThan(full * 0.1);
+    // And at its strongest it is three parts in ten, not the ten in ten of the ring it replaces.
+    expect(cast[0]).toBeLessThan(full * 0.3);
+    expect(cast[0]).toBeGreaterThan(full * 0.15); // but it IS seen
+  });
+
+  it('clause 5 - the colour says whose: the ground takes a GREEN cast and stays the ground', () => {
+    const t = draw('heal', 0.2);
+    for (const k of touched(t)) {
+      const [x, y] = k.split(',').map(Number);
+      const [r, g, b] = chan(t.bgAt(x, y));
+      const [r0, g0, b0] = chan(GROUND);
+      expect(g - g0).toBeGreaterThan(r - r0); // green rises most
+      expect(g - g0).toBeGreaterThan(b - b0);
+      expect(dist(t.bgAt(x, y), GROUND)).toBeLessThan(dist(t.bgAt(x, y), '#5fd88a')); // nearer the ground than the paint
+    }
+  });
+});
+
 describe('per-tower blasts and the beam\'s path (session 30, PR 4)', () => {
   it('a Missile\'s blast throws spokes where a Mortar\'s throws a ring; nothing beyond the radius', () => {
     const draw = (by: string): TextTerm => {

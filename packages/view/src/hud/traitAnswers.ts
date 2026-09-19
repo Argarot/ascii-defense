@@ -11,7 +11,7 @@ export const TRAIT_ANSWER: Record<string, string> = {
   fast: 'slows last half as long; hit hard',
   swarm: 'blasts and pierce - three bodies a pack',
   split: 'kill it early, or blast the halves together',
-  heal: 'kill the mender first (priority WEAKEST)',
+  heal: 'kill it first (priority WEAKEST)', // "it", not "the mender": the body is called the stitch on screen, and `mender` is only its id
   burrow: 'it surfaces past the entry: towers deeper in',
   charge: 'finish it, or slow it before the sprint',
   frontshield: 'flank it from beside the road',

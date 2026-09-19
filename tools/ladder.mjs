@@ -2,10 +2,18 @@
  * The difficulty ladder, read in parallel (session 38): `build-sweep --debt`
  * with one process per table ROW. A player who keeps buying (LabSpec.tail) is
  * slow to play - 120 seeds of one row is minutes on one core, and the ladder
- * has twenty-odd rows.
+ * has thirty-odd rows.
+ *
+ * Every rung is a plan of the lab's ONE table (harness/src/lab/plans.ts),
+ * bought depth first, on the app's own map for the seed - the same players
+ * and the same boards as the fit harness, the balance gate and the seed
+ * corpus. What this tool adds to theirs is the PURSE: towers standing and
+ * Scrap in hand at the end, beside what the last wave paid.
  *
  * Usage: node tools/ladder.mjs [corpus=120] [--only=calm,standard,grim,tree] [--jobs=N]
- *        node tools/ladder.mjs 120 --only=fit --geo=1.12     Grim at another growth rate (issue #349)
+ *
+ * A Threat at another growth rate is the fit harness's job:
+ *        node tools/fit.mjs --patch=candidate.json      with { "threats": { "grim": { "hpGeometric": 1.12 } } }
  */
 import { buildSync } from 'esbuild';
 import { mkdirSync } from 'node:fs';
