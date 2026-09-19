@@ -10,7 +10,11 @@ now, and what it replaced lives in `docs/history/`
   `docs/design/`; the numbers are in the generated [CATALOGUE](CATALOGUE.md)
   and in `docs/lab/`; how it is built is [ARCHITECTURE](ARCHITECTURE.md); how
   it looks is [ASSETS](ASSETS.md).
-- **§32 is THE REWORK — an approved design, NOT BUILT.** A section of the
+- **§32 is THE REWORK — an approved design, NOT the game yet.** Its four
+  spatial pieces (§32.1–32.4: pads, digging, the clear bonus, the courier)
+  exist as a **prototype behind one switch** — run setup's REWORK PROTOTYPE,
+  off by default, the engine's default untouched — so that Daniil can play
+  them before anything is tuned; §32.5 onward is not built. A section of the
   running game that the rework will change carries one line saying so. When a
   ledger row of the rework ships, its part of §32 is folded into the section it
   changes and the old text moves to history.
@@ -1047,9 +1051,12 @@ golden hash stand still.
 ## 32. The rework of 2026-09-19 — the map asks, the run answers *(Daniil, after the design review; D42–D54. APPROVED DESIGN, NOT BUILT)*
 
 **Read this first.** Everything in this section is a decision about what the
-game will be; **none of it is in the build.** Until a ledger row of "The
-Rework" ships, the sections this one supersedes still describe the running
-game, and each of them carries a pointer here. The reasons, the research and
+game will be; **none of it is the game yet.** §32.1–32.4 are built as a
+**prototype behind one switch** (run setup's REWORK PROTOTYPE, off by default;
+`mapgen/pads.ts`, `sim/rework.ts`; the knobs on the debug page), played by
+Daniil before anything is tuned; §32.5 onward is not built. Until the re-fit
+makes the switch the game, the sections this one supersedes still describe the
+running game, and each of them carries a pointer here. The reasons, the research and
 what was dropped are in
 [docs/design/rework-2026-09-19.md](design/rework-2026-09-19.md); the order of
 work is ROADMAP's. **Every number below is a first pass with its target beside

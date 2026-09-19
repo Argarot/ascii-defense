@@ -109,7 +109,13 @@ Windows 10, PowerShell 5.1, Node v22.23.2, npm 12.0.2, git 2.33.0.
   board canvas `drawImage`d onto a fixed overlay every ~110 ms (a filmstrip),
   one screenshot of the overlay; `fx().alive` is the sanity check. And
   `__ad.modalText()` after a menu action is the PREVIOUS page until
-  `__ad.frame()` has run.
+  `__ad.frame()` has run. **Key presses never reach a hidden pane**: drive
+  it with `__ad.menu(id)`, `__ad.build(x, y, id)` and `__ad.step(n)` - read a
+  method's line in `main.ts` before calling it, a wrong argument order hangs
+  the pane for its whole timeout - and a real click needs a screenshot first,
+  in the screenshot's own coordinates. To LOOK closely, `drawImage` a crop of
+  the board's canvas onto a fixed overlay canvas, scaled up, and screenshot
+  that: the pane's zoom does not crop.
 - **A bitmap font must be drawn at native size or an integer multiple.**
   Fractional scaling turns it to mush. Never set CSS `max-width` on the canvas.
 
@@ -311,12 +317,40 @@ Read the PRD before the architecture; read this file before touching anything.
   onward before #377 (and inside it the wrap) had landed in it, so `main` got
   three of five and `gh pr list` said "no open PRs". **Check by ancestry or by
   tree, never by PR state**: `git merge-base --is-ancestor <tip> origin/main`,
-  or an empty `git diff --stat origin/main <gated tip>`. And while the dev
-  cannot merge (the auto-mode classifier refuses `gh pr merge` and `gh issue
-  close` even on Daniil's instruction in chat; only a permission rule in his
-  settings lifts it, and that file is his) **a run of stacked PRs ends in ONE
-  roll-up PR, tip -> `main`**, whose body carries the `Closes #N` lines: one
-  click is the whole merge, and the item PRs are closed citing it.
+  or an empty `git diff --stat origin/main <gated tip>`.
+- **The dev merges its own GREEN PRs, as the bare command** - `gh pr merge N
+  --squash`, its own Bash call, nothing chained before it. Daniil's permission
+  rule (`Bash(gh pr merge *)`, and the same for `gh issue close`) matches a
+  command that STARTS with those words; `cd ... && "$GH" pr merge N` matches
+  nothing, falls to the auto-mode classifier, and is refused - and on
+  2026-09-19 the dev then told him his permission "does not hold", when the
+  fault was its own command. **When a permitted action is refused, read the
+  rule's pattern against the command's first word before reporting a
+  blocker.** Merge one PR at a time, in order, each only when
+  `gh pr checks N --watch` exits 0 with no pending line and the PR's head is
+  the branch tip; verify by tree after each. **Stack the next branch on the
+  OPEN one, never on `origin/main`**: after the merge, `git reset -q
+  origin/main` then moves nothing, where a branch cut from `main` shows the
+  merged PR's files as reverse diffs (18 of them, the same day). If merging is
+  ever refused for a real reason, the fallback stands: stack, and end in ONE
+  roll-up PR, tip -> `main`, whose body carries the `Closes #N` lines.
+- **A PR body or a commit message never puts fix / fixes / fixed / close /
+  closes / resolves in front of an issue number it does not mean to close.**
+  "Found, not fixed: #373" closed #373 when its PR merged to `main`
+  (2026-09-18, found a day later because the plan still listed it). Write
+  "filed as #N".
+- **A default that names content is run through the validator before the call
+  is filed.** Call #381's default was a tile whose cells `validateTileCells`
+  refuses, and whose valid forms are not specials at all: D56 was minted on it
+  and corrected the same day.
+- **A test is believed after it has been seen red.** Three of this project's
+  tests were written on 2026-09-19 that passed with the rule they test
+  switched OFF - a spawn-window test on a wave too small to need the rule, a
+  "nothing slows it" test that looked before anything had shot at it. Break
+  the rule on purpose, see the failure name the right thing, restore it.
+- **A locked file is restored by writing, not by checkout**: `git show
+  HEAD:<path> > <path>` puts the committed bytes back in place where `git
+  checkout -- <path>` dies on "unable to unlink".
 - **A file that can be written but not unlinked** (`pool.json`, held open by
   another agent's process: "unable to unlink ... Invalid argument" on every
   checkout that touches it). Do the merge in a scratch `git worktree` - a
