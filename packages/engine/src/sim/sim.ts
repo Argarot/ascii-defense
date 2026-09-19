@@ -1035,6 +1035,8 @@ export class Sim {
         if (e.ticks > ticks) ticks = e.ticks;
       }
     }
+    // NOTHING HOLDS A COURIER (PRD sec 32.4, his correction): a slow, a chill and a tower's freeze all resolve here, and all fail on it.
+    if (this.opts.enemyDefs[this.enemyDefIdx[i]].courier) { ticks = 0; mul = 1; }
     this.slowTicks[i] = ticks;
     this.slowMul[i] = ticks > 0 ? mul : 1;
   }
@@ -1582,6 +1584,7 @@ export class Sim {
    */
   private chestPhase(): void {
     for (let i = this.voidChests.length - 1; i >= 0; i--) if (this.voidChests[i].until <= this.tickCount) this.voidChests.splice(i, 1);
+    if (this.opts.rework?.courier) return; // random chests are cut (PRD sec 32.4): the courier carries the chest, and a boss keeps its own
     if (this.tickCount === 0 || this.tickCount % CHEST_EVERY !== 0) return;
     if (this.voidChests.filter((c) => !c.boss).length >= CHEST_MAX) return; // a boss's chest does not take a void slot
     if (!(this.opts.lootTables ?? []).some((t) => t.id === 'void_chest')) return;
@@ -2373,6 +2376,7 @@ export class Sim {
       const base = d.minWave ?? 1;
       const mw = base > 1 ? base + delay : 1;
       if (mw > w) return;
+      if (d.courier) return; // the courier (PRD sec 32.4) is no part of a wave's count and never its boss: courierInto() adds it
       bossPool.push(i);
       if (!d.bossOnly) available.push({ idx: i, w: 1 + (w - mw) }); // a boss-only body (session 32) never walks in the escort
     });
@@ -2416,6 +2420,15 @@ export class Sim {
       // The boss walks the first front after a beat: the escort ahead of it, on purpose.
       if (queue.length > 0) queue[queue.length - 1] = queueEntry(queueDef(queue[queue.length - 1]), false, BOSS_BEAT, queueFront(queue[queue.length - 1]));
       queue.push(queueEntry(heavy, true, DEFAULT_SPAWN_GAP, 0));
+    }
+    // The courier (PRD sec 32.4): every Nth wave, never a boss's, in the MIDDLE of the wave - so it arrives with
+    // bodies around it and shows in the NEXT preview like any other kind. No dice: the waves of a seed are the same
+    // waves with the switch on and off, plus this one body.
+    const courier = this.opts.rework?.courier;
+    if (courier && w >= courier.from && (w - courier.from) % courier.every === 0 && !Sim.isBossWave(w, this.finalWave) && queue.length > 0) {
+      const ci = this.opts.enemyDefs.findIndex((d) => d.courier);
+      const mid = Math.floor(queue.length / 2);
+      if (ci >= 0) queue.splice(mid, 0, queueEntry(ci, false, queueGap(queue[mid]) || DEFAULT_SPAWN_GAP, queueFront(queue[mid])));
     }
     return queue;
   }
@@ -3027,6 +3040,14 @@ export class Sim {
       // A boss leaves a CHEST where it falls (design round 1: "where it dies";
       // feedback 2026-09-08, item 7: its own sprite and a rarity) - rarer
       // with the wave, a minute to claim, paid through the boss table.
+      if (def.courier) {
+        // The courier's chest (PRD sec 32.4): where it fell, an ordinary chest - its rarity rolled as a surfacing chest's was - claimed by a click.
+        const cx = Math.floor(this.posX[enemy]);
+        const cy = Math.floor(this.posY[enemy]);
+        const roll = this.rng.stream('loot').int(0, 9);
+        if (!this.voidChests.some((c) => c.x === cx && c.y === cy)) this.voidChests.push({ x: cx, y: cy, until: this.tickCount + BOSS_CHEST_WINDOW, rarity: roll < 6 ? 0 : roll < 9 ? 1 : 2 });
+        this.emit({ kind: 'chest', x: cx + 0.5, y: cy + 0.5 });
+      }
       if (this.bossFlag[enemy]) {
         const bx = Math.floor(this.posX[enemy]);
         const by = Math.floor(this.posY[enemy]);
@@ -3125,7 +3146,9 @@ export class Sim {
   private walkPhase(): void {
     // Stasis (relic active): the board freezes - nothing moves, slow timers
     // hold, towers keep firing. The get-out-of-jail card.
-    if (this.tickCount < this.freezeUntil) return;
+    // ...except a courier, which nothing holds (PRD sec 32.4): under Stasis it is the one body still walking.
+    const stasis = this.tickCount < this.freezeUntil;
+    if (stasis && !this.opts.rework?.courier) return;
     const { nodeDist, width } = this.flow;
     // Enemies II (session 32): the living bulwarks this tick, and the menders' second.
     this.bulwarks.length = 0;
@@ -3134,6 +3157,7 @@ export class Sim {
     for (let i = 0; i < this.enemyHigh; i++) {
       if (!this.alive[i]) continue;
       const edef = this.opts.enemyDefs[this.enemyDefIdx[i]];
+      if (stasis && !edef.courier) continue;
       let speed = edef.speed;
       // A charger under half hp, a sprinter unhit (traits.ts, session 32).
       speed *= traitSpeedMul(edef, this.spawnHp[i] > 0 ? this.hp[i] / this.spawnHp[i] : 1, this.tickCount - this.lastHit[i]);

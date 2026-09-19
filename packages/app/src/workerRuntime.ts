@@ -37,6 +37,7 @@ import {
   threatKnobs,
   reworkKnobs,
   reworkRules,
+  withCourier,
   validateTile,
   type EnemyDef,
   type GeneratedMap,
@@ -96,6 +97,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   let runEndless = false;
   /** The rework's prototype switch for this run (PRD sec 32, D55); undefined = the game as it is. */
   let runRework: ReworkSpec | undefined;
+  /** This run's bodies: the roster, plus the courier when the switch is on (PRD sec 32.4) - at the END, so every index holds. */
+  let runEnemies: readonly EnemyDef[] = enemyDefs;
   let runFinalWave = 0;
   // The receipt covers everything newRun builds a sim from (issue #341): a save resumes only against the content it saw.
   // Of a Threat, only what the SIM reads: its map knobs and its walk made the map, and the save carries its map (D15).
@@ -202,7 +205,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         cellsW: nextMap.cellsW,
         cellsH: nextMap.cellsH,
         map: nextMap,
-        enemyDefs,
+        enemyDefs: nextRework ? withCourier(enemyDefs) : enemyDefs,
         towerDefs: nextTowers,
         mode: 'waves',
         coreHp: CORE_HP,
@@ -243,6 +246,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       runRelics = nextRelics;
       runEndless = nextEndless;
       runRework = nextRework;
+      runEnemies = nextRework ? withCourier(enemyDefs) : enemyDefs;
       runFinalWave = nextEndless ? 0 : THREAT.finalWave;
       seed = resume ? resume.seed : nextSeed;
       threatIdx = nextThreatIdx;
@@ -294,6 +298,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   /** An enemy kind's traits plus its resistances as words the strip knows (session 26). */
   function kindTraits(d: EnemyDef): string[] {
     const out = [...(d.traits ?? [])];
+    // The courier's rule is a flag on the def, not a trait of the table (PRD sec 32.4): the strip and the answer line read this word.
+    if (d.courier) out.push('courier');
     for (const t of DAMAGE_TYPES) {
       const m = d.resist?.[t];
       if (m === undefined || m === 1) continue;
@@ -479,7 +485,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const nowCounts = new Map<string, number>();
     for (let i = 0; i < s.posX.length; i++) if (s.alive[i]) nowCounts.set(s.enemyDefOf(i).id, (nowCounts.get(s.enemyDefOf(i).id) ?? 0) + 1);
     const waveNow = [...nowCounts].map(([id, count]) => {
-      const d = enemyDefs.find((e) => e.id === id);
+      const d = runEnemies.find((e) => e.id === id);
       return { name: d?.name ?? id, count, traits: d ? kindTraits(d) : [] };
     });
 
@@ -547,7 +553,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
             wave: p.wave,
             boss: p.boss,
             kinds: p.kinds.map((k) => {
-              const d = enemyDefs.find((e) => e.id === k.id);
+              const d = runEnemies.find((e) => e.id === k.id);
               return { name: d?.name ?? k.id, count: k.count, traits: d ? kindTraits(d) : [] };
             }),
             canCall: s.canCallWave(),
@@ -660,7 +666,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
   function story(s: Sim): NonNullable<FrameSnapshot['story']> {
     const kills = new Map<string, number>();
     for (const t of s.towers) if (t) { const name = s.towerDef(t).name ?? s.towerDef(t).id; kills.set(name, (kills.get(name) ?? 0) + t.kills); }
-    const met = enemyDefs.map((d, i) => ({ name: d.name ?? d.id, count: s.spawnedByDef[i] ?? 0 })).filter((m) => m.count > 0);
+    const met = runEnemies.map((d, i) => ({ name: d.name ?? d.id, count: s.spawnedByDef[i] ?? 0 })).filter((m) => m.count > 0);
     return {
       killsByTower: [...kills].map(([name, k]) => ({ name, kills: k })).sort((a, b) => b.kills - a.kills),
       met,

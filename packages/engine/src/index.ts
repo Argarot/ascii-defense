@@ -60,7 +60,7 @@ export { EVENT_CAP } from './sim/sim';
 export { REPLAY_VERSION, contentHashOf, fnv1a, playReplay } from './sim/replay';
 export { THREAT_LEVELS, MAP_LAND, threatKnobs, REWORK_PADS, reworkKnobs, type ThreatLevel } from './sim/threat';
 export { dealPads, PAD_REACH, type PadOptions, type PadDeal } from './mapgen/pads';
-export { REWORK_DIG, REWORK_CLEAR, SURVEY_SIGHT, reworkRules, isOpenCell, sightMask, boonUnder, type DigRules, type ClearRules, type ReworkRules } from './sim/rework';
+export { REWORK_DIG, REWORK_CLEAR, REWORK_COURIER, COURIER_DEF, withCourier, SURVEY_SIGHT, reworkRules, isOpenCell, sightMask, boonUnder, type DigRules, type ClearRules, type CourierRules, type ReworkRules } from './sim/rework';
 export type { WalkCharacterSpec } from './mapgen/carve';
 export { landFamilyOf, type LandFamily, type LandSpec } from './mapgen/mapgen';
 export type { Replay, ReplayAction, ReplayInput } from './sim/replay';

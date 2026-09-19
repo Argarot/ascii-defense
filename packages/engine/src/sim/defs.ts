@@ -43,6 +43,12 @@ export interface EnemyDef {
   splitInto?: string;
   /** Never in a wave's escort: only the boss of a boss wave, once unlocked (session 32). */
   bossOnly?: boolean;
+  /**
+   * THE COURIER (PRD sec 32.4, the rework's prototype): carries a chest, is held by nothing - slows, freezes and
+   * Stasis all fail - is never composed into a wave's count and never its boss. Not a content field: the one body
+   * that has it is sim/rework.ts's COURIER_DEF, which a run gets only with the switch on.
+   */
+  courier?: boolean;
 }
 
 export interface ProjectileSpec {

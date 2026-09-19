@@ -106,6 +106,8 @@ const ENEMIES = {
   mole: { role: 'enemy.husk', body: 'M', cell: [3, 2], frames: [['_M_', '///'], ['_M_', '\\\\\\']] },
   pavise: { role: 'enemy.shell', body: '|', cell: [4, 3], frames: [['|]P ', '|]P ', '|]  '], ['|]P ', '|] P', '|]  ']] },
   warden: { role: 'enemy.boss', body: 'W#', cell: [5, 3], frames: [['/=W=\\', '|###|', '|___|'], ['/=W=\\', '|#.#|', '|___|']] },
+  // ---- the rework's prototype (PRD sec 32.4): the courier - drawn as its rule, a chest that runs ----
+  courier: { role: 'relic.gold', body: '$', cell: [3, 2], frames: [['>$>', '/ \\'], ['>$>', '\\ /']] },
 };
 for (const [id, e] of Object.entries(ENEMIES)) {
   const keys = makeKeys();
