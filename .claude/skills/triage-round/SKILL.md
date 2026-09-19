@@ -140,3 +140,13 @@ happen that day. Two calls — one question.**
 
 Both calls shipped on their defaults and both sat unclosed a round later,
 because nothing forced them shut. Step 5 is what closes them.
+
+## A recurring theme is a design signal
+
+After the buckets are assigned, look across the round **and the tracker** for a
+theme: the third item in a month about one thing - one tower always picked, one
+spot always built on, one mechanic never used. Each keeps its bucket, and each
+also gets the label `design-signal` (CONTRIBUTING §6 rule 8). "Three Mortars
+demolish everything", "400 Bolts win" and "ignore-armour is always the pick"
+were each filed as balance; together they said width was unbounded, and nobody
+read them together for a month. The design review reads that label first.
