@@ -240,6 +240,8 @@ export type SimEvent =
   | { kind: 'build'; x: number; y: number }
   | { kind: 'sell'; x: number; y: number }
   | { kind: 'waveStart'; wave: number }
+  /** The clear bonus (PRD sec 32.3, the rework's prototype): a wave's last body is gone. Seconds and par are whole seconds. */
+  | { kind: 'waveCleared'; wave: number; seconds: number; par: number; bonus: number }
   | { kind: 'reveal'; x: number; y: number; found: 'ore' | 'cache' | 'none' | 'boon' }
   | { kind: 'loot'; x: number; y: number; text: string };
 
@@ -777,6 +779,59 @@ export class Sim {
     const dig = this.opts.rework?.dig;
     if (dig) return Math.round(dig.cost * (this.fold.prospectFree ? 0.5 : 1));
     return this.fold.prospectFree ? 0 : PROSPECT_COST;
+  }
+
+  // ---- the clear bonus (the rework's prototype, PRD sec 32.3; rules in sim/rework.ts) --------------------------
+  /** The wave each body belongs to - a split's halves inherit their parent's. Written only under the rework's clear rules. */
+  private readonly eWave = new Uint16Array(ENEMY_CAP);
+  /** Waves with bodies still to come or still walking: when each launched, its par, what its kills have paid, how many of its bodies live. */
+  private readonly waveRecs = new Map<number, { launched: number; par: number; bounties: number; alive: number }>();
+  /** Formations compress by this while the current wave arrives, so it fits its spawn window. */
+  private gapScale = 1;
+  /** The last wave cleared, for the HUD's line; null until one is. */
+  lastClear: { wave: number; seconds: number; par: number; bonus: number; tick: number } | null = null;
+  /** Every clear of the run, for the lab and the summary. */
+  readonly clears: { wave: number; seconds: number; par: number; bonus: number; /** What the wave's kills paid - the sum the bonus is a share of. */ bounties: number }[] = [];
+
+  /** At launch: the spawn window, the par, and the wave's record. */
+  private openWaveRecord(): void {
+    const clear = this.opts.rework?.clear;
+    if (!clear) return;
+    let natural = 0;
+    let slowest = Infinity;
+    for (const q of this.spawnQueue) {
+      const gap = queueGap(q);
+      natural += gap > 0 ? gap : DEFAULT_SPAWN_GAP;
+      slowest = Math.min(slowest, this.opts.enemyDefs[queueDef(q)].speed);
+    }
+    const window = Math.max(1, Math.round(this.interWaveTicks * clear.windowShare));
+    this.gapScale = natural > window ? window / natural : 1;
+    let far = 0;
+    for (const e of this.waveEntries) far = Math.max(far, this.flow.dist[e.y * this.opts.cellsW + e.x]);
+    const walk = slowest > 0 && slowest !== Infinity ? far / slowest : 0;
+    this.waveRecs.set(this.wave, { launched: this.tickCount, par: Math.round(Math.min(natural, window) + walk), bounties: 0, alive: 0 });
+  }
+  /** A body of wave `w` is gone - killed or through the Core. */
+  private bodyGone(w: number): void {
+    const rec = this.waveRecs.get(w);
+    if (rec) rec.alive--;
+  }
+  /** Once a tick: a wave whose bodies have all arrived and all gone is CLEARED, and pays for the share of par it saved. */
+  private clearPhase(): void {
+    const clear = this.opts.rework?.clear;
+    if (!clear) return;
+    for (const [w, rec] of this.waveRecs) {
+      if (rec.alive > 0 || (w === this.wave && this.spawnQueue.length > 0)) continue;
+      this.waveRecs.delete(w);
+      const took = this.tickCount - rec.launched;
+      const saved = rec.par > 0 ? Math.max(0, 1 - took / rec.par) : 0;
+      const bonus = Math.round(rec.bounties * clear.mul * saved);
+      this.scrap += bonus;
+      const line = { wave: w, seconds: Math.round(took / TICK_HZ), par: Math.round(rec.par / TICK_HZ), bonus };
+      this.lastClear = { ...line, tick: this.tickCount };
+      this.clears.push({ ...line, bounties: rec.bounties });
+      this.emit({ kind: 'waveCleared', ...line });
+    }
   }
 
   // ---- digging (the rework's prototype, PRD sec 32.2; rules in sim/rework.ts) ----------------------------------
@@ -2046,6 +2101,8 @@ export class Sim {
     u32(this.status === 'won' ? 1 : 0);
     for (const [k, v] of this.depositLeft) { u32(k); f64(v); }
     for (const [k, v] of this.prospectJobs) { u32(k); u32(v); }
+    // The clear bonus's records - only under the rework, so the golden hash of the game as it is stands still.
+    if (this.opts.rework?.clear) for (const [w, r] of this.waveRecs) { u32(w); u32(r.launched); u32(r.par); u32(r.bounties); u32(r.alive); }
     u32(this.waveTimer + 1); u32(this.intraTimer); u32(this.spawnTimer);
     f64(this.lengthMul);
     for (const q of this.spawnQueue) u32(q);
@@ -2383,9 +2440,11 @@ export class Sim {
     this.nextQueue = this.lastWaveLaunched() ? [] : this.composeWave(this.wave + 1);
     this.waveTimer = this.lastWaveLaunched() ? 0 : this.interWaveTicks;
     this.intraTimer = 0;
+    this.openWaveRecord();
   }
 
   private wavePhase(): void {
+    this.clearPhase();
     // Surviving the final wave IS the win (D6: a run ends).
     if (this.lastWaveLaunched() && this.spawnQueue.length === 0 && this.aliveCount() === 0) {
       this.status = 'won';
@@ -2402,6 +2461,8 @@ export class Sim {
       // The entry carries its own spacing and front (session 32, PR 2); a bare index (an old save's queue) walks the old way.
       const gap = queueGap(q);
       this.intraTimer = gap > 0 ? gap : DEFAULT_SPAWN_GAP;
+      // Short spawn windows (PRD sec 32.3): the formation keeps its shape and arrives faster.
+      if (this.opts.rework?.clear) this.intraTimer = Math.max(1, Math.round(this.intraTimer * this.gapScale));
       const defIdx = queueDef(q);
       const entry = this.waveEntries[gap > 0 ? queueFront(q) % this.waveEntries.length : (this.spawned + this.wave) % this.waveEntries.length];
       const boss = queueBoss(q);
@@ -2419,9 +2480,15 @@ export class Sim {
   }
 
   /** Spawns one body; false when every slot is taken (session 31: the caller keeps the body for a later tick instead of losing it). */
-  private spawn(entry: CellRef, defIdx: number, boss = false, at?: { x: number; y: number; dir: number }): boolean {
+  private spawn(entry: CellRef, defIdx: number, boss = false, at?: { x: number; y: number; dir: number }, ofWave?: number): boolean {
     const i = this.freeEnemies.pop() ?? (this.enemyHigh < ENEMY_CAP ? this.enemyHigh++ : -1);
     if (i === -1) return false;
+    if (this.opts.rework?.clear) {
+      // A body knows its wave (PRD sec 32.3: "wave N cleared" has to mean something while waves overlap).
+      this.eWave[i] = ofWave ?? this.wave;
+      const rec = this.waveRecs.get(this.eWave[i]);
+      if (rec) rec.alive++;
+    }
     const def = this.opts.enemyDefs[defIdx];
     this.alive[i] = 1;
     this.gen[i]++;
@@ -2904,12 +2971,18 @@ export class Sim {
         const si = this.opts.enemyDefs.findIndex((d) => d.id === def.splitInto);
         if (si >= 0) {
           const cell = { x: Math.floor(this.posX[enemy]), y: Math.floor(this.posY[enemy]) };
-          for (let n = 0; n < TRAIT_RULES.split.count; n++) this.spawn(cell, si, false, { x: this.posX[enemy], y: this.posY[enemy], dir: this.walkDir[enemy] });
+          for (let n = 0; n < TRAIT_RULES.split.count; n++) this.spawn(cell, si, false, { x: this.posX[enemy], y: this.posY[enemy], dir: this.walkDir[enemy] }, this.eWave[enemy]);
         }
       }
       // Bounty Board (relic) multiplies boss bounty only; rounded so Scrap
       // stays integral (the state hash truncates its lanes to integers).
       this.scrap += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1) * this.econFold.bountyMul) + this.fold.killRefundScrap; // Tithe; Bounty Hunter (relic)
+      if (this.opts.rework?.clear) {
+        // The wave's bounties are what its clear bonus is a share of (PRD sec 32.3); a split's halves were counted into the wave above.
+        const rec = this.waveRecs.get(this.eWave[enemy]);
+        if (rec) rec.bounties += Math.round((def.bounty ?? 0) * (this.bossFlag[enemy] ? BOSS_BOUNTY_MUL * this.fold.bossBountyMul : 1) * this.econFold.bountyMul);
+        this.bodyGone(this.eWave[enemy]);
+      }
       if (this.fold.killRefundScrap > 0) this.noteRelicUse('killRefundScrap');
       if (this.bossFlag[enemy] && this.fold.bossBountyMul !== 1) this.noteRelicUse('bossBountyMul');
       if (this.econFold.bountyMul !== 1) this.noteRelicUse('bountyMul');
@@ -3095,6 +3168,7 @@ export class Sim {
           this.alive[i] = 0;
           this.freeEnemies.push(i);
           this.breaches++;
+          if (this.opts.rework?.clear) this.bodyGone(this.eWave[i]);
           // Iron Will (relic, session 28 PR 4): every breach costs less, never below nothing.
           const dealt = Math.max(0, this.opts.enemyDefs[this.enemyDefIdx[i]].damage * (this.bossFlag[i] ? BOSS_DAMAGE_MUL : 1) - this.fold.breachReduce);
           if (this.fold.breachReduce > 0) this.noteRelicUse('breachReduce');

@@ -154,6 +154,8 @@ export interface LabReport {
   oreEnd: number[];
   /** Digs ORDERED over the run (the rework's prototype); 0 without it. */
   digs: number;
+  /** Every wave cleared, with what its kills paid and what clearing it early paid on top (PRD sec 32.3); [] without the rework. */
+  clears: { wave: number; seconds: number; par: number; bonus: number; bounties: number }[];
   /** The towers and relics the tree state allowed this run. */
   world: { towers: number; relics: number; relicSlots: number };
   /** What the run held when it ended, granted and picked alike, each at its rarity (0 common): no row of the lab "holds nothing" - it takes option 0 of every offer. */
@@ -594,6 +596,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     killsByDef,
     oreEnd: [...sim.ore],
     digs,
+    clears: sim.clears.map((c) => ({ ...c })),
     world: { towers: towerDefs.length, relics: relicDefs.length, relicSlots: sim.relicSlots },
     relicsHeld: sim.heldRelics.map((di, i) => ({ id: relicDefs[di].id, rarity: sim.heldRarity[i] ?? 0 })),
   };

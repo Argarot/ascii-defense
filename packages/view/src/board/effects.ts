@@ -208,6 +208,8 @@ export class EffectsLayer {
           break;
         case 'waveStart':
           break; // entries are already telegraphed; a screen-wide flash would only startle
+        case 'waveCleared':
+          break; // the clear bonus is one line in the column (PRD sec 32.3), never an effect on the board
         default:
           e satisfies never;
       }
