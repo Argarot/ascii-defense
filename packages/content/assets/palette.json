@@ -37,6 +37,7 @@
     "status.frozen": "#2c5a70",
     "status.slowed": "#16303c",
     "terrain.bedrock.dark": "#11171e",
+    "terrain.bedrock.known": "#07090c",
     "terrain.bedrock.lit": "#27323d",
     "terrain.bedrock.mid": "#1d2630",
     "terrain.core.dark": "#1c2733",

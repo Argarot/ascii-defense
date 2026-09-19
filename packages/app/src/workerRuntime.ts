@@ -36,6 +36,7 @@ import {
   platingAt,
   threatKnobs,
   reworkKnobs,
+  reworkRules,
   validateTile,
   type EnemyDef,
   type GeneratedMap,
@@ -59,6 +60,7 @@ import {
   relicEffectsAt,
   TRAIT_RULES,
  effectiveStats, DAMAGE_TYPES } from '@ascii-defense/engine';
+import { reworkRelicText, reworkTowerText } from './reworkText';
 import { BOARD_SLOTS, SAVE_VERSION, THREAT_LEVELS, type FrameSnapshot, type FromWorker, type ReworkSpec, type RunSave, type ToWorker, type UiState, type WorkerAction } from './protocol';
 
 export interface WorkerRuntimeDeps {
@@ -127,9 +129,9 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
       // shell's; neither given means everything (tests, the lab).
       const nextMeta: MetaState = resume?.meta ?? meta ?? { unlocks: [ALL_UNLOCKS], earned: [], forged: {} };
       const unlocked = resolveUnlocks(tree, nextMeta, relicDefs);
-      const nextTowers = towerDefs.filter((d) => unlocked.towers.has(d.id));
+      const nextTowers = (nextRework ? reworkTowerText(towerDefs) : towerDefs).filter((d) => unlocked.towers.has(d.id));
       // A relic whose only effect touches a tower this run lacks stays out of the pool (session 31, PR 7).
-      const nextRelics = relicDefs.filter((d) => unlocked.relics.has(d.id) && relicApplies(d, nextTowers.map((t) => t.id)));
+      const nextRelics = (nextRework ? reworkRelicText(relicDefs) : relicDefs).filter((d) => unlocked.relics.has(d.id) && relicApplies(d, nextTowers.map((t) => t.id)));
       if (nextTowers.length === 0) { post({ t: 'genError', message: 'the tree grants no tower - the base set is empty' }); return; }
       // The board is the caller's (viewport-derived, D24) or the default; a
       // resumed save is exactly its map's size, whatever the screen is now.
@@ -207,6 +209,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         relicDefs: nextRelics,
         relicSlots: unlocked.relicSlots,
         rarityMax: unlocked.rarityMax,
+        // The rework's prototype (PRD sec 32.2-32.4): the sim's half of the switch, at its first-pass numbers.
+        rework: nextRework ? reworkRules() : undefined,
         setDefs,
         recipeDefs,
         lootTables,
@@ -482,6 +486,12 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
     const cellDescribe = (() => {
       const c = selected ?? hover;
       if (!c) return '';
+      // One layer of sight (PRD sec 32.2): a cell the player cannot see into says nothing about itself.
+      if (!s.cellKnown(c.x, c.y)) return '';
+      if (s.digRules && s.cellAt(c.x, c.y) === 'R') {
+        const find = map.rockContents.find((r) => r.x === c.x && r.y === c.y)?.yields === 'cache';
+        return ' \u2802 there is a pad under it' + (find ? ' \u2802 and BOON GROUND under that' : '');
+      }
       const dep = s.depositAt(c.x, c.y);
       // A higher tier says so in words (PRD sec 26): the colour is never the only carrier.
       if (dep && s.cellAt(c.x, c.y) === 'O') return dep.tier > 1 ? ` \u2802 TIER-${dep.tier} ore left ${dep.left}/${dep.initial} - rarer, mined slower, banked as tier-${dep.tier} Ore` : ` \u2802 ore left ${dep.left}/${dep.initial}`;
@@ -497,6 +507,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         hover,
         selected,
         routeAllowed: s.flow.allowed,
+        sight: s.digSight(),
         caches,
         chests: s.voidChests.map((c) => ({ x: c.x, y: c.y, left01: Math.max(0, Math.min(1, (c.until - s.tickCount) / (c.boss ? BOSS_CHEST_WINDOW : CHEST_WINDOW))), rarity: RARITIES[c.rarity], ...(c.boss ? { boss: true } : {}) })),
         boons: [...(map.boons ?? []), ...s.extraBoons].map((b) => ({ x: b.x, y: b.y, tier: b.tier, boon: b.boon })),
@@ -579,11 +590,13 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
           const last = s.lootLog[s.lootLog.length - 1];
           return last && s.tickCount - last.tick < 6 * TICK_HZ ? last.text : null;
         })(),
-        rock: selected && s.cellAt(selected.x, selected.y) === 'R'
+        rock: selected && s.cellAt(selected.x, selected.y) === 'R' && s.cellKnown(selected.x, selected.y)
           ? {
               cost: s.prospectCost(),
               affordable: s.scrap >= s.prospectCost(),
-              seconds: Math.ceil(PROSPECT_TICKS / s.prospectSpeed() / TICK_HZ),
+              seconds: s.digRules ? s.digRules.seconds : Math.ceil(PROSPECT_TICKS / s.prospectSpeed() / TICK_HZ),
+              // Digging (PRD sec 32.2): where this rock stands in the queue (0 = not queued), how many crews dig, and whether the queue has room.
+              dig: s.digRules ? { place: s.digQueue().indexOf(selected.y * map.cellsW + selected.x) + 1, crews: s.digCrews(), waiting: s.digQueue().length, room: s.digQueue().length < s.digCrews() + s.digRules.queue } : undefined,
               job: (() => {
                 const j = s.prospectJobAt(selected.x, selected.y);
                 return j ? { pct: Math.round(((j.total - j.remaining) / j.total) * 100) } : null;

@@ -15,6 +15,9 @@
 import {
   DEFAULT_DIFFICULTY,
   Sim,
+  reworkKnobs,
+  reworkRules,
+  type PadOptions,
   computeFlowField,
   createRng,
   generateMap,
@@ -113,6 +116,14 @@ export interface LabSpec {
    * wave 20, and every ladder table had been read off it.
    */
   tail?: TowerPlacement[];
+  /**
+   * THE REWORK'S PROTOTYPE (PRD sec 32.1-32.4): absent, the lab plays the game as it is - every band, the ladder and
+   * the corpus. Present, the map is dealt with the pad rule and the sim plays by the prototype's rules, exactly as
+   * the app does with its switch on; the plans need no change, because they place by sim.canBuildDefAt. `dig`:
+   * 'always' orders a dig on the first rock in sight, once a second, whenever the purse and the queue allow - the
+   * player who "digs at every chance" (sec 32.2's target is that such a run ends about six pads up).
+   */
+  rework?: { pads?: Partial<PadOptions>; dig?: 'never' | 'always' };
 }
 
 export interface WaveRow {
@@ -141,6 +152,8 @@ export interface LabReport {
   killsByDef: Record<string, number>;
   /** The purse at the end, by tier (session 29, PR 6): what the run would bank. */
   oreEnd: number[];
+  /** Digs ORDERED over the run (the rework's prototype); 0 without it. */
+  digs: number;
   /** The towers and relics the tree state allowed this run. */
   world: { towers: number; relics: number; relicSlots: number };
   /** What the run held when it ended, granted and picked alike, each at its rarity (0 common): no row of the lab "holds nothing" - it takes option 0 of every offer. */
@@ -172,7 +185,7 @@ function makeWorld(spec: LabSpec, content: LabContent, oreTierMax = 1) {
   if ('threat' in spec.map) {
     // Draw for draw what workerRuntime.newRun does (its test holds the worker to the engine's map; this holds the lab to it).
     const knobs = createRng(spec.seed).stream('map');
-    const dealt = generateMap(knobs, content.lib, { width: spec.map.width, height: spec.map.height, ...threatKnobs(knobs, spec.map.threat), relicPoolSize: content.relicDefs.length, specials: spec.loadout ?? [], oreTierMax });
+    const dealt = generateMap(knobs, content.lib, { width: spec.map.width, height: spec.map.height, ...threatKnobs(knobs, spec.map.threat), relicPoolSize: content.relicDefs.length, specials: spec.loadout ?? [], oreTierMax, ...(spec.rework ? reworkKnobs(spec.map.threat, spec.rework.pads) : {}) });
     return { map: dealt, cellsW: dealt.cellsW, cellsH: dealt.cellsH, cells: mapCells(dealt, content.lib) };
   }
   const map = generateMap(createRng(spec.seed).stream('map'), content.lib, { ...spec.map, relicPoolSize: content.relicDefs.length, specials: spec.loadout ?? [], oreTierMax });
@@ -385,6 +398,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     // Until 2026-09-18 the lab passed the slots and not the cap, so every base-world row rolled rares and epics from
     // its offers - a richer world than the one a player without the workshop is in.
     rarityMax: unlocked?.rarityMax,
+    rework: spec.rework ? reworkRules() : undefined,
     interWaveTicks: spec.interWaveTicks,
     mode: 'waves',
     firstWaveWaits: false,
@@ -514,6 +528,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
   let kills0 = 0;
   let breaches0 = 0;
   let lastWave = 0;
+  let digs = 0;
   // Auto-pick offers so long runs are not blocked by a pending offer.
   const guard = spec.maxWaves * 20_000;
   for (let t = 0; t < guard; t++) {
@@ -524,6 +539,15 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     // recorded it as "refused" and dropped it from its row's denominator. One loss in twenty-odd, since issue #348
     // gave the lab a player who keeps buying; every win rate read since then was nudged up by it.
     if (spec.economy && t % 20 === 0 && sim.status === 'running') advancePlan();
+    // The digger: AFTER the plan has had its turn at the purse, so a dig never starves the build it is for.
+    if (spec.rework?.dig === 'always' && t % 20 === 0 && sim.status === 'running' && sim.scrap >= sim.prospectCost()) {
+      dig: for (let y = 0; y < cellsH; y++)
+        for (let x = 0; x < cellsW; x++) {
+          if (sim.cellAt(x, y) !== 'R' || sim.prospectJobAt(x, y) !== null || !sim.cellKnown(x, y)) continue;
+          if (sim.prospect(x, y)) digs++;
+          break dig;
+        }
+    }
     if (sim.offer !== null) sim.pickRelic(0);
     if (sim.wave !== lastWave) {
       if (lastWave > 0) {
@@ -569,6 +593,7 @@ export function runLab(spec: LabSpec, content: LabContent): LabReport {
     towersPlaced: placed,
     killsByDef,
     oreEnd: [...sim.ore],
+    digs,
     world: { towers: towerDefs.length, relics: relicDefs.length, relicSlots: sim.relicSlots },
     relicsHeld: sim.heldRelics.map((di, i) => ({ id: relicDefs[di].id, rarity: sim.heldRarity[i] ?? 0 })),
   };
