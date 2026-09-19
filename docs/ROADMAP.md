@@ -256,6 +256,33 @@ PROTOTYPE: on / off**; the pause menu's debug page gets the knobs.
    new count. *Proof:* nothing in the old PRD that is still true is missing
    from the new one - checked section by section against the history file -
    and Daniil reads it once, end to end, and says whether it is the game.
+   **The brief, for a context that was not in the room on 2026-09-19:**
+   *(a)* **Decide nothing.** Every decision is already made: PRD §32 is the
+   rework's spec and is carried over whole; D42–D54 are its record;
+   docs/design/rework-2026-09-19.md is the why (§4 there shows what Daniil
+   cut and how — read it before writing a word). What is still open stays
+   marked open and is not resolved by the rewrite: the Core roster (#412),
+   whether crews come from the Refinery, a relic or both, Vein Tap under
+   scarce pads, and whether plating survives (§32.8).
+   *(b)* **One document, two clearly separated halves.** *The game as it
+   runs* — the pillars, the grid, the map, towers, economy, relics, enemies,
+   difficulty, meta, the shell, presentation, determinism, acceptance
+   criteria — stated once, in the present tense, no dates, no "was", no
+   session numbers, numbers left to the generated CATALOGUE. *The rework,
+   approved and not built* — §32's fifteen parts, each placed beside the
+   section it will replace or gathered in one part, his choice of the two
+   offered in the brief; when a Rework row ships, its part is folded into the
+   first half and the old text moves to history.
+   *(c)* **What leaves:** "as built" reports, session and PR numbers, the
+   thought dump's table (§19 — its accepted items are already in the item
+   tree), superseded paragraphs, corrections of earlier drafts. All of it
+   goes to `docs/history/prd-2026-09-19.md` verbatim, in the old order, so
+   the check in the proof is a diff of headings.
+   *(d)* **What stays even though it is history:** §14, *deliberately
+   rejected* — a rejection with its reason is scope, it stops a re-proposal —
+   plus the refusals of 2026-09-19 (one Ore tier, a guaranteed "hands" relic,
+   burning parts, hardness tiers of rock, a dig price by road touch, the
+   first Core roster, paid power as advice).
 1. **Pads (10.1, #399).** A `bedrock` cell; the generator rule that demotes
    ground to bedrock and keeps pads by the rule in PRD §32.1; the density knob;
    two Threat knobs. *Proof:* a census over 500 seeds a Threat — pads per
