@@ -134,6 +134,8 @@ export interface HudState {
   chest?: { seconds: number; home: 'water' | 'rock' | 'ground'; /** The chest's rarity and what it multiplies its loot by (session 30, PR 4). */ rarity?: string; mul?: number; /** A boss's chest (feedback 2026-09-08, item 7). */ boss?: boolean } | null;
   /** What the last opened cache gave, shown briefly; null otherwise. */
   loot: string | null;
+  /** The clear bonus (PRD sec 32.3, the rework's prototype): the last wave cleared, while its line is up. */
+  cleared?: { wave: number; seconds: number; par: number; bonus: number } | null;
   /** The prospect card, when a rock cell is selected. */
   rock: { cost: number; affordable: boolean; seconds: number; job: { pct: number } | null; /** Digging (PRD sec 32.2): absent = prospecting as it is. */ dig?: { place: number; crews: number; waiting: number; room: boolean } } | null;
   /** Animation phase 0..1 - preview numbers pulse on it. */
@@ -393,6 +395,11 @@ export class HudPanel {
       this.button(0, y, W - 4, label, nw.canCall ? role('ui.bg') : role('ui.dim'), nw.canCall ? role('ui.accent') : role('ui.grid'));
       if (nw.canCall) this.regions.push({ row: y, x0: 0, x1: W - 4, action: { kind: 'callWave' } });
       y++;
+    }
+    if (s.cleared) {
+      // One line a player already understands (D44): how long, against what, for how much. Two rows, because the panel is thirty glyphs.
+      term.write(0, y++, `WAVE ${s.cleared.wave} CLEARED in ${s.cleared.seconds} s`.slice(0, W), role('ui.text'));
+      term.write(0, y++, `par ${s.cleared.par} \u2802 ${s.cleared.bonus > 0 ? `+${s.cleared.bonus} scrap` : 'no bonus: over par'}`.slice(0, W), s.cleared.bonus > 0 ? role('terrain.ore.lit') : role('ui.dim'));
     }
     if (s.loot) term.write(0, y++, `found: ${s.loot}`, role('terrain.ore.lit'));
     // ---- a first meeting (D41): said here, and the run goes on -------------

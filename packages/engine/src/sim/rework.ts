@@ -27,12 +27,35 @@ export interface DigRules {
 }
 export const REWORK_DIG: DigRules = { cost: 60, seconds: 45, crews: 1, sight: 1, queue: 4 };
 
+/**
+ * The clear bonus (sec 32.3, D44 - his rule, in place of bounty-by-distance):
+ * "the sooner a wave is cleared, the more it pays". A wave killed near its
+ * entry never walks the road, so clear time already measures how far forward
+ * a build kills - and it reads as one line:  WAVE 7 CLEARED in 31 s . par 60 . +58
+ *
+ * PAR is the wave's spawn window plus the walk of its slowest body from its
+ * farthest entry to the Core. The BONUS is the wave's bounties x the share of
+ * par saved x `mul`. SPAWN WINDOWS ARE SHORT (his condition): a wave finishes
+ * arriving within `windowShare` of its clock, or the last body's entry time
+ * decides the payout and not the build; formations compress to fit. The early
+ * call is untouched: par runs from a wave's own launch. Target, for the re-fit
+ * (Rework IV), not for here: a build that hugs the Core earns about 60% of
+ * today's income, one that kills forward about 160%.
+ */
+export interface ClearRules {
+  mul: number;
+  /** A wave arrives within this share of its Threat's clock: a fifth - Calm 11 s, Standard 8, Grim 6. */
+  windowShare: number;
+}
+export const REWORK_CLEAR: ClearRules = { mul: 1, windowShare: 0.2 };
+
 export interface ReworkRules {
   dig?: DigRules;
+  clear?: ClearRules;
 }
 /** Everything the prototype turns on in the sim, at its first-pass numbers. */
-export function reworkRules(over: Partial<{ dig: Partial<DigRules> }> = {}): ReworkRules {
-  return { dig: { ...REWORK_DIG, ...over.dig } };
+export function reworkRules(over: Partial<{ dig: Partial<DigRules>; clear: Partial<ClearRules> }> = {}): ReworkRules {
+  return { dig: { ...REWORK_DIG, ...over.dig }, clear: { ...REWORK_CLEAR, ...over.clear } };
 }
 
 /** An OPEN cell is one a player can see into the ground from: road, the Core, a pad, a vein (a pad with ore under it). */

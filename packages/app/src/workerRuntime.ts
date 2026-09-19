@@ -586,6 +586,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps) {
         cache: selected && s.cacheAt(selected.x, selected.y) ? { source: s.cacheAt(selected.x, selected.y)!.table } : null,
         chest: (() => { const c = selected ? s.chestAt(selected.x, selected.y) : null; return c ? { seconds: Math.max(0, Math.ceil((c.until - s.tickCount) / TICK_HZ)), home: s.cellAt(c.x, c.y) === null ? ('water' as const) : s.cellAt(c.x, c.y) === 'G' ? ('ground' as const) : ('rock' as const), rarity: RARITIES[c.rarity], mul: CHEST_RARITY_MUL[c.rarity] ?? 1, boss: c.boss === true } : null; })(),
         // The newest thing a cache gave, for a few seconds after it opened.
+        // The clear bonus's line (PRD sec 32.3), held for eight seconds of play.
+        cleared: s.lastClear && s.tickCount - s.lastClear.tick < 8 * TICK_HZ ? { wave: s.lastClear.wave, seconds: s.lastClear.seconds, par: s.lastClear.par, bonus: s.lastClear.bonus } : null,
         loot: (() => {
           const last = s.lootLog[s.lootLog.length - 1];
           return last && s.tickCount - last.tick < 6 * TICK_HZ ? last.text : null;

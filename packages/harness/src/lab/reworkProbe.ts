@@ -16,11 +16,11 @@ import enemiesJson from '@ascii-defense/content/assets/enemies/roster.json';
 import towersJson from '@ascii-defense/content/assets/towers/roster.json';
 import relicsJson from '@ascii-defense/content/assets/relics/pool.json';
 import { runLab, type LabContent, type LabSpec } from './lab';
-import { PLANS } from './plans';
+import { PLANS, type Plan } from './plans';
 import { corpusSeed, specFor } from './spec';
 
 declare const console: { log: (...args: unknown[]) => void };
-declare const process: { argv: string[] };
+declare const process: { argv: string[]; exit: (code: number) => never };
 
 function must<T>(r: { ok: true; value: T } | { ok: false; errors: unknown[] }): T {
   if (!r.ok) throw new Error('content invalid: ' + JSON.stringify(r.errors).slice(0, 200));
@@ -37,10 +37,37 @@ const arg = (name: string): string | undefined => process.argv.find((a) => a.sta
 const N = Number(process.argv.slice(2).find((a) => /^\d+$/.test(a)) ?? 40);
 const threat = THREAT_LEVELS[Number(arg('threat') ?? 1)];
 const planName = arg('plan') ?? 'mixedDeep';
-const plan = PLANS[planName as keyof typeof PLANS];
+const plan: Plan = PLANS[planName as keyof typeof PLANS];
 if (!plan) throw new Error(`no plan '${planName}' in plans.ts`);
 
 const mean = (xs: readonly number[]): string => (xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length)).toFixed(1);
+
+// --clear: the clear bonus's row pair (PRD sec 32.3) - the SAME build, placed at the choke by the Core and placed
+// FORWARD by the entries, and what each earns on top of its bounties. The target it is read against is the re-fit's
+// (a Core-hugging build about 60% of today's income, a forward one about 160%); this is the reading before any fit.
+if (process.argv.includes('--clear')) {
+  console.log(`clear bonus - ${threat.name}, plan ${planName}, ${N} of the app's own seeds, pads on, never digs - a reading, not a tuning`);
+  console.log('');
+  console.log('| the same build, placed | wins | waves cleared a run | bounties a run | clear bonus a run | bonus as a share of bounties | mean seconds to clear / par |');
+  console.log('|---|---|---|---|---|---|---|');
+  for (const where of ['choke', 'entry'] as const) {
+    let wins = 0; let refused = 0; const bounties: number[] = []; const bonus: number[] = []; const cleared: number[] = []; const secs: number[] = []; const pars: number[] = [];
+    const at = (p: (typeof plan.towers)[number]): (typeof plan.towers)[number] => (typeof p.at === 'object' || p.at === 'vein' ? p : { ...p, at: where });
+    for (let i = 0; i < N; i++) {
+      try {
+        const rep = runLab({ ...specFor(threat, { ...plan, towers: plan.towers.map(at), tail: plan.tail?.map(at) }, corpusSeed(i)), rework: { dig: 'never' } }, content);
+        if (rep.result === 'survived') wins++;
+        bounties.push(rep.clears.reduce((a, c) => a + c.bounties, 0));
+        bonus.push(rep.clears.reduce((a, c) => a + c.bonus, 0));
+        cleared.push(rep.clears.length);
+        for (const c of rep.clears) { secs.push(c.seconds); pars.push(c.par); }
+      } catch { refused++; }
+    }
+    const b = Number(mean(bounties)); const x = Number(mean(bonus));
+    console.log(`| ${where === 'choke' ? 'at the choke, by the Core' : 'forward, by the entries'} | ${Math.round((100 * wins) / Math.max(1, N - refused))}% of ${N - refused} | ${mean(cleared)} | ${b} | ${x} | ${b > 0 ? Math.round((100 * x) / b) : 0}% | ${mean(secs)} / ${mean(pars)} |`);
+  }
+  process.exit(0);
+}
 const ROWS: { name: string; rework?: LabSpec['rework'] }[] = [
   { name: 'the game as it is' },
   { name: 'pads on, never digs', rework: { dig: 'never' } },
