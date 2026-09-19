@@ -82,6 +82,19 @@ If any subsystem reached two and a third patch shipped anyway, that is a
 **postmortem entry and a spec row in the next session's plan**, not a line to
 leave out. Sessions 20 and 21 are the evidence for both halves of this rule.
 
+## 1d. Is a design review due?
+
+`node tools/doc-drift.mjs` fails when more than six ledger rows have been
+struck since ROADMAP's `Last design review:` line (CONTRIBUTING §6 rule 8).
+**Striking today's row may be what trips it.** When it does - or when one of
+rule 8's triggers fired today (a third fix round on one subsystem across
+sessions, three open "his eye" gates, a lab result that needed a blunt global
+rule, a milestone gate ahead, the PRD over its amendment budget) - **the next
+session's plan is the `design-review` skill, not a build**: the ledger's NEXT
+row becomes a named review row, and the build row waits behind it. Say so in
+the final reply. Label anything that recurred on a theme today
+`design-signal`.
+
 ## 2. Docs, in dependency order
 
 Each file has ONE job. Update in this order so later files can reference
@@ -97,8 +110,13 @@ earlier ones:
    never numbered** (agreement rule 5) — do not renumber anything, do not add a
    number to a planned row, and never let one identity appear twice.
    `doc-drift` fails on both.
-2. **docs/PRD.md** — only if the day changed what the game IS (mechanics,
-   rejections, acceptance criteria). Rejections go to §14 with reasons.
+2. **docs/PRD.md** — if the day changed what the game IS (mechanics,
+   rejections, acceptance criteria), **rewrite the section in place** so it
+   says what is true now (CONTRIBUTING §6 rule 9). What it replaced moves to
+   `docs/history/` verbatim; the why goes in the decision table. **Never add
+   an "amended" paragraph or a dated stratum** - `doc-drift` budgets them, and
+   the PRD is read whole at every session's start, so every line costs every
+   session. Rejections go to §14 with reasons.
 3. **README.md** — if any player-facing claim drifted. Read it END TO END
    before editing; patching the top of a drifted doc produced a
    self-contradicting README once already.

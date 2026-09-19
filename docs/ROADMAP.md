@@ -9,6 +9,11 @@ Read [PRD.md](PRD.md) first, then [ARCHITECTURE.md](ARCHITECTURE.md), then
 
 ## Where the project is today
 
+**Last design review: 2026-09-19, after done row 38.** The next is due six done
+rows later, or sooner on a trigger ([CONTRIBUTING §6](../CONTRIBUTING.md) rule
+8); `tools/doc-drift.mjs` enforces the count and the `design-review` skill is
+the procedure.
+
 Live: <https://argarot.github.io/ascii-defense/> (verify cache-busted, always).
 **Since session 39 a run starts with 200 Scrap, a Bolt costs 60 and its first
 upgrade 15, and from wave 6 the next-wave panel says PLATED** — a build
@@ -240,6 +245,17 @@ PROTOTYPE: on / off**; the pause menu's debug page gets the knobs.
    #381 (*default: re-mint Jogged Elbow*), #392 (*default: leave the Missile
    Rack*) and #412 (*the Core roster — default: Relay, Bulwark, Foreman*) if
    unanswered. Then #373, #375, #378, each looked at in the running game.
+0a. **The PRD, written clean - before any code** (CONTRIBUTING §6 rule 9).
+   Today it is 2,500 lines of dated strata plus §32 on top, and until today
+   the session checklist did not read it. Rewrite it as **what the game is
+   now, once**: the running game stated plainly, the rework as the one marked
+   "approved, not built" part, every superseded paragraph moved verbatim to
+   `docs/history/prd-2026-09-19.md`, the why left to the decision table and
+   `docs/design/`. *Target: short enough to read whole at every session's
+   start - about 700 lines.* Then lower doc-drift's amendment budget to the
+   new count. *Proof:* nothing in the old PRD that is still true is missing
+   from the new one - checked section by section against the history file -
+   and Daniil reads it once, end to end, and says whether it is the game.
 1. **Pads (10.1, #399).** A `bedrock` cell; the generator rule that demotes
    ground to bedrock and keeps pads by the rule in PRD §32.1; the density knob;
    two Threat knobs. *Proof:* a census over 500 seeds a Threat — pads per
@@ -604,6 +620,7 @@ The order is derived from *what causes rework if done late*:
 | **The Rework I — the spatial prototype** | *(NEXT; the plan is "The next session" above. PRD §32.1–32.4, D42–D45; items 10.1–10.4)* | Very scarce build pads (pad / rock / bedrock) as a generator rule with a density knob; digging with one layer of sight and one crew; the clear bonus against a par, spawn windows short; the courier in place of random chests. **Behind one switch, engine default off: the lab, the bands and the golden hash do not move** | **Daniil plays three runs with the switch on and says whether very scarce feels right.** Nothing is tuned before that |
 | **The Rework II — the run's identity** | *(PRD §32.5–32.7, D46–D48; items 10.5–10.7; the Core roster is call #412)* | The briefing (map features, the host, bosses by wave each with one mechanic, a starting relic of three); the undo window; Core types at run setup; the relic audit - a rule-breaker in every offer, flat stats into the sets, skipping pays, tower-family relics, win rate per relic in every sweep | He reads a briefing and plans a run from it; two runs on one Threat feel like different problems; he uses a Core's verb without being told to |
 | **The Rework III — one economy** | *(PRD §32.9–32.11, D49–D52; items 10.8–10.11)* | Bank what you mined; a tile from every run past wave 5 by depth score; parts, recycling, minting with parts, the part ladder; `priceTile` with pads priced by the road they touch; the tile shop removed and the Smith open at the first recycle; towers on a first-hour schedule; Grim and Endless by wins; loadout comfort half offset; **the meta-save migration, with a refund of what the shop sold** | A lost run still hands him something; he recycles a tile and mints one; a Calm grind is visibly not worth it; no save is lost |
+| **The design review before the re-fit** | *(pre-planned 2026-09-19, CONTRIBUTING §6 rule 8 - or sooner, if six done rows or a trigger come first; the `design-review` skill; needs Daniil in the conversation)* | No code. The PRD read whole; every pillar held to evidence; the decision audit on the new map (is *where to build* a decision now? does the answer change between runs?); he plays while the dev watches; one or two research questions; the subtraction list; the PRD rewritten clean; the process retro | Decisions, or an explicit "no change" - **before** the expensive step, so the re-fit runs on a design that has just been checked |
 | **The Rework IV — the re-fit** | *(PRD §32.8 and §32.12, D53; item 10.12. **The old map's code path is deleted here**)* | One re-fit of Calm, Standard and Grim against the stated targets on the new map; the plating question answered by measurement; every band, the ladder and the seed corpus rebuilt; the unwinnable-seed target stated and read | In the lab: naive play with everything unlocked wins Grim under 5%, skilled play with the base kit 15–25%, with everything 50–60% on relics DEALT. His eye: a Grim run he loses and knows why |
 | **The Rework V — the daily** | *(PRD §32.13, D54; item 10.13, and 7.4 which it fulfils)* | The daily run - first attempt scored, practice unlimited, loadout and Core fixed, everything unlocked; the share strip with no link; days played; feats that pay the bank | He plays the daily two days running and sends the strip to someone |
 | **Meta progression, full** | *(**mostly absorbed by The Rework III and V, 2026-09-19** - what is left is tech tree stage 2 and replay sharing; plus 7.8, the monetization door — D27; the tree, run history with bests and the in-game Tile Smith landed in sessions 29–31)* | Tech tree stages 1–2 beyond the shipped tree, dailies, replay sharing, **the tile-loadout slot economy** (7.5) | Finishing a run visibly changes the next one |

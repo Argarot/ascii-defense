@@ -1,6 +1,6 @@
 ---
 name: start-session
-description: Open a working session on ASCII Defense in a NEW, EMPTY conversation with no prior context — read the right three things, mint the calls whose deadline has passed, prove the tree is green, then BRIEF Daniil on what loaded and what is about to be built and WAIT for his go. Run it when a fresh chat opens, including one that opens with just "go". Do NOT run it to continue work in a conversation that already holds the context (e.g. "go with the next session" right after a wrap) — there the wrap's plan is the brief and his "go" is the go.
+description: Open a working session on ASCII Defense in a NEW, EMPTY conversation with no prior context — read the right four things (the PRD whole among them), mint the calls whose deadline has passed, prove the tree is green, then BRIEF Daniil on what loaded and what is about to be built and WAIT for his go. Run it when a fresh chat opens, including one that opens with just "go". Do NOT run it to continue work in a conversation that already holds the context (e.g. "go with the next session" right after a wrap) — there the wrap's plan is the brief and his "go" is the go.
 ---
 
 # Open the working day
@@ -36,9 +36,9 @@ tree is green before touching it — happened whenever someone remembered.
 
 ---
 
-## 1. Read exactly three things
+## 1. Read exactly four things
 
-Not the whole doc set. These three, in order:
+Not the whole doc set. These four, in order:
 
 1. **[CONTRIBUTING.md](../../../CONTRIBUTING.md)** — the invariants, the traps,
    and **§6, how a session runs**. §6 is the one that changes behaviour; the
@@ -49,9 +49,14 @@ Not the whole doc set. These three, in order:
 3. **[docs/ROADMAP.md](../../../docs/ROADMAP.md)** — "Where the project is
    today", "The next session", then the ledger's NEXT row.
 
-Everything else is reference, opened when the work needs it: PRD for what the
-game is, ARCHITECTURE for how it is built, CATALOGUE (generated) for what is in
-it right now.
+4. **[docs/PRD.md](../../../docs/PRD.md), end to end** (CONTRIBUTING §6 rule
+   9). It is the scope - what is being built - and until 2026-09-19 this skill
+   told you not to read it. If it has grown too long to read whole, or it
+   contradicts itself, **that is a finding for the top of the brief**, not a
+   reason to skim.
+
+Everything else is reference, opened when the work needs it: ARCHITECTURE for
+how it is built, CATALOGUE (generated) for what is in it right now.
 
 ## 2. Mint the calls whose deadline has passed
 
@@ -100,6 +105,8 @@ If the gate is red *before* you have written anything, that is the state of
 | **a numbered list** of feedback | Invoke the **`triage-round`** skill *before* touching any of it |
 | **a specific ask** | Do that. If it is more than a trivial edit, plan first and stop (CLAUDE.md) |
 | **nothing is planned** | The previous wrap failed its own rule. Propose a session, sized to a day, and wait |
+| **the NEXT row is a design review**, or `doc-drift` says one is overdue | Invoke the **`design-review`** skill. It needs him in the conversation - a bare "go" does not start it |
+| **a long autonomous session** ("build all night") | Count what is hanging first (CONTRIBUTING §6 rule 10). If the work would mostly rest on unanswered calls, open gates or guessed defaults, **say so before accepting** and propose the shorter session |
 
 ## 5. Brief him, and STOP
 
@@ -125,7 +132,9 @@ Keep it to roughly the shape and length below. It is scanned, not read.
 - CONTRIBUTING §6 — <n> rules, newest: <rule n, in five words>
 - POSTMORTEM — last session was <date>; newest finding: <one line>
 - ROADMAP — last shipped: <ledger row>; newest decision: <D-number, five words>
+- PRD — read whole, <n> lines; the pillar or section today's work touches: <one line>
 - golden hash <n> · live <url>
+- design review: <n> of 6 done rows since <date> · hanging: <n> calls, <n> open "his eye" gates
 
 **Tree** — main @ <sha>, clean/dirty, `npm run gate` <green|RED>
 **Queue** — <n> calls (<n> blocks-ship) · <n> defects · <n> scope
@@ -151,7 +160,7 @@ them; do not bury the finding under a tidy brief.
 is worse than not printing it — a wrong fact reads as loaded context:
 
 ```bash
-grep -c '^### [0-9]\.' CONTRIBUTING.md            # how many §6 rules
+grep -c '^### [0-9]*\.' CONTRIBUTING.md            # how many §6 rules
 grep '^## ' POSTMORTEM.md | tail -1               # the last session logged
 grep -o '^| D[0-9]* |' docs/ROADMAP.md \
   | grep -o 'D[0-9]*' | sort -t D -k2 -n | tail -1   # newest decision

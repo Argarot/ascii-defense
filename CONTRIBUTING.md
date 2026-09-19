@@ -32,8 +32,13 @@ skill still needs them.
 3. [docs/ROADMAP.md](docs/ROADMAP.md) — "Where the project is today" and "The
    next session", then the ledger's NEXT row.
 
-Everything else is reference: read [docs/PRD.md](docs/PRD.md) for what the game
-is, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it is built,
+4. **[docs/PRD.md](docs/PRD.md), end to end, every session** (§6 rule 9). It
+   is the scope of the project - the thing being built - and a dev who has not
+   read it is building from a plan's summary of it. Until 2026-09-19 this list
+   called it "reference", and the design drifted for a month with nobody
+   holding the whole of it.
+
+Everything else is reference: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it is built,
 [docs/CATALOGUE.md](docs/CATALOGUE.md) (generated) for what is in it today.
 
 ---
@@ -492,6 +497,81 @@ not measurable.
 
 *Prevents:* him being used as QA — which is the original diagnosis this whole
 section exists to fix, recurring in a new costume.
+
+
+### 8. The design is reviewed on a schedule, and the schedule is a gate
+
+From 2026-08-16 ("the game is fun now") to 2026-09-19 nobody asked whether
+the plan was still the right game. Forty sessions of balance work sat on two
+decisions that each had one answer - *where to build* and *what to build* -
+and the evidence was in the project's own lab, in a rung the dev had named
+"placement learned" (docs/design/rework-2026-09-19.md). Daniil: *"If I didn't
+do this session, we would have continued to build a shit project. … Let's bake
+regular reviews into our work schedule, so they are pre-planned."*
+
+- **A design review is due after six done ledger rows.** ROADMAP carries one
+  line - `Last design review: <date>, after done row <N>` - and
+  `tools/doc-drift.mjs` **fails** when more than six rows have been struck
+  since. Six is a first guess, his and the dev's; change the constant when it
+  proves wrong.
+- **When one is due, the wrap's next-session plan IS the review** - the
+  `design-review` skill - and not a build. The brief at every session's open
+  shows the count (`design review: 2 of 6`).
+- **It needs him in the conversation.** No code, no overnight run, no "go".
+- **Four things pull one forward**, whatever the count: a **third** fix round
+  on one subsystem *across* sessions (rule 4 counts a day; this counts a
+  history - D37, D38 and the re-fit behind them were three rounds on "what
+  bounds a build" and the rule never fired); **three open "his eye" gates** in
+  the ledger; **a lab result that needs a blunt global rule to hold** (plating
+  was one); and **any milestone gate or the stranger's round**, before it.
+- **`design-signal`** is a label beside the three buckets of rule 1, never in
+  place of one: an item or a lab finding that recurs on a theme. "Three
+  Mortars demolish everything", "400 Bolts win" and "ignore-armour is always
+  the pick" were each triaged as balance; together they said width was
+  unbounded. The review reads the label first.
+
+*Prevents:* building the wrong game correctly.
+
+### 9. The PRD is the scope: read whole, written once, never stacked
+
+Daniil, 2026-09-19: *"PRD is the scope of the project, the thing we are trying
+to build, and the fact that you don't read it defeats the purpose of having it.
+… PRD is the source of truth for the whole project, and it should be clear. If
+amendments pile up, and especially if they start contradicting or confusing
+each other - that's a prime signal for design review."*
+
+- **Read it end to end at every session's start** ("Before writing any code
+  today", item 4). It is kept short enough for that on purpose.
+- **A change to the design is written in place.** The section is rewritten to
+  say what is true now; what it replaced moves to `docs/history/` verbatim;
+  the *why* lives in ROADMAP's decision table and in `docs/design/`. **No
+  "amended", no "superseded", no dated stratum.** A design that is approved
+  and not built yet is the one exception: it is marked as such until its row
+  ships, and folded in the day it does.
+- **Amendments are budgeted.** `doc-drift` counts the PRD's amendment markers
+  and fails above the budget; the budget only ever goes down. Going over it is
+  not a formatting problem - it is rule 8's fifth trigger.
+
+*How it got this way, so it does not again:* early sessions kept dated
+amendments to preserve the why, the wrap checklist said "only if the day
+changed what the game IS", nothing ever consolidated, and at 2,000 lines the
+session checklist stopped reading it to save tokens. Each step was sensible.
+
+*Prevents:* a source of truth nobody reads.
+
+### 10. Push back on autonomy when decisions are hanging
+
+Long autonomous sessions are right for instruments, defects and detail, and
+wrong for direction. **Before accepting one, count what is hanging** - open
+calls, open "his eye" gates, plan items whose default is a guess - and if the
+work would mostly be built on those, **say so and propose the shorter session
+or the conversation instead.** Daniil, 2026-09-19: *"push back if I ask you for
+a long autonomous session which you think would be not particularly productive
+because of lots of hanging decisions."* His assumption - that what remained
+was unimportant detail - was reasonable from what the wraps told him; the
+wraps were the dev's.
+
+*Prevents:* throughput in the wrong direction.
 
 ---
 
