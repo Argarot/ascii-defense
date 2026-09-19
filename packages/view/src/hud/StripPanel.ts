@@ -77,10 +77,32 @@ const TRAIT_MARK: Record<string, string> = {
   'weak-kinetic': 'K+',
   'weak-energy': 'E+',
 };
-function traitText(traits: readonly string[], room: number): string {
+/** `marked` collects every trait that had to be shown as a MARK, so the strip can spell it out in its legend (#373). */
+function traitText(traits: readonly string[], room: number, marked?: Set<string>): string {
   const words = traits.map((t) => TRAIT_WORD[t] ?? t).join(' ');
   if (words.length <= room) return words;
+  for (const t of traits) marked?.add(t);
   return traits.map((t) => TRAIT_MARK[t] ?? t.slice(0, 2)).join(' ').slice(0, Math.max(0, room));
+}
+
+/**
+ * The legend's lines (#373): every mark the strip is showing right now, with
+ * its word, packed into rows of `width`. A kind with three traits always falls
+ * back to marks, so the kinds a player most needs to read were the ones shown
+ * in a code nothing explained.
+ */
+export function markLegend(marked: ReadonlySet<string>, width: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const t of marked) {
+    const entry = `${TRAIT_MARK[t] ?? t.slice(0, 2)} ${TRAIT_WORD[t] ?? t}`;
+    const next = line ? `${line} ⠂ ${entry}` : entry;
+    if (next.length <= width) { line = next; continue; }
+    if (line) lines.push(line);
+    line = entry.slice(0, width);
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 
 interface Region {
@@ -199,10 +221,11 @@ export class StripPanel {
     if (now.length === 0) term.write(wx, 2, 'the road is empty', dim);
     // Thirteen glyphs: "12 swarmling" is twelve, and the wave ceiling of sixty keeps counts to two digits (session 31: "swarmlin").
     const KIND_W = 13;
+    const marked = new Set<string>();
     now.slice(0, H - 2).forEach((k, i) => {
       const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);
       term.write(wx, 2 + i, line, text);
-      term.write(wx + KIND_W, 2 + i, traitText(k.traits, colW - KIND_W - 1), dim);
+      term.write(wx + KIND_W, 2 + i, traitText(k.traits, colW - KIND_W - 1, marked), dim);
     });
     const nx = wx + colW;
     if (s.nextWave) {
@@ -214,7 +237,7 @@ export class StripPanel {
       nw.kinds.slice(0, H - 2).forEach((k, i) => {
         const line = `${k.count} ${k.name}`.slice(0, KIND_W - 1).padEnd(KIND_W);
         term.write(nx, 2 + i, line, text);
-        term.write(nx + KIND_W, 2 + i, traitText(k.traits ?? [], colW - KIND_W - 1), dim);
+        term.write(nx + KIND_W, 2 + i, traitText(k.traits ?? [], colW - KIND_W - 1, marked), dim);
       });
       // The formations (session 32, PR 3): how the packs walk, under the kinds, when a row is free.
       const fr = nw.formations ?? [];
@@ -223,6 +246,16 @@ export class StripPanel {
     } else {
       term.write(nx, 1, 'NEXT', dim);
       term.write(nx, 2, 'the last wave is out', dim);
+    }
+    // The legend (#373): whatever marks are on show, spelled out under the
+    // longer column, a row below it - close to the marks it explains (at the
+    // strip's foot it read as a caption for nothing), in the rows the kinds
+    // left free.
+    if (marked.size > 0) {
+      const nextRows = s.nextWave ? Math.min(s.nextWave.kinds.length, H - 2) + ((s.nextWave.formations ?? []).length > 0 ? 1 : 0) : 1;
+      const used = 2 + Math.max(Math.min(now.length, H - 2), nextRows);
+      const legend = markLegend(marked, waveW - 1).slice(0, Math.max(0, H - used - 1));
+      legend.forEach((l, i) => term.write(wx, used + 1 + i, l, dim));
     }
 
     // ---- CORE: the vessel, always ---------------------------------------------

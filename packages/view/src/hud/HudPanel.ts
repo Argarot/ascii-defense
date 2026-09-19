@@ -11,7 +11,7 @@
  */
 import type { TermSurface } from '@ascii-defense/render';
 import type { Sprite } from '@ascii-defense/content';
-import { drawRelicPlate, RELIC_PLATE_W } from '../board/relicPlate';
+import { drawRelicPlate, RELIC_PLATE_H, RELIC_PLATE_W } from '../board/relicPlate';
 import { FACING_NAME, PRIORITIES, type Priority } from '@ascii-defense/engine';
 import { role, rarityRole } from '../palette';
 import { platingWords, waveAnswer } from './traitAnswers';
@@ -543,8 +543,22 @@ export class HudPanel {
       // The opened relic's plate at the card's right (session 31): the same ring the strip shows.
       drawRelicPlate(term, c.id ? this.sprites.get(`relic_${c.id}`) : undefined, W - RELIC_PLATE_W, y, { rarity: c.rarity, kind: c.kind === 'active' ? 'active' : c.kind === 'consumable' ? 'consumable' : 'passive', plate: role('ui.grid'), fg: role('ui.text'), label: c.name.slice(0, 2).toUpperCase() });
       term.write(0, y++, c.name.toUpperCase().slice(0, W - RELIC_PLATE_W - 1), rr ? role(rr) : role('ui.accent'));
-      term.write(0, y++, [c.rarity, c.kind, c.tags.length ? c.tags.join(' ') : ''].filter(Boolean).join('  \u2802  ').slice(0, W), role('ui.dim'));
-      for (const line of this.wrapText(c.desc, W).slice(0, 5)) term.write(0, y++, line, role('ui.text'));
+      // Beside the plate a row is narrower than under it (#375: the rarity line
+      // and the description were wrapped at the panel's full width, over the
+      // plate's middle rows, so the icon was mostly gone under its own card).
+      const plateBottom = y - 1 + RELIC_PLATE_H;
+      const widthAt = (row: number): number => (row < plateBottom ? W - RELIC_PLATE_W - 1 : W);
+      const flow = (s: string, maxLines: number, fg: string): void => {
+        let words = s.split(' ').filter((w) => w !== '');
+        for (let n = 0; n < maxLines && words.length > 0; n++) {
+          const line = this.wrapText(words.join(' '), widthAt(y))[0];
+          term.write(0, y++, line.slice(0, widthAt(y - 1)), fg);
+          words = words.slice(line.split(' ').length);
+        }
+      };
+      flow([c.rarity, c.kind, c.tags.length ? c.tags.join(' ') : ''].filter(Boolean).join(' \u2802 '), 2, role('ui.dim'));
+      flow(c.desc, 7, role('ui.text'));
+      y = Math.max(y, plateBottom);
       term.write(0, y++, c.uses > 0 ? `its rule fired ${c.uses} time${c.uses === 1 ? '' : 's'}` : 'its rule has not fired yet', role('ui.dim'));
       y++;
       this.button(0, y, W - 2, `SALVAGE  +${c.salvageOre} ore`, role('ui.bg'), role('terrain.ore.lit'));
@@ -552,7 +566,7 @@ export class HudPanel {
       y += 2;
       // Combining lives in the Forge (feedback 2026-09-06 evening, item 4); the card only says what is possible.
       for (const t of c.combine.slice(0, 3)) for (const line of this.wrapText(`forge: with ${t.withName} -> ${t.result}`, W).slice(0, 2)) term.write(0, y++, line, role('ui.dim'));
-      if (c.combine.length === 0) term.write(0, y++, 'nothing held combines with it: a second copy of the same rarity, or its recipe partner', role('ui.dim'));
+      if (c.combine.length === 0) for (const line of this.wrapText('nothing held combines with it: it wants a second copy at the same rarity, or its recipe partner', W)) term.write(0, y++, line, role('ui.dim'));
       this.button(0, y, W - 2, 'OPEN THE FORGE', role('ui.bg'), role('ui.accent'));
       this.regions.push({ row: y, x0: 0, x1: W - 2, action: { kind: 'forge' } });
       y += 2;

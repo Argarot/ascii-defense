@@ -110,6 +110,7 @@ import laserSprite from '@ascii-defense/content/assets/sprites/laser.json';
 import bastionSprite from '@ascii-defense/content/assets/sprites/bastion.json';
 import roadSprite from '@ascii-defense/content/assets/sprites/road_muted_cobble.json';
 import grid from '@ascii-defense/content/assets/grid.json';
+import relicPool from '@ascii-defense/content/assets/relics/pool.json';
 
 describe('imported sprites cover what the game can show', () => {
   // The four studies and the two session-25 placeholders (tools/placeholder-sprites.mjs).
@@ -128,6 +129,17 @@ describe('imported sprites cover what the game can show', () => {
         expect(st, `${t.id} state '${p}'`).toBeDefined();
         expect(st.frames?.length ?? 0, `${t.id} state '${p}' frames`).toBeGreaterThanOrEqual(1); // the approved pack has four, the placeholders one
       }
+    }
+  });
+
+  it('every relic of the pool has a 4x3 icon (#378: eleven had none - the placeholder table stopped growing at session 28)', () => {
+    const files = import.meta.glob(['../../content/assets/sprites/relic_*.json'], { query: '?raw', import: 'default', eager: true });
+    const byId = new Map(Object.values(files).map((raw) => JSON.parse(raw) as { id: string; kind: string; cell: number[] }).map((s) => [s.id, s]));
+    for (const r of (relicPool as { relics: { id: string }[] }).relics) {
+      const sp = byId.get(`relic_${r.id}`);
+      expect(sp, `sprite for the relic ${r.id}: a row in tools/placeholder-sprites.mjs RELICS, then run the tool`).toBeDefined();
+      expect(sp!.kind).toBe('relic');
+      expect(sp!.cell).toEqual([4, 3]);
     }
   });
 

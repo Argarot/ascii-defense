@@ -173,6 +173,18 @@ const RELICS = {
   // ---- #365: the synergy - a heavier round, and a point that goes through plate ----
   payload: { role: 'relic.blood', rows: [' /\\ ', '|++|', '|__|'], dim: '/\\|_' },
   penetrators: { role: 'relic.steel', rows: ['# |>', '#=|>', '# |>'], dim: '#' },
+  // ---- #378: the eleven the table never got (the passives folded into the pool on 2026-09-06, after this table stopped growing) ----
+  iron_sights: { role: 'relic.steel', rows: [' /\\ ', '-++-', ' \\/ '], dim: '/\\' },
+  hot_loads: { role: 'fx.ember', rows: ['^^^^', '|##|', '|##|'], dim: '|' },
+  quick_hands: { role: 'relic.copper', rows: ['>>  ', ' >> ', '  >>'] },
+  deep_cold: { role: 'relic.ice', rows: ['~~~~', '*~~*', '~~~~'], dim: '~' },
+  overclock: { role: 'fx.ember', rows: ['-==>', '-==>', ' ^^ '], dim: '-' },
+  wide_aura: { role: 'relic.moss', rows: ['(  )', '(++)', '(  )'], dim: '()' },
+  rich_seam: { role: 'terrain.ore.lit', rows: ['oooo', '/oo\\', '####'], dim: '#/\\' },
+  war_chest: { role: 'relic.gold', rows: ['.--.', '[$$]', '[$$]'], dim: '.-[]' },
+  bounty_hunter: { role: 'relic.gold', rows: ['\\  /', ' $$ ', '/  \\'], dim: '\\/' },
+  tempered_steel: { role: 'relic.steel', rows: ['  /|', ' /|/', '=+/ '], dim: '=+' },
+  shield_breaker: { role: 'relic.blood', rows: ['[\\/]', '[/\\]', ' \\/ '], dim: '[]' },
 };
 for (const [id, r] of Object.entries(RELICS)) {
   const keys = makeKeys();
